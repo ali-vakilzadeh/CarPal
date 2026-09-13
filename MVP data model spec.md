@@ -1,0 +1,1909 @@
+**MVP Data Model Specification**
+
+
+# 1. Data Model Goals
+
+The MVP data model must support:
+
+- multiple user roles and organizations
+- vehicle profiles and service history
+- provider capability profiles and trust evidence
+- vendor inventory and fitment
+- reviews and reputation
+- appointment workflows
+- fleet management basics
+- lightweight social/community features
+- AI/MCP context, insights, approvals, and audit
+- admin moderation and taxonomy management
+
+It should be simple enough for MVP, but structured enough for Phase 2 extensions such as OBDII, payments, and deeper analytics.
+
+---
+
+# 2. General Conventions
+
+## 2.1 Identifier strategy
+
+All entities should have:
+
+- globally unique ID
+- human-readable slug where useful
+- audit-friendly timestamps
+
+Recommended ID style:
+
+- UUID or ULID
+
+## 2.2 Common fields
+
+Most entities should include:
+
+- `id`
+- `created_at`
+- `updated_at`
+- `created_by`
+- `updated_by`
+- `status`
+- `version` for optimistic concurrency where needed
+
+For organization-scoped records:
+
+- `organization_id`
+
+For soft-delete-sensitive records:
+
+- `deleted_at`
+- `deletion_reason`
+
+## 2.3 Multi-tenancy rule
+
+Business-sensitive data must be organization-scoped:
+
+- provider analytics
+- vendor inventory
+- fleet vehicles
+- fleet costs
+- appointment internal notes
+- MCP audit logs
+
+Public or semi-public data may be globally readable:
+
+- public profiles
+- public reviews
+- public portfolio items
+- public inventory listings
+
+---
+
+# 3. Domain Overview
+
+The MVP data model is grouped into these domains:
+
+1. Identity and Access
+2. Organizations and Plans
+3. Vehicles
+4. Taxonomy
+5. Provider Profile and Capabilities
+6. Portfolio and Media
+7. Reviews and Trust
+8. Appointments
+9. Vendor Inventory
+10. Fleet Management
+11. Community/Social
+12. Notifications and Consent
+13. AI/MCP and Governance
+14. Search Projections
+
+---
+
+# 4. Identity and Access Domain
+
+## UserAccount
+
+Represents a human user.
+
+### Key fields
+
+- `id`
+- `full_name`
+- `email`
+- `phone`
+- `auth_provider`
+- `locale`
+- `timezone`
+- `status`
+- `last_active_at`
+
+### Relationships
+
+- has many `RoleMembership`
+- may own personal `Vehicle` records
+- may author reviews, questions, comments
+
+---
+
+## AuthenticationMethod
+
+Represents login mechanisms.
+
+### Key fields
+
+- `user_id`
+- `method_type`
+  - email/password
+  - phone OTP
+  - social login
+- `identifier`
+- `verified_at`
+- `status`
+
+---
+
+## RoleMembership
+
+Connects a user to an organization and role.
+
+### Key fields
+
+- `user_id`
+- `organization_id`
+- `role`
+- `status`
+- `invited_by`
+- `joined_at`
+
+### Roles
+
+- individual
+- fleet_owner
+- fleet_manager
+- fleet_driver
+- provider_owner
+- provider_manager
+- provider_staff
+- vendor_owner
+- vendor_staff
+- admin
+
+---
+
+## ConsentRecord
+
+Stores user or organization consent.
+
+### Key fields
+
+- `subject_type`
+  - user
+  - organization
+- `subject_id`
+- `consent_type`
+- `version`
+- `granted`
+- `granted_at`
+- `withdrawn_at`
+
+### Consent types
+
+- vehicle_data_sharing
+- service_history_sharing
+- photo_publishing
+- ai_personalization
+- review_invitations
+- location_usage
+- marketing
+
+---
+
+# 5. Organizations and Plans Domain
+
+## Organization
+
+Represents a business or fleet entity.
+
+### Key fields
+
+- `id`
+- `name`
+- `legal_name`
+- `organization_type`
+  - provider
+  - vendor
+  - fleet
+  - hybrid_provider_vendor
+- `verification_status`
+- `plan_id`
+- `primary_location_id`
+- `contact_email`
+- `contact_phone`
+- `website`
+- `status`
+
+### Relationships
+
+- has many `OrganizationLocation`
+- has many `RoleMembership`
+- may have one `ProviderProfile`
+- may have one `VendorProfile`
+- may have one `FleetProfile`
+
+---
+
+## OrganizationLocation
+
+Physical or service location.
+
+### Key fields
+
+- `organization_id`
+- `name`
+- `address_line_1`
+- `address_line_2`
+- `city`
+- `region`
+- `postal_code`
+- `country`
+- `latitude`
+- `longitude`
+- `service_radius_km`
+- `phone`
+- `status`
+
+---
+
+## Plan
+
+Defines subscription or entitlement tier.
+
+### Key fields
+
+- `id`
+- `name`
+- `plan_type`
+  - individual_free
+  - fleet_20
+  - fleet_50
+  - fleet_100
+  - provider_basic
+  - provider_pro
+  - vendor_basic
+  - vendor_pro
+- `max_vehicles`
+- `max_users`
+- `status`
+
+---
+
+## Entitlement
+
+Specific capability granted by a plan.
+
+### Key fields
+
+- `plan_id`
+- `entitlement_key`
+- `value_type`
+- `value`
+
+### Example entitlement keys
+
+- max_vehicles
+- ai_tools_enabled
+- fleet_reports_enabled
+- inventory_bulk_import_enabled
+- appointment_calendar_enabled
+- export_enabled
+
+---
+
+## Subscription
+
+Links an organization to a plan.
+
+### Key fields
+
+- `organization_id`
+- `plan_id`
+- `status`
+- `started_at`
+- `expires_at`
+- `billing_mode`
+  - manual
+  - self_serve_future
+- `vehicle_limit_override`
+
+For MVP, billing can be manual/admin-managed.
+
+---
+
+# 6. Vehicle Domain
+
+## Vehicle
+
+Represents a car, fleet vehicle, or customer vehicle.
+
+### Key fields
+
+- `id`
+- `owner_type`
+  - user
+  - organization
+- `owner_id`
+- `vin`
+- `vin_hash`
+- `license_plate`
+- `nickname`
+- `brand`
+- `model`
+- `series`
+- `year`
+- `engine_type`
+- `fuel_type`
+- `transmission`
+- `drivetrain`
+- `body_style`
+- `color`
+- `mileage`
+- `status`
+- `profile_completeness`
+
+### Vehicle statuses
+
+- active
+- inactive
+- sold
+- in_repair
+- archived
+
+### Relationships
+
+- belongs to user or organization
+- has many `VehicleServiceRecord`
+- has many `VehicleIssue`
+- has many `VehicleDocument`
+- has many `Appointment`
+- may be assigned to a fleet driver
+
+---
+
+## VehicleDocument
+
+Stores document metadata, not necessarily raw file content.
+
+### Key fields
+
+- `vehicle_id`
+- `document_type`
+  - insurance
+  - registration
+  - warranty
+  - invoice
+  - inspection_report
+- `title`
+- `media_asset_id`
+- `uploaded_by`
+- `visibility`
+- `status`
+
+---
+
+## VehicleServiceRecord
+
+Represents a repair or maintenance record.
+
+### Key fields
+
+- `vehicle_id`
+- `service_date`
+- `provider_organization_id`
+- `service_system`
+- `service_task`
+- `description`
+- `cost_amount`
+- `currency`
+- `warranty_note`
+- `source_type`
+  - user_manual
+  - provider_logged
+  - appointment_completed
+  - invoice_upload
+- `verification_status`
+- `appointment_id`
+- `status`
+
+### Verification statuses
+
+- self_reported
+- provider_confirmed
+- appointment_verified
+- invoice_verified
+- admin_verified
+
+---
+
+## VehicleIssue
+
+Represents an active or resolved issue.
+
+### Key fields
+
+- `vehicle_id`
+- `title`
+- `description`
+- `symptom_category`
+- `urgency_level`
+- `status`
+- `reported_by_user_id`
+- `fleet_approval_status`
+- `converted_appointment_id`
+- `ai_triage_summary`
+
+### Issue statuses
+
+- open
+- investigating
+- scheduled
+- resolved
+- cancelled
+
+---
+
+## MaintenanceReminder
+
+Generated reminder for vehicle maintenance.
+
+### Key fields
+
+- `vehicle_id`
+- `reminder_type`
+- `title`
+- `reason`
+- `due_by_mileage`
+- `due_by_date`
+- `priority`
+- `status`
+
+---
+
+# 7. Taxonomy Domain
+
+For MVP, taxonomy can be modeled as a unified node structure with types.
+
+## TaxonomyNode
+
+### Key fields
+
+- `id`
+- `type`
+- `parent_id`
+- `name`
+- `slug`
+- `description`
+- `status`
+- `sort_order`
+
+### Node types
+
+- vehicle_brand
+- vehicle_model
+- vehicle_series
+- engine_type
+- fuel_type
+- service_system
+- service_task
+- part_category
+- symptom
+- amenity
+- badge_type
+
+---
+
+## TaxonomySynonym
+
+Alternate terms for search and AI normalization.
+
+### Key fields
+
+- `taxonomy_node_id`
+- `term`
+- `locale`
+- `source`
+- `status`
+
+---
+
+## TaxonomyMapping
+
+Maps entities to taxonomy terms.
+
+### Key fields
+
+- `entity_type`
+- `entity_id`
+- `taxonomy_node_id`
+- `mapping_type`
+- `confidence`
+
+Example uses:
+
+- provider capability to service task
+- inventory item to part category
+- symptom to service system
+
+---
+
+# 8. Provider Profile and Capabilities Domain
+
+## ProviderProfile
+
+Extends an organization with provider-specific data.
+
+### Key fields
+
+- `organization_id`
+- `provider_type`
+  - general_mechanic
+  - garage
+  - body_shop
+  - mobile_mechanic
+  - transmission_specialist
+  - suspension_specialist
+  - ev_specialist
+  - tire_shop
+  - detailing
+- `description`
+- `years_in_business`
+- `price_tier`
+  - budget
+  - mid_range
+  - premium
+- `response_time_target`
+- `warranty_policy`
+- `profile_completeness`
+- `verification_status`
+- `public_status`
+
+---
+
+## ProviderServiceCategory
+
+Links provider to supported service systems/tasks.
+
+### Key fields
+
+- `provider_organization_id`
+- `taxonomy_node_id`
+- `experience_level`
+- `visibility`
+- `source`
+  - self_declared
+  - ai_suggested
+  - evidence_based
+- `status`
+
+---
+
+## ProviderVehicleCoverage
+
+Defines supported brands/models/series.
+
+### Key fields
+
+- `provider_organization_id`
+- `brand_node_id`
+- `model_node_id`
+- `series_node_id`
+- `engine_node_id`
+- `coverage_level`
+- `source`
+- `status`
+
+This supports the requirement that providers can have virtually unlimited brand/model/series coverage.
+
+---
+
+## ProviderCapability
+
+More specific than coverage/category. Represents a claim or proven skill.
+
+### Key fields
+
+- `provider_organization_id`
+- `brand_node_id`
+- `model_node_id`
+- `series_node_id`
+- `service_system_node_id`
+- `service_task_node_id`
+- `confidence_level`
+- `evidence_count`
+- `public_visibility`
+- `badge_eligible`
+- `source`
+- `status`
+
+### Confidence levels
+
+- self_declared
+- low_evidence
+- moderate_evidence
+- strong_evidence
+- verified_expert
+
+---
+
+## ProviderCapabilityEvidence
+
+Evidence supporting a capability.
+
+### Key fields
+
+- `capability_id`
+- `evidence_type`
+  - completed_job
+  - review
+  - portfolio_item
+  - certification
+  - appointment
+- `reference_entity_type`
+- `reference_entity_id`
+- `weight`
+- `created_at`
+
+---
+
+## SkillHeatmapEntry
+
+AI-derived provider strength entry.
+
+### Key fields
+
+- `provider_organization_id`
+- `scope_type`
+  - brand
+  - model
+  - service_system
+  - service_task
+- `scope_reference_id`
+- `score`
+- `confidence`
+- `trend`
+- `evidence_summary`
+- `local_demand_score`
+- `generated_at`
+- `status`
+
+---
+
+## ProviderBadge
+
+Public or semi-public badge.
+
+### Key fields
+
+- `provider_organization_id`
+- `badge_type`
+- `title`
+- `reason`
+- `awarded_at`
+- `expires_at`
+- `visibility`
+- `status`
+
+---
+
+## ProviderAvailabilityRule
+
+Basic scheduling rules.
+
+### Key fields
+
+- `provider_organization_id`
+- `location_id`
+- `day_of_week`
+- `start_time`
+- `end_time`
+- `max_concurrent_appointments`
+- `buffer_minutes`
+- `status`
+
+---
+
+# 9. Portfolio and Media Domain
+
+## MediaAsset
+
+Central media object.
+
+### Key fields
+
+- `id`
+- `owner_type`
+- `owner_id`
+- `media_type`
+  - image
+  - video
+  - document
+- `storage_reference`
+- `thumbnail_reference`
+- `uploaded_by`
+- `consent_status`
+- `redaction_status`
+- `moderation_status`
+- `status`
+
+---
+
+## PortfolioItem
+
+Provider showcase project.
+
+### Key fields
+
+- `provider_organization_id`
+- `title`
+- `description`
+- `brand_node_id`
+- `model_node_id`
+- `series_node_id`
+- `service_system_node_id`
+- `service_task_node_id`
+- `job_date`
+- `consent_status`
+- `visibility`
+- `ai_caption`
+- `provider_approved_caption`
+- `status`
+
+### Relationships
+
+- has many media assets
+- may link to service record or appointment
+
+---
+
+# 10. Reviews and Trust Domain
+
+## Review
+
+Core reputation object.
+
+### Key fields
+
+- `id`
+- `author_user_id`
+- `subject_organization_id`
+- `subject_type`
+  - provider
+  - vendor
+- `context_vehicle_id`
+- `context_appointment_id`
+- `context_service_record_id`
+- `overall_rating`
+- `quality_rating`
+- `communication_rating`
+- `timeliness_rating`
+- `price_rating`
+- `cleanliness_rating`
+- `title`
+- `body`
+- `service_category_node_id`
+- `verified_status`
+- `status`
+- `published_at`
+
+### Review statuses
+
+- draft
+- pending_moderation
+- published
+- rejected
+- removed
+
+### Verification statuses
+
+- unverified
+- appointment_verified
+- invoice_verified
+- provider_confirmed
+- admin_verified
+
+---
+
+## ReviewTag
+
+Structured tags attached to a review.
+
+### Key fields
+
+- `review_id`
+- `taxonomy_node_id`
+- `sentiment`
+- `source`
+  - user_selected
+  - ai_suggested
+
+---
+
+## ReviewResponse
+
+Provider or vendor response.
+
+### Key fields
+
+- `review_id`
+- `organization_id`
+- `response_text`
+- `ai_assisted`
+- `status`
+- `published_at`
+- `responded_by_user_id`
+
+---
+
+## ReviewReport
+
+Report against a review.
+
+### Key fields
+
+- `review_id`
+- `reported_by`
+- `reason`
+- `details`
+- `status`
+- `resolved_at`
+
+---
+
+## TrustSignal
+
+Computed trust indicators.
+
+### Key fields
+
+- `subject_type`
+- `subject_id`
+- `signal_type`
+  - verified_reviews_count
+- `value`
+- `calculated_at`
+
+This can be a materialized or derived table.
+
+---
+
+# 11. Appointment Domain
+
+## Appointment
+
+Represents a service request/booking.
+
+### Key fields
+
+- `id`
+- `requester_type`
+  - user
+  - fleet
+- `requester_id`
+- `provider_organization_id`
+- `vehicle_id`
+- `service_system_node_id`
+- `service_task_node_id`
+- `description`
+- `urgency_level`
+- `preferred_start_window`
+- `confirmed_start_at`
+- `estimated_duration_minutes`
+- `status`
+- `cancellation_reason`
+- `completed_at`
+
+### Appointment statuses
+
+- draft
+- requested
+- provider_reviewing
+- alternative_proposed
+- confirmed
+- checked_in
+- in_progress
+- awaiting_parts
+- ready_for_pickup
+- completed
+- cancelled
+- no_show
+
+---
+
+## AppointmentStatusHistory
+
+Tracks status changes.
+
+### Key fields
+
+- `appointment_id`
+- `old_status`
+- `new_status`
+- `changed_by`
+- `note`
+- `changed_at`
+
+---
+
+## AppointmentParticipant
+
+Staff or users connected to appointment.
+
+### Key fields
+
+- `appointment_id`
+- `user_id`
+- `organization_id`
+- `participant_role`
+  - requester
+  - fleet_manager
+  - driver
+  - service_advisor
+  - technician
+
+---
+
+## PreVisitReport
+
+AI/generated report sent to provider.
+
+### Key fields
+
+- `appointment_id`
+- `vehicle_summary`
+- `issue_summary`
+- `ai_triage_summary`
+- `relevant_history_summary`
+- `suggested_focus_areas`
+- `urgency_level`
+- `consent_reference_id`
+- `generated_at`
+- `status`
+
+---
+
+## AppointmentNote
+
+Internal or customer-visible notes.
+
+### Key fields
+
+- `appointment_id`
+- `author_user_id`
+- `note_type`
+  - internal
+  - customer_visible
+- `body`
+- `created_at`
+
+---
+
+# 12. Vendor Inventory Domain
+
+## VendorProfile
+
+Extends organization with vendor-specific data.
+
+### Key fields
+
+- `organization_id`
+- `vendor_type`
+  - parts_retailer
+  - wholesaler
+  - used_parts
+  - performance_parts
+  - oem_supplier
+  - tire_specialist
+  - battery_specialist
+- `description`
+- `delivery_options`
+- `pickup_available`
+- `trade_customers_supported`
+- `return_policy`
+- `warranty_policy`
+- `profile_completeness`
+- `status`
+
+---
+
+## InventoryItem
+
+Vendor catalog item.
+
+### Key fields
+
+- `vendor_organization_id`
+- `sku`
+- `name`
+- `normalized_name`
+- `brand`
+- `oem_number`
+- `aftermarket_number`
+- `part_category_node_id`
+- `condition`
+  - new
+  - used
+  - refurbished
+  - remanufactured
+- `price_public`
+- `price_trade`
+- `currency`
+- `stock_quantity`
+- `stock_status`
+- `location_id`
+- `warranty_note`
+- `visibility`
+- `data_quality_score`
+- `status`
+
+### Stock statuses
+
+- in_stock
+- low_stock
+- out_of_stock
+- available_on_request
+
+---
+
+## InventoryMedia
+
+Links inventory items to media assets.
+
+### Key fields
+
+- `inventory_item_id`
+- `media_asset_id`
+- `display_order`
+
+---
+
+## InventoryFitment
+
+Links part to compatible vehicle taxonomy.
+
+### Key fields
+
+- `inventory_item_id`
+- `brand_node_id`
+- `model_node_id`
+- `series_node_id`
+- `year_start`
+- `year_end`
+- `engine_node_id`
+- `notes`
+- `confidence`
+- `source`
+  - manual
+  - csv_import
+  - ai_suggested
+  - vendor_confirmed
+
+### Confidence levels
+
+- confirmed
+- likely
+- uncertain
+
+---
+
+## StockInquiry
+
+Request about an inventory item.
+
+### Key fields
+
+- `inventory_item_id`
+- `vendor_organization_id`
+- `requester_type`
+  - user
+  - provider
+  - fleet
+- `requester_id`
+- `vehicle_id`
+- `message`
+- `status`
+- `response_note`
+- `responded_at`
+
+### Inquiry statuses
+
+- open
+- answered
+- reserved
+- unavailable
+- completed
+- cancelled
+
+---
+
+# 13. Fleet Management Domain
+
+## FleetProfile
+
+Extends organization with fleet-specific settings.
+
+### Key fields
+
+- `organization_id`
+- `fleet_size`
+- `industry`
+- `approval_workflow_enabled`
+- `preferred_provider_mode`
+- `reporting_currency`
+- `status`
+
+---
+
+## FleetVehicleAssignment
+
+Assigns vehicle to driver.
+
+### Key fields
+
+- `vehicle_id`
+- `driver_user_id`
+- `assigned_by`
+- `assigned_at`
+- `ended_at`
+- `status`
+
+---
+
+## FleetPreferredProvider
+
+Preferred providers for a fleet.
+
+### Key fields
+
+- `fleet_organization_id`
+- `provider_organization_id`
+- `service_category_node_id`
+- `priority`
+- `notes`
+- `status`
+
+---
+
+## FleetApproval
+
+Approval request for repair or cost.
+
+### Key fields
+
+- `fleet_organization_id`
+- `vehicle_id`
+- `related_issue_id`
+- `related_appointment_id`
+- `requested_by_user_id`
+- `approver_user_id`
+- `approval_type`
+  - repair_request
+  - provider_selection
+  - cost_estimate
+- `status`
+- `decision_reason`
+- `decided_at`
+
+### Approval statuses
+
+- pending
+- approved
+- rejected
+- needs_more_info
+
+---
+
+# 14. Community/Social Domain
+
+## Follow
+
+User follows an organization.
+
+### Key fields
+
+- `user_id`
+- `organization_id`
+- `status`
+- `created_at`
+
+---
+
+## Post
+
+Lightweight social/update object.
+
+### Key fields
+
+- `author_organization_id`
+- `post_type`
+  - showcase
+  - tip
+  - availability
+  - event
+  - educational
+- `title`
+- `body`
+- `visibility`
+- `moderation_status`
+- `published_at`
+
+---
+
+## PostMedia
+
+Links posts to media assets.
+
+### Key fields
+
+- `post_id`
+- `media_asset_id`
+- `display_order`
+
+---
+
+## Comment
+
+Comment on post, showcase, or question.
+
+### Key fields
+
+- `target_type`
+  - post
+  - question
+  - showcase
+- `target_id`
+- `author_user_id`
+- `body`
+- `status`
+- `moderation_status`
+- `created_at`
+
+---
+
+## Reaction
+
+Lightweight engagement.
+
+### Key fields
+
+- `target_type`
+- `target_id`
+- `user_id`
+- `reaction_type`
+  - helpful
+  - like
+  - thanks
+
+---
+
+## Question
+
+Community Q&A question.
+
+### Key fields
+
+- `author_user_id`
+- `vehicle_id`
+- `title`
+- `body`
+- `category_node_id`
+- `status`
+- `accepted_answer_id`
+- `moderation_status`
+
+---
+
+## Answer
+
+Answer to a question.
+
+### Key fields
+
+- `question_id`
+- `author_user_id`
+- `author_organization_id`
+- `body`
+- `helpful_count`
+- `status`
+- `moderation_status`
+
+---
+
+# 15. Notifications Domain
+
+## Notification
+
+### Key fields
+
+- `recipient_type`
+  - user
+  - organization
+- `recipient_id`
+- `channel`
+  - in_app
+  - email
+  - push
+  - sms
+- `notification_type`
+- `title`
+- `body`
+- `reference_entity_type`
+- `reference_entity_id`
+- `read_at`
+- `status`
+
+---
+
+## NotificationPreference
+
+### Key fields
+
+- `user_id`
+- `channel`
+- `notification_category`
+- `enabled`
+
+Categories:
+
+- appointments
+- reviews
+- inquiries
+- fleet_approvals
+- ai_suggestions
+- marketing
+- system
+
+---
+
+# 16. AI/MCP and Governance Domain
+
+## McpClient
+
+Registered client allowed to use MCP.
+
+### Key fields
+
+- `id`
+- `name`
+- `client_type`
+  - internal_assistant
+  - matching_engine
+  - moderation_assistant
+  - analytics_engine
+  - partner_agent_future
+- `status`
+- `rate_limit_policy`
+- `allowed_scopes`
+- `environment`
+
+---
+
+## McpAccessLog
+
+Audit record for MCP resource/tool usage.
+
+### Key fields
+
+- `id`
+- `mcp_client_id`
+- `principal_type`
+- `principal_id`
+- `organization_id`
+- `operation_type`
+  - resource_read
+  - tool_invoke
+- `resource_or_tool_id`
+- `context_entity_type`
+- `context_entity_id`
+- `consent_reference_id`
+- `policy_decision`
+- `result_status`
+- `latency_ms`
+- `created_at`
+
+---
+
+## AiInsight
+
+AI-generated result.
+
+### Key fields
+
+- `id`
+- `insight_type`
+- `subject_entity_type`
+- `subject_entity_id`
+- `source_tool_id`
+- `model_version`
+- `prompt_version`
+- `confidence`
+- `summary`
+- `structured_payload`
+- `evidence_references`
+- `approval_status`
+- `created_at`
+
+### Insight types
+
+- skill_heatmap
+- profile_suggestion
+- review_theme
+- maintenance_suggestion
+- inventory_normalization
+- match_explanation
+- fraud_flag
+- moderation_recommendation
+
+---
+
+## AiSuggestion
+
+User/provider-facing suggestion requiring acceptance.
+
+### Key fields
+
+- `insight_id`
+- `target_entity_type`
+- `target_entity_id`
+- `suggestion_text`
+- `suggested_action`
+- `accepted_at`
+- `rejected_at`
+- `status`
+
+---
+
+## ApprovalRequest
+
+Human approval workflow.
+
+### Key fields
+
+- `id`
+- `requested_by_client_id`
+- `requested_by_user_id`
+- `action_type`
+- `subject_entity_type`
+- `subject_entity_id`
+- `risk_level`
+- `summary`
+- `payload_reference`
+- `approver_role`
+- `status`
+- `decision_reason`
+- `decided_by`
+- `decided_at`
+
+---
+
+## AuditLog
+
+General platform audit log.
+
+### Key fields
+
+- `id`
+- `actor_type`
+- `actor_id`
+- `organization_id`
+- `action`
+- `entity_type`
+- `entity_id`
+- `previous_state_summary`
+- `new_state_summary`
+- `reason`
+- `created_at`
+
+---
+
+## FeatureFlag
+
+Controls feature rollout.
+
+### Key fields
+
+- `key`
+- `description`
+- `enabled`
+- `target_type`
+- `target_id`
+- `environment`
+- `updated_at`
+
+---
+
+# 17. Moderation Domain
+
+## ModerationCase
+
+Tracks moderation issues.
+
+### Key fields
+
+- `id`
+- `case_type`
+  - review
+  - post
+  - comment
+  - portfolio
+  - inventory_item
+  - question
+  - answer
+- `target_entity_type`
+- `target_entity_id`
+- `reported_by`
+- `reason`
+- `severity`
+- `ai_risk_score`
+- `status`
+- `assigned_to`
+- `resolution`
+- `resolved_at`
+
+### Case statuses
+
+- open
+- investigating
+- action_taken
+- dismissed
+- escalated
+
+---
+
+# 18. Search Projection Domain
+
+These are not necessarily primary system-of-record entities. They are derived search indexes.
+
+## ProviderSearchIndex
+
+### Key fields
+
+- `provider_organization_id`
+- `name`
+- `description_text`
+- `service_categories`
+- `brands`
+- `models`
+- `geo_point`
+- `overall_rating`
+- `review_count`
+- `badges`
+- `availability_flag`
+- `verified_flag`
+- `profile_completeness`
+- `updated_at`
+
+---
+
+## VendorSearchIndex
+
+### Key fields
+
+- `vendor_organization_id`
+- `name`
+- `description_text`
+- `categories`
+- `brands`
+- `geo_point`
+- `overall_rating`
+- `inventory_count`
+- `trade_supported`
+- `updated_at`
+
+---
+
+## InventorySearchIndex
+
+### Key fields
+
+- `inventory_item_id`
+- `vendor_organization_id`
+- `name`
+- `normalized_name`
+- `part_category`
+- `brand`
+- `condition`
+- `stock_status`
+- `price_visibility`
+- `fitment_summary`
+- `geo_point`
+- `data_quality_score`
+- `updated_at`
+
+---
+
+## CommunitySearchIndex
+
+### Key fields
+
+- `entity_type`
+  - post
+  - question
+  - answer
+  - showcase
+- `entity_id`
+- `title`
+- `body`
+- `tags`
+- `author_id`
+- `published_at`
+- `moderation_status`
+
+---
+
+# 19. Key Enumerations
+
+These enums should be centralized and taxonomy/version controlled.
+
+## User Status
+
+- active
+- suspended
+- deleted
+- pending_verification
+
+## Organization Status
+
+- draft
+- active
+- pending_verification
+- suspended
+- archived
+
+## Verification Status
+
+- unverified
+- pending
+- verified
+- rejected
+- expired
+
+## Vehicle Ownership Type
+
+- individual
+- fleet
+
+## Service Record Source
+
+- user_manual
+- provider_logged
+- appointment_completed
+- invoice_upload
+- future_obdii_event
+
+## Review Verification Status
+
+- unverified
+- appointment_verified
+- invoice_verified
+- provider_confirmed
+- admin_verified
+
+## Appointment Status
+
+- draft
+- requested
+- provider_reviewing
+- alternative_proposed
+- confirmed
+- checked_in
+- in_progress
+- awaiting_parts
+- ready_for_pickup
+- completed
+- cancelled
+- no_show
+
+## Inventory Status
+
+- draft
+- active
+- hidden
+- out_of_stock
+- discontinued
+- pending_review
+
+## Fitment Confidence
+
+- confirmed
+- likely
+- uncertain
+
+## MCP Risk Level
+
+- read_only
+- personalized_read
+- draft_creation
+- external_action
+- admin_action
+
+---
+
+# 20. Core Relationships Summary
+
+## Users and Organizations
+
+- A `UserAccount` can have many `RoleMembership` records.
+- A `RoleMembership` links one user to one `Organization`.
+- An `Organization` can have many locations and members.
+- An `Organization` may have one provider profile, vendor profile, or fleet profile.
+
+## Vehicles
+
+- A `Vehicle` belongs to either a `UserAccount` or an `Organization`.
+- A fleet `Vehicle` can be assigned to a driver through `FleetVehicleAssignment`.
+- A `Vehicle` has service records, issues, documents, reminders, and appointments.
+
+## Providers
+
+- A provider `Organization` has one `ProviderProfile`.
+- A provider has service categories, vehicle coverage, capabilities, capability evidence, portfolio items, badges, availability rules, and reviews.
+- AI generates `SkillHeatmapEntry` records for the provider.
+
+## Vendors
+
+- A vendor `Organization` has one `VendorProfile`.
+- A vendor has many `InventoryItem` records.
+- Each inventory item can have media, fitment records, and inquiries.
+
+## Reviews
+
+- A `Review` is written by a user about an organization.
+- A review may reference a vehicle, appointment, or service record.
+- A review can have tags, responses, reports, and moderation cases.
+
+## Appointments
+
+- An `Appointment` links requester, provider, and vehicle.
+- It can generate a `PreVisitReport`.
+- It has status history and notes.
+- Completed appointments can generate service records and review invitations.
+
+## AI/MCP
+
+- `McpClient` records access MCP resources/tools.
+- `McpAccessLog` records each operation.
+- `AiInsight` stores AI outputs.
+- `AiSuggestion` stores actionable suggestions.
+- `ApprovalRequest` stores human approval decisions.
+
+---
+
+# 21. Data Integrity Rules
+
+## 21.1 Vehicle limits
+
+- Individual free users are limited to 5 active vehicles.
+- Fleet organizations are limited by plan:
+  - 20
+  - 50
+  - 100
+  - custom
+
+## 21.2 Review integrity
+
+- Reviews should reference context where possible.
+- Verified reviews require one of:
+  - completed appointment
+  - provider confirmation
+  - invoice evidence
+  - admin verification
+- Removed reviews should be retained for audit but hidden publicly.
+
+## 21.3 Provider capability integrity
+
+- Public badges require evidence threshold.
+- AI-suggested capabilities are not public until provider approves.
+- Capability confidence should increase only from supported evidence.
+
+## 21.4 Vendor inventory isolation
+
+- Vendor inventory is tenant-isolated.
+- One vendor’s private catalog cannot be used to enrich another vendor.
+- Public search can index only permitted inventory fields.
+
+## 21.5 Fleet privacy
+
+- Driver personal data is limited to fleet operations.
+- Fleet cost data is organization-private.
+- Providers only see fleet context needed for the appointment.
+
+## 21.6 Media consent
+
+- Portfolio media requires consent flag.
+- Public showcase items require provider and customer consent where identifiable.
+- Media with missing consent should not be publicly displayed.
+
+## 21.7 AI insight separation
+
+- AI outputs should not overwrite source-of-record data directly.
+- AI-generated suggestions should be stored as insights/suggestions.
+- Human acceptance should be recorded before public or operational use.
+
+---
+
+# 22. MVP Data Model Exclusions
+
+The MVP data model should not yet fully include:
+
+- OBDII raw telemetry
+- live ECU sensor streams
+- crash detection events
+- payment transactions
+- refunds
+- shipping/fulfillment
+- insurance claims
+- full parts ordering cart
+- shop POS/DMS integrations
+- advanced telematics
+- driver behavior scoring
+
+However, the model should allow future extension points:
+
+- `VehicleServiceRecord.source_type` can include future OBDII events
+- `PreVisitReport` can later include OBD summaries
+- `Appointment` can later include payment references
+- `InventoryItem` can later support commerce fields
+- `MediaAsset` can support future redaction automation
+
+---
+
+# 23. Recommended MVP Data Model Priorities
+
+## Must-have entities
+
+- UserAccount
+- Organization
+- OrganizationLocation
+- RoleMembership
+- Plan/Subscription
+- Vehicle
+- VehicleServiceRecord
+- VehicleIssue
+- TaxonomyNode
+- ProviderProfile
+- ProviderCapability
+- ProviderVehicleCoverage
+- PortfolioItem
+- MediaAsset
+- Review
+- ReviewResponse
+- Appointment
+- PreVisitReport
+- VendorProfile
+- InventoryItem
+- InventoryFitment
+- StockInquiry
+- FleetProfile
+- FleetApproval
+- Notification
+- ConsentRecord
+- McpClient
+- McpAccessLog
+- AiInsight
+- ApprovalRequest
+- AuditLog
+- ModerationCase
+
+## Should-have entities
+
+- SkillHeatmapEntry
+- ProviderBadge
+- MaintenanceReminder
+- Community Post
+- Question/Answer
+- Reaction
+- Search index projections
+
+## Can be simplified initially
+
+- Analytics event warehouse
+- Full notification preference matrix
+- Advanced entitlement engine
+- Full document versioning
+- Full media redaction pipeline

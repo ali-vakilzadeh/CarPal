@@ -1,0 +1,146 @@
+**Trust Scoring and Capability Confidence Specification**
+
+
+# 1. Evidence Types & Base Weights
+
+Evidence is the atomic unit of trust. AI calculates confidence by aggregating weighted evidence tied to specific taxonomy nodes (Brand + Model + System + Task).
+
+| Evidence Type | Base Weight | Verification Requirement | Context Required |
+|---|---:|---|---|
+| **Completed Appointment** | 10 pts | Status = `completed` | Vehicle, Service Task |
+| **Verified Review (5-Star)** | 8 pts | `appointment_verified` or `invoice_verified` | Service Category |
+| **Verified Review (4-Star)** | 4 pts | `appointment_verified` or `invoice_verified` | Service Category |
+| **Portfolio Item (Before/After)**| 5 pts | Media approved + Consent granted | Vehicle, Service Task |
+| **Uploaded Invoice/Record** | 3 pts | Admin/AI verified | Vehicle, Service Task |
+| **OEM/ASE Certification** | 15 pts | Admin verified document | Service System / Brand |
+| **Self-Declared Claim** | 0 pts | None | N/A (Cannot earn badges) |
+
+*Rule:* Negative reviews (1-2 stars) subtract points from the specific category confidence and overall trust score.
+
+---
+
+# 2. Capability Confidence Levels (Skill Heatmap)
+
+Calculated per specific capability (e.g., *BMW / 3 Series / Suspension / Control Arm*). 
+
+**Formula:** `Score = Σ(Evidence Weight × Freshness Multiplier)`
+
+| Level | Label | Minimum Score | Evidence Requirement | Public Display |
+|---|---|---|---|---|
+| **0** | Self-Declared | 0 | Provider claims it. | Listed as "Offered" |
+| **1** | Low Evidence | 10 - 29 | 1-2 verified jobs/reviews. | Listed, no badge |
+| **2** | Moderate Evidence | 30 - 79 | 3-7 verified jobs/reviews. | "Experienced" tag |
+| **3** | Strong Evidence | 80 - 199 | 8-20 verified jobs/reviews + photos. | "Specialist" badge eligible |
+| **4** | Verified Expert | 200+ | 20+ jobs + 4.8+ avg rating in category. | "Expert" badge eligible |
+
+*Rule:* AI suggestions to upgrade a level require MCP `ApprovalRequest` if auto-publishing is disabled.
+
+---
+
+# 3. Overall Provider Trust Score (0-100)
+
+A holistic metric determining baseline search ranking and platform trust.
+
+### Score Breakdown
+1. **Review Quality (40%):** Average rating (weighted by verification status and recency).
+2. **Operational Reliability (30%):** 
+   * Response time to requests.
+   * Appointment show-up rate (1 - `no_show` rate).
+   * Completion rate.
+3. **Profile Integrity (15%):** Verification status, completeness, active locations.
+4. **Evidence Volume (15%):** Total verified jobs across all categories.
+
+### Penalties (Deductions)
+* **Unanswered Negative Review:** -5 points per instance.
+* **High Cancellation Rate:** -10 points if provider cancels >10% of confirmed appointments.
+* **Moderation Flag:** -20 points for content/policy violations.
+* **Fake Review Detected:** -50 points + immediate badge stripping.
+
+---
+
+# 4. Badge System (Unlock Rules)
+
+Badges are visual trust signals. They are strictly rule-based, calculated nightly or event-triggered, and auditable via MCP.
+
+| Badge Name | Unlock Criteria | Expiry/Revocation |
+|---|---|---|
+| **Verified Business** | Admin verifies legal docs + physical location. | Revoked on suspension/failure to renew. |
+| **Make Specialist** (e.g., BMW) | Level 3+ Confidence in 3+ distinct service systems for that brand. | Drops to Level 2. |
+| **System Expert** (e.g., Brakes) | Level 4 Confidence in specific service system across any brand. | Drops to Level 3. |
+| **Highly Rated** | 4.8+ avg rating across minimum 20 *verified* reviews. | Drops below 4.8 or <20 verified reviews. |
+| **Fast Responder** | < 2 hour average response time to appointment requests (last 30 days). | Avg exceeds 2 hours. |
+| **Fleet Friendly** | 5+ completed appointments with `requester_type = fleet`. | N/A (Permanent unless revoked). |
+| **EV Ready** | Verified EV certification + Level 2+ evidence in EV battery/systems. | Revoked on cert expiry. |
+
+---
+
+# 5. Search & AI Matching Ranking Signals
+
+When a user searches or AI matches a provider to a need, results are sorted by a composite **Match Score**.
+
+### Match Score Formula
+`Match Score = (Capability Fit × 0.40) + (Category Trust × 0.30) + (Operational × 0.20) + (Distance × 0.10)`
+
+1. **Capability Fit (40%):** Does the provider have Level 2+ confidence in the *exact* Brand/Model/Task requested? (Self-declared scores near zero here).
+2. **Category Trust (30%):** Provider's Trust Score, but heavily weighted toward reviews/evidence in the *specific requested category*.
+3. **Operational (20%):** Availability (can they do it this week?), Response Time, Appointment acceptance rate.
+4. **Distance (10%):** Proximity to user/fleet vehicle.
+
+### Anti-Gaming & Fairness Rules
+* **No Hidden Paid Ranking:** Organic Match Score cannot be silently boosted by payments. Sponsored results must use a separate UI slot labeled "Sponsored".
+* **Evidence Over Claims:** A provider with 50 verified suspension jobs will always outrank a provider who merely self-declares "We do everything" on their profile.
+* **Explanation Required:** AI must output a `match_explanation` resource (e.g., *"Ranked #1 because of 15 verified BMW suspension jobs and 4.9 rating"*).
+
+---
+
+# 6. Time Decay & Freshness
+
+Trust is not static. Recent evidence is more valuable than old evidence.
+
+| Timeframe | Freshness Multiplier | Effect |
+|---|---:|---|
+| **0 - 90 Days** | 1.5x | Boosts recent jobs/reviews. |
+| **91 - 365 Days** | 1.0x | Standard weight. |
+| **1 - 2 Years** | 0.5x | Halves evidence weight. |
+| **2+ Years** | 0.1x | Minimal weight (historical only). |
+
+*Staleness Rule:* If a provider has 0 completed appointments or reviews in 12 months, their profile is flagged `Inactive`, dropping them to the bottom of search results regardless of historical score.
+
+---
+
+# 7. Vendor Inventory Trust & Fitment Confidence
+
+Vendors have a parallel trust model focused on catalog accuracy rather than labor.
+
+### Fitment Confidence Levels
+* **Confirmed (100%):** Vendor manually verified or backed by OEM API data.
+* **Likely (70%):** AI suggested based on part number cross-referencing, pending vendor approval.
+* **Uncertain (30%):** Mapped only by broad category; user warned to verify.
+
+### Vendor Catalog Quality Score (0-100)
+Calculated by:
+1. **Fitment Coverage:** % of inventory with `Confirmed` fitment.
+2. **Data Completeness:** % of items with images, accurate weights, and warranty info.
+3. **Inquiry Fulfillment:** Speed and accuracy of responses to `StockInquiry`.
+4. **Return/Defect Rate:** (Phase 2 metric) Frequency of parts returned as "incorrect fit".
+
+---
+
+# 8. Fleet Trust Signals
+
+Fleets rely on B2B trust signals rather than consumer reviews.
+
+### Fleet Provider Rating
+Calculated specifically from `requester_type = fleet` appointments.
+* **Downtime Metric:** Average time from `checked_in` to `ready_for_pickup`.
+* **First-Time Fix Rate:** % of fleet vehicles that do not return for the same `service_task` within 30 days.
+* **Cost Accuracy:** Variance between initial `cost_estimate` and final invoice.
+
+---
+
+# 9. MCP & AI Governance Rules for Scoring
+
+1. **Immutability of Evidence:** Once an appointment is `completed` or a review is `published`, the raw evidence cannot be altered by the provider to artificially boost scores.
+2. **AI Hallucination Prevention:** AI can *calculate* scores based on structured data, but cannot *invent* evidence. If AI suggests a badge, it must cite the exact `ProviderCapabilityEvidence` IDs.
+3. **Admin Override:** Admins can manually apply a `Trust_Penalty` or `Badge_Revoke` via the Moderation Console, which overrides algorithmic calculations.
+4. **Auditability:** Every score change > 5% must generate an `AuditLog` entry detailing the evidence added/removed or decay applied.
