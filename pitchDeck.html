@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarPal - Investor Pitch Deck</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #F5F5DC;
+            color: #000080;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .presentation-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .slides-wrapper {
+            display: flex;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 100%;
+            width: 100%;
+        }
+
+        .slide {
+            min-width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 80px;
+            background: linear-gradient(135deg, #F5F5DC 0%, #FFF8DC 100%);
+            position: relative;
+            border: 8px solid transparent;
+            border-image: linear-gradient(135deg, #DAA520, #8B4513, #DAA520) 1;
+            box-shadow: inset 0 0 60px rgba(139, 69, 19, 0.15);
+        }
+
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(139, 69, 19, 0.08) 100%);
+            pointer-events: none;
+        }
+
+        .slide-content {
+            max-width: 1200px;
+            width: 100%;
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 3.5em;
+            color: #000080;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(139, 69, 19, 0.3);
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 2.2em;
+            color: #000080;
+            margin-bottom: 30px;
+            font-weight: 600;
+            border-bottom: 3px solid #DAA520;
+            padding-bottom: 15px;
+            display: inline-block;
+        }
+
+        .sub-headline {
+            font-size: 1.8em;
+            color: #000080;
+            margin-bottom: 40px;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+
+        .tagline {
+            font-size: 1.5em;
+            color: #DAA520;
+            font-style: italic;
+            margin-top: 30px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 128, 0.3);
+        }
+
+        ul {
+            list-style: none;
+            margin: 20px 0;
+        }
+
+        li {
+            font-size: 1.3em;
+            margin: 15px 0;
+            padding-left: 40px;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        li::before {
+            content: '◆';
+            color: #DAA520;
+            position: absolute;
+            left: 0;
+            font-size: 1.2em;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #000080 0%, #0000CD 100%);
+            color: #DAA520;
+            padding: 25px 35px;
+            border-radius: 12px;
+            margin: 25px 0;
+            box-shadow: 0 8px 25px rgba(0, 0, 128, 0.3);
+            border: 2px solid #DAA520;
+        }
+
+        .highlight-box h3 {
+            color: #DAA520;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .highlight-box p, .highlight-box li {
+            color: #FFD700;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin: 30px 0;
+        }
+
+        .column {
+            background: rgba(255, 255, 255, 0.4);
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #DAA520;
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.1);
+        }
+
+        .column h3 {
+            color: #000080;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        .flow-diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+
+        .flow-step {
+            background: linear-gradient(135deg, #000080 0%, #0000CD 100%);
+            color: #DAA520;
+            padding: 25px 35px;
+            border-radius: 50%;
+            width: 180px;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 128, 0.4);
+            border: 3px solid #DAA520;
+        }
+
+        .flow-step span {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .flow-arrow {
+            font-size: 2.5em;
+            color: #DAA520;
+        }
+
+        .note-bubble {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #DAA520 0%, #FFD700 100%);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.4);
+            z-index: 1000;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 3px solid #000080;
+        }
+
+        .note-bubble:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.6);
+        }
+
+        .note-bubble::after {
+            content: '📝';
+            font-size: 1.8em;
+        }
+
+        .note-popup {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            max-width: 400px;
+            background: linear-gradient(135deg, #000080 0%, #0000CD 100%);
+            color: #FFD700;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            z-index: 999;
+            display: none;
+            border: 3px solid #DAA520;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .note-popup h4 {
+            color: #DAA520;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .note-popup p {
+            line-height: 1.5;
+            font-size: 1em;
+        }
+
+        .nav-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: linear-gradient(135deg, #000080 0%, #0000CD 100%);
+            color: #DAA520;
+            border: 2px solid #DAA520;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 128, 0.3);
+        }
+
+        .nav-btn:hover {
+            background: linear-gradient(135deg, #DAA520 0%, #FFD700 100%);
+            color: #000080;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.4);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .slide-indicator {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(0, 0, 128, 0.8);
+            color: #DAA520;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            border: 2px solid #DAA520;
+            z-index: 1000;
+        }
+
+        .visual-placeholder {
+            background: linear-gradient(135deg, rgba(0, 0, 128, 0.1) 0%, rgba(218, 165, 32, 0.1) 100%);
+            border: 3px dashed #DAA520;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 30px 0;
+            color: #000080;
+            font-style: italic;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #000080 0%, #0000CD 100%);
+            color: #DAA520;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            border: 3px solid #DAA520;
+            box-shadow: 0 6px 20px rgba(0, 0, 128, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .phase-timeline {
+            display: flex;
+            justify-content: space-between;
+            margin: 40px 0;
+            position: relative;
+        }
+
+        .phase-timeline::before {
+            content: '';
+            position: absolute;
+            top: 30px;
+            left: 50px;
+            right: 50px;
+            height: 4px;
+            background: #DAA520;
+            z-index: 0;
+        }
+
+        .phase-item {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            flex: 1;
+        }
+
+        .phase-dot {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #000080 0%, #0000CD 100%);
+            border: 4px solid #DAA520;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #DAA520;
+            font-weight: 700;
+            font-size: 1.3em;
+            box-shadow: 0 4px 15px rgba(0, 0, 128, 0.4);
+        }
+
+        .phase-title {
+            font-weight: 600;
+            color: #000080;
+            margin-bottom: 8px;
+        }
+
+        .phase-desc {
+            font-size: 0.9em;
+            opacity: 0.8;
+            padding: 0 10px;
+        }
+
+        .funding-breakdown {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin: 30px 0;
+        }
+
+        .funding-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .funding-percentage {
+            background: linear-gradient(135deg, #000080 0%, #0000CD 100%);
+            color: #DAA520;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 700;
+            font-size: 1.3em;
+            border: 3px solid #DAA520;
+            flex-shrink: 0;
+        }
+
+        .funding-description {
+            flex: 1;
+        }
+
+        .funding-description strong {
+            color: #000080;
+            font-size: 1.2em;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .slide {
+                padding: 40px 30px;
+            }
+
+            h1 {
+                font-size: 2.5em;
+            }
+
+            h2 {
+                font-size: 1.8em;
+            }
+
+            .two-column,
+            .stat-grid,
+            .funding-breakdown {
+                grid-template-columns: 1fr;
+            }
+
+            .flow-diagram {
+                flex-direction: column;
+            }
+
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+
+            .phase-timeline {
+                flex-direction: column;
+                gap: 30px;
+            }
+
+            .phase-timeline::before {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slides-wrapper" id="slidesWrapper">
+            
+            <!-- Slide 1: Title Slide -->
+            <div class="slide">
+                <div class="slide-content">
+                    <h1>CarPal</h1>
+                    <p class="sub-headline">The AI-Governed Trust Network for the Automotive Aftermarket.</p>
+                    
+                    <div class="visual-placeholder">
+                        <strong>Visual:</strong> Split-screen design<br>
+                        Left: Frustrated driver with glowing engine light<br>
+                        Right: Confident mechanic with tablet showing "Pre-Visit Report"
+                    </div>
+                    
+                    <p class="tagline">Turning automotive anxiety into verified, actionable trust.</p>
+                </div>
+            </div>
+
+            <!-- Slide 2: The Problem -->
+            <div class="slide">
+                <div class="slide-content">
+                    <h2>The Automotive Aftermarket is Blind and Fragmented</h2>
+                    
+                    <div class="two-column">
+                        <div class="column">
+                            <h3>For Car Owners</h3>
+                            <ul>
+                                <li>Lack vocabulary to diagnose problems</li>
+                                <li>Experience anxiety and mistrust of mechanics</li>
+                                <li>Endless Googling with no clear answers</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="column">
+                            <h3>For Providers (Garages)</h3>
+                            <ul>
+                                <li>Directories treat specialists same as generalists</li>
+                                <li>Cannot prove specific capabilities easily</li>
+                                <li>No way to showcase expertise</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="highlight-box">
+                        <h3>The Gap</h3>
+                        <p>Current platforms are just "static directories" or "engagement-driven social networks." Neither translates a user's problem into a verified, specialized provider match.</p>
+                    </div>
+                    
+                    <div class="column" style="margin-top: 20px;">
+                        <h3>For Businesses (Vendors & Fleets)</h3>
+                        <ul>
+                            <li>Inventory data is a mess</li>
+                            <li>Fleets lose millions to unverified repair costs</li>
+                            <li>Administrative bottlenecks</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 3: The Solution -->
+            <div class="slide">
+                <div class="slide-content">
+                    <h2>Context-Aware Matching, Powered by Governed AI</h2>
+                    
+                    <div class="flow-diagram">
+                        <div class="flow-step">
+                            <span>🔍</span>
+                            <strong>Symptom</strong>
+                        </div>
+                        <div class="flow-arrow">➜</div>
+                        <div class="flow-step">
+                            <span>🤖</span>
+                            <strong>AI Triage</strong>
+                        </div>
+                        <div class="flow-arrow">➜</div>
+                        <div class="flow-step">
+                            <span>✅</span>
+                            <strong>Verified Match</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="two-column">
+                        <div class="column">
+                            <h3>The Digital Garage</h3>
+                            <p>A centralized hub for vehicle history, documents, and active issues.</p>
+                        </div>
+                        
+                        <div class="column">
+                            <h3>"Help Me" AI Triage</h3>
+                            <p>Translates vague human complaints into structured automotive taxonomy.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="two-column">
+                        <div class="column">
+                            <h3>Evidence-Based Matching</h3>
+                            <p>Connects diagnosed problems to providers based on <strong>proven skill heatmaps</strong>, not paid ads.</p>
+                        </div>
+                        
+                        <div class="column">
+                            <h3>Frictionless Transactions</h3>
+                            <p>Generates automated "Pre-Visit Reports" so mechanics know exactly what's wrong before the car enters the bay.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 4: The Differentiator -->
+            <div class="slide">
+                <div class="slide-content">
+                    <h2>Engagement vs. Utility: The CarPal Paradigm</h2>
+                    
+                    <div class="two-column">
+                        <div class="column" style="border-left-color: #888;">
+                            <h3>Traditional Social Networks</h3>
+                            <ul>
+                                <li>Designed to keep users scrolling</li>
+                                <li>Value measured in "likes"</li>
+                                <li>Data is unstructured and noisy</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="column">
+                            <h3>CarPal Ecosystem</h3>
+                            <ul>
+                                <li><strong>Action-Oriented</strong></li>
+                                <li>Value measured in <strong>Resolved Issues</strong> and <strong>Verified Trust</strong></li>
+                                <li>Social feeds the algorithm</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="highlight-box">
+                        <h3>Social Feeds the Algorithm</h3>
+                        <p>When a provider posts a "Before & After" showcase, our AI extracts the vehicle, part, and task, feeding directly into their <strong>Skill Heatmap</strong>.</p>
+                    </div>
+                    
+                    <div class="highlight-box">
+                        <h3>Q&A Converts to Commerce</h3>
+                        <p>AI flags community questions, routes to verified experts, and offers one-click "Turn this answer into an Appointment Request."</p>
+                    </div>
+                    
+                    <div class="column">
+                        <h3>Zero Fake Trust</h3>
+                        <p>Reviews tied to completed appointments, VINs, and verified service records.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 5: The Magic - AI Triage -->
+            <div class="slide">
+                <div class="slide-content">
+                    <h2>From "Weird Noise" to "Perfect Match" in 60 Seconds</h2>
+                    
+                    <div class="visual-placeholder">
+                        <strong>Visual:</strong> Mobile screen mockups showing C-HELP-02 (AI Triage) and C-HELP-03 (Recommendations)
+                    </div>
+                    
+                    <div class="column">
+                        <h3>Step 1: Conversational Triage</h3>
+                        <p>User: <em>"Grinding noise when turning left."</em><br>
+                        AI asks targeted follow-ups: <em>"Does it happen at high or low speeds?"</em> and flags safety risks.</p>
+                    </div>
+                    
+                    <div class="column" style="margin-top: 20px;">
+                        <h3>Step 2: Taxonomy Translation</h3>
+                        <p>AI maps chat to structured data:<br>
+                        <code>Symptom: Grinding</code> ➜ <code>Service System: Suspension/Brakes</code> ➜ <code>Urgency: High</code></p>
+                    </div>
+                    
+                    <div class="column" style="margin-top: 20px;">
+                        <h3>Step 3: In-Line Matching</h3>
+                        <p>We search for providers with <strong>Verified Capabilities</strong> for that specific car's make/model and repair task.</p>
+                    </div>
+                    
+                    <div class="highlight-box" style="margin-top: 20px;">
+                        <h3>Step 4: Transparent Explanations</h3>
+                        <p><em>"Recommended because Mike's Garage has completed 14 verified suspension jobs on your exact vehicle model, with a 4.9 rating."</em></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 6: MCP - The Ultimate Moat -->
+            <div class="slide">
+                <div class="slide-content">
+                    <h2>Enterprise-Grade AI Governance & GDPR Compliance</h2>
+                    
+                    <div class="highlight-box">
+                        <h3>The Problem with Standard AI</h3>
+                        <p>Hallucinations, data leaks, and unauthorized autonomous actions.</p>
+                    </div>
+                    
+                    <div class="two-column">
+                        <div class="column">
+                            <h3>Resources (Read-Only)</h3>
+                            <p>AI can only see what it is allowed to see. Cannot read payment data to fix a brake issue.</p>
+                        </div>
+                        
+                        <div class="column">
+                            <h3>Tools (Action-Oriented)</h3>
+                            <p>AI cannot autonomously publish content or book jobs. It creates <strong>Drafts</strong>. Humans must approve.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="column" style="margin-top: 20px;">
+                        <h3>Immutable Audit Logs</h3>
+                        <p>Every prompt, every consent check, and every AI output is logged.</p>
+                    </div>
+                    
+                    <div class="highlight-box" style="margin-top: 20px;">
+                        <h3>Result</h3>
+                        <p>Secure, scalable, multi-region AI infrastructure that guarantees GDPR compliance and builds absolute trust with users.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 7: Background AI -->
+            <div class="slide">
+                <div class="slide-content">
+                    <h2>AI that Works Behind the Scenes to Drive Retention</h2>
+                    
+                    <p style="font-size: 1.4em; margin-bottom: 30px;">Our AI isn't a chatbot gimmick; it is the operational backbone that reduces friction for B2B and B2C users.</p>
+                    
+                    <div class="two-column">
+                        <div class="column">
+                            <h3>For Providers</h3>
+                            <p><strong>Skill Heatmaps:</strong> AI analyzes completed jobs, review sentiments, and portfolio uploads to automatically generate localized Skill Heatmaps.</p>
+                        </div>
+                        
+                        <div class="column">
+                            <h3>For Vendors</h3>
+                            <p><strong>Inventory Normalization:</strong> AI normalizes part names, categorizes them, and suggests vehicle fitments from messy CSVs.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="two-column">
+                        <div class="column">
+                            <h3>For Fleets</h3>
+                            <p><strong>Approval Workflows:</strong> AI analyzes driver reports, summarizes triage, estimates costs, and presents clean recommendations for one-click approval.</p>
+                        </div>
+                        
+                        <div class="column">
+                            <h3>For Admin</h3>
+                            <p><strong>Moderation:</strong> AI flags fraudulent reviews and PII before they reach the public feed.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 8: Value Proposition -->
+            <div class="slide">
+                <div class="slide-content">
+                    <h2>One Platform, Multiple Monetization Avenues</h2>
+                    
+                    <div class="two-column">
+                        <div class="column">
+                            <h3>Consumers (B2C)</h3>
+                            <ul>
+                                <li>Free to use</li>
+                                <li>Freemium limits (max 5 cars)</li>
+                                <li>Total peace of mind</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="column">
+                            <h3>Service Providers (B2B2C)</h3>
+                            <ul>
+                                <li>Subscription tiers (Basic/Pro)</li>
+                                <li>Higher quality leads</li>
+                                <li>Fewer wasted diagnostic hours</li>
+                                <li>Automated marketing</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="two-column">
+                        <div class="column">
+                            <h3>Parts Vendors (B2B)</h3>
+                            <ul>
+                                <li>Subscription tiers</li>
+                                <li>Perfectly searchable inventory</li>
+                                <li>Targeted B2B inquiries from local garages</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="column">
+                            <h3>Corporate Fleets (B2B)</h3>
+                            <ul>
+                                <li>Tiered by size (20, 50, 100+ vehicles)</li>
+                                <li>Centralized cost reporting</li>
+                                <li>Driver safety</li>
+                                <li>Automated maintenance compliance</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 9: Market Opportunity -->
+            <div class="slide">
+                <div class="slide-content">
+                    <h2>A Massive, Recession-Proof Market</h2>
+                    
+                    <div class="stat-grid">
+                        <div class="stat-box">
+                            <div class="stat-number">$400B+</div>
+                            <div class="stat-label"><strong>TAM</strong><br>Global Automotive Aftermarket (Parts & Service)</div>
+                        </div>
+                        
+                        <div class="stat-box">
+                            <div class="stat-number">$45B+</div>
+                            <div class="stat-label"><strong>SAM</strong><br>Digital Automotive Service & Fleet Management Software</div>
+                        </div>
+                        
+                        <div class="stat-box">
+                            <div class="stat-number">$2.5B</div>
+                            <div class="stat-label"><strong>SOM</strong><br>Independent Garages, Specialized Vendors, SME Fleets in launch regions</div>
+                        </div>
+                    </div>
+                    
+                    <div class="highlight-box">
+                        <h3>The Trend</h3>
+                        <p>Vehicles are getting more complex (EVs, Hybrids, Software). Consumers and Fleets <strong>demand specialized experts</strong>, not generalists. Current discovery mechanisms cannot handle this complexity.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 10: Technology & Architecture -->
+            <div class="slide">
+                <div class="slide-content">
+                    <h2>Built for Global Scale from Day One</h2>
+                    
+                    <div class="two-column">
+                        <div class="column">
+                            <h3>Unified Tech Stack</h3>
+                            <p>Built entirely on TypeScript (Node.js/React/React Native), allowing rapid iteration and a single codebase for iOS, Android, and Web.</p>
+                        </div>
+                        
+                        <div class="column">
+                            <h3>Multi-Region Data Planes</h3>
+                            <p>Strict separation of data across EU, US, and APAC regions to ensure absolute GDPR and regional data sovereignty compliance.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="two-column">
+                        <div class="column">
+                            <h3>Microservices Architecture</h3>
+                            <p>Database-per-service design allows us to upgrade the AI engine, Search Index, or Billing system with zero downtime.</p>
+                        </div>
+                        
+                        <div class="column">
+                            <h3>Disaster Resilient</h3>
+                            <p>Multi-AZ (Availability Zone) active-active deployment ensures <strong>99.999% uptime</strong>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 11: Go-To-Market Strategy -->
+            <div class="slide">
+                <div class="slide-content">
+                    <h2>Seeding Trust, Scaling Utility</h2>
+                    
+                    <div class="phase-timeline">
+                        <div class="phase-item">
+                            <div class="phase-dot">1</div>
+                            <div class="phase-title">Supply-Side Acquisition</div>
+                            <div class="phase-desc">Providers/Vendors - Free "Digital Reputation & Inventory Manager"</div>
+                        </div>
+                        
+                        <div class="phase-item">
+                            <div class="phase-dot">2</div>
+                            <div class="phase-title">Demand-Side Acquisition</div>
+                            <div class="phase-desc">Consumers/Fleets - Mobile App with "Help Me" AI Triage</div>
+                        </div>
+                        
+                        <div class="phase-item">
+                            <div class="phase-dot">3</div>
+                            <div class="phase-title">B2B Wedge</div>
+                            <div class="phase-desc">Fleets - Approval workflows for recurring transactions</div>
+                        </div>
+                    </div>
+                    
+                    <div class="column">
+                        <h3>Phase 1: Supply-Side Acquisition</h3>
+                        <p>Offer CarPal for free as a "Digital Reputation & Inventory Manager." Providers use our AI to clean their inventory and build their portfolios.</p>
+                    </div>
+                    
+                    <div class="column" style="margin-top: 20px;">
+                        <h3>Phase 2: Demand-Side Acquisition</h3>
+                        <p>Launch the Consumer Mobile App with the "Help Me" AI Triage as a free utility. Users experience the magic of being perfectly matched.</p>
+                    </div>
+                    
+                    <div class="column" style="margin-top: 20px;">
+                        <h3>Phase 3: The B2B Wedge</h3>
+                        <p>Onboard local logistics companies using Fleet Approval workflows to lock in recurring, high-volume repair transactions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 12: The Roadmap -->
+            <div class="slide">
+                <div class="slide-content">
+                    <h2>From Digital Garage to Connected Vehicle</h2>
+                    
+                    <div class="phase-timeline">
+                        <div class="phase-item">
+                            <div class="phase-dot">1</div>
+                            <div class="phase-title">MVP (Current)</div>
+                            <div class="phase-desc">Platform launch, AI Triage, Skill Heatmaps, Governed MCP, B2B/B2C Portals, Community Q&A</div>
+                        </div>
+                        
+                        <div class="phase-item">
+                            <div class="phase-dot">2</div>
+                            <div class="phase-title">Next 18 Months</div>
+                            <div class="phase-desc">Hardware Integration - OBD-II dongle pairing, real-time diagnostic trouble codes</div>
+                        </div>
+                        
+                        <div class="phase-item">
+                            <div class="phase-dot">3</div>
+                            <div class="phase-title">Year 3+</div>
+                            <div class="phase-desc">Deep Commerce & Telematics - In-app parts purchasing, live ECU data, automated SOS crash detection</div>
+                        </div>
+                    </div>
+                    
+                    <div class="highlight-box" style="margin-top: 30px;">
+                        <h3>Phase 2 Highlights</h3>
+                        <p>OBD-II dongle pairing enables real-time diagnostic trouble codes feeding directly into AI Triage and Pre-Visit Reports.</p>
+                    </div>
+                    
+                    <div class="highlight-box">
+                        <h3>Phase 3 Vision</h3>
+                        <p>In-app parts purchasing (Vendor-to-Provider checkout), live ECU data streams, and automated SOS crash detection.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 13: The Ask -->
+            <div class="slide">
+                <div class="slide-content">
+                    <h2>Fueling the Engine</h2>
+                    
+                    <div class="highlight-box">
+                        <h3>Seeking: $X Million in Seed / Series A funding</h3>
+                        <p><strong>Runway:</strong> 18–24 months</p>
+                    </div>
+                    
+                    <div class="funding-breakdown">
+                        <div>
+                            <div class="funding-item">
+                                <div class="funding-percentage">40%</div>
+                                <div class="funding-description">
+                                    <strong>Engineering & AI/MCP Development</strong>
+                                    Scaling the unified TypeScript stack
+                                </div>
+                            </div>
+                            
+                            <div class="funding-item">
+                                <div class="funding-percentage">30%</div>
+                                <div class="funding-description">
+                                    <strong>Go-To-Market</strong>
+                                    Supply-side acquisition and localized marketing
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="funding-item">
+                                <div class="funding-percentage">20%</div>
+                                <div class="funding-description">
+                                    <strong>Operations & Compliance</strong>
+                                    Maintaining global GDPR/Data residency infrastructure
+                                </div>
+                            </div>
+                            
+                            <div class="funding-item">
+                                <div class="funding-percentage">10%</div>
+                                <div class="funding-description">
+                                    <strong>Legal & Contingency</strong>
+                                    Reserve for unexpected needs
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="highlight-box" style="margin-top: 30px;">
+                        <h3>Milestone Targets to Next Round</h3>
+                        <ul>
+                            <li>10,000 Active Vehicles</li>
+                            <li>500 Verified Provider Organizations</li>
+                            <li>5,000 Completed AI-Matched Appointments</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="note-bubble" id="noteBubble" onclick="toggleNote()"></div>
+    
+    <div class="note-popup" id="notePopup">
+        <h4>Presenter Notes</h4>
+        <p id="noteContent"></p>
+    </div>
+
+    <div class="slide-indicator" id="slideIndicator">1 / 13</div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">◀ Previous</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next ▶</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const totalSlides = 13;
+        
+        const notes = {
+            3: "<strong>Social Differentiator:</strong> Emphasize that social networks fail when they try to do commerce. CarPal <em>starts</em> with commerce (fixing the car) and uses social elements (portfolios/reviews) merely as <strong>data points to prove capability</strong>.",
+            4: "<strong>Matching 'Aha!' Moment:</strong> Walk investors through the exact scenario: <em>'Instead of searching for \"Mechanic\", the user searches for \"BMW 3 Series suspension grinding\", and gets matched to a shop that has uploaded 5 photos of BMW suspensions they fixed last week.'</em>",
+            5: "<strong>MCP - Your Firewall:</strong> Do not skip this slide. Every VC is currently terrified of AI startups getting sued for data privacy or hallucinations. Explain that <strong>MCP is your firewall.</strong> It ensures the AI can only see what the user consented to, and the AI can never finalize a transaction without a human clicking 'Approve.'"
+        };
+
+        function updateSlide() {
+            const wrapper = document.getElementById('slidesWrapper');
+            wrapper.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            
+            document.getElementById('slideIndicator').textContent = `${currentSlide + 1} / ${totalSlides}`;
+            
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+            
+            document.getElementById('notePopup').style.display = 'none';
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                updateSlide();
+            }
+        }
+
+        function toggleNote() {
+            const popup = document.getElementById('notePopup');
+            const noteContent = document.getElementById('noteContent');
+            
+            if (notes[currentSlide]) {
+                noteContent.innerHTML = notes[currentSlide];
+                popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+            } else {
+                noteContent.innerHTML = '<em>No presenter notes for this slide.</em>';
+                popup.style.display = 'block';
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'Space') {
+                changeSlide(1);
+            } else if (e.key === 'ArrowLeft') {
+                changeSlide(-1);
+            } else if (e.key === 'n' || e.key === 'N') {
+                toggleNote();
+            }
+        });
+
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, false);
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, false);
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            if (touchStartX - touchEndX > swipeThreshold) {
+                changeSlide(1);
+            } else if (touchEndX - touchStartX > swipeThreshold) {
+                changeSlide(-1);
+            }
+        }
+
+        updateSlide();
+    </script>
+</body>
+</html>
