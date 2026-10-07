@@ -1,0 +1,3733 @@
+
+# Final MVP MCP Catalog Summary
+
+## Core Resources
+
+- Taxonomy
+- Geography
+- User/vehicle
+- Provider profile/capabilities
+- Vendor inventory
+- Fleet vehicles/costs
+- Search/matching
+- Reviews/trust
+- Appointments/pre-visit reports
+- Community
+- AI insights
+- Admin/moderation/audit
+
+## Core Tools
+
+- Search
+- Matching
+- Triage
+- Maintenance suggestions
+- Appointment drafting
+- Pre-visit report generation
+- Review classification/response drafting
+- Provider profile/skill suggestions
+- Portfolio/showroom generation
+- Inventory normalization/fitment
+- Fleet approval support
+- Community moderation support
+- Admin moderation support
+- MCP governance and audit
+
+
+# 1. Purpose of the MCP Service in the MVP
+
+The MCP service is the **central intelligence and integration spine** of the platform.
+
+Its job is to provide a secure, auditable, consent-aware way for AI features and approved agents to:
+
+1. **Read relevant context**
+   - vehicles
+   - providers
+   - vendors
+   - reviews
+   - inventory
+   - appointments
+   - fleet data
+   - taxonomy
+   - trust signals
+
+2. **Perform governed actions**
+   - search
+   - match
+   - triage
+   - draft responses
+   - suggest capabilities
+   - normalize inventory
+   - create appointment drafts
+   - generate pre-visit reports
+   - flag moderation risks
+
+3. **Enforce policy**
+   - role permissions
+   - organization tenancy
+   - user consent
+   - data minimization
+   - human approval rules
+   - safety constraints
+   - audit logging
+
+4. **Prepare for future phases**
+   - OBDII data
+   - telematics
+   - crash/SOS
+   - parts commerce
+   - insurance
+   - shop DMS/POS systems
+   - external partner agents
+
+The MCP layer should be designed so that every AI feature uses the same governed resources and tools instead of each feature accessing data directly.
+
+---
+
+# 2. Core MCP Design Principles
+
+## 2.1 Resources are read-oriented
+
+A **resource** provides context. It may return data, summaries, or derived insights, but it should not directly mutate the system.
+
+Examples:
+
+- vehicle summary
+- provider capability profile
+- review summary
+- inventory item
+- fleet cost summary
+- taxonomy list
+- appointment pre-visit report
+
+## 2.2 Tools are action-oriented
+
+A **tool** performs a computation, recommendation, draft, or governed action.
+
+Examples:
+
+- match provider to need
+- draft review response
+- normalize inventory item
+- suggest provider capabilities
+- create appointment request draft
+- generate pre-visit report
+
+## 2.3 Tools should produce drafts before public writes
+
+For MVP, tools should rarely publish or finalize anything automatically.
+
+Preferred pattern:
+
+> AI tool creates a draft, suggestion, or recommendation.  
+> Human approves.  
+> Domain service commits the change.
+
+## 2.4 Every MCP operation must be auditable
+
+Every resource access and tool invocation should produce an audit record containing:
+
+- who requested it
+- which client requested it
+- which user/org/vehicle context was used
+- which resources were accessed
+- which tool was invoked
+- what output was generated
+- whether approval was required
+- whether approval was granted
+- what happened next
+
+## 2.5 Context must be minimized
+
+MCP should not pass entire records to AI features when only a summary is needed.
+
+Example:
+
+For provider matching, the AI does not need the user’s full documents. It needs:
+
+- vehicle model
+- mileage
+- issue category
+- location
+- relevant service history summary
+- preferences
+
+## 2.6 Consent is explicit and versioned
+
+Access to personal or sensitive context requires consent.
+
+Examples:
+
+- vehicle context
+- service history
+- documents
+- photos
+- fleet driver data
+- review invitation history
+- AI personalization
+
+## 2.7 Multi-tenancy must be strict
+
+A vendor’s private inventory must not be used to benefit another vendor.
+
+A provider’s private analytics must not leak to competitors.
+
+A fleet’s cost data must not leak outside the organization.
+
+---
+
+# 3. MCP Object Model
+
+The MVP MCP service should manage the following object types.
+
+---
+
+## 3.1 MCP Client
+
+Represents an approved consumer of MCP capabilities.
+
+### Examples
+
+- Consumer Assistant
+- Provider Assistant
+- Vendor Assistant
+- Fleet Assistant
+- Matching Engine
+- Review Intelligence
+- Inventory Intelligence
+- Moderation Assistant
+- Admin Copilot
+- Future Partner Agent
+
+### Client attributes
+
+- client ID
+- client name
+- client type
+- environment
+- allowed roles
+- allowed resources
+- allowed tools
+- allowed scopes
+- rate limits
+- approval requirements
+- status
+- API credential reference
+- version
+
+---
+
+## 3.2 Principal
+
+The actor on whose behalf the MCP operation is performed.
+
+### Principal types
+
+- user
+- provider organization
+- vendor organization
+- fleet organization
+- admin user
+- system process
+
+### Principal attributes
+
+- principal ID
+- role
+- organization membership
+- permission level
+- consent status
+- tenancy context
+
+---
+
+## 3.3 Context Reference
+
+The target object or workflow context.
+
+### Examples
+
+- vehicle ID
+- provider organization ID
+- vendor organization ID
+- fleet organization ID
+- appointment ID
+- review ID
+- inventory item ID
+- inquiry ID
+- moderation case ID
+
+---
+
+## 3.4 Resource
+
+A governed read context.
+
+### Resource attributes
+
+- resource ID
+- name
+- description
+- category
+- required scopes
+- required consent
+- allowed principals
+- input parameters
+- output shape
+- freshness policy
+- cache policy
+- sensitivity level
+- redaction rules
+- version
+
+---
+
+## 3.5 Tool
+
+A governed action or computation.
+
+### Tool attributes
+
+- tool ID
+- name
+- description
+- category
+- risk level
+- required scopes
+- required consent
+- input parameters
+- output shape
+- side effects
+- approval policy
+- rate limits
+- fallback behavior
+- audit requirements
+- version
+
+---
+
+## 3.6 Prompt Template
+
+A governed prompt used by a tool.
+
+### Prompt attributes
+
+- prompt ID
+- tool association
+- purpose
+- inputs
+- constraints
+- tone rules
+- safety rules
+- version
+- evaluation metrics
+
+---
+
+## 3.7 Policy
+
+Rules controlling access and behavior.
+
+### Policy types
+
+- permission policy
+- consent policy
+- redaction policy
+- approval policy
+- safety policy
+- rate-limit policy
+- retention policy
+- model-use policy
+
+---
+
+## 3.8 Insight
+
+An AI-generated result stored separately from source data.
+
+### Insight types
+
+- skill heatmap
+- match explanation
+- review theme
+- suggested capability
+- maintenance suggestion
+- inventory normalization suggestion
+- fraud flag
+- moderation recommendation
+
+---
+
+## 3.9 Approval Request
+
+A request for human approval before an action is finalized.
+
+### Approval attributes
+
+- approval ID
+- requested by client
+- affected entity
+- action type
+- risk level
+- payload summary
+- approver role
+- status
+- decision reason
+- timestamp
+
+---
+
+## 3.10 Audit Log
+
+Immutable record of MCP activity.
+
+### Audit attributes
+
+- event ID
+- timestamp
+- client ID
+- principal ID
+- resource/tool ID
+- context reference
+- input summary
+- output summary
+- consent reference
+- policy decisions
+- approval status
+- result status
+- error code if failed
+
+---
+
+# 4. MCP Naming Convention
+
+Use clear namespacing.
+
+## Resource naming pattern
+
+`res:domain.object.view`
+
+Examples:
+
+- `res:vehicle.summary`
+- `res:provider.capabilities`
+- `res:review.detail`
+- `res:inventory.item_details`
+- `res:fleet.cost_summary`
+
+## Tool naming pattern
+
+`tool:domain.action.object`
+
+Examples:
+
+- `tool:match.provider_to_need`
+- `tool:review.draft_response`
+- `tool:inventory.suggest_fitment`
+- `tool:triage.classify_symptom`
+- `tool:appointment.create_pre_visit_report`
+
+## Scope naming pattern
+
+`action:domain.object.constraint`
+
+Examples:
+
+- `read:vehicle.summary:owned`
+- `read:provider.analytics:self_organization`
+- `read:inventory.items:vendor_self`
+- `draft:appointment.request:user_initiated`
+- `approve:profile.suggestion:provider_admin`
+
+---
+
+# 5. MCP Risk Levels
+
+All tools should be classified by risk.
+
+---
+
+## Level 0 — Read-Only / Low Risk
+
+No state change. Minimal risk.
+
+Examples:
+
+- read taxonomy
+- read public provider profile
+- read public inventory
+- read provider public reviews
+
+Approval:
+
+- Not required.
+
+---
+
+## Level 1 — Personalized Read / Medium Sensitivity
+
+Reads user/org-specific context.
+
+Examples:
+
+- read user vehicle summary
+- read fleet vehicle list
+- read provider analytics
+- read vendor private inventory
+
+Approval:
+
+- Not required if consent and scope are valid.
+
+---
+
+## Level 2 — Draft Creation / Private Suggestion
+
+Creates drafts or suggestions that are not public.
+
+Examples:
+
+- draft review response
+- draft appointment request
+- suggest capability
+- generate showcase caption
+- suggest maintenance
+
+Approval:
+
+- Draft creation allowed.
+- Publishing or sending requires human approval.
+
+---
+
+## Level 3 — External-Facing Action
+
+Action affects another party or leaves the actor’s private space.
+
+Examples:
+
+- submit appointment request
+- send inquiry to vendor
+- publish showcase post
+- publish review response
+- submit question to community
+
+Approval:
+
+- Explicit user/provider/vendor approval required.
+
+---
+
+## Level 4 — Trust, Safety, or Administrative Action
+
+Actions that affect trust, moderation, billing, or platform integrity.
+
+Examples:
+
+- flag review as fraudulent
+- recommend review removal
+- change verification status
+- suspend organization
+- modify entitlements
+- change taxonomy globally
+
+Approval:
+
+- AI may recommend.
+- Human admin must decide.
+- No autonomous final action in MVP.
+
+---
+
+# 6. MCP Resource Specification
+
+Below is the MVP resource catalog.
+
+---
+
+## 6.1 Global Resource Rules
+
+Every resource must define:
+
+1. **Purpose**
+2. **Allowed clients**
+3. **Required scopes**
+4. **Required consent**
+5. **Data minimization rules**
+6. **Sensitivity level**
+7. **Freshness**
+8. **Audit behavior**
+
+### Sensitivity levels
+
+- Public
+- Internal
+- Personal
+- Business-sensitive
+- Safety-sensitive
+- Admin-sensitive
+
+### Freshness options
+
+- Real-time
+- Near real-time
+- Hourly
+- Daily
+- Event-triggered
+- On-demand
+
+---
+
+# 7. Resource Catalog by Domain
+
+---
+
+## 7.1 Taxonomy Resources
+
+These resources provide the controlled vocabulary used across the platform.
+
+| Resource ID | Purpose | Sensitivity | Freshness |
+|---|---|---|---|
+| `res:taxonomy.vehicle.brands` | List vehicle brands | Public | Daily |
+| `res:taxonomy.vehicle.models` | Models for a brand | Public | Daily |
+| `res:taxonomy.vehicle.series` | Series/generation list | Public | Daily |
+| `res:taxonomy.vehicle.engine_types` | Engine/fuel types | Public | Daily |
+| `res:taxonomy.service_systems` | Service systems such as brakes, suspension, engine | Public | Daily |
+| `res:taxonomy.service_tasks` | Specific service tasks | Public | Daily |
+| `res:taxonomy.part_categories` | Part categories | Public | Daily |
+| `res:taxonomy.symptoms` | Common symptoms and issue descriptors | Public | Daily |
+| `res:taxonomy.synonyms` | Search synonyms and aliases | Internal | Daily |
+
+### Typical consumers
+
+- Search
+- Matching
+- Triage
+- Provider profile helper
+- Vendor inventory normalization
+- Admin taxonomy tools
+
+### Notes
+
+- Taxonomy resources should be versioned.
+- AI should not invent taxonomy terms without admin approval.
+- Synonyms can be AI-suggested but admin-approved.
+
+---
+
+## 7.2 Geography Resources
+
+| Resource ID | Purpose | Sensitivity | Freshness |
+|---|---|---|---|
+| `res:geo.location_summary` | Normalized location context | Personal | On-demand |
+| `res:geo.service_area` | Provider or fleet service area | Business-sensitive | Near real-time |
+| `res:geo.nearby_providers` | Providers near a location | Public/Internal | Real-time |
+| `res:geo.nearby_vendors` | Vendors near a location | Public/Internal | Real-time |
+
+### Typical consumers
+
+- Search
+- Matching
+- Help Me
+- Fleet provider selection
+
+### Data minimization
+
+- Use approximate location if precise location is not required.
+- Do not expose user home address unless needed and permitted.
+
+---
+
+## 7.3 User and Consumer Resources
+
+| Resource ID | Purpose | Sensitivity | Consent |
+|---|---|---|---|
+| `res:user.profile_summary` | Basic user profile summary | Personal | Required |
+| `res:user.preferences` | Notification and AI preferences | Personal | Required |
+| `res:user.vehicle_list` | Vehicles owned by user | Personal | Required |
+| `res:vehicle.summary` | Compact vehicle context | Personal | Required |
+| `res:vehicle.details` | Full vehicle profile | Personal | Required |
+| `res:vehicle.service_history` | Service records summary or details | Personal | Required |
+| `res:vehicle.active_issues` | Open issues and symptoms | Personal/Safety | Required |
+| `res:vehicle.documents_summary` | Document availability without raw content | Personal | Required |
+| `res:vehicle.maintenance_plan` | Suggested maintenance items | Personal | Required |
+| `res:vehicle.consent_status` | What can be shared with providers | Personal | Required |
+
+### Resource details: `res:vehicle.summary`
+
+This is one of the most important resources.
+
+#### Purpose
+
+Provide a safe, compact vehicle context for matching, triage, search, and pre-visit reports.
+
+#### Input context
+
+- vehicle ID
+- requesting principal
+- requesting client
+- purpose of access
+
+#### Returned elements
+
+- vehicle ID
+- brand
+- model
+- series
+- year
+- engine/fuel type
+- mileage
+- ownership type
+- active issue indicator
+- service due indicator
+- profile completeness
+- consent flags
+
+#### Excluded by default
+
+- VIN in full
+- license plate
+- documents
+- owner contact details
+- precise location
+
+#### Allowed consumers
+
+- Consumer Assistant
+- Matching Engine
+- Help Me triage
+- Appointment flow
+- Provider pre-visit report generator
+- Fleet assistant if vehicle belongs to fleet
+
+---
+
+### Resource details: `res:vehicle.service_history`
+
+#### Purpose
+
+Provide relevant repair context for diagnosis, matching, and pre-visit reports.
+
+#### Returned elements
+
+- service date
+- provider name or ID depending on permission
+- service category
+- task
+- short description
+- cost range optional
+- verified status
+- related issue status
+
+#### Redaction rules
+
+- Remove invoice numbers unless needed.
+- Remove payment details.
+- Remove private contact data.
+- Hide unrelated service records unless user consents.
+
+#### Consent rule
+
+Provider receives only the history needed for the requested appointment and only after user consent.
+
+---
+
+## 7.4 Provider Resources
+
+| Resource ID | Purpose | Sensitivity |
+|---|---|---|
+| `res:provider.profile_summary` | Public provider summary | Public |
+| `res:provider.profile_details` | Full provider profile | Public/Internal |
+| `res:provider.locations` | Locations and service areas | Public/Internal |
+| `res:provider.services` | Declared services | Public |
+| `res:provider.capabilities` | Structured capability list | Public/Internal |
+| `res:provider.capability_evidence` | Evidence behind capabilities | Internal |
+| `res:provider.skill_heatmap` | AI-derived strength map | Business-sensitive |
+| `res:provider.portfolio_summary` | Portfolio highlights | Public |
+| `res:provider.availability` | Appointment availability | Business-sensitive |
+| `res:provider.review_summary` | Rating and review summaries | Public |
+| `res:provider.review_themes` | AI themes from reviews | Business-sensitive |
+| `res:provider.analytics_summary` | Provider performance metrics | Business-sensitive |
+| `res:provider.profile_gaps` | Missing profile elements | Business-sensitive |
+
+### Resource details: `res:provider.capabilities`
+
+#### Purpose
+
+Expose what the provider claims and proves they can do.
+
+#### Returned elements
+
+- brand
+- model
+- series
+- service system
+- service task
+- evidence count
+- confidence level
+- badge eligibility
+- public visibility
+- source type
+
+#### Sources
+
+- self-declared
+- job evidence
+- review evidence
+- portfolio evidence
+- certification
+- AI-suggested but approved
+
+#### Consumers
+
+- Search
+- Matching
+- Provider profile screen
+- Skill heatmap
+- AI profile helper
+
+---
+
+### Resource details: `res:provider.skill_heatmap`
+
+#### Purpose
+
+Provide AI-derived provider strength insights.
+
+#### Returned elements
+
+- capability scope
+- score
+- confidence
+- trend
+- evidence summary
+- local demand context
+- explanation summary
+- suggested actions
+
+#### Access rules
+
+- Provider can see their own heatmap.
+- Admin can see all heatmaps for oversight.
+- Public sees only derived badges or explanations, not raw scores.
+- Competitors cannot access another provider’s heatmap.
+
+---
+
+## 7.5 Vendor Resources
+
+| Resource ID | Purpose | Sensitivity |
+|---|---|---|
+| `res:vendor.profile_summary` | Public vendor summary | Public |
+| `res:vendor.profile_details` | Full vendor profile | Public/Internal |
+| `res:vendor.inventory_list` | Vendor inventory list | Business-sensitive |
+| `res:inventory.item_summary` | Compact item summary | Public/Internal |
+| `res:inventory.item_details` | Full item detail | Business-sensitive |
+| `res:inventory.fitment` | Vehicle compatibility | Business-sensitive |
+| `res:inventory.quality_score` | Catalog quality score | Business-sensitive |
+| `res:vendor.inquiries_summary` | Inquiry activity summary | Business-sensitive |
+| `res:vendor.catalog_gaps` | AI-suggested catalog gaps | Business-sensitive |
+
+### Resource details: `res:inventory.item_details`
+
+#### Purpose
+
+Expose a vendor inventory item for search, inquiry, and fitment matching.
+
+#### Returned elements
+
+- item ID
+- name
+- category
+- brand
+- part numbers
+- condition
+- price according to viewer permission
+- stock status
+- location
+- warranty summary
+- images
+- fitment summary
+- fitment confidence
+- visibility rules
+- vendor rating summary
+
+#### Access rules
+
+- Public users see public price if vendor allows.
+- Trade users see trade price if authorized.
+- Other vendors cannot access private inventory data.
+- AI normalization tools must not use one vendor’s private data to enrich another vendor.
+
+---
+
+## 7.6 Fleet Resources
+
+| Resource ID | Purpose | Sensitivity |
+|---|---|---|
+| `res:fleet.organization_summary` | Fleet organization overview | Business-sensitive |
+| `res:fleet.vehicle_list` | List of fleet vehicles | Business-sensitive |
+| `res:fleet.vehicle_summary` | Single fleet vehicle summary | Business-sensitive |
+| `res:fleet.driver_list` | Drivers and assignments | Personal/Business |
+| `res:fleet.maintenance_board` | Maintenance status overview | Business-sensitive |
+| `res:fleet.approvals` | Pending approvals | Business-sensitive |
+| `res:fleet.cost_summary` | Cost analytics | Business-sensitive |
+| `res:fleet.preferred_providers` | Preferred provider list | Business-sensitive |
+
+### Resource details: `res:fleet.cost_summary`
+
+#### Purpose
+
+Support fleet analytics and approval recommendations.
+
+#### Returned elements
+
+- total cost by period
+- cost by vehicle
+- cost by category
+- provider spend
+- estimated downtime
+- pending repair costs
+
+#### Access rules
+
+- Only fleet organization users with reporting permission.
+- Admin may access for support or audit under policy.
+- Not accessible to providers or vendors.
+
+---
+
+## 7.7 Discovery and Matching Resources
+
+| Resource ID | Purpose | Sensitivity |
+|---|---|---|
+| `res:search.providers` | Provider search results | Public/Internal |
+| `res:search.vendors` | Vendor search results | Public/Internal |
+| `res:search.parts` | Part search results | Public/Internal |
+| `res:search.showcases` | Showcase search results | Public |
+| `res:search.qna` | Q&A search results | Public |
+| `res:match.provider_candidates` | Ranked provider candidates | Internal |
+| `res:match.explanation` | Explanation for a match | Internal/Personal |
+
+### Resource details: `res:match.provider_candidates`
+
+#### Purpose
+
+Provide ranked providers for a specific vehicle need.
+
+#### Returned elements
+
+- provider ID
+- match score
+- capability fit
+- evidence strength
+- rating fit
+- distance
+- availability
+- trust indicators
+- explanation tokens
+- sponsored flag if applicable
+
+#### Rules
+
+- Organic matching must not be silently influenced by undisclosed paid placement.
+- Sponsored results must be labeled separately if introduced.
+- Explanation should be stored for audit and user transparency.
+
+---
+
+## 7.8 Review and Trust Resources
+
+| Resource ID | Purpose | Sensitivity |
+|---|---|---|
+| `res:review.detail` | Full review record | Personal/Internal |
+| `res:review.list` | List of reviews for entity | Public/Internal |
+| `res:review.verification` | Verification status and evidence | Internal |
+| `res:review.themes` | AI-derived themes | Internal/Business |
+| `res:trust.signals` | Composite trust indicators | Internal |
+| `res:trust.badges` | Public badges | Public |
+
+### Resource details: `res:review.detail`
+
+#### Purpose
+
+Support review response, moderation, and analytics.
+
+#### Returned elements
+
+- review ID
+- rating
+- sub-ratings
+- text
+- tags
+- service category
+- vehicle context if allowed
+- verified status
+- response status
+- sentiment
+- risk flags
+- author alias or limited author context
+
+#### Redaction rules
+
+- Do not expose reviewer contact details to provider unless platform rules allow.
+- Do not expose private messages unless part of moderation case.
+- Redact phone numbers, emails, addresses, and payment data from AI context.
+
+---
+
+## 7.9 Appointment Resources
+
+| Resource ID | Purpose | Sensitivity |
+|---|---|---|
+| `res:appointment.summary` | Basic appointment state | Personal/Internal |
+| `res:appointment.details` | Full appointment context | Personal/Internal |
+| `res:appointment.pre_visit_report` | Pre-visit diagnostic summary | Personal/Safety |
+| `res:appointment.availability` | Provider availability | Business-sensitive |
+| `res:appointment.status_history` | Status timeline | Internal |
+
+### Resource details: `res:appointment.pre_visit_report`
+
+#### Purpose
+
+Prepare the provider before the vehicle arrives.
+
+#### Returned elements
+
+- vehicle summary
+- mileage
+- reported symptoms
+- triage summary
+- likely service categories
+- relevant service history
+- photos
+- urgency
+- customer preferences
+- fleet approval status
+- consent status
+
+#### Consent rules
+
+User must approve sharing of:
+
+- vehicle context
+- service history
+- photos
+- issue description
+
+#### Phase 2 extension
+
+Add OBDII codes and sensor summary to this resource.
+
+---
+
+## 7.10 Social and Community Resources
+
+| Resource ID | Purpose | Sensitivity |
+|---|---|---|
+| `res:community.feed` | Personalized or public feed | Public/Personal |
+| `res:post.details` | Post content | Public |
+| `res:showcase.details` | Before/after showcase | Public |
+| `res:qna.question` | Question detail | Public |
+| `res:qna.answers` | Answers to question | Public |
+| `res:community.engagement` | Reactions/comments summary | Public/Internal |
+
+### Notes
+
+- Community resources should support moderation flags.
+- AI should not generate public comments autonomously.
+- Provider AI may draft responses to comments but publishing requires approval.
+
+---
+
+## 7.11 AI Insight Resources
+
+| Resource ID | Purpose | Sensitivity |
+|---|---|---|
+| `res:ai.insight` | Single AI-generated insight | Internal |
+| `res:ai.suggestion_queue` | Pending suggestions for approval | Internal |
+| `res:ai.policy` | Active AI policy/version | Admin |
+| `res:ai.evaluation_summary` | AI quality metrics | Admin |
+
+### Notes
+
+Insights should always carry:
+
+- source tool
+- model version
+- confidence
+- evidence references
+- approval state
+- expiry or freshness
+
+---
+
+## 7.12 Admin and Moderation Resources
+
+| Resource ID | Purpose | Sensitivity |
+|---|---|---|
+| `res:moderation.queue` | Moderation cases | Admin-sensitive |
+| `res:moderation.case` | Single moderation case | Admin-sensitive |
+| `res:audit.log` | Audit trail | Admin-sensitive |
+| `res:mcp.client_registry` | MCP clients and scopes | Admin-sensitive |
+| `res:feature.flags` | Active feature flags | Admin-sensitive |
+| `res:plans.entitlements` | Plan rules | Admin-sensitive |
+
+---
+
+## 7.13 Future Phase Resources
+
+These should be reserved in the MCP catalog but not fully activated in MVP.
+
+| Resource ID | Phase | Purpose |
+|---|---|---|
+| `res:obd.device_summary` | Phase 2 | OBDII device pairing summary |
+| `res:obd.codes` | Phase 2 | Diagnostic trouble codes |
+| `res:obd.live_data_summary` | Phase 2 | Sensor snapshot summary |
+| `res:vehicle.health_score` | Phase 2 | Derived vehicle health |
+| `res:vehicle.telemetry_history` | Phase 2/3 | Historical telemetry |
+| `res:sos.event` | Phase 3 | Crash/emergency event |
+| `res:payment.summary` | Phase 2+ | Payment status/summary |
+| `res:insurance.claim_summary` | Future | Insurance context |
+
+---
+
+# 8. MCP Tool Specification
+
+Below is the MVP tool catalog.
+
+---
+
+## 8.1 Global Tool Output Contract
+
+Every tool should return a consistent conceptual result:
+
+- tool ID
+- tool version
+- status
+- primary result
+- structured payload
+- explanation
+- confidence
+- evidence references
+- warnings
+- required approvals
+- trace ID
+- follow-up actions
+
+Tools should also declare whether they are:
+
+- synchronous
+- asynchronous
+- streaming optional
+- draft-only
+- publish-requiring approval
+
+---
+
+# 9. Tool Catalog by Domain
+
+---
+
+## 9.1 Search and Matching Tools
+
+### `tool:search.providers`
+
+#### Purpose
+
+Search service providers using text, category, vehicle context, geo, and filters.
+
+#### Inputs
+
+- search text
+- vehicle context optional
+- location
+- category
+- filters
+- sort preference
+
+#### Outputs
+
+- provider results
+- relevance explanation
+- applied filters
+- result count
+
+#### Risk level
+
+Level 0 or Level 1 depending on personalization.
+
+#### Approval
+
+Not required.
+
+#### Audit
+
+Log query and context reference.
+
+---
+
+### `tool:search.vendors`
+
+#### Purpose
+
+Search vendors by category, location, rating, and vehicle context.
+
+#### Inputs
+
+- search text
+- vehicle context optional
+- part category
+- location
+- filters
+
+#### Outputs
+
+- vendor results
+- relevance explanation
+
+#### Risk level
+
+Level 0/1.
+
+---
+
+### `tool:search.parts`
+
+#### Purpose
+
+Search inventory items.
+
+#### Inputs
+
+- part name
+- part number
+- vehicle context
+- category
+- condition
+- price visibility
+- location
+
+#### Outputs
+
+- inventory results
+- fitment confidence
+- vendor summary
+
+#### Risk level
+
+Level 0/1.
+
+---
+
+### `tool:match.provider_to_need`
+
+#### Purpose
+
+Match a user or fleet need to the best provider.
+
+#### Inputs
+
+- vehicle summary
+- issue category or symptom
+- urgency
+- location
+- user preferences
+- fleet preferred providers optional
+- availability preference
+
+#### Outputs
+
+- ranked providers
+- match scores
+- explanations
+- alternative providers
+- confidence level
+- safety warnings if applicable
+
+#### Consumed resources
+
+- `res:vehicle.summary`
+- `res:vehicle.active_issues`
+- `res:provider.capabilities`
+- `res:provider.review_summary`
+- `res:provider.availability`
+- `res:geo.nearby_providers`
+- `res:match.provider_candidates`
+
+#### Risk level
+
+Level 1.
+
+#### Approval
+
+Not required to show recommendations.
+
+#### Guardrails
+
+- Must include explanation.
+- Must not claim certainty.
+- Must surface urgent safety warnings.
+
+---
+
+### `tool:match.explain`
+
+#### Purpose
+
+Generate a human-readable explanation for a recommendation.
+
+#### Inputs
+
+- match result
+- evidence summary
+- user language preference
+
+#### Outputs
+
+- explanation text
+- evidence references
+- confidence label
+
+#### Risk level
+
+Level 1.
+
+---
+
+### `tool:match.suggest_alternatives`
+
+#### Purpose
+
+Provide alternatives when best match is unavailable or too distant.
+
+#### Inputs
+
+- original match context
+- constraints
+- reason for alternative
+
+#### Outputs
+
+- alternative provider list
+- reason for each alternative
+
+---
+
+## 9.2 Help Me / Triage Tools
+
+### `tool:triage.start`
+
+#### Purpose
+
+Start a guided problem-solving session.
+
+#### Inputs
+
+- vehicle ID
+- initial symptom text
+- media optional
+- urgency hint
+
+#### Outputs
+
+- triage session ID
+- first question
+- initial category guess
+- safety check status
+
+---
+
+### `tool:triage.ask_question`
+
+#### Purpose
+
+Generate the next clarifying question.
+
+#### Inputs
+
+- triage session state
+- previous answers
+- vehicle context
+
+#### Outputs
+
+- next question
+- answer choices
+- rationale optional
+
+---
+
+### `tool:triage.classify_symptom`
+
+#### Purpose
+
+Map symptoms to service categories and urgency.
+
+#### Inputs
+
+- symptom text
+- answers
+- vehicle context
+- media tags
+
+#### Outputs
+
+- likely service systems
+- likely service tasks
+- urgency level
+- safety flag
+- confidence
+
+#### Safety rules
+
+For brake, steering, airbag, overheating, burning smell, or loss of power symptoms:
+
+- show urgent warning
+- recommend professional inspection
+- avoid telling user it is safe to drive
+
+---
+
+### `tool:triage.create_summary`
+
+#### Purpose
+
+Create a summary for appointment request or pre-visit report.
+
+#### Inputs
+
+- triage session
+- vehicle summary
+- user description
+- media references
+
+#### Outputs
+
+- structured issue summary
+- likely categories
+- urgency
+- recommended provider request draft
+
+---
+
+### `tool:triage.safety_check`
+
+#### Purpose
+
+Detect safety-critical symptoms.
+
+#### Inputs
+
+- symptom text
+- category
+- urgency
+
+#### Outputs
+
+- safety flag
+- warning message
+- recommended immediate action
+
+#### Risk level
+
+Safety-sensitive.
+
+#### Approval
+
+No approval needed for warning, but AI must not give definitive diagnostic or safety clearance.
+
+---
+
+## 9.3 Vehicle and Maintenance Tools
+
+### `tool:vehicle.extract_fields`
+
+#### Purpose
+
+Extract structured vehicle fields from free text or partial input.
+
+#### Inputs
+
+- raw text
+- VIN partial/full optional
+- manual fields
+
+#### Outputs
+
+- suggested brand/model/series/year/engine
+- confidence
+- missing fields
+
+---
+
+### `tool:vehicle.suggest_maintenance`
+
+#### Purpose
+
+Suggest maintenance checks based on vehicle context.
+
+#### Inputs
+
+- vehicle summary
+- service history summary
+- season
+- mileage
+
+#### Outputs
+
+- maintenance suggestions
+- priority
+- rationale
+- provider category to search
+
+#### Guardrails
+
+- Use non-absolute language.
+- Indicate that schedule may vary by manufacturer and condition.
+
+---
+
+### `tool:vehicle.summarize_history`
+
+#### Purpose
+
+Summarize service history for user, provider, or fleet manager.
+
+#### Inputs
+
+- vehicle ID
+- purpose
+- time range
+- category filter
+
+#### Outputs
+
+- concise history summary
+- recurring issues
+- recent repairs
+- unresolved items
+
+---
+
+### `tool:vehicle.create_service_record_draft`
+
+#### Purpose
+
+Draft a service record from user input or completed appointment.
+
+#### Inputs
+
+- vehicle ID
+- description
+- date
+- provider optional
+- cost optional
+- category optional
+
+#### Outputs
+
+- draft service record
+- suggested category
+- missing fields
+
+#### Approval
+
+User or fleet manager must approve.
+
+---
+
+## 9.4 Appointment Tools
+
+### `tool:appointment.check_availability`
+
+#### Purpose
+
+Check provider availability for a request.
+
+#### Inputs
+
+- provider ID
+- service category
+- estimated duration
+- preferred windows
+
+#### Outputs
+
+- available slots
+- constraints
+- confidence
+
+---
+
+### `tool:appointment.suggest_duration`
+
+#### Purpose
+
+Estimate appointment duration.
+
+#### Inputs
+
+- service category
+- vehicle context
+- issue summary
+
+#### Outputs
+
+- duration estimate
+- confidence
+- caveats
+
+---
+
+### `tool:appointment.draft_request`
+
+#### Purpose
+
+Create an appointment request draft.
+
+#### Inputs
+
+- user or fleet principal
+- provider ID
+- vehicle ID
+- issue summary
+- preferred times
+- consent reference
+
+#### Outputs
+
+- draft appointment request
+- pre-visit summary
+- consent requirements
+- submit action pending approval
+
+#### Risk level
+
+Level 2 draft.
+
+#### Approval
+
+User/fleet manager must submit.
+
+---
+
+### `tool:appointment.create_pre_visit_report`
+
+#### Purpose
+
+Generate the provider-facing pre-visit report.
+
+#### Inputs
+
+- appointment draft or request ID
+- vehicle summary
+- triage summary
+- service history summary
+- media references
+- consent reference
+
+#### Outputs
+
+- pre-visit report
+- likely diagnostic focus
+- urgency
+- customer preferences
+
+#### Consent
+
+Requires explicit user/fleet consent.
+
+---
+
+### `tool:appointment.suggest_response`
+
+#### Purpose
+
+Help provider respond to a request.
+
+#### Inputs
+
+- request details
+- provider calendar
+- parts availability optional
+- service category
+
+#### Outputs
+
+- suggested response
+- proposed times
+- internal note draft
+- risk or delay warning
+
+#### Approval
+
+Provider must approve.
+
+---
+
+## 9.5 Review Tools
+
+### `tool:review.classify`
+
+#### Purpose
+
+Classify a review by sentiment and theme.
+
+#### Inputs
+
+- review text
+- rating
+- category
+- tags
+
+#### Outputs
+
+- sentiment
+- themes
+- risk flags
+- priority
+
+---
+
+### `tool:review.summarize`
+
+#### Purpose
+
+Summarize reviews for provider analytics or user display.
+
+#### Inputs
+
+- review list
+- entity ID
+- time range
+- category filter
+
+#### Outputs
+
+- summary text
+- strengths
+- weaknesses
+- trends
+
+---
+
+### `tool:review.draft_response`
+
+#### Purpose
+
+Draft a provider response to a review.
+
+#### Inputs
+
+- review ID
+- provider tone preferences
+- past approved responses optional
+- review classification
+
+#### Outputs
+
+- draft response
+- tone label
+- sensitivity warning
+- suggested follow-up action
+
+#### Risk level
+
+Level 2.
+
+#### Approval
+
+Provider must approve before publishing.
+
+#### Guardrails
+
+- No admission of legal liability unless provider explicitly chooses it.
+- No private customer data.
+- No hostile tone.
+- No invented facts.
+
+---
+
+### `tool:review.flag_risk`
+
+#### Purpose
+
+Flag potentially fake, abusive, or high-risk reviews.
+
+#### Inputs
+
+- review text
+- author behavior
+- timing patterns
+- rating anomalies
+
+#### Outputs
+
+- risk score
+- reason
+- recommended moderation action
+
+#### Risk level
+
+Level 4 recommendation.
+
+#### Approval
+
+Admin must decide.
+
+---
+
+### `tool:review.request_review`
+
+#### Purpose
+
+Draft a review invitation after completed service.
+
+#### Inputs
+
+- appointment or service record ID
+- user consent
+- channel preference
+
+#### Outputs
+
+- invitation draft
+- channel
+- send status pending approval
+
+#### Approval
+
+User or system policy may automate only if consented. For MVP, user-initiated or clearly consented automated invitation is acceptable.
+
+---
+
+## 9.6 Provider Profile and Skill Tools
+
+### `tool:profile.suggest_capabilities`
+
+#### Purpose
+
+Suggest capabilities the provider likely offers.
+
+#### Inputs
+
+- provider profile
+- job history
+- portfolio
+- reviews
+- certifications
+
+#### Outputs
+
+- suggested capabilities
+- evidence references
+- confidence
+- approval request
+
+#### Risk level
+
+Level 2.
+
+#### Approval
+
+Provider must approve before public display.
+
+---
+
+### `tool:profile.suggest_missing_models`
+
+#### Purpose
+
+Suggest missing brands, models, or series.
+
+#### Inputs
+
+- provider job logs
+- portfolio tags
+- review text
+- current profile
+
+#### Outputs
+
+- missing vehicle coverage suggestions
+- confidence
+
+---
+
+### `tool:profile.generate_summary`
+
+#### Purpose
+
+Generate or improve provider public description.
+
+#### Inputs
+
+- provider profile
+- capabilities
+- portfolio highlights
+- tone preference
+
+#### Outputs
+
+- profile summary draft
+- improvement notes
+
+#### Approval
+
+Provider must approve.
+
+---
+
+### `tool:skill.generate_heatmap`
+
+#### Purpose
+
+Generate provider skill heatmap.
+
+#### Inputs
+
+- completed jobs
+- portfolio
+- reviews
+- appointment history
+- category taxonomy
+- local demand summary
+
+#### Outputs
+
+- capability scores
+- confidence levels
+- trends
+- explanation
+- suggested actions
+
+#### Frequency
+
+- Nightly batch
+- Event-triggered after completed jobs/reviews
+
+#### Access
+
+Private to provider and admin oversight.
+
+---
+
+### `tool:skill.suggest_focus`
+
+#### Purpose
+
+Suggest which skills provider should emphasize.
+
+#### Inputs
+
+- skill heatmap
+- local demand
+- competitor public signals
+- provider goals
+
+#### Outputs
+
+- focus suggestions
+- expected benefit
+- evidence gaps
+
+#### Guardrails
+
+Do not expose competitor private analytics.
+
+---
+
+## 9.7 Portfolio / Showroom Tools
+
+### `tool:portfolio.group_media`
+
+#### Purpose
+
+Group uploaded photos into likely jobs.
+
+#### Inputs
+
+- media set
+- timestamps
+- visual similarity
+- tags
+
+#### Outputs
+
+- grouped media sets
+- likely before/after pairs
+- confidence
+
+---
+
+### `tool:portfolio.generate_caption`
+
+#### Purpose
+
+Generate a showcase caption.
+
+#### Inputs
+
+- grouped media
+- provider notes
+- service category
+- vehicle model
+
+#### Outputs
+
+- caption draft
+- hashtags/tags optional
+- redaction warnings
+
+#### Approval
+
+Provider must approve.
+
+---
+
+### `tool:portfolio.suggest_tags`
+
+#### Purpose
+
+Suggest service and vehicle tags.
+
+#### Inputs
+
+- media
+- caption
+- provider categories
+
+#### Outputs
+
+- tags
+- confidence
+
+---
+
+### `tool:portfolio.redaction_check`
+
+#### Purpose
+
+Detect sensitive information in media.
+
+#### Inputs
+
+- image/video references
+
+#### Outputs
+
+- plate detection
+- face detection
+- personal document detection
+- suggested redaction
+
+#### Note
+
+MVP can flag and ask provider to confirm. Full automatic redaction can come later.
+
+---
+
+## 9.8 Vendor Inventory Tools
+
+### `tool:inventory.normalize_item`
+
+#### Purpose
+
+Normalize raw inventory item data.
+
+#### Inputs
+
+- item name
+- description
+- part numbers
+- images
+- vendor category
+
+#### Outputs
+
+- normalized name
+- category
+- condition
+- attributes
+- confidence
+
+---
+
+### `tool:inventory.classify_category`
+
+#### Purpose
+
+Assign part category/subcategory.
+
+#### Inputs
+
+- item text
+- part number
+- image optional
+
+#### Outputs
+
+- category suggestion
+- confidence
+
+---
+
+### `tool:inventory.suggest_fitment`
+
+#### Purpose
+
+Suggest compatible vehicles.
+
+#### Inputs
+
+- item details
+- part number
+- taxonomy
+- vendor history
+
+#### Outputs
+
+- fitment suggestions
+- confidence
+- uncertain fitment flags
+
+#### Approval
+
+Vendor must confirm.
+
+---
+
+### `tool:inventory.detect_duplicates`
+
+#### Purpose
+
+Detect duplicate or near-duplicate items.
+
+#### Inputs
+
+- vendor inventory list
+- similarity rules
+
+#### Outputs
+
+- duplicate candidates
+- similarity reason
+- merge suggestion
+
+---
+
+### `tool:inventory.validate_import`
+
+#### Purpose
+
+Validate bulk import before commit.
+
+#### Inputs
+
+- import batch summary
+- mapping rules
+- sample rows
+
+#### Outputs
+
+- validation errors
+- warnings
+- missing fields
+- AI normalization suggestions
+
+---
+
+### `tool:inventory.suggest_catalog_gaps`
+
+#### Purpose
+
+Suggest inventory gaps based on demand.
+
+#### Inputs
+
+- public search demand
+- inquiry trends
+- vendor categories
+- local provider demand
+
+#### Outputs
+
+- suggested categories/parts
+- rationale
+
+#### Guardrails
+
+Use aggregated demand only. Do not reveal another vendor’s private catalog.
+
+---
+
+### `tool:inquiry.draft_response`
+
+#### Purpose
+
+Draft vendor response to inventory inquiry.
+
+#### Inputs
+
+- inquiry details
+- inventory item
+- stock status
+
+#### Outputs
+
+- response draft
+- availability status
+- alternative suggestion
+
+#### Approval
+
+Vendor must approve.
+
+---
+
+## 9.9 Fleet Tools
+
+### `tool:fleet.summarize_vehicle_health`
+
+#### Purpose
+
+Summarize fleet vehicle condition.
+
+#### Inputs
+
+- vehicle summary
+- service history
+- active issues
+- mileage
+
+#### Outputs
+
+- health summary
+- priorities
+- recommended action
+
+---
+
+### `tool:fleet.suggest_provider`
+
+#### Purpose
+
+Recommend provider for fleet repair.
+
+#### Inputs
+
+- vehicle context
+- issue
+- fleet preferred providers
+- location
+- cost constraints
+
+#### Outputs
+
+- provider recommendations
+- explanation
+- estimated availability
+
+---
+
+### `tool:fleet.draft_approval_recommendation`
+
+#### Purpose
+
+Assist fleet manager approval decision.
+
+#### Inputs
+
+- issue report
+- triage summary
+- provider options
+- cost estimates
+- vehicle history
+
+#### Outputs
+
+- recommendation
+- rationale
+- risk level
+- urgency
+
+#### Approval
+
+Fleet manager decides.
+
+---
+
+### `tool:fleet.create_issue_report`
+
+#### Purpose
+
+Draft driver issue report.
+
+#### Inputs
+
+- driver input
+- vehicle ID
+- photos
+- symptom
+
+#### Outputs
+
+- structured issue report
+- urgency
+- AI triage summary
+
+#### Approval
+
+Driver submits; manager receives.
+
+---
+
+### `tool:fleet.generate_cost_report`
+
+#### Purpose
+
+Generate fleet cost report.
+
+#### Inputs
+
+- fleet ID
+- period
+- grouping
+
+#### Outputs
+
+- report summary
+- tables/charts data
+- anomalies
+
+---
+
+## 9.10 Community Tools
+
+### `tool:qna.classify_question`
+
+#### Purpose
+
+Classify community question.
+
+#### Inputs
+
+- question text
+- vehicle context
+- media
+
+#### Outputs
+
+- category
+- urgency
+- similar questions
+
+---
+
+### `tool:qna.suggest_provider`
+
+#### Purpose
+
+Suggest provider if question indicates service need.
+
+#### Inputs
+
+- question context
+- location
+- category
+
+#### Outputs
+
+- provider suggestions
+- explanation
+
+---
+
+### `tool:community.draft_provider_answer`
+
+#### Purpose
+
+Draft provider answer to question or comment.
+
+#### Inputs
+
+- question/comment
+- provider profile
+- tone
+
+#### Outputs
+
+- answer draft
+- caution flags
+
+#### Approval
+
+Provider must approve.
+
+---
+
+### `tool:community.moderate_content`
+
+#### Purpose
+
+Flag community content for moderation.
+
+#### Inputs
+
+- content text/media
+- reporter context
+- policy rules
+
+#### Outputs
+
+- risk category
+- recommended action
+- confidence
+
+#### Approval
+
+Human moderator decides.
+
+---
+
+## 9.11 Admin and Moderation Tools
+
+### `tool:moderation.classify_content`
+
+#### Purpose
+
+Classify reported or suspicious content.
+
+#### Inputs
+
+- content type
+- content summary
+- report reason
+
+#### Outputs
+
+- category
+- severity
+- policy references
+
+---
+
+### `tool:moderation.prioritize_queue`
+
+#### Purpose
+
+Rank moderation cases by risk.
+
+#### Inputs
+
+- queue items
+- severity
+- user impact
+
+#### Outputs
+
+- prioritized queue
+- rationale
+
+---
+
+### `tool:moderation.suggest_action`
+
+#### Purpose
+
+Recommend moderation action.
+
+#### Inputs
+
+- case details
+- policy
+- history
+
+#### Outputs
+
+- suggested action
+- confidence
+- explanation
+
+#### Approval
+
+Admin only.
+
+---
+
+### `tool:fraud.detect_review_pattern`
+
+#### Purpose
+
+Detect suspicious review behavior.
+
+#### Inputs
+
+- review events
+- reviewer history
+- provider review patterns
+- timing signals
+
+#### Outputs
+
+- fraud score
+- suspicious pattern explanation
+- recommended review weight adjustment
+
+#### Approval
+
+Admin decides.
+
+---
+
+### `tool:taxonomy.suggest_synonym`
+
+#### Purpose
+
+Suggest new synonyms or mappings.
+
+#### Inputs
+
+- search logs
+- failed queries
+- category usage
+
+#### Outputs
+
+- synonym suggestion
+- evidence
+
+#### Approval
+
+Admin approves.
+
+---
+
+## 9.12 MCP Governance Tools
+
+### `tool:mcp.check_consent`
+
+#### Purpose
+
+Verify whether consent exists for a context.
+
+#### Inputs
+
+- principal
+- context reference
+- purpose
+
+#### Outputs
+
+- consent status
+- missing consents
+- expiry
+
+---
+
+### `tool:mcp.redact_pii`
+
+#### Purpose
+
+Redact sensitive data before AI context assembly.
+
+#### Inputs
+
+- raw context
+- redaction policy
+
+#### Outputs
+
+- redacted context
+- redaction summary
+
+---
+
+### `tool:mcp.request_human_approval`
+
+#### Purpose
+
+Create an approval request.
+
+#### Inputs
+
+- action type
+- payload summary
+- requester
+- risk level
+
+#### Outputs
+
+- approval request ID
+- status
+
+---
+
+### `tool:mcp.log_ai_action`
+
+#### Purpose
+
+Record AI activity for audit.
+
+#### Inputs
+
+- client
+- tool/resource
+- context
+- result summary
+
+#### Outputs
+
+- audit event ID
+
+---
+
+### `tool:mcp.evaluate_output`
+
+#### Purpose
+
+Capture feedback on AI output.
+
+#### Inputs
+
+- output ID
+- user/provider/admin feedback
+- correction
+
+#### Outputs
+
+- evaluation event
+- quality metric update
+
+---
+
+# 10. Prompt Template Catalog
+
+The MCP service should maintain governed prompt templates.
+
+---
+
+## 10.1 Prompt Categories
+
+| Prompt ID Area | Purpose |
+|---|---|
+| `prompt:triage.intake` | Initial symptom understanding |
+| `prompt:triage.followup` | Clarifying question generation |
+| `prompt:match.explanation` | Explain provider recommendation |
+| `prompt:review.response` | Draft review response |
+| `prompt:profile.summary` | Generate provider profile text |
+| `prompt:skill.heatmap_explanation` | Explain skill heatmap |
+| `prompt:portfolio.caption` | Generate showcase caption |
+| `prompt:inventory.normalize` | Normalize inventory item |
+| `prompt:fleet.approval_summary` | Summarize approval request |
+| `prompt:moderation.summary` | Summarize moderation case |
+
+---
+
+## 10.2 Prompt Guardrails
+
+Every prompt should include:
+
+- role definition
+- allowed facts only
+- no invented claims
+- safety caution
+- privacy restrictions
+- tone requirements
+- output structure
+- uncertainty disclosure
+- escalation rule
+
+---
+
+# 11. Context Packages for MVP AI Features
+
+A context package defines which resources and tools are allowed for a specific AI workflow.
+
+---
+
+## 11.1 Consumer Help Me Context Package
+
+### Purpose
+
+Support user problem triage and provider matching.
+
+### Allowed resources
+
+- `res:user.profile_summary`
+- `res:vehicle.summary`
+- `res:vehicle.active_issues`
+- `res:vehicle.service_history` with consent and time filter
+- `res:taxonomy.symptoms`
+- `res:taxonomy.service_tasks`
+- `res:geo.location_summary`
+- `res:provider.profile_summary`
+- `res:provider.capabilities`
+- `res:provider.review_summary`
+- `res:match.provider_candidates`
+
+### Allowed tools
+
+- `tool:triage.start`
+- `tool:triage.ask_question`
+- `tool:triage.classify_symptom`
+- `tool:triage.safety_check`
+- `tool:triage.create_summary`
+- `tool:match.provider_to_need`
+- `tool:match.explain`
+- `tool:appointment.draft_request`
+
+### Excluded
+
+- raw documents
+- payment details
+- precise home address unless needed
+- other users’ data
+- vendor private inventory beyond part suggestions
+
+---
+
+## 11.2 Provider Matching Context Package
+
+### Purpose
+
+Rank providers for a specific need.
+
+### Allowed resources
+
+- `res:vehicle.summary`
+- `res:vehicle.active_issues`
+- `res:provider.capabilities`
+- `res:provider.review_summary`
+- `res:provider.availability`
+- `res:geo.nearby_providers`
+- `res:trust.badges`
+- `res:match.provider_candidates`
+
+### Allowed tools
+
+- `tool:match.provider_to_need`
+- `tool:match.explain`
+- `tool:match.suggest_alternatives`
+
+### Rules
+
+- Explanation required.
+- No hidden paid ranking.
+- Urgent safety flags must be surfaced.
+
+---
+
+## 11.3 Provider Profile Helper Context Package
+
+### Purpose
+
+Improve provider capability profile.
+
+### Allowed resources
+
+- `res:provider.profile_details`
+- `res:provider.services`
+- `res:provider.capabilities`
+- `res:provider.capability_evidence`
+- `res:provider.portfolio_summary`
+- `res:provider.review_summary`
+- `res:provider.analytics_summary`
+- `res:taxonomy.service_tasks`
+
+### Allowed tools
+
+- `tool:profile.suggest_capabilities`
+- `tool:profile.suggest_missing_models`
+- `tool:profile.generate_summary`
+- `tool:skill.suggest_focus`
+
+### Approval
+
+Provider must approve public changes.
+
+---
+
+## 11.4 Skill Heatmap Context Package
+
+### Purpose
+
+Generate and explain provider skill heatmap.
+
+### Allowed resources
+
+- `res:provider.capabilities`
+- `res:provider.capability_evidence`
+- `res:provider.review_summary`
+- `res:provider.portfolio_summary`
+- `res:provider.analytics_summary`
+- `res:geo.service_area`
+- `res:taxonomy.service_tasks`
+
+### Allowed tools
+
+- `tool:skill.generate_heatmap`
+- `tool:skill.suggest_focus`
+- `tool:match.explain` optional for internal explanation
+
+### Access
+
+- Provider only for own data.
+- Admin for oversight.
+- Public only through derived badges/explanations.
+
+---
+
+## 11.5 Review Response Context Package
+
+### Purpose
+
+Draft provider response to review.
+
+### Allowed resources
+
+- `res:review.detail`
+- `res:provider.profile_summary`
+- `res:provider.review_themes`
+- `res:provider.response_policy` if defined
+
+### Allowed tools
+
+- `tool:review.classify`
+- `tool:review.draft_response`
+- `tool:review.flag_risk`
+
+### Redactions
+
+- Reviewer contact info
+- payment info
+- private messages
+- unrelated customer history
+
+---
+
+## 11.6 Vendor Inventory Normalization Context Package
+
+### Purpose
+
+Clean and enrich vendor inventory.
+
+### Allowed resources
+
+- `res:vendor.inventory_list`
+- `res:inventory.item_details`
+- `res:taxonomy.part_categories`
+- `res:taxonomy.vehicle.brands`
+- `res:taxonomy.vehicle.models`
+- `res:inventory.quality_score`
+
+### Allowed tools
+
+- `tool:inventory.normalize_item`
+- `tool:inventory.classify_category`
+- `tool:inventory.suggest_fitment`
+- `tool:inventory.detect_duplicates`
+- `tool:inventory.validate_import`
+
+### Strict rule
+
+One vendor’s private inventory cannot be used as training or enrichment context for another vendor.
+
+---
+
+## 11.7 Fleet Approval Context Package
+
+### Purpose
+
+Support fleet repair approval decisions.
+
+### Allowed resources
+
+- `res:fleet.vehicle_summary`
+- `res:vehicle.active_issues`
+- `res:vehicle.service_history`
+- `res:fleet.cost_summary`
+- `res:fleet.preferred_providers`
+- `res:provider.profile_summary`
+- `res:match.provider_candidates`
+
+### Allowed tools
+
+- `tool:fleet.summarize_vehicle_health`
+- `tool:fleet.suggest_provider`
+- `tool:fleet.draft_approval_recommendation`
+
+### Approval
+
+Fleet manager makes final decision.
+
+---
+
+## 11.8 Pre-Visit Report Context Package
+
+### Purpose
+
+Create provider-facing pre-visit summary.
+
+### Allowed resources
+
+- `res:vehicle.summary`
+- `res:vehicle.service_history`
+- `res:vehicle.active_issues`
+- `res:appointment.details`
+- `res:appointment.pre_visit_report`
+- `res:user.consent_status`
+
+### Allowed tools
+
+- `tool:appointment.create_pre_visit_report`
+- `tool:vehicle.summarize_history`
+- `tool:triage.create_summary`
+
+### Consent
+
+Explicit consent required before sharing history and media.
+
+---
+
+# 12. Permission and Scope Matrix
+
+Below is a simplified MVP permission model.
+
+---
+
+## 12.1 Principal Roles
+
+| Role | Description |
+|---|---|
+| Individual User | Owns personal vehicles |
+| Fleet Manager | Manages fleet organization |
+| Fleet Driver | Reports issues for assigned vehicles |
+| Provider Admin | Manages provider organization |
+| Provider Staff | Limited provider operations |
+| Vendor Admin | Manages vendor organization |
+| Vendor Staff | Limited vendor operations |
+| Admin | Platform operations |
+| System | Background internal processes |
+
+---
+
+## 12.2 Resource Access Matrix
+
+| Resource Category | Individual | Fleet | Provider | Vendor | Admin |
+|---|---:|---:|---:|---:|---:|
+| Public taxonomy | Yes | Yes | Yes | Yes | Yes |
+| Public provider profiles | Yes | Yes | Limited own/public | Limited own/public | Yes |
+| User vehicle summary | Own | Org vehicles | With consent | With fitment context | Audit/support |
+| User service history | Own | Org vehicles | With consent | No | Audit/support |
+| Provider capabilities | Public | Public | Own | Limited public | Yes |
+| Provider analytics | No | No | Own | No | Oversight |
+| Vendor public profile | Yes | Yes | Yes | Own | Yes |
+| Vendor private inventory | No | No | No | Own | Oversight |
+| Fleet cost data | No | Org only | No | No | Oversight |
+| Review details | Limited | Limited | For own org | For own org | Yes |
+| Moderation cases | No | No | No | No | Yes |
+| MCP audit logs | No | No | No | No | Yes |
+
+---
+
+## 12.3 Tool Access Matrix
+
+| Tool Category | Individual | Fleet | Provider | Vendor | Admin |
+|---|---:|---:|---:|---:|---:|
+| Search tools | Yes | Yes | Yes | Yes | Yes |
+| Triage tools | Yes | Yes | Limited | No | Yes |
+| Matching tools | Yes | Yes | Limited | Limited | Yes |
+| Appointment draft | Yes | Yes | Respond only | No | Support |
+| Review response draft | No | No | Own org | Own org | No |
+| Profile suggestion tools | No | No | Own org | Own org | Oversight |
+| Inventory tools | No | No | No | Own org | Oversight |
+| Fleet approval tools | No | Yes | No | No | Oversight |
+| Moderation tools | No | No | No | No | Yes |
+| MCP governance tools | No | No | No | No | Yes |
+
+---
+
+# 13. Consent, Tenancy, and Privacy Rules
+
+---
+
+## 13.1 Consent Rules
+
+### Required consent examples
+
+| Context | Consent Required From |
+|---|---|
+| Vehicle context | Vehicle owner or fleet manager |
+| Service history sharing | Vehicle owner or fleet manager |
+| Photo sharing | Uploader/user |
+| Review invitation | User |
+| AI personalization | User/org admin |
+| Driver issue data | Driver and fleet policy |
+| Before/after public showcase | Provider and customer if identifiable |
+
+### Consent behavior
+
+- Consent must be versioned.
+- Consent can be withdrawn.
+- Withdrawal should stop future sharing but may not erase historical legal records.
+- AI context logs should respect retention policy.
+
+---
+
+## 13.2 Tenancy Rules
+
+### Provider tenancy
+
+A provider may access:
+
+- own profile
+- own capabilities
+- own analytics
+- own reviews
+- own appointments
+- own portfolio
+
+A provider may not access:
+
+- competitor analytics
+- private inventory of vendors
+- other providers’ review response drafts
+- customer data outside active service context
+
+### Vendor tenancy
+
+A vendor may access:
+
+- own inventory
+- own inquiries
+- own reviews
+- own catalog insights
+
+A vendor may not access:
+
+- other vendors’ inventory
+- other vendors’ pricing
+- private provider analytics
+- customer service history except inquiry context
+
+### Fleet tenancy
+
+A fleet may access:
+
+- own vehicles
+- own drivers
+- own costs
+- own approvals
+
+A fleet may not access:
+
+- other fleets’ data
+- provider private analytics
+- vendor private pricing beyond permitted trade context
+
+---
+
+## 13.3 PII Minimization
+
+AI context should avoid raw PII unless necessary.
+
+### Redact or mask by default
+
+- phone numbers
+- emails
+- home addresses
+- precise live location
+- license plates
+- VIN full where partial is enough
+- payment card data
+- invoice numbers
+- personal documents
+- driver personal data outside fleet necessity
+
+---
+
+# 14. Approval Workflow Specification
+
+---
+
+## 14.1 Actions Not Requiring Approval
+
+- Reading public data
+- Reading permitted private data with valid scope/consent
+- Generating internal analytics
+- Generating draft suggestions
+- Generating match explanations
+- Generating safety warnings
+
+---
+
+## 14.2 Actions Requiring Actor Approval
+
+These require the primary actor to approve.
+
+| Action | Approver |
+|---|---|
+| Submit appointment request | User/fleet manager |
+| Publish review response | Provider admin/authorized staff |
+| Publish showcase post | Provider admin/authorized staff |
+| Submit vendor inquiry response | Vendor admin/authorized staff |
+| Accept provider capability suggestion | Provider admin |
+| Confirm inventory fitment | Vendor admin |
+| Publish community answer | Provider/user author |
+
+---
+
+## 14.3 Actions Requiring Admin Approval
+
+| Action | Approver |
+|---|---|
+| Remove review | Admin |
+| Suspend organization | Admin |
+| Change verification status | Admin |
+| Modify taxonomy globally | Admin |
+| Change entitlements manually | Admin |
+| Approve external MCP client | Admin |
+| Override fraud flag | Admin |
+
+---
+
+## 14.4 Prohibited Autonomous Actions in MVP
+
+The AI must not autonomously:
+
+- publish public content
+- finalize appointments
+- change trust scores
+- remove reviews
+- suspend users/orgs
+- alter billing entitlements
+- send marketing messages
+- disclose private data
+- provide definitive safety clearance
+- make legal liability admissions
+- modify taxonomy globally
+- access OBDII hardware before Phase 2 readiness
+
+---
+
+# 15. Audit and Observability Specification
+
+---
+
+## 15.1 Audit Events
+
+MCP should log:
+
+- resource accessed
+- tool invoked
+- prompt used
+- model/version used
+- client identity
+- principal identity
+- context reference
+- consent reference
+- policy decision
+- redactions applied
+- approval request created
+- approval decision
+- output accepted/rejected
+- error or fallback
+
+---
+
+## 15.2 Audit Event Fields
+
+Each audit event should include:
+
+- event ID
+- timestamp
+- environment
+- client ID
+- principal ID
+- organization ID if applicable
+- user ID if applicable
+- resource/tool ID
+- version
+- input summary
+- output summary
+- sensitivity level
+- consent status
+- approval status
+- risk level
+- result status
+- trace ID
+
+---
+
+## 15.3 Observability Metrics
+
+### Performance
+
+- resource latency
+- tool latency
+- prompt latency
+- approval turnaround time
+- cache hit rate
+
+### Quality
+
+- AI suggestion acceptance rate
+- draft edit rate
+- match acceptance rate
+- review response approval rate
+- inventory normalization acceptance rate
+- false flag rate
+
+### Safety
+
+- safety-critical triage count
+- urgent warning rate
+- moderation escalation rate
+- hallucination reports
+- consent denial rate
+
+### Governance
+
+- unauthorized access attempts
+- scope failures
+- consent failures
+- rate-limit hits
+- policy overrides
+
+---
+
+# 16. Error Handling and Fallback Behavior
+
+---
+
+## 16.1 Error Categories
+
+| Category | Example |
+|---|---|
+| Authentication error | Invalid client |
+| Authorization error | Missing scope |
+| Consent error | User did not consent |
+| Validation error | Missing required input |
+| Context error | Vehicle not found |
+| Policy error | Cross-tenant access blocked |
+| Model error | LLM unavailable |
+| Timeout error | Tool exceeded time limit |
+| Safety error | Safety-critical flow requires human care |
+
+---
+
+## 16.2 Fallback Rules
+
+### If AI model unavailable
+
+- Search still works.
+- Manual forms still work.
+- Provider profiles still accessible.
+- Appointments still work.
+- AI panels show degraded state.
+
+### If consent missing
+
+- Show consent request.
+- Do not access restricted context.
+- Allow manual flow without AI if safe.
+
+### If confidence low
+
+- Show uncertainty.
+- Ask for more information.
+- Avoid strong recommendation.
+- Offer broader search.
+
+### If safety-critical
+
+- Show warning.
+- Recommend urgent inspection.
+- Avoid normalizing as minor issue.
+- Do not delay urgent messaging for AI polish.
+
+---
+
+# 17. Versioning and Lifecycle
+
+---
+
+## 17.1 Resource Versioning
+
+Each resource should have:
+
+- version number
+- status: active, beta, deprecated
+- change notes
+- compatibility rules
+
+### Rules
+
+- Additive changes should be backward-compatible where possible.
+- Breaking changes require version bump.
+- Deprecated resources must remain available for transition period.
+
+---
+
+## 17.2 Tool Versioning
+
+Each tool should have:
+
+- version number
+- risk level
+- model/prompt version
+- approval policy version
+- evaluation metrics
+
+### Rules
+
+- New tool versions can be shadow-tested.
+- Admin can roll back tool version.
+- High-risk tools require feature flag rollout.
+
+---
+
+## 17.3 Prompt Versioning
+
+Each prompt should have:
+
+- prompt ID
+- version
+- owner
+- evaluation results
+- approval status
+- rollout percentage
+
+---
+
+# 18. MCP Service Interface Specification
+
+This is a narrative interface, not code.
+
+---
+
+## 18.1 Discovery Capabilities
+
+The MCP service should allow clients to:
+
+- list available resources
+- list available tools
+- list available prompts
+- get resource metadata
+- get tool metadata
+- get policy requirements
+- get consent requirements
+
+---
+
+## 18.2 Resource Access Operation
+
+Conceptual flow:
+
+1. Client requests resource.
+2. Client provides principal context and context reference.
+3. MCP checks authentication.
+4. MCP checks scopes and tenancy.
+5. MCP checks consent.
+6. MCP applies redaction.
+7. MCP returns resource or error.
+8. MCP logs access.
+
+---
+
+## 18.3 Tool Invocation Operation
+
+Conceptual flow:
+
+1. Client requests tool invocation.
+2. Client provides inputs and context.
+3. MCP validates inputs.
+4. MCP checks risk level.
+5. MCP checks consent and scopes.
+6. MCP executes tool or routes to async job.
+7. MCP returns result or approval request.
+8. MCP logs invocation and outcome.
+
+---
+
+## 18.4 Approval Operation
+
+Conceptual flow:
+
+1. Tool creates approval request.
+2. Approver sees request in relevant portal.
+3. Approver reviews summary and evidence.
+4. Approver approves, edits, or rejects.
+5. MCP records decision.
+6. Domain service completes action if approved.
+
+---
+
+## 18.5 Event Subscription
+
+MCP should support internal events.
+
+### Example event topics
+
+- resource.changed
+- tool.invoked
+- approval.requested
+- approval.decided
+- insight.created
+- moderation.flagged
+- consent.updated
+- policy.updated
+- client.suspended
+
+### Consumers
+
+- audit dashboard
+- analytics pipeline
+- notification service
+- AI evaluation service
+- admin console
+
+---
+
+# 19. MCP Client Profiles for MVP
+
+---
+
+## 19.1 Consumer Assistant
+
+### Purpose
+
+Assist individual users.
+
+### Allowed scope
+
+- own profile
+- own vehicles
+- public provider/vendor data
+- matching
+- triage
+- appointment drafts
+
+### Not allowed
+
+- other users’ data
+- provider analytics
+- vendor private inventory
+- admin functions
+
+---
+
+## 19.2 Provider Assistant
+
+### Purpose
+
+Assist provider organization.
+
+### Allowed scope
+
+- own profile
+- own capabilities
+- own portfolio
+- own reviews
+- own appointments
+- own analytics
+- profile suggestions
+- review drafts
+- showcase drafts
+
+### Not allowed
+
+- competitor analytics
+- customer data outside service context
+- vendor private inventory unless inquiry context
+
+---
+
+## 19.3 Vendor Assistant
+
+### Purpose
+
+Assist vendor organization.
+
+### Allowed scope
+
+- own inventory
+- own inquiries
+- own profile
+- catalog normalization
+- fitment suggestions
+
+### Not allowed
+
+- other vendor inventory
+- provider analytics
+- customer service history
+
+---
+
+## 19.4 Fleet Assistant
+
+### Purpose
+
+Assist fleet organization.
+
+### Allowed scope
+
+- fleet vehicles
+- fleet drivers
+- fleet maintenance
+- fleet approvals
+- fleet cost data
+- provider matching
+
+### Not allowed
+
+- other fleets
+- provider private analytics
+- vendor private inventory beyond inquiry context
+
+---
+
+## 19.5 Matching Engine
+
+### Purpose
+
+Perform provider/vendor matching.
+
+### Allowed scope
+
+- public profiles
+- capability data
+- review summaries
+- availability
+- vehicle context with consent
+- geo context
+
+### Not allowed
+
+- raw documents
+- payment data
+- private analytics unrelated to matching
+
+---
+
+## 19.6 Moderation Assistant
+
+### Purpose
+
+Assist admin moderation.
+
+### Allowed scope
+
+- reported content
+- public content
+- review risk signals
+- fraud flags
+- policy references
+
+### Not allowed
+
+- autonomous removal
+- autonomous suspension
+- access unrelated private data unless case requires
+
+---
+
+## 19.7 Admin Copilot
+
+### Purpose
+
+Assist internal admin operations.
+
+### Allowed scope
+
+- admin resources
+- audit summaries
+- taxonomy suggestions
+- moderation summaries
+- MCP health
+
+### Not allowed
+
+- autonomous final admin decisions in MVP
+
+---
+
+# 20. Mapping MCP to MVP Screens
+
+Below is a mapping between major screens and MCP usage.
+
+---
+
+## Consumer Screens
+
+| Screen | MCP Resources/Tools |
+|---|---|
+| Home/Discover | search resources, provider summary, maintenance suggestions |
+| Search Results | search tools, match candidates |
+| Provider Profile | provider profile resources, capabilities, reviews, portfolio |
+| Vendor Profile | vendor profile resources, inventory summary |
+| Inventory Item | inventory item resources, fitment resources |
+| Vehicle Detail | vehicle summary, service history, maintenance plan |
+| Help Me | triage tools, matching tools, safety check |
+| Appointment Request | appointment draft tool, consent check, pre-visit report |
+| Write Review | review classification, moderation flagging |
+
+---
+
+## Provider Screens
+
+| Screen | MCP Resources/Tools |
+|---|---|
+| Dashboard | provider analytics, review summary, AI suggestions |
+| Request Detail | appointment resources, pre-visit report, response suggestion |
+| Calendar | availability resource |
+| Profile Editor | profile suggestion tools |
+| Capabilities Builder | capability resources, profile suggestion tools |
+| Portfolio Editor | portfolio tools, redaction check |
+| Review Inbox | review resources, response drafting |
+| Insights | skill heatmap, improvement suggestions |
+
+---
+
+## Vendor Screens
+
+| Screen | MCP Resources/Tools |
+|---|---|
+| Dashboard | inventory quality, inquiry summary |
+| Inventory List | inventory resources |
+| Item Edit | normalization tools, fitment tools |
+| Bulk Import | validation tool, normalization tool |
+| Fitment Editor | fitment suggestion tool |
+| Inquiry Detail | inquiry draft response tool |
+| Insights | catalog gap suggestions |
+
+---
+
+## Fleet Screens
+
+| Screen | MCP Resources/Tools |
+|---|---|
+| Dashboard | fleet maintenance board, approvals |
+| Vehicle Detail | vehicle summary, service history |
+| Issue Report | triage tools, issue draft tool |
+| Approval Screen | fleet approval recommendation tool |
+| Reports | cost report generation tool |
+
+---
+
+## Admin Screens
+
+| Screen | MCP Resources/Tools |
+|---|---|
+| Dashboard | moderation queue, audit summary |
+| Review Moderation | review risk tools |
+| Content Moderation | content classification tools |
+| AI Oversight | insight resources, evaluation resources |
+| MCP Audit | audit logs, client registry |
+| Taxonomy | synonym suggestion tools |
+
+---
+
+# 21. Future Phase MCP Extensions
+
+These are not active in MVP but should be reserved.
+
+---
+
+## Phase 2: OBDII Extensions
+
+### Resources
+
+- `res:obd.device_summary`
+- `res:obd.pairing_status`
+- `res:obd.codes`
+- `res:obd.live_data_summary`
+- `res:vehicle.health_score`
+
+### Tools
+
+- `tool:obd.interpret_codes`
+- `tool:obd.create_health_report`
+- `tool:obd.append_pre_visit_report`
+- `tool:obd.suggest_diagnostic_focus`
+
+### Guardrails
+
+- Explicit user consent.
+- Hardware compatibility checks.
+- Safety-critical codes require urgent warning.
+- No definitive diagnosis without professional verification.
+
+---
+
+## Phase 3: Crash/SOS Extensions
+
+### Resources
+
+- `res:sos.event`
+- `res:device.motion_summary`
+- `res:emergency.location_summary`
+
+### Tools
+
+- `tool:sos.detect_possible_crash`
+- `tool:sos.prompt_user_confirmation`
+- `tool:sos.initiate_emergency_flow`
+
+### Guardrails
+
+- False positive handling.
+- User confirmation where possible.
+- Emergency service integration requires legal/regulatory readiness.
+- Clear disclaimers and reliability limits.
+
+---
+
+# 22. MVP Acceptance Criteria for MCP
+
+The MCP layer can be considered MVP-ready when:
+
+## Governance
+
+- All AI features use MCP resources/tools instead of direct unmanaged data access.
+- Every MCP client has defined scopes.
+- Every sensitive resource requires consent check.
+- Every tool has a risk level.
+- Every public write requires human approval.
+- Admin can disable any tool or resource.
+
+## Security
+
+- Multi-tenant isolation is enforced.
+- Cross-tenant access attempts are blocked and logged.
+- PII redaction is applied by default.
+- Audit logs are immutable or protected.
+- MCP credentials are scoped and revocable.
+
+## AI Quality
+
+- Matching includes explanation.
+- Triage includes safety warnings.
+- Review response drafts require approval.
+- Skill heatmap includes confidence and evidence.
+- Inventory suggestions require vendor confirmation.
+- AI outputs include trace IDs for audit.
+
+## Resilience
+
+- AI failure does not block core search, profiles, or appointments.
+- Tools have timeouts and fallback behavior.
+- Background AI jobs can retry safely.
+- Admin can inspect failed operations.
+
+## Observability
+
+- Audit logs capture every tool/resource event.
+- Approval workflows are tracked.
+- User/provider feedback is captured.
+- AI acceptance metrics are available.
+- Safety events are monitored.
+

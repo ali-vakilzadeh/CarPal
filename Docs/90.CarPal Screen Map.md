@@ -1,0 +1,4094 @@
+# 1. Screen Mapping Principles
+
+For the MVP, the product should feel:
+
+- **Trust-first**
+- **Vehicle-context aware**
+- **AI-assisted but human-controlled**
+- **Simple for users, powerful for businesses**
+- **Consistent across roles**
+
+The MVP should avoid overloading users with unnecessary screens. Each screen should have a clear job.
+
+## Core screen rules
+
+1. **Every major search or recommendation should preserve vehicle context.**
+   - If the user selects a BMW 3 Series, search and matching should adapt automatically.
+
+2. **Every provider or vendor profile should make trust visible.**
+   - Ratings, badges, evidence, portfolio, reviews, response behavior.
+
+3. **AI should appear as assistance, not as uncontrolled automation.**
+   - Drafts, suggestions, explanations, summaries.
+
+4. **Every role should have a clear home dashboard.**
+   - Consumer: Discover/Garage
+   - Provider: Requests and reputation
+   - Vendor: Inventory and inquiries
+   - Fleet: Vehicle health and approvals
+   - Admin: moderation and trust operations
+
+5. **Critical states must be designed from the start.**
+   - Empty
+   - Loading
+   - Error
+   - No permission
+   - Pending verification
+   - Limit reached
+   - No results
+   - Safety warning
+
+---
+
+# 2. Screen ID Convention
+
+To make the MVP easier to manage, each screen gets an ID.
+
+| Prefix | Area |
+|---|---|
+| S | Shared screens |
+| C | Consumer / individual user |
+| P | Service provider portal |
+| V | Vendor portal |
+| F | Fleet / corporate portal |
+| A | Admin console |
+
+Example:
+
+- `C-HELP-02` = Consumer Help Me AI triage screen
+- `P-REV-02` = Provider review detail and response screen
+- `V-INV-03` = Vendor inventory item edit screen
+- `F-APP-02` = Fleet appointment approval screen
+- `A-AI-01` = Admin AI oversight dashboard
+
+---
+
+# 3. Global Navigation Structure
+
+## 3.1 Consumer App Navigation
+
+The consumer experience should be mobile-first.
+
+### Primary bottom navigation
+
+1. **Discover**
+2. **My Garage**
+3. **Help Me**
+4. **Appointments**
+5. **Community**
+
+### Top-level access
+
+- Notifications icon
+- Profile/avatar menu
+- Search entry point
+- Organization/role switcher if user also belongs to a provider/vendor/fleet organization
+
+---
+
+## 3.2 Provider Portal Navigation
+
+Provider experience should work well on desktop and tablet, but also be usable on mobile.
+
+### Primary sidebar navigation
+
+1. **Dashboard**
+2. **Requests**
+3. **Calendar**
+4. **Profile**
+5. **Portfolio**
+6. **Reviews**
+7. **Insights**
+8. **Team**
+9. **Settings**
+
+Optional if provider also has vendor capabilities:
+
+- **Inventory**
+- **Inquiries**
+
+For MVP, keep provider and vendor separate unless the organization is explicitly hybrid.
+
+---
+
+## 3.3 Vendor Portal Navigation
+
+### Primary sidebar navigation
+
+1. **Dashboard**
+2. **Inventory**
+3. **Inquiries**
+4. **Profile**
+5. **Reviews**
+6. **Insights**
+7. **Team**
+8. **Settings**
+
+---
+
+## 3.4 Fleet Portal Navigation
+
+### Primary sidebar navigation
+
+1. **Dashboard**
+2. **Vehicles**
+3. **Drivers**
+4. **Maintenance**
+5. **Appointments**
+6. **Reports**
+7. **Settings**
+
+Drivers may have a simplified mobile-friendly view.
+
+---
+
+## 3.5 Admin Console Navigation
+
+### Primary sidebar navigation
+
+1. **Dashboard**
+2. **Users**
+3. **Organizations**
+4. **Verification**
+5. **Taxonomy**
+6. **Reviews**
+7. **Content Moderation**
+8. **Inventory Moderation**
+9. **AI Oversight**
+10. **MCP & Audit**
+11. **Plans & Entitlements**
+12. **Analytics**
+13. **Feature Flags**
+
+---
+
+# 4. Shared Screens
+
+These screens appear across multiple portals or are foundational to the whole product.
+
+---
+
+## S-AUTH-01 — Splash / Launch Screen
+
+### Purpose
+
+Initialize the app and route users to the correct entry point.
+
+### Key elements
+
+- Product logo/branding
+- Loading indicator
+- Session check
+- Redirect logic:
+  - not logged in → login
+  - logged in → role-specific home
+  - pending onboarding → continue onboarding
+
+### States
+
+- Loading
+- Error connecting to service
+- Force update notice if app version is unsupported
+
+---
+
+## S-AUTH-02 — Login
+
+### Purpose
+
+Allow returning users to sign in.
+
+### Key elements
+
+- Email/phone input
+- Password or one-time code option
+- Forgot password
+- Continue button
+- Link to sign up
+- Terms/privacy notice
+
+### States
+
+- Empty
+- Invalid credentials
+- Locked account
+- MFA required
+- Success redirect
+
+---
+
+## S-AUTH-03 — Sign Up
+
+### Purpose
+
+Create a new account.
+
+### Key elements
+
+- Name
+- Email or phone
+- Password
+- Country/region
+- Terms acceptance
+- Privacy consent
+- Optional marketing consent
+- AI personalization consent
+
+### States
+
+- Validation errors
+- Duplicate account
+- Success
+
+---
+
+## S-AUTH-04 — Role Selection
+
+### Purpose
+
+Route the user into the correct experience.
+
+### Options
+
+- Individual car owner
+- Fleet manager / corporate user
+- Service provider
+- Parts vendor
+
+### Important behavior
+
+A user may later belong to multiple organizations, but at sign-up they should choose a primary intent.
+
+### States
+
+- User chooses one role
+- User already has an organization role
+- User tries to access restricted role without verification
+
+---
+
+## S-AUTH-05 — Consent and Permissions
+
+### Purpose
+
+Collect required permissions and explain data use.
+
+### Key elements
+
+- Vehicle data usage
+- Location access
+- Notification permission
+- AI personalization
+- Media/photo access
+- Consent for review invitations
+- Fleet-specific consent if applicable
+
+### States
+
+- Accepted
+- Partially accepted
+- Declined critical permission with explanation screen
+
+---
+
+## S-SHARED-01 — Global Search Entry
+
+### Purpose
+
+Provide a consistent search entry point.
+
+### Key elements
+
+- Search input
+- Recent searches
+- Suggested categories
+- Vehicle context chip
+- Location context chip
+- Search modes:
+  - Providers
+  - Vendors
+  - Parts
+  - Showcases
+  - Q&A
+
+### AI behavior
+
+- Suggest likely categories from partial text
+- Detect vehicle-related intent
+- Detect symptom-related intent
+
+---
+
+## S-SHARED-02 — Map View
+
+### Purpose
+
+Show geographic results.
+
+### Used by
+
+- Provider search
+- Vendor search
+- Fleet provider selection
+- Help Me recommendations
+
+### Key elements
+
+- Map canvas
+- Result pins
+- Clustered pins
+- Selected result card
+- Recenter button
+- Filters button
+- List/map toggle
+
+### States
+
+- Location permission denied
+- No results in area
+- Loading
+- Error loading map
+
+---
+
+## S-SHARED-03 — Filter Sheet / Filter Panel
+
+### Purpose
+
+Refine search results.
+
+### Common filters
+
+- Distance
+- Rating
+- Verified status
+- Availability
+- Price indicator
+- Category
+- Brand
+- Model
+- Series
+- Service system
+- Part condition
+- Stock availability
+- Fleet-friendly
+- EV-capable
+- Warranty offered
+
+### Actions
+
+- Apply
+- Reset
+- Save filter optional
+
+---
+
+## S-SHARED-04 — Notifications Center
+
+### Purpose
+
+Central place for alerts and updates.
+
+### Tabs
+
+- All
+- Appointments
+- Reviews
+- Inquiries
+- Fleet
+- AI Suggestions
+- System
+
+### Notification item elements
+
+- Icon/type
+- Title
+- Summary
+- Timestamp
+- Read/unread state
+- Primary action button if relevant
+
+### Examples
+
+- “Your appointment request was confirmed.”
+- “You received a new review.”
+- “Driver reported an issue.”
+- “AI prepared a review response draft.”
+- “Inventory import completed.”
+
+---
+
+## S-SHARED-05 — Profile / Account Menu
+
+### Purpose
+
+Access account and organization settings.
+
+### Key elements
+
+- User name/avatar
+- Current role
+- Organization switcher
+- Profile settings
+- Notification preferences
+- Privacy and consent
+- Help/support
+- Logout
+
+---
+
+## S-SHARED-06 — Organization Switcher
+
+### Purpose
+
+Allow a user to move between roles/organizations.
+
+### Examples
+
+- Individual profile
+- Mike’s Shop provider account
+- AutoParts Ltd vendor account
+- Logistics Co fleet account
+
+### Key elements
+
+- Organization list
+- Role in each organization
+- Add organization
+- Pending verification indicator
+
+---
+
+## S-SHARED-07 — Generic Error / Empty / No Permission Screens
+
+### Purpose
+
+Handle failure states consistently.
+
+### Variants
+
+- Empty state with call to action
+- No results state
+- No permission
+- Record not found
+- Network error
+- Feature disabled
+- Moderation pending
+
+---
+
+# 5. Consumer App Screen Map
+
+This is the experience for individual car owners.
+
+---
+
+## 5.1 Consumer Information Architecture
+
+```text
+Consumer App
+├── Auth & Onboarding
+│   ├── Splash
+│   ├── Login / Sign Up
+│   ├── Role Selection
+│   ├── Permissions
+│   └── Add First Vehicle
+│
+├── Discover
+│   ├── Home / Discover
+│   ├── Search Results
+│   ├── Provider Profile
+│   ├── Vendor Profile
+│   ├── Inventory Item
+│   └── Showcase Detail
+│
+├── My Garage
+│   ├── Garage List
+│   ├── Vehicle Detail
+│   ├── Add/Edit Vehicle
+│   ├── Service History
+│   ├── Add Service Record
+│   └── Documents
+│
+├── Help Me
+│   ├── Help Landing
+│   ├── AI Triage
+│   ├── Recommendations
+│   └── Appointment Request Draft
+│
+├── Appointments
+│   ├── Appointment List
+│   ├── Appointment Detail
+│   └── Pre-Visit Report View
+│
+├── Community
+│   ├── Community Feed
+│   ├── Showcase Post Detail
+│   ├── Q&A List
+│   ├── Ask Question
+│   └── Question Detail
+│
+└── Profile & Settings
+    ├── Profile
+    ├── Vehicles
+    ├── Notifications
+    ├── Privacy & Consent
+    ├── AI Preferences
+    └── Plan / Vehicle Limit
+```
+
+---
+
+## 5.2 Consumer Onboarding Screens
+
+---
+
+## C-ONB-01 — Add First Vehicle
+
+### Purpose
+
+Create the user’s first vehicle context as early as possible.
+
+### Key elements
+
+- VIN input optional
+- Manual entry option
+- Brand selector
+- Model selector
+- Series selector
+- Year selector
+- Engine/fuel type
+- Mileage
+- Nickname
+- Photo upload optional
+
+### AI behavior
+
+- Suggest likely model/series from partial input
+- Detect inconsistent year/model combinations
+- Suggest missing fields
+
+### States
+
+- No vehicle yet
+- VIN decode unavailable
+- Manual entry mode
+- Vehicle limit reached for free tier
+- Success confirmation
+
+---
+
+## C-ONB-02 — First Problem Optional
+
+### Purpose
+
+Immediately show value if the user has an active issue.
+
+### Key elements
+
+- “Do you have a current issue?”
+- Symptom input
+- Photo upload
+- Skip option
+
+### Outcomes
+
+- If yes → route into Help Me
+- If no → route into Discover/Garage
+
+---
+
+## 5.3 Discover / Home Screens
+
+---
+
+## C-HOME-01 — Home / Discover
+
+### Purpose
+
+Main discovery surface for trusted providers, vendors, and useful content.
+
+### Key sections
+
+1. **Vehicle context bar**
+   - Selected vehicle
+   - Change vehicle
+
+2. **Primary search bar**
+   - “Search service, part, shop, or symptom”
+
+3. **AI Help Me card**
+   - “Describe your problem and get matched with the right expert”
+
+4. **Recommended providers**
+   - Based on vehicle
+   - Based on location
+   - Based on trust signals
+
+5. **Maintenance suggestions**
+   - Seasonal or mileage-based suggestions
+
+6. **Nearby showcase posts**
+   - Before/after work from local providers
+
+7. **Followed providers**
+   - Updates from shops the user follows
+
+### Primary actions
+
+- Search
+- Open Help Me
+- View provider
+- View vendor
+- Change vehicle
+- View maintenance suggestion
+
+### AI involvement
+
+- Personalized provider suggestions
+- Maintenance suggestions
+- Content ranking
+- Match explanations
+
+### States
+
+- No vehicle added → prompt to add vehicle
+- No location permission → show city-level recommendations
+- No nearby providers → broaden search or show onboarding tips
+- New user empty state → guided suggestions
+
+---
+
+## C-SEARCH-01 — Search Results
+
+### Purpose
+
+Display results for providers, vendors, parts, showcases, or Q&A.
+
+### Tabs
+
+- Providers
+- Vendors
+- Parts
+- Showcases
+- Q&A
+
+### Result card elements for providers
+
+- Provider name
+- Distance
+- Overall rating
+- Relevant capability badge
+- Match explanation snippet
+- Availability indicator
+- Price indicator
+- Verified badge
+- Thumbnail portfolio image
+
+### Result card elements for vendors
+
+- Vendor name
+- Distance
+- Rating
+- Relevant part categories
+- Stock availability
+- Fitment confidence if vehicle selected
+
+### Result card elements for parts
+
+- Part name
+- Vendor name
+- Price visibility
+- Condition
+- Stock status
+- Fitment indicator
+- Image
+
+### Primary actions
+
+- Open result
+- Refine filters
+- Switch list/map
+- Change vehicle context
+- Save/follow provider
+
+### AI involvement
+
+- Semantic search interpretation
+- Ranking
+- Match explanation generation
+- Category normalization
+
+### States
+
+- No results
+- No results with suggestions
+- Vehicle context missing
+- Filters too narrow
+- Loading skeleton
+- Error loading results
+
+---
+
+## C-PROV-01 — Provider Profile
+
+### Purpose
+
+The core trust decision screen for a service provider.
+
+### Header
+
+- Provider name
+- Category/type
+- Verification badge
+- Overall rating
+- Review count
+- Distance
+- Price indicator
+- Response time
+- Follow button
+- Request appointment button
+
+### Tabs
+
+1. Overview
+2. Services & Capabilities
+3. Portfolio
+4. Reviews
+5. Location & Hours
+6. Q&A optional
+
+---
+
+### Tab 1: Overview
+
+#### Key elements
+
+- Provider description
+- Certifications
+- Amenities
+- Warranty policy
+- Featured skills/badges
+- Recent showcase posts
+- Availability preview
+- Trust indicators
+
+#### AI involvement
+
+- Highlight strongest capabilities
+- Summarize review themes
+- Show “Why you’re seeing this provider” explanation if arrived from Help Me
+
+---
+
+### Tab 2: Services & Capabilities
+
+#### Key elements
+
+- Supported brands
+- Supported models
+- Supported series
+- Service systems
+- Specific service tasks
+- Evidence indicators
+- Badges
+
+#### Display logic
+
+Capabilities should not appear as an unstructured wall. They should be grouped:
+
+- By brand
+- By service system
+- By evidence strength
+
+#### Example badge labels
+
+- “Strong evidence”
+- “Verified by completed jobs”
+- “Based on customer reviews”
+- “Self-declared”
+
+---
+
+### Tab 3: Portfolio
+
+#### Key elements
+
+- Before/after grid
+- Project cards
+- Service category tags
+- Vehicle model tags
+- Filter by category/model
+
+#### Actions
+
+- Open showcase detail
+- View before/after slider
+
+---
+
+### Tab 4: Reviews
+
+#### Key elements
+
+- Overall rating breakdown
+- Sub-ratings:
+  - work quality
+  - communication
+  - timeliness
+  - price fairness
+  - cleanliness
+- Review tags
+- Verified review badge
+- Provider responses
+- Filter by:
+  - rating
+  - service category
+  - verified
+  - recent
+  - critical
+
+#### AI involvement
+
+- Theme summary
+- Sentiment summary
+- Highlight recurring strengths/complaints
+
+---
+
+### Tab 5: Location & Hours
+
+#### Key elements
+
+- Map
+- Address
+- service area
+- opening hours
+- contact options
+- directions link
+- appointment types supported
+
+---
+
+### Primary actions across provider profile
+
+- Request appointment
+- Ask question optional
+- Follow
+- Share
+- Report concern
+- View vendor partners if relevant
+
+### States
+
+- Provider not verified
+- Provider pending approval
+- No portfolio yet
+- No reviews yet
+- No availability
+- Provider inactive
+- Restricted/suspended
+
+---
+
+## C-PROV-02 — Showcase / Before-After Detail
+
+### Purpose
+
+Show evidence of provider work.
+
+### Key elements
+
+- Before/after slider
+- Project title
+- AI-generated or provider-written caption
+- Service category
+- Vehicle model/series
+- Provider name
+- Date
+- Consent indicator
+- Helpful reaction
+- Comments optional
+- Report button
+
+### AI involvement
+
+- Caption generation
+- Tagging
+- Related project suggestions
+
+### States
+
+- Media pending moderation
+- Consent missing
+- Content removed
+- Comments disabled
+
+---
+
+## C-VEND-01 — Vendor Profile
+
+### Purpose
+
+Show vendor trust and inventory capability.
+
+### Header
+
+- Vendor name
+- Vendor type
+- Rating
+- Distance
+- Delivery/pickup options
+- Trade/B2B indicator
+- Follow button
+- Browse inventory button
+
+### Tabs
+
+1. Overview
+2. Inventory
+3. Fitment Coverage
+4. Reviews
+5. Location
+
+### Overview elements
+
+- Vendor description
+- Categories
+- Brands carried
+- Warranty/return policy
+- Business hours
+- verification badges
+
+### Inventory tab
+
+- Search within vendor inventory
+- Filters
+- Inventory cards
+
+### Fitment Coverage tab
+
+- Brands/models supported
+- Category strength
+- Fitment confidence indicator
+
+### Reviews tab
+
+- Vendor ratings
+- Part accuracy
+- Availability accuracy
+- communication
+- price fairness
+
+---
+
+## C-INV-01 — Inventory Search Results
+
+### Purpose
+
+Allow users to find parts.
+
+### Key elements
+
+- Search bar
+- Vehicle context chip
+- Filters:
+  - category
+  - condition
+  - price
+  - stock
+  - distance
+  - vendor rating
+- Result cards
+
+### Inventory card elements
+
+- Part name
+- image
+- condition
+- price or login for trade price
+- stock status
+- vendor name
+- fitment match indicator
+- distance
+
+### Actions
+
+- Open item
+- inquire
+- change vehicle
+- save item optional
+
+### States
+
+- No exact match
+- Suggest alternative parts
+- Trade-only price hidden
+- Stock unavailable
+- Vendor unverified
+
+---
+
+## C-INV-02 — Inventory Item Detail
+
+### Purpose
+
+Show part details and fitment confidence.
+
+### Key sections
+
+- Images
+- Part name
+- SKU
+- vendor name
+- condition
+- price visibility
+- stock status
+- warranty
+- fitment list
+- compatibility with selected vehicle
+- inquiry button
+- vendor rating
+
+### AI involvement
+
+- Fitment confidence label
+- Normalized category display
+- Alternative part suggestions
+
+### States
+
+- Item unavailable
+- Fitment uncertain
+- Trade price restricted
+- Vendor inactive
+- Item flagged for moderation
+
+---
+
+## 5.4 My Garage Screens
+
+---
+
+## C-GARAGE-01 — My Garage List
+
+### Purpose
+
+Show all vehicles owned by the user.
+
+### Vehicle card elements
+
+- Vehicle photo
+- nickname
+- brand/model/series
+- year
+- mileage
+- active issue indicator
+- service due indicator
+- last service date
+
+### Actions
+
+- Add vehicle
+- Select vehicle
+- View details
+- Set primary vehicle
+
+### States
+
+- No vehicles
+- Vehicle limit reached
+- Incomplete vehicle profile
+- Sold/inactive vehicles
+
+---
+
+## C-GARAGE-02 — Vehicle Detail
+
+### Purpose
+
+The central screen for one vehicle.
+
+### Header
+
+- Vehicle photo
+- nickname
+- VIN masked
+- brand/model/series
+- year/engine
+- mileage
+- edit button
+
+### Tabs
+
+1. Overview
+2. Service History
+3. Issues
+4. Documents
+5. Reminders
+
+---
+
+### Overview tab
+
+- Key specs
+- active issues
+- upcoming reminders
+- recent providers
+- favorite providers
+- OBDII placeholder section for future
+
+---
+
+### Service History tab
+
+- Timeline of service records
+- Filter by category/provider/date
+- Add service record
+- Verified indicator
+- Cost optional
+
+---
+
+### Issues tab
+
+- Active issues
+- Resolved issues
+- Issue detail
+- Related appointments
+- Add issue manually
+- Convert issue to Help Me request
+
+---
+
+### Documents tab
+
+- Insurance
+- Registration
+- Warranty
+- Invoices
+- Upload document
+- Privacy notice
+
+---
+
+### Reminders tab
+
+- Maintenance suggestions
+- Due soon
+- Overdue
+- AI-generated rationale
+
+---
+
+## C-GARAGE-03 — Add/Edit Vehicle
+
+### Purpose
+
+Create or update a vehicle profile.
+
+### Fields
+
+- VIN
+- Brand
+- Model
+- Series
+- Year
+- Engine type
+- Fuel type
+- Transmission
+- Drivetrain
+- Body style
+- Color
+- License plate optional
+- Nickname
+- Mileage
+- Notes
+
+### AI behavior
+
+- Suggest missing fields
+- Warn on inconsistent data
+- Suggest common model variants
+
+### States
+
+- Duplicate vehicle warning
+- VIN decode failed
+- Limit reached
+- Save success
+
+---
+
+## C-GARAGE-04 — Service History Detail
+
+### Purpose
+
+Show a single service record.
+
+### Key elements
+
+- Date
+- Provider
+- Category
+- Task
+- Description
+- Parts used
+- Cost
+- Warranty
+- Evidence
+- Verified status
+- Related appointment
+- Next service suggestion
+
+### Actions
+
+- Edit if user-owned
+- View provider
+- Re-request similar service
+- Report inaccuracy
+
+---
+
+## C-GARAGE-05 — Add Service Record
+
+### Purpose
+
+Allow user to manually log service.
+
+### Fields
+
+- Date
+- Provider optional
+- Category
+- Task
+- Description
+- Cost
+- Parts
+- Warranty
+- Upload invoice/photos
+- Mark as verified evidence optional
+
+### AI behavior
+
+- Extract category from free text
+- Suggest task/category
+- Detect recurring issue
+- Suggest whether issue is resolved
+
+---
+
+## 5.5 Help Me Screens
+
+This is one of the most important MVP flows.
+
+---
+
+## C-HELP-01 — Help Me Landing
+
+### Purpose
+
+Invite the user to describe a problem.
+
+### Key elements
+
+- Select vehicle
+- Symptom input box
+- Common symptom shortcuts:
+  - warning light
+  - noise
+  - vibration
+  - brakes
+  - overheating
+  - no start
+  - AC issue
+- Photo/video upload
+- Urgency selector optional
+
+### Primary action
+
+- Start AI triage
+
+### States
+
+- No vehicle selected
+- No vehicles owned
+- Safety-critical symptom shortcut visible
+
+---
+
+## C-HELP-02 — AI Triage Conversation
+
+### Purpose
+
+Understand the issue through guided questions.
+
+### Key elements
+
+- Conversational UI
+- User answers
+- AI clarifying questions
+- Symptom tags
+- Upload media
+- Urgency indicator
+- Safety warning banner if needed
+
+### Example AI questions
+
+- “When does the noise occur?”
+- “Is it worse when turning left or right?”
+- “Does the warning light stay on or flash?”
+- “Has this happened before?”
+- “Is the vehicle safe to drive?”
+
+### AI outputs
+
+- Likely service categories
+- Urgency level
+- Possible inspection focus areas
+- Recommended next step
+
+### States
+
+- Low confidence
+- Safety-critical warning
+- Need more information
+- User skips questions
+- AI unavailable fallback to manual category selection
+
+---
+
+## C-HELP-03 — Help Me Recommendations
+
+### Purpose
+
+Show matched providers based on the triage.
+
+### Key elements
+
+- Issue summary
+- Recommended providers
+- Match explanation
+- Alternative providers
+- Urgency notice
+- Availability
+- Distance
+- rating
+- request appointment button
+
+### Match explanation example
+
+> “Recommended because this provider has verified suspension work on BMW 3 Series, strong recent reviews, and availability this week.”
+
+### Actions
+
+- View provider
+- Request appointment
+- Adjust preferences
+- Add note
+- Save for later
+
+---
+
+## C-HELP-04 — Appointment Request Draft
+
+### Purpose
+
+Turn the Help Me outcome into an appointment request.
+
+### Key elements
+
+- Selected provider
+- Vehicle summary
+- Issue summary
+- AI triage summary
+- Preferred time windows
+- Photos
+- Consent to share vehicle/service history
+- Notes to provider
+- Fleet approval indicator if corporate
+
+### Actions
+
+- Submit request
+- Change provider
+- Change time
+- Add information
+- Cancel
+
+### States
+
+- Provider unavailable
+- Time slot conflict
+- Consent required
+- Request submitted confirmation
+
+---
+
+## 5.6 Appointments Screens
+
+---
+
+## C-APP-01 — Appointment List
+
+### Purpose
+
+Show all user appointments.
+
+### Tabs
+
+- Upcoming
+- Pending
+- Past
+- Cancelled
+
+### Appointment card elements
+
+- Provider name
+- vehicle
+- service category
+- date/time
+- status
+- action button
+
+### Actions
+
+- View details
+- Reschedule request
+- Cancel
+- Leave review
+- View pre-visit report
+
+---
+
+## C-APP-02 — Appointment Detail
+
+### Purpose
+
+Central screen for one appointment.
+
+### Sections
+
+- Status timeline
+- Provider info
+- Vehicle info
+- Issue summary
+- Pre-visit report
+- Time/location
+- Updates
+- Actions
+
+### Status timeline
+
+- Requested
+- Confirmed
+- Checked in
+- In progress
+- Awaiting parts
+- Ready
+- Completed
+
+### Actions
+
+- View provider
+- Add note
+- Upload additional photo
+- View pre-visit report
+- Leave review after completion
+- Report issue
+
+---
+
+## C-APP-03 — Pre-Visit Report View
+
+### Purpose
+
+Let the user see what will be shared with the provider.
+
+### Sections
+
+- Vehicle summary
+- mileage
+- reported symptoms
+- AI triage summary
+- photos
+- relevant service history
+- consent status
+
+### Actions
+
+- Edit description
+- Add/remove photos
+- Adjust consent
+- Download/share optional
+
+---
+
+## 5.7 Review Screens
+
+---
+
+## C-REV-01 — Write Review
+
+### Purpose
+
+Capture a structured, trustworthy review.
+
+### Entry points
+
+- Completed appointment
+- Service record
+- Review invitation
+- Provider profile
+
+### Fields
+
+- Overall stars
+- Sub-ratings
+- Review text
+- Service category
+- Tags
+- Photo upload optional
+- Verified context indicator
+- Consent to display vehicle model/category
+
+### AI behavior
+
+- Suggest tags
+- Warn about private information
+- Encourage specific details
+- Detect potentially unsafe or abusive content
+
+### States
+
+- Not eligible for verified review
+- Duplicate review warning
+- Moderation notice
+- Success confirmation
+
+---
+
+## C-REV-02 — Review Submitted
+
+### Purpose
+
+Confirm review submission.
+
+### Content
+
+- Thank you message
+- Review status
+- Moderation notice if needed
+- Link back to provider
+- Link to service history
+
+---
+
+## 5.8 Community Screens
+
+The community layer should be lightweight in MVP.
+
+---
+
+## C-COMM-01 — Community Feed
+
+### Purpose
+
+Show trusted activity and educational content.
+
+### Content types
+
+- Before/after showcases
+- Provider tips
+- Q&A highlights
+- Followed provider updates
+- Seasonal maintenance advice
+
+### Card elements
+
+- Author
+- content type
+- media preview
+- tags
+- helpful count
+- comment count if enabled
+
+### Actions
+
+- Open post
+- Follow author
+- Helpful reaction
+- Report
+
+### States
+
+- Empty feed
+- No followed providers
+- Personalization disabled
+
+---
+
+## C-COMM-02 — Showcase Post Detail
+
+### Purpose
+
+Display a provider showcase post.
+
+### Key elements
+
+- Before/after media
+- caption
+- provider info
+- vehicle/category tags
+- reactions
+- comments optional
+- related provider CTA
+
+### Actions
+
+- Helpful reaction
+- Comment optional
+- View provider
+- Request similar service
+- Report
+
+---
+
+## C-COMM-03 — Q&A List
+
+### Purpose
+
+Let users browse questions and answers.
+
+### Filters
+
+- Vehicle brand/model
+- Category
+- symptom
+- recent
+- answered
+- unanswered
+
+### Question card
+
+- Question preview
+- vehicle context
+- answer count
+- category
+- date
+
+---
+
+## C-COMM-04 — Ask Question
+
+### Purpose
+
+Allow users to ask the community/providers a question.
+
+### Fields
+
+- Vehicle selection
+- Category
+- Question text
+- Photo upload optional
+- Privacy note
+- Submit
+
+### AI behavior
+
+- Suggest category
+- Suggest similar existing questions
+- Detect safety-critical issue
+- Encourage more detail
+
+### States
+
+- Similar question found
+- Safety warning
+- Submitted pending moderation
+
+---
+
+## C-COMM-05 — Question Detail
+
+### Purpose
+
+Show question and answers.
+
+### Key elements
+
+- Question
+- vehicle context
+- answers
+- provider badges on answerers
+- helpful votes
+- accepted answer
+- add answer if provider
+- follow question
+
+### Actions
+
+- Vote helpful
+- Answer if authorized
+- Report
+- Convert to Help Me/appointment
+
+---
+
+## 5.9 Consumer Profile and Settings Screens
+
+---
+
+## C-PROF-01 — Profile Home
+
+### Purpose
+
+Manage account basics.
+
+### Sections
+
+- Personal info
+- Contact details
+- Role memberships
+- Saved providers
+- Saved vehicles
+- Notification preferences
+- Privacy settings
+
+---
+
+## C-PROF-02 — Privacy & Consent
+
+### Purpose
+
+Control data sharing.
+
+### Controls
+
+- Vehicle data sharing
+- Service history sharing
+- Photo consent
+- AI personalization
+- Review invitations
+- Location usage
+- Marketing communications
+- Data export
+- Delete account
+
+---
+
+## C-PROF-03 — AI Preferences
+
+### Purpose
+
+Let users control AI behavior.
+
+### Controls
+
+- AI suggestions enabled
+- Personalized matching
+- AI maintenance reminders
+- AI triage
+- Explanation visibility
+- Feedback controls
+
+---
+
+## C-PLAN-01 — Vehicle Limit / Upgrade
+
+### Purpose
+
+Handle free-tier vehicle limit.
+
+### Trigger
+
+User tries to add sixth vehicle.
+
+### Content
+
+- Current limit: 5 vehicles
+- Remove or archive vehicle
+- Convert to fleet/corporate
+- Contact sales
+- Future self-serve upgrade placeholder
+
+---
+
+# 6. Provider Portal Screen Map
+
+---
+
+## 6.1 Provider Information Architecture
+
+```text
+Provider Portal
+├── Auth & Onboarding
+│   ├── Provider Sign Up
+│   ├── Business Basics
+│   ├── Locations
+│   ├── Services & Capabilities
+│   ├── Brands/Models
+│   ├── Portfolio Upload
+│   ├── Hours & Capacity
+│   ├── Verification
+│   └── AI Profile Preview
+│
+├── Dashboard
+├── Requests
+│   ├── Request List
+│   └── Request Detail
+│
+├── Calendar
+│   ├── Calendar View
+│   └── Availability Settings
+│
+├── Profile
+│   ├── Overview
+│   ├── Locations
+│   ├── Services & Capabilities
+│   ├── Brands/Models
+│   ├── Certifications
+│   └── Public Profile Preview
+│
+├── Portfolio
+│   ├── Portfolio List
+│   ├── Create/Edit Showcase
+│   └── Media Library
+│
+├── Reviews
+│   ├── Review Inbox
+│   ├── Review Detail & Response
+│   └── Review Analytics
+│
+├── Insights
+│   ├── Skill Heatmap
+│   ├── Capability Detail
+│   ├── Improvement Plan
+│   └── Profile Suggestions
+│
+├── Team
+└── Settings
+```
+
+---
+
+## 6.2 Provider Onboarding Screens
+
+---
+
+## P-ONB-01 — Business Basics
+
+### Purpose
+
+Create the provider organization.
+
+### Fields
+
+- Business name
+- Provider type
+- Description
+- Contact info
+- primary location
+- business hours initial
+- price tier
+- languages
+
+---
+
+## P-ONB-02 — Locations and Service Area
+
+### Purpose
+
+Define where the provider serves customers.
+
+### Fields
+
+- Physical locations
+- Service radius
+- Mobile service option
+- Pickup/drop-off option
+- Service area map
+
+---
+
+## P-ONB-03 — Services & Capabilities
+
+### Purpose
+
+Select service systems and tasks.
+
+### UI pattern
+
+- Category selector
+- Service system chips
+- Service task search
+- Experience level optional
+- Add evidence later
+
+---
+
+## P-ONB-04 — Brands / Models / Series Selector
+
+### Purpose
+
+Define supported vehicles.
+
+### UI pattern
+
+- Brand search
+- Model selection
+- Series/generation selection
+- Engine/fuel optional
+- Bulk select common brands
+- Unlimited additions
+
+### AI behavior
+
+- Suggest likely brands/models based on provider type and location
+- Suggest missing series
+
+---
+
+## P-ONB-05 — Portfolio Upload
+
+### Purpose
+
+Begin building trust evidence.
+
+### Elements
+
+- Upload before/after photos
+- Tag by category
+- Tag by vehicle model
+- Consent checkbox
+- Skip option
+
+### AI behavior
+
+- Detect before/after pairs
+- Suggest captions
+- Suggest tags
+- Flag plates/faces for redaction
+
+---
+
+## P-ONB-06 — Hours & Appointment Capacity
+
+### Purpose
+
+Prepare appointment management.
+
+### Fields
+
+- Working hours
+- Appointment slots
+- Buffer time
+- Max concurrent jobs
+- Appointment types
+
+---
+
+## P-ONB-07 — Verification
+
+### Purpose
+
+Establish trust.
+
+### Items
+
+- Business email/phone
+- Address verification
+- documents optional
+- admin review notice
+
+---
+
+## P-ONB-08 — AI Profile Preview
+
+### Purpose
+
+Show the provider how their profile appears and what AI suggests.
+
+### Sections
+
+- Profile completeness
+- Suggested capabilities
+- Missing evidence
+- Suggested badges
+- Public preview
+
+### Actions
+
+- Accept suggestions
+- Edit
+- Publish later
+- Finish onboarding
+
+---
+
+## 6.3 Provider Core Screens
+
+---
+
+## P-DASH-01 — Provider Dashboard
+
+### Purpose
+
+Daily operational cockpit.
+
+### Key widgets
+
+- Today’s appointments
+- New requests
+- Response time
+- Unanswered reviews
+- Profile completeness
+- AI suggestions
+- Recent rating trend
+- New followers
+- Portfolio performance
+
+### Primary actions
+
+- Review requests
+- Respond to reviews
+- View AI suggestions
+- Add showcase
+- Update availability
+
+### States
+
+- New provider empty state
+- No requests yet
+- Pending verification banner
+- Low profile completeness prompt
+
+---
+
+## P-REQ-01 — Appointment Request List
+
+### Purpose
+
+Manage incoming appointment requests.
+
+### Table/card fields
+
+- Customer/fleet name
+- Vehicle
+- Service category
+- Urgency
+- Preferred time
+- Status
+- Request age
+- Action needed
+
+### Filters
+
+- Status
+- Urgency
+- Date
+- Vehicle brand
+- Service category
+
+### Actions
+
+- Open
+- Accept
+- Propose alternative
+- Decline
+- Request more info
+
+---
+
+## P-REQ-02 — Appointment Request Detail
+
+### Purpose
+
+Evaluate and respond to a request.
+
+### Sections
+
+1. Customer summary
+2. Vehicle summary
+3. Issue description
+4. AI pre-visit summary
+5. Service history relevant excerpt
+6. Photos
+7. Preferred times
+8. Internal notes
+9. Response actions
+
+### Response actions
+
+- Accept
+- Propose alternative time
+- Decline with reason
+- Ask for more information
+- Mark as needing parts
+- Add internal note
+
+### AI involvement
+
+- Summarize issue
+- Suggest likely service category
+- Suggest appointment duration
+- Suggest response options
+- Warn if safety-critical
+
+### States
+
+- Customer unresponsive
+- Time expired
+- Fleet approval pending
+- Part availability unknown
+- Request cancelled
+
+---
+
+## P-CAL-01 — Calendar View
+
+### Purpose
+
+Manage schedule.
+
+### Views
+
+- Day
+- Week
+- Month
+
+### Elements
+
+- Appointment blocks
+- Status colors
+- Pending requests
+- Blocked times
+- Capacity indicator
+
+### Actions
+
+- Open appointment
+- Propose new time
+- Block time
+- Add internal note
+
+---
+
+## P-CAL-02 — Availability Settings
+
+### Purpose
+
+Configure scheduling rules.
+
+### Fields
+
+- Working hours
+- Break times
+- Appointment buffers
+- Max concurrent appointments
+- Appointment type durations
+- Unavailable dates
+- Emergency/urgent slots optional
+
+---
+
+## P-PROF-01 — Provider Profile Overview Editor
+
+### Purpose
+
+Edit public business profile.
+
+### Fields
+
+- Business name
+- Description
+- provider type
+- price tier
+- amenities
+- warranty policy
+- certifications
+- languages
+- public contact rules
+
+### AI behavior
+
+- Improve description
+- Suggest missing details
+- Warn about unverifiable claims
+
+---
+
+## P-PROF-02 — Locations Editor
+
+### Purpose
+
+Manage business locations and service areas.
+
+### Fields
+
+- Address
+- Geo point
+- Hours per location
+- Service radius
+- Mobile service flag
+- Instructions
+
+---
+
+## P-PROF-03 — Services & Capabilities Builder
+
+### Purpose
+
+Manage what the provider offers.
+
+### UI structure
+
+- Service systems
+- Service tasks
+- Experience level
+- Evidence attachments
+- Public/private toggle
+
+### AI behavior
+
+- Suggest new capabilities
+- Suggest removing weak capabilities
+- Suggest evidence requests
+
+---
+
+## P-PROF-04 — Brands / Models / Series Editor
+
+### Purpose
+
+Manage supported vehicle coverage.
+
+### UI
+
+- Brand list
+- Model list
+- Series list
+- Engine/fuel filters
+- Bulk add
+- Suggested additions
+
+### AI behavior
+
+- Suggest likely missing models based on portfolio/reviews
+- Detect improbable combinations
+
+---
+
+## P-PROF-05 — Public Profile Preview
+
+### Purpose
+
+Show how customers see the provider.
+
+### Elements
+
+- Profile header
+- Badges
+- Portfolio
+- reviews
+- services
+- availability CTA
+
+---
+
+## P-PORT-01 — Portfolio List
+
+### Purpose
+
+Manage showcase items.
+
+### Card fields
+
+- Thumbnail
+- Title
+- category
+- vehicle model
+- publish state
+- engagement stats
+- consent status
+
+### Actions
+
+- Edit
+- Publish/unpublish
+- Delete
+- View public page
+
+---
+
+## P-PORT-02 — Create/Edit Showcase
+
+### Purpose
+
+Create a before/after project.
+
+### Fields
+
+- Title
+- Description
+- Before media
+- After media
+- Service category
+- Brand/model/series
+- Date
+- Customer consent
+- Tags
+- Public visibility
+
+### AI Showroom Agent
+
+- Group photos
+- Suggest before/after pairing
+- Generate caption
+- Suggest tags
+- Recommend redactions
+- Suggest best cover image
+
+### Actions
+
+- Save draft
+- Submit for publish
+- Preview
+
+---
+
+## P-PORT-03 — Media Library
+
+### Purpose
+
+Manage uploaded images/videos.
+
+### Elements
+
+- Grid view
+- Upload
+- Tag
+- consent status
+- redaction status
+- usage references
+
+---
+
+## P-REV-01 — Review Inbox
+
+### Purpose
+
+Manage all reviews.
+
+### Filters
+
+- All
+- Needs response
+- Negative
+- Positive
+- Verified
+- Flagged
+- Service category
+
+### Review card
+
+- Rating
+- excerpt
+- customer name/alias
+- service category
+- date
+- response status
+- sentiment label
+
+---
+
+## P-REV-02 — Review Detail & Response
+
+### Purpose
+
+Respond to a review.
+
+### Sections
+
+- Full review
+- Review context
+- Customer history optional/privacy-safe
+- AI sentiment
+- AI suggested response
+- Response editor
+- Tone selector
+- Publish controls
+
+### AI response assistant
+
+- Draft response
+- Explain issue category
+- Suggest apology/clarification
+- Suggest private follow-up
+- Flag high-risk review
+
+### Actions
+
+- Edit draft
+- Approve and publish
+- Save draft
+- Flag review
+- Request mediation
+
+---
+
+## P-REV-03 — Review Analytics
+
+### Purpose
+
+Understand reputation trends.
+
+### Widgets
+
+- Rating trend
+- Review volume
+- Sentiment breakdown
+- Common praise themes
+- Common complaint themes
+- Response rate
+- Response time
+- Category-level ratings
+
+### AI suggestions
+
+- Improve communication
+- Reduce wait time
+- Add more portfolio evidence
+- Clarify pricing
+
+---
+
+## P-INS-01 — Insights Home / Skill Heatmap
+
+### Purpose
+
+Show provider strengths and opportunities.
+
+### Views
+
+- By brand
+- By model
+- By service system
+- By service task
+- By rating trend
+- By local demand
+
+### Heatmap indicators
+
+- Strong
+- Emerging
+- Weak
+- Insufficient evidence
+- High local demand
+
+### AI explanation
+
+- Why a capability is strong
+- Why a badge is eligible
+- Why a gap exists
+
+---
+
+## P-INS-02 — Capability Detail
+
+### Purpose
+
+Drill into one capability.
+
+### Example
+
+BMW / 3 Series / Suspension
+
+### Sections
+
+- Evidence count
+- Completed jobs
+- Reviews mentioning category
+- Portfolio items
+- Rating average
+- Trend
+- Badge status
+- Suggested actions
+
+---
+
+## P-INS-03 — Improvement Plan
+
+### Purpose
+
+Give the provider a prioritized action list.
+
+### Example actions
+
+- Add portfolio photos for suspension jobs
+- Respond to negative reviews within 48 hours
+- Add missing service categories
+- Improve appointment confirmation speed
+- Request reviews after completed jobs
+
+---
+
+## P-INS-04 — AI Profile Suggestions
+
+### Purpose
+
+Review AI-generated profile suggestions.
+
+### Suggestion types
+
+- Add capability
+- Add model/series
+- Add certification
+- Add portfolio tag
+- Change description
+- Remove weak claim
+
+### Actions
+
+- Accept
+- Reject
+- Edit
+- Ask for evidence
+
+---
+
+## P-TEAM-01 — Team Management
+
+### Purpose
+
+Manage staff users.
+
+### Roles
+
+- Owner
+- Manager
+- Service advisor
+- Mechanic limited view
+- Marketing/review responder
+
+### Actions
+
+- Invite user
+- Assign role
+- Remove user
+- Set permissions
+
+---
+
+## P-SET-01 — Provider Settings
+
+### Purpose
+
+Manage preferences and operational rules.
+
+### Sections
+
+- Notification settings
+- AI assistant settings
+- Privacy settings
+- Public profile settings
+- Appointment rules
+- Review rules
+- Data export
+
+---
+
+# 7. Vendor Portal Screen Map
+
+---
+
+## 7.1 Vendor Information Architecture
+
+```text
+Vendor Portal
+├── Auth & Onboarding
+│   ├── Vendor Sign Up
+│   ├── Vendor Basics
+│   ├── Categories
+│   ├── Inventory Setup
+│   ├── Pricing Visibility
+│   └── Verification
+│
+├── Dashboard
+├── Inventory
+│   ├── Inventory List
+│   ├── Inventory Item Detail
+│   ├── Add/Edit Item
+│   ├── Bulk Import
+│   ├── AI Normalization Queue
+│   └── Fitment Editor
+│
+├── Inquiries
+│   ├── Inquiry List
+│   └── Inquiry Detail
+│
+├── Profile
+│   ├── Vendor Overview
+│   ├── Categories & Brands
+│   ├── Locations
+│   └── Policies
+│
+├── Reviews
+├── Insights
+├── Team
+└── Settings
+```
+
+---
+
+## V-ONB-01 — Vendor Basics
+
+### Purpose
+
+Create vendor organization.
+
+### Fields
+
+- Vendor name
+- Vendor type
+- Description
+- Contact info
+- Location
+- Delivery/pickup options
+
+---
+
+## V-ONB-02 — Categories and Brands
+
+### Purpose
+
+Define what the vendor sells.
+
+### Fields
+
+- Part categories
+- Brands carried
+- OEM/aftermarket/used/performance focus
+- Trade customers supported
+
+---
+
+## V-ONB-03 — Inventory Setup
+
+### Purpose
+
+Choose how to add inventory.
+
+### Options
+
+- Add manually
+- Upload CSV
+- Start with sample items
+- Import later
+
+---
+
+## V-DASH-01 — Vendor Dashboard
+
+### Purpose
+
+Operational overview.
+
+### Widgets
+
+- Inventory count
+- Low data quality items
+- New inquiries
+- Response time
+- Recent reviews
+- Popular searched categories
+- AI suggestions
+- Fitment completion score
+
+### Actions
+
+- Add item
+- Review inquiries
+- Fix catalog issues
+- View insights
+
+---
+
+## V-INV-01 — Inventory List
+
+### Purpose
+
+Manage all inventory items.
+
+### Table columns
+
+- Image
+- Name
+- SKU
+- Category
+- Condition
+- Price
+- Stock
+- Fitment confidence
+- Visibility
+- Status
+- Quality score
+
+### Filters
+
+- Category
+- Brand
+- Condition
+- Stock status
+- Fitment missing
+- AI flagged
+- Visibility
+- Duplicate candidate
+
+### Actions
+
+- Add item
+- Bulk import
+- Bulk edit
+- Export optional
+- Filter by quality issues
+
+---
+
+## V-INV-02 — Inventory Item Detail
+
+### Purpose
+
+View one inventory item.
+
+### Sections
+
+- Images
+- Basic info
+- Pricing
+- Stock
+- Fitment
+- Vendor notes
+- Visibility
+- AI quality suggestions
+- Activity log
+
+### Actions
+
+- Edit
+- Duplicate
+- Deactivate
+- View public listing
+- View inquiries
+
+---
+
+## V-INV-03 — Add/Edit Inventory Item
+
+### Purpose
+
+Create or update an item.
+
+### Fields
+
+- Name
+- SKU
+- Brand
+- Part numbers
+- Category
+- Subcategory
+- Condition
+- Price
+- Trade price
+- Stock quantity
+- Location
+- Warranty
+- Images
+- Notes
+- Visibility
+- Fitment
+
+### AI behavior
+
+- Suggest category
+- Normalize name
+- Suggest fitment
+- Detect duplicate
+- Warn missing image
+- Warn missing warranty info
+
+---
+
+## V-INV-04 — Bulk Import Wizard
+
+### Purpose
+
+Import inventory from file.
+
+### Steps
+
+1. Upload file
+2. Map columns
+3. Preview validation
+4. AI normalization suggestions
+5. Confirm import
+6. Progress
+7. Results/errors
+
+### States
+
+- File invalid
+- Mapping incomplete
+- Duplicate rows
+- Fitment warnings
+- Import complete with errors
+- Import complete success
+
+---
+
+## V-INV-05 — AI Normalization Queue
+
+### Purpose
+
+Review AI suggestions for messy inventory data.
+
+### Suggestion types
+
+- Rename item
+- Assign category
+- Merge duplicate
+- Add fitment
+- Add missing image
+- Correct condition
+
+### Actions
+
+- Accept
+- Reject
+- Edit
+- Apply to similar items
+
+---
+
+## V-INV-06 — Fitment Editor
+
+### Purpose
+
+Attach compatible vehicles to a part.
+
+### Fields
+
+- Brand
+- Model
+- Series
+- Year range
+- Engine/fuel type
+- Notes
+- Confidence level
+
+### AI behavior
+
+- Suggest likely fitment
+- Flag uncertain fitment
+- Suggest from part number patterns
+
+---
+
+## V-INQ-01 — Inquiry List
+
+### Purpose
+
+Manage part inquiries.
+
+### Fields
+
+- Requester
+- Item
+- Vehicle context
+- Date
+- Status
+- Response time
+
+### Filters
+
+- Open
+- Answered
+- Reserved
+- Unavailable
+- Completed
+
+---
+
+## V-INQ-02 — Inquiry Detail
+
+### Purpose
+
+Respond to a part inquiry.
+
+### Sections
+
+- Item summary
+- Requester type
+- Vehicle context
+- Message
+- Stock status
+- Price visibility
+- Response editor
+
+### Actions
+
+- Confirm available
+- Reserve
+- Mark unavailable
+- Suggest alternative item
+- Send response
+
+---
+
+## V-PROF-01 — Vendor Profile Editor
+
+### Purpose
+
+Manage public vendor profile.
+
+### Fields
+
+- Vendor description
+- categories
+- brands
+- delivery/pickup
+- return/warranty policy
+- business hours
+- verification documents
+
+---
+
+## V-REV-01 — Vendor Reviews
+
+### Purpose
+
+Manage vendor ratings.
+
+### Rating dimensions
+
+- Part accuracy
+- Availability accuracy
+- price fairness
+- communication
+- speed
+
+### Actions
+
+- Respond
+- Flag
+- View trend
+
+---
+
+## V-INS-01 — Vendor Insights
+
+### Purpose
+
+Improve catalog and sales readiness.
+
+### Widgets
+
+- Most searched categories
+- Fitment gaps
+- Missing images
+- Duplicate items
+- Popular inquiries
+- Unanswered inquiry rate
+- Local demand gaps
+
+### AI suggestions
+
+- Add missing fitment
+- Add popular categories
+- Improve item names
+- Add images
+- Resolve duplicates
+
+---
+
+# 8. Fleet Portal Screen Map
+
+---
+
+## 8.1 Fleet Information Architecture
+
+```text
+Fleet Portal
+├── Auth & Onboarding
+│   ├── Fleet Sign Up
+│   ├── Organization Basics
+│   ├── Plan Selection
+│   ├── Add Vehicles
+│   ├── Invite Users
+│   └── Approval Settings
+│
+├── Dashboard
+├── Vehicles
+│   ├── Vehicle List
+│   ├── Vehicle Detail
+│   ├── Add Vehicle
+│   └── Bulk Import
+│
+├── Drivers
+│   ├── Driver List
+│   ├── Driver Detail
+│   └── Assign Vehicle
+│
+├── Maintenance
+│   ├── Maintenance Board
+│   ├── Issue Reports
+│   └── Service Reminders
+│
+├── Appointments
+│   ├── Appointment List
+│   ├── Appointment Detail
+│   └── Approval Queue
+│
+├── Reports
+└── Settings
+```
+
+---
+
+## F-ONB-01 — Fleet Organization Basics
+
+### Purpose
+
+Create corporate organization.
+
+### Fields
+
+- Company name
+- Industry
+- Fleet size
+- Contact info
+- Timezone
+- Currency
+
+---
+
+## F-ONB-02 — Plan Selection
+
+### Purpose
+
+Choose vehicle tier.
+
+### Options
+
+- 20 vehicles
+- 50 vehicles
+- 100 vehicles
+- Contact sales for custom
+
+### MVP note
+
+Payment can be manual/admin-managed, but plan limits must be enforced.
+
+---
+
+## F-ONB-03 — Add Vehicles
+
+### Purpose
+
+Populate fleet.
+
+### Options
+
+- Add manually
+- CSV import
+- Invite drivers to submit vehicle info
+
+---
+
+## F-DASH-01 — Fleet Dashboard
+
+### Purpose
+
+Fleet health overview.
+
+### Widgets
+
+- Total vehicles
+- Active issues
+- Vehicles due for service
+- Active repairs
+- Pending approvals
+- Monthly spend
+- Downtime estimate
+- Most repaired vehicles
+- Driver-reported issues
+
+### Primary actions
+
+- Approve requests
+- View vehicles due
+- Add vehicle
+- Create appointment request
+
+---
+
+## F-VEH-01 — Fleet Vehicle List
+
+### Purpose
+
+Manage all fleet vehicles.
+
+### Table columns
+
+- Vehicle
+- VIN masked
+- Driver
+- Status
+- Mileage
+- Last service
+- Next service due
+- Active issues
+- Cost this month
+
+### Filters
+
+- Status
+- Driver
+- Due soon
+- In repair
+- High cost
+- Inactive
+
+### Actions
+
+- Add vehicle
+- Import
+- Assign driver
+- View detail
+
+---
+
+## F-VEH-02 — Fleet Vehicle Detail
+
+### Purpose
+
+Single vehicle operational record.
+
+### Tabs
+
+1. Overview
+2. Service History
+3. Costs
+4. Documents
+5. Issues
+6. Appointments
+
+### Overview
+
+- Vehicle specs
+- Assigned driver
+- status
+- mileage
+- active issues
+- reminders
+
+### Service History
+
+- Records
+- Providers
+- Verified status
+- Notes
+
+### Costs
+
+- Cost by category
+- Cost over time
+- Provider spend
+
+### Documents
+
+- Insurance
+- registration
+- warranties
+- invoices
+
+### Issues
+
+- Active driver-reported issues
+- AI triage summaries
+- Converted appointments
+
+### Appointments
+
+- Past/upcoming appointments
+- Status
+- Provider
+
+---
+
+## F-VEH-03 — Add Fleet Vehicle
+
+### Purpose
+
+Add one vehicle.
+
+### Fields
+
+- VIN
+- Brand/model/series
+- Year
+- Engine/fuel
+- License plate
+- Mileage
+- Assignment
+- Notes
+
+---
+
+## F-VEH-04 — Bulk Vehicle Import
+
+### Purpose
+
+Import multiple vehicles.
+
+### Steps
+
+1. Upload file
+2. Map fields
+3. Validate
+4. Review duplicates
+5. Import
+6. Summary
+
+---
+
+## F-DRV-01 — Driver List
+
+### Purpose
+
+Manage drivers.
+
+### Fields
+
+- Name
+- Contact
+- Assigned vehicle
+- Status
+- Open issue reports
+
+### Actions
+
+- Invite driver
+- Assign vehicle
+- Deactivate driver
+
+---
+
+## F-DRV-02 — Driver Detail
+
+### Purpose
+
+View driver context.
+
+### Sections
+
+- Contact info
+- Assigned vehicle
+- Issue reports
+- Appointment involvement
+- Notes
+
+---
+
+## F-DRV-03 — Assign Vehicle
+
+### Purpose
+
+Assign or reassign vehicles.
+
+### Fields
+
+- Driver
+- Vehicle
+- Start date
+- End date optional
+- Notes
+
+---
+
+## F-MAIN-01 — Maintenance Board
+
+### Purpose
+
+Monitor maintenance needs.
+
+### Views
+
+- Due soon
+- Overdue
+- Driver-reported issues
+- In repair
+- Completed recently
+
+### Actions
+
+- Create appointment request
+- Mark resolved
+- Assign provider
+- Export list
+
+---
+
+## F-ISSUE-01 — Driver Issue Report
+
+### Purpose
+
+Allow driver to report a problem.
+
+### Fields
+
+- Vehicle
+- Symptom
+- Description
+- Photos
+- Urgency
+- Safety concern
+- Submit to manager
+
+### AI behavior
+
+- Triage urgency
+- Suggest category
+- Warn if safety-critical
+- Summarize for manager
+
+---
+
+## F-APP-01 — Fleet Appointment List
+
+### Purpose
+
+Manage fleet appointments.
+
+### Fields
+
+- Vehicle
+- Provider
+- Service category
+- Status
+- Date
+- Cost estimate
+- Approval status
+
+---
+
+## F-APP-02 — Appointment Approval
+
+### Purpose
+
+Manager approves or rejects a repair request.
+
+### Sections
+
+- Issue summary
+- AI triage summary
+- vehicle context
+- recommended providers
+- cost estimate
+- driver notes
+- preferred provider list
+
+### Actions
+
+- Approve
+- Reject
+- Choose provider
+- Request more info
+- Add note
+
+---
+
+## F-REP-01 — Fleet Reports
+
+### Purpose
+
+Analyze fleet maintenance.
+
+### Reports
+
+- Cost by vehicle
+- Cost by category
+- Repair frequency
+- Provider usage
+- Downtime estimate
+- Service compliance
+- Exportable summary
+
+---
+
+## F-SET-01 — Fleet Settings
+
+### Purpose
+
+Manage organization settings.
+
+### Sections
+
+- Company profile
+- Users and roles
+- Plan limits
+- Approval workflow
+- Preferred providers
+- Notification rules
+- Data export
+
+---
+
+# 9. Admin Console Screen Map
+
+The admin console is critical for trust, safety, and AI governance.
+
+---
+
+## A-DASH-01 — Admin Dashboard
+
+### Purpose
+
+Operational overview.
+
+### Widgets
+
+- New users/orgs
+- Pending verifications
+- Moderation queue size
+- Reported reviews
+- AI flags
+- Search volume
+- Appointment requests
+- Inventory import issues
+
+---
+
+## A-USR-01 — User Management
+
+### Purpose
+
+Manage user accounts.
+
+### Table fields
+
+- User
+- Email/phone
+- Roles
+- Organizations
+- Status
+- Created date
+
+### Actions
+
+- View
+- Suspend
+- Reactivate
+- Reset onboarding
+- View audit trail
+
+---
+
+## A-ORG-01 — Organization Management
+
+### Purpose
+
+Manage provider/vendor/fleet organizations.
+
+### Fields
+
+- Organization
+- Type
+- Plan
+- Verification status
+- Locations
+- Members
+- Status
+
+### Actions
+
+- View
+- Verify
+- Reject
+- Suspend
+- Change plan
+- Merge duplicate
+
+---
+
+## A-VER-01 — Verification Queue
+
+### Purpose
+
+Approve or reject verification requests.
+
+### Items
+
+- Business details
+- Location
+- uploaded documents
+- contact validation
+- taxonomy consistency
+
+### Actions
+
+- Approve
+- Request more info
+- Reject with reason
+
+---
+
+## A-TAX-01 — Taxonomy Management
+
+### Purpose
+
+Maintain controlled vocabulary.
+
+### Sections
+
+- Brands
+- Models
+- Series
+- Engine/fuel types
+- Service systems
+- Service tasks
+- Part categories
+- Symptom categories
+- Synonyms
+
+### Actions
+
+- Add
+- Edit
+- Merge
+- Deprecate
+- Map aliases
+
+---
+
+## A-REV-01 — Review Moderation Queue
+
+### Purpose
+
+Moderate reviews.
+
+### Queue types
+
+- Reported
+- AI flagged
+- Suspicious pattern
+- Disputed
+- Pending verification
+
+### Review detail elements
+
+- Review text
+- Rating
+- Context
+- Author history
+- Appointment link
+- Provider response
+- AI risk score
+
+### Actions
+
+- Approve
+- Remove
+- Reduce weight
+- Request more info
+- Escalate
+
+---
+
+## A-CON-01 — Content Moderation
+
+### Purpose
+
+Moderate posts, comments, photos, Q&A.
+
+### Content types
+
+- Showcase posts
+- Comments
+- Q&A questions
+- Answers
+- Media
+- Messages if introduced
+
+### Actions
+
+- Approve
+- Remove
+- Warn user
+- Escalate
+- Log reason
+
+---
+
+## A-INV-01 — Inventory Moderation
+
+### Purpose
+
+Handle inventory issues.
+
+### Flags
+
+- Counterfeit suspicion
+- Misleading fitment
+- Prohibited item
+- Duplicate abuse
+- Incorrect vendor data
+
+### Actions
+
+- Request correction
+- Hide item
+- Suspend vendor
+- Escalate
+
+---
+
+## A-AI-01 — AI Oversight Dashboard
+
+### Purpose
+
+Monitor AI behavior and quality.
+
+### Widgets
+
+- AI suggestion volume
+- Acceptance rate
+- Override rate
+- Hallucination reports
+- High-risk suggestions
+- Moderation AI performance
+
+---
+
+## A-AI-02 — AI Suggestion Review
+
+### Purpose
+
+Inspect AI-generated suggestions.
+
+### Suggestion types
+
+- Provider capability suggestion
+- Skill heatmap explanation
+- Review response draft
+- Inventory normalization
+- Triage category
+- Match explanation
+
+### Actions
+
+- Approve
+- Reject
+- Flag for prompt improvement
+- View context
+- View audit log
+
+---
+
+## A-MCP-01 — MCP Clients
+
+### Purpose
+
+Manage approved AI clients and integrations.
+
+### Fields
+
+- Client name
+- Type
+- Scopes
+- Allowed resources
+- Allowed tools
+- Rate limits
+- Status
+
+---
+
+## A-MCP-02 — MCP Audit Log
+
+### Purpose
+
+Trace AI/context activity.
+
+### Fields
+
+- Timestamp
+- Client
+- User/org context
+- Resource accessed
+- Tool invoked
+- Input summary
+- Output status
+- Approval status
+
+---
+
+## A-PLAN-01 — Plans & Entitlements
+
+### Purpose
+
+Manage subscription tiers and limits.
+
+### Plans
+
+- Individual free
+- Fleet 20/50/100
+- Provider basic/pro
+- Vendor basic/pro
+
+### Entitlements
+
+- Vehicle limits
+- user seats
+- AI tools
+- exports
+- inventory limits
+- appointment tools
+
+---
+
+## A-FLAG-01 — Feature Flags
+
+### Purpose
+
+Control rollout.
+
+### Flags
+
+- AI triage enabled
+- AI review response enabled
+- Skill heatmap visible
+- Vendor AI import enabled
+- Community comments enabled
+- MCP external clients enabled
+
+---
+
+# 10. Cross-Role Screen Flows
+
+The screen map becomes more useful when connected to key flows.
+
+---
+
+## Flow A: User Finds a Specialist and Requests Appointment
+
+### Screens
+
+1. `C-HOME-01` Home/Discover
+2. `C-HELP-01` Help Me Landing
+3. `C-HELP-02` AI Triage
+4. `C-HELP-03` Recommendations
+5. `C-PROV-01` Provider Profile
+6. `C-HELP-04` Appointment Request Draft
+7. `C-APP-02` Appointment Detail
+8. `C-REV-01` Write Review
+
+---
+
+## Flow B: Provider Receives and Completes Request
+
+### Screens
+
+1. `P-DASH-01` Dashboard
+2. `P-REQ-01` Request List
+3. `P-REQ-02` Request Detail
+4. `P-CAL-01` Calendar View
+5. `P-APP detail equivalent within request/calendar`
+6. `P-REV-01` Review Inbox
+7. `P-REV-02` Review Response
+8. `P-INS-01` Skill Heatmap update
+
+---
+
+## Flow C: Vendor Makes Inventory Searchable
+
+### Screens
+
+1. `V-DASH-01` Dashboard
+2. `V-INV-04` Bulk Import Wizard
+3. `V-INV-05` AI Normalization Queue
+4. `V-INV-06` Fitment Editor
+5. `V-INV-01` Inventory List
+6. `V-INQ-01` Inquiry List
+7. `V-INQ-02` Inquiry Detail
+
+---
+
+## Flow D: Fleet Handles Driver-Reported Issue
+
+### Screens
+
+1. `F-DASH-01` Dashboard
+2. `F-ISSUE-01` Driver Issue Report
+3. `F-MAIN-01` Maintenance Board
+4. `F-APP-02` Appointment Approval
+5. `F-APP-01` Appointment List
+6. `F-VEH-02` Vehicle Detail
+7. `F-REP-01` Reports
+
+---
+
+## Flow E: Provider Improves Trust Profile
+
+### Screens
+
+1. `P-DASH-01` Dashboard
+2. `P-INS-04` AI Profile Suggestions
+3. `P-PROF-03` Capabilities Builder
+4. `P-PORT-02` Create Showcase
+5. `P-PROF-05` Public Profile Preview
+6. `P-INS-01` Skill Heatmap
+
+---
+
+# 11. Screen State Matrix
+
+Every major screen should handle common states.
+
+| State | Meaning | Example Handling |
+|---|---|---|
+| Loading | Data is fetching | Skeleton loaders |
+| Empty | No records yet | CTA to add vehicle/provider/item |
+| Error | Failure | Retry message |
+| No permission | User cannot access | Explanation + request access |
+| Pending verification | Trust not yet confirmed | Banner |
+| Limit reached | Plan cap exceeded | Upgrade/remove prompt |
+| No results | Search found nothing | Broaden filters/suggestions |
+| Safety warning | Risky automotive issue | Urgent notice |
+| Moderation pending | Content not public | Status label |
+| AI unavailable | AI layer down | Manual fallback |
+
+---
+
+# 12. MVP Screen Prioritization
+
+Not every screen has equal priority.
+
+## Must-Have Screens
+
+These are required for MVP.
+
+### Consumer
+
+- Home/Discover
+- Search Results
+- Provider Profile
+- Vendor Profile
+- Inventory Item
+- My Garage List
+- Vehicle Detail
+- Add/Edit Vehicle
+- Help Me Triage
+- Recommendations
+- Appointment Request
+- Appointment Detail
+- Write Review
+- Notifications
+- Settings/Consent
+
+### Provider
+
+- Dashboard
+- Request List
+- Request Detail
+- Calendar
+- Profile Editor
+- Capabilities Builder
+- Portfolio List/Edit
+- Review Inbox
+- Review Response
+- Skill Heatmap
+- Profile Suggestions
+- Team/Settings
+
+### Vendor
+
+- Dashboard
+- Inventory List
+- Inventory Item Edit
+- Bulk Import
+- AI Normalization Queue
+- Fitment Editor
+- Inquiry List/Detail
+- Vendor Profile
+- Settings
+
+### Fleet
+
+- Dashboard
+- Vehicle List
+- Vehicle Detail
+- Add Vehicle
+- Driver List
+- Issue Report
+- Approval Screen
+- Appointment List
+- Reports
+- Settings
+
+### Admin
+
+- Dashboard
+- User/Org Management
+- Verification Queue
+- Taxonomy Management
+- Review Moderation
+- Content Moderation
+- AI Oversight
+- MCP Audit
+- Plans/Feature Flags
+
+---
+
+## Should-Have if Scope Allows
+
+- Community feed
+- Q&A full experience
+- Showcase comments
+- Advanced reporting
+- Saved searches
+- Favorite parts
+- Vendor alternative part suggestions
+- Fleet CSV export
+- Provider public Q&A tab
+
+---
+
+## Defer to Later
+
+- Live chat
+- OBDII pairing screens
+- Live ECU data screens
+- Crash/SOS screens
+- Full payments/checkout
+- Parts reservation commerce
+- Insurance claim screens
+- External partner MCP dashboards
+
+---
+
+# 13. Key Reusable Components
+
+These components should be defined once and reused across screens.
+
+## Trust components
+
+- Star rating display
+- Verified badge
+- Capability badge
+- Match explanation card
+- Review summary card
+- Skill heatmap cell
+- Profile completeness meter
+
+## Vehicle components
+
+- Vehicle card
+- Vehicle selector
+- VIN input
+- Mileage editor
+- Service history timeline
+- Issue card
+
+## Search components
+
+- Search bar
+- Filter sheet
+- Map/list toggle
+- Result card
+- Category chip
+- Location selector
+
+## AI components
+
+- AI suggestion card
+- AI draft panel
+- AI confidence label
+- AI explanation tooltip
+- AI approval/reject controls
+- AI audit link for admin
+
+## Workflow components
+
+- Status timeline
+- Appointment slot picker
+- Consent modal
+- Upload widget
+- Before/after slider
+- Import wizard
+- Table bulk actions
+
+---
+
+# 14. Navigation and Layout Rules
+
+## Consumer app
+
+- Bottom tab navigation
+- Persistent vehicle context chip
+- Sticky call-to-action on provider profiles
+- Full-screen AI Help Me flow
+- Easy return to Garage from any vehicle-related screen
+
+## Provider portal
+
+- Left sidebar navigation
+- Dashboard as default
+- Request detail should be highly scannable
+- AI panels should be collapsible
+- Public preview always accessible
+
+## Vendor portal
+
+- Table-driven inventory management
+- Import and normalization flows should be wizard-style
+- Fitment editing should be visual and searchable
+
+## Fleet portal
+
+- Data tables and status boards
+- Approval flow should be simple and explicit
+- Vehicle detail should be the central operational screen
+
+## Admin console
+
+- Dense but readable tables
+- Clear moderation actions
+- Audit trail visible for sensitive actions
+- AI oversight separated from general moderation
+
+---
+
+# 15. Final MVP Screen Map Summary
+
+The MVP screen map can be summarized as:
+
+## Consumer
+
+A mobile-first experience where users manage vehicles, get AI-assisted help, find trusted providers/vendors, request appointments, and leave reviews.
+
+## Provider
+
+A reputation and workflow portal where providers manage their capability portfolio, appointments, reviews, portfolio evidence, and AI-driven improvement insights.
+
+## Vendor
+
+A secure inventory management portal where vendors normalize, enrich, and expose searchable parts with fitment context.
+
+## Fleet
+
+A practical fleet maintenance portal where corporate users manage vehicles, drivers, issue reports, approvals, appointments, and cost reports.
+
+## Admin
+
+A trust operations console managing users, organizations, taxonomy, moderation, AI oversight, MCP audit, plans, and feature flags.
+

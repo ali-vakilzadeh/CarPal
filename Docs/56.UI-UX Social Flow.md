@@ -1,0 +1,930 @@
+**UI/UX User Welcoming to Social journeys**
+
+1. **User signup and joining the social network**
+2. **Provider signup and creating a profile**
+3. **Timeline-based story sharing between users and providers**
+
+---
+
+# 0. Assumptions
+
+For the social timeline:
+
+- The MVP uses a **LinkedIn-style timeline feed**, not ephemeral 24-hour stories.
+- “Story” means a **timeline post/update** that can include text, photos, before/after media, vehicle context, service context, tags, and reactions.
+- The social layer supports trust-building, but does **not replace reviews**.
+- Users can follow providers, react, comment, save posts, and share repair journeys.
+- Providers can publish updates, before/after showcases, tips, availability, and educational posts.
+
+---
+
+# 1. User Signup and Joining the Social Network
+
+## 1.1 Journey goal
+
+Help a new individual user create an account, add their vehicle, personalize their experience, and enter the social/community feed with a reason to engage.
+
+## 1.2 Primary persona
+
+Individual car owner who wants to:
+
+- keep vehicle records
+- find trusted repair help
+- follow local shops or specialists
+- learn from community content
+
+## 1.3 Entry points
+
+- Landing page
+- Invitation from a provider
+- Invitation from a community post
+- Search engine result
+- Referral link
+- App store listing
+
+## 1.4 Success metrics
+
+- Signup completion rate
+- Vehicle added rate
+- First follow rate
+- First feed engagement rate
+- Day-1 retention
+
+---
+
+## 1.5 High-level flow
+
+```text
+Landing
+  → Sign Up
+  → Role Selection: Individual User
+  → Account Verification
+  → Add First Vehicle
+  → Choose Interests
+  → Consent and Notification Permissions
+  → Personalized Feed/Discover Home
+  → First Social Action
+```
+
+---
+
+## 1.6 Screen map
+
+| Screen ID | Screen | Purpose |
+|---|---|---|
+| `S-AUTH-01` | Landing / Splash | Entry and value proposition |
+| `S-AUTH-03` | Sign Up | Create account |
+| `S-AUTH-04` | Role Selection | Choose “Individual car owner” |
+| `S-AUTH-05` | Verification | Email/phone verification |
+| `C-ONB-01` | Add First Vehicle | Create vehicle context |
+| `C-ONB-02` | Interests and Personalization | Choose brands/topics to follow |
+| `S-AUTH-06` | Consent and Permissions | Privacy, notifications, AI personalization |
+| `C-HOME-01` | Home / Discover | First personalized landing screen |
+| `C-COMM-01` | Community Feed | Social timeline |
+| `C-PROF-01` | Profile Setup | Complete user profile |
+
+---
+
+## 1.7 Detailed journey steps
+
+| Step | Screen | User action | System response | Next step |
+|---|---|---|---|---|
+| 1 | Landing | Opens product page | Shows value: trusted repair help, vehicle history, community | Sign up |
+| 2 | Sign Up | Enters name, email/phone, password | Validates fields | Verification |
+| 3 | Verification | Confirms email/phone | Marks account verified | Role selection |
+| 4 | Role Selection | Chooses “Individual car owner” | Routes to consumer onboarding | Add vehicle |
+| 5 | Add Vehicle | Enters VIN manually or selects brand/model/year | Creates vehicle profile | Interests |
+| 6 | Interests | Selects brands, topics, local shops, EV/body/suspension interests | Generates feed preferences | Consent |
+| 7 | Consent | Accepts privacy, notification, AI personalization options | Saves consent records | Home/Feed |
+| 8 | Home/Discover | Sees recommended providers and posts | Uses vehicle + interests for suggestions | Open feed |
+| 9 | Community Feed | Views posts from providers and community | Shows onboarding tips if feed is thin | First engagement |
+| 10 | First Action | Follows provider, reacts to post, or asks question | Completes activation | Retention loop |
+
+---
+
+## 1.8 First-session activation goal
+
+The first session should end with at least one of these:
+
+- Vehicle added
+- One provider followed
+- One post reacted to or saved
+- One question asked
+- One provider profile viewed
+- One Help Me triage started
+
+---
+
+## 1.9 Empty-state strategy
+
+If the feed has little content:
+
+- Show local providers
+- show “people near you are discussing”
+- show educational maintenance tips
+- show popular Q&A
+- prompt user to add vehicle interests
+- prompt user to follow categories
+
+Example empty state:
+
+> “Your feed is being prepared. Follow a few local shops or vehicle brands to see useful updates.”
+
+---
+
+## 1.10 Edge cases
+
+| Case | Handling |
+|---|---|
+| User skips vehicle | Allow browsing, but reduce personalization |
+| User has multiple vehicles | Allow adding later from Garage |
+| User reaches 5-vehicle limit | Show upgrade/archive option |
+| User declines notifications | Continue with in-app notifications only |
+| User declines AI personalization | Show generic local feed |
+| User arrives from provider post | Show post first, then signup prompt |
+
+---
+
+# 2. Provider Signup and Profile Creation
+
+## 2.1 Journey goal
+
+Allow a repair shop, mechanic, or specialist to create a trustworthy public profile, define capabilities, upload proof, and become discoverable.
+
+## 2.2 Primary persona
+
+Provider owner or manager who wants:
+
+- more qualified customers
+- a professional profile
+- appointment requests
+- reputation visibility
+- AI help completing their profile
+
+## 2.3 Entry points
+
+- Landing page: “Join as a service provider”
+- Provider referral link
+- Sales/onboarding invite
+- Search result
+- Provider community post invite
+
+## 2.4 Success metrics
+
+- Provider signup completion rate
+- Profile publish rate
+- Profile completeness score
+- First portfolio upload rate
+- First appointment request received
+- First post published
+
+---
+
+## 2.5 High-level flow
+
+```text
+Landing
+  → Sign Up
+  → Role Selection: Service Provider
+  → Business Basics
+  → Location and Service Area
+  → Services and Capabilities
+  → Supported Brands/Models
+  → Portfolio Upload
+  → Hours and Appointment Settings
+  → Verification
+  → AI Profile Preview
+  → Publish Profile
+  → Provider Dashboard
+  → First Post/Showcase
+```
+
+---
+
+## 2.6 Screen map
+
+| Screen ID | Screen | Purpose |
+|---|---|---|
+| `S-AUTH-03` | Sign Up | Create account |
+| `S-AUTH-04` | Role Selection | Choose “Service provider” |
+| `P-ONB-01` | Business Basics | Create organization |
+| `P-ONB-02` | Location and Service Area | Add shop/mobile coverage |
+| `P-ONB-03` | Services and Capabilities | Select service systems/tasks |
+| `P-ONB-04` | Brands/Models Selector | Add supported vehicles |
+| `P-ONB-05` | Portfolio Upload | Add before/after proof |
+| `P-ONB-06` | Hours and Appointments | Set availability |
+| `P-ONB-07` | Verification | Business verification |
+| `P-ONB-08` | AI Profile Preview | AI suggestions and completeness |
+| `P-PROF-05` | Public Profile Preview | See customer-facing page |
+| `P-DASH-01` | Provider Dashboard | Manage profile and requests |
+| `P-POST-01` | First Post Composer | Publish first update |
+
+---
+
+## 2.7 Detailed journey steps
+
+| Step | Screen | User action | System response | Next step |
+|---|---|---|---|---|
+| 1 | Sign Up | Creates account | Validates account | Role selection |
+| 2 | Role Selection | Chooses service provider | Starts provider onboarding | Business basics |
+| 3 | Business Basics | Enters shop name, type, description | Creates organization profile | Location |
+| 4 | Location | Adds address/service radius | Enables local discovery | Services |
+| 5 | Services | Selects brakes, engine, body, suspension, etc. | Builds service categories | Brands/models |
+| 6 | Brands/Models | Adds supported makes/models/series | Builds vehicle coverage | Portfolio |
+| 7 | Portfolio | Uploads before/after photos or skips | Creates portfolio draft | Hours |
+| 8 | Hours/Appointments | Sets working hours and appointment capacity | Enables booking requests | Verification |
+| 9 | Verification | Submits business info/documents | Sets verification pending | AI preview |
+| 10 | AI Preview | Reviews AI suggestions | AI suggests missing skills/categories | Publish |
+| 11 | Publish | Publishes profile | Profile becomes searchable | Dashboard |
+| 12 | Dashboard | Sees onboarding checklist | Suggests first post | First post |
+
+---
+
+## 2.8 Provider onboarding checklist
+
+The dashboard should show a checklist:
+
+- Add business description
+- Add at least one location
+- Add service categories
+- Add supported brands/models
+- Upload portfolio item
+- Set working hours
+- Enable appointment requests
+- Verify business
+- Publish profile
+- Publish first post
+
+Profile completeness score should update after each step.
+
+---
+
+## 2.9 AI-assisted profile creation
+
+During onboarding, AI can help by:
+
+- suggesting service categories based on provider type
+- suggesting common brands/models for the region
+- generating a professional profile description
+- suggesting portfolio tags
+- detecting missing capabilities
+- suggesting a first showcase post
+
+Rule:
+
+> AI suggestions are drafts. The provider must approve them before publication.
+
+---
+
+## 2.10 Publish conditions
+
+Provider profile can be published when:
+
+- organization name exists
+- at least one active location exists
+- at least one service category exists
+- at least one supported brand exists
+- business status is active
+
+Recommended but not mandatory:
+
+- portfolio photos
+- certification upload
+- working hours
+- appointment availability
+
+---
+
+## 2.11 Edge cases
+
+| Case | Handling |
+|---|---|
+| Provider has no portfolio yet | Allow publish, prompt to add proof later |
+| Provider is mobile mechanic | Allow service area instead of physical address |
+| Verification pending | Show “Verification pending” badge |
+| Incomplete profile | Show “Draft” status and hide from public search if needed |
+| Hybrid provider/vendor | Prompt to enable vendor module separately |
+| Multiple locations | Allow adding more after onboarding |
+
+---
+
+# 3. Timeline-Based Story Sharing
+
+## 3.1 Journey goal
+
+Enable users and providers to share timeline stories that build trust, demonstrate expertise, and create community engagement.
+
+## 3.2 Social model
+
+The timeline is a professional automotive community feed.
+
+### Main actors
+
+- Individual users
+- Fleet managers optional
+- Service providers
+- Vendors optional later
+- Admins/moderators
+
+### Main content types
+
+| Content type | Author | Example |
+|---|---|---|
+| Repair journey | User | “My BMW suspension repair experience” |
+| Before/after showcase | Provider | “Accident repair completed on Golf MK7” |
+| Maintenance tip | Provider | “Why brake fluid should be changed every 2 years” |
+| Availability update | Provider | “We have 2 alignment slots this week” |
+| Educational post | Provider/user | “Common EV battery care mistakes” |
+| Q&A highlight | System/provider | “Top question: Why does my car squeak when braking?” |
+| Milestone/badge | System/provider | “Earned Suspension Specialist badge” |
+
+---
+
+## 3.3 High-level social flows
+
+### Flow A: User consumes timeline
+
+```text
+Open Feed
+  → View posts from followed providers and recommended content
+  → React, comment, save, or follow
+  → Open provider profile
+  → Request appointment or ask question
+```
+
+### Flow B: User shares repair story
+
+```text
+Open Composer
+  → Select story type: Repair Journey
+  → Choose vehicle optional
+  → Add text and photos
+  → Link service record/provider optional
+  → Set privacy/consent
+  → Publish
+  → Feed shows post
+```
+
+### Flow C: Provider shares before/after showcase
+
+```text
+Provider opens Portfolio/Composer
+  → Select before/after media
+  → AI suggests caption/tags
+  → Provider approves
+  → Publish as showcase post
+  → Post appears in feed and profile
+```
+
+### Flow D: Provider shares tip or availability
+
+```text
+Provider opens Composer
+  → Choose Tip or Availability
+  → Add text, optional media, service category
+  → Publish
+  → Followers see update
+```
+
+---
+
+## 3.4 Screen map for timeline
+
+| Screen ID | Screen | Purpose |
+|---|---|---|
+| `C-FEED-01` | Home Timeline | Main social feed |
+| `C-FEED-02` | Feed Filters | Filter by following, local, topics, providers |
+| `C-COMPOSER-01` | Create Post | Start a new post/story |
+| `C-COMPOSER-02` | Attach Context | Link vehicle, service record, provider, category |
+| `C-COMPOSER-03` | Media and Consent | Upload photos, confirm consent |
+| `C-POST-01` | Post Detail | Full post view |
+| `C-POST-02` | Comments | Comment thread |
+| `C-POST-03` | Post Actions | React, save, share, report |
+| `P-FEED-01` | Provider Feed View | Provider sees feed and engagement |
+| `P-POST-01` | Provider Composer | Provider creates update |
+| `P-PORT-02` | Showcase Composer | Before/after story creation |
+| `C-NOTIF-01` | Notifications | Engagement alerts |
+
+---
+
+# 4. Journey 3A: User Consumes Timeline
+
+## 4.1 User goal
+
+Discover useful updates, see trusted providers, and engage with automotive content.
+
+## 4.2 Flow
+
+```text
+User opens Community Feed
+  → Feed loads ranked timeline
+  → User sees:
+      - followed providers
+      - local providers
+      - recommended repair journeys
+      - maintenance tips
+      - Q&A highlights
+  → User taps a before/after post
+  → Opens Post Detail
+  → Reacts or comments
+  → Views provider profile
+  → Follows provider or requests appointment
+```
+
+## 4.3 Feed post card structure
+
+Each post card should show:
+
+- author name/avatar
+- author role badge: User, Provider, Fleet
+- post type label: Repair Journey, Showcase, Tip
+- timestamp
+- vehicle/context chip optional:
+  - “BMW 3 Series E90”
+  - “Brake service”
+- text preview
+- media preview
+- reaction count
+- comment count
+- save button
+- follow button if not following author
+
+## 4.4 Feed ranking signals
+
+For MVP, rank by:
+
+1. Followed authors
+2. Local relevance
+3. Vehicle/interest relevance
+4. Recency
+5. Engagement
+6. Trust signals from author
+7. Content quality/moderation status
+
+Rule:
+
+> Paid placement must not silently alter organic feed ranking.
+
+---
+
+# 5. Journey 3B: User Shares Repair Story
+
+## 5.1 User goal
+
+Share a repair experience, maintenance milestone, or vehicle improvement.
+
+## 5.2 Entry points
+
+- Community Feed: “Share your story”
+- Vehicle Detail: “Share a repair update”
+- Completed appointment: “Share your experience”
+- Profile: “Create post”
+
+## 5.3 Flow
+
+```text
+User taps Create Post
+  → Selects “Repair Journey”
+  → Chooses vehicle optional
+  → Enters story text
+  → Uploads photos optional
+  → Links provider optional
+  → Links service record optional
+  → Confirms consent for photos
+  → Publishes
+  → Post appears in timeline
+```
+
+## 5.4 Composer fields
+
+| Field | Required | Notes |
+|---|---|---|
+| Post type | R | Repair Journey, Tip, Question, Update |
+| Text | R | Main story |
+| Vehicle | O | From user garage |
+| Service category | O | Brakes, suspension, body, etc. |
+| Provider tag | O | Tag shop/mechanic |
+| Media | O | Photos/video |
+| Visibility | R | Public, followers only, private |
+| Consent | C | Required if media includes identifiable people/plates |
+
+## 5.5 AI assistance
+
+AI can help the user by:
+
+- improving text clarity
+- suggesting category tags
+- suggesting vehicle context
+- warning about private information
+- suggesting consent check for photos
+
+Example:
+
+> “We noticed a license plate in your photo. You may want to blur it before publishing.”
+
+## 5.6 Post-publish result
+
+- Post appears in user profile
+- Post appears in followers’ feeds
+- Tagged provider receives notification
+- Linked provider may show post on their profile if approved
+- User receives engagement notifications
+
+---
+
+# 6. Journey 3C: Provider Shares Before/After Showcase
+
+## 6.1 Provider goal
+
+Demonstrate workmanship and build trust through proof.
+
+## 6.2 Entry points
+
+- Provider Dashboard: “Add showcase”
+- Portfolio screen: “Create showcase”
+- Composer: “Before/after story”
+- Completed job: “Turn this job into a post”
+
+## 6.3 Flow
+
+```text
+Provider opens Showcase Composer
+  → Selects job category
+  → Selects vehicle brand/model optional
+  → Uploads before/after photos
+  → AI groups media and suggests caption
+  → Provider edits/approves caption
+  → Confirms customer consent
+  → Publishes to timeline and profile
+```
+
+## 6.4 Showcase composer fields
+
+| Field | Required | Notes |
+|---|---|---|
+| Title | R | Short project title |
+| Description | O | Project summary |
+| Before media | R | At least one |
+| After media | R | At least one |
+| Service category | R | Body, brakes, suspension, etc. |
+| Vehicle brand/model | O | Helps matching/search |
+| Customer consent | R | Required if identifiable |
+| Visibility | R | Public/unlisted/private |
+
+## 6.5 AI assistance
+
+AI can:
+
+- group before/after photos
+- suggest caption
+- suggest service tags
+- detect plates/faces for redaction
+- suggest best cover image
+- suggest related capabilities to add to profile
+
+Rule:
+
+> Provider must approve AI-generated caption before publishing.
+
+## 6.6 Post-publish result
+
+- Showcase appears in feed
+- Showcase is saved to provider portfolio
+- Followers receive updates based on preferences
+- Provider can view engagement metrics
+- Users can request similar service from post
+
+---
+
+# 7. Journey 3D: Provider Shares Tip or Availability
+
+## 7.1 Provider goal
+
+Stay visible, educate customers, and fill appointment slots.
+
+## 7.2 Flow for tip
+
+```text
+Provider opens Composer
+  → Selects “Maintenance Tip”
+  → Enters tip text
+  → Adds category optional
+  → Adds media optional
+  → Publishes
+```
+
+## 7.3 Flow for availability
+
+```text
+Provider opens Composer
+  → Selects “Availability Update”
+  → Chooses service category
+  → Selects available time window
+  → Adds location optional
+  → Publishes
+```
+
+## 7.4 Availability post structure
+
+- Provider name
+- Service category
+- Available time window
+- Location
+- CTA: “Request this time”
+- Expiry: post becomes less relevant after date passes
+
+---
+
+# 8. Post Detail Screen
+
+## 8.1 Screen ID
+
+`C-POST-01`
+
+## 8.2 Main sections
+
+### Header
+
+- Author avatar/name
+- Author badge
+- Follow button
+- Post type
+- Timestamp
+- Context chips:
+  - vehicle
+  - category
+  - location optional
+
+### Body
+
+- Post text
+- Media viewer
+- Before/after slider if showcase
+- Linked provider card if tagged
+- Linked service record if user shares repair journey
+
+### Engagement bar
+
+- Reactions:
+  - Helpful
+  - Great work
+  - Thanks
+- Comment button
+- Save button
+- Share/copy link
+- Report button
+
+### Comments
+
+- Comment input
+- Comment list
+- Provider response badge if provider replies
+- Report comment option
+
+---
+
+# 9. Social Engagement Rules
+
+## 9.1 Reactions
+
+MVP reactions should be simple and positive/professional:
+
+| Reaction | Meaning |
+|---|---|
+| Helpful | Useful advice or information |
+| Great work | Appreciation for provider craftsmanship |
+| Thanks | User gratitude |
+
+Avoid overly casual or ambiguous reactions in MVP.
+
+## 9.2 Comments
+
+Allowed for:
+
+- users
+- providers
+- fleet users optional
+
+Rules:
+
+- comments must be moderated
+- providers can respond to comments on their posts
+- users can report comments
+- AI can suggest provider responses but not auto-publish
+
+## 9.3 Saves
+
+Users can save posts to:
+
+- read later
+- compare providers
+- keep maintenance tips
+- revisit repair examples
+
+## 9.4 Follows
+
+Users can follow:
+
+- providers
+- vendors optional
+- community topics optional future
+
+Follow action should be available from:
+
+- feed card
+- post detail
+- provider profile
+- search result
+
+---
+
+# 10. Social Notifications
+
+| Event | Recipient | Notification |
+|---|---|---|
+| User follows provider | Provider | “New follower” |
+| User reacts to post | Author | “Your post received a reaction” |
+| User comments on post | Author | “New comment” |
+| Provider replies to comment | User | “Provider replied” |
+| User tags provider | Provider | “You were tagged” |
+| Showcase published | Followers | Optional feed/notification |
+| Availability post published | Relevant users | Optional targeted notification |
+| Post removed by moderation | Author | Moderation notice |
+
+---
+
+# 11. Moderation and Trust Rules for Timeline
+
+## 11.1 Content rules
+
+Posts should not contain:
+
+- fake reviews
+- misleading claims
+- unsafe repair advice
+- private personal data
+- unauthorized customer photos
+- spam
+- abusive language
+- counterfeit part promotion
+
+## 11.2 Consent rules
+
+Before publishing media:
+
+- user must confirm consent for photos
+- provider must confirm customer consent
+- system should flag visible plates/faces
+- redaction recommended but not necessarily automatic in MVP
+
+## 11.3 Moderation states
+
+| State | Meaning |
+|---|---|
+| Draft | Not published |
+| Pending | Waiting moderation if required |
+| Published | Live in feed |
+| Hidden | Hidden by author or system |
+| Removed | Removed by moderation |
+| Flagged | Needs review |
+
+## 11.4 AI moderation assistance
+
+AI can:
+
+- detect unsafe advice
+- detect personal information
+- detect spam patterns
+- suggest moderation priority
+- summarize reported content
+
+Human moderator must approve removals in MVP.
+
+---
+
+# 12. UI States for Timeline Screens
+
+## Feed
+
+| State | Handling |
+|---|---|
+| Loading | Skeleton cards |
+| Empty | Show recommended providers/topics |
+| No followed accounts | Show onboarding prompt |
+| Error | Retry button |
+| Moderation delay | Show “Processing” for pending posts |
+
+## Composer
+
+| State | Handling |
+|---|---|
+| Empty text | Disable publish |
+| Media uploading | Show progress |
+| Media failed | Retry or remove media |
+| Missing consent | Block publish until confirmed |
+| AI unavailable | Allow manual post |
+| Draft saved | Show “Draft saved” |
+
+## Post Detail
+
+| State | Handling |
+|---|---|
+| Post removed | Show removal notice |
+| Comments disabled | Show reason if appropriate |
+| Pending moderation | Visible to author only |
+| Restricted visibility | Show permission notice |
+| Tagged provider inactive | Hide provider CTA |
+
+---
+
+# 13. Complete User Journey Summaries
+
+## Journey 1: User Signup and Joining Social
+
+```text
+New user arrives
+  → Signs up
+  → Verifies account
+  → Chooses individual role
+  → Adds first vehicle
+  → Selects interests
+  → Grants consent/notifications
+  → Enters personalized feed
+  → Follows provider or reacts to post
+  → Becomes active community member
+```
+
+---
+
+## Journey 2: Provider Signup and Profile Creation
+
+```text
+Provider arrives
+  → Signs up
+  → Chooses provider role
+  → Adds business basics
+  → Adds location/service area
+  → Selects services and supported vehicles
+  → Uploads portfolio
+  → Sets hours/appointment rules
+  → Completes verification
+  → Reviews AI profile suggestions
+  → Publishes profile
+  → Publishes first showcase or tip
+```
+
+---
+
+## Journey 3: Timeline Story Sharing
+
+```text
+User or provider creates story
+  → Chooses story type
+  → Adds text/media/context
+  → Confirms consent
+  → Publishes
+  → Post appears in timeline
+  → Others react/comment/save/follow
+  → Engagement drives trust and discovery
+```
+
+---
+
+# 14. Recommended MVP Social Scope
+
+## Must-have
+
+- Signup/onboarding flows
+- Provider profile creation
+- Timeline feed
+- Post composer
+- Before/after showcase posts
+- Repair journey posts
+- Reactions
+- Comments
+- Saves
+- Follows
+- Notifications
+- Moderation queue
+- AI caption suggestion
+- AI redaction warning
+
+## Should-have
+
+- Provider response suggestion for comments
+- Topic filters
+- Local feed
+- Q&A highlights in feed
+- Badge/milestone posts
+- Availability posts with CTA
+
+## Defer
+
+- Direct messaging
+- Reposting/sharing to own feed
+- Groups/clubs
+- Live video
+- Paid boost tools
+- Advanced feed personalization
+- Ephemeral 24-hour stories
+
