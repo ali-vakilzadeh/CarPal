@@ -1,0 +1,38 @@
+<!-- @dsCard group="Showcase" height=900 subtitle="A full feed: mechanic review and a found part, RTL beside LTR" -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>PersianFeed — preview</title></head>
+<body>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:16px;background:var(--surface-sunken)"><div id="fa" dir="rtl" lang="fa" class="phone"></div><div id="en" dir="ltr" lang="en" class="phone"></div></div>
+<style>.phone{display:flex;flex-direction:column;border:2px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--surface);height:860px}.phone .feed{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:var(--space-5);padding:var(--space-4)}.phone .chips{display:flex;gap:var(--space-2);overflow:hidden;padding:var(--space-3) var(--space-4) 0}</style>
+<script>
+  var C = window.CarPal, h = React.createElement;
+  var be = function (l) { return h('button', { className: 'cp-iconbtn', 'aria-label': l }, h(C.Icon, { name: 'bell' })); };
+  function Screen(p) {
+    var t = p.t, s = React.useState('home');
+    return h(React.Fragment, null,
+      h(C.TopBar, { title: t.title, actions: be(t.bell) }),
+      h('div', { className: 'chips' }, t.chips.map(function (c, i) { return h(C.Chip, { key: i, selected: i === 0, icon: [null, 'wrench', 'part'][i] }, c); })),
+      h('div', { className: 'feed' }, t.posts.map(function (x, i) { return h(C.PostCard, Object.assign({ key: i, locale: p.loc, labels: t.labels }, x)); })),
+      h(C.TabBar, { items: t.tabs, active: s[0], onChange: s[1], label: t.nav }));
+  }
+  var FA = { title: 'CarPal', bell: 'اعلان‌ها', nav: 'اصلی', chips: ['همه', 'تعمیرکارها', 'قطعات'],
+    labels: { share: 'اشتراک', more: 'بیشتر', roles: { owner: 'مالک خودرو', mechanic: 'تعمیرکار', seller: 'فروشنده قطعه' } },
+    tabs: [{ id: 'home', label: 'خانه', icon: 'home' }, { id: 'm', label: 'تعمیرکارها', icon: 'wrench' }, { id: 'n', label: 'پست', icon: 'plus', primary: true }, { id: 'p', label: 'قطعات', icon: 'part' }, { id: 'c', label: 'گفتگو', icon: 'chat', badge: '۳ پیام' }],
+    posts: [
+      { author: 'سارا احمدی', handle: '@sara.a', role: 'owner', time: '۵ دقیقه پیش', text: 'صدای چرخ Peugeot 206 هفته‌ها اذیتم می‌کرد. آقای کریمی در ده دقیقه بلبرینگ خراب را پیدا کرد، قطعه کهنه را نشانم داد و دقیقاً همان مبلغی را گرفت که گفته بود. تعمیرکار درستکار!',
+        tagged: [{ icon: 'wrench', title: 'تعمیرگاه کریمی', detail: 'خیابان ستارخان، تهران', rating: 4.9, ratingLabel: 'امتیاز' }], likes: 86, comments: 12, liked: true, cta: 'رزرو' },
+      { author: 'مریم نوری', handle: '@maryam.n', role: 'owner', time: '۲۰ دقیقه پیش', text: 'لنت ترمز اصلی را با شماره فنی جستجو کردم؛ همان روز در فروشگاه نزدیک خانه پیدا شد.',
+        tagged: [{ icon: 'part', title: 'لنت ترمز جلو (اصلی)', detail: 'لوازم یدکی پارس', price: '۱٬۸۵۰٬۰۰۰ تومان', badge: { text: 'موجود', icon: 'check' } }], likes: 31, comments: 9 }] };
+  var EN = { title: 'CarPal', bell: 'Notifications', nav: 'Main', chips: ['All', 'Mechanics', 'Parts'], labels: {},
+    tabs: [{ id: 'home', label: 'Feed', icon: 'home' }, { id: 'm', label: 'Mechanics', icon: 'wrench' }, { id: 'n', label: 'Post', icon: 'plus', primary: true }, { id: 'p', label: 'Parts', icon: 'part' }, { id: 'c', label: 'Chats', icon: 'chat', badge: '3 unread' }],
+    posts: [
+      { author: 'Sara Ahmadi', handle: '@sara.a', role: 'owner', time: '5 min', text: 'My 206 had a grinding noise for weeks. Reza at تعمیرگاه کریمی found a worn wheel bearing in ten minutes and charged exactly what he quoted. Honest mechanic!',
+        tagged: [{ icon: 'wrench', title: 'Karimi Auto Service', detail: 'Sattarkhan St, Tehran', rating: 4.9 }], likes: 86, comments: 12, liked: true, cta: 'Book' },
+      { author: 'Pars Spare Parts', handle: '@pars.parts', role: 'seller', verified: true, time: '20 min', text: 'Fresh stock of OEM brake pads for Peugeot 206/207 — search the part number, reserve in the app, pick up today.',
+        tagged: [{ icon: 'part', title: 'Front brake pads (OEM)', detail: 'Fits Peugeot 206, 207', price: '1,850,000 T', badge: { text: 'In stock', icon: 'check' } }], likes: 31, comments: 9 }] };
+  ReactDOM.createRoot(document.getElementById('fa')).render(h(Screen, { t: FA, loc: 'fa' }));
+  ReactDOM.createRoot(document.getElementById('en')).render(h(Screen, { t: EN, loc: 'en' }));
+</script>
+</body>
+</html>

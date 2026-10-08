@@ -1,0 +1,18 @@
+<!-- @dsCard group="Navigation" height=176 subtitle="Tap a tab to move the selector" -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>TabBar — preview</title></head>
+<body>
+<div id="ltr"></div><div style="height:16px"></div><div id="rtl" dir="rtl" lang="fa"></div>
+<script>
+  var C = window.CarPal, h = React.createElement;
+  function Bar(p) { var s = React.useState(p.items[0].id); return h(C.TabBar, { items: p.items, active: s[0], onChange: s[1], label: p.label }); }
+  ReactDOM.createRoot(document.getElementById('ltr')).render(h(Bar, { items: [
+    { id: 'home', label: 'Feed', icon: 'home' }, { id: 'mech', label: 'Mechanics', icon: 'wrench' }, { id: 'new', label: 'Post', icon: 'plus', primary: true },
+    { id: 'parts', label: 'Parts', icon: 'part' }, { id: 'chat', label: 'Chats', icon: 'chat', badge: '3 unread' }] }));
+  ReactDOM.createRoot(document.getElementById('rtl')).render(h(Bar, { label: 'اصلی', items: [
+    { id: 'home', label: 'خانه', icon: 'home' }, { id: 'mech', label: 'تعمیرکارها', icon: 'wrench' }, { id: 'new', label: 'پست', icon: 'plus', primary: true },
+    { id: 'parts', label: 'قطعات', icon: 'part' }, { id: 'chat', label: 'گفتگو', icon: 'chat', badge: '۳ پیام' }] }));
+</script>
+</body>
+</html>

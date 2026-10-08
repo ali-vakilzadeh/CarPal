@@ -1,0 +1,17 @@
+<!-- @dsCard group="Inputs" height=236 subtitle="LTR and RTL; mixed-script value" -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>TextField — preview</title></head>
+<body>
+<div class="cp-split"><div id="ltr"></div><div id="rtl" dir="rtl" lang="fa"></div></div>
+<script>
+  var C = window.CarPal, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('ltr')).render(h('div', { style: { display: 'grid', gap: 16 } },
+    h(C.TextField, { label: 'Find a part', icon: 'search', placeholder: 'Part name or OEM number', hint: 'e.g. front brake pads, Peugeot 206' }),
+    h(C.TextField, { label: 'Your car', defaultValue: '', error: 'Add your car model so sellers can check fit' })));
+  ReactDOM.createRoot(document.getElementById('rtl')).render(h('div', { style: { display: 'grid', gap: 16 } },
+    h(C.TextField, { label: 'جستجوی قطعه', icon: 'search', defaultValue: 'لنت ترمز جلو Peugeot 206', hint: 'نام قطعه یا شماره فنی' }),
+    h(C.TextField, { label: 'خودروی شما', defaultValue: '', error: 'مدل خودرو را وارد کنید' })));
+</script>
+</body>
+</html>

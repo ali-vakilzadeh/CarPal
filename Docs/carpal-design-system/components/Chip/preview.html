@@ -1,0 +1,18 @@
+<!-- @dsCard group="Inputs" height=128 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Chip — preview</title></head>
+<body>
+<div id="ltr" class="cp-row"></div>
+<div id="rtl" class="cp-row" dir="rtl" lang="fa"></div>
+<script>
+  var C = window.CarPal, h = React.createElement;
+  function Demo(p) {
+    var s = React.useState(p.start), sel = s[0], set = s[1];
+    return h(React.Fragment, null, p.items.map(function (t, i) { return h(C.Chip, { key: i, selected: sel === i, icon: p.icons[i], onClick: function () { set(i); } }, t); }));
+  }
+  ReactDOM.createRoot(document.getElementById('ltr')).render(h(Demo, { start: 0, items: ['All', 'Mechanics', 'Parts', 'Near me', 'Top rated'], icons: [null, 'wrench', 'part', 'pin', 'star'] }));
+  ReactDOM.createRoot(document.getElementById('rtl')).render(h(Demo, { start: 1, items: ['همه', 'تعمیرکارها', 'قطعات', 'نزدیک من', 'بهترین امتیاز'], icons: [null, 'wrench', 'part', 'pin', 'star'] }));
+</script>
+</body>
+</html>
