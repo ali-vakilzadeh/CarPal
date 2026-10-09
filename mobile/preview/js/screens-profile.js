@@ -33,7 +33,7 @@
     var items = [
       ['appt', 'calendar', t('Reza Auto Suspension proposed a new time', 'جلوبندی‌سازی رضا زمان تازه‌ای پیشنهاد داد'), t('Thursday 14:00 instead of the morning.', 'پنجشنبه ۱۴:۰۰ به‌جای صبح.'), t('1 h', '۱ ساعت'), true,
         [t('Accept time', 'پذیرش زمان'), function () { a.nav.go('C-APP-02', { state: 'confirmed' }); a.ui.toast(t('Appointment confirmed', 'نوبت تأیید شد')); }], function () { a.nav.go('C-APP-02', { state: 'action' }); }],
-      ['rev', 'star', t('How was your visit to Reza Auto Suspension?', 'مراجعه به جلوبندی‌سازی رضا چطور بود؟'), t('Verified visit · takes 2 minutes', 'مراجعه تأییدشده · ۲ دقیقه وقت می‌گیرد'), t('3 h', '۳ ساعت'), true,
+      ['rev', 'star', t('How was your visit to Reza Auto Suspension?', 'مراجعه به جلوبندی‌سازی رضا چطور بود؟'), t('Verified visit · your personal link works for 7 days', 'مراجعه تأییدشده · پیوند شخصی شما ۷ روز کار می‌کند'), t('3 h', '۳ ساعت'), true,
         [t('Write review', 'ثبت نظر'), function () { a.nav.go('C-REV-01'); }], function () { a.nav.go('C-REV-01'); }],
       ['rev', 'image', t('Reza would like to show photos of your repair', 'رضا می‌خواهد عکس‌های تعمیر شما را نمایش دهد'), t('Plate and faces blurred. Your choice.', 'پلاک و چهره محو شده. انتخاب با شماست.'), t('Yesterday', 'دیروز'), true,
         [t('Approve photos', 'تأیید عکس‌ها'), function () { a.nav.go('C-REV-03'); }], function () { a.nav.go('C-REV-03'); }],
@@ -41,7 +41,11 @@
         [t('Update mileage', 'به‌روزرسانی کارکرد'), function () { a.nav.go('C-GARAGE-08'); }], function () { a.nav.go('C-GARAGE-08'); }],
       ['comm', 'chat', t('Tehran Tyre Pro answered your question', 'تایر پرو تهران به پرسش شما پاسخ داد'), t('Which winter tyres fit an E90…', 'چه لاستیک زمستانی برای E90…'), t('2 d', '۲ روز'), false, null, function () { a.nav.go('C-COMM-05'); }],
       ['rev', 'check', t('Your review was published', 'نظر شما منتشر شد'), t('Reza Auto Suspension · ★5', 'جلوبندی‌سازی رضا · ★۵'), t('5 d', '۵ روز'), false, null, function () { a.nav.go('C-PROF-06'); }],
-      ['sys', 'download', t('Your data export is ready', 'خروجی اطلاعات شما آماده است'), t('Available for 7 days', 'تا ۷ روز در دسترس است'), t('1 w', '۱ هفته'), false, [t('Download', 'دانلود'), function () { a.nav.go('C-PROF-07'); }], function () { a.nav.go('C-PROF-07'); }]
+      ['sys', 'download', t('Your data export is ready', 'خروجی اطلاعات شما آماده است'), t('Available for 7 days', 'تا ۷ روز در دسترس است'), t('1 w', '۱ هفته'), false, [t('Download', 'دانلود'), function () { a.nav.go('C-PROF-07'); }], function () { a.nav.go('C-PROF-07'); }],
+      ['rev', 'star', t('How was Mina Parts?', 'قطعات مینا چطور بود؟'), t('Verified purchase · your personal link works for 7 days', 'خرید تأییدشده · پیوند شخصی شما ۷ روز کار می‌کند'), t('1 d', '۱ روز'), true,
+        [t('Write review', 'ثبت نظر'), function () { a.nav.go('C-REV-04', { state: 'purchase' }); }], function () { a.nav.go('C-REV-04', { state: 'purchase' }); }],
+      ['rev', 'clock', t('Your review is waiting for approval', 'نظر شما در انتظار تأیید است'), t('The shop has up to 7 days to confirm you were its customer; then CarPal checks it.', 'تعمیرگاه تا ۷ روز فرصت دارد تأیید کند مشتری‌اش بوده‌اید؛ سپس کارپال آن را بررسی می‌کند.'), t('3 d', '۳ روز'), false, null, function () { a.nav.go('C-PROF-06'); }],
+      ['rev', 'check', t('Your review was approved', 'نظر شما تأیید شد'), t('Approved by the business and CarPal · now public', 'تأییدشده توسط کسب‌وکار و کارپال · اکنون عمومی'), t('6 d', '۶ روز'), false, null, function () { a.nav.go('C-PROF-06'); }],
     ].filter(function (x) { return tab[0] === 'all' || x[0] === tab[0]; });
     var pinned = items.filter(function (x) { return x[5]; }), rest = items.filter(function (x) { return !x[5]; });
     function list(xs) { return html`<${K.List}>${xs.map(function (x, i) { return html`<${Notif} key=${i} icon=${x[1]} title=${x[2]} sub=${x[3]} time=${x[4]} unread=${x[5]} action=${x[6]} onClick=${x[7]} />`; })}<//>`; }
@@ -139,7 +143,8 @@
           ${gen(t('News and offers', 'اخبار و پیشنهادها'), t('Marketing messages from CarPal.', 'پیام‌های تبلیغاتی کارپال.'), false, t('Never granted', 'هرگز اعطا نشده'))}
           <hr className="pv-hr" />
           ${gen(t('Review invitations', 'دعوت به نظر دادن'), t('Ask me to review a shop after a visit.', 'پس از مراجعه از من نظر بخواهد.'), true, t('Granted 23 Sep 2026', 'اعطا ۱ مهر ۱۴۰۵'))}
-          <${K.ChipSet} multi value=${['app']} items=${[['app', t('In-app', 'درون اپ')], ['email', t('Email', 'ایمیل')], ['sms', t('SMS', 'پیامک')]]} />
+          <${K.ChipSet} multi value=${['app']} items=${[['app', t('In-app', 'درون اپ')], ['email', t('Email', 'ایمیل')]]} />
+          <p className="pv-cap pv-muted">${t('Email links work once and expire 7 days after they are sent.', 'پیوند ایمیل فقط یک بار کار می‌کند و ۷ روز پس از ارسال منقضی می‌شود.')}</p>
           <hr className="pv-hr" />
           ${gen(t('Location', 'موقعیت مکانی'), t('Use my location to find help nearby.', 'از موقعیت من برای یافتن کمک نزدیک استفاده شود.'), true, t('While using the app', 'هنگام استفاده از اپ'))}
         <//>
@@ -243,15 +248,19 @@
     function row(icon, title, sub, badge, onClick) { return html`<${K.Card} tight onClick=${onClick}><div className="pv-row is-nowrap is-top"><span className="pv-tile"><${K.Ic} name=${icon} size=${20} /></span><div className="pv-col pv-grow"><span className="pv-bs">${title}</span><span className="pv-c pv-muted">${sub}</span></div></div><div>${badge}</div><//>`; }
     var body = {
       rev: html`<${React.Fragment}>
-        ${row('star', D.p.reza.name, t('★5 · 15 Oct · Shop replied', '★۵ · ۲۳ مهر · تعمیرگاه پاسخ داد'), html`<${K.Badge} tone="success" icon="check">${t('Published', 'منتشرشده')}<//>`, function () { a.nav.go('C-PROV-01', { state: 'direct' }); })}
-        ${row('star', D.p.karimi.name, t('★4 · 1 Apr', '★۴ · ۱۲ فروردین'), html`<${K.Badge} icon="clock">${t('Pending', 'در انتظار')}<//>`)}
+        ${row('star', D.p.reza.name, t('★5 · Verified visit · 15 Oct · Shop replied', '★۵ · مراجعه تأییدشده · ۲۳ مهر · تعمیرگاه پاسخ داد'), html`<${K.Badge} tone="success" icon="check">${t('Published', 'منتشرشده')}<//>`, function () { a.nav.go('C-PROV-01', { state: 'direct' }); })}
+        ${row('star', D.p.tyre.name, t('★5 · Submitted a minute ago', '★۵ · یک دقیقه پیش ثبت شد'), html`<${K.Badge} icon="clock">${t('Being checked', 'در حال بررسی')}<//>`)}
+        ${row('star', D.p.karimi.name, t('★4 · No appointment · 1 Apr', '★۴ · بدون نوبت · ۱۲ فروردین'), html`<${K.Badge} tone="signal" icon="clock">${t('Waiting for approval', 'در انتظار تأیید')}<//>`)}
+        <p className="pv-cap pv-muted">${t('Waiting for: the shop to confirm you were its customer (3 days left), then a CarPal reviewer.', 'منتظر: تأیید تعمیرگاه که مشتری‌اش بوده‌اید (۳ روز مانده) و سپس بازبین کارپال.')}</p>
         ${row('star', t('Old garage review', 'نظر تعمیرگاه قدیمی'), t('Removed: contained a phone number', 'حذف شد: شامل شماره تلفن بود'), html`<${K.Badge} tone="danger" icon="close">${t('Removed', 'حذف‌شده')}<//>`)}
+        ${row('star', t('Corner garage review', 'نظر تعمیرگاه سر خیابان'), t('Not approved: the shop could not confirm the visit. You can appeal with an invoice.', 'تأیید نشد: تعمیرگاه مراجعه را تأیید نکرد. با ارائه فاکتور می‌توانید اعتراض کنید.'), html`<${K.Badge} tone="danger" icon="close">${t('Rejected', 'ردشده')}<//>`)}
       <//>`,
       posts: row('chat', t('Silver is quiet again over bumps', 'نقره‌ای دوباره بی‌صداست'), t('Repair story · 2 h', 'داستان تعمیر · ۲ ساعت'), html`<${K.Badge} icon="clock">${t('Processing', 'در حال بررسی')}<//>`),
       qa: row('help', t('Which winter tyres fit an E90…', 'چه لاستیک زمستانی برای E90…'), t('4 answers', '۴ پاسخ'), html`<${K.Badge} tone="success" icon="check">${t('Answer accepted', 'پاسخ پذیرفته شد')}<//>`, function () { a.nav.go('C-COMM-05'); }),
       inq: html`<${React.Fragment}>
         ${row('part', t('Control arm · Mina Parts', 'طبق · قطعات مینا'), t('“In stock, reserved for you until Saturday.”', '«موجود است، تا شنبه برای شما رزرو شد.»'), html`<${K.Badge} tone="success" icon="check">${t('Reserved', 'رزروشده')}<//>`)}
         ${row('part', t('Strut mount · Ehsan Auto Parts', 'سرکمک · لوازم یدکی احسان'), t('Sent 3 Oct', 'ارسال ۱۱ مهر'), html`<${K.Badge} tone="danger" icon="close">${t('Unavailable', 'ناموجود')}<//>`)}
+        ${row('part', t('Brake pads · Mina Parts', 'لنت ترمز · قطعات مینا'), t('Picked up 1 Oct · Write a review', 'تحویل ۹ مهر · نظر بدهید'), html`<${K.Badge} tone="success" icon="check">${t('Completed', 'تکمیل‌شده')}<//>`, function () { a.nav.go('C-REV-04', { state: 'purchase' }); })}
       <//>`,
       rep: html`<${React.Fragment}>
         ${row('flag', t('Report: suspicious review', 'گزارش: نظر مشکوک'), t('On Karimi Auto Service · 6 Oct', 'در تعمیرگاه کریمی · ۱۴ مهر'), html`<${K.Badge} icon="clock">${t('Under review', 'در حال بررسی')}<//>`)}
@@ -316,6 +325,10 @@
       <${K.Sec} title=${t('Digits', 'ارقام')}><${K.ChipSet} value=${fa ? 'fa' : 'latin'} items=${[['fa', '۱۲۳'], ['latin', '123']]} /><//>
       <${K.Sec} title=${t('Distance', 'مسافت')}><${K.ChipSet} value="km" items=${[['km', t('Kilometres', 'کیلومتر')], ['mi', t('Miles', 'مایل')]]} /><//>
       <${K.Sec} title=${t('Currency display', 'نمایش ارز')}><${K.ChipSet} value="toman" items=${[['toman', t('Toman', 'تومان')], ['rial', t('Rial', 'ریال')]]} /><//>
+      <${K.Sec} title=${t('Navigation app', 'برنامه مسیریابی')} sub=${t('The app Directions opens at once. Choose it in the Directions sheet with “Remember my choice”.', 'برنامه‌ای که «مسیریابی» بلافاصله باز می‌کند. آن را در برگه مسیریابی با «انتخاب من را به خاطر بسپار» تعیین کنید.')}>
+        <${K.Li} icon="route" title=${PV.navApp || t('Ask me each time', 'هر بار بپرس')} sub=${PV.navApp ? t('Remembered', 'به‌خاطر سپرده شده') : t('No app remembered', 'برنامه‌ای ذخیره نشده')}
+          end=${PV.navApp ? html`<${K.Btn} size="sm" variant="ghost" onClick=${function () { PV.navApp = null; a.nav.setState('C-PROF-08', 'default'); a.ui.toast(t('Reset. Directions will ask each time.', 'بازنشانی شد. مسیریابی هر بار می‌پرسد.')); }}>${t('Reset', 'بازنشانی')}<//>` : null} />
+      <//>
       <${K.Sec} title=${t('Display', 'نمایش')} sub=${t('Sunlight mode switches on by itself in bright light.', 'حالت آفتاب در نور شدید خودکار روشن می‌شود.')}>
         <${K.ChipSet} wrap value=${a.theme} onChange=${a.setTheme} items=${[['light', t('Daylight', 'روز'), 'sun'], ['sun', t('Sunlight (outdoor)', 'آفتاب (فضای باز)'), 'eye'], ['dark', t('Night', 'شب'), 'moon']]} />
       <//>
@@ -379,7 +392,7 @@
     if (a.st === 'sent') return html`<${K.SheetFrame} title=${t('Report sent', 'گزارش ارسال شد')} foot=${html`<${K.Btn} onClick=${function () { a.nav.replace('C-PROF-06'); }}>${t('Follow in My activity', 'پیگیری در فعالیت‌های من')}<//>`}>
       <${K.Empty} icon="check" tone="success" title=${t('Thanks. Our team will review it.', 'ممنون. تیم ما بررسی می‌کند.')} />
     <//>`;
-    var reasons = [['fake', t('Fake', 'جعلی')], ['abuse', t('Abusive', 'توهین‌آمیز')], ['unsafe', t('Unsafe advice', 'توصیه ناایمن')], ['private', t('Private information', 'اطلاعات خصوصی')], ['mislead', t('Misleading', 'گمراه‌کننده')], ['spam', t('Spam', 'هرزنامه')], ['fit', t('Wrong fitment', 'تناسب اشتباه')], ['other', t('Other', 'سایر')]];
+    var reasons = [['fake', t('Fake', 'جعلی')], ['abuse', t('Abusive', 'توهین‌آمیز')], ['unsafe', t('Unsafe advice', 'توصیه ناایمن')], ['private', t('Private information', 'اطلاعات خصوصی')], ['mislead', t('Misleading', 'گمراه‌کننده')], ['spam', t('Spam', 'هرزنامه')], ['fit', t('Wrong fitment', 'تناسب اشتباه')], ['loc', t('Wrong location or closed', 'مکان اشتباه یا تعطیل‌شده')], ['other', t('Other', 'سایر')]];
     return html`<${K.SheetFrame} title=${t('Report', 'گزارش')} foot=${html`<${K.Btn} variant="primary" onClick=${function () { a.nav.setState('S-SHARED-08', 'sent'); }}>${t('Send report', 'ارسال گزارش')}<//>`}>
       <div role="radiogroup">${reasons.map(function (x) { return html`<${K.Check} key=${x[0]} radio value=${r[0] === x[0]} onChange=${function () { r[1](x[0]); }}>${x[1]}<//>`; })}</div>
       <${K.Field} multiline label=${t('Details (optional)', 'جزئیات (اختیاری)')} />

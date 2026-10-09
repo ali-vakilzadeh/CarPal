@@ -409,3 +409,17 @@ button.pv-li, .pv-li.is-tap { cursor: pointer; }
 .cp-chip { white-space: nowrap; flex: none; }
 .pv-bodywrap:has(.pv-fab) .pv-pad { padding-block-end: calc(var(--space-12) * 2); }
 .pv-ba-knob .cp-icon { margin-inline: -4px; }
+
+/* Map pins by type (shape and icon carry the meaning, never colour alone), dimmed pins, radius circle, attribution */
+.pv-pin.is-seller { border-radius: var(--radius-sm); }
+.pv-pin.is-dim { transform: translate(-50%, -100%) scale(.78); background: transparent; border-style: dashed; color: var(--ink-muted); }
+.pv-pin.is-dim.is-on { background: var(--signal); color: var(--on-signal); border-style: solid; }
+.pv-radius { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; border: 2px dashed var(--accent); background: var(--accent-soft); opacity: .8;
+  display: flex; align-items: center; justify-content: center; color: var(--accent); }
+.pv-map-attr { position: absolute; z-index: 1; inset-block-end: 0; inset-inline-start: 0; padding: 2px var(--space-2); font-size: 11px; line-height: 16px;
+  background: var(--surface-raised); color: var(--ink-muted); border-start-end-radius: var(--radius-sm); }
+.pv-map-zoom { position: absolute; z-index: 3; inset-inline-end: var(--space-3); inset-block-start: calc(var(--space-3) + var(--control-md) * 3 + var(--space-2) * 3); display: flex; flex-direction: column; gap: var(--space-2); }
+.pv-map-zoom .cp-iconbtn { background: var(--surface-raised); border: 2px solid var(--border-inactive); }
+.pv-acc { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid var(--accent); background: var(--accent-soft); opacity: .7; }
+.pv-mapbtn { background: var(--surface-raised); border: 2px solid var(--border-inactive); flex: none; }
+.pv-sheet-body > * { flex-shrink: 0; }

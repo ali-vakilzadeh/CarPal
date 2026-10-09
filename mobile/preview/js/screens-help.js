@@ -199,7 +199,7 @@
   K.reg('C-HELP-06', {
     name: 'Issue Summary and Recommendations', area: 'Help Me', kind: 'full', tab: 'help', parent: 'C-HELP-05', story: '6, 7',
     purpose: 'Show what CarPal understood and the best experts for it, with honest reasons.',
-    notes: 'Changing the category re-runs matching and is recorded for AI evaluation. Featured stays outside the ranked list.',
+    notes: 'Changing the category re-runs matching and is recorded for AI evaluation. On the map the 3 recommended shops carry the numbers 1–3, and urgent providers come first when the issue is safety-critical. A Featured strip is reserved and not shown in the MVP.',
     states: [['default', 'Default'], ['safety', 'Safety-critical'], ['lowconf', 'Low confidence'], ['nomatch', 'No match'], ['aioff', 'AI personalisation off']]
   }, function (props) {
     var a = props.a, D = PV.D(), st = a.st, ai = st !== 'aioff';
@@ -231,17 +231,13 @@
         <p className="pv-h">${t('No suspension specialists for E90 within 10 km', 'هیچ متخصص جلوبندی E90 تا ۱۰ کیلومتری نیست')}</p>
         <div className="pv-col is-gap3"><${K.Btn} block>${t('Widen to 25 km', 'گسترش تا ۲۵ کیلومتر')}<//><${K.Btn} block icon="truck">${t('Mobile mechanics who come to you', 'مکانیک سیار که به محل شما می‌آید')}<//></div>
         <p className="pv-c">${t('Or a well-rated generalist nearby. Karimi Auto Service has done 3 BMW suspension jobs.', 'یا یک تعمیرکار عمومی خوش‌نام در نزدیکی. تعمیرگاه کریمی ۳ کار جلوبندی BMW انجام داده است.')}</p>
-        <${K.ProviderCard} p=${D.p.karimi} primary />
+        <${K.ProviderCard} p=${D.p.karimi} triage primary />
       <//>` : html`<${K.Sec} title=${st === 'safety' ? t('Can see you today', 'امروز وقت دارند') : t('Best matches for Silver', 'بهترین گزینه‌ها برای نقره‌ای')}>
-        ${provs.map(function (x, i) { return html`<${K.ProviderCard} key=${x.id} p=${x} match=${ai} primary=${i === 0} />`; })}
+        ${provs.map(function (x, i) { return html`<${K.ProviderCard} key=${x.id} p=${x} match=${ai} triage primary=${i === 0} />`; })}
       <//>`}
-      <${K.Card} tone="sunken">
-        <div className="pv-row"><${K.Badge} tone="signal" icon="tag">${t('Featured', 'ویژه')}<//><span className="pv-cap pv-muted">${t('Paid placement · not part of the ranking', 'تبلیغ پولی · خارج از رتبه‌بندی')}</span></div>
-        <${K.ProviderCard} p=${D.p.tyre} featured request=${false} />
-      <//>
       <${K.Sec} title=${t('More options', 'گزینه‌های دیگر')}>
         <${K.List}>
-          <${K.Li} icon="map" title=${t('See more shops', 'تعمیرگاه‌های بیشتر')} onClick=${function () { a.nav.go('C-SEARCH-01'); }} />
+          <${K.Li} icon="map" title=${t('See more shops', 'تعمیرگاه‌های بیشتر')} sub=${t('List or map. On the map your 3 matches are numbered 1–3.', 'فهرست یا نقشه. روی نقشه سه گزینه شما با ۱ تا ۳ شماره‌گذاری شده‌اند.')} onClick=${function () { a.nav.go('S-SHARED-02'); }} />
           <${K.Li} icon="part" title=${t('Search for parts instead', 'جستجوی قطعه به‌جای آن')} onClick=${function () { a.nav.go('C-INV-01'); }} />
           <${K.Li} icon="chat" title=${t('Ask the community', 'از انجمن بپرسید')} onClick=${function () { a.nav.go('C-COMM-04'); }} />
         <//>
@@ -251,12 +247,12 @@
 
   /* ---------- C-HELP-07 ---------- */
   K.reg('C-HELP-07', {
-    name: 'Appointment Request Draft', area: 'Help Me', kind: 'full', tab: 'help', parent: 'C-HELP-06', story: '7',
+    name: 'Appointment Request Draft (shared by every entry point)', area: 'Help Me', kind: 'full', tab: 'help', parent: 'C-HELP-06', story: '7, 11',
     purpose: 'Turn the problem into a clear request in one screen, with the user in control of what is shared.',
-    notes: 'Consent is asked here, where data leaves the user, scoped to this appointment.',
-    states: [['default', 'Default'], ['unavailable', 'Chosen times unavailable'], ['failed', 'Send failed']]
+    notes: 'Used from Help Me, search results, a map pin, a profile, a showcase and favourites (Book again); the request source is stored. Without Help Me there is no triage: the user types what they need, and the shop sees “Triage: not provided”. Consent is asked here, where data leaves the user, scoped to this appointment.',
+    states: [['default', 'From Help Me (with triage)'], ['notriage', 'From search, map, profile or showcase (no triage)'], ['safety', 'Safety words in the note'], ['unavailable', 'Chosen times unavailable'], ['failed', 'Send failed']]
   }, function (props) {
-    var a = props.a, D = PV.D(), x = D.p.reza, st = a.st, hist = useState(true);
+    var a = props.a, D = PV.D(), x = D.p.reza, st = a.st, hist = useState(true), nt = st === 'notriage' || st === 'safety';
     var historyPreview = html`<${React.Fragment}><p className="pv-c">${t('The shop will see these records:', 'تعمیرگاه این سوابق را می‌بیند:')}</p>
       <${K.List}><${K.Li} icon="doc" title=${t('Front brake pads and discs', 'لنت و دیسک ترمز جلو')} sub=${t('Apr 2025 · 139,500 km', 'فروردین ۱۴۰۴ · ۱۳۹٬۵۰۰ کیلومتر')} /><${K.Li} icon="doc" title=${t('Oil and filter change', 'تعویض روغن و فیلتر')} sub=${t('Apr 2026 · 146,200 km', 'فروردین ۱۴۰۵ · ۱۴۶٬۲۰۰ کیلومتر')} /><//>
       <p className="pv-c pv-muted">${t('Costs and invoices are not shared.', 'هزینه‌ها و فاکتورها به اشتراک گذاشته نمی‌شوند.')}</p><//>`;
@@ -270,11 +266,19 @@
           <div className="pv-col pv-grow"><bdi className="pv-bs">${x.name}</bdi><span className="pv-row pv-c"><${K.Rating} value=${x.rating} /> · ${x.dist}</span></div>
           <${K.Btn} size="sm" variant="ghost" onClick=${function () { a.nav.back(); }}>${t('Change', 'تغییر')}<//></div>
       <//>
-      <${K.Card} tight>
+      ${nt ? html`<${K.Card} tight>
+        <div className="pv-row is-nowrap"><span className="pv-tile"><${K.Ic} name="car" size=${20} /></span><div className="pv-col pv-grow"><span className="pv-cap pv-muted">${t('Vehicle', 'خودرو')}</span><span className="pv-bs"><bdi>${D.v.silver.nick}</bdi> · ${D.v.silver.short}</span></div>
+          <${K.Btn} size="sm" variant="ghost" onClick=${function () { a.nav.go('S-SHARED-09'); }}>${t('Change', 'تغییر')}<//></div>
+        <${K.Field} multiline label=${t('What do you need?', 'چه چیزی لازم دارید؟')} defaultValue=${st === 'safety' ? '' : t('Front brake pads and a wheel alignment.', 'لنت ترمز جلو و تنظیم فرمان.')} hint=${t('Your own words. The shop will read exactly this.', 'با کلمات خودتان. تعمیرگاه دقیقاً همین را می‌خواند.')} />
+        <${K.ChipSet} wrap value="brakes" items=${[['susp', t('Suspension', 'جلوبندی')], ['brakes', t('Brakes', 'ترمز')], ['tyres', t('Wheels & tyres', 'لاستیک و رینگ')], ['battery', t('Battery', 'باتری')], ['other', t('Other', 'سایر')]]} />
+        <div><button type="button" className="pv-link" onClick=${function () { a.nav.go('C-HELP-03'); }}><${K.Ic} name="help" size=${20} />${t('Describe it with Help Me', 'با «کمکم کن» توضیح دهید')}</button></div>
+        <p className="pv-c pv-muted"><${K.Ic} name="info" size=${16} /> ${t('The shop will see “Triage: not provided” and your own description.', 'تعمیرگاه «بررسی هوشمند: ارائه نشده» و توضیح خود شما را می‌بیند.')}</p>
+        <div className="pv-row"><${K.Thumb} add icon="plus" label=${t('Add media', 'افزودن رسانه')} /></div>
+      <//>` : html`<${K.Card} tight>
         <div className="pv-row is-between is-nowrap"><span className="pv-bs"><bdi>${D.v.silver.nick}</bdi> · ${t('Clunk from front right', 'تق‌تق از جلوی راست')}</span><${K.Btn} size="sm" variant="ghost" icon="edit">${t('Edit', 'ویرایش')}<//></div>
         <p className="pv-c pv-ugc" dir="auto">${D.symptom}</p>
         <div className="pv-row"><${K.Thumb} icon="video" remove badge=${html`<${K.Badge}>${n(0)}:${n(10)}<//>`} /><${K.Thumb} add icon="plus" label=${t('Add media', 'افزودن رسانه')} /></div>
-      <//>
+      <//>`}
       <${K.Sec} title=${t('Service type', 'نوع خدمت')}><${K.ChipSet} value="insp" items=${[['diag', t('Diagnosis', 'عیب‌یابی')], ['repair', t('Repair', 'تعمیر')], ['insp', t('Inspection', 'بازدید')]]} /><//>
       <${K.List}><${K.Li} icon="clock" title=${t('Within two weeks', 'ظرف دو هفته')} sub=${t('Urgency', 'فوریت')} end=${html`<${K.Btn} size="sm" variant="ghost">${t('Change', 'تغییر')}<//>`} /><//>
       <${K.Sec} title=${t('Preferred times', 'زمان‌های دلخواه')} sub=${t('Up to 3. These are the shop’s next openings.', 'تا ۳ مورد. این‌ها نزدیک‌ترین نوبت‌های خالی تعمیرگاه است.')}>
@@ -282,7 +286,9 @@
         <${K.ChipSet} wrap multi value=${st === 'unavailable' ? [] : ['thu9', 'sat10']} items=${[['thu9', t('Thu 15 Oct · 09:00', 'پنجشنبه ۲۳ مهر · ۰۹:۰۰')], ['thu11', t('Thu 15 Oct · 11:00', 'پنجشنبه ۲۳ مهر · ۱۱:۰۰')], ['sat10', t('Sat 17 Oct · 10:00', 'شنبه ۲۵ مهر · ۱۰:۰۰')], ['sat12', t('Sat 17 Oct · 12:00', 'شنبه ۲۵ مهر · ۱۲:۰۰')], ['any', t('Any time this week', 'هر زمانی در این هفته')]]} />
         <p className="pv-c"><${K.Ic} name="spark" size=${16} className="pv-accent" /> ${t('AI hint: allow about 2 hours for an inspection.', 'نکته هوش مصنوعی: حدود ۲ ساعت برای بازدید وقت بگذارید.')}</p>
       <//>
-      <${K.Field} multiline label=${t('Note to the shop (optional)', 'یادداشت برای تعمیرگاه (اختیاری)')} placeholder=${t('e.g. I can leave the car for the day', 'مثلاً می‌توانم خودرو را تا عصر بگذارم')} />
+      <${K.Field} key=${st} multiline label=${t('Note to the shop (optional)', 'یادداشت برای تعمیرگاه (اختیاری)')} placeholder=${t('e.g. I can leave the car for the day', 'مثلاً می‌توانم خودرو را تا عصر بگذارم')}
+        defaultValue=${st === 'safety' ? t('The brake pedal feels soft since yesterday.', 'از دیروز پدال ترمز نرم شده است.') : ''} />
+      ${st === 'safety' ? html`<${K.SafetyBanner} title=${t('Safety words in your note', 'واژه‌های ایمنی در یادداشت شما')} text=${t('If the brakes feel wrong, stop driving and get urgent help. You can still send this request.', 'اگر ترمز غیرعادی است، رانندگی را متوقف کنید و کمک فوری بگیرید. همچنان می‌توانید این درخواست را بفرستید.')} />` : null}
       <${K.Sec} title=${t('What to share', 'چه چیزی به اشتراک گذاشته شود')}>
         <${K.Card} tight>
           <${K.Consent} locked on=${true} title=${t('Vehicle details', 'مشخصات خودرو')} text=${t('Required so the shop can prepare: model, series, year, mileage.', 'برای آماده شدن تعمیرگاه لازم است: مدل، نسل، سال، کارکرد.')} />
@@ -293,7 +299,7 @@
           <hr className="pv-hr" />
           <${K.Consent} on=${true} title=${t('Photos and video', 'عکس و ویدیو')} text=${t('The 10-second video you recorded.', 'ویدیوی ۱۰ ثانیه‌ای که ضبط کردید.')} />
         <//>
-        <div><button type="button" className="pv-link" onClick=${function () { a.nav.go('C-APP-03', { preview: true }); }}><${K.Ic} name="eye" size=${20} />${t('See what the shop will receive', 'ببینید تعمیرگاه چه دریافت می‌کند')}</button></div>
+        <div><button type="button" className="pv-link" onClick=${function () { a.nav.go('C-APP-03', { preview: true, state: nt ? 'notriage' : 'default' }); }}><${K.Ic} name="eye" size=${20} />${t('See what the shop will receive', 'ببینید تعمیرگاه چه دریافت می‌کند')}</button></div>
       <//>
     <//>`;
   });

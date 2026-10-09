@@ -125,13 +125,14 @@
     name: 'Verify Code', area: 'Auth', kind: 'full', parent: 'S-AUTH-03', isNew: true, story: '1, 3',
     purpose: 'Confirm the phone or email, and handle one-time-code login and MFA.',
     notes: 'Auto-submits at 6 digits; SMS auto-read on Android and code autofill on iOS; pasted codes split across the boxes.',
-    states: [['waiting', 'Waiting for code'], ['wrong', 'Wrong code'], ['expired', 'Code expired'], ['mfa', 'Two-step sign-in']]
+    states: [['waiting', 'Waiting for code'], ['wrong', 'Wrong code'], ['expired', 'Code expired'], ['mfa', 'Two-step sign-in'], ['review', 'Opened from a review email link']]
   }, function (props) {
     var a = props.a, wrong = a.st === 'wrong';
     var digits = wrong ? ['', '', '', '', '', ''] : ['4', '8', '1', '9', '', ''];
     var now = wrong ? 0 : 4;
     return html`<${K.Screen} header=${html`<${K.Top} title=${a.st === 'mfa' ? t('Two-step sign-in', 'ورود دومرحله‌ای') : t('Verify your number', 'تأیید شماره')} />`}
-      bottom=${html`<${K.Btn} variant="primary" block onClick=${function () { a.nav.go(a.st === 'mfa' ? 'C-HOME-01' : 'S-AUTH-04'); }}>${t('Verify', 'تأیید')}<//>`}>
+      bottom=${html`<${K.Btn} variant="primary" block onClick=${function () { a.nav.go(a.st === 'mfa' ? 'C-HOME-01' : (a.st === 'review' ? 'C-REV-01' : 'S-AUTH-04'), a.st === 'review' ? { state: 'visit' } : undefined); }}>${a.st === 'review' ? t('Continue to my review', 'ادامه به نظر من') : t('Verify', 'تأیید')}<//>`}>
+      ${a.st === 'review' ? html`<${K.Banner} tone="info" icon="lock" title=${t('Confirm it is you', 'تأیید کنید خودتان هستید')} text=${t('This personal link is for one visit and one person, works once, and expires 7 days after it was sent. A forwarded link is not enough: enter the code we just sent you.', 'این پیوند شخصی برای یک مراجعه و یک نفر است، فقط یک بار کار می‌کند و ۷ روز پس از ارسال منقضی می‌شود. پیوند فوروارد‌شده کافی نیست: کدی که همین حالا فرستادیم را وارد کنید.')} />` : null}
       <p className="pv-b">${t('We sent a 6-digit code to ', 'یک کد ۶ رقمی فرستادیم به ')}<bdi dir="ltr"><b>+98 912 *** 4567</b></bdi>.
         <button type="button" className="pv-link" style=${{ marginInlineStart: 'var(--space-2)' }} onClick=${function () { a.nav.back(); }}>${t('Change', 'تغییر')}</button></p>
       ${a.st === 'expired' ? html`<${K.Banner} tone="warn" text=${t('This code expired. We sent a new one.', 'این کد منقضی شد. یک کد تازه فرستادیم.')} />` : null}
@@ -272,13 +273,13 @@
     return html`<${K.Screen} header=${html`<${K.Top} title=${t('Permissions', 'دسترسی‌ها')} />`}
       bottom=${html`<${K.Btn} variant="primary" block onClick=${function () { a.nav.go('C-ONB-01'); }}>${t('Continue', 'ادامه')}<//>`}>
       <p className="pv-b">${t('Choose what CarPal can use. You can change any of this later in Privacy & Consent.', 'انتخاب کنید کارپال به چه چیزهایی دسترسی داشته باشد. بعداً در «حریم خصوصی و رضایت» قابل تغییر است.')}</p>
-      ${card('loc', 'pin', t('Location', 'موقعیت مکانی'), t('To find help near you.', 'برای پیدا کردن کمک در نزدیکی شما.'), t('Allow while using the app', 'اجازه هنگام استفاده از اپ'),
-        a.st === 'denied' ? html`<div className="pv-col"><span className="pv-c">${t("We'll ask for a city when you search.", 'هنگام جستجو شهر را از شما می‌پرسیم.')}</span><div><${K.Btn} size="sm" icon="sliders">${t('Open settings', 'باز کردن تنظیمات')}<//></div></div>` : null)}
+      ${card('loc', 'pin', t('Location', 'موقعیت مکانی'), t('To find help near you and to open the map where you are.', 'برای پیدا کردن کمک در نزدیکی شما و باز کردن نقشه در محل شما.'), t('Allow while using the app', 'اجازه هنگام استفاده از اپ'),
+        a.st === 'denied' ? html`<div className="pv-col"><span className="pv-c">${t("We'll ask for a city when you search or open the map.", 'هنگام جستجو یا باز کردن نقشه شهر را از شما می‌پرسیم.')}</span><div><${K.Btn} size="sm" icon="sliders">${t('Open settings', 'باز کردن تنظیمات')}<//></div></div>` : null)}
       ${card('notif', 'bell', t('Notifications', 'اعلان‌ها'), t('Appointment updates and reminders.', 'خبر نوبت‌ها و یادآوری‌ها.'), t('Allow notifications', 'اجازه اعلان'))}
       ${card('photo', 'camera', t('Photos and camera', 'عکس و دوربین'), t('To attach pictures of problems and documents.', 'برای پیوست عکس مشکل و مدارک.'), t('Allow later', 'بعداً'),
         all ? null : html`<span className="pv-c pv-muted">${t('We’ll ask the first time you tap the camera.', 'اولین بار که دوربین را بزنید می‌پرسیم.')}</span>`)}
       <${K.Card}>
-        <${K.Consent} title=${t('Review invitations', 'دعوت به نظر دادن')} text=${t('CarPal may ask you to review a shop after a visit. In-app only; choose other channels in settings.', 'کارپال ممکن است پس از مراجعه از شما نظر بخواهد. فقط در اپ؛ کانال‌های دیگر در تنظیمات.')} on=${true} />
+        <${K.Consent} title=${t('Review invitations', 'دعوت به نظر دادن')} text=${t('CarPal may ask you to review a shop after a visit. In the app by default; you can add email (a personal link that works for 7 days) in settings.', 'کارپال ممکن است پس از مراجعه از شما نظر بخواهد. به‌طور پیش‌فرض در اپ؛ در تنظیمات می‌توانید ایمیل (پیوندی شخصی که ۷ روز کار می‌کند) را هم اضافه کنید.')} on=${true} />
       <//>
     <//>`;
   });

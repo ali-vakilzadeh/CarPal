@@ -7,11 +7,11 @@
   /* Screen inventory order and areas — Doc 21 §3. */
   var ORDER = ['S-AUTH-01', 'S-AUTH-02', 'S-AUTH-03', 'S-AUTH-07', 'S-AUTH-08', 'S-AUTH-09', 'S-AUTH-04', 'S-AUTH-05',
     'C-ONB-01', 'C-ONB-02', 'C-ONB-03',
-    'C-HOME-01', 'S-SHARED-01', 'C-SEARCH-01', 'S-SHARED-02', 'S-SHARED-03', 'S-SHARED-09', 'C-PROV-01', 'C-PROV-02', 'C-VEND-01', 'C-INV-01', 'C-INV-02', 'C-INV-03',
+    'C-HOME-01', 'S-SHARED-01', 'C-SEARCH-01', 'S-SHARED-02', 'S-SHARED-03', 'S-SHARED-09', 'S-SHARED-10', 'C-PROV-01', 'C-PROV-02', 'C-VEND-01', 'C-INV-01', 'C-INV-02', 'C-INV-03',
     'C-GARAGE-01', 'C-GARAGE-02', 'C-GARAGE-03', 'C-GARAGE-04', 'C-GARAGE-05', 'C-GARAGE-06', 'C-GARAGE-07', 'C-GARAGE-08', 'C-GARAGE-09', 'C-PLAN-01',
     'C-HELP-01', 'C-HELP-02', 'C-HELP-03', 'C-HELP-04', 'C-HELP-05', 'C-HELP-06', 'C-HELP-07', 'C-HELP-08',
     'C-APP-01', 'C-APP-02', 'C-APP-03', 'C-APP-04',
-    'C-REV-01', 'C-REV-02', 'C-REV-03',
+    'C-REV-01', 'C-REV-02', 'C-REV-03', 'C-REV-04',
     'C-COMM-01', 'C-COMM-02', 'C-COMM-03', 'C-COMM-04', 'C-COMM-05', 'C-COMM-06',
     'S-SHARED-04', 'S-SHARED-05', 'C-PROF-01', 'C-PROF-02', 'C-PROF-03', 'C-PROF-04', 'C-PROF-05', 'C-PROF-06', 'C-PROF-07', 'C-PROF-08', 'C-PROF-09',
     'S-SHARED-06', 'S-SHARED-08', 'S-SHARED-07'];
@@ -31,7 +31,10 @@
     ['Ch. 9 · Review a visit', ['S-SHARED-04', 'C-REV-01', 'C-REV-02']],
     ['Ch. 9 · Approve a showcase', ['S-SHARED-04', 'C-REV-03']],
     ['Ch. 10 · Rebook a favourite', ['C-HOME-01', 'C-HELP-07', 'C-HELP-08']],
-    ['Ch. 10 · Sell a car', ['C-GARAGE-02', 'C-GARAGE-09']]
+    ['Ch. 10 · Sell a car', ['C-GARAGE-02', 'C-GARAGE-09']],
+    ['Ch. 11 · Find a shop without Help Me', ['C-HOME-01', 'S-SHARED-01', 'C-SEARCH-01', 'C-PROV-01', 'C-HELP-07']],
+    ['Ch. 11 · Browse on the map', ['C-HOME-01', 'S-SHARED-02', 'S-SHARED-10', 'C-HELP-07']],
+    ['Ch. 11 · Review from an emailed link', ['S-AUTH-07', 'C-REV-01', 'C-REV-02']]
   ];
 
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }

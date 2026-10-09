@@ -95,7 +95,7 @@
       requested: html`<${K.Btn} block onClick=${function () { a.nav.go('C-APP-04'); }}>${t('Change or cancel', 'تغییر یا لغو')}<//>`,
       confirmed: html`<${React.Fragment}><${K.Btn} onClick=${function () { a.nav.go('C-APP-04'); }} style=${{ flex: 'none' }}>${t('Change or cancel', 'تغییر یا لغو')}<//><${K.Btn} variant="primary" icon="pin" disabled>${t("I've arrived", 'رسیدم')}<//><//>`,
       progress: html`<${K.Btn} block icon="chat">${t('Message the shop', 'پیام به تعمیرگاه')}<//>`,
-      completed: html`<${React.Fragment}><${K.Btn} onClick=${function () { a.nav.go('C-GARAGE-04'); }}>${t('Service record', 'سابقه سرویس')}<//><${K.Btn} variant="primary" icon="star" onClick=${function () { a.nav.go('C-REV-01'); }}>${t('Leave a review', 'ثبت نظر')}<//><//>`,
+      completed: html`<${React.Fragment}><${K.Btn} onClick=${function () { a.nav.go('C-GARAGE-04'); }}>${t('Service record', 'سابقه سرویس')}<//><${K.Btn} variant="primary" icon="star" onClick=${function () { a.nav.go('C-REV-01', { state: 'visit' }); }}>${t('Leave a review', 'ثبت نظر')}<//><//>`,
       declined: null, cancelled: null
     }[st];
     var active = st !== 'declined' && st !== 'cancelled';
@@ -126,7 +126,7 @@
           <div className="pv-row is-nowrap"><${C.Avatar} name=${x.name} ring /><div className="pv-col pv-grow"><bdi className="pv-bs">${x.name}</bdi><span className="pv-c pv-muted">${t('No. 14, Sattarkhan St, Tehran', 'تهران، خیابان ستارخان، پلاک ۱۴')}</span></div></div>
           <div className="pv-row"><${K.Ic} name="calendar" size=${20} className="pv-accent" /><span className="pv-bs">${st === 'action' || st === 'requested' ? t('Proposed: Thu 15 Oct, 14:00', 'پیشنهادی: پنجشنبه ۲۳ مهر، ۱۴:۰۰') : t('Thu 15 Oct, 14:00', 'پنجشنبه ۲۳ مهر، ۱۴:۰۰')}</span></div>
           <div className="pv-grid2">
-            <${K.Btn} size="sm" icon="route">${t('Directions', 'مسیریابی')}<//><${K.Btn} size="sm" icon="calendar">${t('Add to calendar', 'افزودن به تقویم')}<//>
+            <${K.Btn} size="sm" icon="route" onClick=${function () { PV.directions(a); }}>${t('Directions', 'مسیریابی')}<//><${K.Btn} size="sm" icon="calendar">${t('Add to calendar', 'افزودن به تقویم')}<//>
             <${K.Btn} size="sm" icon="phone">${t('Call', 'تماس')}<//><${K.Btn} size="sm" icon="chat">${t('Message', 'پیام')}<//>
           </div>
         <//>
@@ -158,20 +158,23 @@
   K.reg('C-APP-03', {
     name: 'Pre-Visit Report View', area: 'Appointments', kind: 'stack', tab: 'appts', parent: 'C-APP-02', story: '8',
     purpose: 'Show the user exactly what the shop sees.',
-    notes: 'Withdrawing or granting history sharing takes effect immediately and the shop is told the scope changed.'
+    notes: 'Withdrawing or granting history sharing takes effect immediately and the shop is told the scope changed. When the request did not come from Help Me, the report shows the user’s own description and “Triage: not provided”.',
+    states: [['default', 'With Help Me triage'], ['notriage', 'Triage not provided']]
   }, function (props) {
-    var a = props.a, D = PV.D();
+    var a = props.a, D = PV.D(), nt = a.st === 'notriage';
     return html`<${K.Screen} header=${html`<${K.Top} title=${t('What the shop sees', 'آنچه تعمیرگاه می‌بیند')} actions=${html`<${K.IconBtn} icon="download" label=${t('Download PDF', 'دانلود PDF')} />`} />`}>
       ${a.params.preview ? html`<${K.Banner} tone="info" icon="eye" text=${t('Preview: this is what Reza Auto Suspension will receive when you send the request.', 'پیش‌نمایش: این همان چیزی است که جلوبندی‌سازی رضا پس از ارسال درخواست دریافت می‌کند.')} />` : null}
       <${K.Card} tight><dl className="pv-kv">
         <dt>${t('Vehicle', 'خودرو')}</dt><dd>${D.v.silver.model}</dd><dt>${t('Engine', 'موتور')}</dt><dd>${D.v.silver.engine}</dd><dt>${t('Mileage', 'کارکرد')}</dt><dd>${D.v.silver.mileage}</dd>
       </dl><//>
       <${K.Sec} title=${t('Reported symptoms', 'نشانه‌های گزارش‌شده')}>
-        <p className="pv-b pv-ugc" dir="auto">${D.symptom}</p>
+        <p className="pv-b pv-ugc" dir="auto">${nt ? t('Front brake pads and a wheel alignment.', 'لنت ترمز جلو و تنظیم فرمان.') : D.symptom}</p>
         <div className="pv-row"><${K.Thumb} icon="video" remove badge=${html`<${K.Badge}>${n(0)}:${n(10)}<//>`} /><${K.Thumb} add icon="plus" label=${t('Add media', 'افزودن رسانه')} /></div>
         <div><${K.Btn} size="sm" variant="ghost" icon="edit">${t('Edit description', 'ویرایش توضیح')}<//></div>
       <//>
+      ${nt ? html`<${K.Banner} tone="plain" icon="info" title=${t('Triage: not provided', 'بررسی هوشمند: ارائه نشده')} text=${t('The request was sent from search, the map or a profile, so there is no Help Me summary. The shop sees only your own description.', 'درخواست از جستجو، نقشه یا پروفایل ارسال شده، پس خلاصه «کمکم کن» وجود ندارد. تعمیرگاه فقط توضیح خود شما را می‌بیند.')} />` : html`
       <${K.AI} actions=${false} title=${t('Triage summary: front suspension, confidence medium', 'خلاصه بررسی: جلوبندی، اطمینان متوسط')} text=${t('Answers: only when moving; not louder with load. Urgency: soon.', 'پاسخ‌ها: فقط هنگام حرکت؛ با بار بلندتر نمی‌شود. فوریت: به‌زودی.')} />
+      `}
       <${K.Sec} title=${t('Shared service history', 'سابقه سرویس به‌اشتراک‌گذاشته')}>
         <${K.List}>
           <${K.Li} icon="doc" title=${t('Front brake pads and discs', 'لنت و دیسک ترمز جلو')} sub=${t('Apr 2025 · 139,500 km', 'فروردین ۱۴۰۴ · ۱۳۹٬۵۰۰ کیلومتر')} />

@@ -29,18 +29,29 @@
   }
 
   /* ---------- C-REV-01 ---------- */
+  /* A review is confirmed in one of two ways (Doc 21): a confirmed visit (verified at once, the shop cannot block it),
+     or approval by the business and a CarPal reviewer (hidden until then, counts for less). */
   K.reg('C-REV-01', {
-    name: 'Write Review', area: 'Reviews', kind: 'full', tab: 'appts', parent: 'C-APP-02', story: '9',
+    name: 'Write Review (visit-based and approval-based)', area: 'Reviews', kind: 'full', tab: 'appts', parent: 'C-APP-02', story: '9, 11',
     purpose: 'Collect a specific, honest, structured review in under two minutes.',
-    notes: 'Only tags the user keeps are published. Abusive language gets a suggestion to rephrase, not a block.',
-    states: [['verified', 'Verified visit'], ['privacy', 'Privacy check'], ['unverified', 'Not verified']]
+    notes: 'Only tags the user keeps are published. Abusive language gets a suggestion to rephrase, not a block. The email link works once, expires 7 days after it is sent, and asks for a one-time code first (S-AUTH-07). A rating alone is never a reason to reject a review.',
+    states: [['visit', 'Verified visit (confirmed appointment)'], ['walkin', 'No appointment (needs approval)'], ['late', 'Window passed (appointment attached)'], ['expired', 'Email link expired'], ['used', 'Email link already used'], ['privacy', 'Privacy check']]
   }, function (props) {
-    var a = props.a, D = PV.D(), st = a.st;
+    var a = props.a, D = PV.D(), st = a.st, approval = st === 'walkin' || st === 'late';
     var text = st === 'privacy' ? t('Reza fixed the clunk on my car (plate 22 B 345) in one afternoon. Price matched the quote.', 'رضا صدای ماشینم (پلاک ۲۲ ب ۳۴۵) را در یک بعدازظهر درست کرد. قیمت با برآورد یکی بود.')
       : t('The clunk was the front right control arm. Reza showed me the worn bushing, the price matched the quote, and the car was ready the same day.', 'صدای تق‌تق از طبق جلوی راست بود. رضا بوش فرسوده را نشانم داد، قیمت با برآورد یکی بود و ماشین همان روز آماده شد.');
+    if (st === 'expired' || st === 'used') return html`<${K.Screen} header=${html`<${K.CloseBar} title=${t('Write a review', 'ثبت نظر')} />`} stack bottom=${html`<${React.Fragment}>
+        <${K.Btn} variant="primary" block onClick=${function () { a.nav.setState('C-REV-01', 'walkin'); }}>${t('Write a review from the profile', 'نوشتن نظر از پروفایل')}<//>
+        ${st === 'used' ? html`<${K.Btn} block onClick=${function () { a.nav.go('C-PROF-06'); }}>${t('Open your review', 'باز کردن نظر شما')}<//>` : null}
+      <//>`}>
+      <${K.Empty} icon="clock" title=${st === 'used' ? t('This link was already used', 'این پیوند قبلاً استفاده شده') : t('This link has expired', 'این پیوند منقضی شده')}
+        text=${st === 'used' ? t('Review links work once, only for you. Your review is in My Activity.', 'پیوند نظر فقط یک بار و فقط برای خود شما کار می‌کند. نظر شما در «فعالیت‌های من» است.')
+          : t('Review links expire 7 days after they are sent. You can still write a review from the shop’s profile. The shop and CarPal will check it before it is published.', 'پیوند نظر ۷ روز پس از ارسال منقضی می‌شود. هنوز می‌توانید از پروفایل تعمیرگاه نظر بنویسید. تعمیرگاه و کارپال پیش از انتشار آن را بررسی می‌کنند.')} />
+    <//>`;
     return html`<${K.Screen} header=${html`<${K.CloseBar} title=${t('Write a review', 'ثبت نظر')} actions=${html`<span className="pv-cap pv-muted pv-stepcount">${t('Draft saved', 'پیش‌نویس ذخیره شد')}</span>`} />`}
-      bottom=${html`<${K.Btn} variant="primary" block onClick=${function () { a.nav.replace('C-REV-02'); }}>${t('Submit review', 'ثبت نظر')}<//>`}>
-      ${st === 'unverified' ? html`<${K.Banner} tone="plain" icon="info" title=${t('Not verified', 'تأییدنشده')} text=${t("This review won't count toward the shop's score because there is no completed appointment on CarPal.", 'چون نوبت تکمیل‌شده‌ای در کارپال نیست، این نظر در امتیاز تعمیرگاه حساب نمی‌شود.')} />`
+      bottom=${html`<${K.Btn} variant="primary" block onClick=${function () { a.nav.replace('C-REV-02', { state: approval ? 'approval' : 'visit' }); }}>${approval ? t('Send for approval', 'ارسال برای تأیید') : t('Submit review', 'ثبت نظر')}<//>`}>
+      ${approval ? html`<${K.Banner} tone="plain" icon="info" title=${t('No appointment — the shop and CarPal will check this review before it is published.', 'بدون نوبت — تعمیرگاه و کارپال پیش از انتشار این نظر را بررسی می‌کنند.')}
+          text=${st === 'late' ? t('The 7-day window has passed. Your visit on 15 Oct is attached as evidence.', 'مهلت ۷ روزه گذشته است. مراجعه ۲۳ مهر شما به‌عنوان مدرک پیوست شد.') : t('The shop has up to 7 days to confirm you were its customer; then a CarPal reviewer approves it.', 'تعمیرگاه تا ۷ روز فرصت دارد تأیید کند شما مشتری‌اش بوده‌اید؛ سپس یک بازبین کارپال آن را تأیید می‌کند.')} />`
         : html`<${K.Card} tone="soft" tight><div><${K.Trust} kind="visit" /></div><span className="pv-c">${t('BMW 3 Series · Suspension · ', 'BMW سری ۳ · جلوبندی · ')}<bdi>${D.p.reza.name}</bdi></span><//>`}
       <${K.Sec} title=${t('Overall rating', 'امتیاز کلی')}><${K.Stars} value=${5} label=${t('Overall rating', 'امتیاز کلی')} /><//>
       <${K.Card} tight>
@@ -54,7 +65,7 @@
         <p className="pv-c"><${K.Ic} name="spark" size=${16} className="pv-accent" /> ${t('AI tip: mention what was fixed — it helps the next owner of an E90.', 'نکته هوش مصنوعی: بگویید چه چیزی تعمیر شد — به مالک بعدی E90 کمک می‌کند.')}</p>
       </div>
       ${st === 'privacy' ? html`<${K.Banner} tone="warn" title=${t('This looks like a licence plate. Remove it?', 'به نظر پلاک خودرو است. حذف شود؟')}>
-        <div className="pv-row" style=${{ marginBlockStart: 'var(--space-2)' }}><${K.Btn} size="sm" onClick=${function () { a.nav.setState('C-REV-01', 'verified'); }}>${t('Remove', 'حذف')}<//><${K.Btn} size="sm" variant="ghost">${t('Keep', 'بماند')}<//></div><//>` : null}
+        <div className="pv-row" style=${{ marginBlockStart: 'var(--space-2)' }}><${K.Btn} size="sm" onClick=${function () { a.nav.setState('C-REV-01', 'visit'); }}>${t('Remove', 'حذف')}<//><${K.Btn} size="sm" variant="ghost">${t('Keep', 'بماند')}<//></div><//>` : null}
       <${K.Sec} title=${t('Tags', 'برچسب‌ها')} sub=${t('Suggested from your text. Only the ones you keep are published.', 'از متن شما پیشنهاد شده. فقط موارد انتخابی منتشر می‌شوند.')}>
         <${K.ChipSet} wrap multi value=${['clear', 'fair', 'first']} items=${[['clear', t('Explained clearly', 'توضیح روشن')], ['fair', t('Fair price', 'قیمت منصفانه')], ['first', t('Fixed first time', 'درست شد در بار اول')], ['fast', t('Fast', 'سریع')]]} />
       <//>
@@ -67,18 +78,46 @@
 
   /* ---------- C-REV-02 ---------- */
   K.reg('C-REV-02', {
-    name: 'Review Submitted', area: 'Reviews', kind: 'full', tab: 'appts', parent: 'C-APP-02', story: '9',
-    purpose: 'Thank the user and say what happens next.'
+    name: 'Review Submitted', area: 'Reviews', kind: 'full', tab: 'appts', parent: 'C-APP-02', story: '9, 11',
+    purpose: 'Thank the user and say what happens next.',
+    states: [['visit', 'Verified visit: being checked'], ['approval', 'Waiting for approval']]
   }, function (props) {
-    var a = props.a;
+    var a = props.a, approval = a.st === 'approval';
     return html`<${K.Screen} header=${html`<${K.CloseBar} title="" onClose=${function () { a.nav.tab('appts'); }} />`} stack bottom=${html`<${React.Fragment}>
         <${K.Btn} variant="primary" block onClick=${function () { a.nav.reset('C-PROV-01', { state: 'direct' }); }}>${t('View on profile', 'مشاهده در پروفایل')}<//>
         <${K.Btn} block onClick=${function () { a.nav.reset('C-GARAGE-04'); }}>${t('View service record', 'مشاهده سابقه سرویس')}<//>
         <${K.Btn} block variant="ghost" icon="share" onClick=${function () { a.nav.go('C-COMM-06'); }}>${t('Share your repair story', 'داستان تعمیرتان را به اشتراک بگذارید')}<//>
       <//>`}>
-      <${K.Empty} icon="check" tone="success" title=${t('Thank you, Sara', 'ممنون، سارا')} text=${t('Your review helps the next E90 owner find the right expert.', 'نظر شما به مالک بعدی E90 کمک می‌کند متخصص مناسب را پیدا کند.')} />
-      <div className="pv-row" style=${{ justifyContent: 'center' }}><${K.Badge} icon="clock">${t('Being checked — usually published within minutes', 'در حال بررسی — معمولاً چند دقیقه‌ای منتشر می‌شود')}<//></div>
-      <${K.Card} tone="soft"><p className="pv-c">${t("The shop may reply publicly. You'll be notified.", 'تعمیرگاه ممکن است عمومی پاسخ دهد. خبرتان می‌کنیم.')}</p><//>
+      <${K.Empty} icon=${approval ? 'clock' : 'check'} tone=${approval ? undefined : 'success'} title=${approval ? t('Sent for approval', 'برای تأیید ارسال شد') : t('Thank you, Sara', 'ممنون، سارا')}
+        text=${approval ? t('Nobody sees your review until it is approved.', 'تا تأیید نشود، کسی نظر شما را نمی‌بیند.') : t('Your review helps the next E90 owner find the right expert.', 'نظر شما به مالک بعدی E90 کمک می‌کند متخصص مناسب را پیدا کند.')} />
+      <div className="pv-row" style=${{ justifyContent: 'center' }}><${K.Badge} icon="clock">${approval ? t('Waiting for approval', 'در انتظار تأیید') : t('Being checked — usually published within minutes', 'در حال بررسی — معمولاً چند دقیقه‌ای منتشر می‌شود')}<//></div>
+      ${approval ? html`<${K.Card}><${K.Timeline} now=${0} steps=${[[t('The shop confirms you were its customer', 'تعمیرگاه تأیید می‌کند مشتری‌اش بوده‌اید'), t('Up to 7 days. No answer means no objection.', 'تا ۷ روز. نبود پاسخ یعنی اعتراضی نیست.')], [t('A CarPal reviewer approves', 'بازبین کارپال تأیید می‌کند'), t('Usually within 2 working days after that', 'معمولاً ظرف ۲ روز کاری پس از آن')], [t('Published as “Approved by the business and CarPal”', 'منتشر می‌شود با برچسب «تأییدشده توسط کسب‌وکار و کارپال»')]]} /><//>
+        <${K.Card} tone="soft"><p className="pv-c">${t("We'll notify you. You can follow the status in My Activity. The shop only confirms the relationship; it can't change or hide your review.", 'خبرتان می‌کنیم. وضعیت را در «فعالیت‌های من» می‌بینید. تعمیرگاه فقط ارتباط را تأیید می‌کند؛ نمی‌تواند نظر شما را تغییر دهد یا پنهان کند.')}</p><//>`
+        : html`<${K.Card} tone="soft"><p className="pv-c">${t("The shop may reply publicly. You'll be notified. Because you had a confirmed appointment, nobody has to approve your review.", 'تعمیرگاه ممکن است عمومی پاسخ دهد. خبرتان می‌کنیم. چون نوبت تأییدشده داشتید، کسی لازم نیست نظر شما را تأیید کند.')}</p><//>`}
+    <//>`;
+  });
+
+  /* ---------- C-REV-04 ---------- */
+  K.reg('C-REV-04', {
+    name: 'Write Vendor Review', area: 'Reviews', kind: 'full', tab: 'discover', parent: 'C-VEND-01', isNew: true, story: '11',
+    purpose: 'Review a parts seller, with the same two confirmation paths as provider reviews.',
+    notes: 'An inquiry marked completed by the seller or the buyer makes this a verified purchase; the seller does not approve it. Without one, the seller confirms the relationship and a CarPal reviewer approves. One review per user per inquiry; users cannot review an organisation they belong to.',
+    states: [['purchase', 'Verified purchase (completed inquiry)'], ['noinquiry', 'No completed inquiry (needs approval)']]
+  }, function (props) {
+    var a = props.a, approval = a.st === 'noinquiry';
+    return html`<${K.Screen} header=${html`<${K.CloseBar} title=${t('Review the seller', 'نظر درباره فروشنده')} actions=${html`<span className="pv-cap pv-muted pv-stepcount">${t('Draft saved', 'پیش‌نویس ذخیره شد')}</span>`} />`}
+      bottom=${html`<${K.Btn} variant="primary" block onClick=${function () { a.nav.replace('C-REV-02', { state: approval ? 'approval' : 'visit' }); }}>${approval ? t('Send for approval', 'ارسال برای تأیید') : t('Submit review', 'ثبت نظر')}<//>`}>
+      ${approval ? html`<${K.Banner} tone="plain" icon="info" title=${t('No completed inquiry — the seller and CarPal will check this review before it is published.', 'بدون استعلام تکمیل‌شده — فروشنده و کارپال پیش از انتشار این نظر را بررسی می‌کنند.')} text=${t('The seller has up to 7 days to confirm you were its customer; then a CarPal reviewer approves it.', 'فروشنده تا ۷ روز فرصت دارد تأیید کند شما مشتری‌اش بوده‌اید؛ سپس یک بازبین کارپال آن را تأیید می‌کند.')} />`
+        : html`<${K.Card} tone="soft" tight><div><${K.Trust} kind="purchase" /></div><span className="pv-c">${t('Lemförder control arm · ', 'طبق Lemförder · ')}<bdi>${PV.D().p.mina.name}</bdi></span><//>`}
+      <${K.Sec} title=${t('Overall rating', 'امتیاز کلی')}><${K.Stars} value=${5} label=${t('Overall rating', 'امتیاز کلی')} /><//>
+      <${K.Card} tight>
+        ${[[t('Part accuracy', 'دقت قطعه'), 5], [t('Availability accuracy', 'دقت موجودی'), 5], [t('Price fairness', 'منصفانه بودن قیمت'), 4], [t('Service speed', 'سرعت خدمت'), 5], [t('Communication', 'ارتباط'), 0]].map(function (r, i) {
+          return html`<div key=${i} className="pv-row is-between is-nowrap"><span className="pv-c">${r[0]}</span><${K.Stars} small size=${24} value=${r[1]} label=${r[0]} /></div>`;
+        })}
+      <//>
+      <${K.Field} multiline label=${t('Your review', 'نظر شما')} defaultValue=${t('The part fitted my E90 exactly and was ready when they said.', 'قطعه دقیقاً روی E90 من نشست و همان زمانی که گفتند آماده بود.')} hint=${t('10–5000 characters. Phone numbers and plates are flagged before you publish.', '۱۰ تا ۵۰۰۰ نویسه. شماره تلفن و پلاک پیش از انتشار علامت می‌خورد.')} />
+      <${K.Sec} title=${t('Photos (optional)', 'عکس (اختیاری)')}><div className="pv-row"><${K.Thumb} add icon="camera" label=${t('Add photo', 'افزودن عکس')} /></div><//>
+      <${K.Banner} tone="plain" icon="user" text=${t('Shown as Sara M. Your phone and full name are never shown.', 'با نام «سارا م.» نمایش داده می‌شود. شماره و نام کامل شما هرگز نمایش داده نمی‌شود.')} />
     <//>`;
   });
 
@@ -167,7 +206,7 @@
       <${K.Empty} icon="image" title=${t('This post is no longer available', 'این پست دیگر در دسترس نیست')} text=${t('It was removed by its author or by moderation.', 'نویسنده یا ناظر آن را حذف کرده است.')}><${K.Btn} block onClick=${function () { a.nav.back(); }}>${t('Go back', 'بازگشت')}<//><//>
     <//>`;
     return html`<${K.Screen} header=${html`<${K.Top} title=${t('Post', 'پست')} actions=${html`<${React.Fragment}><${K.IconBtn} icon="bookmark" label=${t('Save', 'ذخیره')} /><${K.IconBtn} icon="flag" label=${t('Report', 'گزارش')} onClick=${function () { a.nav.go('S-SHARED-08'); }} /><//>`} />`}
-      bottom=${html`<${K.Btn} variant="primary" block onClick=${function () { a.nav.go('C-HELP-07'); }}>${t('Request similar service', 'درخواست خدمت مشابه')}<//>`}>
+      bottom=${html`<${K.Btn} variant="primary" block onClick=${function () { a.nav.go('C-HELP-07', { state: 'notriage' }); }}>${t('Request similar service', 'درخواست خدمت مشابه')}<//>`}>
       <${K.BeforeAfter} blur=${t('Plate blurred', 'پلاک محو شده')} />
       ${h(C.PostCard, Object.assign({ locale: PV.lang, lang: PV.lang, labels: labels() }, P.reza, { cta: null }))}
       <${K.Card} tight onClick=${function () { a.nav.go('C-PROV-01', { state: 'direct' }); }}>

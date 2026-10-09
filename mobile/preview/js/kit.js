@@ -503,13 +503,15 @@
     var info = {
       verified: [t('Verified Business', 'کسب‌وکار تأییدشده'), 'shield', t('CarPal checked this business’s licence, address and owner identity.', 'کارپال مجوز، نشانی و هویت مالک این کسب‌وکار را بررسی کرده است.')],
       specialist: [p.text || t('Suspension Specialist', 'متخصص جلوبندی'), 'wrench', t('Earned automatically: at least 15 completed jobs in this category on CarPal with an average rating of 4.5 or more. Not paid for.', 'به‌طور خودکار: دست‌کم ۱۵ کار تکمیل‌شده در این دسته در کارپال با میانگین امتیاز ۴٫۵ یا بیشتر. خریدنی نیست.')],
-      visit: [t('Verified visit', 'مراجعه تأییدشده'), 'check', t('The reviewer had a completed appointment with this shop on CarPal.', 'نویسنده یک نوبت تکمیل‌شده با این تعمیرگاه در کارپال داشته است.')],
+      visit: [t('Verified visit', 'مراجعه تأییدشده'), 'check', t('The reviewer had an appointment with this shop that was confirmed and took place. It was verified automatically; the shop cannot approve or block it. Full weight in the score.', 'نویسنده نوبتی با این تعمیرگاه داشته که تأیید شده و انجام شده است. به‌طور خودکار تأیید شده؛ تعمیرگاه نمی‌تواند آن را تأیید یا مسدود کند. وزن کامل در امتیاز.')],
+      purchase: [t('Verified purchase', 'خرید تأییدشده'), 'check', t('The reviewer had a stock inquiry with this seller that was marked completed. Verified automatically; the seller cannot approve or block it.', 'نویسنده استعلام موجودی با این فروشنده داشته که تکمیل‌شده ثبت شده است. به‌طور خودکار تأیید شده؛ فروشنده نمی‌تواند آن را تأیید یا مسدود کند.')],
+      approved: [t('Approved by the business and CarPal', 'تأییدشده توسط کسب‌وکار و کارپال'), 'shield', t('Written without an appointment. The business confirmed the reviewer was its customer (the opinion is never judged), and a CarPal reviewer approved it. It counts in the score, but for less than a verified visit.', 'بدون نوبت نوشته شده. کسب‌وکار تأیید کرده که نویسنده مشتری‌اش بوده (نظر او قضاوت نمی‌شود) و یک بازبین کارپال آن را پذیرفته است. در امتیاز حساب می‌شود، اما کمتر از مراجعه تأییدشده.')],
       record: [t('Verified record', 'سابقه تأییدشده'), 'check', t('Created from a completed appointment or confirmed by the provider.', 'از یک نوبت تکمیل‌شده ایجاد شده یا ارائه‌دهنده آن را تأیید کرده است.')],
       pending: [t('Verification pending', 'در انتظار تأیید'), 'clock', t('This business has applied for verification. CarPal has not finished checking it yet.', 'این کسب‌وکار درخواست تأیید داده است. بررسی کارپال هنوز تمام نشده است.')]
     }[p.kind || 'verified'];
     return html`<button type="button" className="pv-badgebtn" style=${{ border: 0, background: 'none', padding: 0, cursor: 'pointer' }}
       onClick=${function (e) { e.stopPropagation(); a.ui.sheet({ title: info[0], body: html`<p className="pv-b">${info[2]}</p>` }); }}>
-      <${Badge} tone=${p.kind === 'pending' ? 'neutral' : (p.kind === 'visit' || p.kind === 'record' ? 'success' : 'accent')} icon=${info[1]}>${info[0]}<//>
+      <${Badge} tone=${p.kind === 'pending' ? 'neutral' : (p.kind === 'visit' || p.kind === 'record' || p.kind === 'purchase' ? 'success' : 'accent')} icon=${info[1]}>${info[0]}<//>
     </button>`;
   }
 
@@ -557,7 +559,7 @@
       <div className="pv-row is-nowrap">
         <${Ic} name="calendar" size=${20} className="pv-accent" />
         <span className="pv-c pv-grow">${t('Next: ', 'نوبت بعدی: ')}<b>${x.next}</b></span>
-        ${p.request === false ? null : html`<${Btn} size="sm" variant=${p.primary ? 'primary' : 'secondary'} onClick=${function (e) { stop(e); a.nav.go('C-HELP-07'); }}>${t('Request', 'درخواست')}<//>`}
+        ${p.request === false ? null : html`<${Btn} size="sm" variant=${p.primary ? 'primary' : 'secondary'} onClick=${function (e) { stop(e); a.nav.go('C-HELP-07', { state: p.triage ? 'default' : 'notriage' }); }}>${t('Request', 'درخواست')}<//>`}
       </div>
     </article>`;
   }
@@ -579,7 +581,27 @@
     </article>`;
   }
 
+  /* Query chips: how the search text was understood. Removing or editing a chip re-runs the search. */
+  function QueryChips(p) {
+    var a = PV.use(), s = useState(p.items.map(function (x) { return true; }));
+    return html`<div className="pv-wrap" role="group" aria-label=${t('How we understood your search', 'برداشت ما از جستجوی شما')}>
+      <span className="pv-cap pv-muted">${t('Understood as', 'برداشت ما')}</span>
+      ${p.items.map(function (x, i) {
+        if (!s[0][i]) return null;
+        return html`<${Chip} key=${i} icon=${x[1]} iconEnd="close" toggle=${false} label=${t('Remove ', 'حذف ') + x[0]}
+          onClick=${function () { var v = s[0].slice(); v[i] = false; s[1](v); a.ui.toast(t('Search updated', 'جستجو به‌روز شد')); }}>${x[0]}<//>`;
+      })}
+    </div>`;
+  }
+
+  /* Directions: opens the remembered map app at once, otherwise the Directions sheet S-SHARED-10. */
+  PV.directions = function (a, params) {
+    if (PV.navApp) { a.ui.toast(t('Opening ', 'باز شدن ') + PV.navApp + t(' with the destination', ' با مقصد')); return; }
+    a.nav.go('S-SHARED-10', params || {});
+  };
+
   Object.assign(PV, {
+    QueryChips: QueryChips,
     Ic: Ic, Btn: Btn, Chip: Chip, Badge: Badge, Field: Field, TabBar: TabBar, IconBtn: IconBtn,
     Screen: Screen, Top: Top, CloseBar: CloseBar, RootBar: RootBar, VehicleChip: VehicleChip, Steps: Steps, FlowBar: FlowBar,
     Sec: Sec, Card: Card, Li: Li, List: List, Switch: Switch, Check: Check, Option: Option, Tabs: Tabs, ChipSet: ChipSet,

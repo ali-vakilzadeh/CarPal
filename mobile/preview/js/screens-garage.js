@@ -64,7 +64,7 @@
   }
   function Reminder(p) {
     var a = PV.use(), D = PV.D();
-    var acts = [[t('Book', 'رزرو'), function () { a.nav.go('C-HELP-07'); }], [t('Mark done', 'انجام شد'), function () { a.ui.toast(t('Marked as done', 'انجام‌شده ثبت شد'), function () {}); }], [t('Snooze', 'تعویق'), function () { a.ui.toast(t('Snoozed for 2 weeks', 'دو هفته به تعویق افتاد'), function () {}); }]];
+    var acts = [[t('Book', 'رزرو'), function () { a.nav.go('C-HELP-07', { state: 'notriage' }); }], [t('Mark done', 'انجام شد'), function () { a.ui.toast(t('Marked as done', 'انجام‌شده ثبت شد'), function () {}); }], [t('Snooze', 'تعویق'), function () { a.ui.toast(t('Snoozed for 2 weeks', 'دو هفته به تعویق افتاد'), function () {}); }]];
     if (p.ai) return html`<${K.AI} title=${p.title} text=${p.text} basis=${p.basis} actions=${acts} />`;
     return html`<${K.Card} tight>
       <div className="pv-row is-nowrap is-top"><span className="pv-tile"><${K.Ic} name=${p.icon || 'clock'} size=${20} /></span>
@@ -113,7 +113,7 @@
         </details>
         <${K.Sec} title=${t('Shops for this car', 'تعمیرگاه‌های این خودرو')}>
           <${K.List}><${K.Li} lead=${html`<${C.Avatar} name=${D.p.reza.name} ring />`} title=${html`<bdi>${D.p.reza.name}</bdi>`} sub=${t('Favourite · 1 visit', 'علاقه‌مندی · ۱ مراجعه')}
-            end=${ro ? null : html`<${K.Btn} size="sm" onClick=${function () { a.nav.go('C-HELP-07'); }}>${t('Book again', 'رزرو دوباره')}<//>`} /><//>
+            end=${ro ? null : html`<${K.Btn} size="sm" onClick=${function () { a.nav.go('C-HELP-07', { state: 'notriage' }); }}>${t('Book again', 'رزرو دوباره')}<//>`} /><//>
         <//>
         <${K.Card} tone="sunken" tight>
           <div className="pv-row is-nowrap"><span className="pv-tile"><${K.Ic} name="gauge" size=${20} /></span>
@@ -283,7 +283,7 @@
       ${self ? null : html`<${K.AI} title=${t('Next: check the left side', 'بعدی: بررسی سمت چپ')} text=${t('Control arms on the E90 often wear in pairs. Consider asking about the left side at your next service.', 'طبق‌های E90 اغلب جفتی فرسوده می‌شوند. در سرویس بعدی سمت چپ را هم بررسی کنید.')}
         basis=${t('this repair and common E90 wear patterns.', 'همین تعمیر و الگوی رایج فرسودگی E90.')} actions=${[[t('Remind me', 'یادم بینداز')]]} />`}
       <${K.List}>
-        <${K.Li} icon="calendar" title=${t('Book similar service', 'رزرو خدمت مشابه')} onClick=${function () { a.nav.go('C-HELP-07'); }} />
+        <${K.Li} icon="calendar" title=${t('Book similar service', 'رزرو خدمت مشابه')} onClick=${function () { a.nav.go('C-HELP-07', { state: 'notriage' }); }} />
         ${self ? null : html`<${K.Li} icon="star" title=${t('Leave a review', 'ثبت نظر')} onClick=${function () { a.nav.go('C-REV-01'); }} />`}
         <${K.Li} icon="share" title=${t('Share as a repair story', 'اشتراک به‌عنوان داستان تعمیر')} onClick=${function () { a.nav.go('C-COMM-06'); }} />
         ${self ? html`<${K.Li} icon="trash" danger title=${t('Delete record', 'حذف سابقه')} onClick=${function () { a.ui.dialog({ title: t('Delete this record?', 'این سابقه حذف شود؟'), text: t('It will be removed from Silver’s history. This cannot be undone.', 'از سابقه نقره‌ای حذف می‌شود و قابل بازگشت نیست.'), confirm: t('Delete', 'حذف'), danger: true, onConfirm: function () { a.nav.back(); } }); }} />`

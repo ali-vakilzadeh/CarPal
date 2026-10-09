@@ -96,6 +96,12 @@
     var symptom = t('A knocking sound from the front right when I go over bumps. Started two weeks ago, getting louder.',
       'صدای تق‌تق از جلوی سمت راست وقتی از سرعت‌گیر رد می‌شوم. از دو هفته پیش شروع شده و بلندتر می‌شود.');
 
-    return { me: me, v: v, p: p, part: part, symptom: symptom, km: km, toman: toman };
+    /* Navigation apps come from the region setting (Doc 21 S-SHARED-10), not from code. Pilot region: Iran. */
+    var navApps = [
+      { id: 'google', name: 'Google Maps', installed: true }, { id: 'waze', name: 'Waze', installed: true },
+      { id: 'neshan', name: t('Neshan', 'نشان'), installed: true, regional: true }, { id: 'balad', name: t('Balad', 'بلد'), installed: false, regional: true }
+    ];
+
+    return { me: me, v: v, p: p, part: part, symptom: symptom, km: km, toman: toman, navApps: navApps };
   };
 })();
