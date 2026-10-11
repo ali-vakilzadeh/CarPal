@@ -524,10 +524,13 @@ CREATE TRIGGER outbox_notify AFTER INSERT ON core.domain_event_outbox
   FOR EACH STATEMENT EXECUTE FUNCTION core.tg_outbox_notify();
 
 -- Helper used by every module: core.publish_event('review.published', 'review', id, '{...}').
+-- SECURITY DEFINER: the application roles may only INSERT into the outbox; the
+-- RETURNING clause would otherwise need SELECT on the table and a SELECT policy.
 CREATE FUNCTION core.publish_event(p_event_type text, p_aggregate_type text, p_aggregate_id uuid,
                                    p_payload jsonb DEFAULT '{}'::jsonb, p_schema_version int DEFAULT 1)
 RETURNS uuid
 LANGUAGE sql VOLATILE
+SECURITY DEFINER
 SET search_path = pg_catalog
 AS $$
   INSERT INTO core.domain_event_outbox (event_type, aggregate_type, aggregate_id, organization_id, payload, schema_version, request_id)
@@ -3568,12 +3571,15 @@ CREATE INDEX audit_logs_entity_idx ON analytics.audit_logs (entity_type, entity_
 CREATE INDEX audit_logs_actor_idx ON analytics.audit_logs (actor_id, created_at);
 COMMENT ON TABLE analytics.audit_logs IS '52 AuditLog — append-only, monthly partitions';
 
--- Helper used by every module's `AUD` writer (backend/libs L15).
+-- Helper used by every module's `AUD` writer (backend/libs L15). SECURITY DEFINER:
+-- the application roles may only INSERT audit entries; RETURNING would otherwise
+-- need SELECT on the append-only table.
 CREATE FUNCTION analytics.write_audit(p_action text, p_entity_type text, p_entity_id uuid,
                                       p_reason text DEFAULT NULL, p_previous text DEFAULT NULL, p_new text DEFAULT NULL,
                                       p_access_purpose text DEFAULT NULL)
 RETURNS uuid
 LANGUAGE sql VOLATILE
+SECURITY DEFINER
 SET search_path = pg_catalog
 AS $$
   INSERT INTO analytics.audit_logs (actor_type, actor_id, organization_id, action, entity_type, entity_id,

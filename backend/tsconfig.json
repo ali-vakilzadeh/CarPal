@@ -1,0 +1,30 @@
+{
+  // Base config: type-checks everything (sources, tools, tests). See tsconfig.build.json for emit.
+  "compilerOptions": {
+    "target": "ES2024",
+    "lib": ["ES2024"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    // Resolve the package.json "imports" aliases (#libs/*, #modules/*, ...) to TypeScript sources.
+    "customConditions": ["source"],
+    "resolveJsonModule": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": false,
+    "useUnknownInCatchVariables": true,
+    // NestJS dependency injection reads constructor parameter types from decorator metadata.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  "include": ["apps", "libs", "modules", "workers", "tools", "vitest.config.ts", "test"],
+  "exclude": ["node_modules", "dist", ".data", ".tools"]
+}

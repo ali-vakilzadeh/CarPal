@@ -1,0 +1,97 @@
+{
+  "name": "@carpal/backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CarPal MVP backend: NestJS modular monolith (api, admin-api, auth, worker).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=24.7"
+  },
+  "packageManager": "pnpm@10.5.2",
+  "imports": {
+    "#apps/*": {
+      "source": "./apps/*",
+      "default": "./dist/apps/*"
+    },
+    "#libs/*": {
+      "source": "./libs/*",
+      "default": "./dist/libs/*"
+    },
+    "#modules/*": {
+      "source": "./modules/*",
+      "default": "./dist/modules/*"
+    },
+    "#workers/*": {
+      "source": "./workers/*",
+      "default": "./dist/workers/*"
+    },
+    "#tools/*": {
+      "source": "./tools/*",
+      "default": "./dist/tools/*"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node tools/copy-build-assets.mjs",
+    "dev": "pnpm db:setup && pnpm build && node --enable-source-maps dist/apps/dev/main.js",
+    "start:api": "node --enable-source-maps dist/apps/api/main.js",
+    "start:admin-api": "node --enable-source-maps dist/apps/admin-api/main.js",
+    "start:auth": "node --enable-source-maps dist/apps/auth/main.js",
+    "start:worker": "node --enable-source-maps dist/apps/worker/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && depcruise --config .dependency-cruiser.cjs apps libs modules workers tools",
+    "format": "prettier --write .",
+    "test": "vitest run --project unit",
+    "test:int": "vitest run --project integration",
+    "test:all": "vitest run",
+    "db:start": "tsx --conditions=source tools/db/cli.ts start",
+    "db:stop": "tsx --conditions=source tools/db/cli.ts stop",
+    "db:setup": "tsx --conditions=source tools/db/cli.ts setup",
+    "db:reset": "tsx --conditions=source tools/db/cli.ts reset",
+    "db:status": "tsx --conditions=source tools/db/cli.ts status",
+    "db:codegen": "tsx --conditions=source tools/db/codegen.ts",
+    "contract:generate": "tsx --conditions=source tools/contract/generate.ts",
+    "contract:check": "tsx --conditions=source tools/contract/generate.ts --check",
+    "contract:coverage": "tsx --conditions=source tools/contract/coverage.ts",
+    "node:setup": "node tools/setup-local-node.mjs",
+    "test:watch": "vitest --project unit",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@nestjs/common": "^12.1.2",
+    "@nestjs/core": "^12.1.2",
+    "@opentelemetry/api": "^1.9",
+    "ajv": "^8",
+    "jose": "^6.2",
+    "kysely": "^0.29",
+    "pg": "^8",
+    "pino": "^10",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@swc/core": "^1.16.13",
+    "@types/node": "^24.19.2",
+    "@types/pg": "^8.23.1",
+    "dependency-cruiser": "^18",
+    "embedded-postgres": "16.14.0-beta.17",
+    "eslint": "^10",
+    "globals": "^17.13.0",
+    "kysely-codegen": "^0.20.0",
+    "prettier": "^3.9.9",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9",
+    "typescript-eslint": "^8.71.1",
+    "unplugin-swc": "^2",
+    "vitest": "^5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@embedded-postgres/windows-x64",
+      "@swc/core",
+      "esbuild"
+    ]
+  }
+}

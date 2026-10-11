@@ -1,0 +1,71 @@
+{
+  "$comment": "Pilot region (Plan §3.5: Iran, FA first, Jalali calendar, tiles and geocoder on project servers). Loaded by backend/libs/region-config and validated against 40 §22.1 RegionConfig; label values are Translations resolved per Accept-Language. Map URLs are placeholders until the WP1/WP8 tile build publishes them.",
+  "region_key": "ir-pilot",
+  "default_locale": "fa",
+  "locales": ["fa", "en"],
+  "currency": "IRR",
+  "calendar_default": "jalali",
+  "distance_unit_default": "km",
+  "map": {
+    "style_url": "https://cdn.carpal.app/tiles/ir-pilot/style.json",
+    "tiles_url": "https://cdn.carpal.app/tiles/ir-pilot/{z}/{x}/{y}.pbf",
+    "attribution": "© OpenStreetMap contributors",
+    "default_center": { "lat": 35.6892, "lng": 51.389 },
+    "default_zoom": 11,
+    "max_bbox_deg": "0.6"
+  },
+  "cities": [
+    { "city_key": "tehran", "label": { "en": "Tehran", "fa": "تهران" }, "center": { "lat": 35.6892, "lng": 51.389 } },
+    { "city_key": "karaj", "label": { "en": "Karaj", "fa": "کرج" }, "center": { "lat": 35.8327, "lng": 50.9915 } },
+    { "city_key": "isfahan", "label": { "en": "Isfahan", "fa": "اصفهان" }, "center": { "lat": 32.6539, "lng": 51.666 } },
+    { "city_key": "mashhad", "label": { "en": "Mashhad", "fa": "مشهد" }, "center": { "lat": 36.2972, "lng": 59.6067 } },
+    { "city_key": "shiraz", "label": { "en": "Shiraz", "fa": "شیراز" }, "center": { "lat": 29.5918, "lng": 52.5837 } },
+    { "city_key": "tabriz", "label": { "en": "Tabriz", "fa": "تبریز" }, "center": { "lat": 38.0962, "lng": 46.2738 } },
+    { "city_key": "qom", "label": { "en": "Qom", "fa": "قم" }, "center": { "lat": 34.6416, "lng": 50.8746 } }
+  ],
+  "navigation_apps": [
+    {
+      "key": "neshan",
+      "label": { "en": "Neshan", "fa": "نشان" },
+      "platforms": ["ios", "android", "web"],
+      "url_template": "https://neshan.org/maps/@{lat},{lng},16z"
+    },
+    {
+      "key": "balad",
+      "label": { "en": "Balad", "fa": "بلد" },
+      "platforms": ["ios", "android", "web"],
+      "url_template": "https://balad.ir/location?latitude={lat}&longitude={lng}"
+    },
+    {
+      "key": "google_maps",
+      "label": { "en": "Google Maps", "fa": "گوگل مپ" },
+      "platforms": ["ios", "android", "web"],
+      "url_template": "https://www.google.com/maps/dir/?api=1&destination={lat},{lng}"
+    },
+    {
+      "key": "waze",
+      "label": { "en": "Waze", "fa": "ویز" },
+      "platforms": ["ios", "android", "web"],
+      "url_template": "https://waze.com/ul?ll={lat},{lng}&navigate=yes"
+    },
+    {
+      "key": "osm",
+      "label": { "en": "OpenStreetMap", "fa": "اوپن‌استریت‌مپ" },
+      "platforms": ["web"],
+      "url_template": "https://www.openstreetmap.org/?mlat={lat}&mlon={lng}#map=17/{lat}/{lng}"
+    }
+  ],
+  "map_link_hosts": [
+    { "host": "www.google.com", "provider_key": "google", "short_link": false },
+    { "host": "maps.google.com", "provider_key": "google", "short_link": false },
+    { "host": "maps.app.goo.gl", "provider_key": "google", "short_link": true },
+    { "host": "goo.gl", "provider_key": "google", "short_link": true },
+    { "host": "www.openstreetmap.org", "provider_key": "osm", "short_link": false },
+    { "host": "osm.org", "provider_key": "osm", "short_link": true },
+    { "host": "neshan.org", "provider_key": "neshan", "short_link": false },
+    { "host": "nshn.ir", "provider_key": "neshan", "short_link": true },
+    { "host": "balad.ir", "provider_key": "balad", "short_link": false },
+    { "host": "waze.com", "provider_key": "waze", "short_link": false }
+  ],
+  "sms_country_codes": ["+98"]
+}

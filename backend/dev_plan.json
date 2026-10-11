@@ -1,0 +1,1450 @@
+{
+  "meta": {
+    "title": "CarPal backend — scratch build plan and stage log",
+    "created": "2026-10-10",
+    "last_updated": "2026-10-11",
+    "status": "in_progress",
+    "purpose": "Breaks the first (scratch) build of the CarPal backend into 9 stages, each sized to run in its own context window. Every stage writes its report back into this file so the next context can see what is done, what was decided and what to watch out for.",
+    "how_to_use": [
+      "Start a new context with: 'Run stage <id> of backend/dev_plan.json'.",
+      "Read this file first: global_decisions, conventions, doc_issues, the reports of all completed stages, and handoff_notes. Then read only the doc sections listed in the stage's context_to_read.",
+      "Before starting, set the stage status to 'in_progress' and fill report.started_at. Update each task's status as you go (not_started | in_progress | done | deferred | blocked), so a context that runs out mid-stage can be resumed.",
+      "When finishing, fill the stage report (summary, ops_implemented, ops_deferred, deviations, notes_for_next), set status to 'done' (or 'partial' with reasons), append to handoff_notes and deviations_log, and update meta.last_updated.",
+      "Never delete earlier reports. Correct them by appending a note that says what changed.",
+      "If a stage changes a global decision, record it in global_decisions with the stage id and a reason. Do not edit the decision in place without a trace."
+    ],
+    "source_documents": {
+      "authority_order": "On fields, types, enums and validation: 52 wins. On operations, transport, authorization and security: 40 wins. Physical DB: 43 script (with 42 explaining it). Module boundaries, workers and schedules: 41. Scores and badges: 54. AI resources and tools: 53.",
+      "paths": {
+        "api_contract": "Docs/40.API contract.md (402 operations, sections 6-23, appendices A-D)",
+        "backend_plan": "Docs/41.backend plan.md",
+        "db_schema_doc": "Docs/42.db schema.md",
+        "db_setup_sql": "Docs/43.db_setup.sql (about 6,500 lines; schema sections start at the 'CREATE SCHEMA <module>' lines; seeds at section 22; analytics DB at section 23)",
+        "taxonomy_catalog": "Docs/44.taxonomy catalog.json (694 nodes, 301 synonyms, 741 mappings, safety_check block)",
+        "data_model_spec": "Docs/50.MVP data model spec.md",
+        "er_map": "Docs/51.MVP entity Relationship Map.md",
+        "data_dictionary": "Docs/52.MVP Data Dictionary.md (authoritative for fields; entity rules in §21)",
+        "mcp_catalog": "Docs/53.MCP Catalog.md",
+        "scoring_protocol": "Docs/54.Scoring Protocol.md",
+        "project_plan": "Docs/02.Detailed project plan.md (§2 stack, §4 repo layout, §5 cross-cutting rules)"
+      },
+      "reading_tip": "The large docs (40 at 264 KB, 52 at 140 KB, 43 at 496 KB) must not be read whole. Use grep on '^#### <op.id>' in 40, on '^## <Entity>' in 52 and on 'CREATE SCHEMA <name>' in 43, then read only those ranges."
+    }
+  },
+  "environment": {
+    "checked_on": "2026-10-10",
+    "os": "Windows 11, Git Bash + PowerShell",
+    "available": {
+      "node": "20.10.0",
+      "npm": "10.2.3",
+      "pnpm": "10.5.2",
+      "git": "2.55",
+      "local_node": "24.21.0 LTS, project-local in backend/.tools/node (gitignored), installed by tools/setup-local-node.mjs (checksum-verified)",
+      "postgresql": "16.14 embedded (embedded-postgres npm binaries, contrib incl. pg_trgm; no pgvector, no psql)"
+    },
+    "missing": [
+      "docker",
+      "psql / PostgreSQL server",
+      "redis-server",
+      "nats-server",
+      "elasticsearch"
+    ],
+    "consequence": "Local development and tests must run in 'lite' infrastructure mode (see GD-04) until Docker is installed. The 'full' mode (docker compose) is written but cannot be verified on this machine yet.",
+    "node_note": "System Node stays 20.10 (the user has another live project on it; they will move to Node 24 LTS later). The backend runs on the project-local Node 24.21.0: in every new shell run `source tools/use-local-node.sh` (Git Bash) or `. tools\\use-local-node.ps1` (PowerShell) from backend/. Shell state does not persist between Claude Bash calls, so prefix each command with it."
+  },
+  "global_decisions": [
+    {
+      "id": "GD-01",
+      "decision": "Single NestJS package rooted at backend/ (backend/package.json, pnpm). TypeScript path aliases give module boundaries: @carpal/libs/*, @carpal/modules/*, @carpal/workers/*. Nest CLI monorepo mode with apps under backend/apps/{api,admin-api,auth,worker}.",
+      "reason": "One deployable codebase (41 §1). A single package avoids workspace overhead while there is no frontend consumer. dependency-cruiser enforces the boundaries instead of package borders. A repo-level pnpm workspace can be added when shared/ gets consumers.",
+      "stage": "plan",
+      "amendments": [
+        {
+          "stage": "S1",
+          "change": "The package is ESM (\"type\": \"module\") because NestJS 12 ships ESM only. Module aliases are package.json subpath imports (#apps/*, #libs/*, #modules/*, #workers/*, #tools/*) with a \"source\" condition (TS sources for tsc/tsx/Vitest, dist/ for node), not TS path aliases. No nest-cli: `pnpm build` = tsc -p tsconfig.build.json + tools/copy-build-assets.mjs (copies generated JSON)."
+        }
+      ]
+    },
+    {
+      "id": "GD-02",
+      "decision": "SQL-first data access: Kysely + pg. DB types are generated from the live schema with kysely-codegen. No ORM, and no ORM-managed migrations.",
+      "reason": "The schema, RLS, triggers and seeds already exist as SQL (43), and every transaction must call core.set_context(). A query builder keeps SQL visible and type-safe.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-03",
+      "decision": "Request/response validation uses ajv (JSON Schema 2020-12, closed objects). Schemas are generated from the doc-40 type notation where the parser can handle it. Types it cannot handle get hand-written schemas in the owning module's api/ folder.",
+      "reason": "40 §0.1 says its notation maps 1:1 to JSON Schema 2020-12, and OpenAPI 3.1 uses the same dialect.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-04",
+      "decision": "Infrastructure goes behind ports, with two adapter sets chosen by CARPAL_INFRA=lite|full. Lite: embedded PostgreSQL (see S1.T3), in-memory key-value store, in-process event bus and job queue, in-memory search index, local-filesystem object storage under backend/.data/, file/log sinks for email/SMS/push. Full: PostgreSQL 16 + pgvector, Redis, NATS JetStream, BullMQ, Elasticsearch, S3/MinIO, Mailpit, via infrastructure/docker/docker-compose.yml.",
+      "reason": "No Docker or servers on this machine. Business code depends only on the ports, so full mode needs no code changes.",
+      "stage": "plan",
+      "amendments": [
+        {
+          "stage": "S1",
+          "change": "Lite DB runtime chosen: embedded-postgres 16.14.0-beta.17 (real PostgreSQL 16, real login roles and RLS, concurrent connections). PGlite was not needed. The cluster is run with pg_ctl so it survives the CLI process (data: backend/.data/pg, port 54329, 127.0.0.1 only, fsync off)."
+        },
+        {
+          "stage": "S2",
+          "change": "Lite adapters are per process (in-memory KV, bus, queue; files under .data/), so pnpm dev runs api, admin-api, auth and the worker in one process. Full-mode adapters exist as typed skeletons that reject with NotConfiguredError."
+        }
+      ]
+    },
+    {
+      "id": "GD-05",
+      "decision": "The router registers all 402 operations from the generated registry from day one. An operation without a handler returns 501 with problem code NOT_IMPLEMENTED. This is a dev-only deviation from 40 §4.3, and it must be zero (or explicitly listed) by the end of S9.",
+      "reason": "Fail-closed routing (40 'no undocumented endpoints') from the start, plus a measurable coverage number per stage.",
+      "stage": "plan",
+      "amendments": [
+        {
+          "stage": "S2",
+          "change": "The 501 is answered after authentication, rate limits, authorization and feature flags and before input validation, so unimplemented routes still prove their guards. Problem code NOT_IMPLEMENTED (outside the 40 catalog). After S2: 398 operations answer 501."
+        }
+      ]
+    },
+    {
+      "id": "GD-06",
+      "decision": "Scratch auth: real EdDSA JWTs, server-side sessions with refresh rotation and family revocation, Argon2id passwords, TOTP. DPoP, mTLS, app attestation, PoW and WebAuthn are coded as guard hooks and enforced only when CARPAL_STRICT_AUTH=1. Until then they are logged deviations.",
+      "reason": "Keeps the security model in place without blocking feature stages on the hardest protocol work.",
+      "stage": "plan",
+      "amendments": [
+        {
+          "stage": "S2",
+          "change": "Strict-mode hooks implemented: DPoP proof verification is complete (ES256 embedded key, htm/htu/iat/ath/jkt, jti replay in the KV store; server nonces left to S3), mTLS compares cnf x5t#S256 with the thumbprint supplied by the TLS terminator, ATT calls an AttestationVerifierPort (S3). The admin plane requires aal3 staff sessions in both modes."
+        }
+      ]
+    },
+    {
+      "id": "GD-07",
+      "decision": "AI is never called directly. The ai-mcp facade module talks to an McpClientPort. In lite mode the port is a deterministic stub that returns schema-valid drafts, or 503 AI_UNAVAILABLE when the flag or kill switch says so. The real MCP gateway and orchestrator (ai-mcp/ folder, D6/D7) are out of scope for this backend build.",
+      "reason": "41 §1 rule 4 and 40 SEC-AI. The user asked for the backend; ai-mcp/ is a separate deployable.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-08",
+      "decision": "Tests: Jest (with @swc/jest) + supertest. Integration tests run against the real embedded PostgreSQL with RLS on, connecting as the real application roles (carpal_api, carpal_admin_api, carpal_worker, carpal_auth), never as superuser.",
+      "reason": "41 §8. RLS is the second wall of tenancy (40 SEC-AZ-3) and only real role connections test it.",
+      "stage": "plan",
+      "amendments": [
+        {
+          "stage": "S1",
+          "change": "Vitest 5 instead of Jest (41 §8 names Jest): Jest ESM support is still experimental and the package is ESM. unplugin-swc compiles TS so decorator metadata is emitted. Projects: unit (*.test.ts) and integration (*.int.test.ts, global setup starts the DB and runs db:setup)."
+        }
+      ]
+    },
+    {
+      "id": "GD-09",
+      "decision": "The database migrations are generated from Docs/43.db_setup.sql by a build script into database/migrations/. Generated files are never edited by hand: fix 43 (and 42) and regenerate. Changes after the first install become numbered migrations (0100+), written by hand.",
+      "reason": "42 §1: the script is authoritative and later changes are numbered migrations.",
+      "stage": "plan",
+      "amendments": [
+        {
+          "stage": "S1",
+          "change": "No generated split migration files. Docs/43.db_setup.sql is run as-is by a psql-compatible runner (tools/db/psql: \\set, \\if/\\elif/\\else/\\endif, \\gset, \\gexec, \\connect, \\echo, :var/:'var'/:\"var\"/:{?var}); its SHA-256 is stored in core.schema_info (baseline.sha256). database/migrations/NNNN_*.sql run afterwards as carpal_migrator + SET ROLE carpal_owner. Real psql works too (full mode)."
+        }
+      ]
+    },
+    {
+      "id": "GD-10",
+      "decision": "Project-local Node 24 LTS (backend/.node-version = 24.21.0) under backend/.tools/node; engines \">=22.12\". Current tool majors are used (TypeScript 5.9, Vitest 5, ESLint 10, dependency-cruiser 18).",
+      "reason": "The user keeps the system Node 20.10 for another project until it ends, then upgrades to Node 24 LTS. Current tooling needs Node >= 22.12.",
+      "stage": "S1",
+      "amendments": [
+        {
+          "stage": "S2",
+          "change": "engines raised to >=24.7: password hashing uses node:crypto argon2 (Argon2id, no native npm dependency). TypeScript target/lib ES2024 (String.isWellFormed)."
+        }
+      ]
+    },
+    {
+      "id": "GD-11",
+      "decision": "The contract is generated, never hand-copied: libs/contract/generated/ (operations.json, schemas.json, operation-schemas.json, operation-ids.ts, errors.ts, enums.ts, role-groups.ts, schema-coverage.json) from Docs/40 by tools/contract/generate.ts. CI (S9) runs pnpm contract:check; a unit test fails when the files are stale.",
+      "reason": "40 is authoritative and changes; generation keeps the router, validation and tests aligned with it.",
+      "stage": "S1"
+    },
+    {
+      "id": "GD-12",
+      "decision": "HTTP layer: no Nest controllers and no Nest platform adapter. libs/http-pipeline registers the routes of operations.json per host on node:http and runs the 41 §5 steps as explicit code; NestJS (application context) provides dependency injection, modules, lifecycle and DiscoveryService to find @Operation(opId) handlers.",
+      "reason": "Routes must come only from the contract (SEC-AZ-1) with exact 404/405/501 behaviour, a fixed step order, raw-body access for strict JSON and idempotency hashing, and no framework headers. Decorator-based controllers would duplicate the registry; dynamic Express routes would still need custom ordering and parsing.",
+      "stage": "S2"
+    },
+    {
+      "id": "GD-13",
+      "decision": "Integration-test database strategy: one shared database per test run (db:setup once), never reset between tests; fixtures (libs/testing) write through carpal_worker in the system context with fresh UUIDv7 ids and @test.carpal.app emails, the app under test connects with its real role, and tests assert only on their own rows.",
+      "reason": "Template clones lose the per-database role settings (S1 notes); per-test rollback cannot wrap an HTTP app with its own transactions; truncation is blocked on append-only tables. Unique fixtures keep RLS real and tests fast (the 3.5k-request sweep takes about 3 s).",
+      "stage": "S2"
+    }
+  ],
+  "conventions": {
+    "folder_layout": {
+      "backend/apps/": "api, admin-api, auth, worker entry points (41 §1 D1-D3, D5). BFFs (D4) are deferred and live in backend/api-gateway/ later.",
+      "backend/libs/<lib>/": "L1-L22 of 41 §2.2, one folder each: contract, http-pipeline, auth, authz, tenancy, idempotency, concurrency, rate-limit, outbox, jobs, crypto, link-tokens, i18n, flags, audit, consent-gate, entitlements, safety-check, geo, region-config, observability, testing. Add 'db' (Kysely pools, generated types) and 'infra' (ports + lite/full adapters).",
+      "backend/modules/<name>/": "Layout of 41 §4.2: <name>.module.ts, interface/, api/, application/, domain/, infrastructure/, events/, projections/, tests/. Add modules/ai-mcp (missing from the skeleton).",
+      "backend/workers/<name>/": "Handlers per worker (W1-W15 of 41 §2.4), registered in apps/worker. The existing folders (search-indexer, trust-scoring, notification-dispatch, analytics-pipeline, import-jobs) are kept; add others as the stages need them.",
+      "database/": "tools/ (migration builder), migrations/ (generated + numbered), seeds/ (only if not covered by 43), policies/ (unused: RLS is inside 43).",
+      "shared/api-contracts/": "openapi.yaml generated in S9."
+    },
+    "naming": "Operation handlers are bound by op id: @Operation('vehicles.create'). One use case class per operation in application/. Event types and payloads follow 40 Appendix A and 52 §20.",
+    "definition_of_done_per_operation": [
+      "Handler bound to the op id, with request validation (closed schema) and the sec tags enforced by guards (auth, authz, flags, idempotency, ETag, rate-limit bucket, entitlement, consent, audit, as tagged).",
+      "Runs in one transaction with core.set_context(); writes only the module's own schema; cross-module reads go through interfaces.",
+      "Response is built by an allowlist projection for its audience (public, member or staff).",
+      "Documented operation-specific error codes are produced; events in its 'emit:' line are written to the outbox.",
+      "At least: one happy-path integration test, one authorization-negative test (BOLA or BFLA), plus a test per state-machine or business rule the op enforces."
+    ],
+    "commands_expected": {
+      "install": "cd backend && pnpm install",
+      "build": "pnpm build",
+      "lint": "pnpm lint (eslint + dependency-cruiser)",
+      "test": "pnpm test (unit) / pnpm test:int (integration, needs embedded DB)",
+      "db": "pnpm db:setup | pnpm db:reset | pnpm db:codegen",
+      "contract": "pnpm contract:generate | pnpm contract:check | pnpm contract:coverage",
+      "dev": "pnpm dev (lite mode: api + admin-api + auth + embedded workers)"
+    },
+    "context_budget": "Each stage should read only its listed doc ranges, lean on the generated registry (backend/libs/contract/generated/) instead of re-reading doc 40, and copy repetitive CRUD patterns from the first finished module rather than re-deriving them."
+  },
+  "doc_issues": [
+    {
+      "id": "DI-01",
+      "issue": "42.db schema.md calls itself 'Doc 41 (db schema)' and calls the script '42.db_setup.sql'. 41.backend plan.md links '41.db schema.md' and '42.db_setup.sql'. The actual files are 42.db schema.md and 43.db_setup.sql, and the script header says 'Doc 42'.",
+      "action": "Code and tooling use the real file names. Suggest the user renumbers the references in 41/42/43.",
+      "status": "open"
+    },
+    {
+      "id": "DI-02",
+      "issue": "backend/README.md lists 15 modules. 41 §2.1 has 16 (M16 ai-mcp API facade). 41 §4.1 also has backend/apps/, which does not exist yet.",
+      "action": "S1 creates backend/modules/ai-mcp and backend/apps/ and updates backend/README.md.",
+      "status": "resolved in S1 (backend/apps/*, backend/modules/ai-mcp created; backend/README.md rewritten)"
+    },
+    {
+      "id": "DI-03",
+      "issue": "Git tracks the folder as 'Docs/' but it appears as 'docs/' on this case-insensitive Windows disk.",
+      "action": "Tooling must reference 'Docs/' exactly so it works on case-sensitive CI runners.",
+      "status": "open"
+    },
+    {
+      "id": "DI-04",
+      "issue": "41 §4.1 puts migrations in database/migrations 'generated from 42.db_setup.sql', but 43 uses psql meta-commands (\\set, \\if, \\gset, \\connect) and cluster-level DDL (roles, two databases), so it cannot run through a plain driver.",
+      "action": "S1.T4 builds a converter that resolves the meta-commands for env=dev|staging|prod and splits the output per database.",
+      "status": "resolved in S1 (psql-compatible runner executes 43 directly; see GD-09 amendment)"
+    },
+    {
+      "id": "DI-05",
+      "issue": "40 admin.assist_session_start says staff call allowlisted operations \"through {adm}/assist/{assist_session_id}/… with the same bodies as the portal\", but does not say how the \"…\" suffix maps to the portal paths (e.g. is org.update reached at {adm}/assist/{id}/orgs/{org_id}?). The registry carries the 20 allowlisted op ids (assistAllowlist) but no assist routes.",
+      "action": "S8 decides the mapping (proposal: the portal path after /v1, e.g. /v1/admin/assist/{assist_session_id}/orgs/{org_id}) and the doc is corrected.",
+      "status": "open"
+    },
+    {
+      "id": "DI-06",
+      "issue": "40 auth.authorize declares q: client_id: Str without bounds (every other Str has <a,b>). The generator accepts it as a non-empty single-line string.",
+      "action": "Suggest Str<3,40> to match the CarPal-Client client_id rule (40 §1.3).",
+      "status": "open"
+    },
+    {
+      "id": "DI-07",
+      "issue": "core.normalize_search_text() uses lower() and the regex class \\s, which follow the database ctype: under the default -v db_locale=C only ASCII letters are lower-cased and only ASCII whitespace is collapsed (checked in S2). With C.UTF-8 or ICU the same function lower-cases Unicode and collapses Unicode spaces.",
+      "action": "libs/i18n normalizeSearchText takes the DB locale (CARPAL_DB_LOCALE) and matches either behaviour; an integration test compares it with the database. Suggest 43 pins the behaviour (e.g. lower(... COLLATE \"und-x-icu\") and an explicit space class) so search keys do not depend on the install locale.",
+      "status": "open"
+    },
+    {
+      "id": "DI-08",
+      "issue": "core.publish_event() and analytics.write_audit() use INSERT ... RETURNING; the application roles have INSERT but no SELECT (and no SELECT policy) on core.domain_event_outbox / analytics.audit_logs, so publish_event failed for carpal_api, carpal_admin_api, carpal_auth, carpal_ai and write_audit for carpal_api, carpal_auth (42501).",
+      "action": "Both functions are SECURITY DEFINER in Docs/43 (search_path already pinned; they only insert and read the caller's GUC context). 42 §5.3 lists them. Local databases: pnpm db:reset.",
+      "status": "resolved in S2"
+    },
+    {
+      "id": "DI-09",
+      "issue": "admin.platform_role_revoke and admin.synonym_delete are DELETE operations with RSN, but DELETE takes no body (TR-6) and RSN means 'request body must contain reason'.",
+      "action": "Decide in S8: make them POST .../revoke and POST .../delete with { reason }, or carry the reason in a header. A unit test pins the list of RSN operations whose input lacks reason.",
+      "status": "open"
+    },
+    {
+      "id": "DI-10",
+      "issue": "Problem (40 §4.2) is a closed type, but CONSENT_REQUIRED ('body names the consent_type'), ENTITLEMENT_REQUIRED ('body names the key') and PUBLISH_REQUIREMENTS_UNMET ('body lists missing requirements') need extra members.",
+      "action": "S3/S4 decide: add optional members to Problem (e.g. consent_type, entitlement_key, requirements[]) or encode them as FieldErrors. The pipeline renders only the closed Problem today.",
+      "status": "open"
+    }
+  ],
+  "stages": [
+    {
+      "id": "S1",
+      "title": "Foundation: workspace, local DB runtime, migrations, contract registry",
+      "status": "done",
+      "depends_on": [],
+      "goal": "A buildable, testable backend package; the full database from 43 installed locally without Docker; and a machine-readable registry of all 402 operations generated from doc 40.",
+      "scope": {
+        "contract_sections": [
+          "§0 notation (parsing only)",
+          "§3 data types",
+          "§4 envelopes and errors",
+          "§5 enum registry"
+        ],
+        "libs": [
+          "contract (L1)",
+          "db"
+        ],
+        "ops_target": 0
+      },
+      "context_to_read": [
+        "Docs/41.backend plan.md §1, §2.2, §4",
+        "Docs/42.db schema.md (all, it is short)",
+        "Docs/43.db_setup.sql header and sections 0-1 (parameters, roles) and 21-23 (security, seeds, analytics DB). Skim the rest for meta-commands only.",
+        "Docs/40.API contract.md §0, §3, §4, §5 and 3-4 sample operation blocks"
+      ],
+      "tasks": [
+        {
+          "id": "S1.T1",
+          "status": "done",
+          "title": "Create backend/package.json (pnpm, engines node >=20.10), tsconfig (strict, path aliases per GD-01), nest-cli.json (monorepo: api, admin-api, auth, worker), Jest + @swc/jest, eslint + prettier, dependency-cruiser rules from 41 §4.2, .env.example, scripts listed in conventions.commands_expected. Add backend/.data/ to .gitignore.",
+          "note": "Done with changes: ESM package, Vitest instead of Jest, no nest-cli.json (tsc build). ESLint flat config, Prettier (printWidth 140), dependency-cruiser rules (module-internals, libs-are-leaves, modules-not-apps, runtime-not-tools, no-circular, not-to-unresolvable, not-to-dev-dep) — verified to fire with planted violations. .env.example. NestJS itself is not installed yet (S2)."
+        },
+        {
+          "id": "S1.T2",
+          "status": "done",
+          "title": "Create the folder skeleton: backend/apps/*, the 41 §4.2 layout in every module (16, including the new modules/ai-mcp), and libs folders with index.ts barrels. Remove .gitkeep files that become redundant. Update backend/README.md (DI-02).",
+          "note": "Done: apps/{api,admin-api,auth,worker} and modules/ai-mcp created (with .gitkeep); backend/README.md rewritten (quick start, layout, conventions). The 41 §4.2 sub-folders and lib folders are created when a stage first adds code (empty folders are not tracked by git); the README states the layout."
+        },
+        {
+          "id": "S1.T3",
+          "status": "done",
+          "title": "DB runtime spike. Try in order: (a) the 'embedded-postgres' npm package (real PostgreSQL 16 binaries on Windows; check whether pgvector can be added); (b) PGlite (@electric-sql/pglite, WASM, ships the vector extension; check roles, SET ROLE, RLS, and a second instance for carpal_analytics). Pass criteria: the generated migrations run; there are login connections as carpal_api with RLS enforced; there are two databases; pgvector exists or a documented lite-mode shim exists (ext.vector → real[] only in lite). Record the choice and the evidence in report.notes_for_next.",
+          "note": "Done: embedded-postgres 16.14 chosen (see GD-04 amendment). Whole baseline installs in ~4.5 s."
+        },
+        {
+          "id": "S1.T4",
+          "status": "done",
+          "title": "database/tools/build-migrations.ts: convert Docs/43.db_setup.sql into pure SQL files under database/migrations/ (0001_cluster_roles.sql, 0002_carpal.sql, 0003_carpal_seeds.sql, 0010_analytics.sql or similar), resolving \\set/\\if/\\gset/\\connect/\\echo for a chosen env. Passwords come from env vars, never from files. Add a runner (pnpm db:setup / db:reset) that applies them to the lite or full DB and records the version in core.schema_info.",
+          "note": "Done differently: runner instead of generated files (see GD-09 amendment). Lite shim for pgvector: ext.vector = real[] domain + ext.vector_dims(), HNSW index skipped; recorded as runtime.lite_shims."
+        },
+        {
+          "id": "S1.T5",
+          "status": "done",
+          "title": "DB smoke tests (integration): 17 schemas / 102 tables in carpal; 694 taxonomy nodes, 301 synonyms, 741 mappings; 9 plans / 108 entitlements; 22 feature flags; carpal_api cannot set 'system' or 'staff' context; anonymous context cannot read user_accounts; analytics DB has events.analytics_events.",
+          "note": "Done: tools/db/baseline.int.test.ts (13 tests)."
+        },
+        {
+          "id": "S1.T6",
+          "status": "done",
+          "title": "Contract parser (L1): tools/contract/parse.ts reads Docs/40.API contract.md and writes libs/contract/generated/operations.json. Per op: op_id, section, owning module, method, path (aliases of 40 §0.3 expanded; ops under {V}/{A}/{RQ} produce one entry per prefix with its own sec tags per the 'A | B' rule), host (auth | api | admin-api), success status, response type, input type, query params, structured sec tags, errors, emits. Expect 402 op ids (the §0.2 grammar example \"#### <op.id>\" is not an operation). Also generate TS for the error catalog (§4.3/§4.4), the enum registry (§5) and the role groups (§0.5).",
+          "note": "Done: 402 operations, 450 routes (48 dual-scope ops → 2 routes), hosts api 373 / admin-api 60 / auth 16 / storage 1, no route conflicts; assist allowlist (20 ops) extracted."
+        },
+        {
+          "id": "S1.T7",
+          "status": "done",
+          "title": "Time-boxed: type-notation parser that turns the 'type X = {...}' blocks in §3 and every §N.1 into JSON Schema 2020-12 (closed objects, Partial/Omit, unions, List/Set limits, Int<a,b>, Str<a,b>, enums) at libs/contract/generated/schemas.json. Report coverage (parsed / total types) and list unparsed types in notes_for_next. If coverage < 70% after the time box, stop and record that later stages hand-write schemas.",
+          "note": "Done: 100% — 313/313 named types (+1 generic Page<T>), 206/206 inputs, 399/399 responses, all query and path parameters; every schema compiles in ajv strict mode."
+        },
+        {
+          "id": "S1.T8",
+          "status": "done",
+          "title": "pnpm contract:check (fails when Docs/40 changed without regeneration, using a stored doc hash) and pnpm contract:coverage (later: implemented vs 501 ops per module).",
+          "note": "Done: pnpm contract:check (and a unit test comparing regenerated output with the files); pnpm contract:coverage counts @Operation('op.id') decorators per module (0/402 now)."
+        },
+        {
+          "id": "S1.T9",
+          "status": "done",
+          "title": "pnpm db:codegen: kysely-codegen for each schema into libs/db/generated/. Commit the output so stages without a DB can still compile.",
+          "note": "Done: libs/db/generated/db.ts (102 tables, keys like \"vehicle.vehicles\") and analytics-db.ts (events.*); numeric and date as strings; pnpm db:codegen --verify works."
+        },
+        {
+          "id": "S1.T10",
+          "status": "done",
+          "title": "infrastructure/docker/docker-compose.yml for full mode (postgres16 + pgvector, redis, nats with JetStream, elasticsearch or opensearch, minio, mailpit). Written but not run (no Docker here); mark it unverified.",
+          "note": "Written, NOT verified (no Docker): PostgreSQL 16 + pgvector, Redis 7.4, NATS 2.10 JetStream, OpenSearch 2.17, MinIO, Mailpit; ports/credentials match .env.example."
+        }
+      ],
+      "deliverables": [
+        "backend/package.json, tsconfig, nest-cli.json, lint/test config",
+        "database/tools/build-migrations.ts + generated database/migrations/*",
+        "backend/libs/contract/generated/{operations.json, schemas.json, errors.ts, enums.ts, role-groups.ts}",
+        "backend/libs/db/generated/*",
+        "infrastructure/docker/docker-compose.yml"
+      ],
+      "acceptance_criteria": [
+        "pnpm install, build, lint and test pass on this machine",
+        "pnpm db:reset installs both databases from the generated migrations in lite mode, and the S1.T5 smoke tests pass",
+        "operations.json contains 402 distinct op ids and every op has a method, path, host and parsed sec tags"
+      ],
+      "out_of_scope": [
+        "Any HTTP server",
+        "Business logic"
+      ],
+      "report": {
+        "started_at": "2026-10-10",
+        "completed_at": "2026-10-10",
+        "summary": "Backend package (ESM, TypeScript 5.9, project-local Node 24) with lint, module-boundary rules, Vitest and build. The full Docs/43 database installs locally without Docker or psql (embedded PostgreSQL 16 + a psql-compatible runner), with smoke tests for counts, RLS and role contexts. Docs/40 is parsed into a complete operation registry (402 ops / 450 routes) and JSON Schemas for 100% of its types, plus error, enum and role-group catalogs. Kysely types generated for both databases. Full-mode docker compose written (unverified).",
+        "db_runtime_choice": "embedded-postgres 16.14.0-beta.17 (real PostgreSQL 16 server via pg_ctl) + lite pgvector shim",
+        "schema_parser_coverage": "100%: 313/313 types (+1 generic), 206/206 inputs, 399/399 responses, all query/path params",
+        "ops_implemented": [],
+        "ops_deferred": [],
+        "files_created": [
+          "backend/package.json, pnpm-lock.yaml, tsconfig.json, tsconfig.build.json, vitest.config.ts, eslint.config.js, .dependency-cruiser.cjs, .prettierrc.json, .prettierignore, .env.example, .node-version",
+          "backend/tools/setup-local-node.mjs, use-local-node.sh, use-local-node.ps1, copy-build-assets.mjs",
+          "backend/tools/db/{config,server,install,cli,codegen,vitest.global-setup}.ts, psql/{lexer,runner}.ts, baseline.int.test.ts",
+          "backend/tools/contract/{markdown,parse-operations,catalogs,generate,coverage}.ts, types/{parser,json-schema}.ts (+ tests)",
+          "backend/libs/contract/{index,registry.types}.ts, generated/* (committed), contract.test.ts",
+          "backend/libs/db/index.ts, generated/{db,analytics-db}.ts (committed)",
+          "database/migrations/README.md, database/README.md, infrastructure/docker/docker-compose.yml"
+        ],
+        "tests": "52 passing (pnpm test:all): 39 unit (psql lexer/runner, contract parser, type parser and JSON Schema converter, generated contract: freshness, counts, host isolation, error/role references, ajv strict compile of >1000 schemas, sample VehicleWrite validation) + 13 integration (baseline hash, 17 schemas / 102 tables, RLS on every module table, seed counts, analytics DB, set_context refusals for carpal_api, staff/system contexts, anonymous/user visibility, append-only audit log, no CREATE in public). Also green: pnpm lint, typecheck, build, contract:check, db:codegen --verify.",
+        "deviations": [
+          "Vitest instead of Jest (41 §8) — GD-08 amendment.",
+          "No nest-cli; ESM subpath imports instead of TS path aliases — GD-01 amendment.",
+          "Baseline is executed directly, not split into generated migration files — GD-09 amendment.",
+          "Lite mode has no pgvector: ext.vector is a real[] domain and the HNSW index is skipped (only ai_mcp.embeddings affected).",
+          "Embedded cluster runs with fsync/synchronous_commit/full_page_writes off (dev speed)."
+        ],
+        "notes_for_next": [
+          "Run every command from backend/ after `source tools/use-local-node.sh`. `pnpm test:int` starts the DB and runs db:setup by itself (idempotent).",
+          "Registry (loadRegistry()): each Route has host (api | admin-api | auth | storage), method, path with {param} placeholders (convert to :param for Nest/Express), pathParams, and security = { principals: SecTag[][] (ANY ONE alternative, each an AND-list of PUB/USR/ORG/DRV/STF/LNK), tags: SecTag[] (ALL apply) }. SecTag = { tag, args, qualifier? }. Dual-scope ops ({V}/{A}/{RQ}) are two routes with scope me | fleet | org. Single-path ops with \"USR | ORG(...)\" have two principal alternatives where the org is resolved by target or body (media.*, jobs.*, ai.insight_*), qualifier \"by target\"/\"by approver_role\" on ai.suggestion_decide / ai.approval_decide.",
+          "Special routes: media.upload_put has host \"storage\" and no principals (signed URL; not a Nest route). auth.token and auth.revoke have inputEncoding \"form\" (RFC 6749); auth.authorize answers 302. Operations with alternateResponses (admin.flag_update, admin.mcp_client_update) can answer 202 PendingChange (4EYES).",
+          "Schemas: createContractAjv() returns a strict Ajv2020 with all $defs registered; per-op schemas in loadSchemas().operations[opId] = { input?, response?, alternateResponses?, query (closed object; cursor/limit shorthand expanded, admin limit ≤ 100), pathParams }. Custom keywords: x-node-type (TaxonomyResolver check, S3), x-conditional (the \"// C:\" rule text; enforced by the owning use case), x-server-schema (Json<Name>: server-defined schemas still to be written by the owning module), x-external (RFC-defined OAuth/OIDC/WebAuthn documents), x-locale-config.",
+          "Error catalog (ERROR_CODES, 50 codes with status and common flag), ENUMS (75 from §5), ROLE_GROUPS (15; O+ and M+ are orgTypeRelative, ANY = any active member) and the OperationId union type are exported from #libs/contract/index.js.",
+          "Kysely: import type { DB } from #libs/db/index.js; table keys are \"schema.table\"; numeric and date columns are strings, timestamptz are Date. Regenerate with pnpm db:codegen after any DB change.",
+          "Request context: SELECT core.set_context(actor_type, user_id, org_id, role, request_id, anon_key) first in every transaction (transaction-local). carpal_api is refused system/staff (SQLSTATE 42501); staff is only for carpal_admin_api; system for carpal_auth/worker/ai.",
+          "Test DB strategy for S2.T14: roles are cluster-wide, but the per-role settings (search_path = pg_catalog, core, ext; statement/lock timeouts) are set IN DATABASE carpal. A database cloned with CREATE DATABASE … TEMPLATE carpal does NOT inherit them, so either re-apply the ALTER ROLE … IN DATABASE statements for clones or use per-test transactions with rollback on the main carpal database. Login role passwords default to <role>_dev.",
+          "NestJS 12 is not installed yet. Check early in S2 that DI works under ESM with tsc emitDecoratorMetadata (build) and unplugin-swc (tests); eslint consistent-type-imports is already off in apps/modules/workers because Nest injects by class.",
+          "Assist-session routes are not in the registry (DI-05); decide in S8."
+        ]
+      }
+    },
+    {
+      "id": "S2",
+      "title": "Platform libraries, app shells and the request pipeline",
+      "status": "done",
+      "depends_on": [
+        "S1"
+      ],
+      "goal": "All four apps boot in lite mode. Every one of the 402 routes is reachable on its host and passes the full 41 §5 pipeline (implemented, or 501 per GD-05). Shared libs L2-L22 exist with tests, and the test harness can create users, orgs and tokens for any role.",
+      "scope": {
+        "contract_sections": [
+          "§1 transport",
+          "§2 security model (SEC-AU, AZ, IN, OUT, IC, RL, LT, CR, LOG)",
+          "§22 platform ops: health.get, config.client, jobs.get, jobs.cancel"
+        ],
+        "libs": [
+          "L2-L22",
+          "infra (ports + lite adapters)"
+        ],
+        "workers": [
+          "W1 outbox-relay",
+          "W15 scheduler host (no rules yet)"
+        ],
+        "ops_target": 4
+      },
+      "context_to_read": [
+        "backend/dev_plan.json S1 report",
+        "Docs/41.backend plan.md §2.2, §5, §6.1, §7",
+        "Docs/40.API contract.md §1, §2 (all SEC rules), §22",
+        "Docs/42.db schema.md §5 (context, RLS, definer functions), §7 (events, jobs, audit)"
+      ],
+      "tasks": [
+        {
+          "id": "S2.T1",
+          "status": "done",
+          "title": "Config (zod-validated env) and observability L21: pino logs with redaction and escaping, request id = CarPal-Request-Id, OpenTelemetry hooks (no exporter in lite mode).",
+          "note": "libs/config (zod env; staging/prod refuse the dev master secret; prod requires CARPAL_STRICT_AUTH=1) and libs/observability (pino JSON logs, key-based redaction at any depth, control/bidi escaping, CarPal-Request-Id resolver, /24 and /56 IP prefixes, OpenTelemetry API spans and metrics; no SDK/exporter in lite)."
+        },
+        {
+          "id": "S2.T2",
+          "status": "done",
+          "title": "libs/infra ports + lite adapters: KeyValueStore (TTL, atomic ops, sliding windows), EventBus, JobQueue, ObjectStorage (signed local URLs), SearchIndex (interface only; implemented in S6), Mailer/Sms/Push sinks writing to backend/.data/outbox-*. Full adapters as typed skeletons that throw 'not configured'.",
+          "note": "libs/infra: ports (KeyValueStore incl. sliding windows, EventBus, DeadLetterStore, JobQueue, ObjectStorage with presigned PUT/GET, SearchIndex, Mailer/Sms/Push). Lite: in-memory KV/bus/queue (single process), LocalObjectStorage under .data/objects with an HMAC-signed local listener, JSONL sinks .data/outbox-{mail,sms,push}.jsonl and dead-letter.jsonl. Full: typed skeletons that reject with NotConfiguredError. SearchIndex rejects until S6."
+        },
+        {
+          "id": "S2.T3",
+          "status": "done",
+          "title": "L5 tenancy + libs/db: one pool per DB role; withTx(ctx, fn) runs BEGIN, core.set_context(...), fn, COMMIT; refuses queries outside a context; maps SQLSTATE P0410/P0411/P0403/P0409 and the constraint names to 40 error codes.",
+          "note": "libs/db: Database = one pg pool + Kysely per login role (numeric/int8/date as strings, matching codegen); mapDbError: P0410/P0411/P0403/P0409, 23514 message prefixes (INVALID_TRANSITION, TAXONOMY_MISMATCH), 23505 DUPLICATE, 23503 REFERENCE_NOT_FOUND, RLS 42501 -> NOT_FOUND, timeouts/serialization -> UNAVAILABLE with retry delay; registerConstraintErrors() for module constraint names. libs/tenancy: TxRunner.run(ctx, fn) = BEGIN, core.set_context, fn(scope), COMMIT; retries 40001/40P01 (3 attempts); afterCommit hooks; setOrganization() for by-target org resolution; scope.marks for audit/outbox tracking. No pool is exposed to business code."
+        },
+        {
+          "id": "S2.T4",
+          "status": "done",
+          "title": "L1 router: build Nest routes from operations.json per app host; unknown path → 404; wrong method → 405; @Operation(opId) binds handlers; missing handler → 501 NOT_IMPLEMENTED (GD-05).",
+          "note": "Done: libs/http-pipeline/router.ts builds a segment trie per host from operations.json (api 373, admin-api 60, auth 16 routes; the storage PUT is not an API route). Literal segments beat parameters; path parameters are validated with the generated schemas before a route matches (invalid id -> 404). Encoded slashes, backslashes, dot and empty segments never match. Known path + other method -> 405 with Allow (HEAD/OPTIONS included). Handlers: @Operation(opId) on any Nest provider (libs/http-pipeline/operation.ts), discovered with DiscoveryService (libs/runtime/http-host.ts); unknown op ids or two handlers for one op fail at startup; missing handler -> 501 NOT_IMPLEMENTED (GD-05). No Nest controllers or platform adapter: see GD-12."
+        },
+        {
+          "id": "S2.T5",
+          "status": "done",
+          "title": "L2 http-pipeline: CarPal-Client check, body ≤ 64 KiB, strict JSON (duplicate keys, depth), Unicode NFC (SEC-IN-4), ajv validation of body and query against generated or hand-written schemas, problem+json (RFC 9457) with the error catalog, security headers, Cache-Control/no-store for PII, signed cursors (Page<T>).",
+          "note": "Done: CarPal-Client (required except token-less GETs; min version per client -> 400 CLIENT_UPGRADE_REQUIRED), method-override headers rejected, CarPal-Timezone allowlist, Content-Type (json with charset utf-8 only; form for the two OAuth posts) -> 415, body <= 64 KiB -> 413, strict JSON parser (UTF-8 fatal, no BOM, duplicate/__proto__/constructor/prototype keys, exponents, unsafe integers -> 400; depth > 8 or > 1,000 keys -> 413), SEC-IN-4 normalization (trim, NFC, Latin digits in numeric-looking strings; C0/C1, bidi, noncharacters, lone surrogates -> 422 forbidden_character with pointer; secrets verbatim), ajv closed-schema validation with union-branch pruning (UNKNOWN_FIELD / READ_ONLY_FIELD for response-only top-level fields / VALIDATION_FAILED with RFC 6901 pointers), query parsing (unknown or repeated -> 400 UNKNOWN_QUERY_PARAM; typed coercion and defaults; /query/<name> pointers), problem+json with en/fa titles and no internal detail, security headers + CarPal-Request-Id + CarPal-Contract on every response, no-store by default (PII forced), public caching only for anonymous callers of cacheable ops, signed cursors (HMAC, bound to principal + op + path params + filters, 15 min; mismatch -> 400 CURSOR_MISMATCH), ETag from body.version, response validation and an AUD-wrote-audit check in dev/test (-> 500)."
+        },
+        {
+          "id": "S2.T6",
+          "status": "done",
+          "title": "L3 auth (GD-06): EdDSA JWT verification (jose), local dev key ring + JWKS, anonymous tokens, live session (sid) check in the KV store, acr/AAL step-up window; strict-mode hooks for DPoP, mTLS and attestation.",
+          "note": "Done: libs/auth. JwtKeyRing (Ed25519 derived from the master secret, or CARPAL_JWT_PRIVATE_JWKS; JWKS export), TokenService (issue + verify: EdDSA only, typ at+jwt, kid known, jku/x5u/jwk/x5c refused, iss/aud/exp/nbf/iat skew 30 s, lifetime <= 15 min, client_id/acr/scope/sid/auth_time), anonymous tokens (acr 'anonymous', anon_key = HMAC of cnf.jkt), SessionStore in the KV store (create/get/stepUp/revoke/revokeAll/list), Authenticator (audience per host, CarPal-Client = client_id, live sid, staff sessions aal3 on admin-api, requireAssurance with the RFC 9470 challenge). Strict mode (CARPAL_STRICT_AUTH=1): full DPoP proof verification (ES256 embedded key, htm/htu/iat +-60 s/ath/jkt, jti replay via KV), mTLS cnf x5t#S256 vs the TLS terminator thumbprint, ATT through an AttestationVerifier port (S3)."
+        },
+        {
+          "id": "S2.T7",
+          "status": "done",
+          "title": "L4 authz: guards built from parsed sec tags: PUB, USR, ORG(groups with qualifiers), DRV, STF(roles), AAL2/AAL3, PURP, RSN. Roles resolved through an identity interface (stubbed until S3) with a 30 s cache; path org must match; 404-not-403 rule.",
+          "note": "Done: libs/authz Authorizer. Principal alternatives (A | B) with PUB / PUB(no token) / USR / ORG(groups[:qualifier]) / DRV / STF(roles) / LNK; tags AAL2/AAL3 (conditional ones with arguments are left to the use case), PURP (header format; 400 if missing/malformed, 404 if the PurposeVerifier refuses), ATT. ORG: active membership in the path org, role in the groups (O+/M+ relative to the org type, ANY), alias org type ({prv}/{vnd}/{flt}), merged/archived orgs refused; ORG on routes without org_id is deferred to the use case (ctx.authorizeOrg). DRV restricts fleet_driver only (assignment to the path vehicle via DriverAssignments; driverScoped flag otherwise). Failures: 401 for a missing user, otherwise 404 (never 403). Roles from MembershipDirectory/OrganizationDirectory with a KV cache (CARPAL_AUTHZ_CACHE_MS <= 30 s) and invalidateUser/invalidateOrganization. RSN is enforced by the input schemas (33 ops require reason; see DI-09)."
+        },
+        {
+          "id": "S2.T8",
+          "status": "done",
+          "title": "L6 idempotency (24 h, body hash, replay, in-progress lock), L7 ETag/If-Match on version, L8 rate limits (buckets from 40 §2.8 as config, CarPal-Retry-After-Ms, OVERLOADED shedding), L14 flags (cache of admin.feature_flags, kill switch, FLAG guard), L15 audit writer (analytics.write_audit in the same tx).",
+          "note": "Done: L6 IdempotencyStore (KV, 24 h, per principal + op + key, request hash over method/path/query/body, 5-min running lock, replay with Idempotent-Replayed, 4xx stored, 5xx released; IDEM(if new) optional); L7 concurrency (If-Match \"v<n>\" required on ETAG -> 428, malformed/stale -> 412, ETAG(if exists) optional, assertVersion/assertUpdated, ETag on versioned responses); L8 RateLimiter (40 §2.8 buckets as config + CARPAL_RATE_LIMITS overrides + CARPAL_RATE_LIMIT_SCALE; default bucket of the tag + RL(...) buckets; caller windows before authz, org windows after it; request-dependent scopes via ctx.rateLimit; IETF RateLimit/RateLimit-Policy headers; 429 with CarPal-Retry-After-Ms, Retry-After, retry_after_ms; escalation to a 15-min block) and LoadShedder (in-flight capacity per priority: analytics/AI 50 %, search/map 70 %, reads 85 %, writes 95 %, critical 100 %); L14 FlagService (admin.feature_flags of CARPAL_ENV, process cache refreshed every CARPAL_FLAG_REFRESH_MS, kill switch over ai_feature flags, targeting roles/regions/organization_ids/plan_keys/percentage, unknown flag = off, FLAG off -> 403 FEATURE_DISABLED or 503 AI_UNAVAILABLE with a retry delay); L15 writeAudit/auditPiiRead via analytics.write_audit in the same transaction."
+        },
+        {
+          "id": "S2.T9",
+          "status": "done",
+          "title": "L9 outbox: publish() via core.publish_event in the current tx; W1 relay (lite: polls outbox, dispatches in process; full: NATS); consumer base class with de-dup on event_id, retry/backoff and a dead-letter store. L10 jobs: core.background_jobs + JobQueue, the 202 Job response helper.",
+          "note": "Done: libs/outbox publishEvent (core.publish_event in the caller's transaction), OutboxRelay W1 (LISTEN carpal_outbox + poll, FOR UPDATE SKIP LOCKED batches, publish + mark in one tx, failed after 10 attempts), EventConsumer base + registerConsumer (KV de-dup on event_id: running lock, done for 7 days), lite bus redelivery with backoff and a dead-letter store. workers/outbox-relay, workers/consumer-host. libs/jobs: JobService.create (row in the use-case tx, enqueue after commit) and cancel, acceptedJob (202 + Location), toJobView, JobRunner (queued -> running -> succeeded/failed, progress, cancelled jobs never start), ScheduledRule base."
+        },
+        {
+          "id": "S2.T10",
+          "status": "done",
+          "title": "L11 crypto (AES-256-GCM envelope with a dev KEK from env, HMAC-SHA-256, Argon2id, cursor signing), L12 link tokens (cp_<type>_ format, hash-only storage, atomic consume), L13 i18n (Accept-Language, Translations validation, l10n fallback to en, Persian normalization identical to core.normalize_search_text), L19 geo (haversine, 0.01° public point, bbox, map-link allowlist with SSRF-safe resolver), L20 region config (pilot region file under shared/region-config/).",
+          "note": "Done: L11 libs/crypto (UUIDv7, HKDF KeyRing, AES-256-GCM envelope with KEK id for rotation and AAD binding, HMAC per purpose, Argon2id via node:crypto with pepper and PHC strings, CursorSigner); L12 libs/link-tokens (cp_<type>_<43>, HMAC-only storage, fragment links, TTLs of SEC-LT-3, consumeFailure -> LINK_USED/LINK_EXPIRED, assertRecipient); L13 libs/i18n (Accept-Language, l10n fallback, validateTranslations, latinDigits, normalizeSearchText identical to core.normalize_search_text, checked against the DB; see DI-07); L19 libs/geo (distanceMeters = core.distance_m, round2 = numeric round, publicPoint, BBox checks, parseMapLink per provider, MapLinkResolver: allowlist, DNS pinned, private/metadata ranges refused, <= 3 re-checked redirects, Location only, 3 s); L20 libs/region-config + shared/region-config/ir-pilot.json (validated against 40 RegionConfig per locale)."
+        },
+        {
+          "id": "S2.T11",
+          "status": "done",
+          "title": "Guard shells L16 consent-gate, L17 entitlements and L18 safety-check, with interfaces implemented later by identity (S3), billing (S3) and taxonomy (S3).",
+          "note": "Done: libs/consent-gate (ConsentChecker port, requireConsent -> 403 CONSENT_REQUIRED, NoConsentChecker fails closed), libs/entitlements (EntitlementChecker port, requireEntitlement -> VEHICLE_LIMIT_REACHED / INVENTORY_LIMIT_REACHED / ENTITLEMENT_REQUIRED, an unbound checker throws), libs/safety-check (SafetyLexicon port, whole-phrase matching on normalized text, highest urgency, merge never lowers urgency; EmptySafetyLexicon until S3)."
+        },
+        {
+          "id": "S2.T12",
+          "status": "done",
+          "title": "Apps: api, admin-api, auth and worker bootstraps; worker host with a consumer registry and the W15 scheduler (leader lock in the KV store); pnpm dev starts everything in lite mode with workers embedded.",
+          "note": "Done: apps/{api,admin-api,auth,worker}/main.ts and apps/dev/main.ts (pnpm dev = db:setup + build + all deployables in one lite process sharing one adapter set, plus the storage listener on :8083). apps/shared/app-modules.ts composes each deployable on PlatformModule.forRoot (libs/runtime: config, logger, infra, Database/TxRunner per role, crypto, auth, authz, flags, rate limits, idempotency, validator, region config, link tokens, jobs) with the identity/organization port modules. Worker: OutboxRelayModule (W1), ConsumerHostModule, SchedulerModule (W15: KV leader lock with 30 s TTL renewed every 5 s, one run per rule at a time, rule libs.monthly_partitions daily). pnpm start:<host> runs one deployable from dist/."
+        },
+        {
+          "id": "S2.T13",
+          "status": "done",
+          "title": "Platform ops: health.get, config.client, jobs.get, jobs.cancel.",
+          "note": "Done: libs/platform PlatformOpsModule. health.get ({status:'ok'}, no token or client header), config.client (versions, contract 1.0.0, i18n, taxonomy_version (TaxonomyVersion port, seeded 1.0.0), flags evaluated for the caller without targeting rules, region resolved to the locale; public max-age=300 for anonymous callers, no-store for users), jobs.get (owner, or member of the job's org with any role; RLS-enforced), jobs.cancel (owner only, queued/running -> cancelled, else 409 INVALID_TRANSITION; IDEM)."
+        },
+        {
+          "id": "S2.T14",
+          "status": "done",
+          "title": "L22 testing harness: app factory per host, DB reset/fixture strategy that keeps RLS real (document the choice: template DB clone, schema truncate, or tx rollback per test), factories for users, orgs, memberships and tokens per role group, and BOLA/BFLA helpers driven by operations.json.",
+          "note": "Done: libs/testing (send() raw HTTP client; Fixtures: users/staff/orgs/memberships/jobs written as carpal_worker in the system context + sessions and tokens in the app's KV; routeMatrix(op, route) -> allowed/denied principal specs incl. BOLA (member of another org) and step-up; PrincipalFactory with caching) and apps/testing/test-app.ts (createTestApp per host with ad-hoc @Operation handlers and provider overrides, createTestWorker). DB strategy (GD-13): one shared database, no reset, unique fixtures."
+        }
+      ],
+      "deliverables": [
+        "backend/libs/* implemented with unit tests",
+        "backend/apps/{api,admin-api,auth,worker}/main.ts",
+        "4 platform ops",
+        "test harness"
+      ],
+      "acceptance_criteria": [
+        "pnpm dev serves all three hosts; GET /v1/health returns 200",
+        "A request to every registered op returns either its real response or 501 NOT_IMPLEMENTED, never an unregistered 404",
+        "Pipeline tests cover the §4.3 common errors that apply without business logic (MALFORMED_REQUEST, UNKNOWN_QUERY_PARAM, UNAUTHENTICATED, 404 for unknown route, METHOD_NOT_ALLOWED, PAYLOAD_TOO_LARGE, UNSUPPORTED_MEDIA_TYPE, UNKNOWN_FIELD, IDEMPOTENCY_*, PRECONDITION_REQUIRED, VERSION_MISMATCH, RATE_LIMITED)",
+        "An outbox event written in a tx reaches a test consumer exactly once"
+      ],
+      "out_of_scope": [
+        "BFFs (D4)",
+        "Strict DPoP/mTLS/attestation enforcement",
+        "Business modules"
+      ],
+      "report": {
+        "started_at": "2026-10-10",
+        "completed_at": "2026-10-10",
+        "summary": "All four deployables boot in lite mode (pnpm dev) and every one of the 449 HTTP routes of the contract is served by a fail-closed, contract-driven pipeline in the order of 41 §5 (router, shedding, transport, authentication, rate limits, authorization, flags, 501 if unbound, validation, idempotency/If-Match, handler in an RLS transaction, checked response). Platform libraries L2-L22 exist with tests, plus config, infra ports with lite adapters and full-mode skeletons, and the Nest wiring. The four platform operations are implemented. The harness boots any host, creates users, orgs, memberships and tokens for every role group, and derives BOLA/BFLA matrices from operations.json; a whole-registry sweep runs 3,537 pipeline checks. Two Docs/43 defects (publish_event and write_audit unusable by the API roles) were found and fixed.",
+        "ops_implemented": [
+          "health.get",
+          "config.client",
+          "jobs.get",
+          "jobs.cancel"
+        ],
+        "ops_deferred": [],
+        "files_created": [
+          "backend/libs/{config,observability,infra,crypto,db (database, errors),tenancy,auth,authz,http-pipeline,idempotency,concurrency,rate-limit,flags,audit,outbox,jobs,link-tokens,i18n,geo,region-config,consent-gate,entitlements,safety-check,runtime,platform,testing}/ with unit tests (*.test.ts) and DB-parity integration tests (i18n, geo, tenancy)",
+          "backend/libs/contract/api-error.ts (ApiError, FieldError); createContractAjv(options)",
+          "backend/apps/{api,admin-api,auth,worker,dev}/main.ts, apps/shared/{app-modules,bootstrap}.ts",
+          "backend/apps/testing/test-app.ts + integration suites: routes (whole registry + BFLA/BOLA), pipeline (common errors), platform-ops, outbox (exactly once), jobs",
+          "backend/modules/identity/{identity.module.ts, infrastructure/membership-directory.ts}, modules/organization/{organization.module.ts, infrastructure/organization-directory.ts} (provisional DB-backed authz ports)",
+          "backend/workers/{outbox-relay,consumer-host,scheduler}/ (W1, consumer registry, W15 + monthly-partitions rule)",
+          "shared/region-config/ir-pilot.json",
+          "Docs/43.db_setup.sql + Docs/42.db schema.md: core.publish_event and analytics.write_audit are SECURITY DEFINER (DI-08)",
+          "backend/package.json (deps: @nestjs/core|common 12, reflect-metadata, rxjs, jose, pino, zod 4, @opentelemetry/api; scripts dev, start:*; engines >=24.7), tsconfig (ES2024), vitest alias for #-imports, eslint (null comparisons, libs/platform DI), .env.example, README.md"
+        ],
+        "tests": "183 passing (pnpm test:all): 123 unit (20 files) + 60 integration (9 files). Highlights: routes.int.test.ts sends 3,537 requests (api 373 routes / 3,101 checks, admin-api 60 / 420, auth 16 / 16): every allowed caller of every unimplemented route gets 501 NOT_IMPLEMENTED (or 403/503 when its flag is off) and every BFLA/BOLA denial gets its 401/404; pipeline.int.test.ts covers MALFORMED_REQUEST, CLIENT_UPGRADE_REQUIRED, UNKNOWN_QUERY_PARAM, CURSOR_MISMATCH, UNAUTHENTICATED, 404, METHOD_NOT_ALLOWED, PAYLOAD_TOO_LARGE, UNSUPPORTED_MEDIA_TYPE, UNKNOWN_FIELD, READ_ONLY_FIELD, VALIDATION_FAILED, IDEMPOTENCY_KEY_REQUIRED/REUSED/IN_PROGRESS + replay, PRECONDITION_REQUIRED, VERSION_MISMATCH, RATE_LIMITED, OVERLOADED, FEATURE_DISABLED, AI_UNAVAILABLE, response-contract and missing-audit 500s, headers and problem shape (validated against the contract Problem schema); outbox.int.test.ts proves exactly-once delivery (relay rerun + duplicate bus messages), no delivery after rollback, retries + dead letter. Also green: pnpm lint (eslint + dependency-cruiser, 156 modules), typecheck, build, contract:check, db:codegen --verify; pnpm dev serves api/admin-api/auth (GET /v1/health = 200).",
+        "deviations": [
+          "HTTP layer without Nest controllers or platform adapter: contract dispatcher on node:http, Nest for DI/modules/lifecycle only (GD-12).",
+          "Pipeline order: closed-schema validation (query and body) runs after authorization and the 501 check, not in transport step 3 of 41 §5; parsing limits stay in step 3. Rate limiting is split: caller windows before authorization, organization windows after it.",
+          "GD-05: 501 NOT_IMPLEMENTED is answered after authentication, authorization and flags (so the sweep proves every route's guards), with a Problem code outside the 40 catalog (dev only).",
+          "CarPal-Client is not required on token-less GET routes (discovery documents, /oauth/authorize navigation, health.get); 40 §1.3 says 'Always'.",
+          "jobs.cancel: only the job's owner may cancel (description 'the caller started'), although sec is USR | ORG(ANY); org members who are not the owner get 404.",
+          "PURP: a missing or malformed CarPal-Access-Purpose is 400 MALFORMED_REQUEST (40 names no code); binding to the staff queue is a stub that accepts well-formed purposes until S8.",
+          "DriverAssignments is a deny-all stub until fleet (S8): fleet drivers get 404 on {flt}/vehicles/{vehicle_id} routes.",
+          "MembershipDirectory and OrganizationDirectory are provisional DB-backed implementations in modules/identity and modules/organization (instead of in-memory stubs), so fixtures and RLS agree; S3/S4 extend them.",
+          "Lite rate limits, sessions, idempotency and the event bus are per process: separate deployables need full mode (Redis/NATS); pnpm dev runs everything in one process.",
+          "Node >= 24.7 required (crypto.argon2) instead of >= 22.12 (GD-10 amendment).",
+          "Docs/43 fixed in place (publish_event, write_audit SECURITY DEFINER) per database/migrations/README.md (no shared environment yet); local DBs need pnpm db:reset."
+        ],
+        "notes_for_next": [
+          "Writing a handler: a Nest provider with @Operation('<op.id>') and handle(ctx). ctx gives params, query (typed, defaults applied), body (validated, normalized), principal, access (AccessGrant: org {id,type,role}, matchedGroups, qualifiers, driverScoped, deferredOrg, link, purpose, conditionalAssurance), locale, ifMatch, cursor, and helpers tx(fn), authorizeOrg(orgId, groups), requireAssurance(level), flagEnabled(key), rateLimit(bucket, scope, key, cost), page(items, nextPosition). Return { status?, body, headers?, cache?, contentLanguage? }; throw ApiError(code[, {errors, detail}]). The module must be imported in apps/shared/app-modules.ts.",
+          "Transactions: ctx.tx(async (scope) => ...) sets core.set_context(actor, user, path org, role, request id, anon key). Use scope.setOrganization(orgId, role) after ctx.authorizeOrg for 'by target' operations. publishEvent(scope, {...}) and writeAudit(scope, {...}) write in the same transaction; with CARPAL_VALIDATE_RESPONSES (default in dev/test) an AUD operation that wrote no audit entry and any response that violates the contract answer 500. Jobs: JobService.create(scope, ...) + acceptedJob(row).",
+          "Register meaningful constraint names with registerConstraintErrors({name: 'DUPLICATE' | {code, pointer}}) (libs/db). The SQLSTATE mapping already covers P0410/P0411/P0403/P0409, INVALID_TRANSITION/TAXONOMY_MISMATCH message prefixes, RLS write violations (-> 404) and timeouts (-> 503 with retry).",
+          "Ports to implement: S3 identity -> ConsentChecker (libs/consent-gate), AttestationVerifierPort (libs/runtime), MembershipDirectory (extend modules/identity; call Authorizer.invalidateUser on membership/role/status change); S3 billing -> EntitlementChecker (libs/entitlements); S3 taxonomy -> SafetyLexicon (libs/safety-check), TaxonomyVersion (libs/platform); S4 organization -> OrganizationDirectory (extend; invalidateOrganization); S8 fleet -> DriverAssignments; S8 admin -> PurposeVerifier, FlagService.invalidate() on admin.flag_update. Provide them from @Global modules exporting the abstract class token (PlatformModule injects them optionally).",
+          "S3 auth server: TokenService.issue(...) and SessionStore.create(...) already implement the token and session shapes the API verifies (claims client_id, sid, acr aal1|aal2|aal3|anonymous, auth_time, scope, cnf). CLIENTS in libs/auth holds lifetimes per client_id. JwtKeyRing.jwks() is the auth.jwks body. PasswordHasher (CryptoServices.passwords) implements SEC-AU-7. LinkTokens issues and hashes ev/pr/mi tokens.",
+          "Tests: createTestApp({ host, handlers?, env?, providers?, imports? }) from apps/testing/test-app.ts; app.fixtures.user()/staff(role)/org(type)/member(user, org, role)/memberOf(type, role)/token(user, {acr, staff})/anonymousToken()/job(owner); app.principals + routeMatrix(op, route) for BOLA/BFLA. routes.int.test.ts skips implemented ops in the 501 sweep, so each stage adds real tests per op (happy path + authorization negative). The test config scales rate limits x1000 and validates responses.",
+          "Integration tests share one database without reset (GD-13); the S1 baseline tests now count seeded accounts only. Fixtures use @test.carpal.app emails. pnpm db:reset gives a clean slate.",
+          "Doc issues to settle: DI-07 (search normalization depends on the DB ctype), DI-09 (RSN on bodyless DELETEs, S8), DI-10 (Problem is closed but some errors must name a key/consent/requirements, S3/S4), DI-05 (assist routes, S8).",
+          "Coverage after S2: 4/402 operations implemented (platform), 398 answer 501. pnpm contract:coverage counts @Operation decorators in source, comments included: do not write a literal @Operation('x.y') in comments.",
+          "Gotchas: SWC rewrites line-separator escapes inside regex literals (and the editing tool can decode backslash-u sequences in written text): build such regexes with new RegExp(string) using double-escaped code points, or String.fromCharCode. pnpm dev builds with tsc (decorator metadata); tsx cannot run Nest DI code."
+        ]
+      }
+    },
+    {
+      "id": "S3",
+      "title": "Identity and auth server, billing, taxonomy",
+      "status": "in_progress",
+      "depends_on": [
+        "S2"
+      ],
+      "goal": "Users can sign up, verify, sign in, refresh, manage their account, preferences, sessions, MFA (TOTP), consents, DSR intake and onboarding. Plans, subscriptions and entitlements work, and the taxonomy is served and cached for every other module.",
+      "scope": {
+        "contract_sections": [
+          "§6 identity (50 ops)",
+          "§10 billing (4 ops)",
+          "§11 taxonomy (4 ops)"
+        ],
+        "modules": [
+          "identity",
+          "billing",
+          "taxonomy"
+        ],
+        "interfaces_exposed": [
+          "IdentityRoles (for L4)",
+          "ConsentService (for L16)",
+          "UserCards",
+          "EntitlementService.check (L17)",
+          "TaxonomyResolver",
+          "SafetyCheck data (L18)"
+        ],
+        "events": [
+          "user.registered",
+          "consent.withdrawn"
+        ],
+        "ops_target": 58
+      },
+      "context_to_read": [
+        "backend/dev_plan.json S1-S2 reports and handoff_notes",
+        "Docs/40.API contract.md §6, §10, §11, SEC-AU and SEC-LT rules",
+        "Docs/52.MVP Data Dictionary.md §4 (identity entities), billing and taxonomy entity sections",
+        "Docs/43.db_setup.sql schemas identity, billing, taxonomy",
+        "Docs/44.taxonomy catalog.json: conventions, safety_check, ui_presets keys only"
+      ],
+      "tasks": [
+        {
+          "id": "S3.T1",
+          "status": "not_started",
+          "title": "Auth server (apps/auth): auth.discovery, auth.jwks, auth.authorize + auth.token (authorization_code + PKCE, refresh rotation with family revocation, client_credentials for cp-ssr, anonymous grant), auth.revoke, auth.signup, auth.signin_password (always INVALID_CREDENTIALS, constant-ish timing), auth.email_verify, auth.password_reset_*, auth.otp_* (SMS sink), auth.mfa_verify (TOTP). auth.webauthn_options, auth.social_start and auth.pow_challenge: minimal or 501 with a deviation note."
+        },
+        {
+          "id": "S3.T2",
+          "status": "not_started",
+          "title": "Account: me.get/update, email and phone change, password change, preferences (Jalali/Persian digits defaults come from the DB trigger), memberships list/leave, sessions list/revoke/revoke_all, MFA list/enroll/confirm/remove, recovery codes."
+        },
+        {
+          "id": "S3.T3",
+          "status": "not_started",
+          "title": "Consents (§6.4) incl. org consents and consent requests; ConsentService for L16 (never cached); consent.withdrawn event."
+        },
+        {
+          "id": "S3.T4",
+          "status": "not_started",
+          "title": "DSR intake (dsr.create/list/get; dsr.export_download returns the job artifact once S8 builds the export) and onboarding (list/update/accept_terms)."
+        },
+        {
+          "id": "S3.T5",
+          "status": "not_started",
+          "title": "Wire L4 role resolution to identity.role_memberships; identity.user_cards interface."
+        },
+        {
+          "id": "S3.T6",
+          "status": "not_started",
+          "title": "Billing: plans.list, subscription.me_get/org_get, subscription.change_request; EntitlementService.check(subscriber, key, delta) with billing.lock_subscriber + effective_entitlement inside the caller's tx; consumer for user.registered (Individual Free subscription if not already created)."
+        },
+        {
+          "id": "S3.T7",
+          "status": "not_started",
+          "title": "Taxonomy: taxonomy.version, snapshot (ETag + long cache), node_get, suggest (normalized prefix and synonym match, EN/FA); TaxonomyResolver (NodeId<type> and parent-chain checks → TAXONOMY_MISMATCH, label resolution, synonyms) with an in-memory cache invalidated on taxonomy.node.merged; feed L18 safety check from safety-critical symptoms + safety_check word list."
+        }
+      ],
+      "deliverables": [
+        "modules/identity, modules/billing, modules/taxonomy implemented",
+        "apps/auth functional"
+      ],
+      "acceptance_criteria": [
+        "E2E: signup → email verify → authorize/token → me.get → refresh → reuse of an old refresh token revokes the family",
+        "Entitlement check is race-safe: two parallel calls at the limit, exactly one passes (test with a dummy counter)",
+        "taxonomy.suggest returns results for Persian input with Arabic ي/ك variants",
+        "All 58 ops implemented or explicitly deferred in the report"
+      ],
+      "out_of_scope": [
+        "DSR export/deletion execution (S8)",
+        "Admin plan assignment (S8)",
+        "Real SMS/email providers"
+      ],
+      "report": {
+        "started_at": "2026-10-11",
+        "completed_at": null,
+        "summary": null,
+        "ops_implemented": [],
+        "ops_deferred": [],
+        "files_created": [],
+        "tests": null,
+        "deviations": [],
+        "notes_for_next": []
+      }
+    },
+    {
+      "id": "S4",
+      "title": "Organizations, provider and vendor profiles, media",
+      "status": "not_started",
+      "depends_on": [
+        "S3"
+      ],
+      "goal": "Businesses can be created, staffed, located, verified and published, with the provider capability portfolio and vendor profile. The media upload pipeline works end to end in lite mode.",
+      "scope": {
+        "contract_sections": [
+          "§7 organizations (18)",
+          "§8 provider (36)",
+          "§9 vendor (8)",
+          "§17 media (10)"
+        ],
+        "modules": [
+          "organization (org-core, provider, vendor sub-packages)",
+          "media"
+        ],
+        "workers": [
+          "W6 media-processor (lite)"
+        ],
+        "interfaces_exposed": [
+          "OrgCards",
+          "OrgMembership for invitations",
+          "ProviderCapabilities read for discovery/trust",
+          "MediaService (attach, delivery_info)"
+        ],
+        "events": [
+          "provider.profile.published",
+          "portfolio.published",
+          "organization.verified (emitted later by admin)",
+          "organization.location.corrected (admin)",
+          "media.scan.completed"
+        ],
+        "ops_target": 72
+      },
+      "context_to_read": [
+        "backend/dev_plan.json previous reports and handoff_notes",
+        "Docs/40.API contract.md §7, §8, §9, §17, SEC-UP, SEC-OUT-4, SEC-IN-9",
+        "Docs/52.MVP Data Dictionary.md organization + media entity sections, §15 public media, §21 publish rules",
+        "Docs/54.Scoring Protocol.md §2 (capability levels, AI approvals)",
+        "Docs/43.db_setup.sql schemas organization, media"
+      ],
+      "tasks": [
+        {
+          "id": "S4.T1",
+          "status": "not_started",
+          "title": "Org core: org.create (app-generated id, draft rule, default subscription), get/update, members list/invite (mi link token)/invitation_accept (identity.accept_invitation)/update/remove, locations CRUD with pin + public point rules, org.location_pin_check, verifications list/submit."
+        },
+        {
+          "id": "S4.T2",
+          "status": "not_started",
+          "title": "Geo ops: geo.geocode, geo.reverse (geocoder port; lite = fixture-based stub for the pilot city list), geo.resolve_map_link (host allowlist, safe redirect expansion, no private addresses)."
+        },
+        {
+          "id": "S4.T3",
+          "status": "not_started",
+          "title": "Provider profile: profile get/put/publish/unpublish (PUBLISH_REQUIREMENTS_UNMET listing missing items), certifications, service categories, vehicle coverage, capabilities + evidence list, gated_decide for AI-suggested rows."
+        },
+        {
+          "id": "S4.T4",
+          "status": "not_started",
+          "title": "Provider work records: job logs, customer notes (internal only), portfolio create/update/consent_request/publish (needs approved moderation + consent; moderation hook stubbed until S8)/archive, provider.insights_get (FLAG → 503 AI_UNAVAILABLE until S9)."
+        },
+        {
+          "id": "S4.T5",
+          "status": "not_started",
+          "title": "Vendor: profile get/put/publish/unpublish, coverage list/create/delete, vendor.insights_get (AI stub)."
+        },
+        {
+          "id": "S4.T6",
+          "status": "not_started",
+          "title": "Media: upload create (pre-signed local URL, declared size/type/checksum), upload_complete → W6 lite processor (magic-byte sniffing, EXIF strip and re-encode with sharp if it installs cleanly on Windows, else record a deviation; a fake clean scan in lite mode), attachments, delivery URLs only through owning-module authorization, quarantine path; media.scan.completed."
+        },
+        {
+          "id": "S4.T7",
+          "status": "not_started",
+          "title": "Projections: public, member and staff allowlists for organization, location (approximate → only the public point) and profiles; organization.org_cards interface."
+        }
+      ],
+      "deliverables": [
+        "modules/organization, modules/media",
+        "workers/media-processor (lite)"
+      ],
+      "acceptance_criteria": [
+        "A user creates a provider org, adds a location by pin, completes the profile and publishes; the public read shows no street address for approximate visibility",
+        "A member of org A gets 404 on every org-B route (BOLA helper over all §7-§9 ops)",
+        "Upload → complete → scan → attach works; an unscanned asset gives MEDIA_NOT_READY"
+      ],
+      "out_of_scope": [
+        "Admin verification decisions and moderation queues (S8)",
+        "Search indexing of profiles (S6)",
+        "AI helpers (S9)"
+      ],
+      "report": {
+        "started_at": null,
+        "completed_at": null,
+        "summary": null,
+        "ops_implemented": [],
+        "ops_deferred": [],
+        "files_created": [],
+        "tests": null,
+        "deviations": [],
+        "notes_for_next": []
+      }
+    },
+    {
+      "id": "S5",
+      "title": "Vehicles and service history; vendor inventory and stock inquiries",
+      "status": "not_started",
+      "depends_on": [
+        "S4"
+      ],
+      "goal": "Owners and fleets manage vehicles, VINs, mileage, documents, service records, issues and reminders. Vendors manage inventory, fitment, trade accounts, CSV imports and stock inquiries.",
+      "scope": {
+        "contract_sections": [
+          "§12 vehicles (31)",
+          "§13 inventory (30)"
+        ],
+        "modules": [
+          "vehicle",
+          "inventory"
+        ],
+        "workers": [
+          "W7 import-jobs (inventory CSV)"
+        ],
+        "interfaces_exposed": [
+          "VehicleCards",
+          "VehicleService for appointment/fleet",
+          "InventoryRead for discovery"
+        ],
+        "events": [
+          "vehicle.created",
+          "vehicle.updated",
+          "service_record.created",
+          "vehicle.issue.reported",
+          "inventory.updated",
+          "vendor.inventory.imported",
+          "inquiry.sent"
+        ],
+        "ops_target": 61
+      },
+      "context_to_read": [
+        "backend/dev_plan.json previous reports and handoff_notes",
+        "Docs/40.API contract.md §12, §13, SEC-IN-11 (CSV), SEC-CR (VIN)",
+        "Docs/52.MVP Data Dictionary.md vehicle and inventory entity sections",
+        "Docs/54.Scoring Protocol.md §7 (fitment confidence, catalog quality)",
+        "Docs/43.db_setup.sql schemas vehicle, inventory"
+      ],
+      "tasks": [
+        {
+          "id": "S5.T1",
+          "status": "not_started",
+          "title": "Vehicles under both {me}/vehicles and {flt}/vehicles prefixes: list/create/get/update/status_change with ENT(max_vehicles) inside the tx (VEHICLE_LIMIT_REACHED under parallel requests), VIN format + check digit, encryption + hash + last4, duplicate detection per owner, vin_reveal (AAL2 + audit), vin_decode (decoder port; lite stub), status history, mileage list/add (lower-reading flag). DRV access depends on fleet assignments: implement the check through a fleet interface stub returning none until S8."
+        },
+        {
+          "id": "S5.T2",
+          "status": "not_started",
+          "title": "Documents (media attachments, encrypted), service records + evidence, provider.service_record_create (needs owner consent via L16), issues (safety check → urgency hint, vehicle.issue.reported), reminders CRUD."
+        },
+        {
+          "id": "S5.T3",
+          "status": "not_started",
+          "title": "Inventory items: list/search/create/get/update/delete/bulk_update/duplicate_mark with ENT(max_inventory_items), price visibility (public / trade_only), fitment CRUD + decide (AI-suggested rows), catalog quality score per 54 §7."
+        },
+        {
+          "id": "S5.T4",
+          "status": "not_started",
+          "title": "Imports: inventory.import_create (ASYNC, 202 Job) → W7 CSV parser (formula injection, size and row limits, row validation, entitlement), imports_list/get, import_error_report file; vendor.inventory.imported on completion."
+        },
+        {
+          "id": "S5.T5",
+          "status": "not_started",
+          "title": "Trade accounts (vendor list/decide) and stock inquiries for both sides ({RQ} requester prefixes and the vendor side): create/list/get/message/transition with the 40 §13.1 transition tables, reservation expiry handled by a W15 rule (every 15 min), inquiry.sent."
+        },
+        {
+          "id": "S5.T6",
+          "status": "not_started",
+          "title": "Hourly W15 rule: maintenance reminders upcoming → due → overdue, document expiry reminders (notification events only; delivery comes in S6)."
+        }
+      ],
+      "deliverables": [
+        "modules/vehicle, modules/inventory",
+        "workers/import-jobs (inventory)"
+      ],
+      "acceptance_criteria": [
+        "Six parallel vehicle creates for an Individual Free user with 4 active vehicles → exactly 1 succeeds",
+        "VIN is never returned except by vin_reveal and never stored in plain text (DB check)",
+        "Trade prices are absent for users without an approved trade account",
+        "CSV import with a formula-injection row and an invalid row → job succeeds with an error report"
+      ],
+      "out_of_scope": [
+        "Search indexing of inventory (S6)",
+        "AI normalization/fitment suggestions (S9)",
+        "Fleet imports (S8)"
+      ],
+      "report": {
+        "started_at": null,
+        "completed_at": null,
+        "summary": null,
+        "ops_implemented": [],
+        "ops_deferred": [],
+        "files_created": [],
+        "tests": null,
+        "deviations": [],
+        "notes_for_next": []
+      }
+    },
+    {
+      "id": "S6",
+      "title": "Discovery, search and map; community; notifications",
+      "status": "not_started",
+      "depends_on": [
+        "S5"
+      ],
+      "goal": "Users find providers, vendors and parts by text, taxonomy, vehicle context and map, see public profiles, follow and favourite, post and ask questions, and receive in-app/email/push notifications for the events built so far.",
+      "scope": {
+        "contract_sections": [
+          "§14 discovery and public profiles (12)",
+          "§19 community (26)",
+          "§20 notifications (7)"
+        ],
+        "modules": [
+          "discovery",
+          "community",
+          "notification"
+        ],
+        "workers": [
+          "W2 search-indexer",
+          "W5 notification-dispatch"
+        ],
+        "events": [
+          "qna.question.created",
+          "analytics events search.started, search.zero_result, search.chip_edited, map.opened (written to outbox; analytics pipeline in S8)"
+        ],
+        "ops_target": 45
+      },
+      "context_to_read": [
+        "backend/dev_plan.json previous reports and handoff_notes",
+        "Docs/40.API contract.md §14, §19, §20",
+        "Docs/52.MVP Data Dictionary.md §10 (search projections), discovery, community and notification entities",
+        "Docs/54.Scoring Protocol.md §5 (ranking, fairness, map behaviour)",
+        "Docs/41.backend plan.md §6.2 (event → consumer map)"
+      ],
+      "tasks": [
+        {
+          "id": "S6.T1",
+          "status": "not_started",
+          "title": "SearchIndex lite implementation (in-memory, normalized tokens, synonyms, geo radius/bbox) behind the port, plus an Elasticsearch adapter written to the same port (unverified). Five projections: ProviderSearchDoc, VendorSearchDoc, InventorySearchDoc, CommunitySearchDoc, TaxonomySearchDoc, built per locale."
+        },
+        {
+          "id": "S6.T2",
+          "status": "not_started",
+          "title": "W2 search-indexer consuming profile, location, capability, inventory, fitment, portfolio, post, Q&A and taxonomy events (review, badge and trust events are added in S7); removes unpublished content; nightly reconciliation rule."
+        },
+        {
+          "id": "S6.T3",
+          "status": "not_started",
+          "title": "Discovery ops: rule-based query interpreter (taxonomy + synonyms + vehicle context → chips), search.run/refine with match sessions and results (non-empty reasons, never sponsored), ranking per 54 §5 (trust score null until S7), map.pins, safety.check, feed.discover."
+        },
+        {
+          "id": "S6.T4",
+          "status": "not_started",
+          "title": "Public profile ops of §14.3 (providers, vendors, inventory, portfolio, availability placeholder until S7), using the organization/inventory interfaces and public projections."
+        },
+        {
+          "id": "S6.T5",
+          "status": "not_started",
+          "title": "Community: follows, favorites, posts, comments (flag community.comments.enabled), reactions (one per user/target/type), questions/answers (accepted answer rule, vehicle_id hidden), qna.question.created."
+        },
+        {
+          "id": "S6.T6",
+          "status": "not_started",
+          "title": "Notifications: list/read/read_all, preferences, push token register/remove (encrypted, hash-unique); W5 dispatch builds Notification rows (member fan-out), applies preferences and digests, sends through the sinks, records deliveries; templates (EN/FA) for the events emitted by S3-S6."
+        }
+      ],
+      "deliverables": [
+        "modules/discovery, modules/community, modules/notification",
+        "workers/search-indexer, workers/notification-dispatch"
+      ],
+      "acceptance_criteria": [
+        "A published provider appears in search.run within one relay cycle and disappears on unpublish",
+        "A Persian query and its Arabic-character variant return the same results",
+        "safety.check flags a safety-critical symptom in EN and FA",
+        "Every match result has at least one reason"
+      ],
+      "out_of_scope": [
+        "Semantic search (flag search.semantic.enabled stays off; pgvector in S9)",
+        "Review-based ranking signals (S7)"
+      ],
+      "report": {
+        "started_at": null,
+        "completed_at": null,
+        "summary": null,
+        "ops_implemented": [],
+        "ops_deferred": [],
+        "files_created": [],
+        "tests": null,
+        "deviations": [],
+        "notes_for_next": []
+      }
+    },
+    {
+      "id": "S7",
+      "title": "Appointments, calendar and pre-visit report; reviews and trust",
+      "status": "not_started",
+      "depends_on": [
+        "S6"
+      ],
+      "goal": "The core trust loop: request → confirm (capacity-safe) → check in → complete → service record → review (Path 1 visit-based, Path 2 business-confirmed) → trust score, capability confidence and badges.",
+      "scope": {
+        "contract_sections": [
+          "§16 appointments (30)",
+          "§15 reviews and trust (27)"
+        ],
+        "modules": [
+          "appointment",
+          "trust"
+        ],
+        "workers": [
+          "W3 trust-scoring",
+          "W4 review-workflow",
+          "W15 rules for appointment and trust (41 §6.3)"
+        ],
+        "events": [
+          "appointment.requested/confirmed/completed/status_changed",
+          "review.created/published/reported",
+          "review.invitation.sent/opened",
+          "review.approval.requested/answered/objected",
+          "review.approved",
+          "badge.awarded/revoked",
+          "trust.score.changed"
+        ],
+        "ops_target": 57
+      },
+      "context_to_read": [
+        "backend/dev_plan.json previous reports and handoff_notes",
+        "Docs/40.API contract.md §15, §16 (incl. §16.1 transition table), SEC-LT, SEC-BF",
+        "Docs/52.MVP Data Dictionary.md §11, §12, §21 (review paths, appointment rules), trust and appointment entities",
+        "Docs/54.Scoring Protocol.md §1-§4, §6, §9-§10",
+        "Docs/43.db_setup.sql schemas trust, appointment (triggers and named checks)"
+      ],
+      "tasks": [
+        {
+          "id": "S7.T1",
+          "status": "not_started",
+          "title": "Provider calendar: availability rules, time off, slot computation (KV slot cache), public.availability; appointment.capacity_available with advisory lock at confirmation."
+        },
+        {
+          "id": "S7.T2",
+          "status": "not_started",
+          "title": "Requester side under {me}/appointments and {flt}/appointments: draft/create (time windows required at 'requested'), get/list/update, transitions (accept alternative, cancel), pre-visit report preview (consent-gated vehicle history through vehicle interface; AI summary stub; sending the request approves the previewed report per 40 Appendix D), fleet approval hook (stub until S8)."
+        },
+        {
+          "id": "S7.T3",
+          "status": "not_started",
+          "title": "Provider side: list/get/transition (confirm with CAPACITY_UNAVAILABLE, propose alternative, start, complete → service record via vehicle interface), notes (internal vs customer_visible), check-in by ci link (appointment.check_in_by_token)."
+        },
+        {
+          "id": "S7.T4",
+          "status": "not_started",
+          "title": "Reviews: path selection (eligible appointment states, late-closed appointments, 7-day window), reviews.create (REVIEW_NOT_ALLOWED for self or member), sub-ratings and tags, Path 2 business approval (answer/object), responses (one published + one draft), disputes, review invitations send/open (ri link, trust.open_invitation, invitation_grant in the KV store)."
+        },
+        {
+          "id": "S7.T5",
+          "status": "not_started",
+          "title": "W4 review-workflow: automatic checks → Path 1 publish, Path 2 business deadline → no_response (every 5 min), invitation reminders/expiry (every 15 min), invitation creation after appointment/inquiry completion."
+        },
+        {
+          "id": "S7.T6",
+          "status": "not_started",
+          "title": "W3 trust-scoring per 54: evidence weights, review trust weight, capability confidence levels, provider and vendor trust score, penalties, badges (badge.awarded/revoked), staleness (daily), trust.score.changed; extend W2 to index review, badge and trust signals."
+        },
+        {
+          "id": "S7.T7",
+          "status": "not_started",
+          "title": "W15 appointment rules: reminders before start; confirmed and 24 h past → Path 1 eligibility. Notification templates for all S7 events."
+        }
+      ],
+      "deliverables": [
+        "modules/appointment, modules/trust",
+        "workers/trust-scoring, review-workflow"
+      ],
+      "acceptance_criteria": [
+        "Two concurrent confirmations for the last slot → one succeeds, one gets CAPACITY_UNAVAILABLE",
+        "Full loop test: request → confirm → check-in → complete → review Path 1 → published → provider trust score and capability evidence updated",
+        "Path 2 review is never published before business confirmed/no_response and reviewer approval (DB check + API test)",
+        "Internal appointment notes are never visible to the requester"
+      ],
+      "out_of_scope": [
+        "Admin review approval and dispute resolution screens (S8)",
+        "AI pre-visit summary and review insights (S9)"
+      ],
+      "report": {
+        "started_at": null,
+        "completed_at": null,
+        "summary": null,
+        "ops_implemented": [],
+        "ops_deferred": [],
+        "files_created": [],
+        "tests": null,
+        "deviations": [],
+        "notes_for_next": []
+      }
+    },
+    {
+      "id": "S8",
+      "title": "Fleet; admin plane; analytics and audit; DSR execution",
+      "status": "not_started",
+      "depends_on": [
+        "S7"
+      ],
+      "goal": "Fleets manage vehicles, drivers, approvals, imports and exports. Staff operate the platform through the admin API with 4-eyes, reason, purpose and PII audit. Product analytics flow into carpal_analytics, and data subject requests can be executed.",
+      "scope": {
+        "contract_sections": [
+          "§18 fleet (20)",
+          "§23 admin plane (60)",
+          "§22 events.ingest, reports.create"
+        ],
+        "modules": [
+          "fleet",
+          "admin",
+          "analytics",
+          "billing/taxonomy/trust admin use cases"
+        ],
+        "workers": [
+          "W7 fleet imports",
+          "W8 export-jobs (fleet export, DSR export bundle)",
+          "W12 analytics-pipeline",
+          "W15 rules for admin, billing, identity, retention, partitions"
+        ],
+        "events": [
+          "fleet.approval.requested/decided",
+          "moderation.action.taken",
+          "organization.verified",
+          "organization.location.corrected",
+          "taxonomy.node.merged",
+          "user.deletion.completed"
+        ],
+        "ops_target": 82
+      },
+      "context_to_read": [
+        "backend/dev_plan.json previous reports and handoff_notes",
+        "Docs/40.API contract.md §18, §22, §23, SEC-ADM, SEC-LOG",
+        "Docs/52.MVP Data Dictionary.md fleet, admin, analytics entities",
+        "Docs/54.Scoring Protocol.md §8 (fleet trust signals)",
+        "Docs/41.backend plan.md §6.3 (scheduled rules)"
+      ],
+      "tasks": [
+        {
+          "id": "S8.T1",
+          "status": "not_started",
+          "title": "Fleet: profile, vehicle assignments (one active driver per vehicle; switch the DRV guard and vehicle interface stub from S5 to real data), drivers, preferred partners, approvals (no self-approval; wire the appointment and issue hooks from S5/S7), reports (FR roles), import_create via W7, export via W8 (formula-safe CSV)."
+        },
+        {
+          "id": "S8.T2",
+          "status": "not_started",
+          "title": "Admin plane foundations on admin-api: aal3 sessions, RSN, PURP header bound to a queue item, PII read-audit, 4EYES via admin.pending_admin_changes (FOUR_EYES_PENDING 202, SELF_APPROVAL_FORBIDDEN, expiry rule), assist sessions (≤ 4 h)."
+        },
+        {
+          "id": "S8.T3",
+          "status": "not_started",
+          "title": "§23.2 users, organizations and plans: user/org status, verification decide (organization.verified), location correct, subscription assign, plan update, DSR queue and execution (export bundle via each module's export interface; deletion/anonymization handlers; user.deletion.completed)."
+        },
+        {
+          "id": "S8.T4",
+          "status": "not_started",
+          "title": "§23.3 taxonomy administration (create/update/merge with approval → taxonomy.node.merged; consumers re-point xrefs) and §23.4 moderation: content reports (reports.create), moderation cases and actions, review approval queue (Path 2 decide → review.approved/published), disputes resolve, portfolio moderation (unblocks S4 publish), badge approve."
+        },
+        {
+          "id": "S8.T5",
+          "status": "not_started",
+          "title": "§23.5 flags (update + cache bust + kill switch), retention policies, audit search, analytics dashboard (daily_metrics), MCP client admin records (data only)."
+        },
+        {
+          "id": "S8.T6",
+          "status": "not_started",
+          "title": "Analytics: events.ingest (client events, allowlisted names, batch ≤ 50), W12 pipeline: pseudonymize actors (analytics.actor_pseudonyms), write events.analytics_events in carpal_analytics, daily aggregates; partition maintenance rule (core.ensure_monthly_partitions)."
+        },
+        {
+          "id": "S8.T7",
+          "status": "not_started",
+          "title": "Remaining W15 rules: trials → default plan, DSR deadline alerts, pending admin changes/assist sessions expiry, retention apply, expired uploads/link tokens/jobs."
+        }
+      ],
+      "deliverables": [
+        "modules/fleet, modules/admin, modules/analytics",
+        "workers/import-jobs (fleet), export-jobs, analytics-pipeline"
+      ],
+      "acceptance_criteria": [
+        "Admin operations are unreachable on the api host and consumer tokens are refused on admin-api",
+        "A 4EYES change by staff A is applied only after staff B approves; A approving their own change → SELF_APPROVAL_FORBIDDEN",
+        "Staff PII reads write an audit row with access_purpose",
+        "DSR deletion leaves no linkable analytics events (pseudonym key deleted)"
+      ],
+      "out_of_scope": [
+        "Admin AI oversight beyond data CRUD (S9)",
+        "Admin web UI"
+      ],
+      "report": {
+        "started_at": null,
+        "completed_at": null,
+        "summary": null,
+        "ops_implemented": [],
+        "ops_deferred": [],
+        "files_created": [],
+        "tests": null,
+        "deviations": [],
+        "notes_for_next": []
+      }
+    },
+    {
+      "id": "S9",
+      "title": "AI/MCP facade, contract test sweep, OpenAPI, hardening pass",
+      "status": "not_started",
+      "depends_on": [
+        "S8"
+      ],
+      "goal": "Close the scratch build: the §21 AI operations work through the MCP port with graceful degradation, Appendix C contract tests run from the registry, the OpenAPI file is generated and checked, and the remaining 501 operations and deviations are resolved or listed for the next iteration.",
+      "scope": {
+        "contract_sections": [
+          "§21 AI features (23)",
+          "Appendix B (flags)",
+          "Appendix C (contract test obligations)"
+        ],
+        "modules": [
+          "ai-mcp (API facade)"
+        ],
+        "workers": [
+          "W9 ai-insight-generator",
+          "W10 skill-heatmap",
+          "W11 fraud-detection",
+          "W13 mcp-audit-logger",
+          "W14 embedding-indexer (skeletons calling the MCP port)"
+        ],
+        "events": [
+          "ai.insight.generated"
+        ],
+        "ops_target": 23
+      },
+      "context_to_read": [
+        "backend/dev_plan.json all reports, deviations_log and handoff_notes",
+        "Docs/40.API contract.md §21, SEC-AI, Appendix B, C",
+        "Docs/53.MCP Catalog.md §2, §3, §5 and the tool entries referenced by §21",
+        "Docs/52.MVP Data Dictionary.md AI/MCP entities"
+      ],
+      "tasks": [
+        {
+          "id": "S9.T1",
+          "status": "not_started",
+          "title": "McpClientPort + lite stub (deterministic, schema-valid structured payloads, EN/FA), policy pre-checks (flag, kill switch, consent, tenancy) → 503 AI_UNAVAILABLE with a fallback hint; AiInsight/AiSuggestion/ApprovalRequest storage; ai.insight.generated."
+        },
+        {
+          "id": "S9.T2",
+          "status": "not_started",
+          "title": "§21 ops: Help Me triage (session, safety-first via L18, triage.complete → vehicle.issue.reported), asynchronous feature requests (202 Job), insights list/get, suggestions accept/reject, approvals (never self-approved). Replace the AI stubs left in S4/S5/S7 (provider/vendor insights, fitment suggestions, pre-visit summary)."
+        },
+        {
+          "id": "S9.T3",
+          "status": "not_started",
+          "title": "Worker skeletons W9-W11, W13, W14 consuming their events through the MCP port; W10 skill heatmap from 54 §2.3 (rule-based, without AI); W11 rule-based review pattern checks that only open moderation cases."
+        },
+        {
+          "id": "S9.T4",
+          "status": "not_started",
+          "title": "Contract test generator (L22) from operations.json + schemas: schema conformance, BOLA and BFLA matrices for every op, projection tests for SEC-OUT-1 fields, kill switch → AI 503 while search, profiles and appointments still succeed."
+        },
+        {
+          "id": "S9.T5",
+          "status": "not_started",
+          "title": "Generate shared/api-contracts/openapi.yaml (OpenAPI 3.1) from the registry and schemas; CI check that it matches the router; add a GitHub Actions workflow for backend lint, build and test (lite mode)."
+        },
+        {
+          "id": "S9.T6",
+          "status": "not_started",
+          "title": "pnpm contract:coverage → zero 501 ops, or a reviewed list of deferred ops; consolidate deviations_log into a 'next iteration' list (strict auth, full-mode verification with Docker, BFFs, real providers); update backend/README.md with how to run."
+        }
+      ],
+      "deliverables": [
+        "modules/ai-mcp",
+        "AI worker skeletons",
+        "tests/contract generated suites",
+        "shared/api-contracts/openapi.yaml",
+        ".github/workflows backend CI"
+      ],
+      "acceptance_criteria": [
+        "All 402 operations implemented, or listed with a reason in ops_deferred",
+        "Generated BOLA/BFLA suites pass",
+        "OpenAPI check passes in CI"
+      ],
+      "out_of_scope": [
+        "The real MCP gateway and AI orchestrator services (ai-mcp/ D6/D7)",
+        "Load tests (k6)",
+        "BFFs"
+      ],
+      "report": {
+        "started_at": null,
+        "completed_at": null,
+        "summary": null,
+        "ops_implemented": [],
+        "ops_deferred": [],
+        "files_created": [],
+        "tests": null,
+        "deviations": [],
+        "notes_for_next": []
+      }
+    }
+  ],
+  "coverage_summary": {
+    "total_operations": 402,
+    "by_stage_target": {
+      "S1": 0,
+      "S2": 4,
+      "S3": 58,
+      "S4": 72,
+      "S5": 61,
+      "S6": 45,
+      "S7": 57,
+      "S8": 82,
+      "S9": 23
+    },
+    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route).",
+    "implemented": 4,
+    "returning_501": 398,
+    "total_routes": 450
+  },
+  "deviations_log": [
+    {
+      "stage": "S1",
+      "date": "2026-10-10",
+      "deviation": "Vitest instead of Jest (41 §8) — GD-08 amendment."
+    },
+    {
+      "stage": "S1",
+      "date": "2026-10-10",
+      "deviation": "No nest-cli; ESM subpath imports instead of TS path aliases — GD-01 amendment."
+    },
+    {
+      "stage": "S1",
+      "date": "2026-10-10",
+      "deviation": "Baseline is executed directly, not split into generated migration files — GD-09 amendment."
+    },
+    {
+      "stage": "S1",
+      "date": "2026-10-10",
+      "deviation": "Lite mode has no pgvector: ext.vector is a real[] domain and the HNSW index is skipped (only ai_mcp.embeddings affected)."
+    },
+    {
+      "stage": "S1",
+      "date": "2026-10-10",
+      "deviation": "Embedded cluster runs with fsync/synchronous_commit/full_page_writes off (dev speed)."
+    },
+    {
+      "stage": "S2",
+      "date": "2026-10-10",
+      "deviation": "HTTP layer without Nest controllers or platform adapter: contract dispatcher on node:http, Nest for DI/modules/lifecycle only (GD-12)."
+    },
+    {
+      "stage": "S2",
+      "date": "2026-10-10",
+      "deviation": "Pipeline order: closed-schema validation (query and body) runs after authorization and the 501 check, not in transport step 3 of 41 §5; parsing limits stay in step 3. Rate limiting is split: caller windows before authorization, organization windows after it."
+    },
+    {
+      "stage": "S2",
+      "date": "2026-10-10",
+      "deviation": "GD-05: 501 NOT_IMPLEMENTED is answered after authentication, authorization and flags (so the sweep proves every route's guards), with a Problem code outside the 40 catalog (dev only)."
+    },
+    {
+      "stage": "S2",
+      "date": "2026-10-10",
+      "deviation": "CarPal-Client is not required on token-less GET routes (discovery documents, /oauth/authorize navigation, health.get); 40 §1.3 says 'Always'."
+    },
+    {
+      "stage": "S2",
+      "date": "2026-10-10",
+      "deviation": "jobs.cancel: only the job's owner may cancel (description 'the caller started'), although sec is USR | ORG(ANY); org members who are not the owner get 404."
+    },
+    {
+      "stage": "S2",
+      "date": "2026-10-10",
+      "deviation": "PURP: a missing or malformed CarPal-Access-Purpose is 400 MALFORMED_REQUEST (40 names no code); binding to the staff queue is a stub that accepts well-formed purposes until S8."
+    },
+    {
+      "stage": "S2",
+      "date": "2026-10-10",
+      "deviation": "DriverAssignments is a deny-all stub until fleet (S8): fleet drivers get 404 on {flt}/vehicles/{vehicle_id} routes."
+    },
+    {
+      "stage": "S2",
+      "date": "2026-10-10",
+      "deviation": "MembershipDirectory and OrganizationDirectory are provisional DB-backed implementations in modules/identity and modules/organization (instead of in-memory stubs), so fixtures and RLS agree; S3/S4 extend them."
+    },
+    {
+      "stage": "S2",
+      "date": "2026-10-10",
+      "deviation": "Lite rate limits, sessions, idempotency and the event bus are per process: separate deployables need full mode (Redis/NATS); pnpm dev runs everything in one process."
+    },
+    {
+      "stage": "S2",
+      "date": "2026-10-10",
+      "deviation": "Node >= 24.7 required (crypto.argon2) instead of >= 22.12 (GD-10 amendment)."
+    },
+    {
+      "stage": "S2",
+      "date": "2026-10-10",
+      "deviation": "Docs/43 fixed in place (publish_event, write_audit SECURITY DEFINER) per database/migrations/README.md (no shared environment yet); local DBs need pnpm db:reset."
+    }
+  ],
+  "handoff_notes": [
+    {
+      "date": "2026-10-10",
+      "from": "planning",
+      "note": "Plan created from Docs 02, 40-44 and 50-54 plus the empty backend skeleton. No code written yet. Start with S1. The riskiest item is S1.T3/T4 (running the 43 script without Docker or psql); settle it before anything else, because every later stage's integration tests depend on it."
+    },
+    {
+      "date": "2026-10-10",
+      "from": "S1",
+      "note": "S1 done. Foundation in place: local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract registry + schemas (100%), Kysely types, lint/boundary rules, 52 tests. Next: S2 (NestJS app shells, request pipeline, platform libs). Read S1.report.notes_for_next first."
+    },
+    {
+      "date": "2026-10-10",
+      "from": "S2",
+      "note": "S2 done. Platform libraries, the contract-driven request pipeline and the four app shells are in place; pnpm dev runs everything in lite mode. 4 platform ops implemented, 398 answer 501 behind full guards. Read S2.report.notes_for_next (handler contract, ctx helpers, ports S3 must implement, test harness). Next: S3 (identity/auth server, billing, taxonomy) - implement the ports listed there. Docs/43 changed (DI-08): run pnpm db:reset once."
+    }
+  ],
+  "open_questions": [
+    {
+      "id": "OQ-01",
+      "question": "Install Docker Desktop (enables full mode: Postgres + pgvector, Redis, NATS, Elasticsearch, MinIO) or stay on lite mode for the whole scratch build?",
+      "default_if_unanswered": "Lite mode; full-mode adapters written but unverified.",
+      "owner": "user",
+      "note": "Still open. Lite mode covers PostgreSQL fully (embedded PG16). Docker would add pgvector, Redis, NATS and OpenSearch for full-mode verification."
+    },
+    {
+      "id": "OQ-02",
+      "question": "Upgrade Node from 20.10 (end of life) to 22 LTS or later?",
+      "default_if_unanswered": "Code stays compatible with 20.10; engines field recommends >=22.",
+      "owner": "user",
+      "answer": "Answered 2026-10-10: keep system Node 20.10 (other project); use a project-local, gitignored Node for this backend; move to Node 24 LTS later. See GD-10.",
+      "status": "answered"
+    },
+    {
+      "id": "OQ-03",
+      "question": "Proposed entitlement values beyond max_vehicles and proposed retention periods (41 §10) are seeded as-is. Confirm before S8.",
+      "default_if_unanswered": "Use the seeded proposed values.",
+      "owner": "user / WP3"
+    }
+  ]
+}
