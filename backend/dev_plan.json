@@ -6,7 +6,7 @@
     "status": "in_progress",
     "progress": {
       "as_of": "2026-10-12",
-      "summary": "S1-S5 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles with publication, the capability portfolio, work records, public projections and the media pipeline (W6), and now vehicles and service history (VIN sealed and revealed only with AAL2, the max_vehicles race closed in the write transaction, documents, owner- and provider-entered service records, issues with the safety check, reminders with an hourly W15 rule) and vendor inventory (items, fitment, catalog quality, CSV imports and bulk updates through W7, trade accounts and trade-price visibility, stock inquiries on both sides with a consent-gated vehicle snapshot). 191 of 402 operations are implemented; 211 answer 501 behind their full guards. Next: S6 (discovery, search and map; community; notifications).",
+      "summary": "S1-S6 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles with publication, the capability portfolio, work records and the media pipeline (W6), vehicles and service history, vendor inventory and stock inquiries, and now discovery (search projections with the W2 indexer, rule-based query interpretation into chips, ranking with structured reasons per 54 §5, search sessions, map pins with clusters, the safety check, the Discover feed), the public profile reads (profiles by slug, reviews, portfolio, vendor items, availability placeholder), community (follows, favourites, posts, comments, reactions without the subject organization's members, Q&A) and notifications (in-app list and read marks, preferences with digests and the marketing consent, encrypted push tokens, W5 dispatch with EN/FA templates for the S3-S6 events). 236 of 402 operations are implemented; 166 answer 501 behind their full guards. Next: S7 (appointments, calendar and pre-visit report; reviews and trust).",
       "stages": [
         {
           "stage": "S1",
@@ -57,8 +57,13 @@
         {
           "stage": "S6",
           "title": "Discovery, search and map; community; notifications",
-          "status": "not_started",
-          "ops_target": 45
+          "status": "done",
+          "ops_target": 45,
+          "completed_at": "2026-10-12",
+          "ops_implemented": 45,
+          "ops_deferred": 0,
+          "note": "6 search/map (§14.2) + 6 public reads (§14.3, of which public.org_reviews in a new trust module and public.availability an S7 placeholder answering no slots) + 26 community (§19, incl. feed.discover in discovery) + 7 notification (§20).",
+          "tests_after_stage": 382
         },
         {
           "stage": "S7",
@@ -80,17 +85,18 @@
         }
       ],
       "operations": {
-        "implemented": 191,
-        "returning_501": 211,
+        "implemented": 236,
+        "returning_501": 166,
         "deferred_with_reason": 3,
         "total": 402
       },
-      "next_stage": "S6",
-      "before_starting_S6": [
-        "Run `pnpm db:reset` once: S5 changed Docs/43 (vehicle.vehicle_owner, vehicle.duplicate_vin_flags, inventory.inquiry_item_cards definer functions; the inquiry trigger no longer lets a vendor cancel a reservation; a succeeded bulk_inventory_update job may have no result). No new npm dependency.",
-        "Read S5.report.notes_for_next and recommendations_for_next_stages.S6: InventoryRead.publicCards / publicItem already implement the public item projections (price and trade-price rules, fitment confidence for a vehicle); public.org_inventory_search and public.inventory_get only need the vendor card and location pin from organization PublicProfiles, the search text and paging.",
-        "Events S5 emits for S6 consumers: inventory.updated (payload item_ids, change), vendor.inventory.imported, inquiry.sent, vehicle.created / vehicle.updated, service_record.created, vehicle.issue.reported, fleet.approval.requested (driver issues), and vehicle.reminder.due (not in 40 Appendix A yet, DI-36).",
-        "All checks were green at the end of S5: pnpm lint (285 modules), typecheck, build, format:check, contract:check, db:codegen --verify, test:all (347 tests, 47 files); pnpm dev starts all hosts (api 177 implemented routes) with the new W15 rules vehicle.reminders, inventory.reservation_expiry and inventory.catalog_quality."
+      "next_stage": "S7",
+      "before_starting_S7": [
+        "Run `pnpm db:reset` once: S6 added community.refresh_reaction_count (Docs/43 + 42 §5.3). No new npm dependency.",
+        "Read S6.report.notes_for_next and recommendations_for_next_stages.S7. The trust module exists now (modules/trust: TrustRead, public.org_reviews) and the appointment module has public.availability as a placeholder: extend both instead of creating them.",
+        "Events S6 added that S7 producers must keep feeding: the search indexer (W2) already consumes review.published, review.approved, badge.awarded, badge.revoked, trust.score.changed and moderation.action.taken and rebuilds the subject organization (send organization_id or subject_organization_id in the payload); community.reaction.changed (target review, reaction helpful) carries the count for trust.reviews.helpful_count.",
+        "Notifications for S7 events: add their intents to modules/notification/domain/routing.ts (ROUTED_EVENTS) and their EN/FA templates to domain/templates.ts; the dispatcher, preferences, digests and push need no change.",
+        "All checks were green at the end of S6: pnpm lint (348 modules), typecheck, build, format:check, contract:check, db:codegen --verify, test:all (382 tests, 54 files); pnpm dev starts all hosts (api 222 implemented routes), registers the consumers notification.dispatch and discovery.search_indexer and rebuilds the lite search index once at start."
       ]
     },
     "purpose": "Breaks the first (scratch) build of the CarPal backend into 9 stages, each sized to run in its own context window. Every stage writes its report back into this file so the next context can see what is done, what was decided and what to watch out for.",
@@ -183,6 +189,10 @@
         {
           "stage": "S4",
           "change": "ObjectStorage.put takes { encrypt }: lite stores such objects AES-256-GCM (key derived from the master secret, AAD = object key) and decrypts on read and serve; full mode maps it to SSE-KMS. Geocoder is a port bound by PlatformModule (lite FixtureGeocoder, full UnconfiguredGeocoder → 503). sharp (prebuilt) is the image codec of W6 in both modes."
+        },
+        {
+          "stage": "S6",
+          "change": "SearchIndex port redesigned (libs/infra/ports.ts): typed filters (eq/in/all/range/exists/not/any on dotted paths), analyzed text with field boosts (all/any, prefix and one-edit typo matches), geo radius with a per-point service radius and bbox, removeWhere, get and ids. Lite: MemorySearchIndex (per process, text analyzed by libs/i18n searchTokens). Full: OpenSearchIndex written to the same port (REST via fetch, analyzed tokens stored per field) but unverified (OQ-01). EmailMessage/SmsMessage gained rendered subject/text; PushMessage gained platform and the decrypted token (the lite sink drops the token)."
         }
       ]
     },
@@ -207,6 +217,10 @@
         {
           "stage": "S5",
           "change": "After S5: 191 operations implemented, 211 answer 501 (3 of them the deferred S3 operations). vehicle 31/31, inventory 30/32 (the 2 others are the §14.3 public reads of S6)."
+        },
+        {
+          "stage": "S6",
+          "change": "After S6: 236 operations implemented, 166 answer 501 (3 of them the deferred S3 operations). discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71, trust 1/36, appointment 1/31."
         }
       ]
     },
@@ -297,6 +311,10 @@
         {
           "stage": "S5",
           "change": "POST searches page in their bodies (40 §3.3, TR-7): when the input schema has a cursor member, the pipeline verifies body.cursor like a query cursor and binds it (and ctx.page) to the body filters without cursor and limit (CURSOR_MISMATCH when they change). Used by inventory.search; search.run and the public searches of S6 get it for free."
+        },
+        {
+          "stage": "S6",
+          "change": "OperationContext.cursorFor(opId, params, position) signs a cursor for another operation of the same host (bound to that route and path parameters, no query filters): search.run and search.refine answer next_cursor for search.page."
         }
       ]
     },
@@ -325,6 +343,10 @@
         {
           "stage": "S5",
           "change": "New extension points and interfaces in S5: vehicle VehicleCards (definer cards, visible-vehicle lookup) and VehicleService (recordAppointmentService, markIssueScheduled for S7); inventory InventoryRead (visibleIds, publicCards, publicItem for S6); identity ConsentGrants (a consent created atomically with another module's record, no scope verifier: the inquiry's vendor_fitment_context); organization VendorCatalog (catalog_quality_score and measured_response_time_minutes written by inventory, only when they change), OrgLocations (active location check), PublicProfiles.vendors (published vendors and their trade_customers_supported flag); media MediaService.syncAttachments, imageCounts, assetUrls, publicImageUrls, readContent, storeGenerated, signedDownload. Registered: billing UsageCounters max_vehicles and max_inventory_items; organization visits service_record, customer check, vehicle owners, item counter and four vendor insight sources; media targets vehicle, vehicle_issue, inventory_item; identity ConsentScopes vehicle and stock_inquiry. OrganizationExtensions.VisitInfo gained jobLogVerification: a job log linked to a visit inherits customer_confirmed, appointment_verified or invoice_verified (54 §1.1)."
+        },
+        {
+          "stage": "S6",
+          "change": "New interfaces: organization PublicOrgCards (full 40 PublicOrgCard with trust figures and the newest public portfolio image) and PublicProfiles.idBySlug/cards/searchSources/publishedIds/changedSince/portfolio/portfolioItems/portfolioSources/portfolioIds/portfolioItemStatus; inventory InventoryRead.searchSources/vendorItemIds/tradeVendorIds; trust TrustRead (ratings, ratingSummary, badges, publishedReviewSubject); community CommunityRead (search sources, public refs, favourites, follows, followers, recent questions and posts); identity Recipients (verified contacts, locale, critical_alerts_only, members by role) and authorDisplayName(); notification Messenger (EN/FA transactional mails); media MediaService.publicAttachmentViews; taxonomy TaxonomyResolver.descendants/catalog; vehicle VehicleCards.openReminders. Registered: media attachment targets post, question, answer (community). New consumers: organization.reaction_changed (portfolio like_count), notification.dispatch (W5), discovery.search_indexer (W2)."
         }
       ]
     },
@@ -363,6 +385,24 @@
       "decision": "W7 import-jobs (workers/import-jobs): CSV files are parsed by libs/csv (strict RFC 4180, UTF-8, the SEC-IN-11 limits, no evaluation; a formula-safe writer for error reports and exports). Rows are mapped by ImportCreate.column_mapping onto InventoryItemWrite fields (name_translations.<locale>, lists split on | or ;), normalized like API input (SEC-IN-4), validated with the contract input schemas of inventory.create / inventory.update (ContractValidator) and the module rules, and upserted by SKU in transactions of 200 rows with one SAVEPOINT per row, so a bad row never loses its chunk. Row errors become a private system_export media asset of the vendor (line, field, code, then the row as uploaded). Durable job input lives in core.background_jobs.input_summary (batch id; item ids and patch for bulk updates: no personal data), so a lost queue entry can be re-run. A job that only changes existing records (bulk_inventory_update) succeeds without a result (Docs/43 check relaxed, JobOutcome { result: null }).",
       "reason": "40 inventory.import_create / bulk_update are ASYNC (202 Job) and SEC-IN-11 fixes the dialect and limits; no CSV dependency was needed for a strict dialect. The contract schemas are the single definition of a valid item, so imported rows cannot bypass them; per-row savepoints give \"the job succeeds with an error report\" (S5 acceptance) without one bad row aborting others.",
       "stage": "S5"
+    },
+    {
+      "id": "GD-22",
+      "decision": "Community text is pre-moderated automatically (modules/community/domain/rules.ts autoModeration): posts, comments, questions and answers are approved at once unless their text carries a link, an email address or a phone number (also in Persian/Arabic digits), which stays moderation_status pending for the S8 moderation queue. Edits are moderated again; a published post whose edited text is held leaves publication (status draft). Media follow 52 §15 and stay private until moderation approves them (S8).",
+      "reason": "40 says community content is \"moderated before it becomes visible\", the DB public_read policies require moderation_status approved, and the moderation queue is S8; without an automated decision no question, answer, comment or post could ever be seen. Contact data and links are the main spam and off-platform risk. Product to confirm (OQ-12).",
+      "stage": "S6"
+    },
+    {
+      "id": "GD-23",
+      "decision": "Search: five projections (indices providers, vendors, inventory, community, taxonomy; 52 §10) built by SearchProjections (modules/discovery/infrastructure) from the owning modules' interfaces in the worker's system context, written through the SearchIndex port. W2 (discovery.search_indexer consumer, workers/search-indexer) rebuilds what an event touches; a W15 sweep (discovery.search_sweep, every minute) reindexes organizations whose public tables changed (PublicProfiles.changedSince) to cover edits without events; the nightly discovery.search_reconcile rebuilds everything and drops what is no longer public, and its first run at worker start rebuilds the lite in-memory index (CARPAL_SEARCH_REBUILD_ON_START, off in tests). Query interpretation is rule-based: analyzed n-grams looked up in the taxonomy projection (names and synonyms, every locale), target words, stop words and region cities; ranking follows 54 §5 in pure functions (domain/ranking.ts) with structured reasons stored on match_results and rendered per reader locale. Sessions store up to 100 ranked results; cards are rebuilt from current public data on every page.",
+      "reason": "41 §2.4 W2 and 52 §10 (projections rebuilt from events, not system of record); the lite index is per process, so a start-up rebuild and a sweep keep it correct without events for every organization table; the same normalization (libs/i18n searchTokens) on documents and queries makes Persian/Arabic variants and digits match.",
+      "stage": "S6"
+    },
+    {
+      "id": "GD-24",
+      "decision": "Notifications (W5): events are routed to intents in a pure table (modules/notification/domain/routing.ts: audience users / organization members by role / followers, event_type, category, priority, template, plain params). The dispatcher writes one Notification per recipient (recipient locale) with its deliveries in one transaction, then sends queued deliveries through the Mailer/PushSender/SmsSender ports and records sent/failed (attempt_count, last_error). Critical notifications skip preferences (always in-app; email and push); otherwise the merged preference decides; email digests wait for notification.digests; business notifications (organization context) go to portal web push tokens only. Retries: notification.delivery_retry (3 attempts). Transactional messages that carry secrets (verification links, codes, invitations, consent links) never become notifications: they go through the Messenger (EN/FA templates) synchronously.",
+      "reason": "52 Notification/NotificationDelivery/NotificationPreference rules, 41 §6.2; link tokens and codes must not travel through the outbox or be stored in template_params.",
+      "stage": "S6"
     }
   ],
   "conventions": {
@@ -610,7 +650,8 @@
       "id": "DI-36",
       "issue": "Maintenance reminders and document expiry need notifications (41 §6.3 hourly rule, Plan WP5), but 40 Appendix A / 50 §20 name no event for them; likewise no event when a stock-inquiry reservation expires.",
       "action": "S5 publishes vehicle.reminder.due (payload reminder_id via aggregate, vehicle_id, status due|overdue, reminder_type, owner_type, owner_id) when a reminder becomes due or overdue; reservation expiry publishes nothing yet. Suggest adding vehicle.reminder.due (and inquiry.reservation.expired if the requester should be told) to Appendix A and 50 §20 before S6 builds the notification consumers.",
-      "status": "open"
+      "status": "open",
+      "s6_note": "S6: the notification dispatcher consumes vehicle.reminder.due (user owner → service_reminder; fleet owner → vehicle_due_for_service to FC roles). The event is still missing from 40 Appendix A."
     },
     {
       "id": "DI-37",
@@ -658,6 +699,60 @@
       "id": "DI-44",
       "issue": "40 inquiries.vendor_get is CNS(vendor_fitment_context: for vehicle snapshot) without saying whether a missing consent refuses the read or hides the snapshot; 41 §6.3 says expired reservations are \"released\" without the target status.",
       "action": "S5: the inquiry is always readable by the vendor; the snapshot is null while the consent is missing or withdrawn (checked on every read). An expired reservation goes back to answered (still open) with reserved_until cleared.",
+      "status": "open"
+    },
+    {
+      "id": "DI-45",
+      "issue": "40 Appendix A lacks events S6 needs: unpublication and vendor publication (only provider.profile.published exists), profile/location edits for the search indexer, community content changes, post publication for followers, reaction counts for counters other modules own, and the in-app security alert of SEC-AU-5.",
+      "action": "S6 publishes provider.profile.unpublished, vendor.profile.published, vendor.profile.unpublished, organization.profile.updated {change: profile|location|organization}, community.content.changed {entity_type, entity_id}, community.post.published {organization_id, post_type}, community.reaction.changed {target_type, target_id, reaction_type, count} and user.security_alert {user_id, kind}; vendor.inventory.imported gained requested_by_user_id. Suggest adding them to Appendix A and 50 §20.",
+      "status": "open"
+    },
+    {
+      "id": "DI-46",
+      "issue": "40 search.page declares only `q: cursor: Cursor` (required), so the page size cannot be chosen and the first request needs a cursor.",
+      "action": "S6: pages after the first hold 20 results; the cursor comes from search.run / search.refine (ctx.cursorFor). Suggest `q: cursor: Cursor, limit?` like other lists.",
+      "status": "open"
+    },
+    {
+      "id": "DI-47",
+      "issue": "40 questions.update is ETAG but PublicQuestion carries no version, so a client cannot learn the value for If-Match.",
+      "action": "S6: questions.create / get / update send the ETag header (\"v<version>\") even though the body has no version. Suggest adding version to PublicQuestion (author view) or dropping ETAG.",
+      "status": "open"
+    },
+    {
+      "id": "DI-48",
+      "issue": "40 SearchMode has showcases and qna, but ResultCard.target is organization or inventory_item only; showcases and questions have their own reads (showcases.get, questions.search).",
+      "action": "S6: search_mode showcases and qna rank providers like providers mode (the match session records the mode). Suggest dropping the two modes from SearchRequest or defining their result cards.",
+      "status": "open"
+    },
+    {
+      "id": "DI-49",
+      "issue": "40 SearchRequest.issue_id links a search to a vehicle issue, but nothing says how it changes the search (symptom context, urgency) and the vehicle module exposes no issue read for other modules.",
+      "action": "S6: issue_id is not stored or used (MatchSession.issue_id null); the urgency_level of the body and the safety check apply. S7 (Help Me / appointments from issues) should add a VehicleCards issue read and use the issue's symptom as a chip.",
+      "status": "open"
+    },
+    {
+      "id": "DI-50",
+      "issue": "Json<MatchReasonValues>, Json<FeedCard> and Json<TemplateParams> are server-defined schemas (x-server-schema) that 40 never writes down.",
+      "action": "S6 shapes: MatchReasonValues = plain values per reason_type (level, jobs, system/task/brand node ids, offered, covered, avg_rating, reviews, distance_km, response_minutes/target, matching_items, fitment_confidence, in_stock_items, stock_status, urgency_level, fast, favorite, verified, badge); FeedCard per kind (organization card + distance; post excerpt; reminder title/type/status; showcase title, organization, thumbnail; question title/status/answer_count); TemplateParams = the template's placeholders (domain/templates.ts). Suggest documenting them in 40 and validating them (S9 OpenAPI).",
+      "status": "open"
+    },
+    {
+      "id": "DI-51",
+      "issue": "answers.delete of an accepted answer: the answer's author may not change another user's question (RLS author_all), so the accepted reference cannot be cleared, and 40 names no error.",
+      "action": "S6: deleting an accepted answer is 409 INVALID_TRANSITION(accepted_answer). Suggest either a definer that reopens the question or documenting the 409.",
+      "status": "open"
+    },
+    {
+      "id": "DI-52",
+      "issue": "notification.push_device_tokens.token_hash is unique across users, but a device that signs into another account registers the same token while the old row belongs to the previous user (invisible under RLS).",
+      "action": "S6: the second account gets 409 DUPLICATE (/token not_unique); sign-out should revoke the token (push_tokens.revoke). Suggest a definer that moves the token to the new account, or revocation on session end (S9 hardening).",
+      "status": "open"
+    },
+    {
+      "id": "DI-53",
+      "issue": "40 SearchFilters.available_within_days and preferred_partners_only depend on availability (S7) and fleet preferred partners (S8); public.availability computes slots from availability rules that do not exist yet.",
+      "action": "S6: available_within_days is ignored, preferred_partners_only fails closed (no results), public.availability answers { slots: [] } after checking the provider and location. S7/S8 replace them.",
       "status": "open"
     }
   ],
@@ -1663,7 +1758,7 @@
     {
       "id": "S6",
       "title": "Discovery, search and map; community; notifications",
-      "status": "not_started",
+      "status": "done",
       "depends_on": [
         "S5"
       ],
@@ -1699,32 +1794,32 @@
       "tasks": [
         {
           "id": "S6.T1",
-          "status": "not_started",
+          "status": "done",
           "title": "SearchIndex lite implementation (in-memory, normalized tokens, synonyms, geo radius/bbox) behind the port, plus an Elasticsearch adapter written to the same port (unverified). Five projections: ProviderSearchDoc, VendorSearchDoc, InventorySearchDoc, CommunitySearchDoc, TaxonomySearchDoc, built per locale."
         },
         {
           "id": "S6.T2",
-          "status": "not_started",
+          "status": "done",
           "title": "W2 search-indexer consuming profile, location, capability, inventory, fitment, portfolio, post, Q&A and taxonomy events (review, badge and trust events are added in S7); removes unpublished content; nightly reconciliation rule."
         },
         {
           "id": "S6.T3",
-          "status": "not_started",
+          "status": "done",
           "title": "Discovery ops: rule-based query interpreter (taxonomy + synonyms + vehicle context → chips), search.run/refine with match sessions and results (non-empty reasons, never sponsored), ranking per 54 §5 (trust score null until S7), map.pins, safety.check, feed.discover."
         },
         {
           "id": "S6.T4",
-          "status": "not_started",
+          "status": "done",
           "title": "Public profile ops of §14.3 (providers, vendors, inventory, portfolio, availability placeholder until S7), using the organization/inventory interfaces and public projections."
         },
         {
           "id": "S6.T5",
-          "status": "not_started",
+          "status": "done",
           "title": "Community: follows, favorites, posts, comments (flag community.comments.enabled), reactions (one per user/target/type), questions/answers (accepted answer rule, vehicle_id hidden), qna.question.created."
         },
         {
           "id": "S6.T6",
-          "status": "not_started",
+          "status": "done",
           "title": "Notifications: list/read/read_all, preferences, push token register/remove (encrypted, hash-unique); W5 dispatch builds Notification rows (member fan-out), applies preferences and digests, sends through the sinks, records deliveries; templates (EN/FA) for the events emitted by S3-S6."
         }
       ],
@@ -1743,15 +1838,97 @@
         "Review-based ranking signals (S7)"
       ],
       "report": {
-        "started_at": null,
-        "completed_at": null,
-        "summary": null,
-        "ops_implemented": [],
+        "started_at": "2026-10-12",
+        "completed_at": "2026-10-12",
+        "summary": "All 45 S6 operations are implemented: §14.2 search and map (6), §14.3 public reads (6), §19 community (26, feed.discover in discovery) and §20 notifications (7). The SearchIndex port has a lite in-memory index (search normalization, prefix and typo matches, filters, geo radius with service radius, bbox) and an OpenSearch adapter written to the same port (unverified). W2 builds the five 52 §10 projections from the owning modules' interfaces on profile, location, inventory, portfolio, community and taxonomy events, sweeps unevented organization edits every minute, reconciles nightly and rebuilds the lite index at worker start. search.run normalizes and interprets the text into editable chips (taxonomy names and synonyms in every locale, symptom → system/task mappings, target words, cities, shop names), runs the safety check, retrieves providers, vendors and items with the filters, ranks them by 54 §5 with structured reasons (never sponsored; evidence over claims; favourites bonus; urgency weights; inactive last), applies the vehicle filter with its fallback and stores the session; search.page / refine / result_event, map.pins (one pin per location, highlight, vehicle relevance, ranks of a session, clusters) and feed.discover build on it. Public reads: profiles by slug with rating summary and badges, reviews (new trust module), portfolio, vendor item search and item, availability placeholder. Community: follows, favourites, posts with publication rules, comments, reactions counted without the subject organization's members (definer community.refresh_reaction_count), Q&A with business answers and the accepted answer; text pre-moderated (GD-22). Notifications: list, unread count, read marks, preferences (defaults, digests, marketing consent), encrypted push tokens, and W5 dispatch with EN/FA templates for the S3-S6 events (security alert as a critical in-app notice, identity and invitation mails rendered through the Messenger). The four acceptance criteria are covered by integration tests.",
+        "ops_implemented": [
+          "search.run",
+          "search.page",
+          "search.refine",
+          "search.result_event",
+          "map.pins",
+          "safety.check",
+          "public.org_get",
+          "public.org_reviews",
+          "public.org_portfolio",
+          "public.org_inventory_search",
+          "public.inventory_get",
+          "public.availability",
+          "follows.list",
+          "follows.put",
+          "follows.delete",
+          "favorites.list",
+          "favorites.put",
+          "favorites.delete",
+          "feed.discover",
+          "showcases.get",
+          "posts.org_list",
+          "posts.create",
+          "posts.update",
+          "posts.publish",
+          "posts.delete",
+          "posts.public_list",
+          "comments.list",
+          "comments.create",
+          "comments.delete",
+          "reactions.put",
+          "reactions.delete",
+          "questions.create",
+          "questions.search",
+          "questions.get",
+          "questions.update",
+          "answers.create",
+          "answers.accept",
+          "answers.delete",
+          "notifications.list",
+          "notifications.unread_count",
+          "notifications.mark_read",
+          "notification_prefs.get",
+          "notification_prefs.put",
+          "push_tokens.register",
+          "push_tokens.revoke"
+        ],
         "ops_deferred": [],
-        "files_created": [],
-        "tests": null,
-        "deviations": [],
-        "notes_for_next": []
+        "files_created": [
+          "modules/discovery: discovery.module.ts (global: SearchProjections, SearchService), discovery-api.module.ts, discovery-worker.module.ts (W2 consumer + rules); application/{search-service,search-ops,map-ops,feed-ops,indexer}.ts; domain/{intent,ranking,reasons,clustering}.ts + discovery-domain.test.ts; infrastructure/projections.ts",
+          "modules/community: community.module.ts (global: CommunityRead, attachment targets post/question/answer), community-api.module.ts; application/{common,follow-ops,post-ops,comment-ops,qna-ops}.ts; domain/rules.ts + community-domain.test.ts; infrastructure/community-read.ts; interface/community.ts; api/projections.ts",
+          "modules/notification: notification.module.ts (global: dispatcher + W5 consumer), notification-messaging.module.ts (Messenger, also on the auth host), notification-api.module.ts, notification-worker.module.ts (W15 rules); application/{dispatcher,notification-ops,notification-rules}.ts; domain/{templates,preferences,routing}.ts + notification-domain.test.ts; events/dispatch.consumer.ts; infrastructure/template-messenger.ts; interface/messenger.ts",
+          "modules/trust (new, read side only): trust.module.ts (TrustRead), trust-api.module.ts (public.org_reviews); application/public-review-ops.ts; infrastructure/trust-read.ts; interface/trust.ts; api/projections.ts",
+          "modules/appointment (new, placeholder): appointment-api.module.ts, application/availability-ops.ts (public.availability)",
+          "modules/organization: application/public-ops.ts (public.org_get, public.org_portfolio), infrastructure/public-org-cards.ts, events/reaction-changed.consumer.ts; PublicProfiles extended; profile events (application/common.ts profileUpdated, publicationChanged)",
+          "modules/inventory: application/public-ops.ts (public.org_inventory_search, public.inventory_get); InventoryRead search sources",
+          "modules/identity: infrastructure/recipients.ts (Recipients); IdentityMessages through the Messenger; user.security_alert event",
+          "workers/search-indexer/search-indexer.module.ts (W2 host), workers/notification-dispatch/notification-dispatch.module.ts (W5 host)",
+          "libs/infra/lite/memory-search.ts + memory-search.test.ts, libs/infra/full/opensearch.ts; libs/geo/hours.ts (openNow moved from organization); libs/i18n searchTokens; libs/config CARPAL_SEARCH_REBUILD_ON_START; libs/http-pipeline ctx.cursorFor",
+          "apps/testing: s6-support.ts, discovery.int.test.ts, community.int.test.ts, notification.int.test.ts",
+          "Docs/43.db_setup.sql + Docs/42 §5.3: community.refresh_reaction_count definer"
+        ],
+        "tests": "382 passing (pnpm test:all, 54 files): S6 added 35 (unit: memory search 3, discovery domain 5, notification domain 4, community domain 3, authenticator anon key updated; integration: discovery 10, community 5, notification 5). Acceptance: a published provider is absent before the relay, present after one relay cycle and absent again after unpublish; a Persian query and the same text with Arabic yeh/kaf give the same results, query_normalized and chips; safety.check flags the lexicon's safety-critical symptom by its EN and FA names (level urgent) and search.run carries the banner; every result has at least one reason with a summary. Also: paging with a caller-bound cursor (another caller gets CURSOR_MISMATCH, refine 404), result events, sign-in and location_usage consent rules, parts search with fitment for the caller's vehicle, map pins with highlight and session ranks and the bbox limit, profile by slug with rating summary and reviews, vendor item search (Persian/Arabic variant, filter_required), follows/favourites, post lifecycle with moderation hold and follower notification, comments, reactions excluding members, Q&A with business answers and accepted answer, notifications with EN/FA rendering, portal context and web-only push, preferences with marketing consent and digests, encrypted push tokens. The S4 outbox assertion was widened for organization.profile.updated.",
+        "deviations": [
+          "public.availability is a placeholder: it checks the published provider and the location and answers { slots: [] } until S7 computes slots (DI-53).",
+          "public.org_reviews lives in a new trust module with only its read side (TrustRead); reviews exist only once S7 writes them (tests insert fixture rows).",
+          "Community text is pre-moderated automatically (GD-22, OQ-12): links, emails and phone numbers wait for the S8 queue; media stay private until S8 approves them, so public posts, questions and showcases show no media yet; author avatars are always null.",
+          "Search: search_mode showcases/qna rank providers (DI-48); issue_id is ignored (DI-49); available_within_days is ignored and preferred_partners_only fails closed (DI-53); trust scores, availability and freshness are not ranking inputs until S7 (category trust uses published ratings, operational fit the response time); the default search radius is 50 km (proposed).",
+          "Lite search index is per process (like the other lite adapters): separate deployables need the OpenSearch adapter, which is written but unverified (OQ-01).",
+          "Edits of service categories, coverage, capabilities, certifications and portfolio reach the index through the one-minute sweep, not an event (DI-45).",
+          "search.page pages hold 20 results (no limit in the contract, DI-46); questions send their ETag in a header (DI-47).",
+          "Reactions on a target bump its version when the cached counter changes (posts, answers): an author holding an older ETag gets 412 and re-reads; portfolio like_count follows asynchronously (community.reaction.changed).",
+          "Deleting an accepted answer is 409 INVALID_TRANSITION (DI-51); a push token already registered by another account is 409 DUPLICATE (DI-52).",
+          "Notifications: no notification for new questions, answers or service records yet (no recipient rule in 52 for them); SMS only when the user enables it and has a verified phone; push sending in full mode needs the push gateway adapter (skeleton).",
+          "The identity mails keep being sent synchronously by the auth server (now through the Messenger with EN/FA templates); the refresh-token reuse alert is additionally a critical in-app system_announcement via user.security_alert, written in its own transaction because the token request rolls back.",
+          "Anonymous principals' anonKey is now the full 64-hex HMAC (was 32) to satisfy discovery.match_sessions.anonymous_key_hash.",
+          "Docs/43 and Docs/42 changed in place again (community.refresh_reaction_count): local databases need pnpm db:reset."
+        ],
+        "notes_for_next": [
+          "Run `pnpm db:reset` once (Docs/43 changed). Commands from backend/ after `source tools/use-local-node.sh`.",
+          "Layout used in S6 (copy it): <name>.module.ts global (ports, registrations, consumers), <name>-api.module.ts (handlers), <name>-worker.module.ts (W15 rules, hosted by workers/<host>/<host>.module.ts which imports it). Event consumers are providers extending EventConsumer in any module; only the worker's consumer registry subscribes them.",
+          "Public organization cards: inject PublicOrgCards (organization interface) — it adds trust ratings, top badges and the newest public portfolio image; community CommunityCards adds a member fallback for organizations that are not published.",
+          "Search index: write documents only in SearchProjections; reindex an organization with projections.reindexOrgs([id]) (or publish an event the indexer consumes). Query with infra.search and the typed filters; ranking functions live in modules/discovery/domain/ranking.ts. Tests: flush(app, worker) (s6-support) relays and drains consumers; the test config turns the start-up rebuild off, so tests index only what they create.",
+          "Notifications: to notify on a new event, add a case to domain/routing.ts (and its subject to ROUTED_EVENTS) and EN/FA texts to domain/templates.ts; never put secrets, VINs, plates or contact data in params. Transactional mails with links or codes go through Messenger.email(to, template, locale, vars).",
+          "Community flags (community.feed.enabled, community.comments.enabled, qna.enabled) are off in the seeds; tests switch them on with the flagsOn(...) provider of s6-support.",
+          "Reaction counts: community.refresh_reaction_count(target_type, target_id, reaction, subject_org) is the only way to count other users' reactions; reviews' helpful_count must follow community.reaction.changed (target review) in S7.",
+          "Persian/Arabic matching: documents and queries use libs/i18n searchTokens; SQL-side text filters use core.normalize_search_text with normalizeSearchText(text, { dbLocale: config.db.locale })."
+        ]
       }
     },
     {
@@ -2073,9 +2250,9 @@
       "S8": 82,
       "S9": 23
     },
-    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501.",
-    "implemented": 191,
-    "returning_501": 211,
+    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501. After S6 (pnpm contract:coverage): discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71 (the other 7 are admin ops of S8), trust 1/36 (public.org_reviews), appointment 1/31 (public.availability placeholder); 236 implemented, 166 answer 501.",
+    "implemented": 236,
+    "returning_501": 166,
     "total_routes": 450,
     "by_module_after_S3": {
       "identity": "47/61",
@@ -2130,6 +2307,25 @@
       "fleet": "0/20",
       "community": "0/25",
       "notification": "0/7",
+      "ai-mcp": "0/27",
+      "analytics": "0/3",
+      "admin": "0/16"
+    },
+    "by_module_after_S6": {
+      "identity": "47/61",
+      "billing": "4/7",
+      "taxonomy": "4/13",
+      "platform": "4/4",
+      "organization": "64/71",
+      "media": "9/11",
+      "vehicle": "31/31",
+      "inventory": "32/32",
+      "discovery": "7/7",
+      "trust": "1/36",
+      "appointment": "1/31",
+      "fleet": "0/20",
+      "community": "25/25",
+      "notification": "7/7",
       "ai-mcp": "0/27",
       "analytics": "0/3",
       "admin": "0/16"
@@ -2450,6 +2646,71 @@
       "stage": "S5",
       "date": "2026-10-12",
       "deviation": "Docs/43 and Docs/42 changed in place again (definer functions, inquiry trigger, jobs rule): local databases need pnpm db:reset."
+    },
+    {
+      "stage": "S6",
+      "date": "2026-10-12",
+      "deviation": "public.availability is a placeholder: it checks the published provider and the location and answers { slots: [] } until S7 computes slots (DI-53)."
+    },
+    {
+      "stage": "S6",
+      "date": "2026-10-12",
+      "deviation": "public.org_reviews lives in a new trust module with only its read side (TrustRead); reviews exist only once S7 writes them (tests insert fixture rows)."
+    },
+    {
+      "stage": "S6",
+      "date": "2026-10-12",
+      "deviation": "Community text is pre-moderated automatically (GD-22, OQ-12): links, emails and phone numbers wait for the S8 queue; media stay private until S8 approves them, so public posts, questions and showcases show no media yet; author avatars are always null."
+    },
+    {
+      "stage": "S6",
+      "date": "2026-10-12",
+      "deviation": "Search: search_mode showcases/qna rank providers (DI-48); issue_id is ignored (DI-49); available_within_days is ignored and preferred_partners_only fails closed (DI-53); trust scores, availability and freshness are not ranking inputs until S7 (category trust uses published ratings, operational fit the response time); the default search radius is 50 km (proposed)."
+    },
+    {
+      "stage": "S6",
+      "date": "2026-10-12",
+      "deviation": "Lite search index is per process (like the other lite adapters): separate deployables need the OpenSearch adapter, which is written but unverified (OQ-01)."
+    },
+    {
+      "stage": "S6",
+      "date": "2026-10-12",
+      "deviation": "Edits of service categories, coverage, capabilities, certifications and portfolio reach the index through the one-minute sweep, not an event (DI-45)."
+    },
+    {
+      "stage": "S6",
+      "date": "2026-10-12",
+      "deviation": "search.page pages hold 20 results (no limit in the contract, DI-46); questions send their ETag in a header (DI-47)."
+    },
+    {
+      "stage": "S6",
+      "date": "2026-10-12",
+      "deviation": "Reactions on a target bump its version when the cached counter changes (posts, answers): an author holding an older ETag gets 412 and re-reads; portfolio like_count follows asynchronously (community.reaction.changed)."
+    },
+    {
+      "stage": "S6",
+      "date": "2026-10-12",
+      "deviation": "Deleting an accepted answer is 409 INVALID_TRANSITION (DI-51); a push token already registered by another account is 409 DUPLICATE (DI-52)."
+    },
+    {
+      "stage": "S6",
+      "date": "2026-10-12",
+      "deviation": "Notifications: no notification for new questions, answers or service records yet (no recipient rule in 52 for them); SMS only when the user enables it and has a verified phone; push sending in full mode needs the push gateway adapter (skeleton)."
+    },
+    {
+      "stage": "S6",
+      "date": "2026-10-12",
+      "deviation": "The identity mails keep being sent synchronously by the auth server (now through the Messenger with EN/FA templates); the refresh-token reuse alert is additionally a critical in-app system_announcement via user.security_alert, written in its own transaction because the token request rolls back."
+    },
+    {
+      "stage": "S6",
+      "date": "2026-10-12",
+      "deviation": "Anonymous principals' anonKey is now the full 64-hex HMAC (was 32) to satisfy discovery.match_sessions.anonymous_key_hash."
+    },
+    {
+      "stage": "S6",
+      "date": "2026-10-12",
+      "deviation": "Docs/43 and Docs/42 changed in place again (community.refresh_reaction_count): local databases need pnpm db:reset."
     }
   ],
   "handoff_notes": [
@@ -2482,6 +2743,11 @@
       "date": "2026-10-12",
       "from": "S5",
       "note": "S5 done: vehicles and service history (VIN sealed, AAL2 reveal, limit race closed, documents, owner and provider records, issues with the safety check, reminders + W15) and vendor inventory (items, fitment, catalog quality, CSV import and bulk update through W7, trade accounts and trade prices, inquiries with the consent-gated vehicle snapshot) — all 61 ops, 347 tests green. Docs/43 changed (three definer functions, inquiry trigger, jobs rule): run pnpm db:reset once. Next: S6 (discovery, search and map; community; notifications). Read S5.report.notes_for_next and recommendations_for_next_stages.S6: the public inventory projections are ready in InventoryRead, and S5 events wait for the notification and search consumers. Decide DI-36 (reminder events) before writing the notification templates."
+    },
+    {
+      "date": "2026-10-12",
+      "from": "S6",
+      "note": "S6 done: discovery (search projections + W2 indexer, rule-based interpretation, ranking with reasons, sessions, map pins, safety check, Discover feed), public profile reads, community (follows, favourites, posts, comments, reactions, Q&A) and notifications (in-app, preferences, digests, push tokens, W5 dispatch with EN/FA templates) — all 45 ops, 382 tests green. Docs/43 changed (community.refresh_reaction_count): run pnpm db:reset once. Next: S7 (appointments, calendar, pre-visit report; reviews and trust). The trust module (TrustRead, public.org_reviews) and the appointment module (public.availability placeholder) already exist: extend them. Read S6.report.notes_for_next and recommendations_for_next_stages.S7; decide OQ-12 (automatic community moderation) with product before launch."
     }
   ],
   "open_questions": [
@@ -2553,10 +2819,28 @@
       "question": "How does a fleet consent to share a fleet vehicle's documents and service history with a provider (DI-38): an organization-level vehicle_data_sharing consent by a fleet manager, or only through fleet appointments (S7/S8)?",
       "default_if_unanswered": "Fleets share their own documents by role; providers cannot log work on fleet vehicles outside appointments.",
       "owner": "user / privacy"
+    },
+    {
+      "id": "OQ-12",
+      "question": "Community moderation in the MVP: may text without links or contact data go live at once (automated pre-moderation, GD-22), with reports and the S8 queue as the safety net, or must every post, comment, question and answer wait for a moderator?",
+      "default_if_unanswered": "Automated pre-moderation as implemented in S6; links, emails and phone numbers wait for the queue.",
+      "owner": "user / product / trust & safety"
+    },
+    {
+      "id": "OQ-13",
+      "question": "Default notification preferences (S6: in-app all but marketing; email and push for operational categories; community and AI suggestions in-app only; SMS off) and the digest schedule (daily = 24 h after the oldest pending item, weekly = 7 days).",
+      "default_if_unanswered": "The S6 defaults.",
+      "owner": "user / product (WP14)"
+    },
+    {
+      "id": "OQ-14",
+      "question": "Search defaults not fixed by 54: default radius (S6: 50 km, 25 km for the Discover feed), neutral scores without data (0.5), capability fit per confidence level (0.1 / 0.45 / 0.8 / 0.92 / 1.0) and rating trust weighting (full weight from 10 reviews).",
+      "default_if_unanswered": "The S6 values, revisited when S7 adds trust scores and availability.",
+      "owner": "user / product (WP8)"
     }
   ],
   "recommendations_for_next_stages": {
-    "written_after": "S5",
+    "written_after": "S6",
     "general": [
       "Keep each stage to the S3 module layout (notes_for_next) and copy the account/billing handlers as templates for CRUD with If-Match, keyset paging and audit.",
       "Bind ports instead of reading other modules' tables: add methods to the owning module's interface/ (GD-15) and register extensions in onModuleInit.",
@@ -2567,7 +2851,9 @@
       "Every new list should get a record-level BOLA case like provider.int.test.ts ('org B records under org A paths'); the route sweep only covers path-level BOLA.",
       "Compute derived and system columns in the same statement as the change (every UPDATE moves version and the ETag), and re-read rows that triggers touch (vehicle mileage).",
       "Body-paged searches: give the input schema a cursor member and the pipeline verifies and binds it; page with ctx.page as for query lists.",
-      "Run W7-style work through JobRunner with the durable input in core.background_jobs.input_summary (no personal data); use per-row savepoints when a batch must keep going past bad rows."
+      "Run W7-style work through JobRunner with the durable input in core.background_jobs.input_summary (no personal data); use per-row savepoints when a batch must keep going past bad rows.",
+      "Show organizations publicly only through PublicOrgCards / PublicProfiles; a new kind of public record should add its documents to SearchProjections and an event the W2 consumer understands (or rely on the sweep for organization tables).",
+      "New notifications are a routing case plus templates; keep params plain and free of personal data."
     ],
     "S6": [
       "Notification module: take over the identity messages (templates identity.*: email_verification, account_exists, password_reset, email_change_notice, otp_code, password_changed, security_alert) so preferences, digests and EN/FA templates apply; send the refresh-token reuse alert as a critical system_announcement (SEC-AU-5).",
@@ -2593,7 +2879,13 @@
       "Open provider.service_record_create's appointment_id path (today 422 REFERENCE_NOT_FOUND): resolve the appointment of the provider and its vehicle, then write through the same record rules.",
       "Pre-visit report: read the vehicle through VehicleCards.cards, documents shared with the provider through RLS shared_read, and service history only under service_history_sharing / vehicle_data_sharing (ConsentChecker, never cached).",
       "Reviews: Path 1 inquiry_verified needs a completed inquiry of the author (stock_inquiries.status completed, requester_user_id = author); service_record_verified needs a record with verification_status other than self_reported on the author's vehicle. StockInquiry.can_review should then also check that no review exists.",
-      "Decide DI-38 (fleet vehicles and provider consent) together with fleet appointments."
+      "Decide DI-38 (fleet vehicles and provider consent) together with fleet appointments.",
+      "Extend the existing trust module (modules/trust: TrustRead, public.org_reviews) and appointment module (public.availability placeholder in application/availability-ops.ts): replace the placeholder with slot computation (availability rules, buffers, capacity, time off, existing appointments) and keep the public checks.",
+      "Publish review.published / review.approved / badge.awarded / badge.revoked / trust.score.changed with organization_id (or subject_organization_id) in the payload: the W2 indexer already rebuilds that organization; add trust_score to the provider search document and use it for category trust in modules/discovery/domain/ranking.ts (54 §5.1), and next_available_slot / availability fit for operational fit and SearchFilters.available_within_days.",
+      "Consume community.reaction.changed (target_type review, reaction helpful) to keep trust.reviews.helpful_count; reactions on reviews already resolve the subject through TrustRead.publishedReviewSubject.",
+      "Notifications for S7: route appointment.requested (provider members: appointment_request_received), appointment.confirmed / status_changed / completed (requester), review.invitation.sent (review_invitation), review.approval.requested (business: review_approval_needed), review.published (business: review_received; author: review_status_updated); add EN/FA templates. Consider inquiry.answered / inquiry.status_changed events so requesters get inquiry_answered (52 event type exists).",
+      "Use SearchRequest.issue_id (DI-49): add an issue read to VehicleCards and turn the issue's symptom into a chip; Help Me (S9) uses source ai_triage on match_sessions.",
+      "Appointments created from search results should set discovery.match_results.appointment_id (match acceptance metric) through a discovery interface method."
     ],
     "S8": [
       "Admin billing: admin.subscription_assign / plan_update close open change requests (billing.subscription_change_requests: status assigned/declined, handled_by/at, resulting_subscription_id) and audit every plan change; W15 daily rule: trials past trial_ends_at → audience default plan.",
@@ -2611,7 +2903,11 @@
       "Admin verification of service records and invoices (invoice_verified / admin_verified), which the trust worker (S7) counts as evidence; staff reads of vehicles must never include the VIN except through an audited purpose-bound path.",
       "Retention: purge removed vehicle documents' media, removed import sources and error reports (system_export assets) and unreferenced objects (S5 writes the error-report object before its row).",
       "Fleet imports (fleet.import_create) reuse libs/csv, the W7 host (workers/import-jobs) and the per-row savepoint pattern; vehicles.create rules (VIN sealing, ENT(max_vehicles) per row) must be shared with the vehicle module through its interface, not copied.",
-      "Moderation queue: inventory_image assets need approval before public cards show them (publicImageUrls)."
+      "Moderation queue: inventory_image assets need approval before public cards show them (publicImageUrls).",
+      "Moderation queue: community posts, comments, questions and answers with moderation_status pending (GD-22 holds those with links or contact data), and moderation.action.taken (the W2 indexer already consumes it and rebuilds the organization; also publish community.content.changed for hidden community records so they leave the index). Approving post/question media makes them publicly servable (publicAttachmentViews then shows them).",
+      "Fleet preferred partners: implement SearchFilters.preferred_partners_only (fails closed in S6) and the +5 fleet preferred-partner bonus in modules/discovery/domain/ranking.ts (54 §5.1); route fleet.approval.decided notifications.",
+      "Retention: purge discovery.match_sessions (180 days, anonymize query_text) and notification rows/deliveries per DataRetentionPolicy.",
+      "Admin moderation of reactions and reviews must call community.refresh_reaction_count after removing reactions so cached counters stay right."
     ],
     "S9": [
       "Full mode: sessions, interactions, authorization codes, refresh-token families, OTPs and PoW challenges live in the KeyValueStore; separate deployables need the Redis adapter (lite is per process).",
@@ -2621,13 +2917,20 @@
       "Full-mode adapters still to write for S4: regional geocoder (Geocoder port), S3 SSE-KMS for ObjectStorage.put({ encrypt }), and the W6 tools of OQ-07.",
       "AI fitment suggestions: insert ai_suggested rows with status pending_vendor_confirmation and an ai_insight_id; fitment.decide already confirms or rejects them (AUD). AI normalization of imported rows (ai_normalization_requested on the batch) and category classification (DI-41) belong here; never use another vendor's private data.",
       "Full mode: a regional VIN decoder adapter for the VinDecoder port (OQ-10), validated as client input (SEC-IN-10).",
-      "OpenAPI: describe the x-vin normalization (Vin pattern after uppercasing) and the body cursors of POST searches."
+      "OpenAPI: describe the x-vin normalization (Vin pattern after uppercasing) and the body cursors of POST searches.",
+      "Verify the OpenSearch adapter (libs/infra/full/opensearch.ts) against docker compose: index templates with geo_point for locations.point and keyword fields for the filters, then run the discovery integration tests in full mode.",
+      "Semantic search (flag search.semantic.enabled) adds candidates or reasons on top of the rule-based ranking; AI query interpretation stores an AiInsight query_interpretation and sets interpretation_source rules_plus_ai; AI explanations set explanation_source ai with explanation_insight_id.",
+      "OpenAPI: describe the server-defined Json schemas of S6 (MatchReasonValues, FeedCard, TemplateParams, DI-50) and the ETag header of questions (DI-47).",
+      "Push: a real push gateway adapter (FCM/APNs/Web Push) for PushSender in full mode; revoke push tokens on sign-out/session end (DI-52)."
     ],
     "S4_done": [
       "All S4 recommendations from S3 were applied: SubscriptionWriter for the default plan (hybrid → provider_basic, DI-20), invitations through identity OrgMemberships + identity.accept_invitation with Authorizer.invalidateUser, ConsentScopes media_asset and portfolio_item, cn requests through identity ConsentRequests (link mailed by identity), requireDescendant chains, DI-10 resolved, DataExportFiles bound, OrgCards.logo_url, textArray for domain arrays."
     ],
     "S5_done": [
       "All S5 recommendations from S4 were applied: OrganizationExtensions registrations (service_record visits, customer check, vehicle owners, item counter, four vendor insight sources), AttachmentTargets vehicle / vehicle_issue / inventory_item, ConsentScopes vehicle and stock_inquiry, UsageCounters max_vehicles and max_inventory_items with the parallel-create race test, vendor publication counting active items, job-log verification from verified visits, VIN sealing with Hmac vin-hash and AAD vehicle.vin:<id>, SafetyCheck urgency on issues, CNS through ConsentChecker with an organization grantee."
+    ],
+    "S6_done": [
+      "All S6 recommendations from S5 were applied, with these adjustments: identity and invitation mails go through the notification Messenger (EN/FA templates) but stay synchronous, because they carry link tokens and codes that must not enter notifications or events; the refresh-token reuse alert is additionally a critical in-app system_announcement (user.security_alert); consent.withdrawn needed no S6 consumer (no consent-gated copies are indexed or notified); inquiry answers/status changes still publish no event, so the requester is not notified yet (S7 recommendation below); profile edits are covered by events for profile, location and organization changes plus the one-minute sweep for catalog edits."
     ]
   }
 }

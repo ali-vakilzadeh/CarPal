@@ -2,7 +2,7 @@
 // org.invitation_accept, org.member_update, org.member_remove. Memberships
 // live in identity (OrgMemberships interface); after every role or status
 // change the caller's or member's authorization cache is dropped (SEC-AU-3).
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { writeAudit } from '#libs/audit/index.js';
 import { Authorizer } from '#libs/authz/index.js';
 import { ApiError } from '#libs/contract/index.js';
@@ -12,6 +12,7 @@ import type { Infra } from '#libs/infra/index.js';
 import { LinkTokens } from '#libs/link-tokens/index.js';
 import { InjectInfra } from '#libs/runtime/index.js';
 import { OrgMemberships, type OrgMemberRecord } from '#modules/identity/interface/identity.js';
+import { Messenger } from '#modules/notification/interface/messenger.js';
 import { toOrgMember } from '../api/projections.js';
 import { isOwnerRole, mayGrant, mayInvite, mayRemove, OWNER_ROLES } from '../domain/roles.js';
 import { afterId, checkVersion, loadOrg, member } from './common.js';
@@ -47,6 +48,7 @@ export class OrgMemberInviteHandler implements OperationHandler {
     private readonly links: LinkTokens,
     private readonly entitlements: EntitlementChecker,
     @InjectInfra() private readonly infra: Infra,
+    @Optional() private readonly messenger?: Messenger,
   ) {}
 
   async handle(ctx: OperationContext<{ email: string; role: string }>): Promise<OperationResult> {
@@ -74,13 +76,11 @@ export class OrgMemberInviteHandler implements OperationHandler {
       });
       await writeAudit(scope, { action: 'membership.invited', entityType: 'role_membership', entityId: id, next: role });
       // The mi link goes to the invited address only (SEC-LT-2: token in the fragment).
+      const variables = { link: this.links.link('mi', link.token), organization_name: org.name, role };
       scope.afterCommit(() =>
-        this.infra.mailer.send({
-          to: email,
-          template: 'organization.member_invitation',
-          locale: ctx.locale,
-          variables: { link: this.links.link('mi', link.token), organization_name: org.name, role },
-        }),
+        this.messenger
+          ? this.messenger.email(email, 'organization.member_invitation', ctx.locale, variables)
+          : this.infra.mailer.send({ to: email, template: 'organization.member_invitation', locale: ctx.locale, variables }),
       );
       return { invitation_id: id, expires_at: link.expiresAt!.toISOString() };
     });

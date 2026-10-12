@@ -239,9 +239,19 @@ export class TokenHandler implements OperationHandler {
         const jkt = await this.auth.dpop(ctx, clientId);
         body = await ctx.tx((scope) =>
           this.auth.refresh(scope, f.refresh_token!, clientId, jkt, async (userId) => {
-            // SEC-AU-5: the user is told (critical security notice).
+            // SEC-AU-5: the user is told (critical security notice): an email now, and a critical
+            // system_announcement in-app through the notification worker (S6). The token request fails and
+            // rolls its transaction back, so the event is written in a transaction of its own.
             const user = await getUser(scope, userId);
             if (user) await this.messages.email(user.email, 'identity.security_alert', user.locale, { kind: 'refresh_token_reuse' });
+            await ctx.tx((s) =>
+              publishEvent(s, {
+                type: 'user.security_alert',
+                aggregateType: 'user',
+                aggregateId: userId,
+                payload: { user_id: userId, kind: 'refresh_token_reuse' },
+              }),
+            );
           }),
         );
         break;

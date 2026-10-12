@@ -175,3 +175,39 @@ export abstract class ConsentRequests {
     scopeRef: { type: string; id: string },
   ): Promise<{ id: string; status: string; resultingConsentId: string | null; expiresAt: Date } | null>;
 }
+
+const FORMER_MEMBER: Record<string, string> = { en: 'CarPal member', fa: 'عضو کارپال' };
+
+/**
+ * Public author name of community content and reviews (40 author.display_name,
+ * Str<2,50>): the user's display name, or a neutral label when the account is
+ * gone, anonymized (DSR) or has no usable name.
+ */
+export function authorDisplayName(card: UserCard | undefined, locale: string): string {
+  const name = card?.displayName?.trim();
+  return name && [...name].length >= 2 ? [...name].slice(0, 50).join('') : (FORMER_MEMBER[locale] ?? FORMER_MEMBER.en!);
+}
+
+/** Delivery facts of a notification recipient (W5); verified destinations only. */
+export interface RecipientContact {
+  userId: string;
+  status: string;
+  locale: string;
+  /** Verified email, or null. */
+  email: string | null;
+  /** Verified E.164 phone, or null. */
+  phone: string | null;
+  /** 52 UserPreference.critical_alerts_only: only critical notifications leave the app. */
+  criticalAlertsOnly: boolean;
+}
+
+/**
+ * Recipients of notifications (notification module, W5). Runs in the
+ * worker's system context: contact data never leaves the notification
+ * module (SEC-OUT-3) and is used only to deliver.
+ */
+export abstract class Recipients {
+  abstract contacts(scope: TxScope, userIds: readonly string[]): Promise<Map<string, RecipientContact>>;
+  /** Active members of an organization with one of `roles` (all active members when empty). */
+  abstract members(scope: TxScope, orgId: string, roles: readonly string[]): Promise<string[]>;
+}

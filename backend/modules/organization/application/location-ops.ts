@@ -18,7 +18,7 @@ import type { TxScope } from '#libs/tenancy/index.js';
 import { OrgMemberships } from '#modules/identity/interface/identity.js';
 import { toLocation, type LocationRow } from '../api/projections.js';
 import { validateHours, type HoursSpec } from '../domain/profile-rules.js';
-import { afterId, checkVersion, failIf, json, member, pageOf } from './common.js';
+import { afterId, checkVersion, failIf, json, member, pageOf, profileUpdated } from './common.js';
 
 type LocationWrite = {
   name?: string;
@@ -169,6 +169,7 @@ export class OrgLocationCreateHandler implements OperationHandler {
         .returningAll()
         .executeTakeFirstOrThrow();
       if (primary) await setPrimaryLocation(scope, m.orgId, loc.id);
+      await profileUpdated(scope, m.orgId, 'location');
       return loc;
     });
     return created(toLocation(row), `/v1/orgs/${m.orgId}/locations/${row.id}`);
@@ -287,6 +288,7 @@ export class OrgLocationUpdateHandler implements OperationHandler {
         entityId: loc.id,
         next: Object.keys(b).join(','),
       });
+      await profileUpdated(scope, m.orgId, 'location');
       return updated;
     });
     return { body: toLocation(row) };
@@ -322,6 +324,7 @@ export class OrgLocationDeleteHandler implements OperationHandler {
         .execute();
       if (loc.is_primary) await promoteNextPrimary(scope, m.orgId, loc.id);
       await writeAudit(scope, { action: 'organization.location_deactivated', entityType: 'organization_location', entityId: loc.id });
+      await profileUpdated(scope, m.orgId, 'location');
     });
     return { body: ACK };
   }

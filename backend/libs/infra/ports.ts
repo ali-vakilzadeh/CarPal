@@ -154,15 +154,91 @@ export interface ObjectStorage {
 
 // ------------------------------------------------------------------ search
 
-/** Elasticsearch/OpenSearch projections (52 §10). Implemented in S6. */
+/** A point of a geo field (GeoPoint, 40 §3.1). */
+export interface SearchPoint {
+  lat: number;
+  lng: number;
+}
+
+/** A projection document (52 §10): JSON values; text fields are analyzed with libs/i18n searchTokens. */
+export type SearchDocument = Record<string, unknown>;
+
+export type SearchScalar = string | number | boolean;
+
+/**
+ * Structured filters (Elasticsearch term/terms/range/exists/bool). A field
+ * holding an array matches when any element matches; dotted paths reach into
+ * objects and arrays of objects ("locations.city").
+ */
+export type SearchFilter =
+  | { field: string; eq: SearchScalar }
+  | { field: string; in: readonly SearchScalar[] }
+  /** Every value is present in the field (array containment). */
+  | { field: string; all: readonly SearchScalar[] }
+  | { field: string; gte?: number | string; lte?: number | string }
+  | { field: string; exists: boolean }
+  | { not: SearchFilter }
+  | { any: readonly SearchFilter[] };
+
+/** Full-text part of a query: analyzed tokens matched against analyzed fields, with per-field boosts. */
+export interface SearchText {
+  query: string;
+  /** Field → boost. */
+  fields: Readonly<Record<string, number>>;
+  /** all: every query token must match some field; any: at least one (default all). */
+  operator?: 'all' | 'any';
+  /** Prefix and one-edit typo matches for longer tokens (default true). */
+  fuzzy?: boolean;
+}
+
+/** Geo restriction on a field holding a point or a list of points; the nearest point gives distance_km. */
+export interface SearchGeo {
+  field: string;
+  /** Origin for distances (and the radius). */
+  origin?: SearchPoint;
+  radiusKm?: number;
+  /**
+   * Field (sibling of each point) holding a per-point radius in km: a point
+   * also matches when the origin lies within it (service radius circles, 54 §5.1).
+   */
+  pointRadiusField?: string;
+  bbox?: { south: number; west: number; north: number; east: number };
+}
+
+export interface SearchQuery {
+  filters?: readonly SearchFilter[];
+  text?: SearchText;
+  geo?: SearchGeo;
+  /** Maximum hits (default 100, at most 1,000). */
+  size?: number;
+}
+
+export interface SearchHit {
+  id: string;
+  /** Text relevance (0 without a text query). */
+  score: number;
+  source: SearchDocument;
+  /** Distance from geo.origin to the nearest point (km, unrounded), null without an origin. */
+  distanceKm: number | null;
+}
+
+/**
+ * Search projections (52 §10: provider, vendor, inventory, community and
+ * taxonomy documents, rebuilt by W2). Lite: in memory per process; full:
+ * Elasticsearch/OpenSearch. Ranking beyond text relevance belongs to the
+ * discovery module (54 §5); the index only filters and retrieves.
+ */
 export interface SearchIndex {
-  upsert(index: string, id: string, document: Record<string, unknown>): Promise<void>;
+  upsert(index: string, id: string, document: SearchDocument): Promise<void>;
   remove(index: string, id: string): Promise<void>;
-  search(
-    index: string,
-    query: Record<string, unknown>,
-  ): Promise<{ hits: { id: string; score: number; source: Record<string, unknown> }[] }>;
+  /** Removes every document matching all filters (e.g. a vendor's items); returns the count. */
+  removeWhere(index: string, filters: readonly SearchFilter[]): Promise<number>;
+  get(index: string, id: string): Promise<SearchDocument | null>;
+  /** Hits by text score (desc), then distance (asc), then id. */
+  search(index: string, query: SearchQuery): Promise<{ hits: SearchHit[]; total: number }>;
   count(index: string): Promise<number>;
+  /** Every document id of an index (reconciliation). */
+  ids(index: string): Promise<string[]>;
 }
 
 // ------------------------------------------------------------------ messaging
@@ -172,16 +248,24 @@ export interface EmailMessage {
   template: string;
   locale: string;
   variables: Record<string, string>;
+  /** Rendered subject and plain-text body (notification module templates, S6); the sink sends these. */
+  subject?: string;
+  text?: string;
 }
 export interface SmsMessage {
   to: string;
   template: string;
   locale: string;
   variables: Record<string, string>;
+  /** Rendered text (notification module templates, S6). */
+  text?: string;
 }
 export interface PushMessage {
   /** Device token reference (never the raw token in logs). */
   deviceTokenId: string;
+  platform?: 'ios' | 'android' | 'web';
+  /** The decrypted device token for the push gateway; sinks never log or store it. */
+  token?: string;
   title: string;
   body: string;
   data?: Record<string, string>;

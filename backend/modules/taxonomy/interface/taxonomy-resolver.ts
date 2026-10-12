@@ -55,6 +55,10 @@ export abstract class TaxonomyResolver {
   abstract requireDescendant(childId: string, ancestorId: string, pointer: string): Promise<void>;
   /** Ids from the node up to its root (the node first). */
   abstract ancestors(id: string): Promise<string[]>;
+  /** The node and every active node below it (category filters include subcategories). */
+  abstract descendants(id: string): Promise<string[]>;
+  /** Every node and active synonym (search projections and query interpretation, S6). */
+  abstract catalog(): Promise<{ nodes: TaxonomyNodeRecord[]; synonyms: TaxonomySynonymRecord[] }>;
   /** Display label in the caller's locale (requested → en → first). */
   abstract labels(ids: readonly string[], locale: Locale): Promise<Map<string, L10n>>;
   /** Follows merged_into_id to the surviving node (stale references after taxonomy.node.merged). */

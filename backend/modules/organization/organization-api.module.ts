@@ -2,6 +2,7 @@
 // on the api host. Needs OrganizationModule, IdentityModule, BillingModule,
 // TaxonomyModule and MediaModule (global) in the same application.
 import { Module } from '@nestjs/common';
+import { PublicOrgGetHandler, PublicOrgPortfolioHandler } from './application/public-ops.js';
 import {
   GeoGeocodeHandler,
   GeoResolveMapLinkHandler,
@@ -156,6 +157,9 @@ import { ProfileFacts } from './infrastructure/facts.js';
     VendorCoverageCreateHandler,
     VendorCoverageDeleteHandler,
     VendorInsightsGetHandler,
+    // §14.3 public profile reads
+    PublicOrgGetHandler,
+    PublicOrgPortfolioHandler,
   ],
 })
 export class OrganizationApiModule {}

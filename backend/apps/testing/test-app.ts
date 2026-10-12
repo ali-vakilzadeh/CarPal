@@ -76,6 +76,8 @@ export function testConfig(env: Record<string, string> = {}): CarpalConfig {
     // SEC-AU-11 latency floor off by default in tests (auth-server.int.test.ts measures it explicitly).
     CARPAL_AUTH_MIN_LATENCY_MS: '0',
     CARPAL_POW_DIFFICULTY_BITS: '8',
+    // The shared test database holds every earlier run's organizations: tests index what they create (S6).
+    CARPAL_SEARCH_REBUILD_ON_START: '0',
     ...env,
   });
 }

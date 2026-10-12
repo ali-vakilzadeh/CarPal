@@ -196,9 +196,9 @@ export class DbMediaService extends MediaService {
     if (notReady) throw new ApiError('MEDIA_NOT_READY');
   }
 
-  async #attachments(scope: TxScope, type: AttachedToType, ids: readonly string[]) {
+  async #attachments(scope: TxScope, type: AttachedToType, ids: readonly string[], publicOnly = false) {
     if (ids.length === 0) return [];
-    return scope.db
+    let q = scope.db
       .selectFrom('media.media_attachments as t')
       .innerJoin('media.media_assets as a', 'a.id', 't.media_asset_id')
       .selectAll('t')
@@ -218,15 +218,24 @@ export class DbMediaService extends MediaService {
       .where('t.attached_to_id', 'in', [...ids])
       .where('t.status', '=', 'active')
       .where('t.deleted_at', 'is', null)
-      .where('a.status', '<>', 'removed')
-      .orderBy('t.display_order')
-      .orderBy('t.id')
-      .execute();
+      .where('a.status', '<>', 'removed');
+    // 52 §15 public rules: only assets the database marks publicly servable (clean, approved, consent, EXIF stripped).
+    if (publicOnly) q = q.where('a.publicly_servable', '=', true);
+    return q.orderBy('t.display_order').orderBy('t.id').execute();
   }
 
-  async attachmentViews(scope: TxScope, type: AttachedToType, ids: readonly string[]): Promise<Map<string, MediaAttachmentView[]>> {
+  async publicAttachmentViews(scope: TxScope, type: AttachedToType, ids: readonly string[]): Promise<Map<string, MediaAttachmentView[]>> {
+    return this.attachmentViews(scope, type, [...new Set(ids)].slice(0, 500), true);
+  }
+
+  async attachmentViews(
+    scope: TxScope,
+    type: AttachedToType,
+    ids: readonly string[],
+    publicOnly = false,
+  ): Promise<Map<string, MediaAttachmentView[]>> {
     const out = new Map<string, MediaAttachmentView[]>();
-    for (const r of await this.#attachments(scope, type, ids)) {
+    for (const r of await this.#attachments(scope, type, ids, publicOnly)) {
       const asset = {
         id: r.media_asset_id,
         media_type: r.a_media_type,
@@ -239,7 +248,7 @@ export class DbMediaService extends MediaService {
         storage_reference: r.a_storage_reference,
         thumbnail_reference: r.a_thumbnail_reference,
       } as AssetRow;
-      const view = toAttachmentView(r, asset, await this.urls.forViewer(asset, servableToOwner(asset)));
+      const view = toAttachmentView(r, asset, await this.urls.forViewer(asset, publicOnly || servableToOwner(asset)));
       out.set(r.attached_to_id, [...(out.get(r.attached_to_id) ?? []), view]);
     }
     return out;

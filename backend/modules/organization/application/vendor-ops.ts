@@ -13,7 +13,7 @@ import { toVendorCoverage, toVendorProfile, type VendorCoverageRow, type VendorP
 import { completeness, insightsPeriod, VENDOR_COMPLETENESS, vendorPublishUnmet } from '../domain/profile-rules.js';
 import { OrganizationExtensions } from '../interface/extensions.js';
 import { ProfileFacts } from '../infrastructure/facts.js';
-import { afterId, checkVersion, failIf, json, member, pageOf } from './common.js';
+import { afterId, checkVersion, failIf, json, member, pageOf, profileUpdated, publicationChanged } from './common.js';
 import { activateOrganization } from './provider-profile-ops.js';
 
 type VendorProfileWrite = {
@@ -103,6 +103,7 @@ export class VendorProfilePutHandler implements OperationHandler {
             .values({ ...values, organization_id: m.orgId })
             .returningAll()
             .executeTakeFirstOrThrow();
+      await profileUpdated(scope, m.orgId, 'profile');
       return toVendorProfile(row, score);
     });
     return { body };
@@ -131,6 +132,7 @@ export class VendorPublishHandler implements OperationHandler {
         .where('id', '=', profile.id)
         .execute();
       const activated = await activateOrganization(scope, m.orgId);
+      await publicationChanged(scope, m.orgId, 'vendor', 'published', profile.id);
       await writeAudit(scope, {
         action: 'vendor.published',
         entityType: 'vendor_profile',
@@ -156,8 +158,10 @@ export class VendorUnpublishHandler implements OperationHandler {
       const profile = await loadProfile(scope, m.orgId, true);
       if (!profile) throw new ApiError('NOT_FOUND');
       const next = profile.public_status === 'published' ? 'draft' : profile.public_status;
-      if (next !== profile.public_status)
+      if (next !== profile.public_status) {
         await scope.db.updateTable('organization.vendor_profiles').set({ public_status: next }).where('id', '=', profile.id).execute();
+        await publicationChanged(scope, m.orgId, 'vendor', 'unpublished', profile.id);
+      }
       await writeAudit(scope, {
         action: 'vendor.unpublished',
         entityType: 'vendor_profile',

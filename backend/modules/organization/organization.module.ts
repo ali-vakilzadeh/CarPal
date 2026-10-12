@@ -12,15 +12,17 @@ import { OrganizationDirectory } from '#libs/authz/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { AttachmentTargets, type AttachmentTarget } from '#modules/media/interface/media.js';
 import { ConsentWithdrawnPortfolioConsumer } from './events/consent-withdrawn.consumer.js';
+import { ReactionChangedPortfolioConsumer } from './events/reaction-changed.consumer.js';
 import { DbOrganizationDirectory } from './infrastructure/organization-directory.js';
 import { DbOrgCards } from './infrastructure/org-cards.js';
 import { DbProviderCapabilities } from './infrastructure/provider-capabilities.js';
+import { DbPublicOrgCards } from './infrastructure/public-org-cards.js';
 import { DbPublicProfiles } from './infrastructure/public-profiles.js';
 import { DbOrgLocations, DbVendorCatalog } from './infrastructure/vendor-catalog.js';
 import { OrganizationExtensions } from './interface/extensions.js';
 import { OrgCards } from './interface/org-cards.js';
 import { ProviderCapabilities } from './interface/provider-capabilities.js';
-import { PublicProfiles } from './interface/public-profiles.js';
+import { PublicOrgCards, PublicProfiles } from './interface/public-profiles.js';
 import { OrgLocations, VendorCatalog } from './interface/vendor-catalog.js';
 
 const orgTarget = (id: string | undefined, groups: string[]): AttachmentTarget | null =>
@@ -76,13 +78,24 @@ export class OrganizationRegistrations implements OnModuleInit {
     { provide: OrgCards, useClass: DbOrgCards },
     { provide: ProviderCapabilities, useClass: DbProviderCapabilities },
     { provide: PublicProfiles, useClass: DbPublicProfiles },
+    { provide: PublicOrgCards, useClass: DbPublicOrgCards },
     { provide: VendorCatalog, useClass: DbVendorCatalog },
     { provide: OrgLocations, useClass: DbOrgLocations },
     // One registry per application context (contexts share a process in pnpm dev and tests).
     { provide: OrganizationExtensions, useFactory: () => new OrganizationExtensions() },
     OrganizationRegistrations,
     ConsentWithdrawnPortfolioConsumer,
+    ReactionChangedPortfolioConsumer,
   ],
-  exports: [OrganizationDirectory, OrgCards, ProviderCapabilities, PublicProfiles, VendorCatalog, OrgLocations, OrganizationExtensions],
+  exports: [
+    OrganizationDirectory,
+    OrgCards,
+    ProviderCapabilities,
+    PublicProfiles,
+    PublicOrgCards,
+    VendorCatalog,
+    OrgLocations,
+    OrganizationExtensions,
+  ],
 })
 export class OrganizationModule {}

@@ -3264,6 +3264,38 @@ CREATE TABLE community.reactions (
 CREATE INDEX reactions_target_idx ON community.reactions (target_type, target_id, reaction_type);
 COMMENT ON TABLE community.reactions IS '52 Reaction — one per user, target and type; removal deletes the row';
 
+-- Reaction count of one target (40 reactions.put/delete, SEC-BF-9): members of
+-- the subject organization (post author, portfolio provider, review subject,
+-- business answering) do not count. A reacting user may read other users'
+-- reactions and memberships only as this number, and refreshes the cached
+-- counters of community rows it cannot update itself (posts, answers). The
+-- counters of other modules (portfolio items, reviews) follow from the
+-- community.reaction.changed event (backend S6).
+CREATE FUNCTION community.refresh_reaction_count(p_target_type text, p_target_id uuid, p_reaction_type text, p_subject_org uuid)
+RETURNS integer
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+DECLARE
+  n integer;
+BEGIN
+  SELECT count(*)::int INTO n FROM community.reactions r
+   WHERE r.target_type = p_target_type AND r.target_id = p_target_id AND r.reaction_type = p_reaction_type
+     AND r.deleted_at IS NULL
+     AND (p_subject_org IS NULL OR NOT EXISTS (
+           SELECT 1 FROM identity.role_memberships m
+            WHERE m.user_id = r.user_id AND m.organization_id = p_subject_org AND m.status = 'active' AND m.deleted_at IS NULL));
+  IF p_target_type = 'post' AND p_reaction_type = 'like' THEN
+    UPDATE community.posts SET like_count = n WHERE id = p_target_id AND like_count <> n;
+  ELSIF p_target_type = 'post' AND p_reaction_type = 'helpful' THEN
+    UPDATE community.posts SET helpful_count = n WHERE id = p_target_id AND helpful_count <> n;
+  ELSIF p_target_type = 'answer' AND p_reaction_type = 'helpful' THEN
+    UPDATE community.answers SET helpful_count = n WHERE id = p_target_id AND helpful_count <> n;
+  END IF;
+  RETURN n;
+END
+$$;
+
 \echo '== 16. media (WP13)'
 
 -- =============================================================================

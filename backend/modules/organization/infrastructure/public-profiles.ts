@@ -3,15 +3,27 @@
 // active, catalog public, capabilities approved and ≥ low_evidence,
 // certifications verified) and projects them by allowlist.
 import { Injectable, Optional } from '@nestjs/common';
+import { sql, type Selectable } from 'kysely';
 import { l10n, type L10n, type Locale } from '#libs/i18n/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
-import { textArray } from '#libs/db/index.js';
+import { textArray, type DB } from '#libs/db/index.js';
 import { toPublicLocation, toPublicLocationPin } from '../api/public-projections.js';
-import { PublicProfiles, type PublicLocationPin, type PublicProfileParts, type PublishedVendor } from '../interface/public-profiles.js';
+import {
+  PublicProfiles,
+  type OrgSearchSource,
+  type PortfolioQuery,
+  type PortfolioSearchSource,
+  type PublicLocationPin,
+  type PublicOrgCardParts,
+  type PublicPortfolioParts,
+  type PublicProfileParts,
+  type PublishedVendor,
+} from '../interface/public-profiles.js';
 
 type T = Record<string, string> | null;
+type PortfolioRow = Selectable<DB['organization.portfolio_items']>;
 
 @Injectable()
 export class DbPublicProfiles extends PublicProfiles {
@@ -259,5 +271,392 @@ export class DbPublicProfiles extends PublicProfiles {
     ))
       out.set(l.organization_id, [...(out.get(l.organization_id) ?? []), toPublicLocationPin(l)]);
     return out;
+  }
+
+  /** Organizations among `ids` that are active with a published provider and/or vendor profile, with their roles. */
+  async #published(scope: TxScope, orgIds: readonly string[]) {
+    const ids = [...new Set(orgIds)].slice(0, 500);
+    if (ids.length === 0) return [];
+    return scope.db
+      .selectFrom('organization.organizations as o')
+      .leftJoin('organization.provider_profiles as p', (j) =>
+        j.onRef('p.organization_id', '=', 'o.id').on('p.public_status', '=', 'published').on('p.deleted_at', 'is', null),
+      )
+      .leftJoin('organization.vendor_profiles as v', (j) =>
+        j.onRef('v.organization_id', '=', 'o.id').on('v.public_status', '=', 'published').on('v.deleted_at', 'is', null),
+      )
+      .select([
+        'o.id',
+        'o.slug',
+        'o.name',
+        'o.organization_type',
+        'o.verification_status',
+        'o.description_translations as o_description',
+        'p.id as p_id',
+        'p.price_tier as p_price_tier',
+        'p.measured_response_time_minutes as p_response',
+        'v.id as v_id',
+        'v.measured_response_time_minutes as v_response',
+      ])
+      .where('o.id', 'in', ids)
+      .where('o.status', '=', 'active')
+      .where('o.deleted_at', 'is', null)
+      .where((eb) => eb.or([eb('p.id', 'is not', null), eb('v.id', 'is not', null)]))
+      .execute();
+  }
+
+  async idBySlug(scope: TxScope, slug: string): Promise<string | null> {
+    const row = await scope.db
+      .selectFrom('organization.organizations')
+      .select('id')
+      .where('slug', '=', slug.toLowerCase())
+      .where('status', '=', 'active')
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (!row) return null;
+    return (await this.#published(scope, [row.id])).length ? row.id : null;
+  }
+
+  async cards(scope: TxScope, orgIds: readonly string[]): Promise<Map<string, PublicOrgCardParts>> {
+    const rows = await this.#published(scope, orgIds);
+    const logos =
+      this.media && rows.length
+        ? await this.media.logoUrls(
+            scope,
+            rows.map((r) => r.id),
+          )
+        : new Map<string, string>();
+    return new Map(
+      rows.map((r) => [
+        r.id,
+        {
+          id: r.id,
+          slug: r.slug,
+          name: r.name,
+          organization_type: r.organization_type,
+          roles: [...(r.p_id ? (['provider'] as const) : []), ...(r.v_id ? (['vendor'] as const) : [])],
+          verified: r.verification_status === 'verified',
+          price_tier: r.p_id ? (r.p_price_tier ?? null) : null,
+          measured_response_time_minutes: r.p_response ?? r.v_response ?? null,
+          logo_url: logos.get(r.id) ?? null,
+        },
+      ]),
+    );
+  }
+
+  async searchSources(scope: TxScope, orgIds: readonly string[]): Promise<Map<string, OrgSearchSource>> {
+    const rows = await this.#published(scope, orgIds);
+    const out = new Map<string, OrgSearchSource>();
+    if (rows.length === 0) return out;
+    const ids = rows.map((r) => r.id);
+    const pIds = rows.filter((r) => r.p_id).map((r) => r.id);
+    const vIds = rows.filter((r) => r.v_id).map((r) => r.id);
+    const db = scope.db;
+    const [locations, providers, vendors, categories, coverage, capabilities, certifications, portfolio, vendorCoverage] =
+      await Promise.all([
+        this.#locations(scope, ids),
+        pIds.length ? db.selectFrom('organization.provider_profiles').selectAll().where('organization_id', 'in', pIds).execute() : [],
+        vIds.length ? db.selectFrom('organization.vendor_profiles').selectAll().where('organization_id', 'in', vIds).execute() : [],
+        pIds.length
+          ? db
+              .selectFrom('organization.provider_service_categories')
+              .select(['provider_organization_id as org', 'taxonomy_node_id'])
+              .where('provider_organization_id', 'in', pIds)
+              .where('status', '=', 'active')
+              .where('visibility', '=', 'public')
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [],
+        pIds.length
+          ? db
+              .selectFrom('organization.provider_vehicle_coverage')
+              .select(['provider_organization_id as org', 'brand_node_id', 'model_node_id', 'series_node_id'])
+              .where('provider_organization_id', 'in', pIds)
+              .where('status', '=', 'active')
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [],
+        pIds.length
+          ? db
+              .selectFrom('organization.provider_capabilities')
+              .select([
+                'provider_organization_id as org',
+                'brand_node_id',
+                'model_node_id',
+                'series_node_id',
+                'service_system_node_id',
+                'service_task_node_id',
+                'confidence_level',
+                'evidence_count',
+              ])
+              .where('provider_organization_id', 'in', pIds)
+              .where('status', '=', 'active')
+              .where('public_visibility', '=', true)
+              .where('confidence_level', '<>', 'self_declared')
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [],
+        pIds.length
+          ? db
+              .selectFrom('organization.provider_certifications')
+              .select(['provider_organization_id as org', 'certification_type'])
+              .where('provider_organization_id', 'in', pIds)
+              .where('status', '=', 'active')
+              .where('verification_status', '=', 'verified')
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [],
+        pIds.length
+          ? db
+              .selectFrom('organization.portfolio_items')
+              .select(['provider_organization_id as org', (eb) => eb.fn.countAll<string>().as('n')])
+              .where('provider_organization_id', 'in', pIds)
+              .where('status', '=', 'published')
+              .where('visibility', '=', 'public')
+              .where('deleted_at', 'is', null)
+              .groupBy('provider_organization_id')
+              .execute()
+          : [],
+        vIds.length
+          ? db
+              .selectFrom('organization.vendor_coverage')
+              .select(['vendor_organization_id as org', 'taxonomy_node_id', 'coverage_type'])
+              .where('vendor_organization_id', 'in', vIds)
+              .where('status', '=', 'active')
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [],
+      ]);
+    const group = <R extends { org: string }>(list: readonly R[]) => {
+      const m = new Map<string, R[]>();
+      for (const x of list) m.set(x.org, [...(m.get(x.org) ?? []), x]);
+      return (id: string): R[] => m.get(id) ?? [];
+    };
+    const cat = group(categories);
+    const cov = group(coverage);
+    const cap = group(capabilities);
+    const cert = group(certifications);
+    const port = group(portfolio);
+    const vcov = group(vendorCoverage);
+    for (const r of rows) {
+      const p = r.p_id ? providers.find((x) => x.id === r.p_id) : undefined;
+      const v = r.v_id ? vendors.find((x) => x.id === r.v_id) : undefined;
+      out.set(r.id, {
+        id: r.id,
+        slug: r.slug,
+        name: r.name,
+        organization_type: r.organization_type,
+        verified: r.verification_status === 'verified',
+        description_translations: ((p?.description_translations ?? v?.description_translations ?? r.o_description) as T) ?? null,
+        locations: locations
+          .filter((l) => l.organization_id === r.id)
+          .map((l) => ({ ...toPublicLocationPin(l), hours: l.hours ?? null, timezone: l.timezone })),
+        provider: p
+          ? {
+              provider_type: p.provider_type,
+              service_modes: textArray(p.service_modes),
+              price_tier: p.price_tier,
+              warranty_offered: p.warranty_offered,
+              response_time_target: p.response_time_target,
+              measured_response_time_minutes: p.measured_response_time_minutes,
+              languages_spoken: textArray(p.languages_spoken),
+              profile_completeness: p.profile_completeness,
+              activity_status: p.activity_status,
+              amenity_node_ids: textArray(p.amenity_node_ids),
+              category_node_ids: cat(r.id).map((c) => c.taxonomy_node_id),
+              coverage: cov(r.id).map(({ org: _o, ...c }) => c),
+              capabilities: cap(r.id).map(({ org: _o, ...c }) => c),
+              certification_types: [...new Set(cert(r.id).map((c) => c.certification_type))],
+              published_portfolio_count: Number(port(r.id)[0]?.n ?? 0),
+            }
+          : null,
+        vendor: v
+          ? {
+              vendor_type: v.vendor_type,
+              delivery_options: textArray(v.delivery_options),
+              trade_customers_supported: v.trade_customers_supported,
+              default_price_visibility: v.default_price_visibility,
+              catalog_quality_score: v.catalog_quality_score,
+              measured_response_time_minutes: v.measured_response_time_minutes,
+              coverage: vcov(r.id).map((c) => ({ node_id: c.taxonomy_node_id, coverage_type: c.coverage_type })),
+            }
+          : null,
+      });
+    }
+    return out;
+  }
+
+  async publishedIds(scope: TxScope, afterId: string | null, limit: number): Promise<string[]> {
+    let q = scope.db
+      .selectFrom('organization.organizations as o')
+      .select('o.id')
+      .where('o.status', '=', 'active')
+      .where('o.deleted_at', 'is', null)
+      .where((eb) =>
+        eb.or([
+          eb.exists(
+            eb
+              .selectFrom('organization.provider_profiles as p')
+              .select('p.id')
+              .whereRef('p.organization_id', '=', 'o.id')
+              .where('p.public_status', '=', 'published'),
+          ),
+          eb.exists(
+            eb
+              .selectFrom('organization.vendor_profiles as v')
+              .select('v.id')
+              .whereRef('v.organization_id', '=', 'o.id')
+              .where('v.public_status', '=', 'published'),
+          ),
+        ]),
+      );
+    if (afterId) q = q.where('o.id', '>', afterId);
+    return (await q.orderBy('o.id').limit(limit).execute()).map((r) => r.id);
+  }
+
+  async changedSince(scope: TxScope, since: Date, limit: number): Promise<{ ids: string[]; until: Date | null }> {
+    // Every table of the public projection, by its organization column (updated_at moves on every write, core.tg_touch).
+    const { rows } = await sql<{ org: string; at: Date }>`
+      SELECT org, max(at) AS at FROM (
+        SELECT id AS org, updated_at AS at FROM organization.organizations WHERE updated_at > ${since}
+        UNION ALL SELECT organization_id, updated_at FROM organization.organization_locations WHERE updated_at > ${since}
+        UNION ALL SELECT organization_id, updated_at FROM organization.provider_profiles WHERE updated_at > ${since}
+        UNION ALL SELECT organization_id, updated_at FROM organization.vendor_profiles WHERE updated_at > ${since}
+        UNION ALL SELECT provider_organization_id, updated_at FROM organization.provider_service_categories WHERE updated_at > ${since}
+        UNION ALL SELECT provider_organization_id, updated_at FROM organization.provider_vehicle_coverage WHERE updated_at > ${since}
+        UNION ALL SELECT provider_organization_id, updated_at FROM organization.provider_capabilities WHERE updated_at > ${since}
+        UNION ALL SELECT provider_organization_id, updated_at FROM organization.provider_certifications WHERE updated_at > ${since}
+        UNION ALL SELECT provider_organization_id, updated_at FROM organization.portfolio_items WHERE updated_at > ${since}
+        UNION ALL SELECT vendor_organization_id, updated_at FROM organization.vendor_coverage WHERE updated_at > ${since}
+      ) c GROUP BY org ORDER BY max(at), org LIMIT ${limit}`.execute(scope.db);
+    return { ids: rows.map((r) => r.org), until: rows.length ? new Date(rows.at(-1)!.at) : null };
+  }
+
+  /** Published public portfolio items of active organizations with a published provider profile. */
+  #portfolioQuery(scope: TxScope) {
+    return scope.db
+      .selectFrom('organization.portfolio_items as i')
+      .innerJoin('organization.organizations as o', 'o.id', 'i.provider_organization_id')
+      .selectAll('i')
+      .where('i.status', '=', 'published')
+      .where('i.visibility', '=', 'public')
+      .where('i.deleted_at', 'is', null)
+      .where('o.status', '=', 'active')
+      .where('o.deleted_at', 'is', null)
+      .where((eb) =>
+        eb.exists(
+          eb
+            .selectFrom('organization.provider_profiles as p')
+            .select('p.id')
+            .whereRef('p.organization_id', '=', 'i.provider_organization_id')
+            .where('p.public_status', '=', 'published'),
+        ),
+      );
+  }
+
+  async #portfolioParts(scope: TxScope, rows: PortfolioRow[], locale: Locale): Promise<PublicPortfolioParts[]> {
+    if (rows.length === 0) return [];
+    const labels = await this.taxonomy.labels(
+      rows
+        .flatMap((r) => [
+          r.brand_node_id,
+          r.model_node_id,
+          r.series_node_id,
+          r.service_system_node_id,
+          r.service_task_node_id,
+          ...textArray(r.tag_node_ids),
+        ])
+        .filter((x): x is string => !!x),
+      locale,
+    );
+    const lb = (id: string | null) => (id ? (labels.get(id) ?? null) : null);
+    const media = this.media
+      ? await this.media.publicAttachmentViews(
+          scope,
+          'portfolio_item',
+          rows.map((r) => r.id),
+        )
+      : new Map<string, unknown[]>();
+    return rows
+      .filter((r) => lb(r.service_system_node_id))
+      .map((r) => ({
+        id: r.id,
+        organization_id: r.provider_organization_id,
+        title: r.title,
+        description: r.description,
+        content_locale: r.content_locale,
+        vehicle: { brand: lb(r.brand_node_id), model: lb(r.model_node_id), series: lb(r.series_node_id) },
+        service_system: lb(r.service_system_node_id)!,
+        service_task: lb(r.service_task_node_id),
+        tags: textArray(r.tag_node_ids)
+          .filter((id) => labels.has(id))
+          .map((id) => ({ node_id: id, label: labels.get(id)! })),
+        job_date: r.job_date ?? null,
+        caption: r.caption,
+        media: (media.get(r.id) ?? []).slice(0, 40),
+        like_count: r.like_count,
+        published_at: new Date(r.published_at!).toISOString(),
+      }));
+  }
+
+  async portfolio(scope: TxScope, orgId: string, q: PortfolioQuery, locale: Locale): Promise<PublicPortfolioParts[]> {
+    let s = this.#portfolioQuery(scope).where('i.provider_organization_id', '=', orgId);
+    if (q.service_system_node_id) s = s.where('i.service_system_node_id', '=', q.service_system_node_id);
+    if (q.brand_node_id) s = s.where('i.brand_node_id', '=', q.brand_node_id);
+    if (q.after) s = s.where(sql<boolean>`(i.published_at, i.id) < (${new Date(q.after.published_at)}, ${q.after.id}::uuid)`);
+    const rows = await s.orderBy('i.published_at', 'desc').orderBy('i.id', 'desc').limit(q.limit).execute();
+    return this.#portfolioParts(scope, rows, locale);
+  }
+
+  async portfolioItems(scope: TxScope, ids: readonly string[], locale: Locale): Promise<Map<string, PublicPortfolioParts>> {
+    const unique = [...new Set(ids)].slice(0, 200);
+    if (unique.length === 0) return new Map();
+    const rows = await this.#portfolioQuery(scope).where('i.id', 'in', unique).execute();
+    return new Map((await this.#portfolioParts(scope, rows, locale)).map((p) => [p.id, p]));
+  }
+
+  async portfolioSources(scope: TxScope, ids: readonly string[]): Promise<Map<string, PortfolioSearchSource>> {
+    const unique = [...new Set(ids)].slice(0, 500);
+    if (unique.length === 0) return new Map();
+    const rows = await this.#portfolioQuery(scope).where('i.id', 'in', unique).execute();
+    return new Map(
+      rows.map((r) => [
+        r.id,
+        {
+          id: r.id,
+          organization_id: r.provider_organization_id,
+          title: r.title,
+          description: r.description,
+          caption: r.caption,
+          content_locale: r.content_locale,
+          node_ids: [
+            r.brand_node_id,
+            r.model_node_id,
+            r.series_node_id,
+            r.service_system_node_id,
+            r.service_task_node_id,
+            ...textArray(r.tag_node_ids),
+          ].filter((x): x is string => !!x),
+          published_at: new Date(r.published_at!),
+        },
+      ]),
+    );
+  }
+
+  async portfolioIds(scope: TxScope, orgId: string): Promise<string[]> {
+    const rows = await this.#portfolioQuery(scope).where('i.provider_organization_id', '=', orgId).execute();
+    return rows.map((r) => r.id);
+  }
+
+  async portfolioItemStatus(scope: TxScope, itemId: string) {
+    const row = await scope.db
+      .selectFrom('organization.portfolio_items')
+      .select(['provider_organization_id', 'status', 'customer_consent_status'])
+      .where('id', '=', itemId)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    return row
+      ? { organizationId: row.provider_organization_id, status: row.status, customerConsentStatus: row.customer_consent_status }
+      : null;
   }
 }

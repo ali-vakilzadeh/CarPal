@@ -253,6 +253,27 @@ export class TaxonomyCatalog extends TaxonomyResolver implements OnApplicationBo
     return out;
   }
 
+  async descendants(id: string): Promise<string[]> {
+    const { nodes } = await this.data();
+    const children = new Map<string, string[]>();
+    for (const n of nodes.values())
+      if (n.parentId && n.status === 'active') children.set(n.parentId, [...(children.get(n.parentId) ?? []), n.id]);
+    const out = new Set<string>();
+    const stack = nodes.has(id) ? [id] : [];
+    while (stack.length && out.size < 5000) {
+      const cur = stack.pop()!;
+      if (out.has(cur)) continue;
+      out.add(cur);
+      stack.push(...(children.get(cur) ?? []));
+    }
+    return [...out];
+  }
+
+  async catalog(): Promise<{ nodes: TaxonomyNodeRecord[]; synonyms: TaxonomySynonymRecord[] }> {
+    const data = await this.data();
+    return { nodes: [...data.nodes.values()], synonyms: [...data.synonyms.values()].flat() };
+  }
+
   async labels(ids: readonly string[], locale: Locale): Promise<Map<string, L10n>> {
     const { nodes } = await this.data();
     const out = new Map<string, L10n>();

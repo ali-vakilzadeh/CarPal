@@ -127,7 +127,8 @@ describe('S4 acceptance: create, locate by pin, complete, publish', () => {
     const events = await app.fixtures.worker.run({ actorType: 'system' }, ({ db }) =>
       db.selectFrom('core.domain_event_outbox').select('event_type').where('aggregate_id', '=', org.id).execute(),
     );
-    expect(events.map((e) => e.event_type)).toEqual(['provider.profile.published']);
+    // S6: profile and location edits publish organization.profile.updated for the search indexer (DI-45).
+    expect(events.map((e) => e.event_type).filter((t) => t !== 'organization.profile.updated')).toEqual(['provider.profile.published']);
 
     // Public read (anonymous RLS context): public point only, no street line, no access instructions.
     const pp = app.app.get(PublicProfiles, { strict: false });

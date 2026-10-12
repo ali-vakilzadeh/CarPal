@@ -2,6 +2,7 @@
 import { ApiError, type FieldError } from '#libs/contract/index.js';
 import type { OrgType } from '#libs/contract/generated/enums.js';
 import type { OperationContext } from '#libs/http-pipeline/index.js';
+import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import type { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 
@@ -86,3 +87,37 @@ export async function loadOrg(scope: TxScope, orgId: string, lock = false) {
 
 /** jsonb columns: arrays must be serialized (pg would send a PostgreSQL array). */
 export const json = (v: unknown): string | null => (v === undefined || v === null ? null : JSON.stringify(v));
+
+/** What changed in an organization's public projection (payload of organization.profile.updated). */
+export type ProfileChange = 'profile' | 'location' | 'organization';
+
+/**
+ * The public projection of an organization changed (S6 search indexer W2).
+ * organization.profile.updated is not in 40 Appendix A yet (DI-45); catalog,
+ * coverage, capability, certification and portfolio edits are picked up by
+ * the indexer's change sweep instead (PublicProfiles.changedSince).
+ */
+export async function profileUpdated(scope: TxScope, orgId: string, change: ProfileChange): Promise<void> {
+  await publishEvent(scope, {
+    type: 'organization.profile.updated',
+    aggregateType: 'organization',
+    aggregateId: orgId,
+    payload: { organization_id: orgId, change },
+  });
+}
+
+/** Publication status of a provider or vendor profile changed (provider.profile.published is in Appendix A; the others are DI-45). */
+export async function publicationChanged(
+  scope: TxScope,
+  orgId: string,
+  side: 'provider' | 'vendor',
+  status: 'published' | 'unpublished',
+  profileId: string,
+): Promise<void> {
+  await publishEvent(scope, {
+    type: `${side}.profile.${status}`,
+    aggregateType: 'organization',
+    aggregateId: orgId,
+    payload: { organization_id: orgId, profile_id: profileId },
+  });
+}

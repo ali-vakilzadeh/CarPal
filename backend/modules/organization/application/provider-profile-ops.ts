@@ -7,7 +7,6 @@ import { writeAudit } from '#libs/audit/index.js';
 import { Authorizer } from '#libs/authz/index.js';
 import { ApiError, type FieldError } from '#libs/contract/index.js';
 import { ACK, created, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
-import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
@@ -15,7 +14,7 @@ import { toCertification, toProviderProfile, type CertificationRow, type Provide
 import { completeness, insightsPeriod, isFutureDate, PROVIDER_COMPLETENESS, providerPublishUnmet } from '../domain/profile-rules.js';
 import { OrganizationExtensions } from '../interface/extensions.js';
 import { ProfileFacts } from '../infrastructure/facts.js';
-import { afterId, checkNodes, checkVersion, failIf, json, member, pageOf } from './common.js';
+import { afterId, checkNodes, checkVersion, failIf, json, member, pageOf, profileUpdated, publicationChanged } from './common.js';
 
 type ContactChannel = { type: 'phone' | 'email' | 'whatsapp' | 'website'; value: string; preferred: boolean };
 type ProviderProfileWrite = {
@@ -129,6 +128,7 @@ export class ProviderProfilePutHandler implements OperationHandler {
             .values({ ...values, organization_id: m.orgId })
             .returningAll()
             .executeTakeFirstOrThrow();
+      await profileUpdated(scope, m.orgId, 'profile');
       return toProviderProfile(row, { completeness: c.score, gaps: c.gaps });
     });
     return { body };
@@ -170,12 +170,7 @@ export class ProviderPublishHandler implements OperationHandler {
         .where('id', '=', profile.id)
         .execute();
       const activated = await activateOrganization(scope, m.orgId);
-      await publishEvent(scope, {
-        type: 'provider.profile.published',
-        aggregateType: 'organization',
-        aggregateId: m.orgId,
-        payload: { organization_id: m.orgId, profile_id: profile.id },
-      });
+      await publicationChanged(scope, m.orgId, 'provider', 'published', profile.id);
       await writeAudit(scope, {
         action: 'provider.published',
         entityType: 'provider_profile',
@@ -202,8 +197,10 @@ export class ProviderUnpublishHandler implements OperationHandler {
       if (!profile) throw new ApiError('NOT_FOUND');
       // A suspension by staff stays in place; existing appointments continue either way.
       const next = profile.public_status === 'published' ? 'draft' : profile.public_status;
-      if (next !== profile.public_status)
+      if (next !== profile.public_status) {
         await scope.db.updateTable('organization.provider_profiles').set({ public_status: next }).where('id', '=', profile.id).execute();
+        await publicationChanged(scope, m.orgId, 'provider', 'unpublished', profile.id);
+      }
       await writeAudit(scope, {
         action: 'provider.unpublished',
         entityType: 'provider_profile',

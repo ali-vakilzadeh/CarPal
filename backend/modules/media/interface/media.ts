@@ -154,6 +154,13 @@ export abstract class MediaService {
    */
   abstract attachmentViews(scope: TxScope, type: AttachedToType, ids: readonly string[]): Promise<Map<string, MediaAttachmentView[]>>;
 
+  /**
+   * Active attachments of records whose assets are publicly servable (52 §15:
+   * clean, moderation approved, consent where needed), signed for anyone, in
+   * any RLS context. Public profiles, showcases, posts and Q&A (S6).
+   */
+  abstract publicAttachmentViews(scope: TxScope, type: AttachedToType, ids: readonly string[]): Promise<Map<string, MediaAttachmentView[]>>;
+
   /** Readiness of the active attachments of one record. */
   abstract attachedAssets(scope: TxScope, type: AttachedToType, id: string): Promise<AttachedAsset[]>;
 

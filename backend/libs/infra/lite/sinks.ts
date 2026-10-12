@@ -45,7 +45,9 @@ export class FilePushSender extends JsonlSink<PushMessage> implements PushSender
     super(dir, 'outbox-push.jsonl');
   }
   async send(message: PushMessage): Promise<void> {
-    this.write(message);
+    // The raw device token stays out of the sink (SEC-LOG-1).
+    const { token: _token, ...safe } = message;
+    this.write(safe);
   }
 }
 

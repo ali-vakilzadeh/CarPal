@@ -70,6 +70,12 @@ export interface OperationContext<B = unknown, Q = Record<string, unknown>> {
   rateLimit(bucket: string, scope: Scope, key: string, cost?: number): Promise<void>;
   /** Page<T> with a signed cursor bound to the caller and the query (40 §3.3); pass null as `next` on the last page. */
   page<T>(items: T[], next: unknown): { items: T[]; next_cursor: string | null };
+  /**
+   * A cursor for another operation of this host with no query filters (e.g.
+   * search.run answering the first page of search.page): signed for the
+   * caller and bound to that operation's route and path parameters.
+   */
+  cursorFor(opId: OperationId, params: Record<string, string>, position: unknown): string;
 }
 
 export type CachePolicy = 'no-store' | { public: number };

@@ -499,6 +499,11 @@ export class HttpPipeline {
         items,
         next_cursor: next === null || next === undefined ? null : d.crypto.cursors.sign(a.pKey, a.binding, next),
       }),
+      cursorFor: (opId, params, position) => {
+        const target = d.routes.entries.find((e) => e.op.opId === opId);
+        if (!target) throw new ApiError('INTERNAL', { detail: `cursorFor: ${opId} is not served by this host` });
+        return d.crypto.cursors.sign(a.pKey, this.#queryBinding(opId, target.route.path, params, {}), position);
+      },
     };
   }
 

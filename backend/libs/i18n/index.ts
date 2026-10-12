@@ -122,6 +122,20 @@ export function normalizeSearchText(text: string, options: SearchNormalizeOption
   return c ? trimmed.replace(/[A-Z]+/g, (m) => m.toLowerCase()) : trimmed.toLowerCase();
 }
 
+const NON_WORD = /[^\p{L}\p{N}]+/u;
+const MARKS = /\p{Mn}+/gu;
+
+/**
+ * Analyzer of the search projections (52 §10, S6) for documents and queries
+ * alike: the search normalization above with Unicode rules (lower case and
+ * whitespace in every script, whatever the database ctype), non-spacing marks
+ * removed, then words of letters and digits. Persian typed with Arabic
+ * letters, Persian or Arabic digits and ZWNJ-joined words give the same tokens.
+ */
+export function searchTokens(text: string): string[] {
+  return normalizeSearchText(text, { dbLocale: 'C.UTF-8' }).replace(MARKS, '').split(NON_WORD).filter(Boolean);
+}
+
 let tzAllowlist: Set<string> | null = null;
 /** 40 Tz: an IANA name from the tzdb allowlist. */
 export function isTimezone(tz: string): boolean {

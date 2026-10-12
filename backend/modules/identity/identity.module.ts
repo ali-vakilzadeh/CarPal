@@ -19,8 +19,17 @@ import { AuthState } from './infrastructure/auth-state.js';
 import { DbAccountFacts, DbConsentChecker, DbConsentGrants, DbUserCards } from './infrastructure/directory.js';
 import { DbMembershipDirectory } from './infrastructure/membership-directory.js';
 import { IdentityMessages } from './infrastructure/messages.js';
+import { DbRecipients } from './infrastructure/recipients.js';
 import { DbConsentRequests, DbOrgMemberships, requestedOfUser } from './infrastructure/org-memberships.js';
-import { AccountFacts, ConsentGrants, ConsentRequests, ConsentScopes, OrgMemberships, UserCards } from './interface/identity.js';
+import {
+  AccountFacts,
+  ConsentGrants,
+  ConsentRequests,
+  ConsentScopes,
+  OrgMemberships,
+  Recipients,
+  UserCards,
+} from './interface/identity.js';
 
 /**
  * Registers the fleet-users counter (entitlement max_fleet_users,
@@ -63,6 +72,7 @@ export class IdentityUsageRegistration implements OnModuleInit {
     { provide: AccountFacts, useClass: DbAccountFacts },
     { provide: ConsentRequests, useClass: DbConsentRequests },
     { provide: ConsentGrants, useClass: DbConsentGrants },
+    { provide: Recipients, useClass: DbRecipients },
     {
       provide: AuthState,
       useFactory: (infra: Infra, c: CryptoServices) => new AuthState(infra.kv, c.hmac),
@@ -82,6 +92,7 @@ export class IdentityUsageRegistration implements OnModuleInit {
     AccountFacts,
     ConsentRequests,
     ConsentGrants,
+    Recipients,
     AuthState,
     AttestationVerifierPort,
     IdentityMessages,

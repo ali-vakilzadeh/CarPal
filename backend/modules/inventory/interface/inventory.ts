@@ -53,6 +53,40 @@ export interface FitmentVehicle {
   year?: number | null;
 }
 
+/**
+ * 52 §10 InventorySearchDoc source of one public item (active, public or
+ * trade_only, published vendor). price_public only for public items; the
+ * trade price and private notes never leave the module (SEC-OUT-1).
+ */
+export interface InventorySearchSource {
+  id: string;
+  vendor_organization_id: string;
+  name_translations: Record<string, string>;
+  normalized_name: string | null;
+  sku: string;
+  part_numbers: string[];
+  brand: string | null;
+  part_category_node_id: string;
+  part_origin: string;
+  condition: string;
+  stock_status: string;
+  visibility: 'public' | 'trade_only';
+  price_public: string | null;
+  currency: string | null;
+  price_on_request: boolean;
+  data_quality_score: number;
+  location_id: string | null;
+  fitment: {
+    brand_node_id: string;
+    model_node_id: string | null;
+    series_node_id: string | null;
+    year_start: number | null;
+    year_end: number | null;
+    engine_type_node_id: string | null;
+    confidence: string;
+  }[];
+}
+
 export abstract class InventoryRead {
   /**
    * The items among `ids` the caller's context may reference: its own
@@ -72,4 +106,10 @@ export abstract class InventoryRead {
   ): Promise<Map<string, PublicInventoryCard>>;
   /** The item-owned parts of a public item, or null when the caller may not see it. */
   abstract publicItem(scope: TxScope, id: string, o: { locale: Locale }): Promise<PublicInventoryItemParts | null>;
+  /** Search sources of public items among `ids` (system context, W2); absent ids are not (or no longer) public. */
+  abstract searchSources(scope: TxScope, ids: readonly string[]): Promise<Map<string, InventorySearchSource>>;
+  /** Every item id of a vendor that is not removed (reindexing or dropping a vendor). */
+  abstract vendorItemIds(scope: TxScope, vendorOrgId: string): Promise<string[]>;
+  /** Vendors with which the context organization has an approved trade account (trade-only items in search). */
+  abstract tradeVendorIds(scope: TxScope): Promise<Set<string>>;
 }

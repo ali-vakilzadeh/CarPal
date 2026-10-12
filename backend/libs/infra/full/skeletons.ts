@@ -13,6 +13,7 @@ import type {
   SearchIndex,
   SmsSender,
 } from '../ports.js';
+import { OpenSearchIndex } from './opensearch.js';
 
 export class NotConfiguredError extends Error {
   constructor(adapter: string, url: string) {
@@ -56,8 +57,8 @@ export const natsDeadLetters = (url: string): DeadLetterStore => skeleton<DeadLe
 export const bullJobQueue = (url: string): JobQueue => skeleton<JobQueue>('BullMQ', url, ['enqueue', 'process', 'cancel', 'idle']);
 export const s3ObjectStorage = (url: string): ObjectStorage =>
   skeleton<ObjectStorage>('S3', url, ['put', 'get', 'head', 'delete', 'presignPut', 'presignGet']);
-export const openSearchIndex = (url: string): SearchIndex =>
-  skeleton<SearchIndex>('OpenSearch', url, ['upsert', 'remove', 'search', 'count']);
+/** Written to the port in S6 but unverified (OQ-01). */
+export const openSearchIndex = (url: string): SearchIndex => new OpenSearchIndex(url);
 export const smtpMailer = (url: string): Mailer => skeleton<Mailer>('SMTP', url, ['send']);
 export const smsGateway = (url: string): SmsSender => skeleton<SmsSender>('SMS gateway', url, ['send']);
 export const pushGateway = (url: string): PushSender => skeleton<PushSender>('push gateway', url, ['send']);

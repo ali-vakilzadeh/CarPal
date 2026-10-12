@@ -118,6 +118,10 @@ const EnvSchema = z
     CARPAL_LOCATION_CHECK_THRESHOLD_M: z.coerce.number().int().min(1).max(100_000).default(300),
     /** W6 media processor: re-queue assets still pending a scan after this long (lost lite queue entries). */
     CARPAL_MEDIA_RESCAN_AFTER_MS: z.coerce.number().int().min(1_000).max(86_400_000).default(300_000),
+
+    // --- Discovery (S6)
+    /** W2: rebuild the search projections when the worker starts (the lite index is in memory, so it starts empty). */
+    CARPAL_SEARCH_REBUILD_ON_START: bool.default(true),
   })
   .superRefine((env, ctx) => {
     if (env.CARPAL_ENV !== 'dev' && env.CARPAL_MASTER_SECRET === DEV_MASTER_SECRET) {
@@ -180,6 +184,7 @@ export interface CarpalConfig {
   taxonomyRefreshMs: number;
   geo: { locationCheckThresholdM: number };
   media: { rescanAfterMs: number };
+  search: { rebuildOnStart: boolean };
 }
 
 /** Development redirect URIs (claimed HTTPS links for mobile, BFF callbacks for web). */
@@ -274,6 +279,7 @@ export function loadConfig(overrides: Record<string, string | undefined> = {}): 
     taxonomyRefreshMs: e.CARPAL_TAXONOMY_REFRESH_MS,
     geo: { locationCheckThresholdM: e.CARPAL_LOCATION_CHECK_THRESHOLD_M },
     media: { rescanAfterMs: e.CARPAL_MEDIA_RESCAN_AFTER_MS },
+    search: { rebuildOnStart: e.CARPAL_SEARCH_REBUILD_ON_START },
   };
   return deepFreeze(config);
 }

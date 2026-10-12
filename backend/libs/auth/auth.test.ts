@@ -155,7 +155,7 @@ describe('Authenticator', () => {
     });
     const a = await make().authenticate(req(`Bearer ${anon}`));
     expect(a).toMatchObject({ kind: 'anonymous', scopes: ['public.read', 'search'] });
-    expect(a.kind === 'anonymous' && a.anonKey).toMatch(/^[0-9a-f]{32}$/);
+    expect(a.kind === 'anonymous' && a.anonKey).toMatch(/^[0-9a-f]{64}$/);
 
     await sessions.revoke(sid);
     await expect(make().authenticate(req(`DPoP ${token}`))).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });

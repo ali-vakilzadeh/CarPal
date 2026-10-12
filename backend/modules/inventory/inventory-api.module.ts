@@ -39,6 +39,7 @@ import {
   InventoryUpdateHandler,
   ItemViews,
 } from './application/item-ops.js';
+import { PublicInventoryGetHandler, PublicOrgInventorySearchHandler } from './application/public-ops.js';
 import {
   TradeAccountsCustomerListHandler,
   TradeAccountsRequestHandler,
@@ -87,6 +88,9 @@ import {
     InquiriesGetHandler,
     InquiriesMessageHandler,
     InquiriesTransitionHandler,
+    // §14.3 public reads
+    PublicOrgInventorySearchHandler,
+    PublicInventoryGetHandler,
   ],
 })
 export class InventoryApiModule {}

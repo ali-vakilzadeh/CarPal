@@ -11,7 +11,13 @@ import { PublicProfiles } from '#modules/organization/interface/public-profiles.
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import type { FitmentRow, ItemRow } from '../api/projections.js';
 import { bestConfidence, type FitmentConfidence } from '../domain/rules.js';
-import { InventoryRead, type FitmentVehicle, type PublicInventoryCard, type PublicInventoryItemParts } from '../interface/inventory.js';
+import {
+  InventoryRead,
+  type FitmentVehicle,
+  type InventorySearchSource,
+  type PublicInventoryCard,
+  type PublicInventoryItemParts,
+} from '../interface/inventory.js';
 
 type Translations = Record<string, string>;
 
@@ -184,5 +190,73 @@ export class DbInventoryRead extends InventoryRead {
           confidence: f.confidence as FitmentConfidence,
         })),
     };
+  }
+
+  async searchSources(scope: TxScope, ids: readonly string[]): Promise<Map<string, InventorySearchSource>> {
+    const rows = await this.#publicRows(scope, ids);
+    const fitment = await this.#fitment(
+      scope,
+      rows.map((r) => r.id),
+    );
+    return new Map(
+      rows.map((r) => [
+        r.id,
+        {
+          id: r.id,
+          vendor_organization_id: r.vendor_organization_id,
+          name_translations: r.name_translations as Translations,
+          normalized_name: r.normalized_name,
+          sku: r.sku,
+          part_numbers: [...(r.oem_numbers ?? []), ...(r.aftermarket_numbers ?? [])],
+          brand: r.brand,
+          part_category_node_id: r.part_category_node_id,
+          part_origin: r.part_origin,
+          condition: r.condition,
+          stock_status: r.stock_status,
+          visibility: r.visibility as 'public' | 'trade_only',
+          // 52 §10: price_public of public items only; trade prices are never indexed.
+          price_public: r.visibility === 'public' ? r.price_public : null,
+          currency: r.currency,
+          price_on_request: r.price_on_request,
+          data_quality_score: r.data_quality_score,
+          location_id: r.location_id,
+          fitment: (fitment.get(r.id) ?? []).map((f) => ({
+            brand_node_id: f.brand_node_id,
+            model_node_id: f.model_node_id,
+            series_node_id: f.series_node_id,
+            year_start: f.year_start,
+            year_end: f.year_end,
+            engine_type_node_id: f.engine_type_node_id,
+            confidence: f.confidence,
+          })),
+        },
+      ]),
+    );
+  }
+
+  async vendorItemIds(scope: TxScope, vendorOrgId: string): Promise<string[]> {
+    const rows = await scope.db
+      .selectFrom('inventory.inventory_items')
+      .select('id')
+      .where('vendor_organization_id', '=', vendorOrgId)
+      .where('status', '<>', 'removed')
+      .where('deleted_at', 'is', null)
+      .orderBy('id')
+      .limit(50_000)
+      .execute();
+    return rows.map((r) => r.id);
+  }
+
+  async tradeVendorIds(scope: TxScope): Promise<Set<string>> {
+    const org = scope.context.orgId;
+    if (!org) return new Set();
+    const rows = await scope.db
+      .selectFrom('inventory.vendor_trade_accounts')
+      .select('vendor_organization_id')
+      .where('trade_customer_organization_id', '=', org)
+      .where('status', '=', 'approved')
+      .where('deleted_at', 'is', null)
+      .execute();
+    return new Set(rows.map((r) => r.vendor_organization_id));
   }
 }

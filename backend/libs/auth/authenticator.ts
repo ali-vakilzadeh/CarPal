@@ -85,7 +85,8 @@ export class Authenticator {
         kind: 'anonymous',
         clientId: claims.client_id,
         tokenId: claims.jti,
-        anonKey: this.o.hmac.digest('anon-key', deviceKey).toString('hex').slice(0, 32),
+        // 64 hex: discovery.match_sessions.anonymous_key_hash and core.my_anon_key() (S6).
+        anonKey: this.o.hmac.digest('anon-key', deviceKey).toString('hex'),
         scopes: claims.scope.split(' ').filter(Boolean),
       };
     }

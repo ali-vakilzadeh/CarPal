@@ -15,7 +15,7 @@ import { AccountFacts, OrgMemberships } from '#modules/identity/interface/identi
 import { MediaService } from '#modules/media/interface/media.js';
 import { toOrganization, toVerification } from '../api/projections.js';
 import { ownerRoleFor } from '../domain/roles.js';
-import { afterId, checkVersion, json, loadOrg, member, pageOf } from './common.js';
+import { afterId, checkVersion, json, loadOrg, member, pageOf, profileUpdated } from './common.js';
 
 registerConstraintErrors({
   organizations_slug_uq: { code: 'DUPLICATE', pointer: '/slug', fieldCode: 'not_unique' },
@@ -143,6 +143,7 @@ export class OrgUpdateHandler implements OperationHandler {
         next: Object.keys(patch).join(',') || null,
       });
       if (slugChanges) scope.afterCommit(() => this.infra.kv.incr(slugKey, 1, SLUG_WINDOW_MS).then(() => undefined));
+      await profileUpdated(scope, m.orgId, 'organization');
       return toOrganization(row, m.role);
     });
     return { body };

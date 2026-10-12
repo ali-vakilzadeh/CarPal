@@ -29,6 +29,16 @@ export abstract class VehicleCards {
   abstract cards(scope: TxScope, ids: readonly string[]): Promise<Map<string, VehicleCard>>;
   /** A vehicle the caller's RLS context owns (the user's personal vehicle, or the fleet's), else null. */
   abstract visible(scope: TxScope, vehicleId: string): Promise<OwnedVehicle | null>;
+  /** Open (due or overdue, else upcoming) reminders of a vehicle the caller owns, most urgent first (Discover feed tips). */
+  abstract openReminders(scope: TxScope, vehicleId: string, limit: number): Promise<OpenReminder[]>;
+}
+
+export interface OpenReminder {
+  id: string;
+  reminder_type: string;
+  title: string;
+  status: string;
+  priority: string;
 }
 
 /** 40 ServiceRecord written when an appointment completes (S7). */

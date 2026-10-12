@@ -23,3 +23,4 @@ export {
   type LocationCheckStatus,
 } from './geocoder.js';
 export * from './points.js';
+export { openNow, type HoursSpec } from './hours.js';

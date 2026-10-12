@@ -10,12 +10,14 @@ import { MemoryEventBus, type BusLogger } from './lite/memory-bus.js';
 import { MemoryKeyValueStore } from './lite/memory-kv.js';
 import { MemoryJobQueue } from './lite/memory-queue.js';
 import { FileDeadLetterStore, FileMailer, FilePushSender, FileSmsSender } from './lite/sinks.js';
-import type { Infra, SearchIndex } from './ports.js';
+import { MemorySearchIndex } from './lite/memory-search.js';
+import type { Infra } from './ports.js';
 
 export type * from './ports.js';
 export { MemoryKeyValueStore } from './lite/memory-kv.js';
 export { MemoryEventBus, subjectMatches } from './lite/memory-bus.js';
 export { MemoryJobQueue } from './lite/memory-queue.js';
+export { MemorySearchIndex, matchesFilter, tokenMatch, withinOneEdit } from './lite/memory-search.js';
 export { LocalObjectStorage } from './lite/local-storage.js';
 export { FileDeadLetterStore, FileMailer, FilePushSender, FileSmsSender } from './lite/sinks.js';
 export { NotConfiguredError } from './full/skeletons.js';
@@ -25,14 +27,6 @@ export interface InfraOptions {
   dataDir: string | null;
   logger?: BusLogger;
 }
-
-/** Search is implemented in S6; lite mode answers empty until then. */
-const unimplementedSearch: SearchIndex = {
-  upsert: () => Promise.reject(new Error('SearchIndex is implemented in S6')),
-  remove: () => Promise.reject(new Error('SearchIndex is implemented in S6')),
-  search: () => Promise.reject(new Error('SearchIndex is implemented in S6')),
-  count: () => Promise.reject(new Error('SearchIndex is implemented in S6')),
-};
 
 export function createInfra(config: CarpalConfig, options: InfraOptions): Infra {
   if (config.infra === 'full') {
@@ -70,7 +64,7 @@ export function createInfra(config: CarpalConfig, options: InfraOptions): Infra 
     deadLetters,
     jobs,
     storage,
-    search: unimplementedSearch,
+    search: new MemorySearchIndex(),
     mailer: new FileMailer(dir),
     sms: new FileSmsSender(dir),
     push: new FilePushSender(dir),

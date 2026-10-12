@@ -10,7 +10,14 @@ import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import type { JobLogVerification, VisitInfo } from '#modules/organization/interface/extensions.js';
 import { issueOpen } from '../domain/rules.js';
-import { VehicleCards, VehicleService, type AppointmentServiceRecord, type OwnedVehicle, type VehicleCard } from '../interface/vehicles.js';
+import {
+  VehicleCards,
+  VehicleService,
+  type AppointmentServiceRecord,
+  type OpenReminder,
+  type OwnedVehicle,
+  type VehicleCard,
+} from '../interface/vehicles.js';
 
 registerConstraintErrors({
   // One service record per appointment (42 §6).
@@ -58,6 +65,21 @@ export class DbVehicleCards extends VehicleCards {
     // RLS owner_all: only the owner user's or the owner organization's context reads it.
     if (!v) return null;
     return { ...toCard(v), ownerType: v.owner_type as OwnedVehicle['ownerType'], ownerId: v.owner_id, status: v.status };
+  }
+
+  async openReminders(scope: TxScope, vehicleId: string, limit: number): Promise<OpenReminder[]> {
+    if (!(await this.visible(scope, vehicleId))) return [];
+    const rows = await scope.db
+      .selectFrom('vehicle.maintenance_reminders')
+      .select(['id', 'reminder_type', 'title', 'status', 'priority'])
+      .where('vehicle_id', '=', vehicleId)
+      .where('status', 'in', ['overdue', 'due', 'upcoming'])
+      .where('deleted_at', 'is', null)
+      .orderBy(sql`CASE status WHEN 'overdue' THEN 0 WHEN 'due' THEN 1 ELSE 2 END`)
+      .orderBy('id')
+      .limit(limit)
+      .execute();
+    return rows;
   }
 }
 

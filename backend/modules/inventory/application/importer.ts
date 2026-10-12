@@ -173,6 +173,8 @@ export class InventoryImporter {
           updated_count: updatedCount,
           error_count: errorRows,
           ai_normalization_requested: batch.ai_normalization_requested,
+          // The importing member is told when the batch finishes (notification W5, S6).
+          requested_by_user_id: batch.created_by,
         },
       });
     });
