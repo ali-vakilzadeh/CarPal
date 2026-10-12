@@ -55,7 +55,8 @@ describe('generated contract', () => {
     }
   });
 
-  it('compiles every operation schema with ajv in strict mode', () => {
+  // Compiles > 1,000 schemas: slower than the default 5 s when the unit files run in parallel.
+  it('compiles every operation schema with ajv in strict mode', { timeout: 60_000 }, () => {
     const ajv = createContractAjv();
     const { operations } = loadSchemas();
     let compiled = 0;

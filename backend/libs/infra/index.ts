@@ -60,6 +60,8 @@ export function createInfra(config: CarpalConfig, options: InfraOptions): Infra 
     dir ? objectsDir(dir) : join(tmpdir(), `carpal-objects-${process.pid}`),
     config.http.mediaBaseUrl,
     new KeyRing(config.secrets.master).hmacKey('storage-url'),
+    Date.now,
+    new KeyRing(config.secrets.master).derive('storage-sse'),
   );
   return {
     mode: 'lite',

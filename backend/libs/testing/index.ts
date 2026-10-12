@@ -11,3 +11,4 @@ export {
   type PrincipalSpec,
   type RouteMatrix,
 } from './matrix.js';
+export { tinyMp4, jpegWithExif, tinyPdf, EICAR_TEXT } from './media.js';

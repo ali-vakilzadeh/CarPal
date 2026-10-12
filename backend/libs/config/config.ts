@@ -100,6 +100,24 @@ const EnvSchema = z
     /** Authorization cache TTL (40 SEC-AU-3: at most 30 s). */
     CARPAL_AUTHZ_CACHE_MS: z.coerce.number().int().min(0).max(30_000).default(30_000),
     CARPAL_OUTBOX_POLL_MS: z.coerce.number().int().min(50).max(60_000).default(1_000),
+
+    // --- Auth server (S3, 40 §6.2)
+    /** Hosted sign-in UI that auth.authorize redirects to (interaction_id in the query). */
+    CARPAL_SIGNIN_URL: z.url().optional(),
+    /** Exact redirect_uri allowlist per client_id (SEC-AU-1), JSON {"cp-mobile":["https://carpal.app/oauth/callback"]}. */
+    CARPAL_OAUTH_REDIRECT_URIS: jsonRecord(z.array(z.url()).max(20)).optional(),
+    /** SEC-AU-11 fixed minimum latency of sign-up, sign-in, OTP and reset start (plus 0-50 ms jitter). */
+    CARPAL_AUTH_MIN_LATENCY_MS: z.coerce.number().int().min(0).max(5_000).default(400),
+    /** Leading zero bits of auth.pow_challenge (SEC-BF-7); raised per risk later. */
+    CARPAL_POW_DIFFICULTY_BITS: z.coerce.number().int().min(8).max(32).default(18),
+    /** Taxonomy cache: how often the catalog fingerprint is re-checked (0 = every read). */
+    CARPAL_TAXONOMY_REFRESH_MS: z.coerce.number().int().min(0).max(3_600_000).default(30_000),
+
+    // --- Organizations and media (S4)
+    /** Pin-versus-address distance above which a location is far_apart (52 OrganizationLocation; proposed 300 m in cities). */
+    CARPAL_LOCATION_CHECK_THRESHOLD_M: z.coerce.number().int().min(1).max(100_000).default(300),
+    /** W6 media processor: re-queue assets still pending a scan after this long (lost lite queue entries). */
+    CARPAL_MEDIA_RESCAN_AFTER_MS: z.coerce.number().int().min(1_000).max(86_400_000).default(300_000),
   })
   .superRefine((env, ctx) => {
     if (env.CARPAL_ENV !== 'dev' && env.CARPAL_MASTER_SECRET === DEV_MASTER_SECRET) {
@@ -128,6 +146,7 @@ export interface CarpalConfig {
     ports: { api: number; 'admin-api': number; auth: number; storage: number };
     issuer: string;
     audiences: { api: string; 'admin-api': string };
+    signinUrl: string;
     mediaBaseUrl: string;
     i18n: { baseUrl: string; version: string };
     clientMinVersions: Record<string, string>;
@@ -153,7 +172,23 @@ export interface CarpalConfig {
     authzCacheMs: number;
     outboxPollMs: number;
   };
+  auth: {
+    redirectUris: Record<string, string[]>;
+    minLatencyMs: number;
+    powDifficultyBits: number;
+  };
+  taxonomyRefreshMs: number;
+  geo: { locationCheckThresholdM: number };
+  media: { rescanAfterMs: number };
 }
+
+/** Development redirect URIs (claimed HTTPS links for mobile, BFF callbacks for web). */
+export const DEV_REDIRECT_URIS: Record<string, string[]> = {
+  'cp-mobile': ['https://carpal.app/oauth/callback'],
+  'cp-web-consumer': ['https://carpal.app/bff/oauth/callback'],
+  'cp-web-portal': ['https://portal.carpal.app/bff/oauth/callback'],
+  'cp-web-admin': ['https://admin.carpal.app/bff/oauth/callback'],
+};
 
 let envFileLoaded = false;
 function loadEnvFile(): void {
@@ -188,6 +223,7 @@ export function loadConfig(overrides: Record<string, string | undefined> = {}): 
       bind: e.CARPAL_HTTP_BIND,
       ports: { api: e.CARPAL_API_PORT, 'admin-api': e.CARPAL_ADMIN_API_PORT, auth: e.CARPAL_AUTH_PORT, storage: e.CARPAL_STORAGE_PORT },
       issuer: e.CARPAL_ISSUER,
+      signinUrl: e.CARPAL_SIGNIN_URL ?? `${e.CARPAL_ISSUER}/signin`,
       audiences: { api: e.CARPAL_API_AUDIENCE, 'admin-api': e.CARPAL_ADMIN_API_AUDIENCE },
       mediaBaseUrl: e.CARPAL_MEDIA_BASE_URL ?? `http://127.0.0.1:${e.CARPAL_STORAGE_PORT}`,
       i18n: { baseUrl: e.CARPAL_I18N_BASE_URL, version: e.CARPAL_I18N_VERSION },
@@ -230,6 +266,14 @@ export function loadConfig(overrides: Record<string, string | undefined> = {}): 
       authzCacheMs: e.CARPAL_AUTHZ_CACHE_MS,
       outboxPollMs: e.CARPAL_OUTBOX_POLL_MS,
     },
+    auth: {
+      redirectUris: e.CARPAL_OAUTH_REDIRECT_URIS ?? DEV_REDIRECT_URIS,
+      minLatencyMs: e.CARPAL_AUTH_MIN_LATENCY_MS,
+      powDifficultyBits: e.CARPAL_POW_DIFFICULTY_BITS,
+    },
+    taxonomyRefreshMs: e.CARPAL_TAXONOMY_REFRESH_MS,
+    geo: { locationCheckThresholdM: e.CARPAL_LOCATION_CHECK_THRESHOLD_M },
+    media: { rescanAfterMs: e.CARPAL_MEDIA_RESCAN_AFTER_MS },
   };
   return deepFreeze(config);
 }

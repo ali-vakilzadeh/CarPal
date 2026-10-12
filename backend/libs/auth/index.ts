@@ -22,13 +22,42 @@ export {
   type UserPrincipal,
 } from './principal.js';
 
-/** Registered OAuth clients (40 §2.2) with access-token and session lifetimes. */
+const H = 3_600_000;
+const D = 24 * H;
+
+/**
+ * Registered OAuth clients (40 §2.2): access-token lifetime, refresh-token
+ * idle (sliding) and absolute lifetimes (= session lifetime), client kind and
+ * token binding. Redirect URIs are configuration (CARPAL_OAUTH_REDIRECT_URIS).
+ */
 export const CLIENTS = {
-  'cp-mobile': { accessTtlS: 300, sessionAbsoluteMs: 90 * 86_400_000 },
-  'cp-web-consumer': { accessTtlS: 300, sessionAbsoluteMs: 7 * 86_400_000 },
-  'cp-web-portal': { accessTtlS: 300, sessionAbsoluteMs: 7 * 86_400_000 },
-  'cp-web-admin': { accessTtlS: 300, sessionAbsoluteMs: 8 * 3_600_000 },
-  'cp-ssr': { accessTtlS: 300, sessionAbsoluteMs: 0 },
+  'cp-mobile': { accessTtlS: 300, refreshIdleMs: 30 * D, sessionAbsoluteMs: 90 * D, kind: 'public', binding: 'dpop', audience: 'api' },
+  'cp-web-consumer': {
+    accessTtlS: 300,
+    refreshIdleMs: 12 * H,
+    sessionAbsoluteMs: 7 * D,
+    kind: 'confidential',
+    binding: 'mtls',
+    audience: 'api',
+  },
+  'cp-web-portal': {
+    accessTtlS: 300,
+    refreshIdleMs: 8 * H,
+    sessionAbsoluteMs: 7 * D,
+    kind: 'confidential',
+    binding: 'mtls',
+    audience: 'api',
+  },
+  'cp-web-admin': {
+    accessTtlS: 300,
+    refreshIdleMs: 30 * 60_000,
+    sessionAbsoluteMs: 8 * H,
+    kind: 'confidential',
+    binding: 'mtls',
+    audience: 'admin-api',
+  },
+  'cp-ssr': { accessTtlS: 300, refreshIdleMs: 0, sessionAbsoluteMs: 0, kind: 'confidential', binding: 'mtls', audience: 'api' },
 } as const;
 export type ClientId = keyof typeof CLIENTS;
+export const isClientId = (v: unknown): v is ClientId => typeof v === 'string' && Object.hasOwn(CLIENTS, v);
 export const ANONYMOUS_TOKEN_TTL_S = 15 * 60;

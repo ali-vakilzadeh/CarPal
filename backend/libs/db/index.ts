@@ -13,3 +13,4 @@ export {
   type ConstraintMapping,
   type PgErrorLike,
 } from './errors.js';
+export { textArray } from './arrays.js';

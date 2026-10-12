@@ -4,6 +4,90 @@
     "created": "2026-10-10",
     "last_updated": "2026-10-11",
     "status": "in_progress",
+    "progress": {
+      "as_of": "2026-10-11",
+      "summary": "S1-S4 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, and now organizations (members, mi invitations, locations with the pin-versus-address check, verifications), provider and vendor profiles with publication, the capability portfolio and its AI approval gate, work records and portfolio consent, public projections for S6, and the media pipeline (signed upload, W6 processing with sharp, attachments, signed delivery). 130 of 402 operations are implemented; 272 answer 501 behind their full guards. Next: S5 (vehicles and service history; vendor inventory and stock inquiries).",
+      "stages": [
+        {
+          "stage": "S1",
+          "title": "Foundation: workspace, local DB runtime, migrations, contract registry",
+          "status": "done",
+          "completed_at": "2026-10-10",
+          "ops_implemented": 0,
+          "tests_after_stage": 52
+        },
+        {
+          "stage": "S2",
+          "title": "Platform libraries, app shells and the request pipeline",
+          "status": "done",
+          "completed_at": "2026-10-10",
+          "ops_implemented": 4,
+          "tests_after_stage": 183
+        },
+        {
+          "stage": "S3",
+          "title": "Identity and auth server, billing, taxonomy",
+          "status": "done",
+          "completed_at": "2026-10-11",
+          "ops_implemented": 55,
+          "ops_deferred": 3,
+          "tests_after_stage": 255
+        },
+        {
+          "stage": "S4",
+          "title": "Organizations, provider and vendor profiles, media",
+          "status": "done",
+          "completed_at": "2026-10-11",
+          "ops_implemented": 71,
+          "ops_deferred": 0,
+          "note": "ops_target 72 = 71 API operations + media.upload_put (the signed PUT, served by the storage listener, not an API route)",
+          "tests_after_stage": 301
+        },
+        {
+          "stage": "S5",
+          "title": "Vehicles and service history; vendor inventory and stock inquiries",
+          "status": "not_started",
+          "ops_target": 61
+        },
+        {
+          "stage": "S6",
+          "title": "Discovery, search and map; community; notifications",
+          "status": "not_started",
+          "ops_target": 45
+        },
+        {
+          "stage": "S7",
+          "title": "Appointments, calendar and pre-visit report; reviews and trust",
+          "status": "not_started",
+          "ops_target": 57
+        },
+        {
+          "stage": "S8",
+          "title": "Fleet; admin plane; analytics and audit; DSR execution",
+          "status": "not_started",
+          "ops_target": 82
+        },
+        {
+          "stage": "S9",
+          "title": "AI/MCP facade, contract test sweep, OpenAPI, hardening pass",
+          "status": "not_started",
+          "ops_target": 23
+        }
+      ],
+      "operations": {
+        "implemented": 130,
+        "returning_501": 272,
+        "deferred_with_reason": 3,
+        "total": 402
+      },
+      "next_stage": "S5",
+      "before_starting_S5": [
+        "Run `pnpm db:reset` once: S4 changed Docs/43 (identity.consent_request_contact added, identity.accept_invitation keeps the token hash, DI-23/DI-24).",
+        "Run `pnpm install`: S4 added the sharp dependency (prebuilt win32-x64 binaries, no build script needed).",
+        "Read S4.report.notes_for_next and recommendations_for_next_stages.S5. S5 must register its resolvers in OrganizationExtensions (visits 'service_record', customer check, vehicle owners, inventory item counter), media AttachmentTargets ('vehicle', 'vehicle_issue', 'inventory_item') and ConsentScopes ('vehicle', 'stock_inquiry').",
+        "All checks were green at the end of S4: pnpm lint, typecheck, build, format:check, contract:check, db:codegen --verify, test:all (301 tests, 42 files); pnpm dev starts all hosts."
+      ]
+    },
     "purpose": "Breaks the first (scratch) build of the CarPal backend into 9 stages, each sized to run in its own context window. Every stage writes its report back into this file so the next context can see what is done, what was decided and what to watch out for.",
     "how_to_use": [
       "Start a new context with: 'Run stage <id> of backend/dev_plan.json'.",
@@ -90,6 +174,10 @@
         {
           "stage": "S2",
           "change": "Lite adapters are per process (in-memory KV, bus, queue; files under .data/), so pnpm dev runs api, admin-api, auth and the worker in one process. Full-mode adapters exist as typed skeletons that reject with NotConfiguredError."
+        },
+        {
+          "stage": "S4",
+          "change": "ObjectStorage.put takes { encrypt }: lite stores such objects AES-256-GCM (key derived from the master secret, AAD = object key) and decrypts on read and serve; full mode maps it to SSE-KMS. Geocoder is a port bound by PlatformModule (lite FixtureGeocoder, full UnconfiguredGeocoder → 503). sharp (prebuilt) is the image codec of W6 in both modes."
         }
       ]
     },
@@ -102,6 +190,14 @@
         {
           "stage": "S2",
           "change": "The 501 is answered after authentication, rate limits, authorization and feature flags and before input validation, so unimplemented routes still prove their guards. Problem code NOT_IMPLEMENTED (outside the 40 catalog). After S2: 398 operations answer 501."
+        },
+        {
+          "stage": "S3",
+          "change": "After S3: 59 operations implemented, 343 answer 501. Test-only handlers (apps/testing handlerModule) are marked as overrides (markOverride) and replace the real handler of the same operation, so pipeline tests keep exercising real op ids; two real handlers for one operation still fail at startup."
+        },
+        {
+          "stage": "S4",
+          "change": "After S4: 130 operations implemented, 272 answer 501 (3 deferred S3 ops). media.upload_put is served by the storage listener, not the API router."
         }
       ]
     },
@@ -114,6 +210,10 @@
         {
           "stage": "S2",
           "change": "Strict-mode hooks implemented: DPoP proof verification is complete (ES256 embedded key, htm/htu/iat/ath/jkt, jti replay in the KV store; server nonces left to S3), mTLS compares cnf x5t#S256 with the thumbprint supplied by the TLS terminator, ATT calls an AttestationVerifierPort (S3). The admin plane requires aal3 staff sessions in both modes."
+        },
+        {
+          "stage": "S3",
+          "change": "Auth server implemented: authorization code + PKCE S256 through a cookie-bound hosted sign-in interaction (__Host-cp_ia), refresh-token rotation where a token family = one server-side session (reuse revokes the session and mails a security alert), client credentials (cp-ssr, public.read), the anonymous grant (15 min, public.read search), ID tokens (EdDSA, nonce), revocation. DPoP proofs are verified at /oauth/token and bind tokens (cnf.jkt, token_type DPoP); strict mode requires a proof from cp-mobile and a server nonce (400 use_dpop_nonce + DPoP-Nonce). The ATT verifier accepts proof-of-work solutions of auth.pow_challenge (single use); platform attestation tokens are refused. Still not implemented (logged deviations): WebAuthn (passkeys, staff aal3 sign-in), Google/Apple sign-in, App Attest / Play Integrity verification, private_key_jwt / mTLS client authentication for the BFF clients, DPoP-Nonce on the API hosts, risk-based sign-in (SEC-AU-12)."
         }
       ]
     },
@@ -163,7 +263,17 @@
       "id": "GD-11",
       "decision": "The contract is generated, never hand-copied: libs/contract/generated/ (operations.json, schemas.json, operation-schemas.json, operation-ids.ts, errors.ts, enums.ts, role-groups.ts, schema-coverage.json) from Docs/40 by tools/contract/generate.ts. CI (S9) runs pnpm contract:check; a unit test fails when the files are stale.",
       "reason": "40 is authoritative and changes; generation keeps the router, validation and tests aligned with it.",
-      "stage": "S1"
+      "stage": "S1",
+      "amendments": [
+        {
+          "stage": "S3",
+          "change": "Generator fixes (tools/contract/generate.ts), regenerated operation-schemas.json: (1) GET list operations returning Page<T> without a q: line now accept cursor/limit (40 §3.3; 26 ops, e.g. dsr.list, me.mfa_list, onboarding.list; POST searches page in their bodies); (2) non-Id path parameters that 40 leaves untyped (flow_type, slug, report_type, role, key, dashboard_key) get their schema types (DI-12) instead of the Id pattern, which made those routes unreachable; (3) createContractAjv accepts validating replacements of the x- keywords (x-node-type, GD-17)."
+        },
+        {
+          "stage": "S4",
+          "change": "Docs/40 changed and the contract was regenerated: Problem gained optional requirements, consent_type, entitlement_key (DI-10); OrgMember gained version and nullable user_id/full_name (DI-19, DI-22)."
+        }
+      ]
     },
     {
       "id": "GD-12",
@@ -176,6 +286,48 @@
       "decision": "Integration-test database strategy: one shared database per test run (db:setup once), never reset between tests; fixtures (libs/testing) write through carpal_worker in the system context with fresh UUIDv7 ids and @test.carpal.app emails, the app under test connects with its real role, and tests assert only on their own rows.",
       "reason": "Template clones lose the per-database role settings (S1 notes); per-test rollback cannot wrap an HTTP app with its own transactions; truncation is blocked on append-only tables. Unique fixtures keep RLS real and tests fast (the 3.5k-request sweep takes about 3 s).",
       "stage": "S2"
+    },
+    {
+      "id": "GD-14",
+      "decision": "The auth host runs every transaction in the system RLS context. Its database role carpal_auth has identity grants only (plus billing.plans), and all its operations are PUB(no token); the pipeline sets actorType system for the auth host.",
+      "reason": "42 §5.1 assigns the system context to carpal_auth; sign-up, sign-in and link consumption act for an account that is not authenticated yet, and AUD operations must write their audit entry through ctx.tx (the pipeline checks the audit mark).",
+      "stage": "S3"
+    },
+    {
+      "id": "GD-15",
+      "decision": "Cross-module extension points live in the owning module's interface/ folder, as abstract-class ports or registries: billing UsageCounters (counter entitlements and Subscription.usage) and SubscriptionReader; identity UserCards, ConsentScopes (scope-ownership checks for consents.grant) and DataExportFiles (DSR download); organization OrgCards; taxonomy TaxonomyResolver. Registries are created with useFactory, so each Nest application context has its own (pnpm dev and the tests run several contexts in one process). Modules register into them in onModuleInit; an unregistered extension fails closed.",
+      "reason": "Keeps dependency-cruiser module boundaries (no module reads another module's tables) while later stages plug in their data (vehicles, inventory, media, appointments).",
+      "stage": "S3",
+      "amendments": [
+        {
+          "stage": "S4",
+          "change": "New extension points: organization OrganizationExtensions (visits, customer checks, vehicle owners, inventory item counter, insight sources) and media AttachmentTargets (attachable record types with owner + role groups). New interfaces: identity AccountFacts, OrgMemberships, ConsentRequests; billing SubscriptionWriter; organization ProviderCapabilities, PublicProfiles; media MediaService. Unregistered extensions fail closed."
+        }
+      ]
+    },
+    {
+      "id": "GD-16",
+      "decision": "Taxonomy is served from an in-memory catalog in every process (all nodes, active synonyms and mappings; about 1,700 rows). A fingerprint (row counts + newest updated_at of the three tables) is re-checked at most every CARPAL_TAXONOMY_REFRESH_MS (30 s); a change reloads the catalog, and taxonomy.node.merged drops it at once (each process subscribes to the bus with its own consumer name). The taxonomy version is derived from the fingerprint (\"t<base36 ms>-<base36 rows>\") and is also what config.client reports.",
+      "reason": "41 §2.1 M4 (\"served and cached for every other module\"); the vocabulary is small and public, typeahead and NodeId checks must not hit the database, and the version must change whenever the content does.",
+      "stage": "S3"
+    },
+    {
+      "id": "GD-17",
+      "decision": "NodeId<type> fields of request bodies are enforced by the pipeline: the x-node-type keyword collects (pointer, id, allowed types) during closed-schema validation, and the NodeTypeChecker port (taxonomy module) answers 422 REFERENCE_NOT_FOUND for unknown or inactive nodes and 422 TAXONOMY_MISMATCH for nodes of another type, all problems in one response. A body with node references fails closed (500) on a host without the checker. Parent chains (model under brand, series under model) stay with the use cases (TaxonomyResolver.requireDescendant).",
+      "reason": "40 §3.1 NodeId<type> and SEC-AZ-4; S1 left x-node-type as an annotation for S3.",
+      "stage": "S3"
+    },
+    {
+      "id": "GD-18",
+      "decision": "Media pipeline: media.upload_complete marks the asset active/pending and enqueues the asset id on the media.process queue after commit; W6 (MediaProcessor, worker deployable, system context) sniffs, scans, re-encodes and re-stores the processed variants (media/<id>/original|display|thumb; the raw uploads/<id> object is deleted when clean) and publishes media.scan.completed in the same transaction as the status. A W15 rule re-queues assets still pending after CARPAL_MEDIA_RESCAN_AFTER_MS (processing is idempotent), another discards uploads never completed. Redaction runs as a core.background_jobs job (kind redaction, queue media.redaction) whose input_summary carries only relative coordinates.",
+      "reason": "41 §2.4 W6 is triggered by media.upload_complete; a queue entry plus a database sweep gives at-least-once processing without an extra event type, and keeps the scan status and its event atomic.",
+      "stage": "S4"
+    },
+    {
+      "id": "GD-19",
+      "decision": "Organization lifecycle in S4: org.create inserts a draft organization (RLS create_draft) with the creator's owner membership and the audience's default plan in one transaction; the first successful provider.publish or vendor.publish moves a draft organization to active (DI-18). Fleets stay draft until S8 decides their activation (fleet profile).",
+      "reason": "52 §21 requires an active organization to publish but no operation of 40 activates one, and 56 §2.11 allows publishing while verification is pending.",
+      "stage": "S4"
     }
   ],
   "conventions": {
@@ -265,6 +417,134 @@
       "id": "DI-10",
       "issue": "Problem (40 §4.2) is a closed type, but CONSENT_REQUIRED ('body names the consent_type'), ENTITLEMENT_REQUIRED ('body names the key') and PUBLISH_REQUIREMENTS_UNMET ('body lists missing requirements') need extra members.",
       "action": "S3/S4 decide: add optional members to Problem (e.g. consent_type, entitlement_key, requirements[]) or encode them as FieldErrors. The pipeline renders only the closed Problem today.",
+      "status": "resolved in S4",
+      "s3_note": "S3 kept the closed Problem: CONSENT_REQUIRED names the consent type only in the internal detail (logs). Still to decide before S4 publishes profiles (PUBLISH_REQUIREMENTS_UNMET needs its list). Recommendation: add optional members consent_type, entitlement_key and requirements: List<Str<1,60>,20> to Problem in 40 §4.2 and regenerate.",
+      "s4_note": "Problem (40 §4.2) gained optional members requirements: List<Str<1,60>,20>, consent_type: ConsentType, entitlement_key: Str<1,60>; contract regenerated; ApiError.extensions renders them; requireConsent/requireEntitlement and both publish operations set them."
+    },
+    {
+      "id": "DI-11",
+      "issue": "AAL2 is unreachable for accounts without a second factor, yet AAL2 guards the operations that enrol the first one (me.mfa_totp_enroll, me.webauthn_register_options) and everyday account operations (me.email_change, me.password_change, dsr.create, consent and onboarding operations). SEC-AU-10 defines aal2 as aal1 + second factor.",
+      "action": "S3: a session records whether the account had an active second factor at sign-in (Session.mfaEnrolled); for sessions without one, a sign-in within the 10-minute step-up window satisfies AAL2 (re-authentication at the strongest level the account has). Staff, aal3 and enrolled accounts are unaffected. Suggest 40 SEC-AU-10 states this rule explicitly.",
+      "status": "open"
+    },
+    {
+      "id": "DI-12",
+      "issue": "40 declares no type for six non-Id path parameters: flow_type (onboarding.update/accept_terms, admin.onboarding_reset), slug (public.org_get), report_type (fleet.report), role (admin.platform_role_revoke), key (admin.flag_update), dashboard_key (admin.analytics_dashboard). The generator treated them as Id, which made those routes unreachable with real values.",
+      "action": "Generator default table (UNTYPED_PATH_PARAMS): OnboardingProgress['flow_type'], Slug, FleetReportType, Role, Str<1,80>, DashboardKey. Suggest adding `param:` lines (like provider.gated_decide) to those blocks in 40.",
+      "status": "open"
+    },
+    {
+      "id": "DI-13",
+      "issue": "auth.password_reset_complete lists \"422 VALIDATION_FAILED(breached_password)\", but FieldErrorCode (40 §4.2) has no code for a breached password.",
+      "action": "S3 answers VALIDATION_FAILED with { pointer: \"/new_password\" (or /password), code: \"pattern\" }. Suggest adding a FieldErrorCode such as \"not_allowed\" or \"breached\".",
+      "status": "open"
+    },
+    {
+      "id": "DI-14",
+      "issue": "onboarding.update is ETAG (If-Match required), but a flow has no row, and so no version, before its first save.",
+      "action": "S3: If-Match \"v1\" against a flow that does not exist yet creates it (version 1); any other version is 412. Suggest ETAG(if exists) for onboarding.update.",
+      "status": "open"
+    },
+    {
+      "id": "DI-15",
+      "issue": "40 §6.2 does not say how the hosted sign-in UI returns to the client once AuthNext.next = \"complete\", and gives no error code for an unknown, expired or cookie-mismatched interaction_id.",
+      "action": "S3: the hosted UI requests GET /oauth/authorize again with the same parameters; the __Host-cp_ia cookie names the completed interaction, so the server redirects to redirect_uri with code, state and iss (RFC 9207). Interaction errors are 410 LINK_EXPIRED (sign-in failures stay INVALID_CREDENTIALS). Suggest documenting both in 40 §6.2.",
+      "status": "open"
+    },
+    {
+      "id": "DI-16",
+      "issue": "me.email_change must not reveal whether the new address belongs to another account (202 always), so the conflict surfaces when the link is used; auth.email_verify lists only 410 errors.",
+      "action": "S3: auth.email_verify answers 409 DUPLICATE when the new address was taken meanwhile (the link stays unused). Suggest adding \"409 DUPLICATE\" to auth.email_verify err.",
+      "status": "open"
+    },
+    {
+      "id": "DI-17",
+      "issue": "RLS made three S3 requirements impossible for the application roles: (a) the L16 consent gate must read another person's consent (a provider reading a vehicle owner's vehicle_data_sharing consent; grantee_read only covers records naming the organization, not unscoped ones); (b) consents.request_view/respond must answer LINK_RECIPIENT_MISMATCH for someone else's cn link, but party_all hides the request; (c) subscription.me_get \"always at least Individual Free\", but default_plan_insert admits organization subscribers only.",
+      "action": "Docs/43 (+ 42 §5.3) gained three SECURITY DEFINER functions with minimal columns: identity.has_consent(subject, type, scope?, grantee?), identity.consent_request_by_token(hash), billing.ensure_user_subscription(user) (system context or the user themself). Local databases: pnpm db:reset.",
+      "status": "resolved in S3"
+    },
+    {
+      "id": "DI-18",
+      "issue": "52 §21 requires organization status active to publish a profile, but no operation of 40 moves an organization from draft to active (org.create must insert draft under RLS create_draft), and 56 §2.11 allows publishing with verification pending.",
+      "action": "S4: provider.publish / vendor.publish activate a draft organization (draft|pending_verification|active may publish; suspended/archived/merged give organization_active in requirements). Suggest stating this in 40 provider.publish/vendor.publish and 52 §21.",
+      "status": "open"
+    },
+    {
+      "id": "DI-19",
+      "issue": "40 OrgMember had user_id: Id and full_name: Str<2,100> (required), but org.members_list must list pending invitations, which have no user yet.",
+      "action": "S4: Docs/40 OrgMember now has user_id: Id | null and full_name: Str<2,100> | null (email = invited address); contract regenerated.",
+      "status": "resolved in S4"
+    },
+    {
+      "id": "DI-20",
+      "issue": "52/40 do not say which default plan a hybrid_provider_vendor organization gets (billing plans have provider and vendor audiences only).",
+      "action": "S4: hybrid starts on provider_basic (its public face is the provider profile); staff can reassign it. Product to confirm.",
+      "status": "open"
+    },
+    {
+      "id": "DI-21",
+      "issue": "Hybrid organizations: one membership per user and organization (role_memberships_org_uq), but {prv} routes need P* / P+ roles and {vnd} routes need V* / V+ roles, so the creator (provider_owner) cannot manage the vendor side; widening role groups is a contract change (40 §0.5).",
+      "action": "Decide before the hybrid UI ships: e.g. in a hybrid organization provider_owner also satisfies V+/V* and vendor_owner P+/P*, or allow two memberships per user in hybrid organizations. S4 leaves the groups as written (workaround: invite a vendor_owner).",
+      "status": "open"
+    },
+    {
+      "id": "DI-22",
+      "issue": "org.member_update is ETAG but OrgMember carried no version, so clients could not send If-Match.",
+      "action": "S4: Docs/40 OrgMember has version: Int<1,2147483647> (the membership row version); responses carry the ETag.",
+      "status": "resolved in S4"
+    },
+    {
+      "id": "DI-23",
+      "issue": "identity.accept_invitation (Docs/43) set invitation_token_hash = NULL on acceptance, so a reused mi link was unknown (410 LINK_EXPIRED) and its own LINK_USED branch was unreachable; SEC-LT-4 requires 410 LINK_USED.",
+      "action": "S4: Docs/43 keeps the hash on acceptance (the status check keeps the link single-use); revoking an invitation (member_remove) clears it. Local databases: pnpm db:reset.",
+      "status": "resolved in S4"
+    },
+    {
+      "id": "DI-24",
+      "issue": "provider.portfolio_consent_request sends a cn link to the customer derived from a visit, but the business may not read the customer's contact data (SEC-OUT-3, RLS) and no event or operation delivers cn links.",
+      "action": "S4: identity issues and mails the link itself; Docs/43 + 42 §5.3 gained identity.consent_request_contact(id) (definer): email/locale of the subject of a pending request of the caller's organization created in the same transaction. S6 may move delivery to the notification module (template identity.consent_request).",
+      "status": "resolved in S4"
+    },
+    {
+      "id": "DI-25",
+      "issue": "40 MediaAsset.status is 'active'|'quarantined'|'removed' but 52 MediaAsset has pending_upload, the state between upload_init and upload_complete.",
+      "action": "S4: media.get answers 404 for pending_upload assets. Suggest adding pending_upload to MediaAsset.status in 40.",
+      "status": "open"
+    },
+    {
+      "id": "DI-26",
+      "issue": "40 Url is https-only, but lite mode serves signed media URLs from the local http listener.",
+      "action": "S4: the response check rewrites lite media URLs to an https placeholder (deviation); full mode uses the https media host. No contract change needed.",
+      "status": "open"
+    },
+    {
+      "id": "DI-27",
+      "issue": "40 provider.coverage_create says each row is validated independently, but NodeId<type> checks (GD-17) run for the whole body in the pipeline, so one unknown node rejects the batch.",
+      "action": "S4: parent chains and duplicates are per row (skipped codes); node existence/type is per request. Suggest 40 states that NodeId errors fail the whole request.",
+      "status": "open"
+    },
+    {
+      "id": "DI-28",
+      "issue": "S4 plan said provider.insights_get answers 503 AI_UNAVAILABLE until S9, but the operation has no FLAG and is not an AI feature; most of its figures belong to trust, appointment and analytics (S6-S8).",
+      "action": "S4: implemented with this module's figures and 0/null from OrganizationExtensions.registerInsight until those modules register. Suggest marking which ProviderInsights/VendorInsights figures are nullable before their source exists.",
+      "status": "open"
+    },
+    {
+      "id": "DI-29",
+      "issue": "40 HoursSpec day_of_week: Int<0,6> does not say which day is 0 (the pilot region's week starts on Saturday).",
+      "action": "S4: 0 = Sunday … 6 = Saturday (JavaScript getDay) in openNow. Suggest stating it in 40 §7.1.",
+      "status": "open"
+    },
+    {
+      "id": "DI-30",
+      "issue": "40 OrgUpdate.slug allows at most 2 changes per 30 days, but no column records slug changes and no error code is named.",
+      "action": "S4: counted in the KV store (30-day TTL), 429 RATE_LIMITED when exceeded. Suggest a slug_changed_at history (or audit read) and naming the code.",
+      "status": "open"
+    },
+    {
+      "id": "DI-31",
+      "issue": "52 OrganizationLocation: exactly one primary per organization, but 40 LocationWrite.is_primary is a free boolean and does not say what happens to the first location or when the primary is deactivated.",
+      "action": "S4: the first active location becomes primary; a second primary is 422 /is_primary not_unique; deactivating the primary promotes the oldest other active location, or 409 INVALID_TRANSITION(primary_location) when it is the only one.",
       "status": "open"
     }
   ],
@@ -597,7 +877,7 @@
     {
       "id": "S3",
       "title": "Identity and auth server, billing, taxonomy",
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [
         "S2"
       ],
@@ -637,38 +917,45 @@
       "tasks": [
         {
           "id": "S3.T1",
-          "status": "not_started",
-          "title": "Auth server (apps/auth): auth.discovery, auth.jwks, auth.authorize + auth.token (authorization_code + PKCE, refresh rotation with family revocation, client_credentials for cp-ssr, anonymous grant), auth.revoke, auth.signup, auth.signin_password (always INVALID_CREDENTIALS, constant-ish timing), auth.email_verify, auth.password_reset_*, auth.otp_* (SMS sink), auth.mfa_verify (TOTP). auth.webauthn_options, auth.social_start and auth.pow_challenge: minimal or 501 with a deviation note."
+          "status": "done",
+          "title": "Auth server (apps/auth): auth.discovery, auth.jwks, auth.authorize + auth.token (authorization_code + PKCE, refresh rotation with family revocation, client_credentials for cp-ssr, anonymous grant), auth.revoke, auth.signup, auth.signin_password (always INVALID_CREDENTIALS, constant-ish timing), auth.email_verify, auth.password_reset_*, auth.otp_* (SMS sink), auth.mfa_verify (TOTP). auth.webauthn_options, auth.social_start and auth.pow_challenge: minimal or 501 with a deviation note.",
+          "note": "Done except WebAuthn and social sign-in. modules/identity/identity-auth.module.ts + application/auth-ops.ts, auth-server.ts: auth.discovery, auth.jwks, auth.authorize (exact redirect_uri, cookie-bound interaction, resume after completion, prompt=none/login), auth.token (authorization_code + PKCE with code replay → session revoked; refresh rotation, reuse → family/session revoked + security alert mail; client_credentials for cp-ssr; anonymous grant; DPoP at the token endpoint), auth.revoke (refresh or access token, always 200), auth.pow_challenge (+ ATT PoW verifier), auth.signup (existing email → notice, same answer), auth.signin_password (always INVALID_CREDENTIALS, dummy Argon2 work, rehash), auth.otp_start/verify (email or allowlisted SMS, 10 min, 5 attempts, 60 s resend, constant-time HMAC compare), auth.mfa_verify (TOTP with replay protection, recovery codes single use), auth.email_verify (first verification activates and emits user.registered; applies email changes), auth.password_reset_start/complete (revokes every session). SEC-AU-11 latency floor (CARPAL_AUTH_MIN_LATENCY_MS, 400 ms + 0-50 ms). Deferred (501): auth.webauthn_options, auth.social_start."
         },
         {
           "id": "S3.T2",
-          "status": "not_started",
-          "title": "Account: me.get/update, email and phone change, password change, preferences (Jalali/Persian digits defaults come from the DB trigger), memberships list/leave, sessions list/revoke/revoke_all, MFA list/enroll/confirm/remove, recovery codes."
+          "status": "done",
+          "title": "Account: me.get/update, email and phone change, password change, preferences (Jalali/Persian digits defaults come from the DB trigger), memberships list/leave, sessions list/revoke/revoke_all, MFA list/enroll/confirm/remove, recovery codes.",
+          "note": "Done except WebAuthn registration. application/account-ops.ts and security-ops.ts: me.get (PII, memberships with OrgSummary, subscription summary), me.update (If-Match, tzdb check), me.email_change (link to the new address, notice to the old one; applied by auth.email_verify), me.phone_change_start/verify (SMS allowlist, OTP in the KV store), me.password_change (ends other sessions), me.preferences_get/update (If-Match; ai_personalization and marketing need consent; navigation app and currency from the region config; default membership must be the caller's), me.memberships_list (individual, platform and organization roles, keyset paging), me.membership_leave (last active owner → 409; invalidates the authorizer cache), sessions list/revoke/revoke-all (keep_current), MFA list/TOTP enrol/confirm (10 recovery codes on the first factor; other sessions end; this one becomes aal2)/remove (staff keep their last WebAuthn)/recovery codes regenerate. Deferred (501): me.webauthn_register_options."
         },
         {
           "id": "S3.T3",
-          "status": "not_started",
-          "title": "Consents (§6.4) incl. org consents and consent requests; ConsentService for L16 (never cached); consent.withdrawn event."
+          "status": "done",
+          "title": "Consents (§6.4) incl. org consents and consent requests; ConsentService for L16 (never cached); consent.withdrawn event.",
+          "note": "Done. application/consent-ops.ts: consents.list/grant/withdraw, consents.request_view/respond (cn links, SEC-LT-5 via identity.consent_request_by_token), org.consents_list/grant/withdraw (three organization consent types). Withdrawal emits consent.withdrawn (ids and type only) and switches dependent preferences off. ConsentChecker (L16) = identity.has_consent(), never cached, works in any caller's RLS context."
         },
         {
           "id": "S3.T4",
-          "status": "not_started",
-          "title": "DSR intake (dsr.create/list/get; dsr.export_download returns the job artifact once S8 builds the export) and onboarding (list/update/accept_terms)."
+          "status": "done",
+          "title": "DSR intake (dsr.create/list/get; dsr.export_download returns the job artifact once S8 builds the export) and onboarding (list/update/accept_terms).",
+          "note": "Done (intake). application/privacy-ops.ts: dsr.create (one open request per type → 409, due in 30 days, AUD), dsr.list/get (export_available derived through DataExportFiles), dsr.export_download (409 until a completed export; 410 while no media binding delivers files — S4/S8). onboarding.list/update (If-Match; \"v1\" creates a flow, DI-14; completed flows cannot reopen; assisted flows complete only after the owner accepted the terms)/accept_terms."
         },
         {
           "id": "S3.T5",
-          "status": "not_started",
-          "title": "Wire L4 role resolution to identity.role_memberships; identity.user_cards interface."
+          "status": "done",
+          "title": "Wire L4 role resolution to identity.role_memberships; identity.user_cards interface.",
+          "note": "Done. MembershipDirectory (identity.role_memberships, user context) feeds L4; membership changes call Authorizer.invalidateUser. identity/interface UserCards (identity.user_cards), plus ConsentScopes and DataExportFiles extension points; organization/interface OrgCards (organization.org_cards)."
         },
         {
           "id": "S3.T6",
-          "status": "not_started",
-          "title": "Billing: plans.list, subscription.me_get/org_get, subscription.change_request; EntitlementService.check(subscriber, key, delta) with billing.lock_subscriber + effective_entitlement inside the caller's tx; consumer for user.registered (Individual Free subscription if not already created)."
+          "status": "done",
+          "title": "Billing: plans.list, subscription.me_get/org_get, subscription.change_request; EntitlementService.check(subscriber, key, delta) with billing.lock_subscriber + effective_entitlement inside the caller's tx; consumer for user.registered (Individual Free subscription if not already created).",
+          "note": "Done. modules/billing: plans.list (public 10 min), subscription.me_get (Individual Free ensured), subscription.org_get, subscription.change_request (audience must match the organization type; one open request → 409). EntitlementChecker (L17): billing.lock_subscriber advisory lock, then effective value (plan + overrides) and usage (caller-supplied counter or the UsageCounters registry); parallel requests at a limit → exactly one passes (tested with three parallel transactions). user.registered consumer → billing.ensure_user_subscription (idempotent), verified through the real worker (relay + consumer registry)."
         },
         {
           "id": "S3.T7",
-          "status": "not_started",
-          "title": "Taxonomy: taxonomy.version, snapshot (ETag + long cache), node_get, suggest (normalized prefix and synonym match, EN/FA); TaxonomyResolver (NodeId<type> and parent-chain checks → TAXONOMY_MISMATCH, label resolution, synonyms) with an in-memory cache invalidated on taxonomy.node.merged; feed L18 safety check from safety-critical symptoms + safety_check word list."
+          "status": "done",
+          "title": "Taxonomy: taxonomy.version, snapshot (ETag + long cache), node_get, suggest (normalized prefix and synonym match, EN/FA); TaxonomyResolver (NodeId<type> and parent-chain checks → TAXONOMY_MISMATCH, label resolution, synonyms) with an in-memory cache invalidated on taxonomy.node.merged; feed L18 safety check from safety-critical symptoms + safety_check word list.",
+          "note": "Done. modules/taxonomy: taxonomy.version (public 5 min), taxonomy.snapshot (type, parent, region filters, signed offset cursor, ETag of the catalog version, public 1 h), taxonomy.node_get (incl. merged), taxonomy.suggest (normalized prefix/word/substring ranking over names and synonyms in every locale, Arabic yeh/kaf and Persian digits normalized, Latin transliterations). TaxonomyResolver interface (require → REFERENCE_NOT_FOUND / TAXONOMY_MISMATCH, requireDescendant, ancestors, labels, canonicalId, synonyms, mappingsFrom, version, invalidate). Pipeline NodeId<type> checks (GD-17). SafetyLexicon (names + synonyms of the 28 safety-critical symptoms + the Docs/44 keyword list, mirrored in domain/safety-keywords.ts and pinned by a unit test) and a SafetyCheck provider exported for S5/S6/S9."
         }
       ],
       "deliverables": [
@@ -688,20 +975,154 @@
       ],
       "report": {
         "started_at": "2026-10-11",
-        "completed_at": null,
-        "summary": null,
-        "ops_implemented": [],
-        "ops_deferred": [],
-        "files_created": [],
-        "tests": null,
-        "deviations": [],
-        "notes_for_next": []
-      }
+        "completed_at": "2026-10-11",
+        "summary": "Identity, the auth server, billing and taxonomy are implemented: 55 of the 58 S3 operations (3 WebAuthn/social operations deferred). Users sign up, verify, sign in with a password or a one-time code, add a TOTP second factor with recovery codes, get DPoP-bindable tokens through authorization code + PKCE, refresh with rotation and family revocation, and manage their account, preferences, memberships, sessions, consents (incl. business consent requests via cn links), data subject requests and onboarding. Plans, subscriptions, change requests and a race-safe entitlement check exist, and user.registered creates Individual Free through the worker. The taxonomy is served from an in-memory catalog with typeahead, the NodeId<type> request check and the safety lexicon. All platform ports S2 left open for S3 are bound (ConsentChecker, EntitlementChecker, SafetyLexicon, TaxonomyVersion, AttestationVerifierPort, MembershipDirectory). Docs/43 gained three definer functions; two contract-generator gaps from S1 were fixed.",
+        "ops_implemented": [
+          "auth.discovery",
+          "auth.jwks",
+          "auth.authorize",
+          "auth.token",
+          "auth.revoke",
+          "auth.pow_challenge",
+          "auth.signup",
+          "auth.signin_password",
+          "auth.otp_start",
+          "auth.otp_verify",
+          "auth.mfa_verify",
+          "auth.email_verify",
+          "auth.password_reset_start",
+          "auth.password_reset_complete",
+          "me.get",
+          "me.update",
+          "me.email_change",
+          "me.phone_change_start",
+          "me.phone_change_verify",
+          "me.password_change",
+          "me.preferences_get",
+          "me.preferences_update",
+          "me.memberships_list",
+          "me.membership_leave",
+          "me.sessions_list",
+          "me.session_revoke",
+          "me.sessions_revoke_all",
+          "me.mfa_list",
+          "me.mfa_totp_enroll",
+          "me.mfa_confirm",
+          "me.mfa_remove",
+          "me.recovery_codes_regenerate",
+          "consents.list",
+          "consents.grant",
+          "consents.withdraw",
+          "consents.request_view",
+          "consents.request_respond",
+          "org.consents_list",
+          "org.consents_grant",
+          "org.consents_withdraw",
+          "dsr.create",
+          "dsr.list",
+          "dsr.get",
+          "dsr.export_download",
+          "onboarding.list",
+          "onboarding.update",
+          "onboarding.accept_terms",
+          "plans.list",
+          "subscription.me_get",
+          "subscription.org_get",
+          "subscription.change_request",
+          "taxonomy.version",
+          "taxonomy.snapshot",
+          "taxonomy.node_get",
+          "taxonomy.suggest"
+        ],
+        "ops_deferred": [
+          {
+            "op_id": "auth.webauthn_options",
+            "reason": "WebAuthn needs attestation/assertion verification (CBOR, COSE keys, signature counters); no library approved yet (OQ-04). Answers 501.",
+            "planned": "S8 at the latest (staff aal3 sign-in depends on it) or a dedicated hardening task"
+          },
+          {
+            "op_id": "me.webauthn_register_options",
+            "reason": "Same as auth.webauthn_options; me.mfa_confirm refuses WebAuthn methods (409) until then.",
+            "planned": "with auth.webauthn_options"
+          },
+          {
+            "op_id": "auth.social_start",
+            "reason": "Google/Apple sign-in needs provider credentials and an ID-token verifier per provider (SEC-AU-13); availability in the pilot region is an open product question (OQ-06). Answers 501.",
+            "planned": "after OQ-06 is answered"
+          }
+        ],
+        "files_created": [
+          "modules/identity: identity.module.ts (global ports), identity-account.module.ts (api host), identity-auth.module.ts (auth host); application/{common,account-ops,security-ops,mfa-service,consent-ops,privacy-ops,auth-server,auth-ops}.ts; domain/credentials.ts (TOTP, codes, PKCE, PoW, password policy); infrastructure/{accounts,auth-state,attestation,directory,messages}.ts (membership-directory.ts from S2 kept); interface/identity.ts; api/projections.ts",
+          "modules/billing: billing.module.ts; interface/billing.ts (SubscriptionReader, UsageCounters, COUNTER_KEYS); application/{billing-ops,subscriptions}.ts; infrastructure/subscription-store.ts; events/user-registered.consumer.ts; api/projections.ts",
+          "modules/taxonomy: taxonomy.module.ts; interface/taxonomy-resolver.ts; infrastructure/{catalog,ports}.ts; domain/{suggest,safety-keywords}.ts; application/taxonomy-ops.ts; api/projections.ts",
+          "modules/organization: interface/org-cards.ts (OrgCards, toOrgSummary), infrastructure/org-cards.ts; organization.module.ts provides OrgCards",
+          "libs: http-pipeline/wire.ts (iso, isoOrNull, meta, ACK), ProtocolError (RFC 6749 error bodies), NodeTypeChecker + x-node-type collection, markOverride/isOverride; db/arrays.ts (textArray for domain arrays); auth: CLIENTS with refresh idle/absolute, binding and audience, isClientId, Session fields (deviceLabel, lastSeenAt, country, mfaEnrolled), SessionStore.update/revokeAll(except), TokenService.issueIdToken, verifyDpopProof without ath and with nonce; config: CARPAL_SIGNIN_URL, CARPAL_OAUTH_REDIRECT_URIS, CARPAL_AUTH_MIN_LATENCY_MS, CARPAL_POW_DIFFICULTY_BITS, CARPAL_TAXONOMY_REFRESH_MS; entitlements: CheckOptions.usage; consent-gate: grantee types of the DB; safety-check: urgency safety_critical (52)",
+          "tools/contract/generate.ts (GET list cursor/limit, untyped path parameters) + regenerated libs/contract/generated/operation-schemas.json",
+          "apps/shared/app-modules.ts (Billing, Taxonomy, IdentityAccount on api; IdentityAuth on auth); apps/testing: test-app.ts (mail/sms helpers, overrides, test defaults), {taxonomy,billing,auth-server,account,privacy}.int.test.ts; routes.int.test.ts runs the BOLA/BFLA denial matrix also for implemented routes",
+          "libs/testing: fixtures.withPassword, fixtures.subscription, fixtures.worker, token({ mfaEnrolled }); matrix sample values for non-Id path parameters",
+          "Docs/43.db_setup.sql + Docs/42.db schema.md §5.3: identity.has_consent, identity.consent_request_by_token, billing.ensure_user_subscription (DI-17); .env.example"
+        ],
+        "tests": "255 passing (pnpm test:all, 37 files): 139 unit (23 files) + 116 integration (14 files); S3 added 72. Highlights: auth-server.int.test.ts (17: the E2E acceptance flow, redirect URI rules, code single use and replay revocation, interaction cookie binding, enumeration resistance incl. the measured latency floor, OTP with 5-attempt invalidation, TOTP + recovery codes at sign-in with step replay refused, password reset ending all sessions, anonymous grant with a real DPoP proof and replay refusal, client credentials, revocation, PoW, user.registered → Individual Free through the real worker); account.int.test.ts (11); privacy.int.test.ts (8: consents, L16 gate across tenants, cn links, org consents, DSR, onboarding); billing.int.test.ts (8: incl. the race test); taxonomy.int.test.ts (12: incl. Persian/Arabic variants, NodeId checks, safety lexicon); unit: TOTP RFC 6238 vectors, PKCE RFC 7636 vector, PoW, password policy, recovery codes, latency floor, step-up rule, session update, x-node-type collection, ProtocolError, suggest ranking, safety keywords = Docs/44. The route sweep now also runs the denial matrix of every implemented route. Also green: pnpm lint (eslint + dependency-cruiser, 201 modules), typecheck, build, format:check, contract:check, db:codegen --verify; pnpm dev serves the three hosts (health, discovery, anonymous token, taxonomy version, plans checked over HTTP).",
+        "deviations": [
+          "Deferred (501): auth.webauthn_options, me.webauthn_register_options, auth.social_start (OQ-04, OQ-06). Consequently staff cannot sign in through the hosted UI (cp-web-admin needs aal3 WebAuthn); admin-plane tests keep using fixture sessions.",
+          "AAL2 for accounts without a second factor: a sign-in within the 10-minute window satisfies it (Session.mfaEnrolled = false), DI-11.",
+          "Strict-mode gaps (GD-06): App Attest / Play Integrity tokens are refused (PoW only); private_key_jwt / mTLS client authentication of cp-web-* and cp-ssr is not enforced at /oauth/token (client_id is trusted); DPoP-Nonce is required only at the token endpoint, not on the API hosts.",
+          "SEC-AU-12 risk-based sign-in (new-device notices, exponential slow-down per account and IP, impossible travel) is not implemented; the auth.signin / auth.otp rate-limit buckets apply.",
+          "Breached-password check uses a small built-in list and trivial patterns (no breached corpus in lite mode, OQ-05); refusal is VALIDATION_FAILED with field code \"pattern\" (DI-13).",
+          "Session country is not resolved (null); the device label comes from CarPal-Client.",
+          "Hosted sign-in completion re-requests /oauth/authorize (cookie-bound interaction); interaction errors are 410 LINK_EXPIRED (DI-15).",
+          "onboarding.update creates a missing flow on If-Match \"v1\" (DI-14).",
+          "auth.email_verify answers 409 DUPLICATE when an email change targets an address taken meanwhile (DI-16).",
+          "Identity mails and texts go straight to the Mailer/SmsSender ports with template keys (identity.*); the refresh-token reuse alert is an email, not yet a system_announcement notification (S6 notification module).",
+          "SMS to a country code outside the region allowlist is 422 VALIDATION_FAILED (pointer /phone or /destination, code enum); 40 names no code.",
+          "consents.grant fails closed for scope types whose owning module has not registered a ConsentScopes verifier yet (all five until S4/S5/S7) and for mcp_client grantees (until S8/S9).",
+          "dsr.export_download answers 410 for completed exports until media binds DataExportFiles (S4/S8); subscription.org_get answers 404 for organizations without a subscription (org.create creates one in S4).",
+          "Taxonomy version is derived from the data fingerprint instead of the catalog version \"1.0.0\"; config.client reports the same value.",
+          "libs/safety-check Urgency renamed critical → safety_critical to match 52 / core.urgency_level.",
+          "Docs/43 changed in place (three definer functions, DI-17); local databases need pnpm db:reset.",
+          "Contract generator fixes changed operation-schemas.json for 26 GET list operations (cursor/limit) and 6 path parameters (DI-12)."
+        ],
+        "notes_for_next": [
+          "Run `pnpm db:reset` once (Docs/43 changed). Every command from backend/ after `source tools/use-local-node.sh`.",
+          "Module layout used in S3 (copy it): <name>.module.ts (@Global when it serves ports) + extra *.module.ts per host when handlers differ by host (identity-account / identity-auth); application/<area>-ops.ts with several handler classes; api/projections.ts (allowlists built with iso/isoOrNull/meta/ACK from #libs/http-pipeline); infrastructure/ for SQL and adapters; interface/ for what other modules may import (dependency-cruiser enforces it); domain/ for pure logic with unit tests next to it.",
+          "Handler habits: `caller(ctx)` (identity application/common.ts) or `ctx.principal.kind === \"user\"`; path org = ctx.access.org (authorized); writes in ctx.tx(async (scope) => …); ETAG ops compare row.version with ctx.ifMatch on a FOR UPDATE read; Page responses = ctx.page(items, next) with a small position object ({ id } keyset on UUIDv7 ids, or { o } offset); register meaningful unique/check constraints with registerConstraintErrors; publishEvent/writeAudit inside the same tx; side effects after commit with scope.afterCommit.",
+          "Response validation (CARPAL_VALIDATE_RESPONSES, on in tests) catches projection mistakes at once (e.g. arrays of domain types such as core.country[] arrive as \"{…}\" text: use textArray from #libs/db). Keep it on.",
+          "Platform ports now bound: ConsentChecker (identity, definer function; pass grantee { type: \"organization\", id } to restrict to one recipient), EntitlementChecker (billing; call requireEntitlement(checker, scope, subscriber, key, delta, { usage? }) BEFORE the insert inside the write tx), SafetyLexicon + SafetyCheck (taxonomy; inject SafetyCheck), TaxonomyVersion, NodeTypeChecker, AttestationVerifierPort (PoW), MembershipDirectory. Still stubs: DriverAssignments (S8 fleet), PurposeVerifier (S8 admin).",
+          "Extension points to fill (GD-15): billing UsageCounters.register(\"max_vehicles\" | \"max_inventory_items\", counter) in onModuleInit (S5); identity ConsentScopes.register(\"vehicle\" | \"appointment\" | \"media_asset\" | \"portfolio_item\" | \"stock_inquiry\", ownerCheck) (S4/S5/S7); identity DataExportFiles provider (media, S4/S8); OrgCards logo_url (S4).",
+          "TaxonomyResolver (#modules/taxonomy/interface/taxonomy-resolver.js): NodeId<type> body fields are already checked by the pipeline; use requireDescendant for chains (model under brand, series under model), labels(ids, locale) for public L10n labels, canonicalId to follow merges, mappingsFrom for triage/matching. Call invalidate() after admin taxonomy changes (S8) and publish taxonomy.node.merged after merges.",
+          "Auth server facts for later stages: sessions are server-side (SessionStore) and every refresh-token family is one session; SessionStore.revokeAll(userId) ends everything (use it for suspension, DSR deletion, password reset); Authorizer.invalidateUser/invalidateOrganization after membership, role or status changes (SEC-AU-3). Staff tokens for tests: fixtures.token(user, { staff: true }).",
+          "Test harness additions: createTestApp({ host, infra }) with one shared infra when sessions or mail must cross hosts; app.mail(to, template?) / app.sms(to) read the lite sinks; fixtures.withPassword(user, pw), fixtures.subscription(org, planKey, { vehicleLimit }), fixtures.token(user, { acr, authTime, mfaEnrolled }), fixtures.worker (carpal_worker system tx) to run consumers or assert outbox rows; handlerModule handlers override real ones. Integration tests must live in apps/testing (modules may not import apps). The SEC-AU-11 latency floor is 0 in tests by default.",
+          "Worker tests: drain deterministically (relay.settle(), relay.drainOnce(), infra.bus.idle()) instead of polling. In two early full runs the first version of the user.registered worker test hung for 60 s under one file ordering; it could not be reproduced afterwards (five full runs green) and the deterministic version has passed every run. If a worker test hangs again, check pending outbox rows and consumer retries first.",
+          "Contract notes: 40 still has open doc issues DI-05, DI-07, DI-09, DI-10 (decide before S4 publish), DI-11..DI-16. OAuth endpoints answer RFC 6749 JSON errors through ProtocolError (not Problem); the OpenAPI file (S9) must describe them."
+        ]
+      },
+      "acceptance_results": [
+        {
+          "criterion": "E2E: signup → email verify → authorize/token → me.get → refresh → reuse of an old refresh token revokes the family",
+          "result": "passed",
+          "evidence": "apps/testing/auth-server.int.test.ts \"E2E (S3 acceptance)\" (auth and api hosts on shared adapters)"
+        },
+        {
+          "criterion": "Entitlement check is race-safe: two parallel calls at the limit, exactly one passes (dummy counter)",
+          "result": "passed",
+          "evidence": "apps/testing/billing.int.test.ts \"is race-safe\" (three parallel transactions, one passes, two VEHICLE_LIMIT_REACHED)"
+        },
+        {
+          "criterion": "taxonomy.suggest returns results for Persian input with Arabic ي/ك variants",
+          "result": "passed",
+          "evidence": "apps/testing/taxonomy.int.test.ts \"matches Persian input and its Arabic-character variant identically\""
+        },
+        {
+          "criterion": "All 58 ops implemented or explicitly deferred in the report",
+          "result": "passed",
+          "evidence": "55 implemented, 3 deferred with reasons (report.ops_deferred)"
+        }
+      ]
     },
     {
       "id": "S4",
       "title": "Organizations, provider and vendor profiles, media",
-      "status": "not_started",
+      "status": "done",
       "depends_on": [
         "S3"
       ],
@@ -745,38 +1166,45 @@
       "tasks": [
         {
           "id": "S4.T1",
-          "status": "not_started",
-          "title": "Org core: org.create (app-generated id, draft rule, default subscription), get/update, members list/invite (mi link token)/invitation_accept (identity.accept_invitation)/update/remove, locations CRUD with pin + public point rules, org.location_pin_check, verifications list/submit."
+          "status": "done",
+          "title": "Org core: org.create (app-generated id, draft rule, default subscription), get/update, members list/invite (mi link token)/invitation_accept (identity.accept_invitation)/update/remove, locations CRUD with pin + public point rules, org.location_pin_check, verifications list/submit.",
+          "result": "done: org-ops.ts, member-ops.ts, location-ops.ts; memberships through identity OrgMemberships; default plan through billing SubscriptionWriter."
         },
         {
           "id": "S4.T2",
-          "status": "not_started",
-          "title": "Geo ops: geo.geocode, geo.reverse (geocoder port; lite = fixture-based stub for the pilot city list), geo.resolve_map_link (host allowlist, safe redirect expansion, no private addresses)."
+          "status": "done",
+          "title": "Geo ops: geo.geocode, geo.reverse (geocoder port; lite = fixture-based stub for the pilot city list), geo.resolve_map_link (host allowlist, safe redirect expansion, no private addresses).",
+          "result": "done: libs/geo Geocoder port + FixtureGeocoder (pilot-city street fixtures, EN/FA); full mode answers 503 until a regional geocoder adapter exists."
         },
         {
           "id": "S4.T3",
-          "status": "not_started",
-          "title": "Provider profile: profile get/put/publish/unpublish (PUBLISH_REQUIREMENTS_UNMET listing missing items), certifications, service categories, vehicle coverage, capabilities + evidence list, gated_decide for AI-suggested rows."
+          "status": "done",
+          "title": "Provider profile: profile get/put/publish/unpublish (PUBLISH_REQUIREMENTS_UNMET listing missing items), certifications, service categories, vehicle coverage, capabilities + evidence list, gated_decide for AI-suggested rows.",
+          "result": "done: provider-profile-ops.ts, provider-catalog-ops.ts; PUBLISH_REQUIREMENTS_UNMET lists Problem.requirements (DI-10)."
         },
         {
           "id": "S4.T4",
-          "status": "not_started",
-          "title": "Provider work records: job logs, customer notes (internal only), portfolio create/update/consent_request/publish (needs approved moderation + consent; moderation hook stubbed until S8)/archive, provider.insights_get (FLAG → 503 AI_UNAVAILABLE until S9)."
+          "status": "done",
+          "title": "Provider work records: job logs, customer notes (internal only), portfolio create/update/consent_request/publish (needs approved moderation + consent; moderation hook stubbed until S8)/archive, provider.insights_get (FLAG → 503 AI_UNAVAILABLE until S9).",
+          "result": "done: provider-work-ops.ts; moderation is the S8 queue (items wait in pending_review); provider.insights_get returns real figures where they exist and 0/null from extension points (no FLAG on the op, so no 503)."
         },
         {
           "id": "S4.T5",
-          "status": "not_started",
-          "title": "Vendor: profile get/put/publish/unpublish, coverage list/create/delete, vendor.insights_get (AI stub)."
+          "status": "done",
+          "title": "Vendor: profile get/put/publish/unpublish, coverage list/create/delete, vendor.insights_get (AI stub).",
+          "result": "done: vendor-ops.ts; vendor.insights_get like the provider one."
         },
         {
           "id": "S4.T6",
-          "status": "not_started",
-          "title": "Media: upload create (pre-signed local URL, declared size/type/checksum), upload_complete → W6 lite processor (magic-byte sniffing, EXIF strip and re-encode with sharp if it installs cleanly on Windows, else record a deviation; a fake clean scan in lite mode), attachments, delivery URLs only through owning-module authorization, quarantine path; media.scan.completed."
+          "status": "done",
+          "title": "Media: upload create (pre-signed local URL, declared size/type/checksum), upload_complete → W6 lite processor (magic-byte sniffing, EXIF strip and re-encode with sharp if it installs cleanly on Windows, else record a deviation; a fake clean scan in lite mode), attachments, delivery URLs only through owning-module authorization, quarantine path; media.scan.completed.",
+          "result": "done: modules/media + workers/media-processor; sharp installed cleanly (0.35.5); deviations for video transcoding, PDF sanitizing and HEIC."
         },
         {
           "id": "S4.T7",
-          "status": "not_started",
-          "title": "Projections: public, member and staff allowlists for organization, location (approximate → only the public point) and profiles; organization.org_cards interface."
+          "status": "done",
+          "title": "Projections: public, member and staff allowlists for organization, location (approximate → only the public point) and profiles; organization.org_cards interface.",
+          "result": "done: api/projections.ts (member), api/public-projections.ts + PublicProfiles interface (public, for S6), OrgCards with logo_url; staff views reuse the member projections until S8."
         }
       ],
       "deliverables": [
@@ -794,15 +1222,125 @@
         "AI helpers (S9)"
       ],
       "report": {
-        "started_at": null,
-        "completed_at": null,
-        "summary": null,
-        "ops_implemented": [],
+        "started_at": "2026-10-11",
+        "completed_at": "2026-10-11",
+        "summary": "All 71 API operations of §7, §8, §9 and §17 are implemented (the 72nd, media.upload_put, is the signed PUT served by the storage listener). Users create organizations (draft, owner membership, default plan of the audience in the same transaction), invite members by single-use mi links, manage roles with the last-owner rule, add locations by exact pin with the pin-versus-address check and the 0.01° public point, use the location editor (lite geocoder, SSRF-safe map links) and submit verifications with clean private documents. Providers complete and publish their profile (PUBLISH_REQUIREMENTS_UNMET names the missing rules through the new optional Problem.requirements, DI-10; publication activates a draft organization, DI-18), maintain certifications, service catalog, coverage and capabilities with parent-chain checks and the AI approval gate, log jobs (vehicle links consent-gated), keep private customer notes and publish portfolio items only with a clean attachment and the customer's showcase consent obtained by a cn link. Vendors publish with coverage and \"catalog coming soon\". Media runs end to end in lite mode: upload_init → signed PUT → upload_complete → W6 (byte sniffing, EICAR stand-in scan, sharp re-encode without EXIF, display/thumbnail variants, encryption at rest) → media.scan.completed; attachments ask the owning module, delivery URLs are signed per viewer. Public projections (PublicProfiles) are ready for S6. Contract/DB fixes: Problem members, OrgMember (nullable user fields, version), identity.accept_invitation (LINK_USED) and identity.consent_request_contact.",
+        "ops_implemented": [
+          "org.create",
+          "org.get",
+          "org.update",
+          "org.members_list",
+          "org.member_invite",
+          "org.invitation_accept",
+          "org.member_update",
+          "org.member_remove",
+          "org.locations_list",
+          "org.location_create",
+          "org.location_update",
+          "org.location_delete",
+          "org.location_pin_check",
+          "geo.geocode",
+          "geo.reverse",
+          "geo.resolve_map_link",
+          "org.verifications_list",
+          "org.verification_submit",
+          "provider.profile_get",
+          "provider.profile_put",
+          "provider.publish",
+          "provider.unpublish",
+          "provider.certifications_list",
+          "provider.certification_create",
+          "provider.certification_update",
+          "provider.certification_delete",
+          "provider.service_categories_list",
+          "provider.service_category_create",
+          "provider.service_category_update",
+          "provider.service_category_delete",
+          "provider.coverage_list",
+          "provider.coverage_create",
+          "provider.coverage_delete",
+          "provider.capabilities_list",
+          "provider.capability_create",
+          "provider.capability_update",
+          "provider.capability_delete",
+          "provider.capability_evidence_list",
+          "provider.gated_decide",
+          "provider.job_logs_list",
+          "provider.job_log_create",
+          "provider.job_log_update",
+          "provider.job_log_delete",
+          "provider.customer_notes_list",
+          "provider.customer_note_create",
+          "provider.customer_note_update",
+          "provider.customer_note_delete",
+          "provider.portfolio_list",
+          "provider.portfolio_create",
+          "provider.portfolio_update",
+          "provider.portfolio_consent_request",
+          "provider.portfolio_publish",
+          "provider.portfolio_archive",
+          "provider.insights_get",
+          "vendor.profile_get",
+          "vendor.profile_put",
+          "vendor.publish",
+          "vendor.unpublish",
+          "vendor.coverage_list",
+          "vendor.coverage_create",
+          "vendor.coverage_delete",
+          "vendor.insights_get",
+          "media.upload_init",
+          "media.upload_complete",
+          "media.get",
+          "media.download_url",
+          "media.attach",
+          "media.attachment_update",
+          "media.detach",
+          "media.delete",
+          "media.redaction_decide"
+        ],
         "ops_deferred": [],
-        "files_created": [],
-        "tests": null,
-        "deviations": [],
-        "notes_for_next": []
+        "files_created": [
+          "modules/organization: organization.module.ts (global: OrganizationDirectory, OrgCards, ProviderCapabilities, PublicProfiles, OrganizationExtensions, media attachment targets, consent.withdrawn consumer), organization-api.module.ts; application/{common,org-ops,member-ops,location-ops,provider-profile-ops,provider-catalog-ops,provider-work-ops,vendor-ops}.ts; domain/{roles,profile-rules}.ts + domain.test.ts; infrastructure/{facts,org-cards,provider-capabilities,public-profiles}.ts; interface/{org-cards,extensions,provider-capabilities,public-profiles}.ts; api/{projections,public-projections}.ts; events/consent-withdrawn.consumer.ts",
+          "modules/media: media.module.ts (global: MediaService, AttachmentTargets, DataExportFiles, MediaProcessor, media_asset consent scope, 'user' attachment target), media-api.module.ts; application/{media-ops,media-service,processor}.ts; domain/{purposes,sniff}.ts + media-domain.test.ts; infrastructure/assets.ts; interface/media.ts; api/projections.ts",
+          "workers/media-processor/media-processor.module.ts (W6 host: queues media.process and media.redaction; W15 rules media.rescan_pending, media.discard_expired_uploads)",
+          "modules/identity: interface (AccountFacts, OrgMemberships, ConsentRequests), infrastructure/org-memberships.ts (DbOrgMemberships, DbConsentRequests, portfolio_item consent scope), DbAccountFacts in directory.ts, mail template identity.consent_request",
+          "modules/billing: SubscriptionWriter interface + DbSubscriptionWriter (default plan per organization type)",
+          "libs: geo/geocoder.ts (Geocoder port, FixtureGeocoder, UnconfiguredGeocoder, pinCheck), geo/points.ts (split from index.ts); contract ApiError.extensions + Problem members (requirements, consent_type, entitlement_key) rendered by toProblem and set by requireConsent/requireEntitlement; i18n isTimezone; infra ObjectStorage.put({ encrypt }) with lite AES-256-GCM at rest; pipeline lite media-URL allowance in the response check; config CARPAL_LOCATION_CHECK_THRESHOLD_M, CARPAL_MEDIA_RESCAN_AFTER_MS; runtime binds Geocoder; testing/media.ts (tinyMp4, jpegWithExif, tinyPdf, EICAR_TEXT)",
+          "apps: shared/app-modules.ts (MediaModule in every domain set; OrganizationApiModule + MediaApiModule on api; MediaProcessorModule on worker); testing/{organization,provider,media}.int.test.ts, testing/s4-support.ts (taxonomy nodes, MediaHarness, mailed link tokens)",
+          "Docs/40 (Problem members, OrgMember), Docs/42 §5.3 + Docs/43 (identity.consent_request_contact; accept_invitation keeps the hash), regenerated libs/contract/generated/*; package.json (sharp ^0.35.5, ignoredBuiltDependencies), .env.example"
+        ],
+        "tests": "301 passing (pnpm test:all, 42 files): S4 added 46 (unit: organization domain 9, media domain 4, geocoder 3, Problem members 1, storage encryption 1; integration: organization 9, provider 9, media 10). Highlights: the S4 acceptance flow (create → pin location → profile → publish → public read without the street of an approximate location, provider.profile.published in the outbox); record-level BOLA sweep (24 calls naming org B's records under org A's path, all 404, lists under A stay empty) on top of the route sweep's path-level BOLA/BFLA matrix for every implemented route; upload → complete → scan → attach with MEDIA_NOT_READY before the scan, signed-PUT tampering refused, EXIF gone from the served file, quarantine on type mismatch and EICAR, ciphertext on disk for private documents, MP4 60 s limit, redaction job blurring regions; mi invitations (recipient mismatch, LINK_USED, cache invalidation on accept/remove), last-owner and role-grant rules, fleet seat limit with entitlement_key; location primary rules, far_apart warning, public point rounding; portfolio consent request → cn mail → grant → publish (pending_review) → withdrawal through the real outbox relay and organization consumer; CNS on job-log vehicle links with consent_type in the problem. Also green: pnpm lint (eslint + dependency-cruiser, 242 modules), typecheck, build, format:check, contract:check, db:codegen --verify; pnpm dev starts all hosts (api 116 implemented routes, auth 14) with the W6 rules and the new consumer.",
+        "deviations": [
+          "Lite storage serves signed URLs over http (local listener) while 40 Url is https-only: the response check rewrites those URLs to an https placeholder in lite mode only; clients receive them unchanged (full mode unaffected).",
+          "W6 lite: no real malware scanner (the EICAR test signature stands in), videos are not transcoded (exif_stripped stays false, so videos are never publicly servable in lite mode), PDFs are not sanitized; HEIC (HEVC) cannot be decoded by prebuilt sharp, so HEIC uploads end scan_status failed / quarantined.",
+          "Raw uploads are plaintext in storage until W6 re-stores them (encrypted when private or a document); the lite listener's PUT has no encryption.",
+          "Lite geocoder = FixtureGeocoder (a few pilot-city street addresses + city centres); unknown addresses give location_check_status not_checked. Full mode answers 503 until the regional geocoder adapter exists.",
+          "Slug changes (≤ 2 per 30 days) are counted in the KV store (no column); lite KV is per process, so the count resets on restart. Over the limit: 429 RATE_LIMITED (40 names no code).",
+          "Portfolio publication stops at pending_review: moderation approval, published_at and portfolio.published belong to the S8 moderation queue. Asset moderation_status also stays pending, so no media is publicly servable before S8.",
+          "Visits, customers, vehicle owners and inventory counts come from OrganizationExtensions; until S5/S7 register resolvers, linked appointments/service records and customer notes answer 422 REFERENCE_NOT_FOUND and job-log vehicle links 403 CONSENT_REQUIRED (fail closed).",
+          "provider.insights_get / vendor.insights_get return completeness, response time and catalog score from this module and 0/null for figures of other modules (reviews, requests, views, inquiries) until they register insight sources; the plan's '503 AI_UNAVAILABLE until S9' did not apply (the operations carry no FLAG and are not AI).",
+          "ai_approved portfolio captions and apply_suggestions redaction need AI insights (S9): until then 422 at /ai_caption_insight_id and /decision.",
+          "provider.coverage_create / vendor.coverage_create: an unknown node or wrong node type anywhere fails the whole request through the pipeline's NodeId check (GD-17); parent-chain and duplicate problems are skipped per row (codes reference_not_found, conditional_required, not_unique; vendor type mismatch: enum).",
+          "org.members_list never lists removed memberships (their user data is invisible under RLS); status=removed returns an empty page.",
+          "First active location becomes primary even if is_primary=false was sent (52: exactly one primary); org.location_create/update with a second primary: 422 VALIDATION_FAILED /is_primary not_unique (primary_conflict).",
+          "org.member_remove by a manager on an equal or higher role: 404 (authorization qualifier, SEC-AZ-2); member_invite role not allowed: 422 /role enum.",
+          "media.get for a pending_upload asset is 404 (MediaAsset.status has no pending_upload, DI-25); upload_complete for an already completed asset returns its current state.",
+          "Hybrid organizations: the creator is provider_owner and cannot use {vnd} routes (V+/V* need vendor roles) until DI-21 is decided; an owner may invite a separate vendor_owner.",
+          "Media attach: logo, avatar and cover replace the previous active attachment of the same role on the record."
+        ],
+        "notes_for_next": [
+          "Run `pnpm db:reset` and `pnpm install` once (Docs/43 changed; sharp added). Commands from backend/ after `source tools/use-local-node.sh`.",
+          "Layout to copy (S3 + S4): global <name>.module.ts with ports/registries/consumers on every host, <name>-api.module.ts with the handlers on the api host; application/*-ops.ts with one handler class per op; application/common.ts helpers (member(ctx), checkVersion, afterId/pageOf, failIf, checkChain); api/projections.ts allowlists with an optional() helper that omits null optional members of *Write types.",
+          "Extension points filled or added in S4 (GD-15): organization OrganizationExtensions (registerVisits('appointment'|'service_record'), registerCustomerCheck, registerVehicleOwners, registerItemCounter, registerInsight(key)); media AttachmentTargets.register(type, resolver → { owner, groups }) — organization registered 'organization' (M+), 'portfolio_item' (P*), 'provider_job_log' (P*), media 'user'; ConsentScopes 'media_asset' (media: own assets) and 'portfolio_item' (identity: only in answer to a cn request); DataExportFiles bound by media (5-minute attachment URLs via media.delivery_info).",
+          "Cross-module interfaces available now: identity AccountFacts.hasVerifiedContact, OrgMemberships, ConsentRequests.create/latest (identity issues and mails the cn link; the caller never sees token or contact); billing SubscriptionWriter.createDefaultForOrganization; organization OrgCards (with logo_url), ProviderCapabilities.forProviders, PublicProfiles.profile/pins; media MediaService.requireReady/attachmentViews/attachedAssets/logoUrls.",
+          "USR | ORG(ANY) on records without an org in the path (media): find the record in the user's context, then in each membership's org context (findVisibleAsset, like jobs.get), then ctx.authorizeOrg(orgId, groups) before trusting it. Reuse this for vehicles of fleets and appointments.",
+          "Problem members (DI-10): throw new ApiError(code, { extensions: { requirements | consent_type | entitlement_key } }); requireConsent and requireEntitlement already set consent_type / entitlement_key.",
+          "Media in tests: MediaHarness.start(app) (storage listener on an ephemeral port + a worker on the same adapters), media.upload(token, { owner, purpose, mime, bytes }) returns the processed asset, media.local(url) maps signed URLs to the listener, media.drain() waits for W6. Outbox consumers: worker.get(OutboxRelayService).relay.settle() → drainOnce() → infra.bus.idle().",
+          "OrganizationExtensions and AttachmentTargets are per application context: tests register fakes with app.app.get(OrganizationExtensions, { strict: false }) (provider.int.test.ts shows visits, customers and vehicle owners).",
+          "Taxonomy in tests: s4-support taxonomyNodes(app) returns real brand → model → series and system → task chains plus amenity, part_category, fuel and engine nodes.",
+          "Authorizer caches: org.create, invitation_accept, member_update/remove call invalidateUser; profile publication that activates a draft organization calls invalidateOrganization. Keep doing this for every membership or status change (SEC-AU-3).",
+          "Watch response validation: optional (non-nullable) contract members must be omitted, not null; bigint/numeric columns arrive as strings (Number() them unless the contract wants Dec strings, e.g. confidence_score)."
+        ]
       }
     },
     {
@@ -1320,10 +1858,48 @@
       "S8": 82,
       "S9": 23
     },
-    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route).",
-    "implemented": 4,
-    "returning_501": 398,
-    "total_routes": 450
+    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501.",
+    "implemented": 130,
+    "returning_501": 272,
+    "total_routes": 450,
+    "by_module_after_S3": {
+      "identity": "47/61",
+      "billing": "4/7",
+      "taxonomy": "4/13",
+      "platform": "4/4",
+      "organization": "0/71",
+      "vehicle": "0/31",
+      "inventory": "0/32",
+      "discovery": "0/7",
+      "trust": "0/36",
+      "appointment": "0/31",
+      "media": "0/11",
+      "fleet": "0/20",
+      "community": "0/25",
+      "notification": "0/7",
+      "ai-mcp": "0/27",
+      "analytics": "0/3",
+      "admin": "0/16"
+    },
+    "by_module_after_S4": {
+      "identity": "47/61",
+      "billing": "4/7",
+      "taxonomy": "4/13",
+      "platform": "4/4",
+      "organization": "62/71",
+      "media": "9/11",
+      "vehicle": "0/31",
+      "inventory": "0/32",
+      "discovery": "0/7",
+      "trust": "0/36",
+      "appointment": "0/31",
+      "fleet": "0/20",
+      "community": "0/25",
+      "notification": "0/7",
+      "ai-mcp": "0/27",
+      "analytics": "0/3",
+      "admin": "0/16"
+    }
   },
   "deviations_log": [
     {
@@ -1405,6 +1981,176 @@
       "stage": "S2",
       "date": "2026-10-10",
       "deviation": "Docs/43 fixed in place (publish_event, write_audit SECURITY DEFINER) per database/migrations/README.md (no shared environment yet); local DBs need pnpm db:reset."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "Deferred (501): auth.webauthn_options, me.webauthn_register_options, auth.social_start (OQ-04, OQ-06). Consequently staff cannot sign in through the hosted UI (cp-web-admin needs aal3 WebAuthn); admin-plane tests keep using fixture sessions."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "AAL2 for accounts without a second factor: a sign-in within the 10-minute window satisfies it (Session.mfaEnrolled = false), DI-11."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "Strict-mode gaps (GD-06): App Attest / Play Integrity tokens are refused (PoW only); private_key_jwt / mTLS client authentication of cp-web-* and cp-ssr is not enforced at /oauth/token (client_id is trusted); DPoP-Nonce is required only at the token endpoint, not on the API hosts."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "SEC-AU-12 risk-based sign-in (new-device notices, exponential slow-down per account and IP, impossible travel) is not implemented; the auth.signin / auth.otp rate-limit buckets apply."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "Breached-password check uses a small built-in list and trivial patterns (no breached corpus in lite mode, OQ-05); refusal is VALIDATION_FAILED with field code \"pattern\" (DI-13)."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "Session country is not resolved (null); the device label comes from CarPal-Client."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "Hosted sign-in completion re-requests /oauth/authorize (cookie-bound interaction); interaction errors are 410 LINK_EXPIRED (DI-15)."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "onboarding.update creates a missing flow on If-Match \"v1\" (DI-14)."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "auth.email_verify answers 409 DUPLICATE when an email change targets an address taken meanwhile (DI-16)."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "Identity mails and texts go straight to the Mailer/SmsSender ports with template keys (identity.*); the refresh-token reuse alert is an email, not yet a system_announcement notification (S6 notification module)."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "SMS to a country code outside the region allowlist is 422 VALIDATION_FAILED (pointer /phone or /destination, code enum); 40 names no code."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "consents.grant fails closed for scope types whose owning module has not registered a ConsentScopes verifier yet (all five until S4/S5/S7) and for mcp_client grantees (until S8/S9)."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "dsr.export_download answers 410 for completed exports until media binds DataExportFiles (S4/S8); subscription.org_get answers 404 for organizations without a subscription (org.create creates one in S4)."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "Taxonomy version is derived from the data fingerprint instead of the catalog version \"1.0.0\"; config.client reports the same value."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "libs/safety-check Urgency renamed critical → safety_critical to match 52 / core.urgency_level."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "Docs/43 changed in place (three definer functions, DI-17); local databases need pnpm db:reset."
+    },
+    {
+      "stage": "S3",
+      "date": "2026-10-11",
+      "deviation": "Contract generator fixes changed operation-schemas.json for 26 GET list operations (cursor/limit) and 6 path parameters (DI-12)."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "Lite storage serves signed URLs over http (local listener) while 40 Url is https-only: the response check rewrites those URLs to an https placeholder in lite mode only; clients receive them unchanged (full mode unaffected)."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "W6 lite: no real malware scanner (the EICAR test signature stands in), videos are not transcoded (exif_stripped stays false, so videos are never publicly servable in lite mode), PDFs are not sanitized; HEIC (HEVC) cannot be decoded by prebuilt sharp, so HEIC uploads end scan_status failed / quarantined."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "Raw uploads are plaintext in storage until W6 re-stores them (encrypted when private or a document); the lite listener's PUT has no encryption."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "Lite geocoder = FixtureGeocoder (a few pilot-city street addresses + city centres); unknown addresses give location_check_status not_checked. Full mode answers 503 until the regional geocoder adapter exists."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "Slug changes (≤ 2 per 30 days) are counted in the KV store (no column); lite KV is per process, so the count resets on restart. Over the limit: 429 RATE_LIMITED (40 names no code)."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "Portfolio publication stops at pending_review: moderation approval, published_at and portfolio.published belong to the S8 moderation queue. Asset moderation_status also stays pending, so no media is publicly servable before S8."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "Visits, customers, vehicle owners and inventory counts come from OrganizationExtensions; until S5/S7 register resolvers, linked appointments/service records and customer notes answer 422 REFERENCE_NOT_FOUND and job-log vehicle links 403 CONSENT_REQUIRED (fail closed)."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "provider.insights_get / vendor.insights_get return completeness, response time and catalog score from this module and 0/null for figures of other modules (reviews, requests, views, inquiries) until they register insight sources; the plan's '503 AI_UNAVAILABLE until S9' did not apply (the operations carry no FLAG and are not AI)."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "ai_approved portfolio captions and apply_suggestions redaction need AI insights (S9): until then 422 at /ai_caption_insight_id and /decision."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "provider.coverage_create / vendor.coverage_create: an unknown node or wrong node type anywhere fails the whole request through the pipeline's NodeId check (GD-17); parent-chain and duplicate problems are skipped per row (codes reference_not_found, conditional_required, not_unique; vendor type mismatch: enum)."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "org.members_list never lists removed memberships (their user data is invisible under RLS); status=removed returns an empty page."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "First active location becomes primary even if is_primary=false was sent (52: exactly one primary); org.location_create/update with a second primary: 422 VALIDATION_FAILED /is_primary not_unique (primary_conflict)."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "org.member_remove by a manager on an equal or higher role: 404 (authorization qualifier, SEC-AZ-2); member_invite role not allowed: 422 /role enum."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "media.get for a pending_upload asset is 404 (MediaAsset.status has no pending_upload, DI-25); upload_complete for an already completed asset returns its current state."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "Hybrid organizations: the creator is provider_owner and cannot use {vnd} routes (V+/V* need vendor roles) until DI-21 is decided; an owner may invite a separate vendor_owner."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "Media attach: logo, avatar and cover replace the previous active attachment of the same role on the record."
+    },
+    {
+      "stage": "S4",
+      "date": "2026-10-11",
+      "deviation": "Docs/40, Docs/42 and Docs/43 changed in place (Problem members, OrgMember, consent_request_contact, accept_invitation); local databases need pnpm db:reset."
     }
   ],
   "handoff_notes": [
@@ -1422,6 +2168,16 @@
       "date": "2026-10-10",
       "from": "S2",
       "note": "S2 done. Platform libraries, the contract-driven request pipeline and the four app shells are in place; pnpm dev runs everything in lite mode. 4 platform ops implemented, 398 answer 501 behind full guards. Read S2.report.notes_for_next (handler contract, ctx helpers, ports S3 must implement, test harness). Next: S3 (identity/auth server, billing, taxonomy) - implement the ports listed there. Docs/43 changed (DI-08): run pnpm db:reset once."
+    },
+    {
+      "date": "2026-10-11",
+      "from": "S3",
+      "note": "S3 done: identity + auth server, billing and taxonomy (55 of 58 ops; WebAuthn and social sign-in deferred), all S2 ports for S3 bound, 255 tests green. Docs/43 changed (DI-17): run pnpm db:reset once. Next: S4 (organizations, provider and vendor profiles, media). Read S3.report.notes_for_next and recommendations_for_next_stages.S4 first; decide DI-10 (Problem members) before implementing provider.publish."
+    },
+    {
+      "date": "2026-10-11",
+      "from": "S4",
+      "note": "S4 done: organizations, members/invitations, locations and the location editor, verifications, provider and vendor profiles with publication, capability portfolio with the AI approval gate, work records, portfolio consent, public projections (PublicProfiles) and the media pipeline with W6 — all 71 API ops, 301 tests green. Docs/43 changed (DI-23, DI-24) and sharp was added: run pnpm install and pnpm db:reset once. Next: S5. Read S4.report.notes_for_next and recommendations_for_next_stages.S5; register the S5 resolvers in OrganizationExtensions, AttachmentTargets and ConsentScopes so the fail-closed S4 paths (service-record visits, customer notes, job-log vehicles, vehicle media, vendor item counts) open up."
     }
   ],
   "open_questions": [
@@ -1445,6 +2201,101 @@
       "question": "Proposed entitlement values beyond max_vehicles and proposed retention periods (41 §10) are seeded as-is. Confirm before S8.",
       "default_if_unanswered": "Use the seeded proposed values.",
       "owner": "user / WP3"
+    },
+    {
+      "id": "OQ-04",
+      "question": "Which WebAuthn server library may the backend use (e.g. @simplewebauthn/server), or should WebAuthn be written in-house? Needed for passkeys, staff aal3 sign-in (SEC-ADM-2) and the three deferred S3 operations.",
+      "default_if_unanswered": "Stay deferred; staff sign-in only through fixtures until S8 needs it.",
+      "owner": "user"
+    },
+    {
+      "id": "OQ-05",
+      "question": "Breached-password source for SEC-AU-7: a k-anonymity range service (e.g. Have I Been Pwned) in full mode, an offline list shipped with the backend, or both?",
+      "default_if_unanswered": "Small built-in list in lite mode; full mode to be decided before production.",
+      "owner": "user / security"
+    },
+    {
+      "id": "OQ-06",
+      "question": "Is Google/Apple sign-in (auth.social_start, SEC-AU-13) needed for the pilot region, and which provider credentials will be available?",
+      "default_if_unanswered": "Deferred; password and one-time-code sign-in only.",
+      "owner": "user / product"
+    },
+    {
+      "id": "OQ-07",
+      "question": "Which tools may W6 use in full mode for malware scanning (e.g. ClamAV), video transcoding (ffmpeg) and PDF sanitizing (e.g. qpdf/pdfcpu)? Lite mode has none of them (S4 deviations).",
+      "default_if_unanswered": "Lite stand-ins stay: EICAR check only, videos never publicly servable, PDFs private only.",
+      "owner": "user / security"
+    },
+    {
+      "id": "OQ-08",
+      "question": "HEIC photos (iPhone default): ship a libheif build with HEVC (licensing) or ask clients to convert to JPEG before upload?",
+      "default_if_unanswered": "Clients convert to JPEG; HEIC uploads fail processing.",
+      "owner": "user / product"
+    },
+    {
+      "id": "OQ-09",
+      "question": "Profile completeness weights (WP0) for providers and vendors, and whether publishing needs a minimum completeness (52 §21 'profile complete enough').",
+      "default_if_unanswered": "Equal weights over the MVP Module C criteria; publishing needs only the listed rules.",
+      "owner": "user / WP0"
     }
-  ]
+  ],
+  "recommendations_for_next_stages": {
+    "written_after": "S4",
+    "general": [
+      "Keep each stage to the S3 module layout (notes_for_next) and copy the account/billing handlers as templates for CRUD with If-Match, keyset paging and audit.",
+      "Bind ports instead of reading other modules' tables: add methods to the owning module's interface/ (GD-15) and register extensions in onModuleInit.",
+      "Every implemented route already gets its BOLA/BFLA denials checked by routes.int.test.ts; per operation still write a happy path and the business-rule negatives.",
+      "Watch the generated contract for further gaps like DI-12 (untyped parameters) and fix them in tools/contract with a doc issue, never by editing generated files.",
+      "Before inventing a cross-module read, look for the S4 registries: a module that owns visits, vehicles, items or attachable records registers resolvers (OrganizationExtensions, AttachmentTargets, ConsentScopes, UsageCounters) instead of other modules reading its tables.",
+      "Records reached without an organization in the path (USR | ORG(ANY), ORG(by target)): find in the user's context, then per membership (setOrganization), then ctx.authorizeOrg — see media/infrastructure/assets.ts findVisibleAsset.",
+      "Every new list should get a record-level BOLA case like provider.int.test.ts ('org B records under org A paths'); the route sweep only covers path-level BOLA."
+    ],
+    "S5": [
+      "Register in onModuleInit: OrganizationExtensions.registerVisits('service_record', …) (service records belonging to the provider), registerCustomerCheck (customer has a service record with the provider), registerVehicleOwners (personal vehicle → owner user id; a definer or vehicle-card read, since the provider's RLS context cannot read the vehicle), registerItemCounter (active inventory items, for vendor.publish), and insight sources 'vendor.inquiries_received', 'vendor.inquiry_fulfillment_rate', 'vendor.items_missing_fitment', 'vendor.items_missing_images'.",
+      "Register media AttachmentTargets 'vehicle', 'vehicle_issue' (owner user or fleet organization; groups for fleets e.g. FC) and 'inventory_item' (vendor organization, V*), and ConsentScopes 'vehicle' and 'stock_inquiry'. Vehicle documents use MediaService.requireReady with purposes vehicle_document / service_evidence.",
+      "UsageCounters 'max_vehicles' and 'max_inventory_items' (S3 note still applies): requireEntitlement before the insert inside the write transaction; the six-parallel-creates race test of the acceptance criteria.",
+      "vendor.publish already counts active items through registerItemCounter; inventory publication must follow VendorProfile.public_status (published) and organizations.status active (public_read).",
+      "provider.service_record_create (CNS service_history_sharing) and job logs: once service records exist, set ProviderJobLog.verification_status from verified records (54 §1.1) — the trust-scoring worker (S7) turns them into evidence.",
+      "From S3, still valid: VIN hashing uses Hmac purpose \"vin-hash\" and envelope encryption with AAD \"vehicle.vin:<id>\" (libs/crypto); vehicle issues inject SafetyCheck (taxonomy) for the urgency hint (Urgency safety_critical); provider.service_record_create (CNS) uses ConsentChecker.isGranted with grantee { type: \"organization\", id: providerOrg } (requireConsent now also names consent_type in the problem)."
+    ],
+    "S6": [
+      "Notification module: take over the identity messages (templates identity.*: email_verification, account_exists, password_reset, email_change_notice, otp_code, password_changed, security_alert) so preferences, digests and EN/FA templates apply; send the refresh-token reuse alert as a critical system_announcement (SEC-AU-5).",
+      "Consumers of consent.withdrawn (payload: consent_type, subject, scope, grantee ids) must clear consent-gated copies.",
+      "Search: build TaxonomySearchDoc and query interpretation from TaxonomyResolver (labels, synonyms, mappingsFrom); normalize text exactly like TaxonomyCatalog.normalize so Persian/Arabic variants match; safety.check = SafetyCheck from the taxonomy module.",
+      "user.registered already has a billing consumer; notification and analytics consumers add their own (41 §6.2).",
+      "Public reads: build public.org_get / public.org_portfolio and search cards from organization PublicProfiles.profile (locations already follow SEC-OUT-4: public point only, no street line or access instructions for approximate) and pins; add rating_summary, badges (provider.badges) and portfolio_thumbnail_url from trust/media. Only published items with publicly servable media (52 §15) may appear.",
+      "Search indexer: index on provider.profile.published and also on profile edits and unpublish (no event exists for those yet: add provider.profile.updated / unpublished to Appendix A or reindex from the organization module's writes), and remove on organization suspension.",
+      "Notification module: take over the cn link mail (template identity.consent_request) and the member invitation mail (organization.member_invitation) so preferences and EN/FA templates apply; media.scan.completed is available for 'your upload is ready / was refused' notices."
+    ],
+    "S7": [
+      "Reviews and appointments read user display names through identity UserCards; review_invitations by email need the review_invitations consent (ConsentChecker); the pre-visit report needs service_history_sharing (CNS) and should register the \"appointment\" ConsentScopes verifier.",
+      "Appointment capacity tools are a billing entitlement (appointment_capacity_tools_enabled): requireEntitlement with delta 0.",
+      "Register OrganizationExtensions.registerVisits('appointment', …) and registerCustomerCheck for appointments (customer notes, portfolio consent requests from appointments), and insight sources provider.overall_rating, review_count, category_ratings, requests_received, requests_from_map, completion_rate.",
+      "Trust scoring: create ProviderCapabilityEvidence rows (system_rule) from completed appointments, verified reviews, published portfolio items, verified job logs/certifications (54 §1.1); recompute confidence_level/score/badge_eligible; evidence revoked by S4 (certification/job log removal, portfolio archive) must lower scores. ProviderCapabilities.forProviders is the read interface.",
+      "Release the street address of approximate locations to the requester of a confirmed appointment (SEC-OUT-4) — PublicProfiles hides it for everyone else."
+    ],
+    "S8": [
+      "Admin billing: admin.subscription_assign / plan_update close open change requests (billing.subscription_change_requests: status assigned/declined, handled_by/at, resulting_subscription_id) and audit every plan change; W15 daily rule: trials past trial_ends_at → audience default plan.",
+      "DSR execution: status transitions (received → verifying_identity → in_progress → completed/rejected), export bundle as a media asset (export_media_asset_id) delivered through DataExportFiles; deletion anonymizes (identity.user_cards already hides anonymized names), revokes sessions (SessionStore.revokeAll), deletes the analytics pseudonym key and emits user.deletion.completed.",
+      "Staff features: admin.platform_role_grant/revoke and user/org status changes must call Authorizer.invalidateUser/invalidateOrganization and, for suspension, SessionStore.revokeAll; admin.onboarding_reset sets reset_by on identity.onboarding_progress (assisted flows: staff create rows with assisted_by_user_id; S3 already enforces owner terms acceptance).",
+      "Staff sign-in needs WebAuthn (OQ-04); implement auth.webauthn_options and me.webauthn_register_options there, then let cp-web-admin interactions complete at aal3 (AuthServer.afterFirstFactor already routes the admin client to a WebAuthn second factor).",
+      "Taxonomy admin: after create/update/merge call TaxonomyResolver.invalidate() in the same process and publish taxonomy.node.merged (other processes drop their caches on it).",
+      "Decide DI-05 (assist routes) and DI-09 (RSN on DELETE).",
+      "Moderation queue: portfolio items in pending_review and media assets with moderation_status pending (public purposes). Approval sets moderation_status approved on the item and its attached assets, status published + published_at, and emits portfolio.published; rejection sets rejected. Until then nothing is publicly servable (publicly_servable needs moderation approved).",
+      "Admin organization ops: verification_decide (OrganizationVerification → verified/rejected; Organization.verification_status = verified only when business_identity and location are verified; organization.verified event), location_correct (geo_source admin_corrected, audit, organization.location.corrected), org_status (suspend → Authorizer.invalidateOrganization, profiles public_status suspended), org_merge; admin.media_download_url with PURP.",
+      "Fleet activation: decide when a fleet organization leaves draft (GD-19), e.g. on fleet.profile_put.",
+      "Retention: purge removed media objects and quarantined uploads per DataRetentionPolicy (S4 only marks them removed).",
+      "Decide DI-21 (hybrid roles) together with the admin role tooling."
+    ],
+    "S9": [
+      "Full mode: sessions, interactions, authorization codes, refresh-token families, OTPs and PoW challenges live in the KeyValueStore; separate deployables need the Redis adapter (lite is per process).",
+      "Strict-mode hardening list from S3: confidential client authentication at /oauth/token (private_key_jwt over mTLS), DPoP-Nonce on the API hosts, App Attest / Play Integrity verification, risk-based sign-in (SEC-AU-12), breached-password corpus (OQ-05), WebAuthn (OQ-04).",
+      "OpenAPI: describe the OAuth form inputs and RFC 6749 error bodies (ProtocolError) of /oauth/*, and the cookie-bound interaction (DI-15).",
+      "AI: portfolio captions (caption_source ai_approved + ai_caption_insight_id) and media redaction suggestions (redaction_insight_id, decision apply_suggestions) are refused until the ai-mcp module provides accepted insights; capability/coverage/category suggestions arrive as source ai_suggested + status pending_provider_approval and are decided with provider.gated_decide (already implemented).",
+      "Full-mode adapters still to write for S4: regional geocoder (Geocoder port), S3 SSE-KMS for ObjectStorage.put({ encrypt }), and the W6 tools of OQ-07."
+    ],
+    "S4_done": [
+      "All S4 recommendations from S3 were applied: SubscriptionWriter for the default plan (hybrid → provider_basic, DI-20), invitations through identity OrgMemberships + identity.accept_invitation with Authorizer.invalidateUser, ConsentScopes media_asset and portfolio_item, cn requests through identity ConsentRequests (link mailed by identity), requireDescendant chains, DI-10 resolved, DataExportFiles bound, OrgCards.logo_url, textArray for domain arrays."
+    ]
+  }
 }

@@ -1,11 +1,51 @@
 // Closed-schema validation of request bodies, query strings and (in dev and
 // test) responses against the schemas generated from 40 (GD-03, SEC-IN-3,
 // SEC-AZ-5). Validators compile lazily per operation and are cached.
-import type { ErrorObject, ValidateFunction } from 'ajv';
+import type { ErrorObject, KeywordDefinition, ValidateFunction } from 'ajv';
+import type { DataValidationCxt } from 'ajv/dist/types/index.js';
 import { ApiError, createContractAjv, loadSchemas, type FieldError, type FieldErrorCode } from '#libs/contract/index.js';
+import { ID_PATTERN } from '#libs/crypto/index.js';
 import { normalizeString } from './normalize.js';
 
 type Schema = Record<string, unknown>;
+
+/** A `NodeId<type>` value found in a request body (40 §3.1): checked against the taxonomy after schema validation. */
+export interface NodeRef {
+  /** RFC 6901 pointer of the value. */
+  pointer: string;
+  id: string;
+  /** Allowed node types (union branches at the same pointer are merged). */
+  types: string[];
+}
+
+/**
+ * Port for `NodeId<type>` checks (SEC-AZ-4), implemented by the taxonomy
+ * module: unknown or inactive ids are 422 REFERENCE_NOT_FOUND, a node of
+ * another type 422 TAXONOMY_MISMATCH. Parent chains are checked by use cases.
+ */
+export abstract class NodeTypeChecker {
+  abstract check(refs: NodeRef[]): Promise<void>;
+}
+
+// Validation is synchronous, so one collector at a time is enough.
+let nodeRefCollector: NodeRef[] | null = null;
+
+const NODE_TYPE_KEYWORD: KeywordDefinition = {
+  keyword: 'x-node-type',
+  // NodeId<a> is a string, NodeId<a|b> an array of types.
+  schemaType: ['string', 'array'],
+  errors: false,
+  validate: (schema: string | string[], data: unknown, _parent?: unknown, cxt?: DataValidationCxt) => {
+    if (nodeRefCollector && typeof data === 'string' && ID_PATTERN.test(data)) {
+      const pointer = cxt?.instancePath || '/';
+      const types = typeof schema === 'string' ? [schema] : schema;
+      const existing = nodeRefCollector.find((r) => r.pointer === pointer && r.id === data);
+      if (existing) existing.types = [...new Set([...existing.types, ...types])];
+      else nodeRefCollector.push({ pointer, id: data, types });
+    }
+    return true;
+  },
+};
 
 const KEYWORD_CODES: Record<string, FieldErrorCode> = {
   required: 'required',
@@ -98,7 +138,7 @@ interface OpValidators {
 }
 
 export class ContractValidator {
-  readonly #bodyAjv = createContractAjv({ verbose: true });
+  readonly #bodyAjv = createContractAjv({ verbose: true }, [NODE_TYPE_KEYWORD]);
   readonly #queryAjv = createContractAjv({ useDefaults: true, verbose: true });
   readonly #cache = new Map<string, OpValidators>();
   readonly #defs: Record<string, Schema>;
@@ -156,10 +196,22 @@ export class ContractValidator {
     return v;
   }
 
-  /** Validates a body; throws 422 UNKNOWN_FIELD / READ_ONLY_FIELD / VALIDATION_FAILED. */
-  validateBody(opId: string, successStatus: number, body: unknown): void {
+  /**
+   * Validates a body; throws 422 UNKNOWN_FIELD / READ_ONLY_FIELD / VALIDATION_FAILED.
+   * Returns the `NodeId<type>` references of a valid body for the taxonomy check.
+   */
+  validateBody(opId: string, successStatus: number, body: unknown): NodeRef[] {
     const v = this.for(opId, successStatus);
-    if (!v.input || v.input(body)) return;
+    if (!v.input) return [];
+    const refs: NodeRef[] = [];
+    nodeRefCollector = refs;
+    let valid: boolean;
+    try {
+      valid = v.input(body) as boolean;
+    } finally {
+      nodeRefCollector = null;
+    }
+    if (valid) return refs;
     const errors = toFieldErrors(v.input.errors).map((e): FieldError => {
       // A response-only field at the top level is read-only rather than unknown (40 §0.1).
       const top = /^\/([^/]+)$/.exec(e.pointer);

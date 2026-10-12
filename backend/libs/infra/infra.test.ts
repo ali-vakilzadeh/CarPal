@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -158,6 +158,18 @@ describe('LocalObjectStorage', () => {
     } finally {
       server.close();
     }
+  });
+
+  it('encrypts objects at rest on request and decrypts them on read', async () => {
+    const storage = new LocalObjectStorage(dir, 'http://127.0.0.1:0', Buffer.alloc(32, 7));
+    const body = Buffer.from('%PDF-1.7 private document');
+    const info = await storage.put('m/doc/original', body, 'application/pdf', { encrypt: true });
+    expect(info.encrypted).toBe(true);
+    const onDisk = readFileSync(join(dir, 'm', 'doc', 'original'));
+    expect(onDisk.includes(Buffer.from('private document'))).toBe(false);
+    const got = await storage.get('m/doc/original');
+    expect(got?.body.toString()).toBe(body.toString());
+    expect(got?.info.sha256).toBe(createHash('sha256').update(body).digest('base64'));
   });
 });
 

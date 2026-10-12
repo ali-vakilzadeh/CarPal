@@ -6,6 +6,7 @@ import {
   parseClientHeader,
   parseStrictJson,
   parseTimezone,
+  ProtocolError,
   RouteTable,
   toProblem,
   versionBelow,
@@ -152,11 +153,42 @@ describe('ContractValidator', () => {
     expect(() => v.parseQuery('vehicles.list', 200, 'status=a&status=b')).toThrow(expect.objectContaining({ code: 'UNKNOWN_QUERY_PARAM' }));
   });
 
+  it('collects NodeId<type> references of a valid body for the taxonomy check (x-node-type)', () => {
+    const brand = '0190a000-0000-7000-8000-000000000001';
+    const model = '0190a000-0000-7000-8000-000000000002';
+    const refs = v.validateBody('provider.coverage_create', 200, {
+      items: [{ brand_node_id: brand, model_node_id: model, coverage_level: 'specialist' }],
+    });
+    expect(refs).toEqual([
+      { pointer: '/items/0/brand_node_id', id: brand, types: ['vehicle_brand'] },
+      { pointer: '/items/0/model_node_id', id: model, types: ['vehicle_model'] },
+    ]);
+    // NodeId<a|b> carries every allowed type.
+    expect(
+      v.validateBody('provider.service_category_create', 201, {
+        taxonomy_node_id: brand,
+        experience_level: 'advanced',
+        visibility: 'public',
+      }),
+    ).toEqual([{ pointer: '/taxonomy_node_id', id: brand, types: ['service_system', 'service_task'] }]);
+    expect(v.validateBody('health.get', 200, undefined)).toEqual([]);
+  });
+
   it('checks responses against the contract', () => {
     expect(v.checkResponse('health.get', 200, 200, { status: 'ok' })).toEqual([]);
     expect(v.checkResponse('health.get', 200, 200, { status: 'ok', version: '1' })).toEqual([
       { pointer: '/version', code: 'unknown_field' },
     ]);
+  });
+});
+
+describe('ProtocolError', () => {
+  it('carries an RFC 6749 body and its own status, with no-store', () => {
+    const e = new ProtocolError(400, 'invalid_grant', { description: 'code already used' });
+    expect(e.status).toBe(400);
+    expect(e.body).toEqual({ error: 'invalid_grant', error_description: 'code already used' });
+    expect(e.headers['cache-control']).toBe('no-store');
+    expect(new ProtocolError(401, 'invalid_client').body).toEqual({ error: 'invalid_client' });
   });
 });
 
@@ -188,6 +220,20 @@ describe('headers', () => {
       request_id: 'rid',
     });
     expect(toProblem(new ApiError('RATE_LIMITED', { retryAfterMs: 1500 }), 'r', 'en').retry_after_ms).toBe(1500);
+  });
+  it('renders the optional Problem members of DI-10 (requirements, consent_type, entitlement_key)', async () => {
+    const p = toProblem(
+      new ApiError('PUBLISH_REQUIREMENTS_UNMET', { extensions: { requirements: ['active_location', 'supported_brand'] } }),
+      '0190a0a0-0000-7000-8000-000000000000',
+      'en',
+    );
+    expect(p.requirements).toEqual(['active_location', 'supported_brand']);
+    expect(toProblem(new ApiError('CONSENT_REQUIRED', { extensions: { consent_type: 'vehicle_data_sharing' } }), 'r', 'en')).toMatchObject({
+      consent_type: 'vehicle_data_sharing',
+    });
+    const { createContractAjv, loadSchemas } = await import('#libs/contract/index.js');
+    const validate = createContractAjv().getSchema(`${loadSchemas().root.$id}#/$defs/Problem`)!;
+    expect(validate(p), JSON.stringify(validate.errors)).toBe(true);
   });
 });
 

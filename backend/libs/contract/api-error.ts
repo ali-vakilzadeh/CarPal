@@ -39,6 +39,18 @@ export interface ApiErrorOptions {
   /** Extra response headers (WWW-Authenticate, Allow, RateLimit…). */
   headers?: Record<string, string>;
   cause?: unknown;
+  /** Optional Problem members of 40 §4.2 (DI-10): sent to the client. */
+  extensions?: ProblemExtensions;
+}
+
+/** 40 §4.2 optional Problem members that name what is missing (DI-10). */
+export interface ProblemExtensions {
+  /** PUBLISH_REQUIREMENTS_UNMET: unmet publish rule keys (≤ 20). */
+  requirements?: string[];
+  /** CONSENT_REQUIRED: the missing consent type. */
+  consent_type?: string;
+  /** ENTITLEMENT_REQUIRED: the plan entitlement key. */
+  entitlement_key?: string;
 }
 
 export class ApiError extends Error {
@@ -48,6 +60,7 @@ export class ApiError extends Error {
   readonly errors: FieldError[] | undefined;
   readonly retryAfterMs: number | undefined;
   readonly headers: Record<string, string>;
+  readonly extensions: ProblemExtensions | undefined;
 
   constructor(code: ErrorCode, options: ApiErrorOptions = {}) {
     super(options.detail ? `${code}: ${options.detail}` : code, options.cause === undefined ? undefined : { cause: options.cause });
@@ -57,6 +70,7 @@ export class ApiError extends Error {
     this.detail = options.detail;
     this.errors = options.errors?.slice(0, 50);
     this.headers = { ...options.headers };
+    this.extensions = options.extensions;
     const needsDelay = this.status === 429 || this.status === 503;
     this.retryAfterMs = options.retryAfterMs ?? (needsDelay ? 1_000 : undefined);
     if (this.retryAfterMs !== undefined) this.retryAfterMs = Math.min(3_600_000, Math.max(100, Math.ceil(this.retryAfterMs)));

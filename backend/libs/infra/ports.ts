@@ -121,7 +121,15 @@ export interface JobQueue {
 export interface StoredObjectInfo {
   size: number;
   contentType: string;
+  /** Base64 SHA-256 of the plaintext. */
   sha256: string;
+  /** Encrypted at rest (SSE-KMS in full mode; AES-256-GCM in lite mode). */
+  encrypted?: boolean;
+}
+
+export interface PutOptions {
+  /** Encrypt at rest (40 SEC-UP-5: documents and private media). */
+  encrypt?: boolean;
 }
 
 export interface PresignedPut {
@@ -133,7 +141,7 @@ export interface PresignedPut {
 }
 
 export interface ObjectStorage {
-  put(key: string, body: Buffer, contentType: string): Promise<StoredObjectInfo>;
+  put(key: string, body: Buffer, contentType: string, options?: PutOptions): Promise<StoredObjectInfo>;
   get(key: string): Promise<{ body: Buffer; info: StoredObjectInfo } | null>;
   head(key: string): Promise<StoredObjectInfo | null>;
   delete(key: string): Promise<void>;

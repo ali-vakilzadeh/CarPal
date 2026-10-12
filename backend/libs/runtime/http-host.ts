@@ -13,7 +13,15 @@ import type { CarpalConfig } from '#libs/config/index.js';
 import { loadRegistry } from '#libs/contract/index.js';
 import { CryptoServices } from '#libs/crypto/index.js';
 import { FlagService } from '#libs/flags/index.js';
-import { ContractValidator, HttpPipeline, operationIdsOf, RouteTable, type OperationHandler } from '#libs/http-pipeline/index.js';
+import {
+  ContractValidator,
+  HttpPipeline,
+  isOverride,
+  NodeTypeChecker,
+  operationIdsOf,
+  RouteTable,
+  type OperationHandler,
+} from '#libs/http-pipeline/index.js';
 import { IdempotencyStore } from '#libs/idempotency/index.js';
 import type { Logger } from '#libs/observability/index.js';
 import { LoadShedder, RateLimiter } from '#libs/rate-limit/index.js';
@@ -39,20 +47,34 @@ export function discoverHandlers(app: INestApplicationContext, host: HttpHostNam
   const discovery = app.get(DiscoveryService, { strict: false });
   const known = new Map(loadRegistry().operations.map((o) => [o.opId, o]));
   const handlers = new Map<string, OperationHandler>();
+  const overridden = new Set<string>();
   for (const wrapper of discovery.getProviders()) {
     const opIds = operationIdsOf(wrapper.metatype);
     if (!opIds || !wrapper.instance) continue;
+    const override = isOverride(wrapper.metatype);
     for (const opId of opIds) {
       const op = known.get(opId);
       if (!op) throw new Error(`@Operation('${opId}') on ${wrapper.name}: not an operation of the contract`);
       if (!op.routes.some((r) => r.host === host)) continue; // served by another deployable
-      if (handlers.has(opId)) throw new Error(`two handlers for ${opId}`);
       const instance = wrapper.instance as OperationHandler;
       if (typeof instance.handle !== 'function') throw new Error(`${wrapper.name} has no handle() method`);
+      // A test override replaces the real handler; two real handlers for one operation are a defect.
+      if (overridden.has(opId)) continue;
+      if (handlers.has(opId) && !override) throw new Error(`two handlers for ${opId}`);
       handlers.set(opId, instance);
+      if (override) overridden.add(opId);
     }
   }
   return handlers;
+}
+
+/** An optional provider of the context (ports owned by domain modules). */
+function optional<T>(app: INestApplicationContext, token: abstract new (...args: never[]) => T): T | undefined {
+  try {
+    return app.get(token, { strict: false });
+  } catch {
+    return undefined;
+  }
 }
 
 export function createHttpHost(app: INestApplicationContext, host: HttpHostName): HttpHost {
@@ -60,6 +82,7 @@ export function createHttpHost(app: INestApplicationContext, host: HttpHostName)
   const logger = app.get<Logger>(LOGGER, { strict: false });
   const routes = new RouteTable(host);
   const handlers = discoverHandlers(app, host);
+  const nodeTypes = optional(app, NodeTypeChecker);
   const pipeline = new HttpPipeline({
     host,
     config,
@@ -76,6 +99,7 @@ export function createHttpHost(app: INestApplicationContext, host: HttpHostName)
     crypto: app.get(CryptoServices, { strict: false }),
     logger,
     locales: app.get(RegionConfigService, { strict: false }).locales,
+    ...(nodeTypes ? { nodeTypes } : {}),
   });
   const server = createServer({ requestTimeout: 30_000, headersTimeout: 20_000, keepAliveTimeout: 5_000 }, pipeline.listener);
   return {

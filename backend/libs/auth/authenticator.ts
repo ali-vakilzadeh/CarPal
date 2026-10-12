@@ -107,6 +107,7 @@ export class Authenticator {
       authTime: Math.max(session.authTime, claims.auth_time ?? 0),
       tokenId: claims.jti,
       scopes: claims.scope.split(' ').filter(Boolean),
+      ...(session.mfaEnrolled === false ? { mfaEnrolled: false } : {}),
     };
     if (req.host === 'admin-api') {
       // SEC-ADM-2: staff sessions are aal3 (hardware-bound WebAuthn) on every request.
@@ -116,10 +117,20 @@ export class Authenticator {
     return principal;
   }
 
-  /** AAL2 / AAL3 tags (SEC-AU-10): 401 STEP_UP_REQUIRED with the RFC 9470 challenge. */
+  /**
+   * AAL2 / AAL3 tags (SEC-AU-10): 401 STEP_UP_REQUIRED with the RFC 9470 challenge.
+   * An account without any second factor cannot reach aal2, yet AAL2 guards
+   * the operations that enrol the first one (me.mfa_totp_enroll) and DSR
+   * filing. For such sessions (mfaEnrolled = false, user host only) a fresh
+   * sign-in within the step-up window satisfies AAL2: re-authentication at the
+   * strongest level the account has (S3 deviation, DI-11). Staff and aal3 are
+   * unaffected.
+   */
   requireAssurance(principal: Principal, level: Acr, maxAgeSeconds = STEP_UP_MAX_AGE_S, now = Math.floor(Date.now() / 1000)): void {
     if (principal.kind !== 'user' && principal.kind !== 'staff') throw new ApiError('UNAUTHENTICATED', { detail: 'step-up needs a user' });
-    if (ACR_RANK[principal.acr] < ACR_RANK[level] || now - principal.authTime > maxAgeSeconds) {
+    const fresh = now - principal.authTime <= maxAgeSeconds;
+    const noSecondFactor = principal.kind === 'user' && level === 'aal2' && principal.mfaEnrolled === false;
+    if (!fresh || (ACR_RANK[principal.acr] < ACR_RANK[level] && !noSecondFactor)) {
       throw new ApiError('STEP_UP_REQUIRED', { headers: challenge(level, maxAgeSeconds) });
     }
   }

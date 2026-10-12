@@ -10320,15 +10320,34 @@
           "type": "string",
           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
         },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
         "user_id": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "full_name": {
-          "type": "string",
-          "minLength": 2,
-          "maxLength": 100,
-          "pattern": "^[^\\r\\n]*$"
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "display_name": {
           "anyOf": [
@@ -10368,6 +10387,7 @@
       },
       "required": [
         "membership_id",
+        "version",
         "user_id",
         "full_name",
         "display_name",
@@ -12325,6 +12345,28 @@
           "minimum": 100,
           "maximum": 3600000,
           "description": "with 429/503; equals CarPal-Retry-After-Ms (SEC-RL-1)"
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "^[^\\r\\n]*$"
+          },
+          "maxItems": 20,
+          "description": "with PUBLISH_REQUIREMENTS_UNMET: the unmet publish rules (52 §21)"
+        },
+        "consent_type": {
+          "$ref": "#/$defs/ConsentType",
+          "description": "with CONSENT_REQUIRED: the missing consent"
+        },
+        "entitlement_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "with ENTITLEMENT_REQUIRED: the plan entitlement"
         }
       },
       "required": [

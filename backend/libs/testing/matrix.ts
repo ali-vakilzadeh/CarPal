@@ -143,8 +143,19 @@ export interface MaterializedRequest {
   client: string | null;
 }
 
+/** Valid sample values of the non-Id path parameters (their schemas come from libs/contract). */
+const SAMPLE_PATH_VALUES: Record<string, string> = {
+  collection: 'service-categories',
+  flow_type: 'individual',
+  slug: 'sample-org',
+  report_type: 'costs',
+  role: 'platform_moderator',
+  key: 'map.enabled',
+  dashboard_key: 'activation',
+};
+
 const fill = (route: Route, params: Record<string, string>): string =>
-  route.path.replace(/\{([a-z_]+)\}/g, (_, name: string) => params[name] ?? (name === 'collection' ? 'service-categories' : uuidv7()));
+  route.path.replace(/\{([a-z_]+)\}/g, (_, name: string) => params[name] ?? SAMPLE_PATH_VALUES[name] ?? uuidv7());
 
 /**
  * Builds a request for a spec on a route. Users, organizations, memberships

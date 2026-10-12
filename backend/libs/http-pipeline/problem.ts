@@ -80,6 +80,9 @@ export interface Problem {
   request_id: string;
   errors?: FieldError[];
   retry_after_ms?: number;
+  requirements?: string[];
+  consent_type?: string;
+  entitlement_key?: string;
 }
 
 export function toProblem(err: ApiError, requestId: string, locale: Locale): Problem {
@@ -92,5 +95,9 @@ export function toProblem(err: ApiError, requestId: string, locale: Locale): Pro
   };
   if (err.errors?.length) p.errors = err.errors;
   if (err.retryAfterMs !== undefined) p.retry_after_ms = err.retryAfterMs;
+  const x = err.extensions;
+  if (x?.requirements?.length) p.requirements = x.requirements.slice(0, 20);
+  if (x?.consent_type) p.consent_type = x.consent_type;
+  if (x?.entitlement_key) p.entitlement_key = x.entitlement_key;
   return p;
 }

@@ -1,7 +1,8 @@
-// Provisional OrganizationDirectory (S2): organization type and status through
-// the organization.org_cards() definer function (42 §5.3), readable before
-// the caller's membership is authorized. The organization module owns the
-// table; S4 extends this with cache invalidation on type and status changes.
+// OrganizationDirectory (L4): organization type and status through the
+// organization.org_cards() definer function (42 §5.3), readable before the
+// caller's membership is authorized. The Authorizer caches the answer for at
+// most 30 s; status changes call Authorizer.invalidateOrganization (S4:
+// profile publication activates a draft organization; S8: suspensions).
 import { Injectable } from '@nestjs/common';
 import { sql } from 'kysely';
 import { OrganizationDirectory, type OrganizationInfo } from '#libs/authz/index.js';

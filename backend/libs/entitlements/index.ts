@@ -17,6 +17,8 @@ export type EntitlementKey =
   | 'ai_tools_enabled'
   | 'advanced_analytics_enabled'
   | 'ai_fleet_suggestions_enabled'
+  | 'max_fleet_users'
+  | 'featured_placement_eligible'
   | (string & {});
 
 export interface Subscriber {
@@ -30,9 +32,24 @@ export interface EntitlementDecision {
   limit: number | null;
 }
 
+export interface CheckOptions {
+  /**
+   * Current usage of a counter entitlement, read after the subscriber lock is
+   * held (so parallel requests see each other's committed writes). Defaults to
+   * the counter the owning module registered for the key.
+   */
+  usage?: (scope: TxScope) => Promise<number>;
+}
+
 export abstract class EntitlementChecker {
   /** Locks the subscriber and checks `key` for an increase of `delta` (0 for boolean entitlements). */
-  abstract check(scope: TxScope, subscriber: Subscriber, key: EntitlementKey, delta: number): Promise<EntitlementDecision>;
+  abstract check(
+    scope: TxScope,
+    subscriber: Subscriber,
+    key: EntitlementKey,
+    delta: number,
+    options?: CheckOptions,
+  ): Promise<EntitlementDecision>;
 }
 
 export class UnconfiguredEntitlementChecker extends EntitlementChecker {
@@ -54,9 +71,15 @@ export async function requireEntitlement(
   subscriber: Subscriber,
   key: EntitlementKey,
   delta = 0,
+  options: CheckOptions = {},
 ): Promise<EntitlementDecision> {
-  const d = await checker.check(scope, subscriber, key, delta);
-  if (!d.allowed)
-    throw new ApiError(delta > 0 ? (LIMIT_CODES[key] ?? 'ENTITLEMENT_REQUIRED') : 'ENTITLEMENT_REQUIRED', { detail: `entitlement ${key}` });
+  const d = await checker.check(scope, subscriber, key, delta, options);
+  if (!d.allowed) {
+    const code = delta > 0 ? (LIMIT_CODES[key] ?? 'ENTITLEMENT_REQUIRED') : 'ENTITLEMENT_REQUIRED';
+    throw new ApiError(code, {
+      detail: `entitlement ${key}`,
+      ...(code === 'ENTITLEMENT_REQUIRED' ? { extensions: { entitlement_key: key } } : {}),
+    });
+  }
   return d;
 }

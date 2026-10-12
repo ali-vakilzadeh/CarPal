@@ -12,7 +12,7 @@
 import { CLIENTS, type Acr, type ClientId, type SessionStore, type TokenService } from '#libs/auth/index.js';
 import type { CarpalConfig } from '#libs/config/index.js';
 import type { OrgType } from '#libs/contract/generated/enums.js';
-import { uuidv7 } from '#libs/crypto/index.js';
+import { CryptoServices, uuidv7 } from '#libs/crypto/index.js';
 import type { TxRunner } from '#libs/tenancy/index.js';
 
 export interface TestUser {
@@ -34,6 +34,8 @@ export interface TokenOptions {
   authTime?: number;
   /** Staff session on the admin host (aal3, admin audience). */
   staff?: boolean;
+  /** Session of an account without a second factor (fresh aal1 satisfies AAL2, see Authenticator.requireAssurance). */
+  mfaEnrolled?: boolean;
 }
 
 export class Fixtures {
@@ -43,6 +45,11 @@ export class Fixtures {
     private readonly sessions: SessionStore,
     private readonly config: CarpalConfig,
   ) {}
+
+  /** The fixtures' transaction runner (carpal_worker): run consumers and system-context checks as the worker would. */
+  get worker(): TxRunner {
+    return this.tx;
+  }
 
   /** An active user with a verified email (identity.user_accounts; the bootstrap trigger adds preferences and the individual role). */
   async user(o: { locale?: 'en' | 'fa'; platformRoles?: string[]; status?: 'active' | 'suspended' } = {}): Promise<TestUser> {
@@ -67,6 +74,17 @@ export class Fixtures {
       }
     });
     return { id, email, platformRoles: o.platformRoles ?? [] };
+  }
+
+  /** Adds an active email_password method (Argon2id) to a user. */
+  async withPassword(user: TestUser, password: string): Promise<void> {
+    const hash = await new CryptoServices(this.config.secrets.master).passwords.hash(password);
+    await this.tx.run({ actorType: 'system' }, ({ db }) =>
+      db
+        .insertInto('identity.authentication_methods')
+        .values({ user_id: user.id, method_type: 'email_password', identifier: user.email, credential_reference: hash, status: 'active' })
+        .execute(),
+    );
   }
 
   async staff(...roles: string[]): Promise<TestUser> {
@@ -113,7 +131,16 @@ export class Fixtures {
     const authTime = o.authTime ?? Math.floor(Date.now() / 1000);
     const sid = uuidv7();
     await this.sessions.create(
-      { sid, userId: user.id, clientId, acr, authTime, createdAt: new Date().toISOString(), staff: !!o.staff },
+      {
+        sid,
+        userId: user.id,
+        clientId,
+        acr,
+        authTime,
+        createdAt: new Date().toISOString(),
+        staff: !!o.staff,
+        ...(o.mfaEnrolled !== undefined ? { mfaEnrolled: o.mfaEnrolled } : {}),
+      },
       3_600_000,
     );
     return this.tokens.issue({
@@ -139,6 +166,27 @@ export class Fixtures {
       ttlSeconds: 900,
       cnf: { jkt: uuidv7() },
     });
+  }
+
+  /** A current subscription of an organization to a plan (as admin.subscription_assign or org.create would create it). */
+  async subscription(org: TestOrg, planKey: string, o: { status?: 'trial' | 'active'; vehicleLimit?: number } = {}): Promise<string> {
+    const id = uuidv7();
+    await this.tx.run({ actorType: 'system' }, async ({ db }) => {
+      const plan = await db.selectFrom('billing.plans').select('id').where('plan_key', '=', planKey).executeTakeFirstOrThrow();
+      await db
+        .insertInto('billing.subscriptions')
+        .values({
+          id,
+          subscriber_type: 'organization',
+          subscriber_id: org.id,
+          plan_id: plan.id,
+          status: o.status ?? 'active',
+          ...(o.status === 'trial' ? { trial_ends_at: new Date(Date.now() + 30 * 86_400_000) } : {}),
+          ...(o.vehicleLimit !== undefined ? { vehicle_limit_override: o.vehicleLimit } : {}),
+        })
+        .execute();
+    });
+    return id;
   }
 
   /** A background job row (core.background_jobs) owned by a user, optionally of an organization. */

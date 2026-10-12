@@ -32,12 +32,23 @@ const req = (authorization: string | undefined, extra: Partial<AuthRequest> = {}
   ...extra,
 });
 
-async function userToken(o: { acr?: 'aal1' | 'aal2' | 'aal3'; authTime?: number; audience?: string; staff?: boolean } = {}) {
+async function userToken(
+  o: { acr?: 'aal1' | 'aal2' | 'aal3'; authTime?: number; audience?: string; staff?: boolean; mfaEnrolled?: boolean } = {},
+) {
   const userId = uuidv7();
   const sid = uuidv7();
   const authTime = o.authTime ?? Math.floor(Date.now() / 1000);
   await sessions.create(
-    { sid, userId, clientId: 'cp-mobile', acr: o.acr ?? 'aal1', authTime, createdAt: new Date().toISOString(), staff: !!o.staff },
+    {
+      sid,
+      userId,
+      clientId: 'cp-mobile',
+      acr: o.acr ?? 'aal1',
+      authTime,
+      createdAt: new Date().toISOString(),
+      staff: !!o.staff,
+      ...(o.mfaEnrolled !== undefined ? { mfaEnrolled: o.mfaEnrolled } : {}),
+    },
     60_000,
   );
   const token = await tokens.issue({
@@ -193,6 +204,34 @@ describe('Authenticator', () => {
         headers: { 'www-authenticate': 'DPoP error="insufficient_user_authentication", acr_values="aal2", max_age=600' },
       });
     }
+  });
+
+  it('accounts without a second factor meet AAL2 with a fresh sign-in only (DI-11); AAL3 never', async () => {
+    const auth = make();
+    const now = Math.floor(Date.now() / 1000);
+    const fresh = await auth.authenticate(req(`DPoP ${(await userToken({ mfaEnrolled: false, authTime: now - 60 })).token}`));
+    expect(fresh).toMatchObject({ acr: 'aal1', mfaEnrolled: false });
+    expect(() => auth.requireAssurance(fresh, 'aal2')).not.toThrow();
+    expect(() => auth.requireAssurance(fresh, 'aal3')).toThrow(expect.objectContaining({ code: 'STEP_UP_REQUIRED' }));
+    const stale = await auth.authenticate(req(`DPoP ${(await userToken({ mfaEnrolled: false, authTime: now - 601 })).token}`));
+    expect(() => auth.requireAssurance(stale, 'aal2')).toThrow(expect.objectContaining({ code: 'STEP_UP_REQUIRED' }));
+    // Sessions that do not say otherwise count as enrolled: aal1 is not enough.
+    const enrolled = await auth.authenticate(req(`DPoP ${(await userToken({ authTime: now })).token}`));
+    expect(() => auth.requireAssurance(enrolled, 'aal2')).toThrow(expect.objectContaining({ code: 'STEP_UP_REQUIRED' }));
+  });
+
+  it('session updates keep the expiry; revokeAll can keep one session', async () => {
+    const a = await userToken();
+    await sessions.update(a.sid, { acr: 'aal2', lastSeenAt: 'x' });
+    expect(await sessions.get(a.sid)).toMatchObject({ acr: 'aal2', lastSeenAt: 'x' });
+    expect(await sessions.update(uuidv7(), { acr: 'aal2' })).toBeNull();
+    const sid2 = uuidv7();
+    await sessions.create(
+      { sid: sid2, userId: a.userId, clientId: 'cp-mobile', acr: 'aal1', authTime: 0, createdAt: '', staff: false },
+      60_000,
+    );
+    expect(await sessions.revokeAll(a.userId, a.sid)).toBe(1);
+    expect((await sessions.list(a.userId)).map((s) => s.sid)).toEqual([a.sid]);
   });
 
   it('strict mode: requires a valid, fresh, non-replayed DPoP proof bound to cnf.jkt', async () => {

@@ -46,7 +46,7 @@ import type { OperationContext, OperationHandler, OperationResult } from './oper
 import { toProblem } from './problem.js';
 import type { RouteEntry, RouteTable } from './router.js';
 import { parseStrictJson } from './strict-json.js';
-import type { ContractValidator } from './validation.js';
+import type { ContractValidator, NodeTypeChecker } from './validation.js';
 
 export const MAX_BODY_BYTES = 64 * 1024;
 
@@ -66,6 +66,8 @@ export interface PipelineDeps {
   crypto: CryptoServices;
   logger: Logger;
   locales: readonly Locale[];
+  /** NodeId<type> checks (taxonomy module); a body with node references fails closed without it. */
+  nodeTypes?: NodeTypeChecker;
 }
 
 interface Exchange {
@@ -148,7 +150,8 @@ export class HttpPipeline {
         headers['retry-after'] = String(Math.ceil(e.retryAfterMs / 1000));
       }
       if (req.complete === false) headers.connection = 'close';
-      this.#send(res, x, e.status, toProblem(e, x.requestId, x.locale), headers, 'application/problem+json');
+      if (e instanceof ProtocolError) this.#send(res, x, e.status, e.body, headers, 'application/json');
+      else this.#send(res, x, e.status, toProblem(e, x.requestId, x.locale), headers, 'application/problem+json');
       if (e.code === 'PAYLOAD_TOO_LARGE') req.resume();
     } finally {
       release?.();
@@ -284,7 +287,13 @@ export class HttpPipeline {
 
     // 8. Validation
     const query = d.validator.parseQuery(op.opId, op.successStatus, rawQuery);
-    if (op.inputEncoding === 'json') d.validator.validateBody(op.opId, op.successStatus, body);
+    if (op.inputEncoding === 'json') {
+      const refs = d.validator.validateBody(op.opId, op.successStatus, body);
+      if (refs.length) {
+        if (!d.nodeTypes) throw new ApiError('INTERNAL', { detail: `${op.opId}: NodeId references but no NodeTypeChecker bound` });
+        await d.nodeTypes.check(refs);
+      }
+    }
     const pKey = principalKey(x.principal);
     const binding = this.#queryBinding(op.opId, route.path, params, query);
     let cursor: unknown;
@@ -437,7 +446,9 @@ export class HttpPipeline {
     const { x, grant } = a;
     const p = x.principal;
     const tenancy: TenancyContext = {
-      actorType: p.kind === 'staff' ? 'staff' : p.kind === 'user' ? 'user' : 'anonymous',
+      // The auth server takes no tokens and acts for whoever is signing in: its
+      // transactions run in the system context (carpal_auth, 42 §5.1).
+      actorType: d.host === 'auth' ? 'system' : p.kind === 'staff' ? 'staff' : p.kind === 'user' ? 'user' : 'anonymous',
       userId: p.kind === 'user' || p.kind === 'staff' ? p.userId : null,
       orgId: grant.org?.id ?? null,
       role: grant.org?.role ?? grant.platformRoles[0] ?? null,
@@ -486,6 +497,19 @@ export class HttpPipeline {
     };
   }
 
+  /**
+   * Lite mode signs media URLs for the local storage listener, which speaks
+   * plain http, while the contract `Url` is https-only. For the response check
+   * only, those URLs are rewritten to an https placeholder (S4 deviation); the
+   * client receives them unchanged. Full mode is not affected.
+   */
+  #liteMediaUrls(body: unknown): unknown {
+    const base = this.d.config.http.mediaBaseUrl;
+    if (this.d.config.infra !== 'lite' || !base.startsWith('http://') || body === undefined) return body;
+    const json = JSON.stringify(body);
+    return json.includes(`"${base}/`) ? JSON.parse(json.replaceAll(`"${base}/`, '"https://media.lite.invalid/')) : body;
+  }
+
   #response(entry: RouteEntry, result: OperationResult, x: Exchange, marks: Set<string>): StoredResponse {
     const { op, route } = entry;
     const status = result.status ?? op.successStatus;
@@ -495,7 +519,7 @@ export class HttpPipeline {
       const expected = [op.successStatus, ...(op.alternateResponses ?? []).map((r) => r.status)];
       if (!expected.includes(status))
         throw new ApiError('INTERNAL', { detail: `${op.opId} answered ${status}, contract says ${expected.join('/')}` });
-      const errors = this.d.validator.checkResponse(op.opId, op.successStatus, status, body);
+      const errors = this.d.validator.checkResponse(op.opId, op.successStatus, status, this.#liteMediaUrls(body));
       if (errors.length)
         throw new ApiError('INTERNAL', { detail: `${op.opId} response violates the contract: ${JSON.stringify(errors.slice(0, 5))}` });
       // DoD: an AUD operation writes its audit entry (analytics.write_audit) when it succeeds.
@@ -523,5 +547,24 @@ export class NotImplemented extends ApiError {
     super('INTERNAL', { detail: `${opId} not implemented` });
     Object.defineProperty(this, 'status', { value: 501 });
     Object.defineProperty(this, 'code', { value: 'NOT_IMPLEMENTED' });
+  }
+}
+
+/**
+ * Protocol-defined error bodies outside the Problem catalog: the OAuth
+ * endpoints answer RFC 6749 §5.2 `{ error, error_description? }` JSON (40
+ * auth.token `err:` invalid_grant, invalid_dpop_proof, use_dpop_nonce,
+ * invalid_client), which standard OAuth client libraries expect.
+ */
+export class ProtocolError extends ApiError {
+  readonly body: Record<string, string>;
+
+  constructor(status: 400 | 401, error: string, o: { description?: string; headers?: Record<string, string>; detail?: string } = {}) {
+    super(status === 401 ? 'UNAUTHENTICATED' : 'MALFORMED_REQUEST', {
+      detail: o.detail ?? `${error}${o.description ? `: ${o.description}` : ''}`,
+      headers: { 'cache-control': 'no-store', ...o.headers },
+    });
+    Object.defineProperty(this, 'status', { value: status });
+    this.body = { error, ...(o.description ? { error_description: o.description } : {}) };
   }
 }

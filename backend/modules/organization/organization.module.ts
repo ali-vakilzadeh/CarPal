@@ -1,13 +1,83 @@
-// organization module (41 §2.1 M2). S2 provides only the OrganizationDirectory
-// port the authorizer needs (type and status of the path organization);
-// organizations, members, locations and profiles arrive in S4.
-import { Global, Module } from '@nestjs/common';
+// organization module (41 §2.1 M2; 40 §7-§9). Two Nest modules share this folder:
+//   OrganizationModule     (global, every deployable) the ports organization
+//                          serves: OrganizationDirectory (L4), OrgCards,
+//                          ProviderCapabilities, PublicProfiles (public
+//                          projections for S6), the OrganizationExtensions
+//                          registry, its media attachment targets and the
+//                          consent.withdrawn consumer (run by the worker).
+//   OrganizationApiModule  §7-§9 operations on the api host (organization-api.module.ts)
+import { Global, Injectable, Module, Optional, type OnModuleInit } from '@nestjs/common';
 import { OrganizationDirectory } from '#libs/authz/index.js';
+import type { TxScope } from '#libs/tenancy/index.js';
+import { AttachmentTargets, type AttachmentTarget } from '#modules/media/interface/media.js';
+import { ConsentWithdrawnPortfolioConsumer } from './events/consent-withdrawn.consumer.js';
 import { DbOrganizationDirectory } from './infrastructure/organization-directory.js';
+import { DbOrgCards } from './infrastructure/org-cards.js';
+import { DbProviderCapabilities } from './infrastructure/provider-capabilities.js';
+import { DbPublicProfiles } from './infrastructure/public-profiles.js';
+import { OrganizationExtensions } from './interface/extensions.js';
+import { OrgCards } from './interface/org-cards.js';
+import { ProviderCapabilities } from './interface/provider-capabilities.js';
+import { PublicProfiles } from './interface/public-profiles.js';
+
+const orgTarget = (id: string | undefined, groups: string[]): AttachmentTarget | null =>
+  id ? { owner: { type: 'organization', id }, groups } : null;
+
+/**
+ * Records of this module that media can be attached to (media.attach asks
+ * the owning module): the organization itself (logo, cover: M+), portfolio
+ * items (before/after, gallery: P*) and job logs (photos: P*).
+ */
+@Injectable()
+export class OrganizationRegistrations implements OnModuleInit {
+  constructor(@Optional() private readonly targets?: AttachmentTargets) {}
+
+  onModuleInit(): void {
+    if (!this.targets) return;
+    this.targets.register('organization', async (scope: TxScope, id) => {
+      const o = await scope.db
+        .selectFrom('organization.organizations')
+        .select('id')
+        .where('id', '=', id)
+        .where('deleted_at', 'is', null)
+        .executeTakeFirst();
+      return orgTarget(o?.id, ['M+']);
+    });
+    this.targets.register('portfolio_item', async (scope, id) => {
+      const p = await scope.db
+        .selectFrom('organization.portfolio_items')
+        .select('provider_organization_id')
+        .where('id', '=', id)
+        .where('status', '<>', 'archived')
+        .where('deleted_at', 'is', null)
+        .executeTakeFirst();
+      return orgTarget(p?.provider_organization_id, ['P*']);
+    });
+    this.targets.register('provider_job_log', async (scope, id) => {
+      const j = await scope.db
+        .selectFrom('organization.provider_job_logs')
+        .select('provider_organization_id')
+        .where('id', '=', id)
+        .where('status', '=', 'active')
+        .where('deleted_at', 'is', null)
+        .executeTakeFirst();
+      return orgTarget(j?.provider_organization_id, ['P*']);
+    });
+  }
+}
 
 @Global()
 @Module({
-  providers: [{ provide: OrganizationDirectory, useClass: DbOrganizationDirectory }],
-  exports: [OrganizationDirectory],
+  providers: [
+    { provide: OrganizationDirectory, useClass: DbOrganizationDirectory },
+    { provide: OrgCards, useClass: DbOrgCards },
+    { provide: ProviderCapabilities, useClass: DbProviderCapabilities },
+    { provide: PublicProfiles, useClass: DbPublicProfiles },
+    // One registry per application context (contexts share a process in pnpm dev and tests).
+    { provide: OrganizationExtensions, useFactory: () => new OrganizationExtensions() },
+    OrganizationRegistrations,
+    ConsentWithdrawnPortfolioConsumer,
+  ],
+  exports: [OrganizationDirectory, OrgCards, ProviderCapabilities, PublicProfiles, OrganizationExtensions],
 })
 export class OrganizationModule {}

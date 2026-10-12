@@ -9,8 +9,8 @@ import { SessionStore, TokenService } from '#libs/auth/index.js';
 import { loadConfig, type CarpalConfig } from '#libs/config/index.js';
 import type { OperationId } from '#libs/contract/index.js';
 import { Database } from '#libs/db/index.js';
-import { Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
-import { createInfra, type Infra } from '#libs/infra/index.js';
+import { markOverride, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
+import { createInfra, type EmailMessage, type FileMailer, type FileSmsSender, type Infra, type SmsMessage } from '#libs/infra/index.js';
 import { createLogger, type Logger } from '#libs/observability/index.js';
 import { createHttpHost, type HttpHost, type HttpHostName } from '#libs/runtime/index.js';
 import { TxRunner } from '#libs/tenancy/index.js';
@@ -20,7 +20,7 @@ import { nestLogger } from '../shared/bootstrap.js';
 
 export type HandlerFn = (ctx: OperationContext) => Promise<OperationResult> | OperationResult;
 
-/** A Nest module whose providers handle the given operations (test-only handlers). */
+/** A Nest module whose providers handle the given operations (test-only handlers; they replace real ones). */
 export function handlerModule(handlers: Partial<Record<OperationId, HandlerFn>>): DynamicModule {
   const providers: Provider[] = Object.entries(handlers).map(([opId, fn]) => {
     const cls = class implements OperationHandler {
@@ -30,6 +30,7 @@ export function handlerModule(handlers: Partial<Record<OperationId, HandlerFn>>)
     };
     Object.defineProperty(cls, 'name', { value: `TestHandler_${opId.replace('.', '_')}` });
     Operation(opId as OperationId)(cls);
+    markOverride(cls);
     return cls;
   });
   @Module({})
@@ -58,6 +59,9 @@ export interface TestApp {
   fixtures: Fixtures;
   principals: PrincipalFactory;
   request<T = unknown>(r: TestRequest): Promise<TestResponse<T>>;
+  /** Messages the lite mail and SMS sinks received (newest last). */
+  mail(to: string, template?: string): EmailMessage[];
+  sms(to: string): SmsMessage[];
   close(): Promise<void>;
 }
 
@@ -65,7 +69,15 @@ export const testLogger = (config: CarpalConfig): Logger =>
   createLogger({ level: process.env.CARPAL_TEST_LOG ? 'debug' : 'silent', base: { service: 'test', env: config.env } });
 
 export function testConfig(env: Record<string, string> = {}): CarpalConfig {
-  return loadConfig({ CARPAL_RATE_LIMIT_SCALE: '1000', CARPAL_VALIDATE_RESPONSES: '1', CARPAL_FLAG_REFRESH_MS: '0', ...env });
+  return loadConfig({
+    CARPAL_RATE_LIMIT_SCALE: '1000',
+    CARPAL_VALIDATE_RESPONSES: '1',
+    CARPAL_FLAG_REFRESH_MS: '0',
+    // SEC-AU-11 latency floor off by default in tests (auth-server.int.test.ts measures it explicitly).
+    CARPAL_AUTH_MIN_LATENCY_MS: '0',
+    CARPAL_POW_DIFFICULTY_BITS: '8',
+    ...env,
+  });
 }
 
 const MODULES: Record<HttpHostName, (o: AppOptions) => DynamicModule> = {
@@ -102,6 +114,8 @@ export async function createTestApp(o: TestAppOptions): Promise<TestApp> {
     fixtures,
     principals: new PrincipalFactory(fixtures),
     request: (r) => send(url, r),
+    mail: (to, template) => (infra.mailer as FileMailer).sent.filter((m) => m.to === to && (!template || m.template === template)),
+    sms: (to) => (infra.sms as FileSmsSender).sent.filter((m) => m.to === to),
     async close() {
       await http.close();
       await app.close();

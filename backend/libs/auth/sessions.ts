@@ -15,6 +15,18 @@ export interface Session {
   createdAt: string;
   /** Platform staff session on the admin plane (SEC-ADM-2). */
   staff: boolean;
+  /** Device name shown in me.sessions_list (client and OS from CarPal-Client). */
+  deviceLabel?: string;
+  /** Last token issue or refresh (ISO). */
+  lastSeenAt?: string;
+  /** ISO 3166 country of the sign-in, when known. */
+  country?: string | null;
+  /**
+   * The account had an active second factor when the session started. False
+   * lets a fresh aal1 sign-in satisfy AAL2 step-up (no second factor exists to
+   * step up with; see Authenticator.requireAssurance). Absent = enrolled.
+   */
+  mfaEnrolled?: boolean;
 }
 
 const sessionKey = (sid: string): string => `auth:sess:${sid}`;
@@ -36,10 +48,17 @@ export class SessionStore {
 
   /** Raises the session's assurance after step-up (SEC-AU-10). */
   async stepUp(sid: string, acr: Acr, authTime: number): Promise<void> {
+    await this.update(sid, { acr, authTime });
+  }
+
+  /** Changes fields of a live session, keeping its absolute expiry. Null when it is gone. */
+  async update(sid: string, patch: Partial<Omit<Session, 'sid' | 'userId'>>): Promise<Session | null> {
     const s = await this.get(sid);
-    if (!s) return;
+    if (!s) return null;
     const ttl = await this.kv.ttl(sessionKey(sid));
-    await this.kv.set(sessionKey(sid), JSON.stringify({ ...s, acr, authTime }), ttl ? { ttlMs: ttl } : {});
+    const next: Session = { ...s, ...patch };
+    await this.kv.set(sessionKey(sid), JSON.stringify(next), ttl ? { ttlMs: ttl, mode: 'XX' } : { mode: 'XX' });
+    return next;
   }
 
   async revoke(sid: string): Promise<void> {
@@ -48,11 +67,13 @@ export class SessionStore {
     if (s) await this.kv.sRem(userKey(s.userId), sid);
   }
 
-  /** "Sign out everywhere", password change, suspension (SEC-AU-4). */
-  async revokeAll(userId: string): Promise<number> {
-    const sids = await this.kv.sMembers(userKey(userId));
-    for (const sid of sids) await this.kv.del(sessionKey(sid));
-    await this.kv.del(userKey(userId));
+  /** "Sign out everywhere", password change, suspension (SEC-AU-4); optionally keeps one session. */
+  async revokeAll(userId: string, exceptSid?: string): Promise<number> {
+    const sids = (await this.kv.sMembers(userKey(userId))).filter((sid) => sid !== exceptSid);
+    for (const sid of sids) {
+      await this.kv.del(sessionKey(sid));
+      await this.kv.sRem(userKey(userId), sid);
+    }
     return sids.length;
   }
 

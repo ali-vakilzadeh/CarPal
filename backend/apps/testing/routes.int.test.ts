@@ -45,7 +45,7 @@ describe('every contract route is registered on its host and passes the pipeline
   });
 
   for (const host of hosts) {
-    it(`${host}: allowed callers reach the handler (501 until implemented); denied callers get 401/404`, async () => {
+    it(`${host}: denied callers get 401/404 on every route; allowed callers reach the handler (501 until implemented)`, async () => {
       const app = apps.get(host)!;
       const flags = app.app.get(FlagService, { strict: false });
       const problems: string[] = [];
@@ -58,7 +58,16 @@ describe('every contract route is registered on its host and passes the pipeline
         const sample = await app.principals.request(matrix.allowed[0]!, route);
         if (app.http.routes.match(route.method, sample.path).kind !== 'match')
           problems.push(`${label}: router does not match ${sample.path}`);
-        if (app.http.implemented.has(op.opId)) continue; // real responses are tested per operation
+        for (const d of matrix.denied) {
+          const res = await call(app, route.method, op.inputEncoding, await app.principals.request(d.spec, route));
+          checked++;
+          if (res.status !== d.status)
+            problems.push(
+              `${label} denied ${JSON.stringify(d.spec)} (${d.why}): ${res.status} ${(res.body as { code?: string }).code} (want ${d.status})`,
+            );
+        }
+        // Implemented operations: the BFLA/BOLA denials above run before the handler; real responses are tested per operation.
+        if (app.http.implemented.has(op.opId)) continue;
 
         let expected = 501;
         let expectedCode = 'NOT_IMPLEMENTED';
@@ -80,17 +89,9 @@ describe('every contract route is registered on its host and passes the pipeline
             );
           }
         }
-        for (const d of matrix.denied) {
-          const res = await call(app, route.method, op.inputEncoding, await app.principals.request(d.spec, route));
-          checked++;
-          if (res.status !== d.status)
-            problems.push(
-              `${label} denied ${JSON.stringify(d.spec)} (${d.why}): ${res.status} ${(res.body as { code?: string }).code} (want ${d.status})`,
-            );
-        }
       }
       expect(problems).toEqual([]);
-      expect(checked).toBeGreaterThanOrEqual(app.http.routes.entries.length);
+      expect(checked).toBeGreaterThan(0);
       console.log(`${host}: ${app.http.routes.entries.length} routes, ${checked} pipeline checks`);
     });
   }

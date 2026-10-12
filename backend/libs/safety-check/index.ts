@@ -5,7 +5,8 @@
 // S3) through SafetyLexicon; matching uses the shared search normalization.
 import { normalizeSearchText } from '#libs/i18n/index.js';
 
-export type Urgency = 'low' | 'medium' | 'high' | 'critical';
+/** 52 urgency level (core.urgency_level). */
+export type Urgency = 'low' | 'medium' | 'high' | 'safety_critical';
 
 export interface SafetyTerm {
   /** Normalized with normalizeSearchText (as taxonomy_synonyms.term_normalized). */
@@ -32,7 +33,7 @@ export class EmptySafetyLexicon extends SafetyLexicon {
   }
 }
 
-const RANK: Record<Urgency, number> = { low: 1, medium: 2, high: 3, critical: 4 };
+const RANK: Record<Urgency, number> = { low: 1, medium: 2, high: 3, safety_critical: 4 };
 
 export class SafetyCheck {
   constructor(

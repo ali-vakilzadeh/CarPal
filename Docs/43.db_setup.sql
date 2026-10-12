@@ -4290,13 +4290,104 @@ BEGIN
   IF u.email IS DISTINCT FROM m.invited_email OR u.email_verified_at IS NULL THEN
     RAISE EXCEPTION 'LINK_RECIPIENT_MISMATCH' USING ERRCODE = 'P0403';
   END IF;
+  -- The token hash stays on the row so a second use answers LINK_USED (40 SEC-LT-4);
+  -- the status check above makes the link single-use.
   UPDATE identity.role_memberships r
-     SET user_id = u.id, status = 'active', joined_at = now(), invitation_token_hash = NULL
+     SET user_id = u.id, status = 'active', joined_at = now()
    WHERE r.id = m.id;
   PERFORM analytics.write_audit('membership.invitation_accepted', 'role_membership', m.id);
   RETURN QUERY SELECT m.id, m.organization_id, m.role::text;
 END
 $$;
+
+-- Consent gate (40 SEC-AZ-8, 41 L16): is a consent currently granted? Runs as
+-- definer because the reader is usually not the subject (a provider reading a
+-- vehicle owner's consent). A consent without scope covers every record of its
+-- type; a consent without grantee covers every recipient. Never cached.
+CREATE FUNCTION identity.has_consent(p_subject_type text, p_subject_id uuid, p_consent_type text,
+                                     p_scope_type text DEFAULT NULL, p_scope_id uuid DEFAULT NULL,
+                                     p_grantee_type text DEFAULT NULL, p_grantee_id uuid DEFAULT NULL)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM identity.consent_records c
+     WHERE c.subject_type = p_subject_type AND c.subject_id = p_subject_id
+       AND c.consent_type::text = p_consent_type
+       AND c.granted AND c.withdrawn_at IS NULL AND c.deleted_at IS NULL
+       AND (c.expires_at IS NULL OR c.expires_at > now())
+       AND (c.scope_entity_id IS NULL
+            OR (p_scope_id IS NOT NULL AND c.scope_entity_type::text = p_scope_type AND c.scope_entity_id = p_scope_id))
+       AND (c.granted_to_type IS NULL
+            OR (p_grantee_type IS NOT NULL AND c.granted_to_type = p_grantee_type
+                AND (c.granted_to_type = 'platform' OR c.granted_to_id = p_grantee_id))))
+$$;
+COMMENT ON FUNCTION identity.has_consent IS 'L16 consent gate: active, unexpired, matching scope and grantee (null scope/grantee = all)';
+
+-- Consent request links (40 consents.request_view/respond, SEC-LT-5): the
+-- holder of a cn token learns only whether it is theirs and its state, so the
+-- API can answer LINK_RECIPIENT_MISMATCH without reading the request.
+CREATE FUNCTION identity.consent_request_by_token(p_token_hash bytea)
+RETURNS TABLE (id uuid, subject_user_id uuid, status text, expires_at timestamptz, used_at timestamptz)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT r.id, r.subject_user_id, r.status, r.expires_at, r.used_at
+    FROM identity.consent_requests r
+   WHERE r.token_hash = p_token_hash AND r.deleted_at IS NULL
+$$;
+
+-- Delivery of a cn link (40 provider.portfolio_consent_request): the business
+-- derives the customer from a visit but never reads their contact data
+-- (SEC-OUT-3). Only a pending request of the caller's organization created in
+-- the current transaction (created_at = now()) is answered.
+CREATE FUNCTION identity.consent_request_contact(p_request_id uuid)
+RETURNS TABLE (email text, locale text)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT u.email::text, u.locale::text
+    FROM identity.consent_requests r
+    JOIN identity.user_accounts u ON u.id = r.subject_user_id
+   WHERE r.id = p_request_id AND r.requested_by_organization_id = core.my_org()
+     AND r.status = 'pending' AND r.created_at = now() AND r.deleted_at IS NULL
+     AND u.deleted_at IS NULL AND u.status = 'active'
+$$;
+
+-- Every user has at least the Individual Free plan (52 Subscription). The
+-- user.registered consumer calls this; the API calls it for core.me() when a
+-- user reads or uses entitlements before the consumer ran. Returns the
+-- current (trial or active) subscription id.
+CREATE FUNCTION billing.ensure_user_subscription(p_user_id uuid) RETURNS uuid
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+DECLARE
+  sid uuid;
+BEGIN
+  IF p_user_id IS NULL OR NOT (core.is_system() OR p_user_id = core.me()) THEN
+    RAISE EXCEPTION 'ensure_user_subscription: not allowed' USING ERRCODE = '42501';
+  END IF;
+  SELECT s.id INTO sid FROM billing.subscriptions s
+   WHERE s.subscriber_type = 'user' AND s.subscriber_id = p_user_id AND s.status IN ('trial','active');
+  IF FOUND THEN
+    RETURN sid;
+  END IF;
+  INSERT INTO billing.subscriptions (subscriber_type, subscriber_id, plan_id, status, created_by)
+  SELECT 'user', p_user_id, p.id, 'active', core.actor_id()
+    FROM billing.plans p
+   WHERE p.audience = 'individual' AND p.is_default_for_audience AND p.status = 'active'
+  ON CONFLICT (subscriber_type, subscriber_id) WHERE status IN ('trial','active') DO NOTHING
+  RETURNING id INTO sid;
+  IF sid IS NULL THEN
+    SELECT s.id INTO sid FROM billing.subscriptions s
+     WHERE s.subscriber_type = 'user' AND s.subscriber_id = p_user_id AND s.status IN ('trial','active');
+  END IF;
+  RETURN sid;
+END
+$$;
+COMMENT ON FUNCTION billing.ensure_user_subscription IS 'Creates the default individual subscription when missing (system or the user themself)';
 
 -- ------------------------------------------------------------- 21.3 grants
 REVOKE ALL ON ALL TABLES IN SCHEMA core, identity, organization, billing, taxonomy, vehicle, inventory, discovery,

@@ -26,6 +26,17 @@ export function Operation(...opIds: OperationId[]) {
 export const operationIdsOf = (cls: unknown): string[] | undefined =>
   typeof cls === 'function' ? (cls as unknown as Record<symbol, string[] | undefined>)[OPERATION_IDS] : undefined;
 
+const OVERRIDE = Symbol.for('carpal.operation-override');
+
+/** Test harness only: a handler that replaces the module's real handler of the same operation. */
+export function markOverride<T extends Ctor>(target: T): T {
+  (target as unknown as Record<symbol, boolean>)[OVERRIDE] = true;
+  return target;
+}
+
+export const isOverride = (cls: unknown): boolean =>
+  typeof cls === 'function' && (cls as unknown as Record<symbol, boolean | undefined>)[OVERRIDE] === true;
+
 export interface OperationContext<B = unknown, Q = Record<string, unknown>> {
   readonly op: Operation;
   readonly route: Route;

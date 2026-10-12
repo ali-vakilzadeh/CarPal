@@ -3,7 +3,7 @@
 // these operations (fail closed, 40 SEC-AZ-1); the HTTP pipeline validates bodies,
 // queries and path parameters against these schemas.
 import { readFileSync } from 'node:fs';
-import { Ajv2020, type Options } from 'ajv/dist/2020.js';
+import { Ajv2020, type KeywordDefinition, type Options } from 'ajv/dist/2020.js';
 import type { Operation, OperationRegistry } from './registry.types.js';
 
 export type * from './registry.types.js';
@@ -11,7 +11,7 @@ export { OPERATION_IDS, type OperationId } from './generated/operation-ids.js';
 export { ERROR_CODES, type ErrorCode, type ErrorCodeInfo } from './generated/errors.js';
 export { ENUMS } from './generated/enums.js';
 export { ROLE_GROUPS, type RoleGroup, type RoleGroupName } from './generated/role-groups.js';
-export { ApiError, isApiError, type ApiErrorOptions, type FieldError, type FieldErrorCode } from './api-error.js';
+export { ApiError, isApiError, type ApiErrorOptions, type FieldError, type FieldErrorCode, type ProblemExtensions } from './api-error.js';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -58,10 +58,16 @@ export function operationById(opId: string): Operation {
  * An ajv instance (JSON Schema 2020-12, strict) that knows the contract's named
  * types and custom x- keywords. Compile operation schemas with it.
  */
-export function createContractAjv(options: Pick<Options, 'useDefaults' | 'allErrors' | 'verbose'> = {}): Ajv2020 {
+export function createContractAjv(
+  options: Pick<Options, 'useDefaults' | 'allErrors' | 'verbose'> = {},
+  /** Replaces annotation-only custom keywords with validating ones (e.g. x-node-type, S3). */
+  keywords: KeywordDefinition[] = [],
+): Ajv2020 {
   const { root } = loadSchemas();
   const ajv = new Ajv2020({ strict: true, allErrors: true, unicodeRegExp: true, ...options });
-  ajv.addVocabulary(root['x-custom-keywords']);
+  const replaced = new Set(keywords.map((k) => k.keyword as string));
+  ajv.addVocabulary(root['x-custom-keywords'].filter((k) => !replaced.has(k)));
+  for (const k of keywords) ajv.addKeyword(k);
   ajv.addKeyword('x-custom-keywords');
   ajv.addSchema(root);
   return ajv;

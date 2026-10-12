@@ -22,7 +22,7 @@ import { dataDir, regionConfigDir, type AppDbRole, type CarpalConfig } from '#li
 import { CryptoServices } from '#libs/crypto/index.js';
 import { Database } from '#libs/db/index.js';
 import { FlagService } from '#libs/flags/index.js';
-import { MapLinkResolver } from '#libs/geo/index.js';
+import { FixtureGeocoder, Geocoder, MapLinkResolver, UnconfiguredGeocoder } from '#libs/geo/index.js';
 import { IdempotencyStore } from '#libs/idempotency/index.js';
 import { ContractValidator } from '#libs/http-pipeline/index.js';
 import { createInfra, type Infra } from '#libs/infra/index.js';
@@ -161,6 +161,8 @@ export class PlatformModule {
       { provide: JobService, useFactory: () => new JobService(infra.jobs) },
       { provide: JobRunner, useFactory: (tx: TxRunner) => new JobRunner(tx, infra.jobs, logger), inject: [TxRunner] },
       { provide: MapLinkResolver, useFactory: () => new MapLinkResolver() },
+      // Lite: pilot-city fixtures; full: the regional geocoder service (not built yet, answers 503).
+      { provide: Geocoder, useFactory: () => (config.infra === 'lite' ? new FixtureGeocoder() : new UnconfiguredGeocoder()) },
       { provide: PlatformLifecycle, useFactory: (db: Database) => new PlatformLifecycle(db, infra, ownsInfra), inject: [Database] },
       ...(o.providers ?? []),
     ];

@@ -8,8 +8,8 @@ import { EmptySafetyLexicon, SafetyCheck, SafetyLexicon, type SafetyTerm } from 
 class Lexicon extends SafetyLexicon {
   async terms(): Promise<SafetyTerm[]> {
     return [
-      { termNormalized: 'brake failure', nodeId: 'n-brake', urgency: 'critical' },
-      { termNormalized: 'ترمز نمی گیره', nodeId: 'n-brake', urgency: 'critical' },
+      { termNormalized: 'brake failure', nodeId: 'n-brake', urgency: 'safety_critical' },
+      { termNormalized: 'ترمز نمی گیره', nodeId: 'n-brake', urgency: 'safety_critical' },
       { termNormalized: 'smoke', nodeId: 'n-smoke', urgency: 'high' },
     ];
   }
@@ -20,7 +20,7 @@ describe('SafetyCheck', () => {
     const check = new SafetyCheck(new Lexicon());
     expect(await check.check('Sudden BRAKE   failure on highway')).toEqual({
       safety_flag: true,
-      urgency: 'critical',
+      urgency: 'safety_critical',
       matched_node_ids: ['n-brake'],
     });
     // Arabic yeh/kaf and ZWNJ variants normalize to the Persian term.
@@ -30,7 +30,7 @@ describe('SafetyCheck', () => {
   });
 
   it('never lets AI lower the rule-based urgency (SEC-AI-7)', () => {
-    expect(SafetyCheck.merge('critical', 'low')).toBe('critical');
+    expect(SafetyCheck.merge('safety_critical', 'low')).toBe('safety_critical');
     expect(SafetyCheck.merge('medium', 'high')).toBe('high');
     expect(SafetyCheck.merge(null, 'low')).toBe('low');
   });

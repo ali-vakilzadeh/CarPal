@@ -121,3 +121,10 @@ export function normalizeSearchText(text: string, options: SearchNormalizeOption
   const trimmed = s.replace(/^ +| +$/g, '');
   return c ? trimmed.replace(/[A-Z]+/g, (m) => m.toLowerCase()) : trimmed.toLowerCase();
 }
+
+let tzAllowlist: Set<string> | null = null;
+/** 40 Tz: an IANA name from the tzdb allowlist. */
+export function isTimezone(tz: string): boolean {
+  tzAllowlist ??= new Set([...Intl.supportedValuesOf('timeZone'), 'UTC']);
+  return tzAllowlist.has(tz);
+}

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   distanceKm,
+  FixtureGeocoder,
   isBlockedAddress,
+  normalizeAddress,
+  pinCheck,
   MapLinkResolver,
   parseMapLink,
   publicPoint,
@@ -118,5 +121,35 @@ describe('SSRF guard', () => {
 
     const loop = resolver({ 'https://maps.app.goo.gl/AbCd': 'https://maps.app.goo.gl/AbCd' });
     await expect(loop.resolve('https://maps.app.goo.gl/AbCd', hosts)).rejects.toMatchObject({ detail: 'too many redirects' });
+  });
+});
+
+describe('lite geocoder (FixtureGeocoder) and the pin-versus-address check', () => {
+  const g = new FixtureGeocoder();
+
+  it('locates a known street address in English or Persian (digits and Arabic letters normalized)', async () => {
+    const p = await g.locate({ address_line_1: '1200 Valiasr Street', city: 'Tehran', country: 'IR' });
+    expect(p).toEqual({ lat: 35.757512, lng: 51.410621 });
+    expect(await g.locate({ address_line_1: 'خيابان وليعصر ۱۲۰۰', city: 'تهران', country: 'IR' })).toEqual(p);
+    expect(normalizeAddress('خيابان ولي‌عصر ١٢٠٠')).toContain('1200');
+    expect(await g.locate({ address_line_1: '1 Unknown Lane', city: 'Tehran', country: 'IR' })).toBeNull();
+  });
+
+  it('searches and reverse-geocodes within the fixtures (street first, then city)', async () => {
+    const found = await g.search('valiasr', 'IR');
+    expect(found[0]).toMatchObject({ address_line_1: '1200 Valiasr Street', city: 'Tehran', country: 'IR' });
+    expect(await g.search('tehran', 'DE')).toEqual([]);
+    expect((await g.reverse({ lat: 35.7575, lng: 51.4107 }))?.address_line_1).toBe('1200 Valiasr Street');
+    expect(await g.reverse({ lat: 35.69, lng: 51.3 })).toMatchObject({ address_line_1: '', city: 'Tehran' });
+    expect(await g.reverse({ lat: 0, lng: 0 })).toBeNull();
+  });
+
+  it('classifies the pin distance against the threshold and never checks a city-level match', () => {
+    const geocoded = { lat: 35.757512, lng: 51.410621 };
+    expect(pinCheck({ lat: 35.7576, lng: 51.4107 }, geocoded, 300)).toMatchObject({ location_check_status: 'consistent' });
+    const far = pinCheck({ lat: 35.77, lng: 51.41 }, geocoded, 300);
+    expect(far.location_check_status).toBe('far_apart');
+    expect(far.distance_m).toBeGreaterThan(1000);
+    expect(pinCheck({ lat: 1, lng: 1 }, null, 300)).toEqual({ distance_m: null, location_check_status: 'not_checked' });
   });
 });

@@ -29,6 +29,8 @@ export interface UserPrincipal {
   authTime: number;
   tokenId: string;
   scopes: string[];
+  /** False when the account had no second factor at sign-in (Session.mfaEnrolled). */
+  mfaEnrolled?: boolean;
 }
 
 export type Principal = NoPrincipal | AnonymousPrincipal | UserPrincipal;

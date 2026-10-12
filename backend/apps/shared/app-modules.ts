@@ -7,9 +7,17 @@ import type { Infra } from '#libs/infra/index.js';
 import type { Logger } from '#libs/observability/index.js';
 import { PlatformOpsModule } from '#libs/platform/index.js';
 import { PlatformModule, type RuntimeHost } from '#libs/runtime/index.js';
+import { BillingModule } from '#modules/billing/billing.module.js';
+import { IdentityAccountModule } from '#modules/identity/identity-account.module.js';
+import { IdentityAuthModule } from '#modules/identity/identity-auth.module.js';
 import { IdentityModule } from '#modules/identity/identity.module.js';
+import { MediaApiModule } from '#modules/media/media-api.module.js';
+import { MediaModule } from '#modules/media/media.module.js';
+import { OrganizationApiModule } from '#modules/organization/organization-api.module.js';
 import { OrganizationModule } from '#modules/organization/organization.module.js';
+import { TaxonomyModule } from '#modules/taxonomy/taxonomy.module.js';
 import { ConsumerHostModule } from '#workers/consumer-host/consumer-host.module.js';
+import { MediaProcessorModule } from '#workers/media-processor/media-processor.module.js';
 import { OutboxRelayModule } from '#workers/outbox-relay/outbox-relay.module.js';
 import { SchedulerModule } from '#workers/scheduler/scheduler.module.js';
 
@@ -23,8 +31,8 @@ export interface AppOptions {
   providers?: Provider[];
 }
 
-/** Domain modules shared by api, admin-api and auth (only their port implementations exist in S2). */
-const DOMAIN_MODULES = [IdentityModule, OrganizationModule];
+/** Domain modules shared by api, admin-api and worker (ports, interfaces and their handlers). */
+const DOMAIN_MODULES = [IdentityModule, OrganizationModule, BillingModule, TaxonomyModule, MediaModule];
 
 function root(host: RuntimeHost, o: AppOptions, imports: NonNullable<DynamicModule['imports']>): DynamicModule {
   @Module({})
@@ -47,14 +55,15 @@ function root(host: RuntimeHost, o: AppOptions, imports: NonNullable<DynamicModu
 }
 
 /** D2 public API: every domain module, {me} {org} {pub} operations, platform ops. */
-export const apiAppModule = (o: AppOptions): DynamicModule => root('api', o, [...DOMAIN_MODULES, PlatformOpsModule]);
+export const apiAppModule = (o: AppOptions): DynamicModule =>
+  root('api', o, [...DOMAIN_MODULES, IdentityAccountModule, OrganizationApiModule, MediaApiModule, PlatformOpsModule]);
 
 /** D3 admin API: the same modules with the admin plane ({adm}) routes only. */
 export const adminApiAppModule = (o: AppOptions): DynamicModule => root('admin-api', o, [...DOMAIN_MODULES]);
 
-/** D1 auth server: identity account logic behind /oauth/*, /v1/auth/*, /.well-known/*. */
-export const authAppModule = (o: AppOptions): DynamicModule => root('auth', o, [IdentityModule]);
+/** D1 auth server: identity account logic behind /oauth/*, /v1/auth/*, /.well-known/* (carpal_auth: identity schema only). */
+export const authAppModule = (o: AppOptions): DynamicModule => root('auth', o, [IdentityModule, IdentityAuthModule]);
 
-/** D5 workers: W1 outbox relay, event consumers, W15 scheduler. */
+/** D5 workers: W1 outbox relay, event consumers, W6 media processor, W15 scheduler. */
 export const workerAppModule = (o: AppOptions): DynamicModule =>
-  root('worker', o, [...DOMAIN_MODULES, OutboxRelayModule, ConsumerHostModule, SchedulerModule]);
+  root('worker', o, [...DOMAIN_MODULES, OutboxRelayModule, ConsumerHostModule, MediaProcessorModule, SchedulerModule]);

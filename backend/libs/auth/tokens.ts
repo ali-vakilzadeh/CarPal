@@ -79,6 +79,32 @@ export class TokenService {
       .sign(k.privateKey);
   }
 
+  /**
+   * OIDC ID token (OpenID Connect Core §2): EdDSA, audience = client_id,
+   * nonce from the authorization request. Carries no roles and no contact data.
+   */
+  async issueIdToken(o: {
+    subject: string;
+    clientId: string;
+    nonce: string;
+    authTime: number;
+    acr: Acr;
+    sessionId: string;
+    ttlSeconds: number;
+    now?: number;
+  }): Promise<string> {
+    const now = o.now ?? Math.floor(Date.now() / 1000);
+    const k = this.keys.active;
+    return new SignJWT({ nonce: o.nonce, auth_time: o.authTime, acr: o.acr, sid: o.sessionId })
+      .setProtectedHeader({ alg: 'EdDSA', typ: 'JWT', kid: k.kid })
+      .setIssuer(this.issuer)
+      .setAudience(o.clientId)
+      .setSubject(o.subject)
+      .setIssuedAt(now)
+      .setExpirationTime(now + o.ttlSeconds)
+      .sign(k.privateKey);
+  }
+
   /** Verifies signature and registered claims; throws 401 UNAUTHENTICATED on any failure. */
   async verify(token: string, audience: string, now?: number): Promise<AccessTokenClaims> {
     let payload: AccessTokenClaims;
@@ -124,8 +150,12 @@ export interface DpopCheck {
   method: string;
   /** Request URL without query and fragment (scheme, host, path). */
   htu: string;
-  accessToken: string;
-  expectedJkt: string;
+  /** Access token the proof is bound to (ath); absent at the token endpoint. */
+  accessToken?: string;
+  /** Thumbprint the token is bound to (cnf.jkt); absent where the proof creates the binding (token endpoint). */
+  expectedJkt?: string;
+  /** Server nonce the proof must carry (DPoP-Nonce; required at /oauth/token in strict mode). */
+  nonce?: string;
   now?: number;
 }
 
@@ -134,7 +164,7 @@ export interface DpopCheck {
  * in the header, htm/htu match, iat within ±60 s, jti unique per key for
  * 5 min, ath = base64url(SHA-256(access token)), key thumbprint = cnf.jkt.
  */
-export async function verifyDpopProof(c: DpopCheck, kv: KeyValueStore): Promise<void> {
+export async function verifyDpopProof(c: DpopCheck, kv: KeyValueStore): Promise<string> {
   let payload: Record<string, unknown>;
   let jwk: JWK;
   try {
@@ -145,14 +175,16 @@ export async function verifyDpopProof(c: DpopCheck, kv: KeyValueStore): Promise<
     throw unauthenticated(`DPoP proof rejected: ${(err as Error).message}`);
   }
   const now = c.now ?? Math.floor(Date.now() / 1000);
-  const ath = createHash('sha256').update(c.accessToken).digest('base64url');
   if (payload.htm !== c.method) throw unauthenticated('DPoP htm');
   if (payload.htu !== c.htu) throw unauthenticated('DPoP htu');
   if (typeof payload.iat !== 'number' || Math.abs(payload.iat - now) > 60) throw unauthenticated('DPoP iat');
-  if (payload.ath !== ath) throw unauthenticated('DPoP ath');
+  if (c.accessToken !== undefined && payload.ath !== createHash('sha256').update(c.accessToken).digest('base64url'))
+    throw unauthenticated('DPoP ath');
+  if (c.nonce !== undefined && payload.nonce !== c.nonce) throw unauthenticated('DPoP nonce');
   if (typeof payload.jti !== 'string' || payload.jti.length > 128) throw unauthenticated('DPoP jti');
   const jkt = await calculateJwkThumbprint(jwk, 'sha256');
-  if (jkt !== c.expectedJkt) throw unauthenticated('DPoP key does not match cnf.jkt');
+  if (c.expectedJkt !== undefined && jkt !== c.expectedJkt) throw unauthenticated('DPoP key does not match cnf.jkt');
   const fresh = await kv.set(`auth:dpop-jti:${jkt}:${payload.jti}`, '1', { ttlMs: 5 * 60_000, mode: 'NX' });
   if (!fresh) throw unauthenticated('DPoP proof replayed');
+  return jkt;
 }

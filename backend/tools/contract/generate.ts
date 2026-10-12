@@ -21,6 +21,16 @@ import { parseAssistAllowlist, parseOperations } from './parse-operations.js';
 import { CUSTOM_KEYWORDS, SchemaBuilder, type JsonSchema } from './types/json-schema.js';
 import { parseTypeDefs, parseTypeExpr, type TypeDef, type TypeNode } from './types/parser.js';
 
+/** Types of non-Id path parameters that 40 does not declare with a `param:` line (DI-12). */
+const UNTYPED_PATH_PARAMS: Record<string, string> = {
+  flow_type: "OnboardingProgress['flow_type']",
+  slug: 'Slug',
+  report_type: 'FleetReportType',
+  role: 'Role',
+  key: 'Str<1,80>',
+  dashboard_key: 'DashboardKey',
+};
+
 export const CONTRACT_DOC = join(docsDir, '40.API contract.md');
 export const GENERATED_DIR = join(backendDir, 'libs', 'contract', 'generated');
 export const SCHEMA_ID = 'https://schemas.carpal.app/contract/v1';
@@ -159,7 +169,16 @@ export function generate(): { files: GeneratedFile[]; summary: string[] } {
     const admin = o.routes.some((r) => r.host === 'admin-api');
     const properties: Record<string, JsonSchema> = {};
     const required: string[] = [];
-    for (const q of o.query) {
+    // "List operations that show no q: line accept only them" (cursor?, limit?) — 40 §3.3.
+    // POST searches carry cursor and limit in their body (TR-7), so only GET lists get them here.
+    const query =
+      o.query.length === 0 && o.method === 'GET' && /^Page<.+>$/.test(o.responseType ?? '')
+        ? [
+            { name: 'cursor', type: null, optional: true },
+            { name: 'limit', type: null, optional: true },
+          ]
+        : o.query;
+    for (const q of query) {
       let s: JsonSchema | undefined;
       if (q.type === null && q.name === 'cursor') s = convert(o, 'query cursor', 'Cursor');
       else if (q.type === null && q.name === 'limit') s = { type: 'integer', minimum: 1, maximum: admin ? 100 : 50, default: 20 };
@@ -174,7 +193,9 @@ export function generate(): { files: GeneratedFile[]; summary: string[] } {
     entry.query = { type: 'object', properties, ...(required.length ? { required } : {}), additionalProperties: false };
     for (const r of o.routes) {
       for (const p of r.pathParams) {
-        const t = o.pathParamTypes?.[p];
+        // Path parameters are Ids unless the block declares `param:`; 40 leaves a few non-Id names
+        // untyped (DI-12), typed here from the schemas they name.
+        const t = o.pathParamTypes?.[p] ?? UNTYPED_PATH_PARAMS[p];
         entry.pathParams[p] = t ? (convert(o, `path ${p}`, t) ?? {}) : (convert(o, `path ${p}`, 'Id') ?? {});
       }
     }

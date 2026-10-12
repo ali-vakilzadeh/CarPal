@@ -2,12 +2,14 @@
 // and HMAC-signed URLs served by a tiny local listener (CARPAL_STORAGE_PORT),
 // standing in for media.carpal-usercontent.app (40 §1.1, SEC-UP-1/4).
 // Signed PUT URLs fix Content-Type, Content-Length and SHA-256; signed GET
-// URLs expire and carry the Content-Disposition.
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+// URLs expire and carry the Content-Disposition. Objects put with
+// { encrypt: true } are stored AES-256-GCM encrypted (iv | tag | ciphertext)
+// and decrypted when read or served, like SSE-KMS in full mode.
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { mkdirSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { dirname, join, resolve, sep } from 'node:path';
-import type { ObjectStorage, PresignedPut, StoredObjectInfo } from '../ports.js';
+import type { ObjectStorage, PresignedPut, PutOptions, StoredObjectInfo } from '../ports.js';
 
 const KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9/_.-]{0,511}$/;
 
@@ -17,6 +19,8 @@ export class LocalObjectStorage implements ObjectStorage {
     private readonly baseUrl: string,
     private readonly signingKey: Buffer,
     private readonly clock: () => number = Date.now,
+    /** AES-256 key for objects put with { encrypt: true }. */
+    private readonly encryptionKey: Buffer = createHash('sha256').update(signingKey).update('sse').digest(),
   ) {
     mkdirSync(root, { recursive: true });
   }
@@ -28,18 +32,37 @@ export class LocalObjectStorage implements ObjectStorage {
     return p;
   }
 
-  async put(key: string, body: Buffer, contentType: string): Promise<StoredObjectInfo> {
+  async put(key: string, body: Buffer, contentType: string, options: PutOptions = {}): Promise<StoredObjectInfo> {
     const p = this.#path(key);
     mkdirSync(dirname(p), { recursive: true });
-    const info: StoredObjectInfo = { size: body.length, contentType, sha256: createHash('sha256').update(body).digest('base64') };
-    writeFileSync(p, body);
+    const info: StoredObjectInfo = {
+      size: body.length,
+      contentType,
+      sha256: createHash('sha256').update(body).digest('base64'),
+      ...(options.encrypt ? { encrypted: true } : {}),
+    };
+    let stored = body;
+    if (options.encrypt) {
+      const iv = randomBytes(12);
+      const cipher = createCipheriv('aes-256-gcm', this.encryptionKey, iv);
+      cipher.setAAD(Buffer.from(key));
+      const ct = Buffer.concat([cipher.update(body), cipher.final()]);
+      stored = Buffer.concat([iv, cipher.getAuthTag(), ct]);
+    }
+    writeFileSync(p, stored);
     writeFileSync(`${p}.meta.json`, JSON.stringify(info));
     return info;
   }
 
   async get(key: string): Promise<{ body: Buffer; info: StoredObjectInfo } | null> {
     const info = await this.head(key);
-    return info ? { body: readFileSync(this.#path(key)), info } : null;
+    if (!info) return null;
+    const raw = readFileSync(this.#path(key));
+    if (!info.encrypted) return { body: raw, info };
+    const decipher = createDecipheriv('aes-256-gcm', this.encryptionKey, raw.subarray(0, 12));
+    decipher.setAAD(Buffer.from(key));
+    decipher.setAuthTag(raw.subarray(12, 28));
+    return { body: Buffer.concat([decipher.update(raw.subarray(28)), decipher.final()]), info };
   }
 
   async head(key: string): Promise<StoredObjectInfo | null> {

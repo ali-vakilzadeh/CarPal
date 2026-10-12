@@ -13,8 +13,11 @@ export interface ConsentQuery {
   subject: { type: 'user' | 'organization'; id: string };
   /** The record the consent is scoped to, when the consent type is scoped (e.g. a vehicle). */
   scopeEntity?: { type: string; id: string };
-  /** Who receives the data (e.g. the provider organization), when the consent names one. */
-  grantee?: { type: 'user' | 'organization'; id: string };
+  /**
+   * Who receives the data (e.g. the provider organization). A consent recorded
+   * without a grantee covers every recipient; one with a grantee only that one.
+   */
+  grantee?: { type: 'organization' | 'platform' | 'mcp_client'; id?: string };
 }
 
 export abstract class ConsentChecker {
@@ -29,5 +32,9 @@ export class NoConsentChecker extends ConsentChecker {
 
 /** CNS(type): 403 CONSENT_REQUIRED when the consent is missing or withdrawn. */
 export async function requireConsent(checker: ConsentChecker, scope: TxScope, query: ConsentQuery): Promise<void> {
-  if (!(await checker.isGranted(scope, query))) throw new ApiError('CONSENT_REQUIRED', { detail: `consent ${query.consentType} missing` });
+  if (!(await checker.isGranted(scope, query)))
+    throw new ApiError('CONSENT_REQUIRED', {
+      detail: `consent ${query.consentType} missing`,
+      extensions: { consent_type: query.consentType },
+    });
 }
