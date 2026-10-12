@@ -17,9 +17,8 @@ let app: TestApp;
 let media: MediaHarness;
 let n: Nodes;
 
-/** Visits, customers and vehicles of other modules (S5/S7), registered for the tests. */
+/** Appointment visits and their customers (appointment module, S7), registered for the tests; service records and vehicles are real (S5). */
 const visits = new Map<string, { provider: string; customer: string; vehicle: string | null }>();
-const vehicleOwners = new Map<string, string>();
 
 beforeAll(async () => {
   app = await createTestApp({ host: 'api' });
@@ -31,11 +30,9 @@ beforeAll(async () => {
     return v && v.provider === providerOrgId ? { customerUserId: v.customer, vehicleId: v.vehicle } : null;
   };
   ext.registerVisits('appointment', resolver);
-  ext.registerVisits('service_record', resolver);
   ext.registerCustomerCheck(async (_s, providerOrgId, userId) =>
     [...visits.values()].some((v) => v.provider === providerOrgId && v.customer === userId),
   );
-  ext.registerVehicleOwners(async (_s, vehicleId) => vehicleOwners.get(vehicleId) ?? null);
 });
 afterAll(async () => {
   await media.close();
@@ -398,15 +395,14 @@ describe('certifications and work records', () => {
     const c = api(token);
     const prv = `/v1/orgs/${org.id}/provider`;
     const customer = await app.fixtures.user();
-    const vehicle = uuidv7();
-    vehicleOwners.set(vehicle, customer.id);
+    const vehicle = await app.fixtures.vehicle(customer, n);
     const base = { job_date: '2026-09-30', service_system_node_id: n.system, brand_node_id: n.brand, model_node_id: n.model };
     const plain = await c.post(`${prv}/job-logs`, base);
     expect(plain.body).toMatchObject({ logged_by_user_id: user.id, verification_status: 'self_reported', status: 'active' });
     const denied = await c.post(`${prv}/job-logs`, { ...base, vehicle_id: vehicle });
     expect(denied.status).toBe(403);
     expect(denied.body).toMatchObject({ code: 'CONSENT_REQUIRED', consent_type: 'vehicle_data_sharing' });
-    // The customer grants vehicle data sharing to this provider (S5 registers the vehicle scope; here a test scope check).
+    // The customer grants vehicle data sharing to this provider (the owner comes from vehicle.vehicle_owner, S5).
     await app.fixtures.worker.run({ actorType: 'system' }, ({ db }) =>
       db
         .insertInto('identity.consent_records')

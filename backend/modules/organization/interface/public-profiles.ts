@@ -49,9 +49,18 @@ export interface PublicProfileParts {
   vendor: Record<string, unknown> | null;
 }
 
+/** A published vendor (active organization, published vendor profile). */
+export interface PublishedVendor {
+  orgId: string;
+  /** 52 VendorProfile.trade_customers_supported: trade accounts may be requested. */
+  tradeCustomersSupported: boolean;
+}
+
 export abstract class PublicProfiles {
   /** The public parts of an organization with a published provider or vendor profile; null otherwise. */
   abstract profile(scope: TxScope, orgId: string, locale: Locale, now?: Date): Promise<PublicProfileParts | null>;
+  /** The organizations among `orgIds` that are published vendors (public items and trade accounts follow the vendor's publication). */
+  abstract vendors(scope: TxScope, orgIds: readonly string[]): Promise<Map<string, PublishedVendor>>;
   /** Map pins (one per active location) of organizations with a published profile. */
   abstract pins(scope: TxScope, orgIds: readonly string[]): Promise<Map<string, PublicLocationPin[]>>;
 }

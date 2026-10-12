@@ -117,7 +117,8 @@ export interface JobContext {
   progress(percent: number): Promise<void>;
 }
 
-export type JobOutcome = { result: { type: JobResultType; id: string } } | { errorCode: string };
+/** A job's end state; `result: null` only for kinds that change existing records without producing one (bulk_inventory_update). */
+export type JobOutcome = { result: { type: JobResultType; id: string } | null } | { errorCode: string };
 
 /**
  * Worker side: runs queued jobs and records running → succeeded / failed in
@@ -174,8 +175,8 @@ export class JobRunner {
                 ? {
                     status: 'succeeded',
                     progress: 100,
-                    result_type: outcome.result.type,
-                    result_id: outcome.result.id,
+                    result_type: outcome.result?.type ?? null,
+                    result_id: outcome.result?.id ?? null,
                     finished_at: new Date(),
                   }
                 : { status: 'failed', error_code: outcome.errorCode, finished_at: new Date() },

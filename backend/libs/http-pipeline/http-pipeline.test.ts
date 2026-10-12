@@ -174,6 +174,23 @@ describe('ContractValidator', () => {
     expect(v.validateBody('health.get', 200, undefined)).toEqual([]);
   });
 
+  it('upper-cases Vin fields and Latinizes their digits before the check; a bad VIN alone is VIN_INVALID', () => {
+    const body: Record<string, unknown> = { vin: '1hgcm82633a00435۲' };
+    expect(v.validateBody('vehicles.update', 200, body)).toEqual([]);
+    expect(body.vin).toBe('1HGCM82633A004352');
+    const code = (b: unknown) => {
+      try {
+        v.validateBody('vehicles.update', 200, b);
+        return null;
+      } catch (e) {
+        return { code: (e as ApiError).code, errors: (e as ApiError).errors };
+      }
+    };
+    expect(code({ vin: 'IHGCM82633A004352' })).toEqual({ code: 'VIN_INVALID', errors: [{ pointer: '/vin', code: 'pattern' }] });
+    // Mixed with other failures: the generic code, every field listed.
+    expect(code({ vin: 'short', year: 1800 })).toMatchObject({ code: 'VALIDATION_FAILED' });
+  });
+
   it('checks responses against the contract', () => {
     expect(v.checkResponse('health.get', 200, 200, { status: 'ok' })).toEqual([]);
     expect(v.checkResponse('health.get', 200, 200, { status: 'ok', version: '1' })).toEqual([

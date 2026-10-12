@@ -64,10 +64,12 @@ function orgPairs(tag: SecTag, route: Route, drv: SecTag | undefined): { orgType
   const out: { orgType: OrgType; role: string }[] = [];
   for (const orgType of types) {
     const { roles, anyMember } = rolesFor(tag.args, orgType);
+    // DRV admits fleet drivers in the same alternative (limited to assigned vehicles).
+    if (drv && orgType === 'fleet') roles.add('fleet_driver');
     for (const role of rolesOfType(orgType)) {
       if (!anyMember && !roles.has(role)) continue;
       // A driver needs an assignment to the path vehicle (DriverAssignments: none until S8).
-      if (role === 'fleet_driver' && drv && !drv.qualifier && route.pathParams.includes('vehicle_id')) continue;
+      if (role === 'fleet_driver' && drv && route.pathParams.includes('vehicle_id')) continue;
       out.push({ orgType, role });
     }
   }

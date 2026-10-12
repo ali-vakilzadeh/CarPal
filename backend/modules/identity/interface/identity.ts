@@ -42,6 +42,28 @@ export class ConsentScopes {
   }
 }
 
+export interface ScopedConsentGrant {
+  /** The granting user (signed in; RLS subject_all). */
+  subjectUserId: string;
+  consentType: 'vendor_fitment_context' | 'vehicle_data_sharing';
+  /** Scope entity the calling module created in the same transaction (its own ownership check). */
+  scope: { type: ConsentScopeType; id: string };
+  grantee: { type: 'organization'; id: string };
+  policyVersion: string;
+}
+
+/**
+ * Consents another module records atomically with its own record (40
+ * InquiryCreate.share_vehicle_context: a vendor_fitment_context consent
+ * scoped to the new inquiry and granted to the vendor). The calling module
+ * vouches for the scope entity it has just created, so no ConsentScopes
+ * verifier is consulted; the grantee organization must exist.
+ */
+export abstract class ConsentGrants {
+  /** Inserts the granted consent record in the caller's transaction; returns its id. */
+  abstract grantScoped(scope: TxScope, g: ScopedConsentGrant): Promise<string>;
+}
+
 /**
  * Delivery of DSR export bundles (S8 builds them as media assets; the media
  * module, S4, signs URLs). Until bound, completed exports have no file.

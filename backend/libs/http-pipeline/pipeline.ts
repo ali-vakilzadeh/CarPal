@@ -87,6 +87,8 @@ const header = (req: IncomingMessage, name: string): string | undefined => {
 };
 
 /** Every alternative is PUB(no token) (optionally with LNK): no token is read at all. */
+const isRecord = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
+
 const noTokenRoute = (e: RouteEntry): boolean =>
   e.route.security.principals.every((alt) => alt.some((t) => t.tag === 'PUB' && t.qualifier === 'no token'));
 
@@ -295,10 +297,13 @@ export class HttpPipeline {
       }
     }
     const pKey = principalKey(x.principal);
-    const binding = this.#queryBinding(op.opId, route.path, params, query);
+    // POST searches page in their bodies (40 §3.3, TR-7): the body's filters bind the cursor like query filters.
+    const bodyPaged = op.inputEncoding === 'json' && d.validator.bodyPaged(op.opId, op.successStatus) && isRecord(body);
+    const filters = bodyPaged ? { ...query, ...(body as Record<string, unknown>) } : query;
+    const binding = this.#queryBinding(op.opId, route.path, params, filters);
     let cursor: unknown;
-    if (typeof query.cursor === 'string') {
-      const c = d.crypto.cursors.verify(query.cursor, pKey, binding);
+    if (typeof filters.cursor === 'string') {
+      const c = d.crypto.cursors.verify(filters.cursor, pKey, binding);
       if (!c.ok) throw new ApiError('CURSOR_MISMATCH', { detail: `cursor ${c.reason}` });
       cursor = c.position;
     }

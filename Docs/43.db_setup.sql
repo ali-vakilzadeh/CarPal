@@ -563,7 +563,9 @@ CREATE TABLE core.background_jobs (
   started_at      timestamptz,
   finished_at     timestamptz,
   expires_at      timestamptz NOT NULL DEFAULT now() + interval '7 days',
-  CHECK (status <> 'succeeded' OR (result_type IS NOT NULL AND result_id IS NOT NULL)),
+  -- A bulk inventory update changes existing items and produces no record of its own (backend S5).
+  CHECK (status <> 'succeeded' OR kind = 'bulk_inventory_update' OR (result_type IS NOT NULL AND result_id IS NOT NULL)),
+  CHECK ((result_type IS NULL) = (result_id IS NULL)),
   CHECK (status <> 'failed' OR error_code IS NOT NULL)
 );
 CREATE INDEX background_jobs_owner_idx ON core.background_jobs (owner_user_id, created_at DESC);
@@ -1906,6 +1908,38 @@ AS $$
    WHERE v.id = ANY (p_ids[1:500]) AND v.deleted_at IS NULL
 $$;
 
+-- Owner of a personal vehicle, for the consent gate of providers (job-log
+-- vehicle links, provider service records) and the provider's customer
+-- check: the provider's context cannot read the vehicle. Null for fleet
+-- vehicles and unknown ids. The owner id is used server-side only, never
+-- returned to the business (backend S5).
+CREATE FUNCTION vehicle.vehicle_owner(p_vehicle_id uuid)
+RETURNS uuid
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT v.owner_id FROM vehicle.vehicles v
+   WHERE v.id = p_vehicle_id AND v.owner_type = 'user' AND v.deleted_at IS NULL
+$$;
+
+-- Vehicle.duplicate_vin_warning (40 §12.1): which of the caller's own
+-- vehicles share their VIN hash with a non-archived vehicle of another
+-- owner. Only vehicles of the caller (user or organization context) are
+-- answered, and nothing about the other owner is returned (backend S5).
+CREATE FUNCTION vehicle.duplicate_vin_flags(p_ids uuid[])
+RETURNS TABLE (id uuid)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT v.id FROM vehicle.vehicles v
+   WHERE v.id = ANY (p_ids[1:500]) AND v.vin_hash IS NOT NULL AND v.deleted_at IS NULL
+     AND ((v.owner_type = 'user' AND v.owner_id = core.me())
+          OR (v.owner_type = 'organization' AND v.owner_id = core.my_org()))
+     AND EXISTS (SELECT 1 FROM vehicle.vehicles o
+                  WHERE o.vin_hash = v.vin_hash AND o.id <> v.id AND o.deleted_at IS NULL AND o.status <> 'archived'
+                    AND (o.owner_type, o.owner_id) IS DISTINCT FROM (v.owner_type, v.owner_id))
+$$;
+
 \echo '== 10. inventory (WP7)'
 
 -- =============================================================================
@@ -2095,7 +2129,7 @@ BEGIN
       (side IN ('vendor','any') AND NEW.status IN ('reserved','unavailable','completed'))
       OR (side IN ('requester','any') AND NEW.status IN ('cancelled','completed'))
     WHEN 'reserved' THEN
-      (side IN ('vendor','any') AND NEW.status IN ('answered','unavailable','completed','cancelled'))
+      (side IN ('vendor','any') AND NEW.status IN ('answered','unavailable','completed'))
       OR (side IN ('requester','any') AND NEW.status IN ('cancelled','completed'))
     ELSE false END;
   IF NOT ok THEN
@@ -2129,6 +2163,23 @@ CREATE TABLE inventory.inquiry_messages (
 );
 CREATE INDEX inquiry_messages_inquiry_idx ON inventory.inquiry_messages (inquiry_id, created_at);
 COMMENT ON TABLE inventory.inquiry_messages IS '52 InquiryMessage — thread-ready for live chat';
+
+-- 40 StockInquiry.inventory_item for the requester: the item's name and SKU
+-- stay readable after the vendor hides or removes it (RLS would hide the
+-- item). Answers only inquiries the caller is a party of, with the same
+-- predicate as the party_all policy (backend S5).
+CREATE FUNCTION inventory.inquiry_item_cards(p_inquiry_ids uuid[])
+RETURNS TABLE (inquiry_id uuid, item_id uuid, sku text, name_translations jsonb)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT q.id, i.id, i.sku, i.name_translations::jsonb
+    FROM inventory.stock_inquiries q
+    JOIN inventory.inventory_items i ON i.id = q.inventory_item_id
+   WHERE q.id = ANY (p_inquiry_ids[1:500]) AND q.deleted_at IS NULL
+     AND (q.vendor_organization_id = core.my_org() OR q.requester_organization_id = core.my_org()
+          OR (q.requester_type = 'user' AND q.requester_user_id = core.me()))
+$$;
 
 \echo '== 11. discovery (WP8)'
 

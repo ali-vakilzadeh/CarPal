@@ -2,7 +2,7 @@
 //   IdentityModule         (global, every deployable) the ports identity serves:
 //                          MembershipDirectory (L4), ConsentChecker (L16),
 //                          UserCards, ConsentScopes, OrgMemberships,
-//                          ConsentRequests, ATT verification, and the
+//                          ConsentRequests, ConsentGrants, ATT verification, and the
 //                          services shared by the two others.
 //   IdentityAccountModule  §6.3-§6.6 on the api host (identity-account.module.ts)
 //   IdentityAuthModule     §6.2 on the auth host (identity-auth.module.ts)
@@ -16,11 +16,11 @@ import { UsageCounters } from '#modules/billing/interface/billing.js';
 import { MfaService } from './application/mfa-service.js';
 import { PowAttestationVerifier } from './infrastructure/attestation.js';
 import { AuthState } from './infrastructure/auth-state.js';
-import { DbAccountFacts, DbConsentChecker, DbUserCards } from './infrastructure/directory.js';
+import { DbAccountFacts, DbConsentChecker, DbConsentGrants, DbUserCards } from './infrastructure/directory.js';
 import { DbMembershipDirectory } from './infrastructure/membership-directory.js';
 import { IdentityMessages } from './infrastructure/messages.js';
 import { DbConsentRequests, DbOrgMemberships, requestedOfUser } from './infrastructure/org-memberships.js';
-import { AccountFacts, ConsentRequests, ConsentScopes, OrgMemberships, UserCards } from './interface/identity.js';
+import { AccountFacts, ConsentGrants, ConsentRequests, ConsentScopes, OrgMemberships, UserCards } from './interface/identity.js';
 
 /**
  * Registers the fleet-users counter (entitlement max_fleet_users,
@@ -62,6 +62,7 @@ export class IdentityUsageRegistration implements OnModuleInit {
     { provide: OrgMemberships, useClass: DbOrgMemberships },
     { provide: AccountFacts, useClass: DbAccountFacts },
     { provide: ConsentRequests, useClass: DbConsentRequests },
+    { provide: ConsentGrants, useClass: DbConsentGrants },
     {
       provide: AuthState,
       useFactory: (infra: Infra, c: CryptoServices) => new AuthState(infra.kv, c.hmac),
@@ -80,6 +81,7 @@ export class IdentityUsageRegistration implements OnModuleInit {
     OrgMemberships,
     AccountFacts,
     ConsentRequests,
+    ConsentGrants,
     AuthState,
     AttestationVerifierPort,
     IdentityMessages,

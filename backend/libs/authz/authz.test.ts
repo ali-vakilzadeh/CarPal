@@ -116,6 +116,31 @@ describe('Authorizer', () => {
     });
   });
 
+  it('ORG(FC) DRV admits drivers on assigned vehicles only; DRV(own reports) still needs the assignment', async () => {
+    const orgId = uuidv7();
+    const vehicleId = uuidv7();
+    const driver = user();
+    const viewer = user();
+    dir.addOrg({ id: orgId, type: 'fleet', status: 'active' });
+    dir.addMember(driver.userId, orgId, 'fleet_driver');
+    dir.addMember(viewer.userId, orgId, 'fleet_viewer');
+    const params = { org_id: orgId, vehicle_id: vehicleId, issue_id: uuidv7() };
+    await expect(check('issues.create', driver, params, { scope: 'fleet' })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(check('issues.update', driver, params, { scope: 'fleet' })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    dir.assign(orgId, driver.userId, vehicleId);
+    expect(await check('issues.create', driver, params, { scope: 'fleet' })).toMatchObject({
+      driverScoped: true,
+      matchedGroups: ['DRV'],
+      org: { role: 'fleet_driver' },
+    });
+    expect(await check('issues.update', driver, params, { scope: 'fleet' })).toMatchObject({
+      driverScoped: true,
+      qualifiers: ['own reports'],
+    });
+    // DRV widens to drivers only: a viewer (not in FC) stays out.
+    await expect(check('issues.create', viewer, params, { scope: 'fleet' })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
   it('defers ORG on single-path operations to the use case (USR | ORG(ANY))', async () => {
     const g = await check('jobs.get', user(), { job_id: uuidv7() });
     expect(g.alternative).toBe(0);

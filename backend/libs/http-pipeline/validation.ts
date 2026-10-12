@@ -5,6 +5,7 @@ import type { ErrorObject, KeywordDefinition, ValidateFunction } from 'ajv';
 import type { DataValidationCxt } from 'ajv/dist/types/index.js';
 import { ApiError, createContractAjv, loadSchemas, type FieldError, type FieldErrorCode } from '#libs/contract/index.js';
 import { ID_PATTERN } from '#libs/crypto/index.js';
+import { latinDigits } from '#libs/i18n/index.js';
 import { normalizeString } from './normalize.js';
 
 type Schema = Record<string, unknown>;
@@ -135,6 +136,10 @@ interface OpValidators {
   queryTypes: Map<string, string>;
   responses: Map<number, ValidateFunction>;
   readOnly: Set<string>;
+  /** Top-level body fields of type Vin (x-vin). */
+  vinFields: string[];
+  /** The body carries `cursor` (POST searches page in their bodies, 40 §3.3). */
+  bodyPaged: boolean;
 }
 
 export class ContractValidator {
@@ -159,6 +164,18 @@ export class ContractValidator {
     const props = Object.keys((r.properties as Schema | undefined) ?? {});
     for (const k of ['allOf', 'anyOf', 'oneOf'])
       for (const sub of (r[k] as Schema[] | undefined) ?? []) props.push(...this.#topLevelProperties(sub));
+    return props;
+  }
+
+  /** Top-level properties marked x-vin (40 Vin: checked after uppercasing and digit normalization). */
+  #vinProperties(s: Schema | undefined): string[] {
+    const r = this.#resolve(s);
+    if (!r) return [];
+    const props = Object.entries((r.properties as Record<string, Schema> | undefined) ?? {})
+      .filter(([, p]) => this.#resolve(p)?.['x-vin'] === true)
+      .map(([k]) => k);
+    for (const k of ['allOf', 'anyOf', 'oneOf'])
+      for (const sub of (r[k] as Schema[] | undefined) ?? []) props.push(...this.#vinProperties(sub));
     return props;
   }
 
@@ -191,18 +208,32 @@ export class ContractValidator {
       queryTypes: new Map(Object.entries(queryProps).map(([k, s]) => [k, this.#primitive(s)])),
       responses,
       readOnly: new Set([...META_FIELDS, ...this.#topLevelProperties(schemas.response)]),
+      vinFields: schemas.input ? [...new Set(this.#vinProperties(schemas.input))] : [],
+      bodyPaged: schemas.input ? this.#topLevelProperties(schemas.input).includes('cursor') : false,
     };
     this.#cache.set(opId, v);
     return v;
   }
 
+  /** True when the operation's body pages with `cursor` (bound like query filters by the pipeline). */
+  bodyPaged(opId: string, successStatus: number): boolean {
+    return this.for(opId, successStatus).bodyPaged;
+  }
+
   /**
-   * Validates a body; throws 422 UNKNOWN_FIELD / READ_ONLY_FIELD / VALIDATION_FAILED.
+   * Validates a body; throws 422 UNKNOWN_FIELD / READ_ONLY_FIELD / VALIDATION_FAILED
+   * (VIN_INVALID when the only failures are Vin fields).
    * Returns the `NodeId<type>` references of a valid body for the taxonomy check.
+   * Vin fields are upper-cased and their digits converted to Latin in place first.
    */
   validateBody(opId: string, successStatus: number, body: unknown): NodeRef[] {
     const v = this.for(opId, successStatus);
     if (!v.input) return [];
+    const record = body !== null && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : null;
+    for (const f of v.vinFields) {
+      const value = record?.[f];
+      if (typeof value === 'string') record![f] = latinDigits(value).toUpperCase();
+    }
     const refs: NodeRef[] = [];
     nodeRefCollector = refs;
     let valid: boolean;
@@ -219,11 +250,14 @@ export class ContractValidator {
         return { ...e, code: 'read_only' };
       return e;
     });
+    const vinPointers = new Set(v.vinFields.map((f) => `/${esc(f)}`));
     const code = errors.some((e) => e.code === 'unknown_field')
       ? 'UNKNOWN_FIELD'
       : errors.some((e) => e.code === 'read_only')
         ? 'READ_ONLY_FIELD'
-        : 'VALIDATION_FAILED';
+        : errors.every((e) => vinPointers.has(e.pointer) && e.code !== 'required')
+          ? 'VIN_INVALID'
+          : 'VALIDATION_FAILED';
     throw ApiError.validation(errors, code);
   }
 

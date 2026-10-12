@@ -189,6 +189,34 @@ export class Fixtures {
     return id;
   }
 
+  /**
+   * A vehicle row (vehicle.vehicles) of a user or a fleet organization, without VIN, as vehicles.create stores it.
+   * `nodes` are active taxonomy ids (brand → model chain, e.g. from s4-support taxonomyNodes).
+   */
+  async vehicle(
+    owner: TestUser | TestOrg,
+    nodes: { brand: string; model: string },
+    o: { status?: 'active' | 'inactive' | 'sold' | 'in_repair' | 'archived'; year?: number } = {},
+  ): Promise<string> {
+    const id = uuidv7();
+    const ownerType = 'email' in owner ? 'user' : 'organization';
+    await this.tx.run({ actorType: 'system' }, ({ db }) =>
+      db
+        .insertInto('vehicle.vehicles')
+        .values({
+          id,
+          owner_type: ownerType,
+          owner_id: owner.id,
+          brand_node_id: nodes.brand,
+          model_node_id: nodes.model,
+          year: o.year ?? 2018,
+          status: o.status ?? 'active',
+        })
+        .execute(),
+    );
+    return id;
+  }
+
   /** A background job row (core.background_jobs) owned by a user, optionally of an organization. */
   async job(
     owner: TestUser,

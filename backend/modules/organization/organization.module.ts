@@ -2,7 +2,8 @@
 //   OrganizationModule     (global, every deployable) the ports organization
 //                          serves: OrganizationDirectory (L4), OrgCards,
 //                          ProviderCapabilities, PublicProfiles (public
-//                          projections for S6), the OrganizationExtensions
+//                          projections for S6), VendorCatalog and OrgLocations
+//                          (inventory, S5), the OrganizationExtensions
 //                          registry, its media attachment targets and the
 //                          consent.withdrawn consumer (run by the worker).
 //   OrganizationApiModule  §7-§9 operations on the api host (organization-api.module.ts)
@@ -15,10 +16,12 @@ import { DbOrganizationDirectory } from './infrastructure/organization-directory
 import { DbOrgCards } from './infrastructure/org-cards.js';
 import { DbProviderCapabilities } from './infrastructure/provider-capabilities.js';
 import { DbPublicProfiles } from './infrastructure/public-profiles.js';
+import { DbOrgLocations, DbVendorCatalog } from './infrastructure/vendor-catalog.js';
 import { OrganizationExtensions } from './interface/extensions.js';
 import { OrgCards } from './interface/org-cards.js';
 import { ProviderCapabilities } from './interface/provider-capabilities.js';
 import { PublicProfiles } from './interface/public-profiles.js';
+import { OrgLocations, VendorCatalog } from './interface/vendor-catalog.js';
 
 const orgTarget = (id: string | undefined, groups: string[]): AttachmentTarget | null =>
   id ? { owner: { type: 'organization', id }, groups } : null;
@@ -73,11 +76,13 @@ export class OrganizationRegistrations implements OnModuleInit {
     { provide: OrgCards, useClass: DbOrgCards },
     { provide: ProviderCapabilities, useClass: DbProviderCapabilities },
     { provide: PublicProfiles, useClass: DbPublicProfiles },
+    { provide: VendorCatalog, useClass: DbVendorCatalog },
+    { provide: OrgLocations, useClass: DbOrgLocations },
     // One registry per application context (contexts share a process in pnpm dev and tests).
     { provide: OrganizationExtensions, useFactory: () => new OrganizationExtensions() },
     OrganizationRegistrations,
     ConsentWithdrawnPortfolioConsumer,
   ],
-  exports: [OrganizationDirectory, OrgCards, ProviderCapabilities, PublicProfiles, OrganizationExtensions],
+  exports: [OrganizationDirectory, OrgCards, ProviderCapabilities, PublicProfiles, VendorCatalog, OrgLocations, OrganizationExtensions],
 })
 export class OrganizationModule {}

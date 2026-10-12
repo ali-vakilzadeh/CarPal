@@ -6,20 +6,21 @@ import { uuidv7 } from '#libs/crypto/index.js';
 import { LinkTokens } from '#libs/link-tokens/index.js';
 import type { TestUser } from '#libs/testing/index.js';
 import { TxRunner } from '#libs/tenancy/index.js';
-import { ConsentScopes } from '#modules/identity/interface/identity.js';
+import { taxonomyNodes, type Nodes } from './s4-support.js';
 import { createTestApp, type TestApp } from './test-app.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deep assertions on validated responses
 type Json = Record<string, any>;
 
 let app: TestApp;
+let n: Nodes;
 const idem = () => ({ 'idempotency-key': uuidv7() });
 const fresh = () => ({ acr: 'aal2' as const, authTime: Math.floor(Date.now() / 1000) });
 
 beforeAll(async () => {
   app = await createTestApp({ host: 'api' });
-  // A vehicle-like scope for tests: any id ending in "0" belongs to the caller (S5 registers the real vehicle check).
-  app.app.get(ConsentScopes, { strict: false }).register('vehicle', async (_s, _user, id) => id.endsWith('0'));
+  // Vehicle-scoped consents are checked against real vehicles (the vehicle module registers the scope, S5).
+  n = await taxonomyNodes(app);
 });
 afterAll(() => app.close());
 
@@ -82,7 +83,8 @@ describe('consents.grant / list / withdraw', () => {
   });
 
   it('validates the grant: conditional grantee id, organization types, scope ownership, expiry', async () => {
-    const token = await app.fixtures.token(await app.fixtures.user());
+    const user = await app.fixtures.user();
+    const token = await app.fixtures.token(user);
     expect(
       (await grant(token, { consent_type: 'vehicle_data_sharing', policy_version: '1', granted_to: { type: 'organization' } })).body.errors,
     ).toEqual([{ pointer: '/granted_to/id', code: 'conditional_required' }]);
@@ -102,7 +104,13 @@ describe('consents.grant / list / withdraw', () => {
       (await grant(token, { consent_type: 'photo_publishing', policy_version: '1', scope: { type: 'media_asset', id: uuidv7() } })).body
         .code,
     ).toBe('REFERENCE_NOT_FOUND');
-    const vehicleId = `${uuidv7().slice(0, -1)}0`;
+    // Only the owner of a personal vehicle grants a consent scoped to it (SEC-AZ-4).
+    const othersVehicle = await app.fixtures.vehicle(await app.fixtures.user(), n);
+    expect(
+      (await grant(token, { consent_type: 'vehicle_data_sharing', policy_version: '1', scope: { type: 'vehicle', id: othersVehicle } }))
+        .body.code,
+    ).toBe('REFERENCE_NOT_FOUND');
+    const vehicleId = await app.fixtures.vehicle(user, n);
     const scoped = await grant(token, {
       consent_type: 'vehicle_data_sharing',
       policy_version: '1',
@@ -121,7 +129,7 @@ describe('ConsentChecker (L16)', () => {
     const owner = await app.fixtures.user();
     const token = await app.fixtures.token(owner);
     const { org: provider, user: providerUser } = await app.fixtures.memberOf('provider', 'provider_staff');
-    const vehicle = `${uuidv7().slice(0, -1)}0`;
+    const vehicle = await app.fixtures.vehicle(owner, n);
     const checker = app.app.get(ConsentChecker, { strict: false });
     const tx = app.app.get(TxRunner, { strict: false });
     // Asked as the provider member (RLS would hide the owner's records): the definer function answers.
@@ -142,7 +150,7 @@ describe('ConsentChecker (L16)', () => {
       granted_to: { type: 'organization', id: provider.id },
     });
     expect(await ask()).toBe(true);
-    expect(await ask(`${uuidv7().slice(0, -1)}0`)).toBe(false); // another vehicle
+    expect(await ask(await app.fixtures.vehicle(owner, n))).toBe(false); // another vehicle
     expect(await ask(vehicle, (await app.fixtures.org('provider')).id)).toBe(false); // another provider
     await app.request({ method: 'POST', path: `/v1/me/consents/${g.body.id}/withdraw`, token, headers: idem() });
     expect(await ask()).toBe(false); // withdrawal applies on the next read

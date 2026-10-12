@@ -10,7 +10,7 @@ import type { Field, TypeDef, TypeNode } from './parser.js';
 export type JsonSchema = Record<string, unknown>;
 
 /** Non-standard keywords emitted here; validators must register them (ajv.addVocabulary). */
-export const CUSTOM_KEYWORDS = ['x-node-type', 'x-conditional', 'x-server-schema', 'x-locale-config', 'x-external'] as const;
+export const CUSTOM_KEYWORDS = ['x-node-type', 'x-conditional', 'x-server-schema', 'x-locale-config', 'x-external', 'x-vin'] as const;
 
 /** Enabled locales (40 §3.1 Locale: "en | fa (config)"). */
 export const LOCALES = ['en', 'fa'] as const;
@@ -254,7 +254,8 @@ const BUILTINS: Record<string, Builtin> = {
   Phone: () => ({ type: 'string', pattern: '^\\+[1-9]\\d{6,14}$' }),
   Url: () => ({ type: 'string', maxLength: 2048, pattern: '^https://[^\\s@#/?]+([/?][^\\s#]*)?$' }),
   Slug: () => ({ type: 'string', pattern: '^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$' }),
-  Vin: () => ({ type: 'string', pattern: '^[A-HJ-NPR-Z0-9]{17}$' }),
+  // x-vin: the validator upper-cases the value and converts Persian/Arabic digits before the pattern check (40 §3.1, 52 §8).
+  Vin: () => ({ type: 'string', pattern: '^[A-HJ-NPR-Z0-9]{17}$', 'x-vin': true }),
   // NodeId<service_system|service_task>: any of the listed node types.
   NodeId: ([t]) => {
     const types = t?.k === 'union' ? t.members.map((m) => word(m, 'NodeId')) : [word(t, 'NodeId')];

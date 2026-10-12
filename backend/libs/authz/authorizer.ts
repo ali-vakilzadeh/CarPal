@@ -161,7 +161,9 @@ export class Authorizer {
             grant.deferredOrg = { groups: tag.args, ...(tag.qualifier ? { qualifier: tag.qualifier } : {}) };
             break;
           }
-          const r = await this.#orgAccess(principal, orgId, tag.args, aliasOrgTypes(route.path));
+          // DRV in the same alternative admits fleet drivers too, limited to their assigned vehicles (40 §0.4 DRV, SEC-AZ-7).
+          const drivers = tags.some((t) => t.tag === 'DRV') ? ['fleet_driver'] : [];
+          const r = await this.#orgAccess(principal, orgId, tag.args, aliasOrgTypes(route.path), drivers);
           if (!r) throw new Denied(404);
           grant.org = { id: orgId, type: r.org.type, role: r.role };
           grant.matchedGroups = r.matchedGroups;
@@ -177,8 +179,9 @@ export class Authorizer {
           if (grant.org?.role !== 'fleet_driver') break;
           grant.driverScoped = true;
           if (tag.qualifier) grant.qualifiers.push(tag.qualifier);
+          // A qualified DRV ("own reports") still needs the assignment; the use case applies the qualifier on top.
           const vehicleId = params.vehicle_id;
-          if (grant.org && vehicleId && !tag.qualifier) {
+          if (grant.org && vehicleId) {
             if (!(await this.o.drivers.isAssigned(grant.org.id, principal.kind === 'user' ? principal.userId : '', vehicleId)))
               throw new Denied(404);
           }
@@ -229,7 +232,7 @@ export class Authorizer {
    * the use case): active membership with a role of the groups, organization
    * type matching the alias. Null when not allowed.
    */
-  async #orgAccess(principal: UserPrincipal, orgId: string, groups: string[], aliasTypes: OrgType[] | null) {
+  async #orgAccess(principal: UserPrincipal, orgId: string, groups: string[], aliasTypes: OrgType[] | null, extraRoles: string[] = []) {
     if (!ID_PATTERN.test(orgId)) return null;
     const membership = (await this.#memberships(principal.userId)).find((m) => m.orgId === orgId);
     if (!membership) return null;
@@ -240,7 +243,10 @@ export class Authorizer {
       const { roles, anyMember } = rolesFor([g], org.type);
       return anyMember || roles.has(membership.role);
     });
-    if (matchedGroups.length === 0) return null;
+    if (matchedGroups.length === 0) {
+      if (org.type !== 'fleet' || !extraRoles.includes(membership.role)) return null;
+      matchedGroups.push('DRV');
+    }
     return { org, role: membership.role, matchedGroups };
   }
 

@@ -99,6 +99,22 @@ export interface RequireReadyOptions {
   pointer: string;
 }
 
+/** The active attachments of one role on a record of the calling module, replaced as a set. */
+export interface SyncAttachments extends RequireReadyOptions {
+  type: AttachedToType;
+  id: string;
+  role: AttachmentRole;
+}
+
+/** A server-generated file (import error reports, exports), stored private and encrypted. */
+export interface GeneratedFile {
+  owner: MediaOwner;
+  uploadedBy: string;
+  purpose: 'system_export';
+  mime: 'text/csv';
+  bytes: Buffer;
+}
+
 export abstract class MediaService {
   /**
    * Assets referenced by another module's record (documents, certificates):
@@ -107,6 +123,29 @@ export abstract class MediaService {
    * MEDIA_NOT_READY). Runs in the caller's transaction and RLS context.
    */
   abstract requireReady(scope: TxScope, assetIds: readonly string[], o: RequireReadyOptions): Promise<void>;
+
+  /**
+   * Makes `assetIds` (in this order) the active attachments of `role` on the
+   * record: each asset is checked like requireReady; attachments no longer
+   * listed are removed. For records whose write type carries media ids
+   * (40 IssueWrite.media_ids); the calling module has authorized the record.
+   */
+  abstract syncAttachments(scope: TxScope, assetIds: readonly string[], o: SyncAttachments): Promise<void>;
+
+  /** Number of active attachments of clean, active images per record (inventory data quality, missing_images). */
+  abstract imageCounts(scope: TxScope, type: AttachedToType, ids: readonly string[]): Promise<Map<string, number>>;
+
+  /** Signed display URLs of clean, active assets visible in the caller's context (owners), by asset id. */
+  abstract assetUrls(scope: TxScope, assetIds: readonly string[]): Promise<Map<string, string>>;
+
+  /** Content of a clean, active asset (decrypted), or null. Worker use (CSV imports), system context. */
+  abstract readContent(scope: TxScope, assetId: string): Promise<{ bytes: Buffer; mime: string; purpose: string } | null>;
+
+  /** Stores a server-generated file as a clean, private asset of `owner`; returns its id. */
+  abstract storeGenerated(scope: TxScope, f: GeneratedFile): Promise<string>;
+
+  /** A 5-minute attachment URL of a clean, active asset the calling module has authorized, or null. */
+  abstract signedDownload(scope: TxScope, assetId: string): Promise<{ url: string; expiresAt: Date } | null>;
 
   /**
    * Active attachments of records, ordered, for members of the owner: url and
@@ -120,4 +159,7 @@ export abstract class MediaService {
 
   /** Signed URLs of organization logos that may be shown publicly (52 §15 public rules), by organization id. */
   abstract logoUrls(scope: TxScope, orgIds: readonly string[]): Promise<Map<string, string>>;
+
+  /** The first publicly servable image (52 §15) attached to each record, signed for anyone, by record id. */
+  abstract publicImageUrls(scope: TxScope, type: AttachedToType, ids: readonly string[]): Promise<Map<string, string>>;
 }

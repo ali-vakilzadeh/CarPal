@@ -9,7 +9,7 @@ import { MediaService } from '#modules/media/interface/media.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { textArray } from '#libs/db/index.js';
 import { toPublicLocation, toPublicLocationPin } from '../api/public-projections.js';
-import { PublicProfiles, type PublicLocationPin, type PublicProfileParts } from '../interface/public-profiles.js';
+import { PublicProfiles, type PublicLocationPin, type PublicProfileParts, type PublishedVendor } from '../interface/public-profiles.js';
 
 type T = Record<string, string> | null;
 
@@ -33,6 +33,24 @@ export class DbPublicProfiles extends PublicProfiles {
       .orderBy('is_primary', 'desc')
       .orderBy('id')
       .execute();
+  }
+
+  async vendors(scope: TxScope, orgIds: readonly string[]): Promise<Map<string, PublishedVendor>> {
+    const ids = [...new Set(orgIds)].slice(0, 500);
+    if (ids.length === 0) return new Map();
+    const rows = await scope.db
+      .selectFrom('organization.vendor_profiles as p')
+      .innerJoin('organization.organizations as o', 'o.id', 'p.organization_id')
+      .select(['p.organization_id', 'p.trade_customers_supported'])
+      .where('p.organization_id', 'in', ids)
+      .where('p.public_status', '=', 'published')
+      .where('p.deleted_at', 'is', null)
+      .where('o.status', '=', 'active')
+      .where('o.deleted_at', 'is', null)
+      .execute();
+    return new Map(
+      rows.map((r) => [r.organization_id, { orgId: r.organization_id, tradeCustomersSupported: r.trade_customers_supported }]),
+    );
   }
 
   async profile(scope: TxScope, orgId: string, locale: Locale, now = new Date()): Promise<PublicProfileParts | null> {

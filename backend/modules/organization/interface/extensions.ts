@@ -11,10 +11,15 @@ import type { TxScope } from '#libs/tenancy/index.js';
 
 export type VisitKind = 'appointment' | 'service_record';
 
+/** 52 ProviderJobLog.verification_status a job log inherits from its linked visit (54 §1.1). */
+export type JobLogVerification = 'self_reported' | 'appointment_verified' | 'customer_confirmed' | 'invoice_verified';
+
 /** A visit of a customer at a provider (appointment or service record). */
 export interface VisitInfo {
   customerUserId: string;
   vehicleId: string | null;
+  /** What the visit proves about a job log linked to it (self_reported when it proves nothing). */
+  jobLogVerification?: JobLogVerification;
 }
 
 /** The visit, when it exists and belongs to the provider organization; null otherwise. */

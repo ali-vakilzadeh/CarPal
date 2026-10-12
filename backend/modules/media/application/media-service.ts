@@ -2,18 +2,27 @@
 // (SEC-UP-4) and DSR export delivery (identity DataExportFiles). Signed URLs
 // are issued only after the caller's context was authorized: assets the
 // caller owns, or publicly servable ones (52 §15 public rules).
+import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { sql } from 'kysely';
 import { ApiError } from '#libs/contract/index.js';
 import type { AttachedToType } from '#libs/contract/generated/enums.js';
+import { uuidv7 } from '#libs/crypto/index.js';
 import type { Infra } from '#libs/infra/index.js';
 import { InjectInfra } from '#libs/runtime/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { DataExportFiles } from '#modules/identity/interface/identity.js';
 import { toAttachmentView } from '../api/projections.js';
 import { dispositionOf, urlLifetimeMs } from '../domain/purposes.js';
-import { displayKeyOf, servableToOwner, type AssetRow } from '../infrastructure/assets.js';
-import { MediaService, type AttachedAsset, type MediaAttachmentView, type RequireReadyOptions } from '../interface/media.js';
+import { displayKeyOf, keys, servableToOwner, type AssetRow } from '../infrastructure/assets.js';
+import {
+  MediaService,
+  type AttachedAsset,
+  type GeneratedFile,
+  type MediaAttachmentView,
+  type RequireReadyOptions,
+  type SyncAttachments,
+} from '../interface/media.js';
 
 /** Signs delivery URLs of processed variants. */
 @Injectable()
@@ -40,8 +49,123 @@ export class MediaUrls {
 
 @Injectable()
 export class DbMediaService extends MediaService {
-  constructor(private readonly urls: MediaUrls) {
+  constructor(
+    private readonly urls: MediaUrls,
+    @InjectInfra() private readonly infra: Infra,
+  ) {
     super();
+  }
+
+  async syncAttachments(scope: TxScope, assetIds: readonly string[], o: SyncAttachments): Promise<void> {
+    await this.requireReady(scope, assetIds, o);
+    const current = await scope.db
+      .selectFrom('media.media_attachments')
+      .select(['id', 'media_asset_id'])
+      .where('attached_to_type', '=', o.type)
+      .where('attached_to_id', '=', o.id)
+      .where('role', '=', o.role)
+      .where('status', '=', 'active')
+      .where('deleted_at', 'is', null)
+      .execute();
+    const gone = current.filter((c) => !assetIds.includes(c.media_asset_id)).map((c) => c.id);
+    if (gone.length) await scope.db.updateTable('media.media_attachments').set({ status: 'removed' }).where('id', 'in', gone).execute();
+    for (const [i, assetId] of assetIds.entries()) {
+      const existing = current.find((c) => c.media_asset_id === assetId);
+      if (existing) await scope.db.updateTable('media.media_attachments').set({ display_order: i }).where('id', '=', existing.id).execute();
+      else
+        await scope.db
+          .insertInto('media.media_attachments')
+          .values({ media_asset_id: assetId, attached_to_type: o.type, attached_to_id: o.id, role: o.role, display_order: i })
+          .execute();
+    }
+  }
+
+  async imageCounts(scope: TxScope, type: AttachedToType, ids: readonly string[]): Promise<Map<string, number>> {
+    const out = new Map<string, number>();
+    for (let i = 0; i < ids.length; i += 1000) {
+      const chunk = ids.slice(i, i + 1000);
+      const rows = await scope.db
+        .selectFrom('media.media_attachments as t')
+        .innerJoin('media.media_assets as a', 'a.id', 't.media_asset_id')
+        .select(['t.attached_to_id', (eb) => eb.fn.countAll<string>().as('n')])
+        .where('t.attached_to_type', '=', type)
+        .where('t.attached_to_id', 'in', [...chunk])
+        .where('t.status', '=', 'active')
+        .where('t.deleted_at', 'is', null)
+        .where('a.media_type', '=', 'image')
+        .where('a.status', '=', 'active')
+        .where('a.scan_status', '=', 'clean')
+        .groupBy('t.attached_to_id')
+        .execute();
+      for (const r of rows) out.set(r.attached_to_id, Number(r.n));
+    }
+    return out;
+  }
+
+  async assetUrls(scope: TxScope, assetIds: readonly string[]): Promise<Map<string, string>> {
+    const ids = [...new Set(assetIds)].slice(0, 500);
+    const out = new Map<string, string>();
+    if (ids.length === 0) return out;
+    const rows = await scope.db
+      .selectFrom('media.media_assets')
+      .selectAll()
+      .where('id', 'in', ids)
+      .where('deleted_at', 'is', null)
+      .execute();
+    for (const a of rows) {
+      const { url } = await this.urls.forViewer(a, servableToOwner(a));
+      if (url) out.set(a.id, url);
+    }
+    return out;
+  }
+
+  async readContent(scope: TxScope, assetId: string): Promise<{ bytes: Buffer; mime: string; purpose: string } | null> {
+    const a = await scope.db
+      .selectFrom('media.media_assets')
+      .select(['storage_reference', 'mime_type', 'purpose', 'status', 'scan_status'])
+      .where('id', '=', assetId)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (!a || !servableToOwner(a) || !a.storage_reference) return null;
+    const obj = await this.infra.storage.get(a.storage_reference);
+    return obj ? { bytes: obj.body, mime: a.mime_type, purpose: a.purpose } : null;
+  }
+
+  async storeGenerated(scope: TxScope, f: GeneratedFile): Promise<string> {
+    const id = uuidv7();
+    const key = keys.original(id);
+    await this.infra.storage.put(key, f.bytes, f.mime, { encrypt: true });
+    await scope.db
+      .insertInto('media.media_assets')
+      .values({
+        id,
+        owner_type: f.owner.type,
+        owner_id: f.owner.id,
+        purpose: f.purpose,
+        media_type: 'document',
+        mime_type: f.mime,
+        file_size_bytes: String(f.bytes.length),
+        checksum_sha256: createHash('sha256').update(f.bytes).digest('base64'),
+        storage_reference: key,
+        privacy_level: 'private',
+        encrypted_at_rest: true,
+        scan_status: 'clean',
+        uploaded_by: f.uploadedBy,
+        status: 'active',
+      })
+      .execute();
+    // The object is written before the row: a rolled-back transaction leaves an unreferenced object for the retention purge (S8).
+    return id;
+  }
+
+  async signedDownload(scope: TxScope, assetId: string): Promise<{ url: string; expiresAt: Date } | null> {
+    const { rows } = await sql<{ storage_reference: string | null }>`
+      SELECT storage_reference FROM media.delivery_info(${assetId}::uuid)`.execute(scope.db);
+    const key = rows[0]?.storage_reference;
+    if (!key) return null;
+    const ttl = 300_000;
+    const url = await this.infra.storage.presignGet(key, { expiresInMs: ttl, disposition: 'attachment' });
+    return { url, expiresAt: new Date(Math.floor((Date.now() + ttl) / 1000) * 1000) };
   }
 
   async requireReady(scope: TxScope, assetIds: readonly string[], o: RequireReadyOptions): Promise<void> {
@@ -129,6 +253,31 @@ export class DbMediaService extends MediaService {
       ready: r.a_status === 'active' && r.a_scan_status === 'clean',
       moderationStatus: r.a_moderation_status as AttachedAsset['moderationStatus'],
     }));
+  }
+
+  async publicImageUrls(scope: TxScope, type: AttachedToType, ids: readonly string[]): Promise<Map<string, string>> {
+    const unique = [...new Set(ids)].slice(0, 500);
+    const out = new Map<string, string>();
+    if (unique.length === 0) return out;
+    const rows = await scope.db
+      .selectFrom('media.media_attachments as t')
+      .innerJoin('media.media_assets as a', 'a.id', 't.media_asset_id')
+      .select(['t.attached_to_id', 'a.id', 'a.media_type', 'a.storage_reference', 'a.privacy_level', 'a.mime_type'])
+      .where('t.attached_to_type', '=', type)
+      .where('t.attached_to_id', 'in', unique)
+      .where('t.status', '=', 'active')
+      .where('t.deleted_at', 'is', null)
+      .where('a.media_type', '=', 'image')
+      .where('a.publicly_servable', '=', true)
+      .orderBy('t.display_order')
+      .orderBy('t.id')
+      .execute();
+    for (const r of rows) {
+      if (out.has(r.attached_to_id)) continue;
+      const key = displayKeyOf(r);
+      if (key) out.set(r.attached_to_id, (await this.urls.sign(key, r)).url);
+    }
+    return out;
   }
 
   async logoUrls(scope: TxScope, orgIds: readonly string[]): Promise<Map<string, string>> {

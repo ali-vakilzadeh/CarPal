@@ -2,11 +2,11 @@
   "meta": {
     "title": "CarPal backend — scratch build plan and stage log",
     "created": "2026-10-10",
-    "last_updated": "2026-10-11",
+    "last_updated": "2026-10-12",
     "status": "in_progress",
     "progress": {
-      "as_of": "2026-10-11",
-      "summary": "S1-S4 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, and now organizations (members, mi invitations, locations with the pin-versus-address check, verifications), provider and vendor profiles with publication, the capability portfolio and its AI approval gate, work records and portfolio consent, public projections for S6, and the media pipeline (signed upload, W6 processing with sharp, attachments, signed delivery). 130 of 402 operations are implemented; 272 answer 501 behind their full guards. Next: S5 (vehicles and service history; vendor inventory and stock inquiries).",
+      "as_of": "2026-10-12",
+      "summary": "S1-S5 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles with publication, the capability portfolio, work records, public projections and the media pipeline (W6), and now vehicles and service history (VIN sealed and revealed only with AAL2, the max_vehicles race closed in the write transaction, documents, owner- and provider-entered service records, issues with the safety check, reminders with an hourly W15 rule) and vendor inventory (items, fitment, catalog quality, CSV imports and bulk updates through W7, trade accounts and trade-price visibility, stock inquiries on both sides with a consent-gated vehicle snapshot). 191 of 402 operations are implemented; 211 answer 501 behind their full guards. Next: S6 (discovery, search and map; community; notifications).",
       "stages": [
         {
           "stage": "S1",
@@ -46,8 +46,13 @@
         {
           "stage": "S5",
           "title": "Vehicles and service history; vendor inventory and stock inquiries",
-          "status": "not_started",
-          "ops_target": 61
+          "status": "done",
+          "ops_target": 61,
+          "completed_at": "2026-10-12",
+          "ops_implemented": 61,
+          "ops_deferred": 0,
+          "note": "31 vehicle (§12) + 30 inventory (§13.2-13.3) operations; the 2 public inventory reads of §14.3 belong to S6 (InventoryRead is ready for them).",
+          "tests_after_stage": 347
         },
         {
           "stage": "S6",
@@ -75,17 +80,17 @@
         }
       ],
       "operations": {
-        "implemented": 130,
-        "returning_501": 272,
+        "implemented": 191,
+        "returning_501": 211,
         "deferred_with_reason": 3,
         "total": 402
       },
-      "next_stage": "S5",
-      "before_starting_S5": [
-        "Run `pnpm db:reset` once: S4 changed Docs/43 (identity.consent_request_contact added, identity.accept_invitation keeps the token hash, DI-23/DI-24).",
-        "Run `pnpm install`: S4 added the sharp dependency (prebuilt win32-x64 binaries, no build script needed).",
-        "Read S4.report.notes_for_next and recommendations_for_next_stages.S5. S5 must register its resolvers in OrganizationExtensions (visits 'service_record', customer check, vehicle owners, inventory item counter), media AttachmentTargets ('vehicle', 'vehicle_issue', 'inventory_item') and ConsentScopes ('vehicle', 'stock_inquiry').",
-        "All checks were green at the end of S4: pnpm lint, typecheck, build, format:check, contract:check, db:codegen --verify, test:all (301 tests, 42 files); pnpm dev starts all hosts."
+      "next_stage": "S6",
+      "before_starting_S6": [
+        "Run `pnpm db:reset` once: S5 changed Docs/43 (vehicle.vehicle_owner, vehicle.duplicate_vin_flags, inventory.inquiry_item_cards definer functions; the inquiry trigger no longer lets a vendor cancel a reservation; a succeeded bulk_inventory_update job may have no result). No new npm dependency.",
+        "Read S5.report.notes_for_next and recommendations_for_next_stages.S6: InventoryRead.publicCards / publicItem already implement the public item projections (price and trade-price rules, fitment confidence for a vehicle); public.org_inventory_search and public.inventory_get only need the vendor card and location pin from organization PublicProfiles, the search text and paging.",
+        "Events S5 emits for S6 consumers: inventory.updated (payload item_ids, change), vendor.inventory.imported, inquiry.sent, vehicle.created / vehicle.updated, service_record.created, vehicle.issue.reported, fleet.approval.requested (driver issues), and vehicle.reminder.due (not in 40 Appendix A yet, DI-36).",
+        "All checks were green at the end of S5: pnpm lint (285 modules), typecheck, build, format:check, contract:check, db:codegen --verify, test:all (347 tests, 47 files); pnpm dev starts all hosts (api 177 implemented routes) with the new W15 rules vehicle.reminders, inventory.reservation_expiry and inventory.catalog_quality."
       ]
     },
     "purpose": "Breaks the first (scratch) build of the CarPal backend into 9 stages, each sized to run in its own context window. Every stage writes its report back into this file so the next context can see what is done, what was decided and what to watch out for.",
@@ -198,6 +203,10 @@
         {
           "stage": "S4",
           "change": "After S4: 130 operations implemented, 272 answer 501 (3 deferred S3 ops). media.upload_put is served by the storage listener, not the API router."
+        },
+        {
+          "stage": "S5",
+          "change": "After S5: 191 operations implemented, 211 answer 501 (3 of them the deferred S3 operations). vehicle 31/31, inventory 30/32 (the 2 others are the §14.3 public reads of S6)."
         }
       ]
     },
@@ -272,6 +281,10 @@
         {
           "stage": "S4",
           "change": "Docs/40 changed and the contract was regenerated: Problem gained optional requirements, consent_type, entitlement_key (DI-10); OrgMember gained version and nullable user_id/full_name (DI-19, DI-22)."
+        },
+        {
+          "stage": "S5",
+          "change": "The Vin type carries the annotation keyword x-vin (tools/contract/types/json-schema.ts, regenerated): the validator upper-cases Vin body fields and converts Persian/Arabic digits before the pattern check (40 §3.1 \"after uppercasing and digit normalization\"), and a body whose only failures are Vin fields is 422 VIN_INVALID (40 §4.4) instead of VALIDATION_FAILED."
         }
       ]
     },
@@ -279,7 +292,13 @@
       "id": "GD-12",
       "decision": "HTTP layer: no Nest controllers and no Nest platform adapter. libs/http-pipeline registers the routes of operations.json per host on node:http and runs the 41 §5 steps as explicit code; NestJS (application context) provides dependency injection, modules, lifecycle and DiscoveryService to find @Operation(opId) handlers.",
       "reason": "Routes must come only from the contract (SEC-AZ-1) with exact 404/405/501 behaviour, a fixed step order, raw-body access for strict JSON and idempotency hashing, and no framework headers. Decorator-based controllers would duplicate the registry; dynamic Express routes would still need custom ordering and parsing.",
-      "stage": "S2"
+      "stage": "S2",
+      "amendments": [
+        {
+          "stage": "S5",
+          "change": "POST searches page in their bodies (40 §3.3, TR-7): when the input schema has a cursor member, the pipeline verifies body.cursor like a query cursor and binds it (and ctx.page) to the body filters without cursor and limit (CURSOR_MISMATCH when they change). Used by inventory.search; search.run and the public searches of S6 get it for free."
+        }
+      ]
     },
     {
       "id": "GD-13",
@@ -302,6 +321,10 @@
         {
           "stage": "S4",
           "change": "New extension points: organization OrganizationExtensions (visits, customer checks, vehicle owners, inventory item counter, insight sources) and media AttachmentTargets (attachable record types with owner + role groups). New interfaces: identity AccountFacts, OrgMemberships, ConsentRequests; billing SubscriptionWriter; organization ProviderCapabilities, PublicProfiles; media MediaService. Unregistered extensions fail closed."
+        },
+        {
+          "stage": "S5",
+          "change": "New extension points and interfaces in S5: vehicle VehicleCards (definer cards, visible-vehicle lookup) and VehicleService (recordAppointmentService, markIssueScheduled for S7); inventory InventoryRead (visibleIds, publicCards, publicItem for S6); identity ConsentGrants (a consent created atomically with another module's record, no scope verifier: the inquiry's vendor_fitment_context); organization VendorCatalog (catalog_quality_score and measured_response_time_minutes written by inventory, only when they change), OrgLocations (active location check), PublicProfiles.vendors (published vendors and their trade_customers_supported flag); media MediaService.syncAttachments, imageCounts, assetUrls, publicImageUrls, readContent, storeGenerated, signedDownload. Registered: billing UsageCounters max_vehicles and max_inventory_items; organization visits service_record, customer check, vehicle owners, item counter and four vendor insight sources; media targets vehicle, vehicle_issue, inventory_item; identity ConsentScopes vehicle and stock_inquiry. OrganizationExtensions.VisitInfo gained jobLogVerification: a job log linked to a visit inherits customer_confirmed, appointment_verified or invoice_verified (54 §1.1)."
         }
       ]
     },
@@ -328,6 +351,18 @@
       "decision": "Organization lifecycle in S4: org.create inserts a draft organization (RLS create_draft) with the creator's owner membership and the audience's default plan in one transaction; the first successful provider.publish or vendor.publish moves a draft organization to active (DI-18). Fleets stay draft until S8 decides their activation (fleet profile).",
       "reason": "52 §21 requires an active organization to publish but no operation of 40 activates one, and 56 §2.11 allows publishing while verification is pending.",
       "stage": "S4"
+    },
+    {
+      "id": "GD-20",
+      "decision": "DRV in a principal alternative admits fleet drivers in addition to the ORG role group (ORG(FC) DRV = FC + fleet_driver), always limited to vehicles assigned to them: on routes with a path vehicle the authorizer checks DriverAssignments per request (also for a qualified DRV such as DRV(own reports), whose qualifier the use case applies on top); lists are filtered by the use case (grant.driverScoped). A driver admitted only through DRV gets matchedGroups [\"DRV\"]. The BOLA/BFLA matrix (libs/testing) follows the same rule.",
+      "reason": "40 issues.create (ORG(FC) DRV) says a fleet driver's report starts the fleet approval workflow, and mileage_add is ORG(FC) DRV, but FC does not contain fleet_driver: read as an AND, drivers could never report. 40 §0.4 defines DRV as \"fleet driver: allowed only on vehicles with an active FleetVehicleAssignment\". Until S8 binds real assignments (NoDriverAssignments), drivers reach no vehicle (fail closed).",
+      "stage": "S5"
+    },
+    {
+      "id": "GD-21",
+      "decision": "W7 import-jobs (workers/import-jobs): CSV files are parsed by libs/csv (strict RFC 4180, UTF-8, the SEC-IN-11 limits, no evaluation; a formula-safe writer for error reports and exports). Rows are mapped by ImportCreate.column_mapping onto InventoryItemWrite fields (name_translations.<locale>, lists split on | or ;), normalized like API input (SEC-IN-4), validated with the contract input schemas of inventory.create / inventory.update (ContractValidator) and the module rules, and upserted by SKU in transactions of 200 rows with one SAVEPOINT per row, so a bad row never loses its chunk. Row errors become a private system_export media asset of the vendor (line, field, code, then the row as uploaded). Durable job input lives in core.background_jobs.input_summary (batch id; item ids and patch for bulk updates: no personal data), so a lost queue entry can be re-run. A job that only changes existing records (bulk_inventory_update) succeeds without a result (Docs/43 check relaxed, JobOutcome { result: null }).",
+      "reason": "40 inventory.import_create / bulk_update are ASYNC (202 Job) and SEC-IN-11 fixes the dialect and limits; no CSV dependency was needed for a strict dialect. The contract schemas are the single definition of a valid item, so imported rows cannot bypass them; per-row savepoints give \"the job succeeds with an error report\" (S5 acceptance) without one bad row aborting others.",
+      "stage": "S5"
     }
   ],
   "conventions": {
@@ -545,6 +580,84 @@
       "id": "DI-31",
       "issue": "52 OrganizationLocation: exactly one primary per organization, but 40 LocationWrite.is_primary is a free boolean and does not say what happens to the first location or when the primary is deactivated.",
       "action": "S4: the first active location becomes primary; a second primary is 422 /is_primary not_unique; deactivating the primary promotes the oldest other active location, or 409 INVALID_TRANSITION(primary_location) when it is the only one.",
+      "status": "open"
+    },
+    {
+      "id": "DI-32",
+      "issue": "40 writes ORG(FC) DRV on issues.create and vehicles.mileage_add and says a fleet driver's report starts the approval workflow, but FC (fleet_owner, fleet_manager, fleet_maintenance_coordinator) excludes fleet_driver, so read as \"ORG(FC) and DRV\" no driver could ever call them.",
+      "action": "S5: DRV widens the alternative to fleet drivers on assigned vehicles (GD-20). Suggest 40 §0.4 say so explicitly (\"DRV: fleet drivers are allowed in addition to the listed roles, limited to assigned vehicles\").",
+      "status": "resolved in S5 (interpretation, GD-20)"
+    },
+    {
+      "id": "DI-33",
+      "issue": "40 Job.result is optional (\"set when succeeded\"), but 52/43 require result_type and result_id for every succeeded job and JobResultType has no value for bulk_inventory_update, which only changes existing items.",
+      "action": "S5: Docs/43 check relaxed for kind bulk_inventory_update (and result_type/result_id now set together); Docs/42 notes it. Suggest 52 BackgroundJob.result_type say \"required when succeeded, except bulk_inventory_update\".",
+      "status": "resolved in S5"
+    },
+    {
+      "id": "DI-34",
+      "issue": "Docs/43 inventory.tg_inquiry_rules let the vendor move a reserved inquiry to cancelled, but the 40 §13.1 table gives the vendor only answered, unavailable and completed from reserved.",
+      "action": "S5: trigger aligned with 40 (Docs/43, Docs/42 §6); the API checks the same table first.",
+      "status": "resolved in S5"
+    },
+    {
+      "id": "DI-35",
+      "issue": "40 §3.3 lets POST searches page in their bodies (inventory.search, search.run, public.org_inventory_search …), but the S2 pipeline only verified and bound query-string cursors.",
+      "action": "S5: pipeline verifies body cursors and binds them to the body filters (GD-12 amendment).",
+      "status": "resolved in S5"
+    },
+    {
+      "id": "DI-36",
+      "issue": "Maintenance reminders and document expiry need notifications (41 §6.3 hourly rule, Plan WP5), but 40 Appendix A / 50 §20 name no event for them; likewise no event when a stock-inquiry reservation expires.",
+      "action": "S5 publishes vehicle.reminder.due (payload reminder_id via aggregate, vehicle_id, status due|overdue, reminder_type, owner_type, owner_id) when a reminder becomes due or overdue; reservation expiry publishes nothing yet. Suggest adding vehicle.reminder.due (and inquiry.reservation.expired if the requester should be told) to Appendix A and 50 §20 before S6 builds the notification consumers.",
+      "status": "open"
+    },
+    {
+      "id": "DI-37",
+      "issue": "40 §4.4 VIN_INVALID covers \"format or check-digit rules\", but the ISO 3779 check digit is mandatory only for North American (WMI 1-5) and Chinese (L) VINs; pilot-region VINs (WMI N*) use position 9 freely, so a strict check would refuse real vehicles.",
+      "action": "S5: format always; check digit only for WMI 1-5 and L (modules/vehicle/domain/vin.ts). Suggest 52 §8 state the rule.",
+      "status": "open"
+    },
+    {
+      "id": "DI-38",
+      "issue": "vehicle_data_sharing is a personal consent (52 ConsentRecord: organization subjects only for the three *_ai_use types), but fleet vehicles belong to an organization: 40 does not say how a fleet shares documents or service history with a provider, or how a provider logs work on a fleet vehicle.",
+      "action": "S5: a fleet shares its own documents by its coordinators' decision (FC role, no consent record); provider.service_record_create and job-log vehicle links fail closed (403 CONSENT_REQUIRED) for fleet vehicles. Needs a decision in S7/S8 (e.g. an organization-subject vehicle_data_sharing, or appointments as the only path for fleets).",
+      "status": "open"
+    },
+    {
+      "id": "DI-39",
+      "issue": "52 VehicleIssue.description is 10–3000 characters; 40 IssueWrite.description is Text<3000> without a minimum.",
+      "action": "S5: the 52 minimum is enforced by the use case (422 /description too_short, limit 10). Suggest Text<10,3000> in 40.",
+      "status": "open"
+    },
+    {
+      "id": "DI-40",
+      "issue": "52 Vehicle.profile_completeness (S, 0–100) and InventoryItem.data_quality_score have no weights; 54 §7.2 lists the data-quality criteria only; 54 §3.2/§7.2 name inquiry_fulfillment_rate without a definition.",
+      "action": "S5: equal weights (vehicle: 12 optional criteria + brand/model/year; item: images, part numbers, category, warranty note, description, stock status); inquiry_fulfillment_rate = share of the last 90 days' decidable inquiries the vendor answered within 24 h without marking them unavailable (requester cancellations before an answer and fresh unanswered ones excluded). See OQ-09 for the same question about profiles.",
+      "status": "open"
+    },
+    {
+      "id": "DI-41",
+      "issue": "40 ImportCreate.column_mapping.field is Str<1,60> with no list of target fields, and gives no way to name a part category other than its node id.",
+      "action": "S5: fields are the InventoryItemWrite members with translations per locale (name_translations.en …; modules/inventory/domain/import-row.ts IMPORT_FIELDS); categories by node id only. Suggest an enum in 40 and a category-by-slug or label option (or the S9 AI classify_category).",
+      "status": "open"
+    },
+    {
+      "id": "DI-42",
+      "issue": "40 vehicles.vin_reveal lists no error for a vehicle without a VIN; vin_decode uses 409 INVALID_TRANSITION(no_vin).",
+      "action": "S5: vin_reveal answers 404 NOT_FOUND for a vehicle without a VIN. Suggest listing 409 INVALID_TRANSITION(no_vin) like vin_decode.",
+      "status": "open"
+    },
+    {
+      "id": "DI-43",
+      "issue": "InventoryItem.data_quality_score and the missing_images filter depend on image attachments, which the media module owns and changes without an event (media.attach / detach / delete).",
+      "action": "S5: scores are recomputed on every item write, after imports and by the daily W15 rule inventory.catalog_quality; missing_images asks media per page. Suggest a media.attachment.changed event (or an attach hook through AttachmentTargets) so owning modules can react.",
+      "status": "open"
+    },
+    {
+      "id": "DI-44",
+      "issue": "40 inquiries.vendor_get is CNS(vendor_fitment_context: for vehicle snapshot) without saying whether a missing consent refuses the read or hides the snapshot; 41 §6.3 says expired reservations are \"released\" without the target status.",
+      "action": "S5: the inquiry is always readable by the vendor; the snapshot is null while the consent is missing or withdrawn (checked on every read). An expired reservation goes back to answered (still open) with reserved_until cleared.",
       "status": "open"
     }
   ],
@@ -1346,7 +1459,7 @@
     {
       "id": "S5",
       "title": "Vehicles and service history; vendor inventory and stock inquiries",
-      "status": "not_started",
+      "status": "done",
       "depends_on": [
         "S4"
       ],
@@ -1389,33 +1502,39 @@
       "tasks": [
         {
           "id": "S5.T1",
-          "status": "not_started",
-          "title": "Vehicles under both {me}/vehicles and {flt}/vehicles prefixes: list/create/get/update/status_change with ENT(max_vehicles) inside the tx (VEHICLE_LIMIT_REACHED under parallel requests), VIN format + check digit, encryption + hash + last4, duplicate detection per owner, vin_reveal (AAL2 + audit), vin_decode (decoder port; lite stub), status history, mileage list/add (lower-reading flag). DRV access depends on fleet assignments: implement the check through a fleet interface stub returning none until S8."
+          "status": "done",
+          "title": "Vehicles under both {me}/vehicles and {flt}/vehicles prefixes: list/create/get/update/status_change with ENT(max_vehicles) inside the tx (VEHICLE_LIMIT_REACHED under parallel requests), VIN format + check digit, encryption + hash + last4, duplicate detection per owner, vin_reveal (AAL2 + audit), vin_decode (decoder port; lite stub), status history, mileage list/add (lower-reading flag). DRV access depends on fleet assignments: implement the check through a fleet interface stub returning none until S8.",
+          "result": "done: vehicle-ops.ts. Both prefixes; ENT(max_vehicles) inside the transaction (subscriber lock; the six-parallel-creates test), VIN normalized and checked (pattern by the pipeline, check digit for WMI 1-5/L), sealed with the envelope (AAD vehicle.vin:<id>) + HMAC vin-hash + last4, duplicate per owner 409 DUPLICATE and duplicate_vin_warning across owners (definer vehicle.duplicate_vin_flags), vin_reveal (AAL2, audited, no-store), vin_decode (VinDecoder port: lite model year, full 503), status history through the trigger with app.change_reason, mileage list/add with the lower-reading flag. DRV through the authorizer (GD-20) with no assignments before S8."
         },
         {
           "id": "S5.T2",
-          "status": "not_started",
-          "title": "Documents (media attachments, encrypted), service records + evidence, provider.service_record_create (needs owner consent via L16), issues (safety check → urgency hint, vehicle.issue.reported), reminders CRUD."
+          "status": "done",
+          "title": "Documents (media attachments, encrypted), service records + evidence, provider.service_record_create (needs owner consent via L16), issues (safety check → urgency hint, vehicle.issue.reported), reminders CRUD.",
+          "result": "done: document-ops.ts, service-record-ops.ts, issue-ops.ts, reminder-ops.ts. Documents are clean private vehicle_document assets; sharing with a provider needs the owner's vehicle_data_sharing consent (fleets: role decision, DI-38). Owner records (user_manual, invoice_upload) with evidence, provider names, parts referencing visible items, issue resolution and service-date mileage; provider.service_record_create (provider_logged, provider_confirmed) behind CNS with the owner from the vehicle.vehicle_owner definer; appointment path fails closed until S7. Issues run the SafetyCheck (urgency raised, never lowered), photos through MediaService.syncAttachments, driver reports start the fleet approval workflow. Reminders: manual CRUD, snooze/complete/dismiss."
         },
         {
           "id": "S5.T3",
-          "status": "not_started",
-          "title": "Inventory items: list/search/create/get/update/delete/bulk_update/duplicate_mark with ENT(max_inventory_items), price visibility (public / trade_only), fitment CRUD + decide (AI-suggested rows), catalog quality score per 54 §7."
+          "status": "done",
+          "title": "Inventory items: list/search/create/get/update/delete/bulk_update/duplicate_mark with ENT(max_inventory_items), price visibility (public / trade_only), fitment CRUD + decide (AI-suggested rows), catalog quality score per 54 §7.",
+          "result": "done: item-ops.ts, fitment-ops.ts, common.ts (CatalogQuality), inventory-read.ts. Items with SKU uniqueness, price/currency conditionals, location check, ENT(max_inventory_items) on activation, list sorts with keyset cursors and filters (missing_images through media), body-paged search, duplicate marks, removal (V+, AUD); fitment batch with per-row skips, edits, AI-suggestion decisions (AUD); data_quality_score and the 54 §7.2 catalog quality written to the vendor profile through VendorCatalog. Public projections (InventoryRead) apply visibility and trade-price rules for S6."
         },
         {
           "id": "S5.T4",
-          "status": "not_started",
-          "title": "Imports: inventory.import_create (ASYNC, 202 Job) → W7 CSV parser (formula injection, size and row limits, row validation, entitlement), imports_list/get, import_error_report file; vendor.inventory.imported on completion."
+          "status": "done",
+          "title": "Imports: inventory.import_create (ASYNC, 202 Job) → W7 CSV parser (formula injection, size and row limits, row validation, entitlement), imports_list/get, import_error_report file; vendor.inventory.imported on completion.",
+          "result": "done: import-ops.ts, importer.ts, workers/import-jobs (GD-21). import_create needs inventory_bulk_import_enabled and a clean CSV of the vendor; W7 parses with libs/csv, validates rows with the contract schemas, upserts by SKU, writes a formula-safe error report (5-minute URL from import_error_report) and publishes vendor.inventory.imported. inventory.bulk_update runs on the same worker."
         },
         {
           "id": "S5.T5",
-          "status": "not_started",
-          "title": "Trade accounts (vendor list/decide) and stock inquiries for both sides ({RQ} requester prefixes and the vendor side): create/list/get/message/transition with the 40 §13.1 transition tables, reservation expiry handled by a W15 rule (every 15 min), inquiry.sent."
+          "status": "done",
+          "title": "Trade accounts (vendor list/decide) and stock inquiries for both sides ({RQ} requester prefixes and the vendor side): create/list/get/message/transition with the 40 §13.1 transition tables, reservation expiry handled by a W15 rule (every 15 min), inquiry.sent.",
+          "result": "done: trade-ops.ts, inquiry-ops.ts, inventory-rules.ts. Trade accounts (request to published vendors that accept trade customers, approve/reject/revoke, AUD); inquiries for {me} and {org} requesters (verified contact, visible item of a published vendor, one open inquiry per user and item, atomic vendor_fitment_context consent through identity ConsentGrants, inquiry.sent) and the vendor side (groups, thread, first reply answers, transitions per 40 §13.1, reservation ≤ 14 days); W15 inventory.reservation_expiry every 15 minutes."
         },
         {
           "id": "S5.T6",
-          "status": "not_started",
-          "title": "Hourly W15 rule: maintenance reminders upcoming → due → overdue, document expiry reminders (notification events only; delivery comes in S6)."
+          "status": "done",
+          "title": "Hourly W15 rule: maintenance reminders upcoming → due → overdue, document expiry reminders (notification events only; delivery comes in S6).",
+          "result": "done: reminder-rule.ts (W15 vehicle.reminders, hourly): upcoming → due → overdue by date (14 days) and mileage (500 km), snoozed reminders stay upcoming, document_expiry reminders 30 days ahead, vehicle.reminder.due events (DI-36); delivery is S6."
         }
       ],
       "deliverables": [
@@ -1434,15 +1553,111 @@
         "Fleet imports (S8)"
       ],
       "report": {
-        "started_at": null,
-        "completed_at": null,
-        "summary": null,
-        "ops_implemented": [],
+        "started_at": "2026-10-12",
+        "completed_at": "2026-10-12",
+        "summary": "All 61 operations of §12 (31) and §13.2-13.3 (30) are implemented. Owners and fleets manage vehicles under {me}/vehicles and {flt}/vehicles: the active-vehicle limit is checked under the subscriber lock in the write transaction (six parallel creates at 4 of 5 → exactly one succeeds), the VIN is normalized, checked (check digit only where mandatory), stored as an AES-256-GCM envelope with a keyed hash and its last four characters, and returned only by vin_reveal (AAL2, audited); duplicates are refused per owner and flagged across owners. Status history, mileage with the lower-reading flag, documents as private encrypted media shared with a provider only under the owner's consent, service history (owner records with evidence; provider-entered records behind the vehicle_data_sharing consent), issues with the server-side safety check and driver approval requests, and reminders with an hourly W15 rule are in place. Vendors manage items (SKU, prices, visibility, entitlement on activation, sorts, body-paged search), fitment with AI-suggestion decisions, CSV imports and bulk updates through W7 (formula-safe error reports), trade accounts, and stock inquiries on both sides with a consent-gated vehicle snapshot and a 15-minute reservation-expiry rule. Item data quality and the catalog quality score (54 §7.2) are computed and stored on the vendor profile; InventoryRead gives S6 the public item projections with trade prices only for approved trade customers. The S4 fail-closed paths opened: service-record visits (job logs inherit customer_confirmed / invoice_verified / appointment_verified), the customer check, vehicle owners for consent gates, the vendor item counter and vendor insights. Platform: DRV admits drivers on assigned vehicles (GD-20), Vin normalization and VIN_INVALID in the validator, body-paged cursors, libs/csv, jobs without a result record.",
+        "ops_implemented": [
+          "vehicles.list",
+          "vehicles.create",
+          "vehicles.get",
+          "vehicles.update",
+          "vehicles.status_change",
+          "vehicles.vin_reveal",
+          "vehicles.vin_decode",
+          "vehicles.status_history",
+          "vehicles.mileage_list",
+          "vehicles.mileage_add",
+          "vehicles.documents_list",
+          "vehicles.document_create",
+          "vehicles.document_update",
+          "vehicles.document_delete",
+          "service_records.list",
+          "service_records.create",
+          "service_records.get",
+          "service_records.update",
+          "service_records.delete",
+          "service_records.evidence_add",
+          "service_records.evidence_remove",
+          "provider.service_record_create",
+          "issues.list",
+          "issues.create",
+          "issues.get",
+          "issues.update",
+          "issues.status_change",
+          "reminders.list",
+          "reminders.create",
+          "reminders.update",
+          "reminders.delete",
+          "inventory.list",
+          "inventory.search",
+          "inventory.create",
+          "inventory.get",
+          "inventory.update",
+          "inventory.delete",
+          "inventory.bulk_update",
+          "inventory.duplicate_mark",
+          "fitment.list",
+          "fitment.create",
+          "fitment.update",
+          "fitment.delete",
+          "fitment.decide",
+          "inventory.import_create",
+          "inventory.imports_list",
+          "inventory.import_get",
+          "inventory.import_error_report",
+          "trade_accounts.vendor_list",
+          "trade_accounts.vendor_decide",
+          "inquiries.vendor_list",
+          "inquiries.vendor_get",
+          "inquiries.vendor_message",
+          "inquiries.vendor_transition",
+          "inquiries.create",
+          "inquiries.list",
+          "inquiries.get",
+          "inquiries.message",
+          "inquiries.transition",
+          "trade_accounts.request",
+          "trade_accounts.customer_list"
+        ],
         "ops_deferred": [],
-        "files_created": [],
-        "tests": null,
-        "deviations": [],
-        "notes_for_next": []
+        "files_created": [
+          "modules/vehicle: vehicle.module.ts (global: VehicleCards, VehicleService, registrations into billing, organization, media and identity), vehicle-api.module.ts (handlers, VinDecoder binding), vehicle-worker.module.ts (W15 rule); application/{common,vehicle-ops,document-ops,service-record-ops,issue-ops,reminder-ops,reminder-rule}.ts; domain/{vin,rules}.ts + vehicle-domain.test.ts; infrastructure/{vehicles,vehicle-views,vin-decoder}.ts; interface/vehicles.ts; api/projections.ts",
+          "modules/inventory: inventory.module.ts (global: InventoryRead, CatalogQuality, ItemReferences, importer and bulk updater, registrations), inventory-api.module.ts, inventory-worker.module.ts (W15 rules); application/{common,item-ops,fitment-ops,import-ops,importer,trade-ops,inquiry-ops,inventory-rules}.ts; domain/{rules,import-row}.ts + inventory-domain.test.ts; infrastructure/inventory-read.ts; interface/inventory.ts; api/projections.ts",
+          "workers/import-jobs/import-jobs.module.ts (W7 host: queues inventory.import and inventory.bulk_update through JobRunner)",
+          "libs/csv (parseCsv, writeCsv, neutralizeCell, CSV_LIMITS) + csv.test.ts",
+          "organization: interface/vendor-catalog.ts (VendorCatalog, OrgLocations) + infrastructure/vendor-catalog.ts; PublicProfiles.vendors; VisitInfo.jobLogVerification used by JobLogRules (provider-work-ops.ts)",
+          "identity: ConsentGrants interface + DbConsentGrants; media: MediaService syncAttachments, imageCounts, assetUrls, publicImageUrls, readContent, storeGenerated, signedDownload",
+          "libs: authz DRV widening (+ unit test) and matrix rule; http-pipeline Vin normalization / VIN_INVALID and body-paged cursors (+ unit test); jobs JobOutcome { result: null }; testing fixtures.vehicle; tools/contract x-vin keyword (regenerated schemas)",
+          "apps: shared/app-modules.ts (VehicleModule + InventoryModule in every domain set; their api modules on api; ImportJobsModule and the worker modules on worker); testing/{vehicle,inventory}.int.test.ts, testing/s5-support.ts; provider and privacy tests now use real vehicles and service records",
+          "Docs/43 (vehicle.vehicle_owner, vehicle.duplicate_vin_flags, inventory.inquiry_item_cards, inquiry trigger, background_jobs result rule) and Docs/42 (§5.3, §6, background jobs note); backend/README.md"
+        ],
+        "tests": "347 passing (pnpm test:all, 47 files): S5 added 46 (unit: CSV 7, vehicle domain 6, inventory domain 7, authorizer DRV 1, validator VIN 1; integration: vehicle 14, inventory 10). Highlights: the four S5 acceptance criteria (six parallel creates at 4 active → exactly one 201 and five 409 VEHICLE_LIMIT_REACHED; no plaintext VIN in responses, events or the stored row, reveal only with a fresh AAL2 session and audited; trade prices and trade-only items absent for anonymous callers, other organizations and requested-but-unapproved accounts, present after approval and gone after revocation; a CSV with a formula-injection row and an invalid row → job succeeded, batch completed_with_errors, the formula stored as data and neutralized in the error report); record-level BOLA sweeps for vehicles (15 calls on another owner's records, fleet B on fleet A) and inventory (14 calls on another vendor's items, fitment, imports, inquiries and trade accounts, empty lists and search, bulk update changing nothing); consent gates (document sharing, provider records, withdrawal stopping further entries and hiding the vendor's snapshot at once); the W15 rules (overdue by mileage, document expiry reminder created once, reservation released); job-log verification from a customer's record; S4 provider and S3 privacy tests switched to real vehicles. The route sweep checks every new route's BOLA/BFLA denials, and response validation is on in all tests. Also green: pnpm lint (285 modules), typecheck, build, format:check, contract:check, db:codegen --verify; pnpm dev starts all hosts (api 177 implemented routes, auth 14) with the new W15 rules.",
+        "deviations": [
+          "Fleet drivers reach no vehicle until S8 binds DriverAssignments (fail closed): driver lists are empty and every path-vehicle route is 404; Vehicle.assigned_driver is always null.",
+          "VIN decoder: lite decodes only the model year (position 10, suggestions only, decode_status partial or failed); full mode answers 503 UNAVAILABLE(decoder) until a regional adapter exists (OQ-10).",
+          "provider.service_record_create through appointment_id answers 422 REFERENCE_NOT_FOUND until S7; provider records and job-log links for fleet vehicles answer 403 CONSENT_REQUIRED (DI-38). Fleet documents are shared with a provider by role, without a consent record (DI-38).",
+          "invoice_upload records stay self_reported: the invoice verification path (staff or AI) belongs to S8/S9.",
+          "Driver issue reports set fleet_approval_status pending and publish fleet.approval.requested; the FleetApproval record itself is created by the fleet module (S8, from the event or fleet.approval_create).",
+          "Notifications are events only (vehicle.reminder.due, inquiry.sent …); delivery and templates come with S6. vehicle.reminder.due is not in 40 Appendix A yet (DI-36). Rule reminders are titled in English (\"Renew <document title>\").",
+          "CSV imports: categories by taxonomy node id only (no slug or label matching, DI-41); ai_normalization_requested is recorded for S9; the whole file is read into memory (≤ 20 MB, SEC-IN-11); the error report object is written before its asset row (a rolled-back transaction leaves an unreferenced object for the S8 retention purge).",
+          "inventory.search is a parameterized substring match over SKU, part numbers and names (no ranking); public search ranking belongs to S6.",
+          "Item data quality depends on image attachments, which change in the media module without an event: scores refresh on item writes, after imports and by the daily rule (DI-43).",
+          "Catalog quality and measured response time are written to the vendor profile when they change, which moves its version (a client holding an older ETag gets 412 VERSION_MISMATCH on vendor.profile_put and re-reads).",
+          "StockInquiry.can_review is true for the requester of a completed inquiry; whether a review already exists is checked by the trust module (S7).",
+          "reminders.delete soft-deletes (deleted_at); vehicle documents, service records and evidence are status removed and stay for audit.",
+          "Docs/43 and Docs/42 changed in place again (definer functions, inquiry trigger, jobs rule): local databases need pnpm db:reset."
+        ],
+        "notes_for_next": [
+          "Run `pnpm db:reset` once (Docs/43 changed). Commands from backend/ after `source tools/use-local-node.sh`.",
+          "Layout used in S5 (copy it): <name>.module.ts (global ports, registrations, worker logic), <name>-api.module.ts (handlers and per-request views), <name>-worker.module.ts (W15 rules as providers, imported by workerAppModule); W7-style queues hosted in workers/<host>/ through JobRunner. Views (VehicleViews, ItemViews, InquiryViews …) batch the derived fields of lists.",
+          "New interfaces to use instead of reading tables: VehicleCards.cards (any vehicle, definer, for providers and vendors) and .visible (the caller's own vehicle), VehicleService.recordAppointmentService / markIssueScheduled (S7), InventoryRead.visibleIds / publicCards / publicItem (S6), identity ConsentGrants.grantScoped, organization VendorCatalog / OrgLocations / PublicProfiles.vendors, MediaService.syncAttachments / imageCounts / assetUrls / publicImageUrls / readContent / storeGenerated / signedDownload.",
+          "Definer functions added (42 §5.3): vehicle.vehicle_owner(id) for provider-side consent gates and customer checks, vehicle.duplicate_vin_flags(ids), inventory.inquiry_item_cards(inquiry_ids). The vehicle owner is used server-side only, never returned to a business.",
+          "Consent scopes registered: vehicle (owner of a personal vehicle) and stock_inquiry (its requester). vendor_fitment_context consents are created only by inquiries.create (ConsentGrants) and checked on every vendor read.",
+          "Events and payloads: vehicle.created {owner_type, owner_id, vin_present}, vehicle.updated {fields, old/new_status}, service_record.created {vehicle_id, provider_organization_id, source_type, verification_status, service_system_node_id}, vehicle.issue.reported {vehicle_id, urgency_level, safety_flag, source}, fleet.approval.requested {organization_id, vehicle_id, vehicle_issue_id, requested_by_user_id}, vehicle.reminder.due, inventory.updated {item_ids, change} (aggregate = vendor organization), vendor.inventory.imported {vendor_organization_id, counts, ai_normalization_requested}, inquiry.sent {vendor_organization_id, inventory_item_id, requester_type, vehicle_context_shared}. None carries a VIN, plate or contact data.",
+          "Tests: fixtures.vehicle(owner, nodes) inserts a vehicle; s5-support.ts has client(), outbox(), audits(), grantConsent(); the MediaHarness worker also runs W7 (media.drain() waits for imports and bulk updates) and exposes the W15 rules (media.worker.get(VehicleReminderRule).run()). The shared test database keeps VINs across runs: use unique VINs (vehicle.int.test.ts uniqueVin()).",
+          "Registries reject a second registration: tests must not register fakes for service_record visits, vehicle owners or the vehicle consent scope any more (the real ones exist); appointment visits and the appointment customer check are still open for S7.",
+          "Watch: every update bumps version (core.tg_touch) — compute derived columns in the same statement (inventory data_quality_score, vehicle profile_completeness) so one write is one version; the mileage trigger updates the vehicle row (re-read after mileage writes)."
+        ]
       }
     },
     {
@@ -1858,9 +2073,9 @@
       "S8": 82,
       "S9": 23
     },
-    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501.",
-    "implemented": 130,
-    "returning_501": 272,
+    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501.",
+    "implemented": 191,
+    "returning_501": 211,
     "total_routes": 450,
     "by_module_after_S3": {
       "identity": "47/61",
@@ -1890,6 +2105,25 @@
       "media": "9/11",
       "vehicle": "0/31",
       "inventory": "0/32",
+      "discovery": "0/7",
+      "trust": "0/36",
+      "appointment": "0/31",
+      "fleet": "0/20",
+      "community": "0/25",
+      "notification": "0/7",
+      "ai-mcp": "0/27",
+      "analytics": "0/3",
+      "admin": "0/16"
+    },
+    "by_module_after_S5": {
+      "identity": "47/61",
+      "billing": "4/7",
+      "taxonomy": "4/13",
+      "platform": "4/4",
+      "organization": "62/71",
+      "media": "9/11",
+      "vehicle": "31/31",
+      "inventory": "30/32",
       "discovery": "0/7",
       "trust": "0/36",
       "appointment": "0/31",
@@ -2151,6 +2385,71 @@
       "stage": "S4",
       "date": "2026-10-11",
       "deviation": "Docs/40, Docs/42 and Docs/43 changed in place (Problem members, OrgMember, consent_request_contact, accept_invitation); local databases need pnpm db:reset."
+    },
+    {
+      "stage": "S5",
+      "date": "2026-10-12",
+      "deviation": "Fleet drivers reach no vehicle until S8 binds DriverAssignments (fail closed): driver lists are empty and every path-vehicle route is 404; Vehicle.assigned_driver is always null."
+    },
+    {
+      "stage": "S5",
+      "date": "2026-10-12",
+      "deviation": "VIN decoder: lite decodes only the model year (position 10, suggestions only, decode_status partial or failed); full mode answers 503 UNAVAILABLE(decoder) until a regional adapter exists (OQ-10)."
+    },
+    {
+      "stage": "S5",
+      "date": "2026-10-12",
+      "deviation": "provider.service_record_create through appointment_id answers 422 REFERENCE_NOT_FOUND until S7; provider records and job-log links for fleet vehicles answer 403 CONSENT_REQUIRED (DI-38). Fleet documents are shared with a provider by role, without a consent record (DI-38)."
+    },
+    {
+      "stage": "S5",
+      "date": "2026-10-12",
+      "deviation": "invoice_upload records stay self_reported: the invoice verification path (staff or AI) belongs to S8/S9."
+    },
+    {
+      "stage": "S5",
+      "date": "2026-10-12",
+      "deviation": "Driver issue reports set fleet_approval_status pending and publish fleet.approval.requested; the FleetApproval record itself is created by the fleet module (S8, from the event or fleet.approval_create)."
+    },
+    {
+      "stage": "S5",
+      "date": "2026-10-12",
+      "deviation": "Notifications are events only (vehicle.reminder.due, inquiry.sent …); delivery and templates come with S6. vehicle.reminder.due is not in 40 Appendix A yet (DI-36). Rule reminders are titled in English (\"Renew <document title>\")."
+    },
+    {
+      "stage": "S5",
+      "date": "2026-10-12",
+      "deviation": "CSV imports: categories by taxonomy node id only (no slug or label matching, DI-41); ai_normalization_requested is recorded for S9; the whole file is read into memory (≤ 20 MB, SEC-IN-11); the error report object is written before its asset row (a rolled-back transaction leaves an unreferenced object for the S8 retention purge)."
+    },
+    {
+      "stage": "S5",
+      "date": "2026-10-12",
+      "deviation": "inventory.search is a parameterized substring match over SKU, part numbers and names (no ranking); public search ranking belongs to S6."
+    },
+    {
+      "stage": "S5",
+      "date": "2026-10-12",
+      "deviation": "Item data quality depends on image attachments, which change in the media module without an event: scores refresh on item writes, after imports and by the daily rule (DI-43)."
+    },
+    {
+      "stage": "S5",
+      "date": "2026-10-12",
+      "deviation": "Catalog quality and measured response time are written to the vendor profile when they change, which moves its version (a client holding an older ETag gets 412 VERSION_MISMATCH on vendor.profile_put and re-reads)."
+    },
+    {
+      "stage": "S5",
+      "date": "2026-10-12",
+      "deviation": "StockInquiry.can_review is true for the requester of a completed inquiry; whether a review already exists is checked by the trust module (S7)."
+    },
+    {
+      "stage": "S5",
+      "date": "2026-10-12",
+      "deviation": "reminders.delete soft-deletes (deleted_at); vehicle documents, service records and evidence are status removed and stay for audit."
+    },
+    {
+      "stage": "S5",
+      "date": "2026-10-12",
+      "deviation": "Docs/43 and Docs/42 changed in place again (definer functions, inquiry trigger, jobs rule): local databases need pnpm db:reset."
     }
   ],
   "handoff_notes": [
@@ -2178,6 +2477,11 @@
       "date": "2026-10-11",
       "from": "S4",
       "note": "S4 done: organizations, members/invitations, locations and the location editor, verifications, provider and vendor profiles with publication, capability portfolio with the AI approval gate, work records, portfolio consent, public projections (PublicProfiles) and the media pipeline with W6 — all 71 API ops, 301 tests green. Docs/43 changed (DI-23, DI-24) and sharp was added: run pnpm install and pnpm db:reset once. Next: S5. Read S4.report.notes_for_next and recommendations_for_next_stages.S5; register the S5 resolvers in OrganizationExtensions, AttachmentTargets and ConsentScopes so the fail-closed S4 paths (service-record visits, customer notes, job-log vehicles, vehicle media, vendor item counts) open up."
+    },
+    {
+      "date": "2026-10-12",
+      "from": "S5",
+      "note": "S5 done: vehicles and service history (VIN sealed, AAL2 reveal, limit race closed, documents, owner and provider records, issues with the safety check, reminders + W15) and vendor inventory (items, fitment, catalog quality, CSV import and bulk update through W7, trade accounts and trade prices, inquiries with the consent-gated vehicle snapshot) — all 61 ops, 347 tests green. Docs/43 changed (three definer functions, inquiry trigger, jobs rule): run pnpm db:reset once. Next: S6 (discovery, search and map; community; notifications). Read S5.report.notes_for_next and recommendations_for_next_stages.S6: the public inventory projections are ready in InventoryRead, and S5 events wait for the notification and search consumers. Decide DI-36 (reminder events) before writing the notification templates."
     }
   ],
   "open_questions": [
@@ -2237,10 +2541,22 @@
       "question": "Profile completeness weights (WP0) for providers and vendors, and whether publishing needs a minimum completeness (52 §21 'profile complete enough').",
       "default_if_unanswered": "Equal weights over the MVP Module C criteria; publishing needs only the listed rules.",
       "owner": "user / WP0"
+    },
+    {
+      "id": "OQ-10",
+      "question": "Which VIN decoder may the backend call in full mode for the pilot region (40 vehicles.vin_decode, \"optional pluggable VIN decode\"), and under which terms (cost per call, data sent)?",
+      "default_if_unanswered": "Lite decoder only (model year from the VIN); full mode answers 503 UNAVAILABLE(decoder).",
+      "owner": "user / product"
+    },
+    {
+      "id": "OQ-11",
+      "question": "How does a fleet consent to share a fleet vehicle's documents and service history with a provider (DI-38): an organization-level vehicle_data_sharing consent by a fleet manager, or only through fleet appointments (S7/S8)?",
+      "default_if_unanswered": "Fleets share their own documents by role; providers cannot log work on fleet vehicles outside appointments.",
+      "owner": "user / privacy"
     }
   ],
   "recommendations_for_next_stages": {
-    "written_after": "S4",
+    "written_after": "S5",
     "general": [
       "Keep each stage to the S3 module layout (notes_for_next) and copy the account/billing handlers as templates for CRUD with If-Match, keyset paging and audit.",
       "Bind ports instead of reading other modules' tables: add methods to the owning module's interface/ (GD-15) and register extensions in onModuleInit.",
@@ -2248,15 +2564,10 @@
       "Watch the generated contract for further gaps like DI-12 (untyped parameters) and fix them in tools/contract with a doc issue, never by editing generated files.",
       "Before inventing a cross-module read, look for the S4 registries: a module that owns visits, vehicles, items or attachable records registers resolvers (OrganizationExtensions, AttachmentTargets, ConsentScopes, UsageCounters) instead of other modules reading its tables.",
       "Records reached without an organization in the path (USR | ORG(ANY), ORG(by target)): find in the user's context, then per membership (setOrganization), then ctx.authorizeOrg — see media/infrastructure/assets.ts findVisibleAsset.",
-      "Every new list should get a record-level BOLA case like provider.int.test.ts ('org B records under org A paths'); the route sweep only covers path-level BOLA."
-    ],
-    "S5": [
-      "Register in onModuleInit: OrganizationExtensions.registerVisits('service_record', …) (service records belonging to the provider), registerCustomerCheck (customer has a service record with the provider), registerVehicleOwners (personal vehicle → owner user id; a definer or vehicle-card read, since the provider's RLS context cannot read the vehicle), registerItemCounter (active inventory items, for vendor.publish), and insight sources 'vendor.inquiries_received', 'vendor.inquiry_fulfillment_rate', 'vendor.items_missing_fitment', 'vendor.items_missing_images'.",
-      "Register media AttachmentTargets 'vehicle', 'vehicle_issue' (owner user or fleet organization; groups for fleets e.g. FC) and 'inventory_item' (vendor organization, V*), and ConsentScopes 'vehicle' and 'stock_inquiry'. Vehicle documents use MediaService.requireReady with purposes vehicle_document / service_evidence.",
-      "UsageCounters 'max_vehicles' and 'max_inventory_items' (S3 note still applies): requireEntitlement before the insert inside the write transaction; the six-parallel-creates race test of the acceptance criteria.",
-      "vendor.publish already counts active items through registerItemCounter; inventory publication must follow VendorProfile.public_status (published) and organizations.status active (public_read).",
-      "provider.service_record_create (CNS service_history_sharing) and job logs: once service records exist, set ProviderJobLog.verification_status from verified records (54 §1.1) — the trust-scoring worker (S7) turns them into evidence.",
-      "From S3, still valid: VIN hashing uses Hmac purpose \"vin-hash\" and envelope encryption with AAD \"vehicle.vin:<id>\" (libs/crypto); vehicle issues inject SafetyCheck (taxonomy) for the urgency hint (Urgency safety_critical); provider.service_record_create (CNS) uses ConsentChecker.isGranted with grantee { type: \"organization\", id: providerOrg } (requireConsent now also names consent_type in the problem)."
+      "Every new list should get a record-level BOLA case like provider.int.test.ts ('org B records under org A paths'); the route sweep only covers path-level BOLA.",
+      "Compute derived and system columns in the same statement as the change (every UPDATE moves version and the ETag), and re-read rows that triggers touch (vehicle mileage).",
+      "Body-paged searches: give the input schema a cursor member and the pipeline verifies and binds it; page with ctx.page as for query lists.",
+      "Run W7-style work through JobRunner with the durable input in core.background_jobs.input_summary (no personal data); use per-row savepoints when a batch must keep going past bad rows."
     ],
     "S6": [
       "Notification module: take over the identity messages (templates identity.*: email_verification, account_exists, password_reset, email_change_notice, otp_code, password_changed, security_alert) so preferences, digests and EN/FA templates apply; send the refresh-token reuse alert as a critical system_announcement (SEC-AU-5).",
@@ -2265,14 +2576,24 @@
       "user.registered already has a billing consumer; notification and analytics consumers add their own (41 §6.2).",
       "Public reads: build public.org_get / public.org_portfolio and search cards from organization PublicProfiles.profile (locations already follow SEC-OUT-4: public point only, no street line or access instructions for approximate) and pins; add rating_summary, badges (provider.badges) and portfolio_thumbnail_url from trust/media. Only published items with publicly servable media (52 §15) may appear.",
       "Search indexer: index on provider.profile.published and also on profile edits and unpublish (no event exists for those yet: add provider.profile.updated / unpublished to Appendix A or reindex from the organization module's writes), and remove on organization suspension.",
-      "Notification module: take over the cn link mail (template identity.consent_request) and the member invitation mail (organization.member_invitation) so preferences and EN/FA templates apply; media.scan.completed is available for 'your upload is ready / was refused' notices."
+      "Notification module: take over the cn link mail (template identity.consent_request) and the member invitation mail (organization.member_invitation) so preferences and EN/FA templates apply; media.scan.completed is available for 'your upload is ready / was refused' notices.",
+      "public.org_inventory_search / public.inventory_get: use InventoryRead.publicCards / publicItem (they enforce published vendor, active item, public or permitted trade_only, trade price only for an approved trade account of the context organization, fitment confidence for a vehicle). Authorize as_organization_id with ctx.authorizeOrg (membership) and set it as the context organization (scope.setOrganization) before reading, so RLS trade_read applies; add the vendor PublicOrgCard and location pin from PublicProfiles. vehicle_id in the body must be the caller's own vehicle (VehicleCards.visible) and never leaves the server.",
+      "Search indexer: inventory.updated carries item_ids and change (created, updated, removed, fitment, bulk_update) with the vendor as aggregate; vendor.inventory.imported means \"reindex the vendor\"; vendor.publish/unpublish (organization) changes which items are public; index price_public only, never price_trade or notes (SEC-OUT-1).",
+      "Notification consumers for S5 events: inquiry.sent (vendor members), first vendor reply and transitions (no events yet — add inquiry.answered / inquiry.status_changed if the requester must be told, or notify from the inventory module directly), vehicle.reminder.due (owner or fleet coordinators; DI-36), fleet.approval.requested (fleet approvers), vendor.inventory.imported (the importing member: done / done with errors, link to the error report). Never put VINs or plates in templates.",
+      "Inventory images reach public cards only when publicly servable (52 §15: moderation approved, S8); until the moderation queue exists, image_url is null in public cards."
     ],
     "S7": [
       "Reviews and appointments read user display names through identity UserCards; review_invitations by email need the review_invitations consent (ConsentChecker); the pre-visit report needs service_history_sharing (CNS) and should register the \"appointment\" ConsentScopes verifier.",
       "Appointment capacity tools are a billing entitlement (appointment_capacity_tools_enabled): requireEntitlement with delta 0.",
       "Register OrganizationExtensions.registerVisits('appointment', …) and registerCustomerCheck for appointments (customer notes, portfolio consent requests from appointments), and insight sources provider.overall_rating, review_count, category_ratings, requests_received, requests_from_map, completion_rate.",
       "Trust scoring: create ProviderCapabilityEvidence rows (system_rule) from completed appointments, verified reviews, published portfolio items, verified job logs/certifications (54 §1.1); recompute confidence_level/score/badge_eligible; evidence revoked by S4 (certification/job log removal, portfolio archive) must lower scores. ProviderCapabilities.forProviders is the read interface.",
-      "Release the street address of approximate locations to the requester of a confirmed appointment (SEC-OUT-4) — PublicProfiles hides it for everyone else."
+      "Release the street address of approximate locations to the requester of a confirmed appointment (SEC-OUT-4) — PublicProfiles hides it for everyone else.",
+      "Register OrganizationExtensions.registerVisits('appointment') with jobLogVerification 'appointment_verified' for completed appointments, so job logs linked to them become verified (54 §1.1); service records already resolve (S5).",
+      "On appointment completion call VehicleService.recordAppointmentService (one record per appointment, appointment_verified, evidence appointment_record; emits service_record.created) and, for an appointment created from an issue, VehicleService.markIssueScheduled when it is confirmed.",
+      "Open provider.service_record_create's appointment_id path (today 422 REFERENCE_NOT_FOUND): resolve the appointment of the provider and its vehicle, then write through the same record rules.",
+      "Pre-visit report: read the vehicle through VehicleCards.cards, documents shared with the provider through RLS shared_read, and service history only under service_history_sharing / vehicle_data_sharing (ConsentChecker, never cached).",
+      "Reviews: Path 1 inquiry_verified needs a completed inquiry of the author (stock_inquiries.status completed, requester_user_id = author); service_record_verified needs a record with verification_status other than self_reported on the author's vehicle. StockInquiry.can_review should then also check that no review exists.",
+      "Decide DI-38 (fleet vehicles and provider consent) together with fleet appointments."
     ],
     "S8": [
       "Admin billing: admin.subscription_assign / plan_update close open change requests (billing.subscription_change_requests: status assigned/declined, handled_by/at, resulting_subscription_id) and audit every plan change; W15 daily rule: trials past trial_ends_at → audience default plan.",
@@ -2285,17 +2606,28 @@
       "Admin organization ops: verification_decide (OrganizationVerification → verified/rejected; Organization.verification_status = verified only when business_identity and location are verified; organization.verified event), location_correct (geo_source admin_corrected, audit, organization.location.corrected), org_status (suspend → Authorizer.invalidateOrganization, profiles public_status suspended), org_merge; admin.media_download_url with PURP.",
       "Fleet activation: decide when a fleet organization leaves draft (GD-19), e.g. on fleet.profile_put.",
       "Retention: purge removed media objects and quarantined uploads per DataRetentionPolicy (S4 only marks them removed).",
-      "Decide DI-21 (hybrid roles) together with the admin role tooling."
+      "Decide DI-21 (hybrid roles) together with the admin role tooling.",
+      "Fleet: bind DriverAssignments (FleetVehicleAssignment, active) so drivers reach their vehicles (GD-20); add a set-based method (assigned vehicle ids) and use it in vehicles.list instead of the per-row check; fill Vehicle.assigned_driver from the assignment. Create FleetApproval records from fleet.approval.requested (driver issues).",
+      "Admin verification of service records and invoices (invoice_verified / admin_verified), which the trust worker (S7) counts as evidence; staff reads of vehicles must never include the VIN except through an audited purpose-bound path.",
+      "Retention: purge removed vehicle documents' media, removed import sources and error reports (system_export assets) and unreferenced objects (S5 writes the error-report object before its row).",
+      "Fleet imports (fleet.import_create) reuse libs/csv, the W7 host (workers/import-jobs) and the per-row savepoint pattern; vehicles.create rules (VIN sealing, ENT(max_vehicles) per row) must be shared with the vehicle module through its interface, not copied.",
+      "Moderation queue: inventory_image assets need approval before public cards show them (publicImageUrls)."
     ],
     "S9": [
       "Full mode: sessions, interactions, authorization codes, refresh-token families, OTPs and PoW challenges live in the KeyValueStore; separate deployables need the Redis adapter (lite is per process).",
       "Strict-mode hardening list from S3: confidential client authentication at /oauth/token (private_key_jwt over mTLS), DPoP-Nonce on the API hosts, App Attest / Play Integrity verification, risk-based sign-in (SEC-AU-12), breached-password corpus (OQ-05), WebAuthn (OQ-04).",
       "OpenAPI: describe the OAuth form inputs and RFC 6749 error bodies (ProtocolError) of /oauth/*, and the cookie-bound interaction (DI-15).",
       "AI: portfolio captions (caption_source ai_approved + ai_caption_insight_id) and media redaction suggestions (redaction_insight_id, decision apply_suggestions) are refused until the ai-mcp module provides accepted insights; capability/coverage/category suggestions arrive as source ai_suggested + status pending_provider_approval and are decided with provider.gated_decide (already implemented).",
-      "Full-mode adapters still to write for S4: regional geocoder (Geocoder port), S3 SSE-KMS for ObjectStorage.put({ encrypt }), and the W6 tools of OQ-07."
+      "Full-mode adapters still to write for S4: regional geocoder (Geocoder port), S3 SSE-KMS for ObjectStorage.put({ encrypt }), and the W6 tools of OQ-07.",
+      "AI fitment suggestions: insert ai_suggested rows with status pending_vendor_confirmation and an ai_insight_id; fitment.decide already confirms or rejects them (AUD). AI normalization of imported rows (ai_normalization_requested on the batch) and category classification (DI-41) belong here; never use another vendor's private data.",
+      "Full mode: a regional VIN decoder adapter for the VinDecoder port (OQ-10), validated as client input (SEC-IN-10).",
+      "OpenAPI: describe the x-vin normalization (Vin pattern after uppercasing) and the body cursors of POST searches."
     ],
     "S4_done": [
       "All S4 recommendations from S3 were applied: SubscriptionWriter for the default plan (hybrid → provider_basic, DI-20), invitations through identity OrgMemberships + identity.accept_invitation with Authorizer.invalidateUser, ConsentScopes media_asset and portfolio_item, cn requests through identity ConsentRequests (link mailed by identity), requireDescendant chains, DI-10 resolved, DataExportFiles bound, OrgCards.logo_url, textArray for domain arrays."
+    ],
+    "S5_done": [
+      "All S5 recommendations from S4 were applied: OrganizationExtensions registrations (service_record visits, customer check, vehicle owners, item counter, four vendor insight sources), AttachmentTargets vehicle / vehicle_issue / inventory_item, ConsentScopes vehicle and stock_inquiry, UsageCounters max_vehicles and max_inventory_items with the parallel-create race test, vendor publication counting active items, job-log verification from verified visits, VIN sealing with Hmac vin-hash and AAD vehicle.vin:<id>, SafetyCheck urgency on issues, CNS through ConsentChecker with an organization grantee."
     ]
   }
 }

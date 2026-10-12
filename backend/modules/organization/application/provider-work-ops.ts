@@ -24,25 +24,49 @@ import { MediaService } from '#modules/media/interface/media.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { toCustomerNote, toJobLog, toPortfolioItem, type JobLogRow, type PortfolioRow } from '../api/projections.js';
 import { isFutureDate } from '../domain/profile-rules.js';
-import { OrganizationExtensions, type VisitKind } from '../interface/extensions.js';
+import { OrganizationExtensions, type JobLogVerification, type VisitKind } from '../interface/extensions.js';
 import { afterId, checkChain, checkNodes, checkVersion, failIf, loadOrg, member, pageOf, type MemberAccess } from './common.js';
 import { revokeEvidence } from './provider-profile-ops.js';
 
 const notFound = (pointer: string) => ApiError.validation([{ pointer, code: 'reference_not_found' }], 'REFERENCE_NOT_FOUND');
 
-/** Linked visits must be visits at this provider (40 JobLogWrite / PortfolioWrite appointment_id, service_record_id). */
+const VERIFICATION_RANK: Record<JobLogVerification, number> = {
+  self_reported: 0,
+  customer_confirmed: 1,
+  appointment_verified: 2,
+  invoice_verified: 3,
+};
+
+type VisitLinks = { appointment_id?: string | null; service_record_id?: string | null };
+
+/**
+ * Linked visits must be visits at this provider (40 JobLogWrite /
+ * PortfolioWrite appointment_id, service_record_id): links in `written`
+ * must resolve; links kept from `previous` that no longer resolve just stop
+ * counting. Returns the strongest verification the resolved visits give a
+ * job log (54 §1.1).
+ */
 async function checkVisits(
   ext: OrganizationExtensions,
   scope: TxScope,
   orgId: string,
-  v: { appointment_id?: string | null; service_record_id?: string | null },
-): Promise<void> {
-  for (const [kind, id] of [
-    ['appointment', v.appointment_id],
-    ['service_record', v.service_record_id],
-  ] as [VisitKind, string | null | undefined][]) {
-    if (id && !(await ext.visit(scope, kind, orgId, id))) throw notFound(`/${kind}_id`);
+  written: VisitLinks,
+  previous: VisitLinks = {},
+): Promise<JobLogVerification> {
+  let best: JobLogVerification = 'self_reported';
+  for (const kind of ['appointment', 'service_record'] as VisitKind[]) {
+    const key = `${kind}_id` as const;
+    const id = written[key] !== undefined ? written[key] : previous[key];
+    if (!id) continue;
+    const visit = await ext.visit(scope, kind, orgId, id);
+    if (!visit) {
+      if (written[key] !== undefined) throw notFound(`/${key}`);
+      continue;
+    }
+    const got = visit.jobLogVerification ?? 'self_reported';
+    if (VERIFICATION_RANK[got] > VERIFICATION_RANK[best]) best = got;
   }
+  return best;
 }
 
 /**
@@ -136,13 +160,15 @@ export class JobLogRules {
     private readonly consents: ConsentChecker,
   ) {}
 
-  async check(scope: TxScope, m: MemberAccess, j: Partial<JobLogWrite>, previous?: JobLogRow): Promise<void> {
+  /** Checks a write; returns the verification the linked visits give the job log (system-set, 54 §1.1). */
+  async check(scope: TxScope, m: MemberAccess, j: Partial<JobLogWrite>, previous?: JobLogRow): Promise<JobLogVerification> {
     if (j.job_date !== undefined && isFutureDate(j.job_date)) failIf([{ pointer: '/job_date', code: 'in_future' }]);
     const merged = { ...previous, ...j };
     await checkChain(this.taxonomy, merged);
-    await checkVisits(this.ext, scope, m.orgId, j);
+    const verification = await checkVisits(this.ext, scope, m.orgId, j, previous);
     if (j.vehicle_id && j.vehicle_id !== previous?.vehicle_id)
       await requireVehicleConsent(this.ext, this.consents, scope, m.orgId, j.vehicle_id);
+    return verification;
   }
 }
 
@@ -155,7 +181,7 @@ export class ProviderJobLogCreateHandler implements OperationHandler {
     const m = member(ctx);
     const b = ctx.body;
     const row = await ctx.tx(async (scope) => {
-      await this.rules.check(scope, m, b);
+      const verification = await this.rules.check(scope, m, b);
       return scope.db
         .insertInto('organization.provider_job_logs')
         .values({
@@ -171,8 +197,8 @@ export class ProviderJobLogCreateHandler implements OperationHandler {
           appointment_id: b.appointment_id ?? null,
           service_record_id: b.service_record_id ?? null,
           logged_by_user_id: m.userId,
-          // System-set: a job log counts as evidence only once verified (54 §1.1).
-          verification_status: 'self_reported',
+          // System-set from the linked visit: a job log counts as evidence only once verified (54 §1.1).
+          verification_status: verification,
         })
         .returningAll()
         .executeTakeFirstOrThrow();
@@ -192,10 +218,10 @@ export class ProviderJobLogUpdateHandler implements OperationHandler {
     const row = await ctx.tx(async (scope) => {
       const j = await loadJobLog(scope, m.orgId, ctx.params.job_log_id!, true);
       checkVersion(j.version, ctx.ifMatch);
-      await this.rules.check(scope, m, b, j);
+      const verification = await this.rules.check(scope, m, b, j);
       return scope.db
         .updateTable('organization.provider_job_logs')
-        .set(Object.fromEntries(Object.entries(b).filter(([, v]) => v !== undefined)))
+        .set({ ...Object.fromEntries(Object.entries(b).filter(([, v]) => v !== undefined)), verification_status: verification })
         .where('id', '=', j.id)
         .returningAll()
         .executeTakeFirstOrThrow();
