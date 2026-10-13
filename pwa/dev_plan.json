@@ -1,0 +1,839 @@
+{
+  "meta": {
+    "title": "CarPal consumer PWA (WP19, pwa/) — scratch build plan and stage log",
+    "created": "2026-10-12",
+    "last_updated": "2026-10-12",
+    "status": "planned",
+    "progress": {
+      "as_of": "2026-10-12",
+      "summary": "Plan written. No stage started. The PWA is built from scratch in pwa/ against the existing backend (backend/dev_plan.json: S1-S6 done, 236 of 402 operations implemented). Of the 182 operations a consumer client can call, 140 are implemented in the backend today; the missing 42 are reviews and appointments (backend S7), reports and analytics events (backend S8), Help Me triage and AI (backend S9), and WebAuthn/social sign-in (deferred).",
+      "stages": [
+        { "stage": "P1", "title": "Foundation: workspace, toolchain, contract types, design tokens", "status": "not_started" },
+        { "stage": "P2", "title": "Consumer BFF: session, OAuth, API forwarding, security headers", "status": "not_started" },
+        { "stage": "P3", "title": "Design system, i18n and formatting, app shell and global patterns", "status": "not_started" },
+        { "stage": "P4", "title": "Hosted sign-in UI and web onboarding", "status": "not_started" },
+        { "stage": "P5", "title": "Public SEO pages: landing, provider, vendor, part, showcase", "status": "not_started" },
+        { "stage": "P6", "title": "Search, map, directions and directory pages", "status": "not_started" },
+        { "stage": "P7", "title": "My Garage: vehicles, service history, documents, issues, reminders, uploads", "status": "not_started" },
+        { "stage": "P8", "title": "Community: home timeline, Q&A, follows and favourites, comments, reactions, reports", "status": "not_started" },
+        { "stage": "P9", "title": "Notifications, settings, account and My Activity", "status": "not_started" },
+        { "stage": "P10", "title": "Help Me and appointment requests; appointments", "status": "not_started", "backend_dependency": "backend S7 (appointments), backend S9 (triage)" },
+        { "stage": "P11", "title": "Reviews, review invitations and showcase consent", "status": "not_started", "backend_dependency": "backend S7 (reviews and trust)" },
+        { "stage": "P12", "title": "PWA capabilities (offline, install, web push) and fleet driver reporting", "status": "not_started", "backend_dependency": "backend S8 (fleet) for the driver part" },
+        { "stage": "P13", "title": "Hardening: key-flow E2E, accessibility, performance, security, docs", "status": "not_started" }
+      ],
+      "screens": { "total": 30, "done": 0, "partial": 0, "deferred_by_contract": 0 },
+      "next_stage": "P1"
+    },
+    "purpose": "Breaks the consumer PWA (Docs/22 W- screens, WP19 'Consumer PWA') into stages that can each run in a fresh context. Each stage reports back into this file, so the next context knows what is done, what changed, and what to watch out for.",
+    "how_to_use": [
+      "Start a new context with: 'Run stage <id> of pwa/dev_plan.json' (ids are P1..P13; backend stages are always written 'backend S<n>' to avoid confusion).",
+      "Read this file first: global_decisions, conventions, doc_issues, backend_readiness, the reports of all completed stages, handoff_notes and open_questions. Then read only the doc sections listed in the stage's context_to_read.",
+      "Check backend readiness before a stage that depends on it: read backend/dev_plan.json meta.progress, or run `pnpm contract:coverage` in backend/. If a needed backend stage is not done, build the screens against the contract, show the 'not available yet' state for 501 responses (GD-13), and list the gap in the stage report.",
+      "Before starting, set the stage status to 'in_progress' and fill report.started_at. Update each task's status as you go (not_started | in_progress | done | deferred | blocked), so a context that runs out mid-stage can be resumed.",
+      "When finishing, fill the stage report (summary, screens_done, deviations, notes_for_next, tests_after_stage), set status to 'done' (or 'partial' with reasons), append to handoff_notes and deviations_log, update meta.progress and screen_coverage, and set meta.last_updated.",
+      "Never delete earlier reports. Correct them by appending a note that says what changed.",
+      "If a stage changes a global decision, add an amendment to that decision with the stage id and a reason. Do not edit the decision in place without a trace.",
+      "If a stage must change backend code (e.g. DI-08 storage CORS), keep the change minimal, add tests in backend/, run the backend checks, and record it in both this file (deviations_log) and backend/dev_plan.json (handoff_notes)."
+    ],
+    "source_documents": {
+      "primary": [
+        "Docs/22.Social_WebUI_user_screens.md (the W- screens: layout, web-specific behaviour, URL map §6, social rules §7, open points §8)",
+        "Docs/21.Mobile_app_screen_list.md (element lists of the mirrored C-/S- screens; global patterns §2.3; deep links §6; a11y/l10n checklist §7)",
+        "Docs/40.API contract.md (the only interface to the backend; §1 transport, §2 security incl. SEC-WEB §2.12, the per-module operations)",
+        "Docs/carpal-design-system/ (README, CLAUDE.md, tokens.css/json, fonts, components/bundle.css + bundle.js + index.d.ts)"
+      ],
+      "secondary": [
+        "Docs/02.Detailed project plan.md (WP19 scope and acceptance; §2 stack; §3 localization and region config)",
+        "Docs/01.MVP_Plan.md §10 key flows (line ~3518), §11 consumer IA (~3615), §14 privacy, §15 NFRs",
+        "Docs/55.UI-UX Critical Flow.md (Help Me wizard C-HELP-01..08, decision logic, AI mapping)",
+        "Docs/56.UI-UX Social Flow.md (feed card, composer, reactions/comments/saves/follows, consent and moderation rules)",
+        "Docs/90.CarPal Screen Map.md (S-SHARED-* shared screens: search entry, map, filter panel, notifications, report, vehicle selector, directions)",
+        "Docs/10.User Story - Car Owner.md (Sara's chapters 1-11; the E2E scenarios follow it)",
+        "Docs/54.Scoring Protocol.md (match reasons and ranking explanations shown on cards)",
+        "Docs/52.MVP Data Dictionary.md (field meanings when 40 is not enough; 52 wins on fields)"
+      ],
+      "reference_implementation": [
+        "mobile/preview/ — clickable HTML prototype of all 70 Doc 21 screens, built with the design system. js/screens-*.js hold the EN/FA copy for every element (t('English','فارسی')) and the screen states; js/data.js holds the Story 10-12 sample data. Reuse its copy and states; do not reuse its code (UMD + htm).",
+        "backend/ — the server. backend/README.md (how to run), backend/dev_plan.json (status, global decisions, deviations), backend/libs/contract/generated/ (operation registry and JSON Schemas generated from Docs/40)."
+      ]
+    }
+  },
+
+  "environment": {
+    "checked_on": "2026-10-12",
+    "os": "Windows 11, Git Bash + PowerShell",
+    "available": {
+      "system_node": "20.10.0 (must stay; another project uses it)",
+      "local_node": "24.21.0 LTS in backend/.tools/node (installed by backend/tools/setup-local-node.mjs). The PWA reuses it (GD-02).",
+      "pnpm": "10.5.2",
+      "backend": "pnpm dev in backend/ runs api :8080, admin-api :8081, auth :8082, storage :8083 and the workers in one process (lite mode, embedded PostgreSQL on :54329). Email/SMS/push go to backend/.data/outbox-*.jsonl."
+    },
+    "missing": [
+      "docker (backend runs in lite mode only)",
+      "Playwright browsers (P1 installs Chromium only; see OQ-08)",
+      "vector map tiles (region config URLs are placeholders; see GD-12, OQ-02)"
+    ]
+  },
+
+  "backend_readiness": {
+    "as_of": "2026-10-12",
+    "source": "backend/libs/contract/generated/operations.json filtered to routes on the api/auth hosts with a USR or PUB principal, compared with the @Operation handlers in backend/.",
+    "consumer_operations": 182,
+    "implemented": 140,
+    "missing_by_backend_stage": {
+      "backend S7": ["reviews.eligibility", "reviews.create", "reviews.mine_list", "reviews.mine_get", "reviews.mine_update", "reviews.mine_withdraw", "reviews.evidence_add", "review_invitations.mine_list", "review_invitations.open", "review_invitations.verify", "disputes.create", "disputes.mine_list", "disputes.get", "disputes.withdraw", "appointments.create", "appointments.list", "appointments.get", "appointments.update", "appointments.transition", "appointments.delay", "appointments.check_in", "appointments.check_in_link", "appointments.history", "appointments.notes_list", "appointments.note_create", "pre_visit.requester_get", "public.availability (placeholder today: answers no slots)"],
+      "backend S8": ["events.ingest", "reports.create", "fleet driver assignment reads (fleet module)"],
+      "backend S9": ["triage.start", "triage.reply", "triage.get", "triage.complete", "ai.vehicle_suggestions", "ai.service_history_insights", "ai.insight_get", "ai.insight_feedback", "ai.suggestions_mine", "ai.suggestion_decide", "ai.approval_decide"],
+      "deferred_in_backend": ["auth.webauthn_options", "auth.social_start", "me.webauthn_register_options"]
+    },
+    "auth_server_facts": [
+      "Client cp-web-consumer is registered: confidential, refresh 12 h idle / 7 days absolute, allowed for the authorization-code and the anonymous grant (backend/libs/auth/index.ts).",
+      "Client cp-ssr gets a public.read client-credentials token (no refresh).",
+      "auth.authorize 302s to CARPAL_SIGNIN_URL (default <issuer>/signin) with ?interaction_id=…&ui_locales=…, and sets the interaction cookie (__Host-cp_ia, SameSite=Lax, Path=/). After the hosted UI completes, the UI sends the browser back to the same /oauth/authorize URL, which redirects to redirect_uri with code and state.",
+      "Redirect URIs come from CARPAL_OAUTH_REDIRECT_URIS (JSON); the dev default for cp-web-consumer is https://carpal.app/bff/oauth/callback, so local development must override it (P2).",
+      "private_key_jwt, mTLS, DPoP-Nonce, attestation and PoW are enforced only with CARPAL_STRICT_AUTH=1 (backend GD-06). In lite/dev the BFF calls the token endpoint without client authentication.",
+      "The storage listener (:8083) sends no CORS headers, so a browser cannot PUT a signed upload cross-origin yet (DI-08).",
+      "The auth host does not check Origin / Sec-Fetch-Site on /v1/auth/* yet (DI-09)."
+    ]
+  },
+
+  "global_decisions": [
+    {
+      "id": "GD-01",
+      "decision": "One Next.js app (App Router, React Server Components, TypeScript strict, ESM) in pwa/, managed by pnpm with its own lockfile (no root workspace, so backend/ stays untouched). Styling with Tailwind CSS v4 (CSS-first config). Exact versions are the current stable releases at P1 install time and are recorded in the P1 report.",
+      "reason": "Docs/02 §2 names React + Next.js + Tailwind for the consumer PWA (SSR for public SEO pages). A standalone package mirrors backend/ and avoids reworking the backend's install.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-02",
+      "decision": "Node: the PWA runs on the project-local Node 24 that backend/ already installed. pwa/tools/use-local-node.sh and use-local-node.ps1 put backend/.tools/node first on PATH (and run backend's setup script if it is missing). pwa/.node-version = 24.21.0.",
+      "reason": "System Node must stay 20.10 (backend environment note). One local Node for both packages avoids a second download.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-03",
+      "decision": "The consumer BFF (Docs/41 D4/G2, Docs/40 SEC-WEB) is built inside the PWA as server-only code (pwa/src/server/bff/) mounted by Next.js route handlers: /api/v1/[...path] (1:1 forwarder), /bff/login, /bff/oauth/callback, /bff/logout, /bff/session, /bff/csrf. The BFF code is written over standard Request/Response with no Next.js imports, so it can later move to backend/api-gateway/ unchanged.",
+      "reason": "SEC-WEB-1/2 require a same-origin BFF that holds the tokens; backend/dev_plan.json defers BFFs to backend/api-gateway 'later' and none of backend S7-S9 builds them. Building it with the PWA is the only way to make the PWA work, and keeping it framework-free keeps the Docs/41 placement possible.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-04",
+      "decision": "Contract types are generated, never hand-written. pwa/tools/contract/generate.ts reads backend/libs/contract/generated/{operations.json,schemas.json,operation-schemas.json,enums.ts,errors.ts} and writes shared/api-contracts/generated/ (operation map: opId → method, path template, path params, query, input/response TypeScript types, sec tags such as IDEM/ETAG/AAL2/FLAG; enums; error codes). `pnpm contract:generate` regenerates; `pnpm contract:check` fails when stale. The PWA imports it through a linked package (@carpal/api-contracts, 'link:../shared/api-contracts').",
+      "reason": "Docs/02 §6.1 'strict API contracts: TypeScript clients generated into shared/api-contracts; a breaking API change fails the PWA build'. The backend's OpenAPI file is a backend S9 item, but its generated registry already exists and is checked against Docs/40.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-05",
+      "decision": "Hosted sign-in UI (Docs/40 §6.2 'hosted sign-in UI on id.carpal.app', screens of W-AUTH-01 / S-AUTH-02,03,07,08,09) is built in the PWA codebase as its own route group (/id/signin/...). Dev topology: the PWA proxies /id/oauth/*, /id/v1/auth/* and /id/.well-known/* to the auth host (127.0.0.1:8082), so the hosted UI and the auth endpoints share one origin and the interaction cookie is first-party. Backend env for dev: CARPAL_SIGNIN_URL=http://localhost:3000/id/signin and CARPAL_OAUTH_REDIRECT_URIS={\"cp-web-consumer\":[\"http://localhost:3000/bff/oauth/callback\"]}. The BFF exchanges codes and refresh tokens server-to-server directly with :8082.",
+      "reason": "The interaction cookie is set by the auth host, so the sign-in page must be on the same origin as /v1/auth/*. No sign-in UI exists in backend/. Production placement (id.carpal.app served from the PWA build, or a separate small app) is OQ-03.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-06",
+      "decision": "'Intent survives sign-in' (Docs/22 principle 2) is done with a context modal plus a redirect, not a credentials modal: a gated action opens a small modal ('Sign in to follow Reza Auto Suspension') with Log in / Sign up; the action (type, target, return URL, form draft) is stored server-side in the BFF pre-session (TTL 30 min, size-capped), the browser goes through the hosted sign-in, and on return the page replays the action once and shows its toast.",
+      "reason": "Credentials must be entered on the hosted sign-in origin (GD-05; frame-ancestors 'none' forbids an iframe). Logged as DI-01.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-07",
+      "decision": "Tokens per audience: (a) signed-in browser sessions use the user's cp-web-consumer tokens (refresh rotated in the BFF; a refresh-reuse error ends the session); (b) guests get an anonymous cp-web-consumer token (scope 'public.read search', 15 min, no refresh) created lazily per pre-session (SEC-AU-14); (c) server rendering of public pages uses a cached cp-ssr client-credentials token (public.read). Every BFF call sends CarPal-Client 'cp-web-consumer/<version> (web 1.0)' (or cp-ssr), Accept-Language from the URL locale, and CarPal-Timezone from the browser.",
+      "reason": "Docs/40 §2.2, SEC-AU-14, §1.3. If a PUB operation rejects the cp-ssr scope (e.g. search.run for directory pages), SSR falls back to an anonymous token held by the server (DI-16).",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-08",
+      "decision": "BFF session store behind a port: lite = in-memory Map with TTL (single process, dev); full = Redis adapter (written, not verified, like the backend's full mode). Session cookie __Host-cp_sid (Secure; HttpOnly; SameSite=Strict; Path=/), 256-bit random id, holds nothing but the id. CSRF: synchronizer token bound to the session, sent as X-CSRF-Token by the typed client on every non-GET call, plus Sec-Fetch-Site same-origin and Origin == app origin checks (SEC-WEB-3). The forwarder only allows the consumer audience from the generated registry (USR/PUB operations on the api host; no {org}, {adm} or fleet-manager paths) (SEC-WEB-5), strips cookies and browser-only headers, and passes CarPal-Retry-After-Ms / CarPal-Poll-After-Ms / retry_after_ms through unchanged (SEC-RL-5).",
+      "reason": "Docs/40 SEC-WEB-1..5, SEC-RL-5. The browser on http://localhost accepts Secure cookies (localhost is a secure context).",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-09",
+      "decision": "Data access: server components call the backend through a server-side typed client (same generated operation map) for public reads; client components use TanStack Query over the browser-side typed client that calls the BFF (/api/v1/...). The typed client adds Idempotency-Key (UUIDv7, kept across automatic retries) for IDEM operations and If-Match from the last ETag for ETAG operations, maps problem+json to typed errors (code catalog from the registry), and implements SEC-RL-4 once: honour retry/poll delays + 0-20 % jitter; otherwise exponential backoff with full jitter (base 500 ms, cap 30 s, 5 attempts) for safe methods and IDEM requests only; pause an operation after 3 consecutive 503s.",
+      "reason": "Docs/40 §2.7 and §2.8 are client obligations 'enforced by contract tests'; centralizing them avoids every screen re-implementing them.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-10",
+      "decision": "i18n: i18next + react-i18next. Dictionaries live in shared/i18n/locales/{en,fa}.json (nested keys, namespaced per area) and are bundled into the PWA as the fallback; at runtime the PWA may fetch a newer version from config.client i18n.base_url/version and cache it. `pnpm i18n:check` fails if any en key is missing in fa (Docs/02 §3.1). Locale is the first URL segment (/fa, /en; default from region config = fa); <html lang dir> are set on the server. Dates use Intl with calendar 'persian' for fa (Jalali) and gregorian for en; digits follow the UI language (Intl 'fa' → Persian digits); plates, phones, codes and URLs stay as typed and are isolated with <bdi>. No date library unless Intl falls short (record it if added).",
+      "reason": "Docs/02 §3.1-3.4, design system 'Bidirectional layout' and 'Content fundamentals'.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-11",
+      "decision": "Design system: pwa/tools/sync-design-system.mjs copies tokens.css, tokens.json, fonts/ and components/bundle.css from Docs/carpal-design-system/ into shared/design-system/web/ (with --check for CI); Docs stays the source of truth. Tailwind's @theme maps the semantic tokens (ink, surface, accent, signal, border-inactive, space-*, radius-*, control-md, tap-min …); no raw hex or px values outside the token file. The design-system components (Button, Icon, TextField, Chip, Badge, Avatar, PostCard, Tagged, TopBar, TabBar, fmt) are ported as typed React components under pwa/src/components/ds/, keeping the class names and props of components/index.d.ts. Themes light | sun | dark via data-theme on <html>; sun follows prefers-contrast: more, dark follows prefers-color-scheme, both overridable in settings.",
+      "reason": "Docs/carpal-design-system/CLAUDE.md (Web section) and README. Tailwind is kept for layout only, because Docs/02 names it; components keep the system's own CSS classes.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-12",
+      "decision": "Map: MapLibre GL JS, loaded with a dynamic import only on W-MAP-01, the W-SRCH-01 map pane and on click elsewhere (profiles show a static preview first). Style URL from config.client region.map.style_url, overridable by the PWA env CARPAL_PWA_MAP_STYLE_URL. When no style is reachable (the pilot URLs are placeholders today), the map renders a built-in minimal style (plain background, no basemap) so pins, clusters, list sync and keyboard control still work, with the '© OpenStreetMap contributors' attribution always shown. No public OSM tile servers in committed config.",
+      "reason": "Docs/02 §2 (MapLibre, own tiles, public OSM servers not used), Docs/22 W-MAP-01 'map code loads only on this page', shared/region-config/ir-pilot.json placeholders. Tile source is OQ-02.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-13",
+      "decision": "Graceful degradation is part of every screen: 501 NOT_IMPLEMENTED (backend not there yet), 503 AI_UNAVAILABLE, flags off in config.client (map.enabled, qna.enabled, community.*, ai.*, featured.enabled), 404 (never 403, SEC-AZ-2) and 410 each map to a defined UI state from Docs/21/22 ('not available yet', AI-off fallback, no access, removed). A screen never crashes or loops on them.",
+      "reason": "The backend is mid-build (backend_readiness); Docs/40 SEC-AI-6 requires search, profiles and appointments to keep working without AI.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-14",
+      "decision": "Page URLs follow Docs/22 §6 except that they never carry free search text, coordinates, emails, phones, VINs or link tokens in the path or query (TR-7 spirit). Search pages are /<locale>/search/<search_session_id> plus enumerated filter params; the query text lives in the search session. Link tokens arrive in the fragment (/l/<type>#<token>, SEC-LT-2) and are POSTed. Help Me uses /<locale>/help/<session_id>/<step>.",
+      "reason": "Docs/40 TR-7 and SEC-LT-2 vs. Docs/22 '/fa/search?…' (DI-05).",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-15",
+      "decision": "Security of pages: nonce-based CSP set in Next.js middleware (script-src 'nonce-…' 'strict-dynamic'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; img-src self + media host + tile host; connect-src self + tile host), Trusted Types required, COOP/CORP same-origin, Permissions-Policy (geolocation=(self), camera=(self), others off), Referrer-Policy strict-origin-when-cross-origin, HSTS in prod. All API text renders as text: dangerouslySetInnerHTML is banned by lint (except the JSON-LD script, built with a serializer that escapes '<'). Private pages send Cache-Control: no-store and robots noindex.",
+      "reason": "Docs/40 SEC-WEB-4, SEC-IN-5, Docs/22 §6 (private pages never indexed).",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-16",
+      "decision": "Tests: Vitest + Testing Library (jsdom) for units and components (*.test.ts[x] next to the code); BFF integration tests (*.int.test.ts) run the BFF handlers against the live backend in lite mode; Playwright E2E (tests/e2e/) runs the built PWA against `pnpm dev` in backend/, Chromium only for now, with @axe-core/playwright on every visited page. E2E users sign up through the real hosted sign-in; one-time codes and email links are read from backend/.data/outbox-*.jsonl by a test helper (dev only). Tests use fresh emails under @test.carpal.app and assert only on their own data.",
+      "reason": "Docs/02 WP19 tests (Playwright, RTL, accessibility); mirrors backend GD-13 (shared DB, own rows).",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-17",
+      "decision": "Analytics: a small client queue batches registered events (search, map, directions, funnel; Docs/52 §18 names only) and sends them to events.ingest with platform 'web_pwa' (≤ 50 per request, on an interval and on visibilitychange). No personal data in properties. Cookie consent (Docs/22 §2.5) gates non-essential events. While the backend answers 501 (until backend S8), the queue drops events silently.",
+      "reason": "Docs/40 §22.2 events.ingest, MVP §16 metrics, Docs/22 cookie consent.",
+      "stage": "plan"
+    }
+  ],
+
+  "conventions": {
+    "folder_layout": {
+      "pwa/package.json, next.config.ts, tsconfig.json, eslint.config.js, vitest.config.ts, playwright.config.ts, .env.example, .node-version": "Package root. Scripts listed in commands_expected.",
+      "pwa/src/app/[locale]/(public)/": "SSR public pages: landing, shop/<slug>, parts-seller/<slug>, parts/<vendor>/<item>, post/<id>-<slug>, questions, <city>/<category>[/<brand>], member/<id> (if ever enabled), map, search.",
+      "pwa/src/app/[locale]/(app)/": "Signed-in tools: home, garage, help, appointments, review, settings, notifications, saved, activity. Layout checks the BFF session and redirects to sign-in with the return URL.",
+      "pwa/src/app/id/": "Hosted sign-in UI (GD-05): signin, signup, verify, reset, mfa, locked. Its own minimal layout, no app shell.",
+      "pwa/src/app/l/[type]/": "Link-token landing pages (ri, ci, ev, pr, cn): read the fragment on the client, POST it.",
+      "pwa/src/app/api/v1/[...path]/route.ts, pwa/src/app/bff/*/route.ts": "Thin Next.js adapters over pwa/src/server/bff/ (GD-03).",
+      "pwa/src/server/bff/": "session store port + lite/redis adapters, oauth (PKCE, state, nonce, code exchange, refresh rotation, logout/revoke), forwarder (allowlist from the registry, header hygiene), csrf, pending-intent store, token providers (user, anonymous, cp-ssr). No Next.js imports.",
+      "pwa/src/server/ssr/": "Server-side typed client and cached public reads for RSC pages; SEO helpers (metadata, hreflang, canonical, JSON-LD builders, sitemap).",
+      "pwa/src/lib/api/": "Typed client over the generated operation map; errors; retry/backoff; idempotency; ETag cache; TanStack Query helpers.",
+      "pwa/src/lib/{i18n,format,config,analytics,geo}/": "i18next setup and loaders; Jalali dates, digits, currency, distance; config.client and taxonomy cache; event queue; directions links from region config.",
+      "pwa/src/components/ds/": "Ported design-system components (GD-11).",
+      "pwa/src/components/shell/": "Global header, left navigation, right rail, bottom tab bar, auth-intent modal, toasts with Undo, modal-with-URL, cookie banner, system pages.",
+      "pwa/src/features/<area>/": "One folder per area (auth, onboarding, profiles, search, map, garage, media, community, notifications, settings, activity, help, appointments, reviews, fleet-driver, pwa): components, hooks, view models, tests.",
+      "pwa/src/sw/": "Service worker source (P12).",
+      "pwa/tests/e2e/": "Playwright specs and helpers (outbox reader, user factory).",
+      "pwa/tools/": "use-local-node.{sh,ps1}, contract/generate.ts, sync-design-system.mjs, i18n-check.ts.",
+      "shared/api-contracts/": "@carpal/api-contracts: generated TypeScript from the backend registry (GD-04). Never edited by hand.",
+      "shared/i18n/": "@carpal/i18n: locales/en.json, locales/fa.json (shared with mobile and portals later).",
+      "shared/design-system/web/": "Synced copy of the design-system tokens, fonts and component CSS (GD-11)."
+    },
+    "naming": "Screens are named by their Docs/22 id in a comment at the top of the page file (e.g. // W-GAR-01 My Garage (mirrors C-GARAGE-01/02/06/08/09)). API calls are made by operation id: api('vehicles.list', { query }) — never by hand-written paths.",
+    "ui_rules": [
+      "Logical properties only (start/end, ms-/me-/ps-/pe-/start-/end-); lint forbids left/right utilities and properties.",
+      "User text: dir='auto' + unicode-bidi: plaintext; names, plates, numbers inside sentences in <bdi>.",
+      "Touch targets ≥ 48 px (tap-min); body 17 px; nothing under 13 px or weight 400.",
+      "Every icon-only button has an accessible label in the UI language; keyboard: '/' focuses search, Esc closes modals, visible focus ring (ring-focus).",
+      "Same trust language as mobile: badges, Verified visit / Approved by the business and CarPal labels, match reasons, AI suggestion labels (Docs/21 §2.3).",
+      "No Featured blocks rendered while featured.enabled is off; never on the map.",
+      "Copy: take EN/FA strings from mobile/preview/js/screens-*.js where a screen mirrors a mobile one; put them in shared/i18n under the area's namespace."
+    ],
+    "definition_of_done_per_screen": [
+      "Route, layout per breakpoint (<768, 768-1199, ≥1200) and the elements of its Docs/22 entry (plus the Docs/21 element list for mirrored tools).",
+      "Every state listed in Docs/22/21 for the screen (loading skeleton, empty, error with Retry, 404/410, no access, 501/AI-off per GD-13).",
+      "EN and FA with correct direction; Daylight, Sunlight and Night themes.",
+      "Data only through the typed client; IDEM/ETAG handled by the client; gated actions go through the auth-intent modal (GD-06).",
+      "SEO for public pages (title, description, canonical, hreflang, JSON-LD, preview image, index/noindex per Docs/22 §6); no-store and noindex for private pages.",
+      "Tests: component tests for the view model/states; at least one Playwright path through the screen in EN or FA with an axe check (the key-flow E2E suites come in P13)."
+    ],
+    "commands_expected": {
+      "setup": "cd pwa && source tools/use-local-node.sh (PowerShell: . tools\\use-local-node.ps1) && pnpm install",
+      "dev": "pnpm dev (Next.js on :3000; needs `pnpm dev` running in backend/ with the env of GD-05)",
+      "build": "pnpm build && pnpm start",
+      "check": "pnpm check = lint + typecheck + test + contract:check + i18n:check + ds:check",
+      "lint": "pnpm lint (ESLint incl. RTL/logical-property and no-dangerouslySetInnerHTML rules)",
+      "test": "pnpm test (Vitest unit/component) / pnpm test:int (BFF against the live backend) / pnpm e2e (Playwright)",
+      "contract": "pnpm contract:generate | pnpm contract:check",
+      "i18n": "pnpm i18n:check",
+      "design_system": "pnpm ds:sync | pnpm ds:check"
+    },
+    "context_budget": "Each stage reads only its listed doc ranges. Use the generated operation map instead of re-reading Docs/40 operation blocks (read a block only when a field's meaning is unclear). Use mobile/preview for copy and states instead of re-reading all of Docs/21. Copy the patterns of the first finished screen of a kind (master-detail, wizard, SSR profile) instead of re-deriving them."
+  },
+
+  "doc_issues": [
+    { "id": "DI-01", "issue": "Docs/22 W-AUTH-01 puts the sign-in form in a 640 px modal; Docs/40 §6.2 requires credentials to be entered on the hosted sign-in UI of the authorization server, and SEC-WEB-4 forbids framing.", "action": "GD-06: context modal + redirect through the hosted sign-in, intent replayed on return. The hosted page uses the same W-AUTH-01 layout and shows the context line.", "status": "decided_in_plan" },
+    { "id": "DI-02", "issue": "Docs/22 W-COMP-01 lets car owners publish repair stories and tips; Docs/40 posts.create is ORG(P*, V*) only, and there is no consumer post operation.", "action": "Consumer composer limited to the Question type (questions.create) in P8; repair stories and tips are deferred until the contract adds a consumer post operation. Tell the backend owner.", "status": "open" },
+    { "id": "DI-03", "issue": "Docs/22 W-PUB-07 Member Page has no operation in Docs/40 (no public member read).", "action": "Deferred; review/answer author names render as text without a link until an operation exists.", "status": "open" },
+    { "id": "DI-04", "issue": "Docs/22 W-HELP-01 'Guest use' (and open point 2) lets guests run Help Me; Docs/40 triage.* are USR only.", "action": "Guests see the Help Me landing, are asked to sign in at the vehicle step (GD-06 intent), and can use search and the category picker without an account (OQ-04).", "status": "decided_in_plan" },
+    { "id": "DI-05", "issue": "Docs/22 §6 shows search pages as /fa/search?… with filters in the URL; Docs/40 TR-7 keeps search text and coordinates out of URLs.", "action": "GD-14: search session id in the path, enumerated filters only in the query.", "status": "decided_in_plan" },
+    { "id": "DI-06", "issue": "Docs/22 W-NET-01 has tabs Saved posts, Saved parts and Saved searches, and W-PUB-05/W-FEED-01 have Save on posts; Docs/40 has follows.* and favorites.* (organizations) only.", "action": "Build Favourites and Following; hide Save on posts and the other tabs until operations exist.", "status": "open" },
+    { "id": "DI-07", "issue": "Docs/22 W-FEED-01 feed tabs (For you, Following, Nearby, Showcases, Tips, Q&A), 'Not interested' and the '3 new posts' pill assume a personalised timeline; Docs/40 has feed.discover (PUB) and per-org posts.public_list.", "action": "P8 reads feed.discover's input/output and builds the tabs it supports; others hidden and listed in the P8 report.", "status": "open" },
+    { "id": "DI-08", "issue": "Browsers upload media with a cross-origin signed PUT to the storage host (Docs/40 SEC-UP-1); backend's storage listener sends no CORS headers, so the preflight fails.", "action": "P7 adds CORS to the backend storage listener for configured web origins (PUT with the signed headers only, no credentials), with tests, and records it in backend/dev_plan.json. Production media host needs the same.", "status": "open" },
+    { "id": "DI-09", "issue": "SEC-WEB-3 (Origin, Sec-Fetch-Site, CSRF) is not enforced on the auth host's /v1/auth/* endpoints.", "action": "The hosted UI sends the headers anyway; report to backend (strict-mode item).", "status": "open" },
+    { "id": "DI-10", "issue": "Docs/22 W-SRCH-01/W-PUB-02 'Call' reveals a number and 'logs a contact event'; no operation is named for that event.", "action": "P5 checks search.result_event (event types) and the registered analytics events; uses whichever fits, otherwise events.ingest with a registered name.", "status": "open" },
+    { "id": "DI-11", "issue": "Docs/22 W-NOTIF-01 offers consumer web push ('Get updates even when this tab is closed'); Docs/52 PushDeviceToken says web tokens serve provider and vendor portals and 'the consumer app does not receive business notifications'.", "action": "P12 checks push_tokens.register (platform enum) and the dispatcher; consumer web push is built if the contract allows platform web for a user, else hidden (OQ-07).", "status": "open" },
+    { "id": "DI-12", "issue": "Design system README: 'the web bundle (JS + CSS) is under 20 KB unminified'. A Next.js app cannot meet that for the whole page.", "action": "The budget applies to the design-system component layer (ds/ + its CSS). Page budgets: LCP ≤ 2.5 s on a mid-range phone on 4G for public pages (Docs/22 principle 5), measured in P13.", "status": "decided_in_plan" },
+    { "id": "DI-13", "issue": "Docs/22 W-PUB-08 route /fa/parts/<vendor-slug>/<item-slug>; public.inventory_get is by item_id.", "action": "Route /<locale>/parts/<vendor-slug>/<item_id>-<item-slug>; a wrong slug 301s to the canonical one. Same pattern as posts and questions.", "status": "decided_in_plan" },
+    { "id": "DI-14", "issue": "cp-ssr tokens carry scope public.read only; directory pages (W-PUB-04) and SSR question lists call search.run / questions.search (RL(search)), and the anonymous scope is 'public.read search'.", "action": "P5/P6 test whether the backend accepts cp-ssr for these; if not, SSR uses a server-held anonymous token (GD-07).", "status": "open" },
+    { "id": "DI-15", "issue": "Region config map URLs (shared/region-config/ir-pilot.json) are placeholders; no tile build exists.", "action": "GD-12 fallback style; OQ-02.", "status": "decided_in_plan" }
+  ],
+
+  "screen_coverage": {
+    "note": "Docs/22 §3 inventory. Update status (not_started | partial | done | deferred) and the stage that delivered it.",
+    "screens": [
+      { "id": "W-PUB-01", "name": "Landing Page", "stage": "P5", "status": "not_started" },
+      { "id": "W-AUTH-01", "name": "Sign In / Sign Up (hosted sign-in + context modal)", "stage": "P4", "status": "not_started" },
+      { "id": "W-ONB-01", "name": "Web Onboarding", "stage": "P4", "status": "not_started" },
+      { "id": "W-PUB-02", "name": "Public Provider Profile", "stage": "P5", "status": "not_started", "note": "Request card availability and 'Write a review' complete in P10/P11." },
+      { "id": "W-PUB-03", "name": "Public Vendor Profile", "stage": "P5", "status": "not_started" },
+      { "id": "W-PUB-04", "name": "Directory Page", "stage": "P6", "status": "not_started" },
+      { "id": "W-PUB-05", "name": "Showcase / Post Page", "stage": "P5", "status": "not_started", "note": "Comments and reactions added in P8." },
+      { "id": "W-PUB-06", "name": "Question Page", "stage": "P8", "status": "not_started" },
+      { "id": "W-PUB-07", "name": "Member Page", "stage": "-", "status": "deferred", "note": "DI-03: no operation." },
+      { "id": "W-PUB-08", "name": "Public Part Page", "stage": "P5", "status": "not_started" },
+      { "id": "W-SRCH-01", "name": "Search Results with Map", "stage": "P6", "status": "not_started" },
+      { "id": "W-FEED-01", "name": "Home Timeline", "stage": "P8", "status": "not_started" },
+      { "id": "W-COMP-01", "name": "Create Post (modal)", "stage": "P8", "status": "not_started", "note": "DI-02: question type only." },
+      { "id": "W-QA-01", "name": "Q&A Hub", "stage": "P8", "status": "not_started" },
+      { "id": "W-QA-02", "name": "Ask Question", "stage": "P8", "status": "not_started" },
+      { "id": "W-NET-01", "name": "Saved & Following", "stage": "P8", "status": "not_started", "note": "DI-06." },
+      { "id": "W-ME-01", "name": "My Activity", "stage": "P9", "status": "not_started", "note": "Reviews tab completes in P11." },
+      { "id": "W-NOTIF-01", "name": "Notifications (panel and page)", "stage": "P9", "status": "not_started" },
+      { "id": "W-GAR-01", "name": "My Garage", "stage": "P7", "status": "not_started" },
+      { "id": "W-GAR-02", "name": "Service Record and Documents", "stage": "P7", "status": "not_started" },
+      { "id": "W-GAR-03", "name": "Add / Edit Vehicle", "stage": "P7", "status": "not_started" },
+      { "id": "W-HELP-01", "name": "Help Me (web wizard)", "stage": "P10", "status": "not_started" },
+      { "id": "W-APP-01", "name": "Appointments", "stage": "P10", "status": "not_started" },
+      { "id": "W-REV-01", "name": "Write Review", "stage": "P11", "status": "not_started" },
+      { "id": "W-REV-02", "name": "Showcase Consent Request", "stage": "P11", "status": "not_started" },
+      { "id": "W-REV-03", "name": "Write Vendor Review", "stage": "P11", "status": "not_started" },
+      { "id": "W-SET-01", "name": "Settings", "stage": "P9", "status": "not_started" },
+      { "id": "W-RPT-01", "name": "Report Content (modal)", "stage": "P8", "status": "not_started", "note": "reports.create is backend S8." },
+      { "id": "W-SYS-01", "name": "System Pages", "stage": "P3", "status": "not_started", "note": "Offline page completes in P12." },
+      { "id": "W-MAP-01", "name": "Map View (full page)", "stage": "P6", "status": "not_started" }
+    ],
+    "extra": [
+      { "id": "DRV-WEB", "name": "Fleet driver issue reporting and assigned-vehicle view (pwa/README, Docs/02 WP19)", "stage": "P12", "status": "not_started" }
+    ]
+  },
+
+  "stages": [
+    {
+      "id": "P1",
+      "title": "Foundation: workspace, toolchain, contract types, design tokens",
+      "status": "not_started",
+      "depends_on": ["backend S1-S2 (contract registry exists)"],
+      "goal": "A Next.js app in pwa/ that installs, builds, lints, type-checks and tests on the local Node 24, renders /fa and /en with the right lang/dir/theme and the design-system fonts, and has generated, checked contract types and synced design tokens.",
+      "scope": {
+        "docs": ["Docs/02 §2 stack, §3 localization, §4 repo structure", "Docs/carpal-design-system README + CLAUDE.md", "Docs/40 §0 notation, §1 transport, §3-§5 (types, envelopes, errors, enums)"],
+        "screens": [],
+        "operations": ["health.get, config.client (smoke only)"]
+      },
+      "context_to_read": [
+        "this file: global_decisions, conventions, backend_readiness",
+        "backend/README.md (Quick start, Conventions) and backend/package.json (tool versions to match: TypeScript, ESLint, Vitest, Prettier)",
+        "backend/libs/contract/generated/ (shape of operations.json, schemas.json, operation-schemas.json, enums.ts, errors.ts) and backend/tools/contract/generate.ts (how types are expressed)",
+        "Docs/carpal-design-system/README.md, CLAUDE.md, tokens.css, components/index.d.ts",
+        "Docs/40.API contract.md lines 12-112 (notation, aliases, sec tags, role groups) and 436-583 (types, envelopes, problem, error catalog)"
+      ],
+      "tasks": [
+        { "id": "P1.T1", "task": "tools/use-local-node.{sh,ps1} reusing backend/.tools/node (GD-02); .node-version; verify node 24 + pnpm 10.", "status": "not_started" },
+        { "id": "P1.T2", "task": "Scaffold pwa/ by hand (no interactive create-next-app): package.json (type module, engines, packageManager, scripts of commands_expected), Next.js App Router, React, TypeScript strict (noUncheckedIndexedAccess, exactOptionalPropertyTypes like backend), Tailwind v4, ESLint flat config + Prettier matching backend style, Vitest + Testing Library, Playwright (Chromium only, OQ-08). Record exact versions.", "status": "not_started" },
+        { "id": "P1.T3", "task": "Lint rules: ban left/right CSS properties and Tailwind utilities (ml-/mr-/pl-/pr-/left-/right-/text-left/text-right/float-left…), ban dangerouslySetInnerHTML outside the JSON-LD helper, import boundaries (src/server/** is server-only; features never import each other's internals).", "status": "not_started" },
+        { "id": "P1.T4", "task": "tools/contract/generate.ts → shared/api-contracts/generated/ (operation map with method, path template, path params, query, input/response TS types, sec tags parsed into flags: idem, etag, aal2, flag keys, principals; enums; error codes) + package.json for @carpal/api-contracts; --check mode; unit test that fails when stale. Link it from pwa (link:../shared/api-contracts); configure Next (turbopack root / outputFileTracingRoot / transpilePackages) so linked packages outside pwa/ build.", "status": "not_started" },
+        { "id": "P1.T5", "task": "tools/sync-design-system.mjs (copy + --check) into shared/design-system/web/; tokens.css + @font-face imported once; Tailwind @theme mapped to the semantic tokens; preload only the current language's font.", "status": "not_started" },
+        { "id": "P1.T6", "task": "shared/i18n package skeleton (locales/en.json, fa.json with a 'common' namespace) and tools/i18n-check.ts (missing keys, empty values, placeholder mismatch).", "status": "not_started" },
+        { "id": "P1.T7", "task": "Env config with zod (server-only): CARPAL_PWA_ORIGIN, CARPAL_API_URL (http://127.0.0.1:8080), CARPAL_AUTH_URL (:8082), CARPAL_STORAGE_URL (:8083), CARPAL_PWA_MAP_STYLE_URL?, CARPAL_PWA_SESSION_STORE=lite|redis, CARPAL_PWA_REDIS_URL?, CARPAL_ENV; .env.example; startup validation.", "status": "not_started" },
+        { "id": "P1.T8", "task": "Locale routing: middleware redirects / to /<default locale> (Accept-Language among enabled locales, else region default fa); [locale] layout sets <html lang dir data-theme>; a placeholder home page per locale; not-found page.", "status": "not_started" },
+        { "id": "P1.T9", "task": "pwa/README.md (setup, run with backend, scripts, layout) and pwa/.gitignore entries (.next, test results, playwright report); add pwa/ items to the root .gitignore if needed.", "status": "not_started" },
+        { "id": "P1.T10", "task": "Green run: pnpm check, pnpm build, one Playwright smoke test (/fa renders rtl, /en ltr, fonts load, axe clean).", "status": "not_started" }
+      ],
+      "deliverables": ["pwa/ package with scripts", "shared/api-contracts/generated/", "shared/design-system/web/", "shared/i18n/ skeleton", "pwa/README.md"],
+      "acceptance_criteria": [
+        "pnpm install && pnpm check && pnpm build succeed on the local Node 24.",
+        "contract:check, ds:check and i18n:check fail when their source changes and pass after regeneration.",
+        "/fa renders dir=rtl lang=fa with Vazirmatn; /en dir=ltr with Atkinson; data-theme switches light/sun/dark.",
+        "Playwright smoke + axe pass in Chromium."
+      ],
+      "out_of_scope": ["BFF and auth (P2)", "real screens"],
+      "report": { "started_at": null, "completed_at": null, "summary": null, "versions": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+    },
+
+    {
+      "id": "P2",
+      "title": "Consumer BFF: session, OAuth, API forwarding, security headers",
+      "status": "not_started",
+      "depends_on": ["P1", "backend S3 (auth server)"],
+      "goal": "The browser holds only __Host-cp_sid. The BFF signs users in through the authorization-code + PKCE flow, keeps and rotates tokens, gives guests an anonymous token, forwards the consumer operations 1:1 with CSRF protection, and the typed client implements the contract's idempotency, ETag and retry rules.",
+      "scope": {
+        "docs": ["Docs/40 §1 transport, §2.2-2.3 clients and auth, §2.7-2.8 idempotency and rate limits, §2.10 link tokens, §2.12 SEC-WEB, §6.2 auth server", "Docs/41 §2.3 gateways and BFFs"],
+        "screens": [],
+        "operations": ["auth.discovery", "auth.jwks", "auth.authorize", "auth.token (authorization_code, refresh_token, anonymous, client_credentials for cp-ssr)", "auth.revoke", "me.get (session check)", "config.client"]
+      },
+      "context_to_read": [
+        "Docs/40.API contract.md lines 113-176 (transport, headers), 198-228 (clients, SEC-AU), 271-320 (SEC-IC, SEC-RL), 335-376 (SEC-LT, SEC-UP, SEC-WEB), 760-912 (auth server operations)",
+        "Docs/41.backend plan.md §2.3 (lines ~101-110)",
+        "backend/libs/auth/index.ts (CLIENTS), backend/libs/config/config.ts (signinUrl, redirect URIs), backend/modules/identity/application/auth-ops.ts (authorize, token grants), backend/apps/testing/auth-server.int.test.ts (a working end-to-end example of the flow)"
+      ],
+      "tasks": [
+        { "id": "P2.T1", "task": "Session store port + lite (in-memory TTL) and redis adapters (GD-08); session record: user tokens (access, refresh, expiry, acr, sid), anonymous token, csrf secret, pending intents, locale; idle and absolute lifetimes matching cp-web-consumer (12 h / 7 d).", "status": "not_started" },
+        { "id": "P2.T2", "task": "OAuth client: /bff/login (state, nonce, PKCE S256, ui_locales, optional acr_values=aal2 for step-up, return URL validated as same-origin path) → /id/oauth/authorize; /bff/oauth/callback (state check, code exchange server-to-server, id_token nonce/iss/aud check via JWKS, session rotation on login to prevent fixation); /bff/logout (revoke refresh, drop session, clear cookie). Refresh with single-flight per session; refresh reuse/invalid_grant ends the session.", "status": "not_started" },
+        { "id": "P2.T3", "task": "Dev topology of GD-05: Next rewrites/route for /id/oauth/*, /id/v1/auth/*, /id/.well-known/* → auth host (preserve Set-Cookie and Location; rewrite Location of the authorize 302 when it points at the internal host). Document the backend env (CARPAL_SIGNIN_URL, CARPAL_OAUTH_REDIRECT_URIS) in pwa/README and backend/.env.example (comment only).", "status": "not_started" },
+        { "id": "P2.T4", "task": "Forwarder /api/v1/[...path]: match the path against the generated registry (consumer audience only, SEC-WEB-5; else 404), CSRF + Sec-Fetch-Site + Origin on non-GET (SEC-WEB-3), attach Bearer token (user, else anonymous), CarPal-Client, Accept-Language, CarPal-Timezone, pass Idempotency-Key/If-Match/CarPal-Request-Id; strip cookies and hop-by-hop headers both ways; pass retry/poll headers through; on 401 from an expired access token refresh once and retry; on 401 STEP_UP_REQUIRED return a typed problem the client turns into a step-up redirect.", "status": "not_started" },
+        { "id": "P2.T5", "task": "Token providers: anonymous grant per pre-session (lazy, cached until expiry); cp-ssr client-credentials token cached process-wide; server-side typed client for RSC (uses cp-ssr, falls back to anonymous per DI-14).", "status": "not_started" },
+        { "id": "P2.T6", "task": "Browser typed client (GD-09): api(opId, {path, query, body}) built from the operation map; CSRF token from /bff/csrf (or a meta tag); Idempotency-Key UUIDv7 for IDEM ops; If-Match for ETAG ops from a per-resource ETag cache; problem+json → ApiProblem {status, code, fields, retry_after_ms}; SEC-RL-4 retry/backoff/pause; TanStack Query provider and helpers (query keys = opId + params).", "status": "not_started" },
+        { "id": "P2.T7", "task": "/bff/session endpoint (signed-in? display name, locale, acr; never tokens) and a useSession hook; pending-intent store API (save before sign-in, consume once after).", "status": "not_started" },
+        { "id": "P2.T8", "task": "Security headers (GD-15) in middleware: CSP nonce + Trusted Types policy, frame-ancestors none, COOP/CORP, Permissions-Policy, Referrer-Policy; no-store on BFF and private pages.", "status": "not_started" },
+        { "id": "P2.T9", "task": "Tests: unit (PKCE, state/nonce, allowlist matching, header hygiene, CSRF, retry policy with fake timers); int against live backend (anonymous token → config.client; full code flow with a test user created through the auth endpoints → me.get; refresh rotation; logout revokes; a forbidden {org} path → 404).", "status": "not_started" }
+      ],
+      "deliverables": ["pwa/src/server/bff/", "pwa/src/lib/api/", "route handlers under /api/v1 and /bff", "middleware with security headers"],
+      "acceptance_criteria": [
+        "No access or refresh token ever reaches the browser (checked in an int test by inspecting all responses and cookies).",
+        "A test user can sign in through /bff/login → hosted sign-in endpoints → callback, call me.get through /api/v1/me, refresh after expiry, and log out.",
+        "State-changing calls without a valid CSRF token or with a foreign Origin get 403 from the BFF.",
+        "Paths outside the consumer audience 404 at the BFF without reaching the backend.",
+        "IDEM retries reuse the same Idempotency-Key; 429 with CarPal-Retry-After-Ms is respected."
+      ],
+      "out_of_scope": ["the sign-in pages themselves (P4)", "mTLS and private_key_jwt (strict mode; backend GD-06)"],
+      "report": { "started_at": null, "completed_at": null, "summary": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+    },
+
+    {
+      "id": "P3",
+      "title": "Design system, i18n and formatting, app shell and global patterns",
+      "status": "not_started",
+      "depends_on": ["P1", "P2"],
+      "goal": "Every later screen can be assembled from ported design-system components inside a responsive, RTL-correct shell with the global header, navigation, right rail, toasts, URL-addressable modals, the auth-intent modal, cookie consent and system pages, using EN/FA dictionaries and locale-aware formatting.",
+      "scope": {
+        "docs": ["Docs/22 §1-§2 (principles, layout system, header, navigation, right rail, global patterns), W-SYS-01", "Docs/21 §1-§2 (app shell, global patterns, shared components), §7 a11y/l10n checklist", "Docs/carpal-design-system components/*/README.md"],
+        "screens": ["W-SYS-01 (404, 410, suspended, no access, maintenance; offline in P12)"],
+        "operations": ["config.client", "taxonomy.version", "taxonomy.snapshot", "taxonomy.suggest (header search suggestions)", "vehicles.list (vehicle context chip)", "notifications.unread_count (bell badge)"]
+      },
+      "context_to_read": [
+        "Docs/22.Social_WebUI_user_screens.md lines 18-80 and 527-538",
+        "Docs/21.Mobile_app_screen_list.md lines 20-100 and 1323-1334",
+        "Docs/carpal-design-system/components/*/README.md and components/bundle.js (to port)",
+        "mobile/preview/js/kit.js (i18n helper, shared building blocks) and js/app.js (sheets/dialogs/snackbar behaviour)",
+        "Docs/02.Detailed project plan.md §3 (lines ~66-97)"
+      ],
+      "tasks": [
+        { "id": "P3.T1", "task": "Port DS components to typed React (ds/): Button, Icon (full inline SVG set incl. mirroring rule), TextField, Chip, Badge, Avatar, PostCard, Tagged, TopBar, TabBar, fmt; component tests incl. RTL snapshots.", "status": "not_started" },
+        { "id": "P3.T2", "task": "i18n runtime (GD-10): server and client i18next instances, namespaces per area, bundled fallback + CDN refresh from config.client, language switch preserving the path; formatting helpers (dates Jalali/gregorian, relative time, numbers/digits, currency IRR with the region's display unit, distance 'about x km', <Bidi> wrapper).", "status": "not_started" },
+        { "id": "P3.T3", "task": "Theme handling: data-theme from a cookie (no flash), prefers-contrast → sun, prefers-color-scheme → dark, manual override.", "status": "not_started" },
+        { "id": "P3.T4", "task": "Shell: global header (logo, search box with '/' shortcut and suggestion dropdown incl. 'Browse on map', Help Me button, language switch / avatar menu, notifications bell with unread count), left navigation (desktop labels, tablet icons, 'Your garage' box), right rail slots, bottom tab bar on <768 px for signed-in users; guest vs signed-in variants.", "status": "not_started" },
+        { "id": "P3.T5", "task": "Global patterns: toast with Undo (bottom-start, 5 s), modal-with-URL (refreshable, back closes), drawer, auth-intent modal wired to the pending-intent API (GD-06), hover cards (pointer only), infinite list with scroll restoration and 'Back to top', skeletons, error boundary with Retry, GD-13 state components (not available yet, AI off, no access, removed).", "status": "not_started" },
+        { "id": "P3.T6", "task": "Cookie and tracking consent banner (Accept all / Reject non-essential / Choose; equal prominence) stored in a first-party cookie; consent read by the analytics queue (GD-17) — queue skeleton only.", "status": "not_started" },
+        { "id": "P3.T7", "task": "Config and taxonomy cache: config.client (flags, region, i18n version) loaded on the server per request with short cache; taxonomy snapshot cached by taxonomy.version (server memory + client IndexedDB-free memory); vehicle picker (brand → model → series) component reused by landing, Help Me and garage.", "status": "not_started" },
+        { "id": "P3.T8", "task": "System pages W-SYS-01 with correct HTTP status (404, 410, 200+noindex suspended, 403-styled no access, 503 maintenance).", "status": "not_started" },
+        { "id": "P3.T9", "task": "Tests: component + Playwright layout checks at 375/1024/1440 px in EN and FA, keyboard navigation of header and modals, axe.", "status": "not_started" }
+      ],
+      "deliverables": ["pwa/src/components/ds/", "pwa/src/components/shell/", "pwa/src/lib/i18n, format, config", "shared/i18n/locales common + shell namespaces"],
+      "acceptance_criteria": [
+        "The shell renders correctly in EN/FA × light/sun/dark × three breakpoints with no horizontal scroll and no left/right CSS.",
+        "Language switch keeps the current page; FA shows Persian digits and Jalali dates.",
+        "A gated demo action (e.g. a test-only Follow button) survives sign-in end to end.",
+        "i18n:check passes; axe clean on the shell."
+      ],
+      "out_of_scope": ["feature screens"],
+      "report": { "started_at": null, "completed_at": null, "summary": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+    },
+
+    {
+      "id": "P4",
+      "title": "Hosted sign-in UI and web onboarding",
+      "status": "not_started",
+      "depends_on": ["P2", "P3", "backend S3"],
+      "goal": "A visitor can sign up (email or phone + code, or password), verify, sign in with a code or a password, pass MFA, reset a password, see locked/suspended states, and complete the 5-step web onboarding, then return to the page and action they started from.",
+      "scope": {
+        "docs": ["Docs/22 W-AUTH-01, W-ONB-01", "Docs/21 S-AUTH-02, 03, 04, 05, 07, 08, 09, C-ONB-01..03", "Docs/90 S-AUTH-* (lines 198-350)", "Docs/56 §1 user signup journey"],
+        "screens": ["W-AUTH-01", "W-ONB-01"],
+        "operations": ["auth.signup", "auth.signin_password", "auth.otp_start", "auth.otp_verify", "auth.mfa_verify", "auth.email_verify", "auth.password_reset_start", "auth.password_reset_complete", "auth.pow_challenge (only if strict mode asks)", "onboarding.list", "onboarding.update", "onboarding.accept_terms", "me.update", "me.preferences_update", "consents.grant", "vehicles.create", "vehicles.vin_decode", "taxonomy.suggest"]
+      },
+      "context_to_read": [
+        "Docs/22.Social_WebUI_user_screens.md lines 145-180",
+        "Docs/21.Mobile_app_screen_list.md §4.1 (lines 180-424)",
+        "Docs/40.API contract.md lines 699-760 (identity schemas), 824-912 (auth ops), 1070-1203 (consent, onboarding)",
+        "Docs/56.UI-UX Social Flow.md lines 40-170",
+        "mobile/preview/js/screens-auth.js (copy and states)"
+      ],
+      "tasks": [
+        { "id": "P4.T1", "task": "Hosted sign-in shell under /id (own minimal layout, locale from ui_locales, context line from the pending intent), reading interaction_id from the query; every form posts to /id/v1/auth/* with Origin and Sec-Fetch-Site; AuthNext handling (next step: mfa, verify, complete → navigate the browser back to the authorize URL).", "status": "not_started" },
+        { "id": "P4.T2", "task": "Sign in: identifier field (email or phone), 'Send me a code' default for phones / 'Use password'; 6-box code input with paste and autocomplete=one-time-code; resend timer (≥ 60 s); 'Keep me signed in' (maps to BFF session lifetime); enumeration-safe messages; locked (timed) and suspended (appeal + data export link) states.", "status": "not_started" },
+        { "id": "P4.T3", "task": "Sign up: name, email/phone, optional password (12-128, breached-password error), required terms + privacy (versions from config), optional marketing and AI personalisation unticked; verify by code; email verification link page /l/ev#token → auth.email_verify.", "status": "not_started" },
+        { "id": "P4.T4", "task": "MFA step (TOTP and recovery code; passkey hidden while backend WebAuthn is deferred) and step-up re-entry (acr_values=aal2) used later by AAL2 operations.", "status": "not_started" },
+        { "id": "P4.T5", "task": "Forgot/reset password: start (always same answer) and /l/pr#token completion page.", "status": "not_started" },
+        { "id": "P4.T6", "task": "W-ONB-01: centred stepper (how you'll use CarPal → first car (VIN paste with clean-up, decode, or picker; 'Continue on your phone' QR) → anything wrong (stores a draft for Help Me) → interests (optional) → permissions (location for 'near me'; web push offer deferred to P12)); Next saves, Skip on 2-5, resume at the same step; business choices link to the portal sign-up (placeholder URL from config).", "status": "not_started" },
+        { "id": "P4.T7", "task": "After sign-up/sign-in: onboarding if incomplete, then the pending intent (GD-06) or the return URL; signed-in visitors to the landing go to /home.", "status": "not_started" },
+        { "id": "P4.T8", "task": "E2E: sign up with email + code (code read from the outbox), onboarding with a first vehicle, sign out, sign in with password, MFA enrol is P9; FA and EN variants; axe.", "status": "not_started" }
+      ],
+      "deliverables": ["pwa/src/app/id/**", "pwa/src/features/auth, onboarding", "E2E helpers: outbox reader, user factory"],
+      "acceptance_criteria": [
+        "Sara's Ch. 1-3 path works on the web: sign up, verify, add the BMW 320i E90, sign out, sign in with a code on another browser context and see the garage vehicle.",
+        "A guest clicking a gated action returns to the same page with the action completed.",
+        "All auth errors are enumeration-safe and localized."
+      ],
+      "out_of_scope": ["passkeys and social login (backend deferred)", "session list and MFA enrolment UI (P9)"],
+      "report": { "started_at": null, "completed_at": null, "summary": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+    },
+
+    {
+      "id": "P5",
+      "title": "Public SEO pages: landing, provider, vendor, part, showcase",
+      "status": "not_started",
+      "depends_on": ["P3", "backend S4-S6"],
+      "goal": "Server-rendered, indexable public pages that turn a search-engine visitor into a follower, a request or an inquiry, within the 2.5 s LCP budget.",
+      "scope": {
+        "docs": ["Docs/22 W-PUB-01, 02, 03, 05, 08, §6 URL map, §7 rules", "Docs/90 C-PROV-01, C-PROV-02, C-VEND-01 (lines 914-1200)", "Docs/54 §5 match reasons"],
+        "screens": ["W-PUB-01", "W-PUB-02", "W-PUB-03", "W-PUB-05 (showcases; comments/reactions in P8)", "W-PUB-08"],
+        "operations": ["public.org_get", "public.org_reviews", "public.org_portfolio", "public.org_inventory_search", "public.inventory_get", "public.availability", "showcases.get", "posts.public_list", "feed.discover (landing blocks)", "follows.put/delete", "favorites.put/delete", "inquiries.create (Ask about stock)", "taxonomy.snapshot", "search.result_event (DI-10)"]
+      },
+      "context_to_read": [
+        "Docs/22.Social_WebUI_user_screens.md lines 118-145, 181-255, 278-285, 540-575",
+        "Docs/90.CarPal Screen Map.md C-PROV-01, C-PROV-02, C-VEND-01 sections",
+        "Docs/40.API contract.md §14.1 schemas and §14.3 (lines 2608-2709, 2766-2821), §19 showcases.get/posts.public_list blocks, §13.3 inquiries.create",
+        "mobile/preview/js/screens-discover.js (provider/vendor profile copy and states)"
+      ],
+      "tasks": [
+        { "id": "P5.T1", "task": "SEO kit: generateMetadata per page (title/description per locale, canonical, hreflang fa/en, Open Graph preview image = cover/after-photo), JSON-LD builders (Organization, LocalBusiness/AutoRepair with AggregateRating from published reviews, AutoPartsStore, Product/Offer for parts with public price only, Article/ImageObject), robots.txt and sitemap index (provider, vendor, part, showcase URLs from public reads), noindex rules of §6.", "status": "not_started" },
+        { "id": "P5.T2", "task": "W-PUB-01 landing: hero with Your car picker + 'What's wrong' field → search (P6 opens results; until then a stub route), How it works, trust explained + 'How ranking works' static page, popular specialists near (city picker; IP-based city is optional), recent showcases, for businesses, footer; states (no city, no providers).", "status": "not_started" },
+        { "id": "P5.T3", "task": "W-PUB-02 provider profile at /<locale>/shop/<slug>: header band (badges with popovers, rating, area, response time, Follow/Save/Share/Report), anchored sections with sticky section menu (Overview, Services & Capabilities matrix with 'Only my car', Portfolio grid opening showcases in a modal, Reviews two-column with filters and the two verification labels, Location & Hours with static preview and Get directions, Q&A link), sticky Request card (vehicle chip, fit line, next slots from public.availability or 'Request anyway' → P10 request step), Call reveal (DI-10); states (pending verification, no reviews, suspended noindex, merged 301).", "status": "not_started" },
+        { "id": "P5.T4", "task": "W-PUB-03 vendor profile at /<locale>/parts-seller/<slug>: header band, Parts (search within vendor, filters, grid; no listing without a term beyond page 1), Fitment coverage table, Reviews with vendor sub-ratings, Location; 'Ask about a part' card; trade prices never rendered (only the 'Trade prices for verified businesses' note).", "status": "not_started" },
+        { "id": "P5.T5", "task": "W-PUB-08 part page /<locale>/parts/<vendor-slug>/<item_id>-<slug> (DI-13): gallery, numbers, condition, price or 'Price on request', stock with last update, warranty, fitment table highlighting the visitor's car, vendor card, Ask about stock (auth-intent → inquiries.create form as C-INV-03), alternatives labelled AI suggestion if present; out of stock = 200, removed = 410.", "status": "not_started" },
+        { "id": "P5.T6", "task": "W-PUB-05 showcase page /<locale>/post/<id>-<slug>: author header, before/after slider (drag, arrow keys, click toggle), consent indicator, linked provider card, right rail 'Request similar service' and more from this provider; modal over profiles with URL; removed 410; comments/reactions placeholders for P8.", "status": "not_started" },
+        { "id": "P5.T7", "task": "Media rendering: signed public media URLs with fixed aspect boxes, lazy loading, sizes/srcset where variants exist; images from the media host allowed in CSP.", "status": "not_started" },
+        { "id": "P5.T8", "task": "Tests: RSC render tests with fixtures; E2E on a seeded provider and vendor (create them through backend fixtures or API as a business user), check JSON-LD validity, hreflang, status codes; Lighthouse-style LCP check on the provider page (local, throttled).", "status": "not_started" }
+      ],
+      "deliverables": ["pwa/src/app/[locale]/(public)/** for these pages", "pwa/src/server/ssr/seo", "pwa/src/features/profiles"],
+      "acceptance_criteria": [
+        "View-source of a provider page contains the content, JSON-LD, canonical and hreflang; no trade price, no private data.",
+        "Follow/Save as a guest goes through sign-in and completes on return.",
+        "Suspended and removed content return the documented HTTP status and noindex."
+      ],
+      "out_of_scope": ["directory pages and search (P6)", "comments/reactions (P8)", "writing reviews (P11)", "appointment request (P10)"],
+      "report": { "started_at": null, "completed_at": null, "summary": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+    },
+
+    {
+      "id": "P6",
+      "title": "Search, map, directions and directory pages",
+      "status": "not_started",
+      "depends_on": ["P5", "backend S6"],
+      "goal": "Native-language search without Help Me (chips, All mode, safety banner, filters with counts, sort), the map with pins/clusters/vehicle filter/Search this area, the Directions menu from region config, and indexable directory pages.",
+      "scope": {
+        "docs": ["Docs/22 W-SRCH-01, W-MAP-01, W-PUB-04", "Docs/90 S-SHARED-01, 02, 03, 09, 10 (lines 351-616)", "Docs/21 C-SEARCH-01", "Docs/01 §10 Flow 5 (line ~3590), §12 search", "Docs/54 §5 (match reasons)"],
+        "screens": ["W-SRCH-01", "W-MAP-01", "W-PUB-04", "header search dropdown (S-SHARED-01)"],
+        "operations": ["search.run", "search.page", "search.refine", "search.result_event", "map.pins", "safety.check", "taxonomy.suggest", "me.preferences_get/update (navigation app choice)", "events.ingest (search/map/directions events; 501 until backend S8)"]
+      },
+      "context_to_read": [
+        "Docs/22.Social_WebUI_user_screens.md lines 225-234, 286-332",
+        "Docs/90.CarPal Screen Map.md lines 351-466 and 578-616",
+        "Docs/40.API contract.md lines 2608-2765 (§14.1-14.2)",
+        "backend/dev_plan.json: GD-23 and the S6 report (search defaults, OQ-14)",
+        "mobile/preview/js/screens-discover.js (search entry, results, map, directions copy and states)"
+      ],
+      "tasks": [
+        { "id": "P6.T1", "task": "Search entry: header dropdown with suggestions (taxonomy.suggest), recent searches (local, per device), 'Browse on map'; submitting runs search.run and navigates to /<locale>/search/<session_id> (GD-14).", "status": "not_started" },
+        { "id": "P6.T2", "task": "W-SRCH-01: top bar (query, vehicle chip, location chip, mode tabs All/Providers/Parts/Vendors/Showcases/Q&A, editable 'Understood as' chips via search.refine, sort), safety banner from the response/safety.check, filter panel with counts (instant apply, URL-synced enumerated filters, Reset), result cards with match reasons (54 §5), pagination with signed cursors, map pane synced with hover, empty/widening states, vehicle-missing banner; Ctrl/Cmd-click opens new tab; result events.", "status": "not_started" },
+        { "id": "P6.T3", "task": "Map component (GD-12): lazy MapLibre, style fallback, pins by type (shop/parts seller/mobile provider) with shape+icon, rank numbers 1-3, clusters (≤ 300 pins), radius circles, legend, zoom/recenter, attribution; keyboard (arrows pan, +/- zoom, Tab through list and pins, L toggles list); RTL mirrors controls not the map.", "status": "not_started" },
+        { "id": "P6.T4", "task": "W-MAP-01 /<locale>/map (noindex): places-in-view list, 'For [car]' filter with 'Show all nearby' fallback under 3 pins, layer chips, Open now, Advanced search highlight/dim with 'Hide others', Search this area, selected-pin popover with Request/Ask about part, View, Directions; states (location unknown → city, no results, map failed → list only, offline).", "status": "not_started" },
+        { "id": "P6.T5", "task": "Directions menu (S-SHARED-10): apps from region config filtered to platform 'web' (+ device link on phones), destination only, remembered choice (preferences when signed in, cookie otherwise), approximate-address handling.", "status": "not_started" },
+        { "id": "P6.T6", "task": "Location: browser geolocation only after a user action and only with the location_usage consent (consents.grant), default precision; sent in request bodies only, never in URLs.", "status": "not_started" },
+        { "id": "P6.T7", "task": "W-PUB-04 directory pages /<locale>/<city>/<category>[/<brand>] (SSR, DI-14 token check): H1, intro from structured counts (no AI text), series refinement chips, ranked list, map in the rail loaded after the list, related links, 3 related Q&A; < 3 providers → noindex + 'Widen your search'; sitemap entries for combinations with ≥ 3 results (rule from Docs/22 open point 6; record the chosen rule).", "status": "not_started" },
+        { "id": "P6.T8", "task": "Tests: chip editing and filter URL sync, safety banner, map keyboard, directions link building per app template; E2E Flow 5 (search in Persian text → chips → profile → request button visible) in FA.", "status": "not_started" }
+      ],
+      "deliverables": ["pwa/src/features/search, map", "directory routes and sitemap"],
+      "acceptance_criteria": [
+        "A Persian query and a Latin-letter Persian query both show 'Understood as' chips and ranked results with reasons; safety words show the red banner while results stay visible.",
+        "No search text or coordinates appear in any page URL or BFF access log line.",
+        "The map works with the fallback style and with a real style URL when configured."
+      ],
+      "out_of_scope": ["compare view and saved searches (Should; record if skipped)"],
+      "report": { "started_at": null, "completed_at": null, "summary": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+    },
+
+    {
+      "id": "P7",
+      "title": "My Garage: vehicles, service history, documents, issues, reminders, uploads",
+      "status": "not_started",
+      "depends_on": ["P3", "P4", "backend S4-S5"],
+      "goal": "A signed-in owner manages vehicles, mileage, service records (with print), documents and invoices (drag, drop, paste uploads through the media pipeline), issues and reminders in a master-detail garage, within the plan's vehicle limit.",
+      "scope": {
+        "docs": ["Docs/22 W-GAR-01, 02, 03", "Docs/21 §4.3 My Garage (lines 694-856), C-PLAN-01", "Docs/40 §12 vehicles, §17 media, §2.11 SEC-UP, §10 plans/subscription"],
+        "screens": ["W-GAR-01", "W-GAR-02", "W-GAR-03"],
+        "operations": ["vehicles.* (31 ops on /v1/me/vehicles…)", "media.upload_init", "media.upload_complete", "media.get", "media.download_url", "media.attach", "media.attachment_update", "media.detach", "media.delete", "media.redaction_decide", "subscription.me_get", "plans.list", "jobs.get", "ai.vehicle_suggestions / ai.service_history_insights (backend S9; AI-off state until then)"]
+      },
+      "context_to_read": [
+        "Docs/22.Social_WebUI_user_screens.md lines 414-451",
+        "Docs/21.Mobile_app_screen_list.md lines 694-856",
+        "Docs/40.API contract.md lines 1960-2283 (§12), 3478-3595 (§17), 357-366 (SEC-UP), 1853-1909 (§10)",
+        "backend/dev_plan.json GD-18 (media pipeline) and OQ-08 (HEIC: clients convert to JPEG)",
+        "backend storage listener source (find via backend/README 'storage :8083') for DI-08",
+        "mobile/preview/js/screens-garage.js"
+      ],
+      "tasks": [
+        { "id": "P7.T1", "task": "DI-08 backend change: CORS on the storage listener for configured web origins (env list), PUT + OPTIONS only, exposing nothing extra, no credentials; backend tests; record in both plans.", "status": "not_started" },
+        { "id": "P7.T2", "task": "Upload kit (features/media): drop zone + paste (Ctrl+V) + file picker; client-side checks (type, size, megapixels per SEC-UP-2); HEIC → JPEG conversion in the browser (OQ-08) or a clear refusal; SHA-256 in a worker; upload_init → signed PUT with progress → upload_complete → poll status/jobs with Poll-After → attach; per-file errors (scan failed, quarantined) with reasons; plate/face redaction decision UI where the API returns suggestions.", "status": "not_started" },
+        { "id": "P7.T3", "task": "W-GAR-01 master-detail /<locale>/garage/<vehicle-id>/<tab>: vehicle list with status chips, plan line 'n of N vehicles', sold/inactive group; header with photo, nickname, model, inline mileage edit (Enter saves; lower value warning), completeness meter; tabs Overview, Service History, Issues (side drawer), Documents, Reminders as routes; 'N' adds a record.", "status": "not_started" },
+        { "id": "P7.T4", "task": "W-GAR-02: service history table (sort, filters, source mark Verified/Added by you, attachments, timeline toggle), record drawer, add/edit page with two-column form and invoice upload, print/export layout (buyer-friendly, print CSS); documents table sorted by nearest expiry with in-place PDF preview via signed URL.", "status": "not_started" },
+        { "id": "P7.T5", "task": "W-GAR-03 add/edit vehicle: VIN first (paste clean-up, decode, 'From VIN'/'You entered' tags), picker fallback, live card preview + completeness, 'Scan on your phone' QR; 6th vehicle → plan-limit modal (C-PLAN-01) keeping entered data (ENT(max_vehicles) error mapping); VIN reveal needs AAL2 step-up.", "status": "not_started" },
+        { "id": "P7.T6", "task": "Reminders and issues: list, create, resolve per the contract; 'Find help' on an issue opens Help Me (P10) with the issue pre-filled (stub until P10).", "status": "not_started" },
+        { "id": "P7.T7", "task": "Tests: upload state machine with mocked fetch; ETag conflict (412) handling on edits; E2E Sara Ch. 4: add records with an invoice upload, edit mileage, print view; FA.", "status": "not_started" }
+      ],
+      "deliverables": ["pwa/src/features/garage, media", "backend storage CORS change"],
+      "acceptance_criteria": [
+        "An image and a PDF upload from the browser end in 'clean' and display/download through signed URLs.",
+        "Concurrent edits surface a 412 as 'This changed elsewhere — reload' without losing input.",
+        "The vehicle limit is enforced by the server and shown as the C-PLAN-01 modal."
+      ],
+      "out_of_scope": ["AI suggestions beyond the AI-off state (backend S9)", "OBD placeholder"],
+      "report": { "started_at": null, "completed_at": null, "summary": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+    },
+
+    {
+      "id": "P8",
+      "title": "Community: home timeline, Q&A, follows and favourites, comments, reactions, reports",
+      "status": "not_started",
+      "depends_on": ["P5", "P6", "backend S6"],
+      "goal": "Signed-in users get a home page with what needs attention and a Discover feed; everyone can read Q&A and showcases with comments and reactions; users can ask and answer questions, follow and favourite shops, and report content.",
+      "scope": {
+        "docs": ["Docs/22 W-FEED-01, W-COMP-01, W-QA-01, W-QA-02, W-PUB-06, W-NET-01, W-RPT-01, §7", "Docs/56 §3-§4 (feed), §8-§11 (post detail, reactions, comments, saves, follows, content and moderation rules)", "Docs/21 §4.7 Community (lines 1097-1149)", "Docs/90 S-SHARED-08 report sheet"],
+        "screens": ["W-FEED-01", "W-COMP-01 (question type only, DI-02)", "W-QA-01", "W-QA-02", "W-PUB-06", "W-NET-01 (DI-06)", "W-RPT-01", "W-PUB-05 comments + reactions"],
+        "operations": ["feed.discover", "questions.create/search/get/update", "answers.create/accept/delete", "comments.list/create/delete", "reactions.put/delete", "follows.list/put/delete", "favorites.list/put/delete", "posts.public_list", "showcases.get", "safety.check", "reports.create (backend S8)"]
+      },
+      "context_to_read": [
+        "Docs/22.Social_WebUI_user_screens.md lines 256-266, 333-398, 521-526, 559-575",
+        "Docs/56.UI-UX Social Flow.md lines 338-500 and 660-830",
+        "Docs/40.API contract.md lines 3806-4056 (§19) and the reports.create block (~4430)",
+        "backend/dev_plan.json GD-22 (automatic pre-moderation) and OQ-12",
+        "mobile/preview/js/screens-community.js"
+      ],
+      "tasks": [
+        { "id": "P8.T1", "task": "W-FEED-01 /<locale>/home: Help Me bar (opens P10 with text), 'Share your story' prompt → composer (question only, DI-02), Needs your attention cards (sources available now: onboarding gaps, document expiry, reminders; appointment/review cards wired in P10/P11), feed tabs supported by feed.discover (DI-07), post cards per Docs/56 §4.3, inline recommendation blocks, skeleton/empty/thin/personalisation-off/error states, scroll restoration.", "status": "not_started" },
+        { "id": "P8.T2", "task": "Comments and reactions (Helpful / Great work / Thanks, one per user, changeable) on showcases, posts and answers; provider replies with Shop badge; 'Being reviewed' for held content; guests via auth-intent.", "status": "not_started" },
+        { "id": "P8.T3", "task": "W-QA-01 hub /<locale>/questions (filters incl. my vehicle, answered, sort) and W-PUB-06 /<locale>/questions/<id>-<slug> (SSR, QAPage JSON-LD, indexed only when answered; accepted answer first; answer box; follow question if supported; related questions; 'Describe it in Help Me').", "status": "not_started" },
+        { "id": "P8.T4", "task": "W-QA-02 ask page: vehicle, title with live similar questions, details, category suggestion, photos with blur via the upload kit, safety banner from safety.check with the Help Me button, posting → published or 'Being reviewed'.", "status": "not_started" },
+        { "id": "P8.T5", "task": "W-NET-01 /<locale>/saved: Favourites (Book again → P10), Following (Unfollow, per-account bell if supported), bulk select; hidden tabs per DI-06.", "status": "not_started" },
+        { "id": "P8.T6", "task": "W-RPT-01 report modal: reasons from the ModerationReason enum, details, guests see reasons but sign in to send (form content kept through sign-in); 501 until backend S8 → 'Reporting opens soon' state, never a silent drop.", "status": "not_started" },
+        { "id": "P8.T7", "task": "Tests: reaction toggling with optimistic update and rollback; E2E Sara Ch. 10: ask the winter-tyre question in FA, a second user answers, Sara accepts, question page becomes indexable.", "status": "not_started" }
+      ],
+      "deliverables": ["pwa/src/features/community", "Q&A routes, home"],
+      "acceptance_criteria": [
+        "Feed, Q&A and showcase pages work for guests (read) and signed-in users (write) with the moderation states shown.",
+        "Unanswered question pages are noindex; answered ones carry QAPage JSON-LD."
+      ],
+      "out_of_scope": ["consumer repair stories/tips (DI-02)", "member pages (DI-03)", "saved posts (DI-06)"],
+      "report": { "started_at": null, "completed_at": null, "summary": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+    },
+
+    {
+      "id": "P9",
+      "title": "Notifications, settings, account and My Activity",
+      "status": "not_started",
+      "depends_on": ["P4", "backend S3, S6"],
+      "goal": "Users see and act on notifications, manage every setting section (profile, security, privacy and consents, AI, notifications matrix, language and region, cookies, data and account), and track their own content and requests.",
+      "scope": {
+        "docs": ["Docs/22 W-NOTIF-01, W-SET-01, W-ME-01", "Docs/21 §4.8, §4.9 (lines 1150-1271), §6 deep links", "Docs/90 S-SHARED-04, 05", "Docs/01 §14 privacy"],
+        "screens": ["W-NOTIF-01", "W-SET-01", "W-ME-01 (reviews tab completes in P11)"],
+        "operations": ["notifications.list/unread_count/mark_read", "notification_prefs.get/put", "me.* (19 ops: profile, email/phone change, password, preferences, memberships, sessions, MFA)", "consents.list/grant/withdraw", "dsr.create/list/get/export_download", "inquiries.list/get/message/transition", "questions (mine) via the available filters"]
+      },
+      "context_to_read": [
+        "Docs/22.Social_WebUI_user_screens.md lines 399-413, 506-520",
+        "Docs/21.Mobile_app_screen_list.md lines 1150-1322",
+        "Docs/40.API contract.md lines 913-1176 (§6.3-6.5), 4057-4137 (§20), §13.3 inquiries",
+        "backend/dev_plan.json GD-24 (notification routing) and OQ-13 (defaults)",
+        "mobile/preview/js/screens-profile.js"
+      ],
+      "tasks": [
+        { "id": "P9.T1", "task": "W-NOTIF-01: bell dropdown (latest 10, mark all read, see all) and page /<locale>/notifications with tabs; unread count polling that obeys CarPal-Poll-After-Ms and pauses in hidden tabs; deep-link table of Docs/21 §6 mapped to web routes; inline actions where their stage exists.", "status": "not_started" },
+        { "id": "P9.T2", "task": "W-SET-01 shell /<locale>/settings/<section> with left sub-navigation; Profile (display name preview 'Sara M.'), Sign-in & security (sessions table with sign out / sign out all others (AAL2), password change, email/phone change with code, TOTP enrol with QR + recovery codes; passkeys hidden), step-up flow for AAL2 operations.", "status": "not_started" },
+        { "id": "P9.T3", "task": "Privacy & consent rows (grant/withdraw, effect immediate) + consent history download (CSV from consents.list client-side); AI preferences; Notifications matrix (categories × In-app/Push mobile/Web push this browser/Email; safety alerts locked on; web push column wired in P12); Language & region (language, navigation app, distance units, calendar); Cookies (re-open consent choices).", "status": "not_started" },
+        { "id": "P9.T4", "task": "Data & account: export request with status and download (AAL2, link expiry note), deletion with typed confirmation and the documented consequences; memberships list/leave.", "status": "not_started" },
+        { "id": "P9.T5", "task": "W-ME-01 /<locale>/activity: tabs Reviews (P11), Posts/Questions & answers, Inquiries (list, detail thread, message, transition incl. 'Picked up'), Reports & requests (DSR, reports when S8 lands); table view on desktop with status and actions.", "status": "not_started" },
+        { "id": "P9.T6", "task": "Tests: polling backoff, consent withdraw reflected immediately, step-up redirect and return; E2E: enrol TOTP then sign in with MFA; request a data export and see it in the list.", "status": "not_started" }
+      ],
+      "deliverables": ["pwa/src/features/notifications, settings, activity"],
+      "acceptance_criteria": [
+        "Every Docs/21 §6 notification type has a web destination or a documented placeholder for its stage.",
+        "AAL2 operations trigger step-up and complete after it."
+      ],
+      "out_of_scope": ["web push delivery (P12)", "review rows (P11)"],
+      "report": { "started_at": null, "completed_at": null, "summary": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+    },
+
+    {
+      "id": "P10",
+      "title": "Help Me and appointment requests; appointments",
+      "status": "not_started",
+      "depends_on": ["P6", "P7", "backend S7 (appointments)", "backend S9 (triage) — the request-without-triage path does not need S9"],
+      "goal": "Flow 1 and Flow 5 on the web: describe a problem (or skip triage), get recommendations with explanations, send an appointment request with consent preview, and follow the appointment through confirmation, check-in and completion.",
+      "scope": {
+        "docs": ["Docs/22 W-HELP-01, W-APP-01", "Docs/55 §2-§7 (C-HELP-01..08, decision logic, urgency and confidence handling, AI mapping, UX rules)", "Docs/21 §4.4, §4.5 (lines 857-1026)", "Docs/01 §10 Flow 1 and Flow 5", "Docs/10 Ch. 6-8"],
+        "screens": ["W-HELP-01", "W-APP-01", "/l/ci check-in link page", "Request card completion on W-PUB-02"],
+        "operations": ["triage.start/reply/get/complete (backend S9)", "safety.check", "search.run (recommendations fallback)", "public.availability", "appointments.create/list/get/update/transition/delay/check_in/check_in_link/history/notes_list/note_create", "pre_visit.requester_get", "consents.grant (vehicle data sharing for the request)", "media upload kit"]
+      },
+      "context_to_read": [
+        "Docs/22.Social_WebUI_user_screens.md lines 452-480",
+        "Docs/55.UI-UX Critical Flow.md lines 1-580",
+        "Docs/40.API contract.md lines 3124-3331 (§16.1-16.2), 4138-4208 (§21.1-21.2)",
+        "backend/dev_plan.json: S7 and S9 reports (state machine, capacity rules, triage stub behaviour)",
+        "mobile/preview/js/screens-help.js and screens-appointments.js"
+      ],
+      "tasks": [
+        { "id": "P10.T1", "task": "Wizard frame /<locale>/help/<session-id>/<step>: step indicator, Save and exit, case-so-far rail with editable answers (editing reruns from that point), sticky safety banner, refresh/back-safe per step URL.", "status": "not_started" },
+        { "id": "P10.T2", "task": "Describe step (text, symptom chips, media, urgency), clarifying questions (one card, Not sure/Skip, number keys 1-5), safety & urgency (server safety block always wins; critical interrupt), summary and recommendations (3 wide cards with full match explanations, compare, map toggle, 'See more shops' → search); low-confidence and AI-unavailable fallback to the category picker (GD-13).", "status": "not_started" },
+        { "id": "P10.T3", "task": "Request step (shared by Help Me, profile, map and search; Docs/55 §4.9): 14-day slot grid (up to 3 windows) from public.availability or 'Request anyway', free-text + optional category when no triage ('Triage: not provided'), consent rows with 'Preview what the shop receives' drawer, Idempotency-Key, rate-limit errors (3 open per provider, 10/day) explained; confirmation step; web push offer hook (P12).", "status": "not_started" },
+        { "id": "P10.T4", "task": "W-APP-01 /<locale>/appointments/<id>: segments (Upcoming, Requested, Past, Cancelled) + 'Needs your action', detail with action card (accept proposed time, cancel, delay), status timeline, when/where with map and Directions, vehicle and issue, pre-visit report drawer (printable), notes thread, Add to calendar (.ics + Google/Outlook links), live status by polling with Poll-After.", "status": "not_started" },
+        { "id": "P10.T5", "task": "/l/ci#token check-in page ('I've arrived' → appointments.check_in_link) for signed-in requester; recipient mismatch state.", "status": "not_started" },
+        { "id": "P10.T6", "task": "Wire 'Needs your attention' cards (proposed time) on home and the Request card on provider profiles; Favourites 'Book again'.", "status": "not_started" },
+        { "id": "P10.T7", "task": "E2E Sara Ch. 6-8 in FA (with the backend triage stub or the no-triage path if S9 is not done): describe the clunk, see Reza Auto Suspension, request, the provider confirms via API helper, check in by link, completed.", "status": "not_started" }
+      ],
+      "deliverables": ["pwa/src/features/help, appointments"],
+      "acceptance_criteria": [
+        "A request can be sent with and without triage; the shop-facing preview matches what pre_visit returns.",
+        "AI off or triage 501 still allows a request through the category picker."
+      ],
+      "out_of_scope": ["fleet appointments (portal)", "calendar sync beyond .ics"],
+      "report": { "started_at": null, "completed_at": null, "summary": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+    },
+
+    {
+      "id": "P11",
+      "title": "Reviews, review invitations and showcase consent",
+      "status": "not_started",
+      "depends_on": ["P9", "P10", "backend S7 (reviews and trust)"],
+      "goal": "Flow 6 and Sara Ch. 9 on the web: write provider and vendor reviews by both verification paths, open email invitations with the one-time code, answer showcase consent requests, and track reviews in My Activity.",
+      "scope": {
+        "docs": ["Docs/22 W-REV-01, W-REV-02, W-REV-03, review parts of W-PUB-02/03 and W-ME-01", "Docs/21 §4.6 (lines 1027-1096)", "Docs/01 §10 Flow 6, Module F", "Docs/40 §2.10 SEC-LT"],
+        "screens": ["W-REV-01", "W-REV-02", "W-REV-03", "/l/ri and /l/cn link pages", "W-ME-01 Reviews tab"],
+        "operations": ["reviews.eligibility/create/mine_list/mine_get/mine_update/mine_withdraw/evidence_add", "review_invitations.mine_list/open/verify", "consents.request_view/respond", "disputes.mine_list/get/withdraw (user side, if applicable)", "reactions.put (Helpful on reviews)", "public.org_reviews"]
+      },
+      "context_to_read": [
+        "Docs/22.Social_WebUI_user_screens.md lines 481-505",
+        "Docs/21.Mobile_app_screen_list.md lines 1027-1096",
+        "Docs/40.API contract.md lines 335-356 (SEC-LT), 2822-2979 (§15.1-15.2)",
+        "backend/dev_plan.json S7 report",
+        "mobile/preview/js/screens-appointments.js (review screens) and screens-profile.js (C-PROF-06)"
+      ],
+      "tasks": [
+        { "id": "P11.T1", "task": "W-REV-01 /<locale>/review/<provider>: context header from reviews.eligibility (Verified visit vs approval path, 'Send for approval'), stars + sub-ratings (arrow keys), text with privacy check hints (plate/phone detection, Remove), photos via upload kit, suggested tags, display-name preview; confirmation panel with both outcomes.", "status": "not_started" },
+        { "id": "P11.T2", "task": "/l/ri#token: review_invitations.open → code entry (S-AUTH-07 style) → review_invitations.verify → review form; expired/used/mismatch states (410/403).", "status": "not_started" },
+        { "id": "P11.T3", "task": "W-REV-03 vendor review: verified purchase context from a completed inquiry, vendor sub-ratings; same invitation path.", "status": "not_started" },
+        { "id": "P11.T4", "task": "W-REV-02 /l/cn#token showcase consent: exact photos with blur areas, caption, where it appears, Approve / Decline / Ask for more blurring (draw rectangles), 'Your choice doesn't affect your review'.", "status": "not_started" },
+        { "id": "P11.T5", "task": "My Activity Reviews tab (statuses Being checked / Waiting for approval / Published / Rejected or removed with reason and Appeal), edit/withdraw; review-related notifications and Needs-your-attention cards wired.", "status": "not_started" },
+        { "id": "P11.T6", "task": "Provider profile Reviews section: 'Write a review' button, Helpful reactions, disputed note, filter 'Verified visit only'.", "status": "not_started" },
+        { "id": "P11.T7", "task": "E2E Flow 6: the provider sends an invitation (API helper), Sara opens the emailed link from the outbox, enters the code, submits; review appears with 'Verified visit'. Path 2 review shows 'Waiting for approval'.", "status": "not_started" }
+      ],
+      "deliverables": ["pwa/src/features/reviews", "link pages ri, cn"],
+      "acceptance_criteria": [
+        "Both review paths and the invitation path work end to end against the backend.",
+        "Link tokens never appear in a URL path, query or server log (fragment only)."
+      ],
+      "out_of_scope": ["business-side review handling (portal)"],
+      "report": { "started_at": null, "completed_at": null, "summary": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+    },
+
+    {
+      "id": "P12",
+      "title": "PWA capabilities (offline, install, web push) and fleet driver reporting",
+      "status": "not_started",
+      "depends_on": ["P9", "P10", "backend S8 (fleet) for the driver part"],
+      "goal": "The PWA installs, survives flaky networks with an offline shell and cached garage/appointments, keeps a bundled dictionary, offers web push at the right moment (if DI-11 allows), and lets fleet drivers report issues on their assigned vehicles from the browser.",
+      "scope": {
+        "docs": ["pwa/README.md", "Docs/22 §2.5 PWA install, W-NOTIF-01 web push, W-SYS-01 offline", "Docs/02 WP19 (fleet driver reporting), §3.1 bundled dictionary", "Docs/55 §10.4 F-ISSUE-01 driver issue report", "Docs/40 §18 fleet (driver-visible ops), §20 push_tokens"],
+        "screens": ["W-SYS-01 offline", "install prompt", "web push opt-in", "DRV-WEB driver views"],
+        "operations": ["push_tokens.register/revoke", "notification_prefs.put (web push column)", "vehicles.list/get/mileage_add and vehicle issue ops with DRV", "media upload kit", "triage.start (DRV allowed)"]
+      },
+      "context_to_read": [
+        "Docs/22.Social_WebUI_user_screens.md lines 65-80, 406-413, 527-538",
+        "Docs/55.UI-UX Critical Flow.md lines 823-867 (F-ISSUE-01)",
+        "Docs/40.API contract.md §18.2 (lines 3640-3805) driver-visible operations and §20 push_tokens",
+        "backend/dev_plan.json GD-20 (DRV semantics) and the S8 report"
+      ],
+      "tasks": [
+        { "id": "P12.T1", "task": "Web app manifest (names EN/FA, icons generated from the type-set logo, theme colours from tokens, start_url per locale, display standalone) and install prompt rule (after the second signed-in visit, dismissible, 30-day quiet period).", "status": "not_started" },
+        { "id": "P12.T2", "task": "Service worker (hand-written or a minimal library; record the choice): precache app shell, fonts and the bundled dictionaries; runtime cache for public pages (stale-while-revalidate) and for the signed-in garage/appointments views (network-first, user-scoped, cleared on logout); never cache BFF API responses that are no-store except the explicit offline snapshots; offline page listing cached pages.", "status": "not_started" },
+        { "id": "P12.T3", "task": "Web push (if DI-11 allows): VAPID key from config/env, subscribe after a benefiting action (first appointment request), push_tokens.register (platform per contract), settings column, unsubscribe on logout/revoke, notification click → deep link.", "status": "not_started" },
+        { "id": "P12.T4", "task": "Fleet driver web views: driver sees assigned vehicles only (DRV), reports an issue with photos and mileage, optional triage; sign-in as a driver; no fleet manager features.", "status": "not_started" },
+        { "id": "P12.T5", "task": "Tests: Playwright offline mode (garage view after going offline), SW update flow, push subscription with a mocked push service; driver E2E with a fleet created through backend fixtures.", "status": "not_started" }
+      ],
+      "deliverables": ["pwa/src/sw/", "manifest and icons", "pwa/src/features/pwa, fleet-driver"],
+      "acceptance_criteria": [
+        "Chromium shows the app as installable; offline reload shows the offline page and cached garage data for the signed-in user only.",
+        "After logout no private data remains in caches."
+      ],
+      "out_of_scope": ["iOS-specific push behaviour verification (no device)"],
+      "report": { "started_at": null, "completed_at": null, "summary": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+    },
+
+    {
+      "id": "P13",
+      "title": "Hardening: key-flow E2E, accessibility, performance, security, docs",
+      "status": "not_started",
+      "depends_on": ["P1-P12"],
+      "goal": "Close the scratch build: the consumer key flows pass in EN and FA, accessibility and RTL are verified, public pages meet the LCP budget, the BFF passes a security review, and the deviations are consolidated into a next-iteration list.",
+      "scope": {
+        "docs": ["Docs/01 §10 (Flows 1, 5, 6 for consumers), §15 NFRs", "Docs/02 WP19 acceptance and tests, WP21", "Docs/21 §7 a11y/l10n checklist", "Docs/40 Appendix C (contract test obligations that apply to clients: SEC-RL-4)"],
+        "screens": ["all"],
+        "operations": ["all used"]
+      },
+      "context_to_read": [
+        "this file in full (all reports, deviations_log, doc_issues, open_questions)",
+        "Docs/01.MVP_Plan.md lines 3518-3612 and 4066-4126",
+        "Docs/40.API contract.md lines 5084-5104 (Appendix C, D)"
+      ],
+      "tasks": [
+        { "id": "P13.T1", "task": "Key-flow suites in EN and FA: Flow 1 (find the right specialist via Help Me), Flow 5 (search/map without Help Me), Flow 6 (review invitation by email), plus Sara's story chapters 1-11 as one long journey test.", "status": "not_started" },
+        { "id": "P13.T2", "task": "Accessibility sweep: axe on every route in both directions and three themes; keyboard-only run of the key flows; screen-reader labels; colour-never-alone checks; reduced motion.", "status": "not_started" },
+        { "id": "P13.T3", "task": "Performance: throttled LCP/CLS/INP on landing, provider profile, directory and question pages (budget LCP ≤ 2.5 s mid-range phone on 4G); bundle analysis; map and heavy features lazily loaded; font preload per language.", "status": "not_started" },
+        { "id": "P13.T4", "task": "Security review of the BFF and pages: token never in browser, CSRF, cookie flags, allowlist completeness vs registry, CSP/Trusted Types violations (report-only run first), open-redirect checks on return URLs, link tokens only in fragments, no PII in URLs or logs, cache headers on private pages.", "status": "not_started" },
+        { "id": "P13.T5", "task": "Client obligations from Appendix C: retry/backoff/poll behaviour tests with a fake server; unknown enum values map to 'unknown'; unknown response fields ignored.", "status": "not_started" },
+        { "id": "P13.T6", "task": "Docs: pwa/README.md complete (setup, env, run with backend, scripts, architecture, deviations); consolidate deviations_log into a next_iteration list (strict auth, Redis session store verification, production sign-in host, tiles, contract gaps DI-02/03/06/07).", "status": "not_started" }
+      ],
+      "deliverables": ["tests/e2e key-flow suites", "performance and security notes in the report", "final README"],
+      "acceptance_criteria": [
+        "pnpm check, pnpm build and pnpm e2e are green against backend `pnpm dev`.",
+        "Every Docs/22 screen is done, partial with a reason, or deferred with a doc issue."
+      ],
+      "out_of_scope": ["production deployment and infrastructure (WP1)"],
+      "report": { "started_at": null, "completed_at": null, "summary": null, "next_iteration": [], "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+    }
+  ],
+
+  "deviations_log": [],
+
+  "handoff_notes": [
+    {
+      "date": "2026-10-12",
+      "from": "plan",
+      "note": "Plan created after reviewing Docs/ (22 in full; 01/02 WP19, stack and l10n; 21 and 90 outlines; 40 transport, security, auth server, platform ops and the operation registry; 55/56 outlines; design system README and CLAUDE.md), mobile/preview, shared/, and the backend's README, dev_plan.json, auth clients and config. Key findings: (1) the consumer BFF is not built anywhere and the backend defers it, so P2 builds it inside the PWA (GD-03); (2) no hosted sign-in UI exists, so P4 builds it and dev proxies the auth host under /id (GD-05); (3) the storage host needs CORS for browser uploads (DI-08, P7); (4) several Docs/22 features have no operation (DI-02 consumer posts, DI-03 member page, DI-06 saved posts); (5) 42 consumer operations wait on backend S7-S9, so P10-P12 are scheduled late and every screen has 501/AI-off states (GD-13). Start with P1."
+    }
+  ],
+
+  "open_questions": [
+    { "id": "OQ-01", "question": "Pin exact framework versions now, or take the current stable Next.js, React and Tailwind at P1?", "default_if_unanswered": "Current stable at P1 install time, recorded in the P1 report.", "owner": "user", "note": "" },
+    { "id": "OQ-02", "question": "Where do map tiles come from for local development and for the pilot (a PMTiles extract of Tehran on local storage, a hosted vector tile service, or the WP1/WP8 tile build)?", "default_if_unanswered": "Built-in fallback style without a basemap (GD-12); a real style URL can be set with CARPAL_PWA_MAP_STYLE_URL.", "owner": "user / WP1", "note": "Public OSM tile servers are not used (Docs/02 §2)." },
+    { "id": "OQ-03", "question": "In production, should id.carpal.app serve the hosted sign-in pages from the PWA build (host-based routing) or from a separate small app?", "default_if_unanswered": "Built in the PWA codebase as a separate route group (GD-05); the deployment choice is left to WP1.", "owner": "user / WP1", "note": "" },
+    { "id": "OQ-04", "question": "Should guests be able to run Help Me without an account (Docs/22 open point 2)? The contract makes triage USR-only.", "default_if_unanswered": "No: sign in at the vehicle step; guests use search and the category picker (DI-04).", "owner": "product", "note": "" },
+    { "id": "OQ-05", "question": "Will the contract get a consumer post operation for repair stories and tips (Docs/22 W-COMP-01, Docs/56 §5)?", "default_if_unanswered": "Composer supports questions only (DI-02).", "owner": "product / backend", "note": "" },
+    { "id": "OQ-06", "question": "BFF session store in production: Redis (shared with the backend's Redis) or another store?", "default_if_unanswered": "Lite in-memory store in dev; Redis adapter written but unverified (GD-08).", "owner": "WP1", "note": "" },
+    { "id": "OQ-07", "question": "Do consumers get web push for appointment updates (Docs/22) given Docs/52 limits web push to business portals?", "default_if_unanswered": "Build it in P12 only if push_tokens.register accepts a consumer web token; otherwise hide it (DI-11).", "owner": "product", "note": "" },
+    { "id": "OQ-08", "question": "May P1 download Playwright's Chromium (about 150-200 MB) for E2E tests?", "default_if_unanswered": "Yes, Chromium only.", "owner": "user", "note": "" },
+    { "id": "OQ-09", "question": "Is it acceptable for the PWA stages to make small backend changes the PWA needs (storage CORS DI-08, dev env defaults for the sign-in URL and redirect URI), recorded in both plans?", "default_if_unanswered": "Yes, minimal changes with tests, recorded in both dev_plan files.", "owner": "user", "note": "" }
+  ],
+
+  "recommendations_for_next_stages": {
+    "P1": [
+      "Do not run create-next-app interactively; write the files by hand and install with pnpm so versions are explicit.",
+      "Generate the contract types from backend/libs/contract/generated, not from Docs/40, so the PWA and the backend can never disagree.",
+      "Check that Next.js builds with the linked shared/ packages outside pwa/ before moving on (turbopack root / outputFileTracingRoot)."
+    ],
+    "P2": [
+      "Use backend/apps/testing/auth-server.int.test.ts as the reference for the exact authorize → hosted sign-in → authorize → callback sequence.",
+      "Start backend with CARPAL_SIGNIN_URL and CARPAL_OAUTH_REDIRECT_URIS set as in GD-05; without them the authorize request is rejected (redirect_uri not registered)."
+    ],
+    "P5_P6": [
+      "Create demo providers/vendors with the backend's fixtures or API (as business users) for E2E; do not seed through SQL from the PWA.",
+      "Verify DI-14 (cp-ssr scope on search operations) first; it decides how directory pages fetch."
+    ],
+    "P10_P11": [
+      "Check backend/dev_plan.json before starting: if backend S7 is not done, build against the contract with the 501 state and leave the E2E task 'blocked' with a note."
+    ]
+  }
+}

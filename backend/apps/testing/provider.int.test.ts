@@ -7,7 +7,6 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { uuidv7 } from '#libs/crypto/index.js';
 import { jpegWithExif } from '#libs/testing/index.js';
-import { OrganizationExtensions } from '#modules/organization/interface/extensions.js';
 import { PublicProfiles } from '#modules/organization/interface/public-profiles.js';
 import { OutboxRelayService } from '#workers/outbox-relay/outbox-relay.module.js';
 import { MediaHarness, idem, mailedToken, taxonomyNodes, type Json, type Nodes } from './s4-support.js';
@@ -17,22 +16,10 @@ let app: TestApp;
 let media: MediaHarness;
 let n: Nodes;
 
-/** Appointment visits and their customers (appointment module, S7), registered for the tests; service records and vehicles are real (S5). */
-const visits = new Map<string, { provider: string; customer: string; vehicle: string | null }>();
-
 beforeAll(async () => {
   app = await createTestApp({ host: 'api' });
   media = await MediaHarness.start(app);
   n = await taxonomyNodes(app);
-  const ext = app.app.get(OrganizationExtensions, { strict: false });
-  const resolver = async (_s: unknown, providerOrgId: string, id: string) => {
-    const v = visits.get(id);
-    return v && v.provider === providerOrgId ? { customerUserId: v.customer, vehicleId: v.vehicle } : null;
-  };
-  ext.registerVisits('appointment', resolver);
-  ext.registerCustomerCheck(async (_s, providerOrgId, userId) =>
-    [...visits.values()].some((v) => v.provider === providerOrgId && v.customer === userId),
-  );
 });
 afterAll(async () => {
   await media.close();
@@ -441,7 +428,7 @@ describe('certifications and work records', () => {
     const prv = `/v1/orgs/${org.id}/provider`;
     const customer = await app.fixtures.user();
     const stranger = await app.fixtures.user();
-    visits.set(uuidv7(), { provider: org.id, customer: customer.id, vehicle: null });
+    await app.fixtures.appointment(org, customer, await app.fixtures.vehicle(customer, n));
     const note = await c.post(`${prv}/customer-notes`, { customer_user_id: customer.id, body: 'Prefers morning slots' });
     expect(note.status).toBe(201);
     expect((await c.post(`${prv}/customer-notes`, { customer_user_id: stranger.id, body: 'x' })).body).toMatchObject({
@@ -467,8 +454,8 @@ describe('portfolio: consent request → grant → publish → withdrawal', () =
     const c = api(token);
     const prv = `/v1/orgs/${org.id}/provider`;
     const customer = await app.fixtures.user();
-    const appointment = uuidv7();
-    visits.set(appointment, { provider: org.id, customer: customer.id, vehicle: null });
+    // A real appointment of the customer at this provider (appointment module, S7).
+    const appointment = await app.fixtures.appointment(org, customer, await app.fixtures.vehicle(customer, n));
     const item = await c.post(`${prv}/portfolio`, {
       title: 'Control arm replacement',
       content_locale: 'en',
@@ -637,7 +624,7 @@ describe('record-level BOLA: org B records under org A paths', () => {
     const cb = api(b.token);
     const pb = `/v1/orgs/${b.org.id}/provider`;
     const customer = await app.fixtures.user();
-    visits.set(uuidv7(), { provider: b.org.id, customer: customer.id, vehicle: null });
+    await app.fixtures.appointment(b.org, customer, await app.fixtures.vehicle(customer, n));
     const ids = {
       location_id: (await cb.post(`/v1/orgs/${b.org.id}/locations`, location())).body.id,
       membership_id: (await cb.get(`/v1/orgs/${b.org.id}/members`)).body.items[0].membership_id,

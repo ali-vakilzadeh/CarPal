@@ -2908,7 +2908,7 @@ CREATE FUNCTION appointment.capacity_available(p_provider uuid, p_location uuid,
                                                p_start timestamptz, p_end timestamptz,
                                                p_type text DEFAULT NULL, p_exclude uuid DEFAULT NULL)
 RETURNS boolean
-LANGUAGE plpgsql VOLATILE
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER   -- counts every party's appointments (a requester accepting an alternative; S7)
 SET search_path = pg_catalog
 AS $$
 DECLARE
@@ -2954,6 +2954,24 @@ END
 $$;
 COMMENT ON FUNCTION appointment.capacity_available IS 'Call inside the confirming transaction; returns false → 409 CAPACITY_UNAVAILABLE';
 
+-- Busy intervals of a location for slot computation (40 public.availability,
+-- provider.calendar): start and end of capacity-holding appointments only,
+-- nothing about the parties. Added in backend S7.
+CREATE FUNCTION appointment.busy_intervals(p_provider uuid, p_location uuid, p_from timestamptz, p_to timestamptz)
+RETURNS TABLE (start_at timestamptz, end_at timestamptz)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT ap.confirmed_start_at,
+         coalesce(ap.confirmed_end_at, ap.confirmed_start_at + make_interval(mins => coalesce(ap.estimated_duration_minutes, 60)))
+    FROM appointment.appointments ap
+   WHERE ap.provider_organization_id = p_provider AND ap.provider_location_id = p_location
+     AND ap.status IN ('confirmed','checked_in','in_progress','awaiting_parts','ready_for_pickup')
+     AND ap.deleted_at IS NULL AND ap.confirmed_start_at < p_to
+     AND coalesce(ap.confirmed_end_at, ap.confirmed_start_at + interval '1 day') > p_from
+   LIMIT 5000
+$$;
+
 -- Check-in from a `ci` link without sign-in (40 appointments.check_in_link):
 -- one atomic conditional update, inside the window of ±2 h around the start.
 CREATE FUNCTION appointment.check_in_by_token(p_token_hash bytea)
@@ -2987,6 +3005,70 @@ BEGIN
                              jsonb_build_object('old_status', 'confirmed', 'new_status', 'checked_in', 'via', 'link'));
   RETURN QUERY SELECT a.id, 'checked_in'::text;
 END
+$$;
+
+-- Requester contact for the provider (40 Appointment.requester_contact, SEC-OUT-3):
+-- only the provider organization of the appointment, from confirmation until
+-- 30 days after completion, and only the verified address of the requester's
+-- preferred channel (email or sms). Added in backend S7.
+CREATE FUNCTION appointment.requester_contact(p_appointment_id uuid)
+RETURNS TABLE (channel text, value text)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT c.channel, c.value
+    FROM appointment.appointments a
+    JOIN identity.user_accounts u ON u.id = a.requester_user_id AND u.deleted_at IS NULL AND u.status = 'active'
+    CROSS JOIN LATERAL (
+      SELECT 'email'::text AS channel, u.email::text AS value
+       WHERE coalesce(a.preferred_contact_channel::text, u.preferred_contact_channel::text, 'email') = 'email'
+         AND u.email_verified_at IS NOT NULL
+      UNION ALL
+      SELECT 'sms', u.phone::text
+       WHERE coalesce(a.preferred_contact_channel::text, u.preferred_contact_channel::text) = 'sms'
+         AND u.phone IS NOT NULL AND u.phone_verified_at IS NOT NULL
+    ) c
+   WHERE a.id = p_appointment_id AND a.deleted_at IS NULL
+     AND a.provider_organization_id = core.my_org()
+     AND (a.status IN ('confirmed','checked_in','in_progress','awaiting_parts','ready_for_pickup')
+          OR (a.status = 'completed' AND a.completed_at > now() - interval '30 days'))
+   LIMIT 1
+$$;
+
+-- Email and locale of the requester for mailing the `ci` check-in link (SEC-LT-2),
+-- only in the transaction that confirmed the appointment and issued the link,
+-- for either party, so the provider never reads the address. Added in backend S7.
+CREATE FUNCTION appointment.check_in_contact(p_appointment_id uuid)
+RETURNS TABLE (email text, locale text)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT u.email::text, u.locale::text
+    FROM appointment.appointments a
+    JOIN identity.user_accounts u ON u.id = a.requester_user_id
+   WHERE a.id = p_appointment_id AND a.deleted_at IS NULL AND a.status = 'confirmed'
+     AND a.check_in_token_hash IS NOT NULL AND a.updated_at = now()
+     AND (a.provider_organization_id = core.my_org() OR a.requester_organization_id = core.my_org()
+          OR (core.my_org() IS NULL AND a.requester_user_id = core.me()))
+     AND u.deleted_at IS NULL AND u.status = 'active' AND u.email_verified_at IS NOT NULL
+$$;
+
+-- Visit facts of appointments for the trust module (review eligibility, review
+-- invitations, trust scoring, the anonymous `ri` landing page): taxonomy, dates,
+-- parties and status, never contact data or text. Server-side only. Added in backend S7.
+CREATE FUNCTION appointment.visit_cards(p_ids uuid[])
+RETURNS TABLE (id uuid, provider_organization_id uuid, provider_location_id uuid, requester_type text,
+               requester_user_id uuid, requester_organization_id uuid, vehicle_id uuid,
+               service_system_node_id uuid, service_task_node_id uuid, status text,
+               confirmed_start_at timestamptz, confirmed_end_at timestamptz, completed_at timestamptz)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT a.id, a.provider_organization_id, a.provider_location_id, a.requester_type::text, a.requester_user_id,
+         a.requester_organization_id, a.vehicle_id, a.service_system_node_id, a.service_task_node_id, a.status::text,
+         a.confirmed_start_at, a.confirmed_end_at, a.completed_at
+    FROM appointment.appointments a
+   WHERE a.id = ANY (p_ids[1:500]) AND a.deleted_at IS NULL
 $$;
 
 \echo '== 14. fleet (WP11)'
@@ -3387,6 +3469,28 @@ AS $$
   SELECT a.id, a.storage_reference, a.thumbnail_reference, a.mime_type, a.privacy_level, a.publicly_servable
     FROM media.media_assets a
    WHERE a.id = p_asset_id AND a.status = 'active' AND a.scan_status = 'clean' AND a.deleted_at IS NULL
+$$;
+
+-- Active attachments of records whose owning module has authorized the viewer
+-- for another party's media (the provider of an appointment sees the
+-- requester's photos, 40 PreVisitReport.media). Clean active assets only.
+-- Added in backend S7.
+CREATE FUNCTION media.shared_attachments(p_type text, p_ids uuid[])
+RETURNS TABLE (id uuid, attached_to_id uuid, media_asset_id uuid, role text, pair_group_key text, display_order integer,
+               caption text, media_type text, width integer, height integer, privacy_level text, mime_type text,
+               storage_reference text, thumbnail_reference text)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT t.id, t.attached_to_id, t.media_asset_id, t.role::text, t.pair_group_key, t.display_order, t.caption,
+         a.media_type::text, a.width, a.height, a.privacy_level::text, a.mime_type::text, a.storage_reference,
+         a.thumbnail_reference
+    FROM media.media_attachments t
+    JOIN media.media_assets a ON a.id = t.media_asset_id
+   WHERE t.attached_to_type::text = p_type AND t.attached_to_id = ANY (p_ids[1:500])
+     AND t.status = 'active' AND t.deleted_at IS NULL
+     AND a.status = 'active' AND a.scan_status = 'clean' AND a.deleted_at IS NULL
+   ORDER BY t.attached_to_id, t.display_order, t.id
 $$;
 
 \echo '== 17. notification (WP14)'
@@ -4232,6 +4336,57 @@ BEGIN
   RETURN QUERY SELECT r.id, r.subject_organization_id, r.appointment_id, r.service_record_id, r.stock_inquiry_id,
                       r.provider_job_log_id, r.invited_user_id, r.expires_at, r.business_confirmation_given;
 END
+$$;
+
+-- Verified email and locale of the invited user of a review invitation, so the
+-- trust module can mail the `ri` link and its one-time code without the business
+-- reading the customer's contact data (40 SEC-OUT-3): for the subject
+-- organization, the system, or the holder of the link token. Added in backend S7.
+CREATE FUNCTION trust.invitation_contact(p_request_id uuid, p_token_hash bytea DEFAULT NULL)
+RETURNS TABLE (email text, locale text, contact_encrypted bytea)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT u.email::text, coalesce(u.locale::text, 'fa'), q.invited_contact_encrypted
+    FROM trust.review_requests q
+    LEFT JOIN identity.user_accounts u ON u.id = q.invited_user_id
+          AND u.deleted_at IS NULL AND u.status = 'active' AND u.email_verified_at IS NOT NULL
+   WHERE q.id = p_request_id AND q.deleted_at IS NULL
+     AND (core.is_system() OR q.subject_organization_id = core.my_org()
+          OR (p_token_hash IS NOT NULL AND q.link_token_hash = p_token_hash))
+     AND (u.id IS NOT NULL OR q.invited_contact_encrypted IS NOT NULL)
+$$;
+
+-- `ri` link read for the signed-in invitee (40 review_invitations.verify): the
+-- token is the secret; returns what the recipient check needs. Added in backend S7.
+CREATE FUNCTION trust.invitation_by_token(p_token_hash bytea)
+RETURNS TABLE (id uuid, subject_organization_id uuid, appointment_id uuid, service_record_id uuid, stock_inquiry_id uuid,
+               provider_job_log_id uuid, invited_user_id uuid, invited_contact_hash bytea, status text,
+               token_used_at timestamptz, expires_at timestamptz, business_confirmation_given boolean)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT q.id, q.subject_organization_id, q.appointment_id, q.service_record_id, q.stock_inquiry_id, q.provider_job_log_id,
+         q.invited_user_id, q.invited_contact_hash, q.status, q.token_used_at, q.expires_at, q.business_confirmation_given
+    FROM trust.review_requests q
+   WHERE q.link_token_hash = p_token_hash AND q.deleted_at IS NULL
+$$;
+
+-- Binds an invitation sent to an email address to the signed-in user who proved
+-- that address with the one-time code (52 ReviewRequest.invited_contact: "linked
+-- to the user after sign-up"), and records code_verified_at. The API checks the
+-- code and the recipient before calling it. Added in backend S7.
+CREATE FUNCTION trust.claim_invitation(p_token_hash bytea)
+RETURNS uuid
+LANGUAGE sql VOLATILE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  UPDATE trust.review_requests q
+     SET invited_user_id = core.me(), code_verified_at = now()
+   WHERE q.link_token_hash = p_token_hash AND q.deleted_at IS NULL AND core.me() IS NOT NULL
+     AND (q.invited_user_id IS NULL OR q.invited_user_id = core.me())
+     AND q.status IN ('sent','opened','reminded') AND q.token_used_at IS NULL AND q.expires_at > now()
+  RETURNING q.id
 $$;
 
 -- appointment -------------------------------------------------------------------

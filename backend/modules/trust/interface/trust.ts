@@ -41,7 +41,20 @@ export abstract class TrustRead {
   abstract badges(scope: TxScope, orgIds: readonly string[], locale: Locale): Promise<Map<string, PublicBadgeRecord[]>>;
   /** The subject organization of a published review (helpful reactions, SEC-BF-9), or null. */
   abstract publishedReviewSubject(scope: TxScope, reviewId: string): Promise<string | null>;
+  /**
+   * Review state of the signed-in user's appointments (40 Appointment.can_review):
+   * whether the user already reviewed each one, and the expiry of its review
+   * invitation (the Path 1 window, 52 §21), in the user's RLS context.
+   */
+  abstract appointmentReviewState(
+    scope: TxScope,
+    userId: string,
+    appointmentIds: readonly string[],
+  ): Promise<Map<string, { reviewed: boolean; invitationExpiresAt: Date | null }>>;
 }
+
+/** 52 ReviewRequest.expires_at = sent_at + 7 days; also the Path 1 window of a visit without an invitation. */
+export const REVIEW_WINDOW_MS = 7 * 86_400_000;
 
 /** 40 PublicOrgCard.overall_rating: Dec<1,2> (two decimals at most). */
 export const ratingString = (avg: number | null): string | null => (avg === null ? null : String(Math.round(avg * 100) / 100));

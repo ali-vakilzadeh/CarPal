@@ -254,6 +254,34 @@ export class DbMediaService extends MediaService {
     return out;
   }
 
+  async sharedAttachmentViews(scope: TxScope, type: AttachedToType, ids: readonly string[]): Promise<Map<string, MediaAttachmentView[]>> {
+    const unique = [...new Set(ids)].slice(0, 500);
+    const out = new Map<string, MediaAttachmentView[]>();
+    if (unique.length === 0) return out;
+    const { rows } = await sql<{
+      id: string;
+      attached_to_id: string;
+      media_asset_id: string;
+      role: string;
+      pair_group_key: string | null;
+      display_order: number;
+      caption: string | null;
+      media_type: string;
+      width: number | null;
+      height: number | null;
+      privacy_level: string;
+      mime_type: string;
+      storage_reference: string | null;
+      thumbnail_reference: string | null;
+    }>`SELECT * FROM media.shared_attachments(${type}, ${sql.val(unique)}::uuid[])`.execute(scope.db);
+    for (const r of rows) {
+      const asset = { ...r, id: r.media_asset_id, status: 'active', scan_status: 'clean' } as unknown as AssetRow;
+      const view = toAttachmentView(r as unknown as Parameters<typeof toAttachmentView>[0], asset, await this.urls.forViewer(asset, true));
+      out.set(r.attached_to_id, [...(out.get(r.attached_to_id) ?? []), view]);
+    }
+    return out;
+  }
+
   async attachedAssets(scope: TxScope, type: AttachedToType, id: string): Promise<AttachedAsset[]> {
     return (await this.#attachments(scope, type, [id])).map((r) => ({
       attachmentId: r.id,

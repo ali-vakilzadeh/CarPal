@@ -2,11 +2,11 @@
   "meta": {
     "title": "CarPal backend — scratch build plan and stage log",
     "created": "2026-10-10",
-    "last_updated": "2026-10-12",
+    "last_updated": "2026-10-13",
     "status": "in_progress",
     "progress": {
-      "as_of": "2026-10-12",
-      "summary": "S1-S6 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles with publication, the capability portfolio, work records and the media pipeline (W6), vehicles and service history, vendor inventory and stock inquiries, and now discovery (search projections with the W2 indexer, rule-based query interpretation into chips, ranking with structured reasons per 54 §5, search sessions, map pins with clusters, the safety check, the Discover feed), the public profile reads (profiles by slug, reviews, portfolio, vendor items, availability placeholder), community (follows, favourites, posts, comments, reactions without the subject organization's members, Q&A) and notifications (in-app list and read marks, preferences with digests and the marketing consent, encrypted push tokens, W5 dispatch with EN/FA templates for the S3-S6 events). 236 of 402 operations are implemented; 166 answer 501 behind their full guards. Next: S7 (appointments, calendar and pre-visit report; reviews and trust).",
+      "as_of": "2026-10-13",
+      "summary": "S1-S7 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles with publication, the capability portfolio, work records and the media pipeline (W6), vehicles and service history, vendor inventory and stock inquiries, discovery (search, map, ranking, Discover feed), public profiles, community and notifications, and now appointments (requests, capacity-safe confirmation, check-in, completion with the service record, notes, calendar, availability and time off, the consent-gated pre-visit report, reminders) and reviews and trust (Path 1 / Path 2, invitations with one-time codes, business approval and objections, responses, disputes, W4 review workflow, W3 trust scoring with evidence, capability confidence, trust scores, signals and badges feeding search). 293 of 402 operations are implemented; 109 answer 501 behind their full guards. Next: S8 (fleet; admin plane incl. review approval and dispute resolution; analytics and audit; DSR execution).",
       "stages": [
         {
           "stage": "S1",
@@ -68,8 +68,13 @@
         {
           "stage": "S7",
           "title": "Appointments, calendar and pre-visit report; reviews and trust",
-          "status": "not_started",
-          "ops_target": 57
+          "status": "done",
+          "ops_target": 57,
+          "completed_at": "2026-10-13",
+          "ops_implemented": 57,
+          "ops_deferred": 0,
+          "tests_after_stage": 413,
+          "note": "30 appointment (§16) + 27 trust (§15) operations; public.availability (S6 placeholder) now computes slots. The 8 trust admin operations of §23.4 belong to S8."
         },
         {
           "stage": "S8",
@@ -85,18 +90,18 @@
         }
       ],
       "operations": {
-        "implemented": 236,
-        "returning_501": 166,
+        "implemented": 293,
+        "returning_501": 109,
         "deferred_with_reason": 3,
         "total": 402
       },
-      "next_stage": "S7",
-      "before_starting_S7": [
-        "Run `pnpm db:reset` once: S6 added community.refresh_reaction_count (Docs/43 + 42 §5.3). No new npm dependency.",
-        "Read S6.report.notes_for_next and recommendations_for_next_stages.S7. The trust module exists now (modules/trust: TrustRead, public.org_reviews) and the appointment module has public.availability as a placeholder: extend both instead of creating them.",
-        "Events S6 added that S7 producers must keep feeding: the search indexer (W2) already consumes review.published, review.approved, badge.awarded, badge.revoked, trust.score.changed and moderation.action.taken and rebuilds the subject organization (send organization_id or subject_organization_id in the payload); community.reaction.changed (target review, reaction helpful) carries the count for trust.reviews.helpful_count.",
-        "Notifications for S7 events: add their intents to modules/notification/domain/routing.ts (ROUTED_EVENTS) and their EN/FA templates to domain/templates.ts; the dispatcher, preferences, digests and push need no change.",
-        "All checks were green at the end of S6: pnpm lint (348 modules), typecheck, build, format:check, contract:check, db:codegen --verify, test:all (382 tests, 54 files); pnpm dev starts all hosts (api 222 implemented routes), registers the consumers notification.dispatch and discovery.search_indexer and rebuilds the lite search index once at start."
+      "next_stage": "S8",
+      "before_starting_S8": [
+        "Run `pnpm db:reset` once: S7 added definers to Docs/43 (appointment.requester_contact/check_in_contact/visit_cards/busy_intervals, trust.invitation_contact/invitation_by_token/claim_invitation, media.shared_attachments) and made appointment.capacity_available SECURITY DEFINER. No new npm dependency.",
+        "Read S7.report.notes_for_next and recommendations_for_next_stages.S8: Path 2 reviews wait for the CarPal reviewer decision (§23.4) and objection disputes for their resolution; verified_business badges wait for admin approval.",
+        "Trust: after any admin change that affects trust (review approval/removal, dispute outcome, moderation action, badge approval, verification decision) publish the matching event (review.approved, review.removed, moderation.action.taken, organization.verified …) or call TrustScorer.recompute(orgId); W3 and W2 converge from there.",
+        "Fleet: decide DI-38/DI-58 before wiring fleet approvals into appointments (fleet_approval_id is refused today) and fleet drivers into appointments (GD-20).",
+        "All checks were green at the end of S7: pnpm lint (382 modules), typecheck, build, format:check, contract:check, db:codegen --verify, test:all (413 tests, 58 files); pnpm dev starts all hosts (api 279 implemented routes) with the trust consumers (trust.review_workflow, trust.scoring, trust.helpful_count) and the W15 rules appointment.reminders, trust.approval_deadline, trust.invitations, trust.nightly."
       ]
     },
     "purpose": "Breaks the first (scratch) build of the CarPal backend into 9 stages, each sized to run in its own context window. Every stage writes its report back into this file so the next context can see what is done, what was decided and what to watch out for.",
@@ -221,6 +226,10 @@
         {
           "stage": "S6",
           "change": "After S6: 236 operations implemented, 166 answer 501 (3 of them the deferred S3 operations). discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71, trust 1/36, appointment 1/31."
+        },
+        {
+          "stage": "S7",
+          "change": "After S7: 293 operations implemented, 109 answer 501 (3 of them the deferred S3 operations). appointment 31/31, trust 28/36 (the other 8 are §23.4 admin operations of S8)."
         }
       ]
     },
@@ -347,6 +356,10 @@
         {
           "stage": "S6",
           "change": "New interfaces: organization PublicOrgCards (full 40 PublicOrgCard with trust figures and the newest public portfolio image) and PublicProfiles.idBySlug/cards/searchSources/publishedIds/changedSince/portfolio/portfolioItems/portfolioSources/portfolioIds/portfolioItemStatus; inventory InventoryRead.searchSources/vendorItemIds/tradeVendorIds; trust TrustRead (ratings, ratingSummary, badges, publishedReviewSubject); community CommunityRead (search sources, public refs, favourites, follows, followers, recent questions and posts); identity Recipients (verified contacts, locale, critical_alerts_only, members by role) and authorDisplayName(); notification Messenger (EN/FA transactional mails); media MediaService.publicAttachmentViews; taxonomy TaxonomyResolver.descendants/catalog; vehicle VehicleCards.openReminders. Registered: media attachment targets post, question, answer (community). New consumers: organization.reaction_changed (portfolio like_count), notification.dispatch (W5), discovery.search_indexer (W2)."
+        },
+        {
+          "stage": "S7",
+          "change": "New interfaces: appointment AppointmentFacts; organization ProviderBooking and TrustFigures; discovery MatchResults; trust TrustRead.appointmentReviewState (and the exported TrustScorer, Invitations, ReviewWorkflow inside the trust module); vehicle VehicleCards.serviceVisits/serviceHistory/issue/appointmentRecords; inventory InventoryRead.inquiryVisits; media MediaService.sharedAttachmentViews; identity AccountFacts.verifiedEmail and ConsentGrants service_history_sharing. Registered: organization visits appointment (job logs inherit appointment_verified from completed appointments), the appointment customer check, insight sources provider.requests_received/completion_rate (appointment) and provider.overall_rating/review_count/category_ratings (trust); media attachment targets appointment and review; identity ConsentScopes appointment. New consumers: trust.review_workflow (W4), trust.scoring (W3), trust.helpful_count."
         }
       ]
     },
@@ -402,7 +415,25 @@
       "id": "GD-24",
       "decision": "Notifications (W5): events are routed to intents in a pure table (modules/notification/domain/routing.ts: audience users / organization members by role / followers, event_type, category, priority, template, plain params). The dispatcher writes one Notification per recipient (recipient locale) with its deliveries in one transaction, then sends queued deliveries through the Mailer/PushSender/SmsSender ports and records sent/failed (attempt_count, last_error). Critical notifications skip preferences (always in-app; email and push); otherwise the merged preference decides; email digests wait for notification.digests; business notifications (organization context) go to portal web push tokens only. Retries: notification.delivery_retry (3 attempts). Transactional messages that carry secrets (verification links, codes, invitations, consent links) never become notifications: they go through the Messenger (EN/FA templates) synchronously.",
       "reason": "52 Notification/NotificationDelivery/NotificationPreference rules, 41 §6.2; link tokens and codes must not travel through the outbox or be stored in template_params.",
-      "stage": "S6"
+      "stage": "S6",
+      "amendments": [
+        {
+          "stage": "S7",
+          "change": "S7 routes (appointments, reviews, invitations, inquiry answers) in routing.ts routeS7; the ci check-in link, review invitation links and their one-time codes are Messenger mails (appointment.check_in_link, review.invitation, review.invitation_code), never notifications."
+        }
+      ]
+    },
+    {
+      "id": "GD-25",
+      "decision": "Appointments: confirmation re-checks capacity in its transaction under a per-location transaction advisory lock (appointment.capacity_available, now SECURITY DEFINER, or time off only for a location without any active availability rule); slots for public.availability and the calendar are computed per request from the rules, time off and the busy_intervals definer (no slot cache); the pre-visit report is generated in the requester's transaction and stored, the provider reading history only while the service_history_sharing consent is granted; parties' contact data reach the other side only through definers bound to the appointment (requester_contact, check_in_contact) and Messenger mails.",
+      "reason": "52 §12 (\"concurrent bookings cannot exceed capacity\"), SEC-AZ-8 and SEC-OUT-3: the provider can never read the customer's vehicle, history or contact data directly, and the requester's context cannot count other parties' appointments. Providers without a calendar must still be able to accept requests in the MVP.",
+      "stage": "S7"
+    },
+    {
+      "id": "GD-26",
+      "decision": "Reviews and trust: the server decides the confirmation path at reviews.create (Path 1 from a visit of the author that took place, inside the 7-day window for appointments; Path 2 otherwise, business-confirmed when a business sent the invitation); W4 publishes Path 1 reviews after text checks; W3 recomputes one organization from scratch on every relevant event and nightly (evidence rows synced through organization TrustFigures — inserted active, revoked, never edited — capability confidence, trust score with penalties, change-only trust signals, rule badges with audit and events, staleness). Scores and weights are the 54 launch defaults under RULE_VERSION 54-2026-10.",
+      "reason": "52 §11/§21 and 54: evidence over claims, no unverified reviews, idempotent recomputation converges with at-least-once events and the nightly sweep; the organization module owns capabilities and the trust_score column (GD-15), the trust module owns every number.",
+      "stage": "S7"
     }
   ],
   "conventions": {
@@ -649,7 +680,7 @@
     {
       "id": "DI-36",
       "issue": "Maintenance reminders and document expiry need notifications (41 §6.3 hourly rule, Plan WP5), but 40 Appendix A / 50 §20 name no event for them; likewise no event when a stock-inquiry reservation expires.",
-      "action": "S5 publishes vehicle.reminder.due (payload reminder_id via aggregate, vehicle_id, status due|overdue, reminder_type, owner_type, owner_id) when a reminder becomes due or overdue; reservation expiry publishes nothing yet. Suggest adding vehicle.reminder.due (and inquiry.reservation.expired if the requester should be told) to Appendix A and 50 §20 before S6 builds the notification consumers.",
+      "action": "S5 publishes vehicle.reminder.due (payload reminder_id via aggregate, vehicle_id, status due|overdue, reminder_type, owner_type, owner_id) when a reminder becomes due or overdue; reservation expiry publishes nothing yet. Suggest adding vehicle.reminder.due (and inquiry.reservation.expired if the requester should be told) to Appendix A and 50 §20 before S6 builds the notification consumers. S7 adds appointment.reminder.due the same way (DI-54).",
       "status": "open",
       "s6_note": "S6: the notification dispatcher consumes vehicle.reminder.due (user owner → service_reminder; fleet owner → vehicle_due_for_service to FC roles). The event is still missing from 40 Appendix A."
     },
@@ -662,7 +693,7 @@
     {
       "id": "DI-38",
       "issue": "vehicle_data_sharing is a personal consent (52 ConsentRecord: organization subjects only for the three *_ai_use types), but fleet vehicles belong to an organization: 40 does not say how a fleet shares documents or service history with a provider, or how a provider logs work on a fleet vehicle.",
-      "action": "S5: a fleet shares its own documents by its coordinators' decision (FC role, no consent record); provider.service_record_create and job-log vehicle links fail closed (403 CONSENT_REQUIRED) for fleet vehicles. Needs a decision in S7/S8 (e.g. an organization-subject vehicle_data_sharing, or appointments as the only path for fleets).",
+      "action": "S5: a fleet shares its own documents by its coordinators' decision (FC role, no consent record); provider.service_record_create and job-log vehicle links fail closed (403 CONSENT_REQUIRED) for fleet vehicles. Needs a decision in S7/S8 (e.g. an organization-subject vehicle_data_sharing, or appointments as the only path for fleets). S7: fleet appointment requests ignore share_history (DI-58); providers record work on fleet vehicles through appointments (provider.service_record_create with appointment_id needs no consent).",
       "status": "open"
     },
     {
@@ -674,7 +705,7 @@
     {
       "id": "DI-40",
       "issue": "52 Vehicle.profile_completeness (S, 0–100) and InventoryItem.data_quality_score have no weights; 54 §7.2 lists the data-quality criteria only; 54 §3.2/§7.2 name inquiry_fulfillment_rate without a definition.",
-      "action": "S5: equal weights (vehicle: 12 optional criteria + brand/model/year; item: images, part numbers, category, warranty note, description, stock status); inquiry_fulfillment_rate = share of the last 90 days' decidable inquiries the vendor answered within 24 h without marking them unavailable (requester cancellations before an answer and fresh unanswered ones excluded). See OQ-09 for the same question about profiles.",
+      "action": "S5: equal weights (vehicle: 12 optional criteria + brand/model/year; item: images, part numbers, category, warranty note, description, stock status); inquiry_fulfillment_rate = share of the last 90 days' decidable inquiries the vendor answered within 24 h without marking them unavailable (requester cancellations before an answer and fresh unanswered ones excluded). See OQ-09 for the same question about profiles. S7: the vendor trust score uses the measured inquiry response time for inquiry responsiveness (54 §3.2) until inquiry_fulfillment_rate is defined.",
       "status": "open"
     },
     {
@@ -752,7 +783,55 @@
     {
       "id": "DI-53",
       "issue": "40 SearchFilters.available_within_days and preferred_partners_only depend on availability (S7) and fleet preferred partners (S8); public.availability computes slots from availability rules that do not exist yet.",
-      "action": "S6: available_within_days is ignored, preferred_partners_only fails closed (no results), public.availability answers { slots: [] } after checking the provider and location. S7/S8 replace them.",
+      "action": "S6: available_within_days is ignored, preferred_partners_only fails closed (no results), public.availability answers { slots: [] } after checking the provider and location. S7/S8 replace them. S7: public.availability computes slots; available_within_days filters providers by their indexed next open slot (providers without a calendar are left out); preferred_partners_only still fails closed until S8.",
+      "status": "resolved in S7"
+    },
+    {
+      "id": "DI-54",
+      "issue": "40 Appendix A lacks events S7 needs: appointment reminders, notes, delays and calendar changes, review edits/removals, response publication, invitation reminders, dispute opening and stock-inquiry status changes (requesters cannot be told about answers otherwise).",
+      "action": "S7 publishes appointment.reminder.due, appointment.note_added, appointment.delay_reported, appointment.availability.changed, review.edited, review.removed, review.response.published, review.response.removed, review.invitation.reminded, dispute.opened and inquiry.status_changed with id-only payloads. Add them to Appendix A and 52 §20.",
+      "status": "open"
+    },
+    {
+      "id": "DI-55",
+      "issue": "40 appointments.create names no error for the SEC-BF-3 open-request caps and the no-show cooldown, and no values for them.",
+      "action": "S7 answers 429 RATE_LIMITED (retry-after 3600) at 3 open requests per provider, 10 in total, or within 7 days after a no-show at that provider (proposed values).",
+      "status": "open"
+    },
+    {
+      "id": "DI-56",
+      "issue": "52 §12 requires a capacity check at confirmation, but a provider without availability rules has no capacity defined; 40 does not say whether such providers can confirm.",
+      "action": "S7: a location without any active rule has no calendar; confirmation checks only time off (same advisory lock) and public.availability offers no slots. Product to confirm.",
+      "status": "open"
+    },
+    {
+      "id": "DI-57",
+      "issue": "40 Appointment.requester_contact is \"for the requester's preferred channel\", but in_app and push have no address and many users set no preference.",
+      "action": "S7 (definer appointment.requester_contact): the verified email when the preference is email or unset, the verified phone for sms, otherwise null.",
+      "status": "open"
+    },
+    {
+      "id": "DI-58",
+      "issue": "40 AppointmentCreate.share_history creates personal consents, but fleet requests have no personal consent subject for fleet vehicles (see DI-38).",
+      "action": "S7 ignores share_history for fleet requests (consent_to_share_history false); decide with DI-38 / OQ-11.",
+      "status": "open"
+    },
+    {
+      "id": "DI-59",
+      "issue": "40 review_responses.update says a published response is \"re-moderated\", but ReviewResponse has no moderation status.",
+      "action": "S7 keeps an edited published response published; S8 moderation may add a status or a queue entry.",
+      "status": "open"
+    },
+    {
+      "id": "DI-60",
+      "issue": "54 §9.4 publishes trust.score.changed only for changes above 5 points, but the search index (W2) needs every change to rank by the current score.",
+      "action": "S7 publishes trust.score.changed on every change and audits only changes above 5 points (and the first score).",
+      "status": "open"
+    },
+    {
+      "id": "DI-61",
+      "issue": "52 ProviderCapabilityEvidence.base_weight is an integer (smallint in 43), but 54 §1.1 review weights are fractional for Path 2 (8 × 0.6 = 4.8, 4 × 0.6 = 2.4).",
+      "action": "S7 rounds (5 and 2). Change the column to numeric(5,2) in a numbered migration if calibration needs exact weights.",
       "status": "open"
     }
   ],
@@ -1934,7 +2013,7 @@
     {
       "id": "S7",
       "title": "Appointments, calendar and pre-visit report; reviews and trust",
-      "status": "not_started",
+      "status": "done",
       "depends_on": [
         "S6"
       ],
@@ -1974,38 +2053,45 @@
       "tasks": [
         {
           "id": "S7.T1",
-          "status": "not_started",
-          "title": "Provider calendar: availability rules, time off, slot computation (KV slot cache), public.availability; appointment.capacity_available with advisory lock at confirmation."
+          "status": "done",
+          "title": "Provider calendar: availability rules, time off, slot computation (KV slot cache), public.availability; appointment.capacity_available with advisory lock at confirmation.",
+          "result": "done: availability-ops.ts (rules CRUD with ENT(appointment_capacity_tools_enabled) for concurrency > 1 or buffers, time off with the overlapping confirmed appointments, appointment.availability.changed), domain/rules.ts openSlots/capacityCells (location time zone, buffers, capacity, time off, past slots), public.availability now computes slots (≤ 14 days; a location without rules offers none), capacity.ts: confirmation takes the per-location advisory lock and calls appointment.capacity_available (now SECURITY DEFINER) or, without any rule, checks time off only. The race test (two parallel confirmations of the last slot → 200 + 409 CAPACITY_UNAVAILABLE) passes. The KV slot cache of the plan was not needed: slots are computed per request from indexed rows."
         },
         {
           "id": "S7.T2",
-          "status": "not_started",
-          "title": "Requester side under {me}/appointments and {flt}/appointments: draft/create (time windows required at 'requested'), get/list/update, transitions (accept alternative, cancel), pre-visit report preview (consent-gated vehicle history through vehicle interface; AI summary stub; sending the request approves the previewed report per 40 Appendix D), fleet approval hook (stub until S8)."
+          "status": "done",
+          "title": "Requester side under {me}/appointments and {flt}/appointments: draft/create (time windows required at 'requested'), get/list/update, transitions (accept alternative, cancel), pre-visit report preview (consent-gated vehicle history through vehicle interface; AI summary stub; sending the request approves the previewed report per 40 Appendix D), fleet approval hook (stub until S8).",
+          "result": "done: requester-ops.ts (12 operations under {me}/appointments and {flt}/appointments): create (verified contact, bookable provider via organization ProviderBooking, offered service_mode, own active vehicle, open issue of that vehicle, ≥ 1 window when submitted, SEC-BF-3 caps and no-show cooldown → 429, server safety check, share_history → vehicle_data_sharing + service_history_sharing consents scoped to the appointment and granted to the provider, media through MediaService, match_result_id linked through discovery MatchResults), list/get, update (draft/requested, If-Match, regenerates the report), transitions (submit, counter, accept alternative with capacity, cancel), delay, check-in (±2 h), ci link check-in (appointment.check_in_by_token), history, notes (customer-visible only), pre-visit preview. pre-visit.ts builds the report in the requester transaction (vehicle card, symptoms, likely services from taxonomy mappings, safety warning, consent-gated history) and the provider reads history only while the consent is granted. AI summary stays null (S9); the fleet approval hook refuses fleet_approval_id until S8."
         },
         {
           "id": "S7.T3",
-          "status": "not_started",
-          "title": "Provider side: list/get/transition (confirm with CAPACITY_UNAVAILABLE, propose alternative, start, complete → service record via vehicle interface), notes (internal vs customer_visible), check-in by ci link (appointment.check_in_by_token)."
+          "status": "done",
+          "title": "Provider side: list/get/transition (confirm with CAPACITY_UNAVAILABLE, propose alternative, start, complete → service record via vehicle interface), notes (internal vs customer_visible), check-in by ci link (appointment.check_in_by_token).",
+          "result": "done: provider-ops.ts (11 operations): list (groups new/today/upcoming/in_progress/closed, location and date filters in the caller time zone), get with requester_contact (definer appointment.requester_contact: verified address of the preferred channel, confirmed until 30 days after completion), update (location before confirmation, estimates, cost estimate), transitions (confirm with capacity and the ci link mailed by the Messenger, propose, decline/cancel, check-in, in progress, awaiting parts, ready, no-show only after the start, complete → VehicleService.recordAppointmentService + appointment.completed), participants (active provider members), notes (internal and customer-visible), pre-visit report, calendar (≤ 31 days: appointments, time off, used/max per slot). provider.service_record_create accepts appointment_id (checked in or later, no consent needed)."
         },
         {
           "id": "S7.T4",
-          "status": "not_started",
-          "title": "Reviews: path selection (eligible appointment states, late-closed appointments, 7-day window), reviews.create (REVIEW_NOT_ALLOWED for self or member), sub-ratings and tags, Path 2 business approval (answer/object), responses (one published + one draft), disputes, review invitations send/open (ri link, trust.open_invitation, invitation_grant in the KV store)."
+          "status": "done",
+          "title": "Reviews: path selection (eligible appointment states, late-closed appointments, 7-day window), reviews.create (REVIEW_NOT_ALLOWED for self or member), sub-ratings and tags, Path 2 business approval (answer/object), responses (one published + one draft), disputes, review invitations send/open (ri link, trust.open_invitation, invitation_grant in the KV store).",
+          "result": "done: review-ops.ts (eligibility with candidate visits and the 7-day window, create with the server-side path decision, mine list/get/update/withdraw, evidence for Path 2 or objections), invitation-ops.ts (send for appointment/service record/inquiry/job log with REVIEW_NOT_ALLOWED(self_review_pattern), CNS(review_invitations: email) and the email flag; org list; cancel; mine list; anonymous open via trust.open_invitation with a one-time code mailed to the invited contact; verify → recipient check (user or contact hash), trust.claim_invitation, 30-minute single-use grant in the KV store), business-ops.ts (inbox of published/removed reviews, responses with one draft and one published, Path 2 relationship question without rating or text, answer → audit, rejection opens a review_approval_objection dispute, badges, latest trust signals), dispute-ops.ts (review, appointment and badge targets; one open dispute per raiser and target)."
         },
         {
           "id": "S7.T5",
-          "status": "not_started",
-          "title": "W4 review-workflow: automatic checks → Path 1 publish, Path 2 business deadline → no_response (every 5 min), invitation reminders/expiry (every 15 min), invitation creation after appointment/inquiry completion."
+          "status": "done",
+          "title": "W4 review-workflow: automatic checks → Path 1 publish, Path 2 business deadline → no_response (every 5 min), invitation reminders/expiry (every 15 min), invitation creation after appointment/inquiry completion.",
+          "result": "done: review-workflow.ts: W4 consumer trust.review_workflow (review.created/edited → automatic checks → Path 1 published with trust weight 1.0 and review.published, else held in pending_moderation; appointment.completed and inquiry.status_changed(completed) → in-app system invitation), W15 trust.approval_deadline (5 min: Path 2 pending past due → no_response), trust.invitations (15 min: expiry, ≤ 2 reminders, invitations for appointments that took place without being closed), trust.helpful_count consumer (community.reaction.changed on reviews). inventory publishes inquiry.status_changed now."
         },
         {
           "id": "S7.T6",
-          "status": "not_started",
-          "title": "W3 trust-scoring per 54: evidence weights, review trust weight, capability confidence levels, provider and vendor trust score, penalties, badges (badge.awarded/revoked), staleness (daily), trust.score.changed; extend W2 to index review, badge and trust signals."
+          "status": "done",
+          "title": "W3 trust-scoring per 54: evidence weights, review trust weight, capability confidence levels, provider and vendor trust score, penalties, badges (badge.awarded/revoked), staleness (daily), trust.score.changed; extend W2 to index review, badge and trust signals.",
+          "result": "done: domain/scoring.ts (54 §1-§6 pure functions) and trust-scorer.ts (W3, consumer trust.scoring + W15 trust.nightly): evidence from completed appointments, verified reviews (one per job) and the organization's own portfolio items, verified job logs and certifications through organization TrustFigures (inserted active, revoked when the source stops counting, linked to the most specific capability or a new system-level one), capability confidence and badge eligibility, provider/vendor/hybrid trust score with penalties, trust signals (a row per change), badges (award/revoke with audit and badge.awarded/revoked; verified_business pending admin approval), staleness → activity_status, measured response time. Search: provider documents carry trust_score and next_available_at; ranking blends them (category trust, operational fit); available_within_days filters."
         },
         {
           "id": "S7.T7",
-          "status": "not_started",
-          "title": "W15 appointment rules: reminders before start; confirmed and 24 h past → Path 1 eligibility. Notification templates for all S7 events."
+          "status": "done",
+          "title": "W15 appointment rules: reminders before start; confirmed and 24 h past → Path 1 eligibility. Notification templates for all S7 events.",
+          "result": "done: appointment-rules.ts W15 appointment.reminders (hourly, once per appointment within 24 h, appointment.reminder.due); the \"confirmed and 24 h past → Path 1\" rule lives in trust.invitations (AppointmentFacts.tookPlaceSince). Notification routes and EN/FA templates for appointment.requested/confirmed/status_changed/completed/reminder.due/note_added/delay_reported, review.invitation.sent/reminded, review.approval.requested, review.published, review.response.published and inquiry.status_changed; Messenger templates appointment.check_in_link, review.invitation, review.invitation_code."
         }
       ],
       "deliverables": [
@@ -2023,15 +2109,110 @@
         "AI pre-visit summary and review insights (S9)"
       ],
       "report": {
-        "started_at": null,
-        "completed_at": null,
-        "summary": null,
-        "ops_implemented": [],
+        "started_at": "2026-10-13",
+        "completed_at": "2026-10-13",
+        "summary": "All 57 S7 operations are implemented: §16 appointments (30) and §15 reviews and trust (27); public.availability (S6 placeholder) now computes slots. Appointments: requests and drafts for individuals and fleets with the server safety check, request caps, consent-scoped history sharing, a pre-visit report built in the requester's transaction (history only under an active service_history_sharing consent), the 40 §16.1 transitions on both sides, capacity-safe confirmation (per-location advisory lock + capacity_available), the ci check-in link mailed at confirmation, check-in, completion writing the appointment_verified service record, participants, internal and customer-visible notes, the provider calendar, availability rules and time off, and an hourly reminder rule. Reviews: eligibility with candidate visits, the server-side Path 1 / Path 2 decision, edits, withdrawal, evidence, invitations (system after completed appointments and inquiries; business by in-app or email with the consent and flag; anonymous open with a one-time code; verify → single-use grant), responses, the Path 2 relationship question and objection disputes, disputes, badges and trust signals. W4 publishes Path 1 reviews after automatic checks, expires and reminds invitations and applies the Path 2 deadline; W3 recomputes evidence, capability confidence, the trust score with penalties, signals, badges and staleness per organization on events and nightly; the search index carries trust scores and the next open slot. The four acceptance criteria are covered by integration tests.",
+        "ops_implemented": [
+          "appointments.create",
+          "appointments.list",
+          "appointments.get",
+          "appointments.update",
+          "appointments.transition",
+          "appointments.delay",
+          "appointments.check_in",
+          "appointments.check_in_link",
+          "appointments.history",
+          "appointments.notes_list",
+          "appointments.note_create",
+          "pre_visit.requester_get",
+          "provider.appointments_list",
+          "provider.appointments_get",
+          "provider.appointments_update",
+          "provider.appointments_transition",
+          "provider.participants_list",
+          "provider.participant_add",
+          "provider.participant_remove",
+          "provider.notes_list",
+          "provider.note_create",
+          "pre_visit.provider_get",
+          "provider.calendar",
+          "availability.rules_list",
+          "availability.rule_create",
+          "availability.rule_update",
+          "availability.rule_delete",
+          "availability.time_off_list",
+          "availability.time_off_create",
+          "availability.time_off_cancel",
+          "reviews.eligibility",
+          "reviews.create",
+          "reviews.mine_list",
+          "reviews.mine_get",
+          "reviews.mine_update",
+          "reviews.mine_withdraw",
+          "reviews.evidence_add",
+          "review_invitations.mine_list",
+          "review_invitations.open",
+          "review_invitations.verify",
+          "review_invitations.send",
+          "review_invitations.org_list",
+          "review_invitations.cancel",
+          "reviews.org_list",
+          "reviews.org_get",
+          "review_responses.create",
+          "review_responses.update",
+          "review_responses.publish",
+          "review_responses.delete",
+          "review_approvals.list",
+          "review_approvals.answer",
+          "disputes.create",
+          "disputes.mine_list",
+          "disputes.get",
+          "disputes.withdraw",
+          "badges.list",
+          "trust_signals.list"
+        ],
         "ops_deferred": [],
-        "files_created": [],
-        "tests": null,
-        "deviations": [],
-        "notes_for_next": []
+        "files_created": [
+          "modules/appointment: appointment.module.ts (global: AppointmentFacts, registrations), appointment-api.module.ts, appointment-worker.module.ts; application/{common,requester-ops,provider-ops,availability-ops,capacity,pre-visit,appointment-rules}.ts; domain/rules.ts + appointment-domain.test.ts; infrastructure/{appointment-facts,calendar}.ts; interface/appointments.ts; api/projections.ts",
+          "modules/trust: trust.module.ts (global: TrustRead, TrustScorer, Invitations, ReviewWorkflow, consumers, registrations), trust-api.module.ts, trust-worker.module.ts; application/{common,review-ops,invitation-ops,business-ops,dispute-ops,trust-scorer,review-workflow}.ts; domain/{scoring,reviews}.ts + trust-domain.test.ts; api/projections.ts extended; TrustRead.appointmentReviewState",
+          "modules/organization: interface/{booking,trust-figures}.ts + infrastructure/{booking,trust-figures}.ts (ProviderBooking, TrustFigures); OrgSearchSource.trust_score",
+          "modules/vehicle: VehicleCards.serviceVisits/serviceHistory/issue/appointmentRecords; AppointmentServiceRecord parts/cost/warranty; provider.service_record_create appointment path",
+          "modules/inventory: InventoryRead.inquiryVisits; inquiry.status_changed events",
+          "modules/discovery: interface/match-results.ts + infrastructure/match-results.ts (MatchResults); provider documents trust_score and next_available_at; ranking and available_within_days",
+          "modules/identity: AccountFacts.verifiedEmail; ConsentGrants service_history_sharing; modules/media: MediaService.sharedAttachmentViews",
+          "modules/notification: S7 routes (routing.ts routeS7) and EN/FA templates",
+          "libs/geo/hours.ts localParts/zonedToUtc/addDays; libs/testing fixtures.appointment",
+          "apps/testing: s7-support.ts, appointment.int.test.ts, trust.int.test.ts; provider.int.test.ts now uses real appointments",
+          "Docs/43.db_setup.sql and Docs/42 §5.3: the S7 definer functions"
+        ],
+        "tests": "413 passing (pnpm test:all, 58 files): S7 added 31 (unit: appointment domain 6, trust domain 8, notification routing 2; integration: appointments 8, reviews and trust 7) and switched the S4 provider test to real appointments. Acceptance: two parallel confirmations of the last slot → one 200 and one 409 CAPACITY_UNAVAILABLE (and the slot leaves public.availability); request → confirm → ci-link check-in → in progress → complete (appointment_verified service record) → W4 invitation → Path 1 review → published → organizations.trust_score set and evidence completed_appointment (10) + verified_review (8) active with capability low_evidence, trust signals listed; a Path 2 review stays pending_approval after the business confirms, the database refuses publishing it without the reviewer approval (reviews_path2_publish_rule) and accepts it with the approval; internal notes never appear in the requester's notes. Also: drafts, counter and accepted alternatives, cancellation, delay, check-in window, caps (429), calendar rules/time off/capacity cells/rule ENT, consent-gated pre-visit history with withdrawal, record-level BOLA for appointments, objection dispute and deadline rule, member refusal and dimension rules, responses (draft duplicate, publish, audit), disputes, helpful votes without members, withdrawal revoking evidence, email invitation with code, recipient mismatch, grant single use, LINK_USED, consent requirement and cancel, vendor review after a completed inquiry with the inquiry_answered notification. Also green: pnpm lint (382 modules), typecheck, build, format:check, contract:check, db:codegen --verify; pnpm dev starts all hosts (api 279 implemented routes) with the trust consumers and the appointment/trust W15 rules.",
+        "deviations": [
+          "Docs/43 and Docs/42 §5.3 changed in place again: definers appointment.requester_contact, appointment.check_in_contact, appointment.visit_cards, appointment.busy_intervals, trust.invitation_contact, trust.invitation_by_token, trust.claim_invitation, media.shared_attachments; appointment.capacity_available is now SECURITY DEFINER (a requester accepting an alternative must count every party's appointments). Local databases need pnpm db:reset.",
+          "A location without any active availability rule has no calendar: confirmation checks only time off (under the same advisory lock) and public.availability offers no slots there (DI-56).",
+          "Path 2 reviews are never published in S7: the business answer, the 7-day no_response rule and the objection dispute exist, but the CarPal reviewer decision is an admin operation (§23.4, S8). The database check reviews_path2_publish_rule is covered by a test.",
+          "W4 automatic checks are text rules only: links, email addresses and phone numbers hold a Path 1 review in pending_moderation for the S8 queue (same rule as GD-22); the SEC-BF-1 fraud signals (device-key hash, IP prefix, timing) and the SEC-BF-2 same-device/same-network invitation checks have no data source yet; members of the subject are refused.",
+          "Fleets: share_history is ignored for fleet requests (no personal consent subject, DI-38/DI-58); fleet_approval_id is refused (fleet approvals arrive in S8); fleet appointments get no system review invitation (fleet_confirmed needs the fleet workflow); a cost estimate above a fleet threshold publishes nothing yet; fleet drivers (F*) see only appointments they requested until S8 binds assignments (GD-20).",
+          "AI: triage_session_id is refused (Help Me sessions, S9); the pre-visit ai_summary stays null (ai_summary_status not_required); review response drafts from AI insights are refused (ai_draft_insight_id → 422).",
+          "Events beyond 40 Appendix A (DI-54): appointment.reminder.due, appointment.note_added, appointment.delay_reported, appointment.availability.changed, review.edited, review.removed, review.response.published, review.response.removed, review.invitation.reminded, dispute.opened, inquiry.status_changed.",
+          "Disputes about service records and moderation actions are refused (REFERENCE_NOT_FOUND) until the S8 queues exist; badge challenges are open to any signed-in user.",
+          "Appointment.requester_contact is the verified email or phone of the preferred channel only; it is null when the preference is in_app or push (DI-57).",
+          "The ci check-in link is mailed by the Messenger at confirmation (it carries a token, GD-24); the appointment.confirmed notification is in-app and push only. Check-in by link needs an anonymous token like the other PUB link operations.",
+          "trust.score.changed is published on every score change (the W2 indexer needs it), the audit entry only for changes above 5 points or the first score (54 §9.4, DI-60); trust signals get a new row only when a value changes.",
+          "Review evidence base weights are stored rounded (smallint): a Path 2 five-star review counts 5, not 4.8 (DI-61). Evidence without a matching capability creates a system-level capability (source job_evidence/review_evidence/certification, not public).",
+          "review_responses.update keeps a published response published (responses have no moderation status yet, DI-59).",
+          "A user may write one review without a visit per subject (eligibility already_reviewed); proposed velocity limit 5 reviews per author per 24 h (REVIEW_NOT_ALLOWED); SEC-BF-3 caps 3 open requests per provider and 10 in total plus a 7-day cooldown after a no-show answer 429 RATE_LIMITED (DI-55).",
+          "An appointment created from an issue schedules the issue when the request is sent (requester context), not at confirmation: the provider cannot read the customer's issues.",
+          "The completion service record drops inventory references from parts (the provider names its parts) and is written only when a service system is known (body or appointment).",
+          "The plan's KV slot cache was not built: slots are computed per request from the rules, time off and the busy_intervals definer."
+        ],
+        "notes_for_next": [
+          "Run `pnpm db:reset` once (Docs/43 changed). Commands from backend/ after `source tools/use-local-node.sh`.",
+          "Layout as in S5/S6: <name>.module.ts global (ports, registrations, consumers), <name>-api.module.ts (handlers), <name>-worker.module.ts (W15 rules). New interfaces: appointment AppointmentFacts (visits by id via definer, mine, completed, tookPlaceSince, stats, activeProviders, nextOpenSlot); organization ProviderBooking (bookable provider, active location ids, locations with public and exact address) and TrustFigures (facts, own evidence, syncEvidence, capability scores, trust score, provider figures, job log visits); discovery MatchResults; TrustRead.appointmentReviewState; VehicleCards.serviceVisits/serviceHistory/issue/appointmentRecords; InventoryRead.inquiryVisits; MediaService.sharedAttachmentViews; AccountFacts.verifiedEmail.",
+          "Appointment status changes rely on the appointments_status trigger: the side comes from the RLS context (appointment.caller_side) and the history note from app.change_reason (application/common.ts setSide). The worker's system context may make any allowed move.",
+          "Reviews: TrustScorer.recompute(orgId) is idempotent and derives everything from current rows — call it (or publish an event W3 consumes: review.published/removed/approved, appointment.*, portfolio.published, organization.verified, moderation.action.taken, provider.profile.published) after any change that affects trust. S8 reviewer decisions must set reviewer_decision approved + verified_status approved_without_visit + trust_weight 0.6 + counts_toward_core_score and publish review.approved (W2 and W3 already consume it).",
+          "Invitations: Invitations.create (trust module, exported) writes one and mails email links after commit; tokens never enter events. Grants live in the KV store as ri_grant:<grant> (30 min); codes as ri_code:<invitation> (10 min, 5 attempts).",
+          "Tests: s7-support.ts (customer with vehicle, request bodies, localDay in Asia/Tehran, availability rules); fixtures.appointment(provider, user, vehicle, { status }) inserts a real appointment and walks it through the status table in the system context; flush(app, worker) runs W4/W3/W5 too."
+        ]
       }
     },
     {
@@ -2250,9 +2431,9 @@
       "S8": 82,
       "S9": 23
     },
-    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501. After S6 (pnpm contract:coverage): discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71 (the other 7 are admin ops of S8), trust 1/36 (public.org_reviews), appointment 1/31 (public.availability placeholder); 236 implemented, 166 answer 501.",
-    "implemented": 236,
-    "returning_501": 166,
+    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501. After S6 (pnpm contract:coverage): discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71 (the other 7 are admin ops of S8), trust 1/36 (public.org_reviews), appointment 1/31 (public.availability placeholder); 236 implemented, 166 answer 501. After S7 (pnpm contract:coverage): appointment 31/31, trust 28/36 (the other 8 are §23.4 admin operations of S8); 293 implemented, 109 answer 501.",
+    "implemented": 293,
+    "returning_501": 109,
     "total_routes": 450,
     "by_module_after_S3": {
       "identity": "47/61",
@@ -2323,6 +2504,25 @@
       "discovery": "7/7",
       "trust": "1/36",
       "appointment": "1/31",
+      "fleet": "0/20",
+      "community": "25/25",
+      "notification": "7/7",
+      "ai-mcp": "0/27",
+      "analytics": "0/3",
+      "admin": "0/16"
+    },
+    "by_module_after_S7": {
+      "identity": "47/61",
+      "billing": "4/7",
+      "taxonomy": "4/13",
+      "platform": "4/4",
+      "organization": "64/71",
+      "media": "9/11",
+      "vehicle": "31/31",
+      "inventory": "32/32",
+      "discovery": "7/7",
+      "trust": "28/36",
+      "appointment": "31/31",
       "fleet": "0/20",
       "community": "25/25",
       "notification": "7/7",
@@ -2711,6 +2911,91 @@
       "stage": "S6",
       "date": "2026-10-12",
       "deviation": "Docs/43 and Docs/42 changed in place again (community.refresh_reaction_count): local databases need pnpm db:reset."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "Docs/43 and Docs/42 §5.3 changed in place again: definers appointment.requester_contact, appointment.check_in_contact, appointment.visit_cards, appointment.busy_intervals, trust.invitation_contact, trust.invitation_by_token, trust.claim_invitation, media.shared_attachments; appointment.capacity_available is now SECURITY DEFINER (a requester accepting an alternative must count every party's appointments). Local databases need pnpm db:reset."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "A location without any active availability rule has no calendar: confirmation checks only time off (under the same advisory lock) and public.availability offers no slots there (DI-56)."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "Path 2 reviews are never published in S7: the business answer, the 7-day no_response rule and the objection dispute exist, but the CarPal reviewer decision is an admin operation (§23.4, S8). The database check reviews_path2_publish_rule is covered by a test."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "W4 automatic checks are text rules only: links, email addresses and phone numbers hold a Path 1 review in pending_moderation for the S8 queue (same rule as GD-22); the SEC-BF-1 fraud signals (device-key hash, IP prefix, timing) and the SEC-BF-2 same-device/same-network invitation checks have no data source yet; members of the subject are refused."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "Fleets: share_history is ignored for fleet requests (no personal consent subject, DI-38/DI-58); fleet_approval_id is refused (fleet approvals arrive in S8); fleet appointments get no system review invitation (fleet_confirmed needs the fleet workflow); a cost estimate above a fleet threshold publishes nothing yet; fleet drivers (F*) see only appointments they requested until S8 binds assignments (GD-20)."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "AI: triage_session_id is refused (Help Me sessions, S9); the pre-visit ai_summary stays null (ai_summary_status not_required); review response drafts from AI insights are refused (ai_draft_insight_id → 422)."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "Events beyond 40 Appendix A (DI-54): appointment.reminder.due, appointment.note_added, appointment.delay_reported, appointment.availability.changed, review.edited, review.removed, review.response.published, review.response.removed, review.invitation.reminded, dispute.opened, inquiry.status_changed."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "Disputes about service records and moderation actions are refused (REFERENCE_NOT_FOUND) until the S8 queues exist; badge challenges are open to any signed-in user."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "Appointment.requester_contact is the verified email or phone of the preferred channel only; it is null when the preference is in_app or push (DI-57)."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "The ci check-in link is mailed by the Messenger at confirmation (it carries a token, GD-24); the appointment.confirmed notification is in-app and push only. Check-in by link needs an anonymous token like the other PUB link operations."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "trust.score.changed is published on every score change (the W2 indexer needs it), the audit entry only for changes above 5 points or the first score (54 §9.4, DI-60); trust signals get a new row only when a value changes."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "Review evidence base weights are stored rounded (smallint): a Path 2 five-star review counts 5, not 4.8 (DI-61). Evidence without a matching capability creates a system-level capability (source job_evidence/review_evidence/certification, not public)."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "review_responses.update keeps a published response published (responses have no moderation status yet, DI-59)."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "A user may write one review without a visit per subject (eligibility already_reviewed); proposed velocity limit 5 reviews per author per 24 h (REVIEW_NOT_ALLOWED); SEC-BF-3 caps 3 open requests per provider and 10 in total plus a 7-day cooldown after a no-show answer 429 RATE_LIMITED (DI-55)."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "An appointment created from an issue schedules the issue when the request is sent (requester context), not at confirmation: the provider cannot read the customer's issues."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "The completion service record drops inventory references from parts (the provider names its parts) and is written only when a service system is known (body or appointment)."
+    },
+    {
+      "stage": "S7",
+      "date": "2026-10-13",
+      "deviation": "The plan's KV slot cache was not built: slots are computed per request from the rules, time off and the busy_intervals definer."
     }
   ],
   "handoff_notes": [
@@ -2748,6 +3033,11 @@
       "date": "2026-10-12",
       "from": "S6",
       "note": "S6 done: discovery (search projections + W2 indexer, rule-based interpretation, ranking with reasons, sessions, map pins, safety check, Discover feed), public profile reads, community (follows, favourites, posts, comments, reactions, Q&A) and notifications (in-app, preferences, digests, push tokens, W5 dispatch with EN/FA templates) — all 45 ops, 382 tests green. Docs/43 changed (community.refresh_reaction_count): run pnpm db:reset once. Next: S7 (appointments, calendar, pre-visit report; reviews and trust). The trust module (TrustRead, public.org_reviews) and the appointment module (public.availability placeholder) already exist: extend them. Read S6.report.notes_for_next and recommendations_for_next_stages.S7; decide OQ-12 (automatic community moderation) with product before launch."
+    },
+    {
+      "date": "2026-10-13",
+      "from": "S7",
+      "note": "S7 done: appointments (requests, capacity-safe confirmation, ci check-in, completion with the service record, notes, participants, calendar, availability rules, time off, pre-visit report, reminders) and reviews and trust (Path 1/Path 2, invitations with code and grant, approvals and objections, responses, disputes, W4 workflow, W3 scoring with evidence, confidence, trust score, signals and badges; search uses trust scores and the next open slot) — all 57 ops, 413 tests green. Docs/43 changed (S7 definers): run pnpm db:reset once. Next: S8 (fleet, admin plane incl. review approval and dispute resolution, analytics and audit, DSR execution). Read S7.report.notes_for_next and recommendations_for_next_stages.S8."
     }
   ],
   "open_questions": [
@@ -2840,7 +3130,7 @@
     }
   ],
   "recommendations_for_next_stages": {
-    "written_after": "S6",
+    "written_after": "S7",
     "general": [
       "Keep each stage to the S3 module layout (notes_for_next) and copy the account/billing handlers as templates for CRUD with If-Match, keyset paging and audit.",
       "Bind ports instead of reading other modules' tables: add methods to the owning module's interface/ (GD-15) and register extensions in onModuleInit.",
@@ -2907,7 +3197,13 @@
       "Moderation queue: community posts, comments, questions and answers with moderation_status pending (GD-22 holds those with links or contact data), and moderation.action.taken (the W2 indexer already consumes it and rebuilds the organization; also publish community.content.changed for hidden community records so they leave the index). Approving post/question media makes them publicly servable (publicAttachmentViews then shows them).",
       "Fleet preferred partners: implement SearchFilters.preferred_partners_only (fails closed in S6) and the +5 fleet preferred-partner bonus in modules/discovery/domain/ranking.ts (54 §5.1); route fleet.approval.decided notifications.",
       "Retention: purge discovery.match_sessions (180 days, anonymize query_text) and notification rows/deliveries per DataRetentionPolicy.",
-      "Admin moderation of reactions and reviews must call community.refresh_reaction_count after removing reactions so cached counters stay right."
+      "Admin moderation of reactions and reviews must call community.refresh_reaction_count after removing reactions so cached counters stay right.",
+      "Review approval (§23.4): admin.review_queue and review decisions must set reviewer_decision/reviewer_user_id/reviewer_decided_at/reviewer_reason_code; approval also sets verified_status approved_without_visit, status published, published_at, trust_weight 0.6, counts_toward_core_score true and publishes review.approved with subject_organization_id (W2 and W3 consume it). Business confirmed or no_response first (reviews_path2_publish_rule); 4EYES and a different staff member for objections (52 Dispute).",
+      "Dispute resolution (§23.4): resolved_upheld on a review_approval_objection publishes the review with disputed_by_business true; an upheld fake_review dispute or ModerationAction \"fake\" must make W3 apply the −50 penalty and revoke all badges (54 §3.3) — add those inputs to TrustScorer (today only unanswered negative reviews and provider cancellations are penalized) and publish moderation.action.taken.",
+      "verified_business badges start pending_approval (requires_admin_approval): the admin badge approval sets approved_by and status active and publishes badge.awarded; admin_trust_penalty signals (ModerationAction apply_trust_penalty) should feed TrustScorer as a penalty with a 12-month expiry.",
+      "Fleet: decide DI-38/DI-58 (fleet history sharing), bind FleetApproval to appointments (fleet_approval_id required when the workflow is on; cost estimates above the fleet threshold → fleet.approval.requested from provider.appointments_update), fleet system invitations / fleet_confirmed reviews, fleet trust signals (54 §8: fleet_downtime_avg, first_time_fix_rate, cost_estimate_accuracy) and fleet_friendly revocation by upheld fleet disputes; drivers reach appointments of assigned vehicles (GD-20; appointments.list/get today restrict drivers to their own requests).",
+      "Disputes about service records and moderation actions (refused in S7) need their S8 targets; moderation of review responses (DI-59) and of reviews held in pending_moderation by the W4 text checks (status published + published_at + trust weight on approval, then review.published).",
+      "Retention: purge expired review invitations and their encrypted invited contacts, KV codes/grants are TTL-bound already; analytics: appointment and review funnels can read the S7 events (appointment.requested/confirmed/completed, review.created/published, review.invitation.sent/opened)."
     ],
     "S9": [
       "Full mode: sessions, interactions, authorization codes, refresh-token families, OTPs and PoW challenges live in the KeyValueStore; separate deployables need the Redis adapter (lite is per process).",
@@ -2921,7 +3217,9 @@
       "Verify the OpenSearch adapter (libs/infra/full/opensearch.ts) against docker compose: index templates with geo_point for locations.point and keyword fields for the filters, then run the discovery integration tests in full mode.",
       "Semantic search (flag search.semantic.enabled) adds candidates or reasons on top of the rule-based ranking; AI query interpretation stores an AiInsight query_interpretation and sets interpretation_source rules_plus_ai; AI explanations set explanation_source ai with explanation_insight_id.",
       "OpenAPI: describe the server-defined Json schemas of S6 (MatchReasonValues, FeedCard, TemplateParams, DI-50) and the ETag header of questions (DI-47).",
-      "Push: a real push gateway adapter (FCM/APNs/Web Push) for PushSender in full mode; revoke push tokens on sign-out/session end (DI-52)."
+      "Push: a real push gateway adapter (FCM/APNs/Web Push) for PushSender in full mode; revoke push tokens on sign-out/session end (DI-52).",
+      "AI pre-visit summary: triage sessions (Help Me) set triage_session_id and ai_triage_insight_id; the summary goes to pre_visit_reports.ai_summary in the preview and is approved by the user's submit (40 Appendix D); review response drafts from AiInsight (ai_draft_insight_id, ai_assisted, edited_after_ai) and review insights (ai_sentiment, ai_complaint_flags) stay internal.",
+      "OpenAPI: describe Json<BadgeEvaluation> (ProviderBadge.evaluation_snapshot) and the MatchReasonValues availability value next_available_at; the ci and ri link flows need an anonymous token."
     ],
     "S4_done": [
       "All S4 recommendations from S3 were applied: SubscriptionWriter for the default plan (hybrid → provider_basic, DI-20), invitations through identity OrgMemberships + identity.accept_invitation with Authorizer.invalidateUser, ConsentScopes media_asset and portfolio_item, cn requests through identity ConsentRequests (link mailed by identity), requireDescendant chains, DI-10 resolved, DataExportFiles bound, OrgCards.logo_url, textArray for domain arrays."
@@ -2931,6 +3229,9 @@
     ],
     "S6_done": [
       "All S6 recommendations from S5 were applied, with these adjustments: identity and invitation mails go through the notification Messenger (EN/FA templates) but stay synchronous, because they carry link tokens and codes that must not enter notifications or events; the refresh-token reuse alert is additionally a critical in-app system_announcement (user.security_alert); consent.withdrawn needed no S6 consumer (no consent-gated copies are indexed or notified); inquiry answers/status changes still publish no event, so the requester is not notified yet (S7 recommendation below); profile edits are covered by events for profile, location and organization changes plus the one-minute sweep for catalog edits."
+    ],
+    "S7_done": [
+      "All S7 recommendations from S6 were applied, with these adjustments: user display names through UserCards; review_invitations consent through ConsentChecker; the appointment ConsentScopes verifier registered; appointment_capacity_tools_enabled as requireEntitlement delta 0 for concurrency > 1 or buffers; visits/customer check/insights registered; evidence from completed appointments, published reviews, portfolio items, verified job logs and certifications (revoked when the source stops counting); the exact address released to the requester from confirmation; VehicleService.recordAppointmentService at completion; provider.service_record_create opened for appointments (provider_logged/provider_confirmed, checked in or later); Path 1 inquiry_verified and service_record_verified; trust events published with organization_id; trust_score and next_available_at in the provider document and ranking; community.reaction.changed consumed for helpful_count; S7 notifications and inquiry.status_changed (inquiry_answered) routed; match_results.appointment_id set through MatchResults. Not done: issue_id in search (DI-49) and DI-38 (fleet sharing) remain open; markIssueScheduled runs when the request is sent, not at confirmation."
     ]
   }
 }

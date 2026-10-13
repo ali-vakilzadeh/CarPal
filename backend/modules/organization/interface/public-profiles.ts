@@ -91,6 +91,8 @@ export interface OrgSearchSource {
   name: string;
   organization_type: string;
   verified: boolean;
+  /** 54 §3 Organization.trust_score (0–100), null until W3 scored it. */
+  trust_score: number | null;
   description_translations: Record<string, string> | null;
   locations: SearchLocation[];
   provider: {

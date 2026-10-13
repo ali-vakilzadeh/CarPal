@@ -45,7 +45,8 @@ export class ConsentScopes {
 export interface ScopedConsentGrant {
   /** The granting user (signed in; RLS subject_all). */
   subjectUserId: string;
-  consentType: 'vendor_fitment_context' | 'vehicle_data_sharing';
+  /** service_history_sharing with vehicle_data_sharing: 40 AppointmentCreate.share_history (S7). */
+  consentType: 'vendor_fitment_context' | 'vehicle_data_sharing' | 'service_history_sharing';
   /** Scope entity the calling module created in the same transaction (its own ownership check). */
   scope: { type: ConsentScopeType; id: string };
   grantee: { type: 'organization'; id: string };
@@ -88,6 +89,8 @@ export class NoDataExportFiles extends DataExportFiles {
 export abstract class AccountFacts {
   /** 52 §4 verified contact: a verified email or phone (403 VERIFIED_CONTACT_REQUIRED otherwise). */
   abstract hasVerifiedContact(scope: TxScope, userId: string): Promise<boolean>;
+  /** The signed-in user's own verified email (SEC-LT-5 recipient checks of email-bound links), else null. */
+  abstract verifiedEmail(scope: TxScope, userId: string): Promise<string | null>;
 }
 
 /** A role membership of an organization (40 §7.1 OrgMember source). User fields are null for pending invitations. */

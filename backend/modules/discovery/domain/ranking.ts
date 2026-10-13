@@ -1,9 +1,9 @@
 // Match scores and reasons (54 §5; 52 MatchResult). Pure functions over the
 // search documents. Every score is 0-100, comes with at least one structured
 // reason (public data only) and never takes plan, payment or sponsorship as
-// an input (54 §5.4). Trust scores and availability arrive with S7: until
-// then category trust uses the published ratings and operational fit the
-// response time.
+// an input (54 §5.4). Category trust blends the W3 trust score (S7) with the
+// rating evidence; operational fit blends the response time with the next
+// open appointment slot when the provider keeps a calendar (S7).
 
 export type ReasonType =
   'capability_evidence' | 'rating_evidence' | 'location' | 'availability' | 'urgency_fit' | 'user_preference' | 'trust_signal' | 'recency';
@@ -47,6 +47,8 @@ export interface MatchContext {
   /** Distance at which the distance factor reaches 0. */
   maxDistanceKm: number;
   favorites: ReadonlySet<string>;
+  /** Ranking time (availability fit); defaults to now. */
+  now?: number;
 }
 
 export interface ProviderFacts {
@@ -71,6 +73,10 @@ export interface ProviderFacts {
   response_time_target: string | null;
   activity_status: string;
   service_modes: string[];
+  /** 54 §3 trust score (S7), null until scored. */
+  trust_score?: number | null;
+  /** Earliest open slot (ISO), null without a calendar (S7). */
+  next_available_at?: string | null;
 }
 
 export interface VendorFacts {
@@ -100,6 +106,19 @@ function ratingTrust(rating: number | null, count: number, verified: boolean): n
   const part = rating === null ? 0.5 : (rating - 1) / 4;
   const w = Math.min(1, count / 10);
   return clamp(0.5 * (1 - w) + part * w + (verified ? 0.05 : 0));
+}
+
+/** Category trust (54 §5.1): the trust score blended with the rating evidence once W3 scored the provider. */
+function categoryTrust(p: ProviderFacts): number {
+  const rating = ratingTrust(p.overall_rating, p.review_count, p.verified);
+  return p.trust_score === null || p.trust_score === undefined ? rating : clamp(0.5 * (p.trust_score / 100) + 0.5 * rating);
+}
+
+/** Availability fit (54 §5.1 operational: next available slot within the needed window); null without a calendar. */
+export function availabilityFit(next: string | null | undefined, now: number): number | null {
+  if (!next) return null;
+  const days = (Date.parse(next) - now) / 86_400_000;
+  return days <= 1 ? 1 : days <= 3 ? 0.85 : days <= 7 ? 0.7 : 0.5;
 }
 
 function responseFit(minutes: number | null, target: string | null): number {
@@ -172,7 +191,7 @@ export function scoreProvider(p: ProviderFacts, distanceKm: number | null, ctx: 
     fit = v ? (coversVehicle ? 0.6 : 0.3) : 0.5;
     if (v && coversVehicle) reasons.push({ reason_type: 'capability_evidence', values: { covered: true, brand_node_id: v.brand } });
   }
-  const trust = ratingTrust(p.overall_rating, p.review_count, p.verified);
+  const trust = categoryTrust(p);
   if (p.review_count > 0)
     reasons.push({
       reason_type: 'rating_evidence',
@@ -180,11 +199,17 @@ export function scoreProvider(p: ProviderFacts, distanceKm: number | null, ctx: 
     });
   if (p.verified || p.badges.length)
     reasons.push({ reason_type: 'trust_signal', values: { verified: p.verified, badge: p.badges[0] ?? null } });
-  const operational = responseFit(p.measured_response_time_minutes, p.response_time_target);
-  if (p.measured_response_time_minutes !== null || p.response_time_target)
+  const response = responseFit(p.measured_response_time_minutes, p.response_time_target);
+  const slot = availabilityFit(p.next_available_at, ctx.now ?? Date.now());
+  const operational = slot === null ? response : (response + slot) / 2;
+  if (p.measured_response_time_minutes !== null || p.response_time_target || slot !== null)
     reasons.push({
       reason_type: 'availability',
-      values: { response_minutes: p.measured_response_time_minutes, response_target: p.response_time_target },
+      values: {
+        response_minutes: p.measured_response_time_minutes,
+        response_target: p.response_time_target,
+        ...(p.next_available_at ? { next_available_at: p.next_available_at } : {}),
+      },
     });
   const dist = distanceFit(distanceKm, ctx.maxDistanceKm);
   if (distanceKm !== null) reasons.push({ reason_type: 'location', values: { distance_km: String(Math.round(distanceKm * 10) / 10) } });

@@ -189,6 +189,27 @@ async function addMessage(scope: TxScope, inquiryId: string, userId: string, sid
     .executeTakeFirstOrThrow();
 }
 
+/**
+ * inquiry.status_changed (S7, DI-45 family): the requester learns of answers
+ * and closings (W5 inquiry_answered) and a completed inquiry starts the
+ * vendor review invitation (W4, 52 §21 inquiry_verified). Ids only.
+ */
+async function statusChanged(scope: TxScope, before: InquiryRow, after: InquiryRow): Promise<void> {
+  if (before.status === after.status) return;
+  await publishEvent(scope, {
+    type: 'inquiry.status_changed',
+    aggregateType: 'stock_inquiry',
+    aggregateId: after.id,
+    payload: {
+      old_status: before.status,
+      new_status: after.status,
+      vendor_organization_id: after.vendor_organization_id,
+      requester_user_id: after.requester_user_id,
+      requester_type: after.requester_type,
+    },
+  });
+}
+
 const page = <T>(ctx: OperationContext<unknown, { limit: number }>, rows: InquiryRow[], views: T[]) =>
   ctx.page(views.slice(0, ctx.query.limit), rows.length > ctx.query.limit ? { id: rows[ctx.query.limit - 1]!.id } : null);
 
@@ -365,6 +386,7 @@ export class InquiriesTransitionHandler implements OperationHandler {
         .where('id', '=', q.id)
         .returningAll()
         .executeTakeFirstOrThrow();
+      await statusChanged(scope, q, row);
       return (await this.views.many(scope, [row], 'requester', ctx.locale))[0]!;
     });
     return { body };
@@ -433,12 +455,14 @@ export class InquiriesVendorMessageHandler implements OperationHandler {
       const msg = await addMessage(scope, q.id, m.userId, 'vendor', ctx.body);
       // The first reply answers a sent inquiry; the trigger records first_response_at (response-time metric).
       if (q.status === 'sent') {
+        const before = q;
         q = await scope.db
           .updateTable('inventory.stock_inquiries')
           .set({ status: 'answered' })
           .where('id', '=', q.id)
           .returningAll()
           .executeTakeFirstOrThrow();
+        await statusChanged(scope, before, q);
         await this.quality.refreshVendor(scope, m.orgId);
       }
       const [view] = await this.views.many(scope, [q], 'vendor', ctx.locale);
@@ -484,6 +508,7 @@ export class InquiriesVendorTransitionHandler implements OperationHandler {
         .where('id', '=', q.id)
         .returningAll()
         .executeTakeFirstOrThrow();
+      await statusChanged(scope, q, row);
       await this.quality.refreshVendor(scope, m.orgId);
       return (await this.views.many(scope, [row], 'vendor', ctx.locale))[0]!;
     });

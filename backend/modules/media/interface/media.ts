@@ -161,6 +161,15 @@ export abstract class MediaService {
    */
   abstract publicAttachmentViews(scope: TxScope, type: AttachedToType, ids: readonly string[]): Promise<Map<string, MediaAttachmentView[]>>;
 
+  /**
+   * Active attachments of records of the calling module that it has
+   * authorized another party to see (the provider of an appointment sees the
+   * requester's photos, 40 PreVisitReport.media): clean active assets only,
+   * private URLs (5 min), read through the media.shared_attachments definer
+   * in any RLS context. The caller checks the relationship first.
+   */
+  abstract sharedAttachmentViews(scope: TxScope, type: AttachedToType, ids: readonly string[]): Promise<Map<string, MediaAttachmentView[]>>;
+
   /** Readiness of the active attachments of one record. */
   abstract attachedAssets(scope: TxScope, type: AttachedToType, id: string): Promise<AttachedAsset[]>;
 

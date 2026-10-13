@@ -84,3 +84,59 @@ describe('routing', () => {
     expect(route({ type: 'unknown.event', aggregateType: 'x', aggregateId: 'y', payload: {} })).toEqual([]);
   });
 });
+
+describe('S7 routing', () => {
+  const ids = { provider: 'p0000000-0000-0000-0000-000000000000', user: 'u0000000-0000-0000-0000-000000000000' };
+  const e = (type: string, payload: Record<string, unknown>) => ({ type, aggregateType: 'appointment', aggregateId: 'a1', payload });
+
+  it('appointments go to the other side; confirmations stay in-app and push (the email carries the ci link)', () => {
+    expect(route(e('appointment.requested', { provider_organization_id: ids.provider }))[0]).toMatchObject({
+      audience: { kind: 'members', orgId: ids.provider },
+      event_type: 'appointment_request_received',
+      category: 'appointments',
+    });
+    expect(route(e('appointment.confirmed', { provider_organization_id: ids.provider, requester_user_id: ids.user }))[0]).toMatchObject({
+      audience: { kind: 'users', ids: [ids.user] },
+      channels: ['in_app', 'push'],
+    });
+    const cancelledByRequester = route(
+      e('appointment.status_changed', {
+        new_status: 'cancelled',
+        changed_by_side: 'requester',
+        provider_organization_id: ids.provider,
+        requester_user_id: ids.user,
+      }),
+    );
+    expect(cancelledByRequester[0]!.audience).toMatchObject({ kind: 'members', orgId: ids.provider });
+    expect(route(e('appointment.status_changed', { new_status: 'confirmed', provider_organization_id: ids.provider }))).toEqual([]);
+  });
+
+  it('reviews: the business gets approval questions and new reviews, authors their publication; inquiries their answers', () => {
+    expect(
+      route({
+        ...e('review.approval.requested', { subject_organization_id: ids.provider, business_confirmation_status: 'pending' }),
+        aggregateType: 'review',
+      })[0],
+    ).toMatchObject({
+      event_type: 'review_approval_needed',
+      category: 'reviews',
+    });
+    expect(
+      route({
+        ...e('review.approval.requested', { subject_organization_id: ids.provider, business_confirmation_status: 'confirmed' }),
+        aggregateType: 'review',
+      }),
+    ).toEqual([]);
+    expect(
+      route({ ...e('review.published', { subject_organization_id: ids.provider, author_user_id: ids.user }), aggregateType: 'review' }).map(
+        (i) => i.event_type,
+      ),
+    ).toEqual(['review_received', 'review_status_updated']);
+    expect(
+      route(e('inquiry.status_changed', { new_status: 'answered', requester_user_id: ids.user, requester_type: 'user' }))[0]!.event_type,
+    ).toBe('inquiry_answered');
+    expect(route(e('inquiry.status_changed', { new_status: 'cancelled', requester_user_id: ids.user, requester_type: 'user' }))).toEqual(
+      [],
+    );
+  });
+});

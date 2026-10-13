@@ -14,6 +14,7 @@ import { ApiError, type FieldError } from '#libs/contract/index.js';
 import { ACK, created, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
+import { AppointmentFacts } from '#modules/appointment/interface/appointments.js';
 import { InventoryRead } from '#modules/inventory/interface/inventory.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { OrgCards, toOrgSummary } from '#modules/organization/interface/org-cards.js';
@@ -456,6 +457,7 @@ export class ProviderServiceRecordCreateHandler implements OperationHandler {
     private readonly rules: ServiceRecordRules,
     private readonly consents: ConsentChecker,
     private readonly views: ServiceRecordViews,
+    private readonly appointments: AppointmentFacts,
   ) {}
 
   async handle(ctx: OperationContext<ProviderServiceRecordWrite>): Promise<OperationResult> {
@@ -465,23 +467,24 @@ export class ProviderServiceRecordCreateHandler implements OperationHandler {
     // C: exactly one of vehicle_id and appointment_id.
     if (!b.vehicle_id && !b.appointment_id) failIf([{ pointer: '/vehicle_id', code: 'conditional_required' }]);
     if (b.vehicle_id && b.appointment_id) failIf([{ pointer: '/appointment_id', code: 'conditional_forbidden' }]);
-    // Records through an appointment arrive with the appointment module (S7): fail closed until then.
-    if (b.appointment_id) throw notFoundAt('/appointment_id');
     // The owner's issues are not visible to the provider.
     if (b.resolves_issue_id) throw notFoundAt('/resolves_issue_id');
-    const vehicleId = b.vehicle_id!;
     const body = await ctx.tx(async (scope) => {
-      // The provider cannot read the vehicle (RLS); its owner comes from the definer function and is never returned.
-      const { rows } = await sql<{ owner: string | null }>`SELECT vehicle.vehicle_owner(${vehicleId}::uuid) AS owner`.execute(scope.db);
-      const owner = rows[0]?.owner ?? null;
-      if (!owner)
-        throw new ApiError('CONSENT_REQUIRED', { detail: 'vehicle owner unknown', extensions: { consent_type: 'vehicle_data_sharing' } });
-      await requireConsent(this.consents, scope, {
-        consentType: 'vehicle_data_sharing',
-        subject: { type: 'user', id: owner },
-        scopeEntity: { type: 'vehicle', id: vehicleId },
-        grantee: { type: 'organization', id: org.id },
-      });
+      let vehicleId = b.vehicle_id ?? null;
+      if (b.appointment_id) {
+        // Through an appointment of this provider that took place (checked in or later): the appointment is the
+        // relationship, no vehicle-sharing consent is needed (S7). One record per appointment (unique index).
+        const a = (await this.appointments.visits(scope, [b.appointment_id])).get(b.appointment_id);
+        if (
+          !a ||
+          a.providerOrgId !== org.id ||
+          !['checked_in', 'in_progress', 'awaiting_parts', 'ready_for_pickup', 'completed'].includes(a.status)
+        )
+          throw notFoundAt('/appointment_id');
+        vehicleId = a.vehicleId;
+      }
+      if (!vehicleId) throw notFoundAt('/vehicle_id');
+      if (!b.appointment_id) await this.requireSharing(scope, vehicleId, org.id);
       await this.rules.check(scope, b, { fleet: false, vehicleId, written: b });
       const row = await scope.db
         .insertInto('vehicle.vehicle_service_records')
@@ -493,6 +496,7 @@ export class ProviderServiceRecordCreateHandler implements OperationHandler {
           provider_organization_id: org.id,
           source_type: 'provider_logged',
           verification_status: 'provider_confirmed',
+          appointment_id: b.appointment_id ?? null,
           created_by_type: 'organization',
           // The owner's history: private to the owner; the provider keeps reading it as the provider of record (RLS provider_read).
           visibility: 'private',
@@ -503,5 +507,20 @@ export class ProviderServiceRecordCreateHandler implements OperationHandler {
       return this.views.one(scope, row);
     });
     return created(body, `/v1/orgs/${org.id}/provider/service-records/${body.id}`);
+  }
+
+  /** CNS(vehicle_data_sharing: if vehicle_id): the owner's consent to this provider for this vehicle. */
+  private async requireSharing(scope: TxScope, vehicleId: string, orgId: string): Promise<void> {
+    // The provider cannot read the vehicle (RLS); its owner comes from the definer function and is never returned.
+    const { rows } = await sql<{ owner: string | null }>`SELECT vehicle.vehicle_owner(${vehicleId}::uuid) AS owner`.execute(scope.db);
+    const owner = rows[0]?.owner ?? null;
+    if (!owner)
+      throw new ApiError('CONSENT_REQUIRED', { detail: 'vehicle owner unknown', extensions: { consent_type: 'vehicle_data_sharing' } });
+    await requireConsent(this.consents, scope, {
+      consentType: 'vehicle_data_sharing',
+      subject: { type: 'user', id: owner },
+      scopeEntity: { type: 'vehicle', id: vehicleId },
+      grantee: { type: 'organization', id: orgId },
+    });
   }
 }

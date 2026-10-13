@@ -44,6 +44,16 @@ export class DbAccountFacts extends AccountFacts {
       .executeTakeFirst();
     return !!row && row.status === 'active' && (row.email_verified_at !== null || row.phone_verified_at !== null);
   }
+
+  async verifiedEmail(scope: TxScope, userId: string): Promise<string | null> {
+    const row = await scope.db
+      .selectFrom('identity.user_accounts')
+      .select(['email', 'email_verified_at', 'status'])
+      .where('id', '=', userId)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    return row && row.status === 'active' && row.email_verified_at !== null ? row.email : null;
+  }
 }
 
 /**

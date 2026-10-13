@@ -105,6 +105,103 @@ export const TEMPLATES: Catalog = {
       text: 'شما با نقش {role} به {organization_name} دعوت شده‌اید. دعوت را اینجا بپذیرید:\n{link}',
     },
   },
+  // -------------------------------------------- appointments and reviews (S7)
+  'appointment.check_in_link': {
+    en: {
+      subject: 'Your CarPal appointment is confirmed',
+      text: 'Your appointment starts at {start_at}. When you arrive, check in with this link:\n{link}',
+    },
+    fa: {
+      subject: 'نوبت کارپال شما تأیید شد',
+      text: 'نوبت شما در {start_at} آغاز می‌شود. هنگام رسیدن با این پیوند حضور خود را ثبت کنید:\n{link}',
+    },
+  },
+  'review.invitation': {
+    en: {
+      subject: 'How was your visit to {organization_name}?',
+      text: '{organization_name} asks for your review of your recent visit. Write it here within 7 days:\n{link}',
+    },
+    fa: {
+      subject: 'تجربه شما از {organization_name} چطور بود؟',
+      text: '{organization_name} از شما می‌خواهد درباره مراجعه اخیرتان نظر بدهید. تا ۷ روز اینجا بنویسید:\n{link}',
+    },
+  },
+  'review.invitation_code': {
+    en: { subject: 'Your CarPal review code', text: 'Your code to write the review is {code}. It is valid for 10 minutes.' },
+    fa: { subject: 'کد نظر کارپال شما', text: 'کد نوشتن نظر شما {code} است و ۱۰ دقیقه معتبر است.' },
+  },
+  'appointment.request_received': {
+    en: { subject: 'New appointment request', text: 'A customer requested an appointment. Review it in the CarPal portal.' },
+    fa: { subject: 'درخواست نوبت تازه', text: 'یک مشتری درخواست نوبت داده است. در پرتال کارپال بررسی کنید.' },
+  },
+  'appointment.confirmed': {
+    en: { subject: 'Appointment confirmed', text: 'Your appointment was confirmed.' },
+    fa: { subject: 'نوبت تأیید شد', text: 'نوبت شما تأیید شد.' },
+  },
+  'appointment.alternative_proposed': {
+    en: {
+      subject: 'A new time was proposed',
+      text: 'The shop proposed another time for your appointment. Accept it or suggest a new one.',
+    },
+    fa: {
+      subject: 'زمان دیگری پیشنهاد شد',
+      text: 'کسب‌وکار زمان دیگری برای نوبت شما پیشنهاد داده است. آن را بپذیرید یا زمان تازه‌ای پیشنهاد دهید.',
+    },
+  },
+  'appointment.cancelled': {
+    en: { subject: 'Appointment cancelled', text: 'An appointment was cancelled ({changed_by_side}).' },
+    fa: { subject: 'نوبت لغو شد', text: 'یک نوبت لغو شد ({changed_by_side}).' },
+  },
+  'appointment.status_updated': {
+    en: { subject: 'Appointment update', text: 'Your appointment is now {new_status}.' },
+    fa: { subject: 'به‌روزرسانی نوبت', text: 'وضعیت نوبت شما اکنون {new_status} است.' },
+  },
+  'appointment.completed': {
+    en: { subject: 'Your service is complete', text: 'Your appointment was completed and added to your vehicle history.' },
+    fa: { subject: 'سرویس شما انجام شد', text: 'نوبت شما انجام شد و به سابقه خودرو اضافه شد.' },
+  },
+  'appointment.reminder': {
+    en: { subject: 'Appointment reminder', text: 'You have an appointment starting at {confirmed_start_at}.' },
+    fa: { subject: 'یادآوری نوبت', text: 'شما نوبتی دارید که در {confirmed_start_at} آغاز می‌شود.' },
+  },
+  'appointment.customer_message': {
+    en: { subject: 'New message about an appointment', text: 'There is a new note on an appointment. Open CarPal to read it.' },
+    fa: { subject: 'پیام تازه درباره نوبت', text: 'یادداشت تازه‌ای روی یک نوبت ثبت شده است. برای خواندن آن کارپال را باز کنید.' },
+  },
+  'appointment.delay': {
+    en: { subject: 'Customer running late', text: 'A customer reported a delay of {customer_delay_minutes} minutes.' },
+    fa: { subject: 'تأخیر مشتری', text: 'یک مشتری {customer_delay_minutes} دقیقه تأخیر اعلام کرده است.' },
+  },
+  'review.invitation_in_app': {
+    en: { subject: 'Review your recent visit', text: 'Tell others about your recent visit. You can write a review for 7 days.' },
+    fa: {
+      subject: 'درباره مراجعه اخیر نظر دهید',
+      text: 'تجربه مراجعه اخیر خود را با دیگران در میان بگذارید. تا ۷ روز می‌توانید نظر بنویسید.',
+    },
+  },
+  'review.approval_needed': {
+    en: {
+      subject: 'Do you recognise this customer?',
+      text: 'A review waits for your answer. Without an answer in 7 days it counts as no objection.',
+    },
+    fa: { subject: 'آیا این مشتری را می‌شناسید؟', text: 'یک نظر منتظر پاسخ شماست. اگر تا ۷ روز پاسخ ندهید، به معنی نبود اعتراض است.' },
+  },
+  'review.received': {
+    en: { subject: 'New review published', text: 'A new review about your business was published. You can reply publicly.' },
+    fa: { subject: 'نظر تازه منتشر شد', text: 'نظر تازه‌ای درباره کسب‌وکار شما منتشر شد. می‌توانید پاسخ عمومی بدهید.' },
+  },
+  'review.status_updated': {
+    en: { subject: 'Your review is live', text: 'Your review was published. Thank you for helping other drivers.' },
+    fa: { subject: 'نظر شما منتشر شد', text: 'نظر شما منتشر شد. از اینکه به دیگر رانندگان کمک کردید سپاسگزاریم.' },
+  },
+  'review.response_published': {
+    en: { subject: 'The business replied to your review', text: 'The business published a reply to your review.' },
+    fa: { subject: 'کسب‌وکار به نظر شما پاسخ داد', text: 'کسب‌وکار پاسخی به نظر شما منتشر کرد.' },
+  },
+  'inquiry.answered': {
+    en: { subject: 'Update on your stock inquiry', text: 'Your stock inquiry is now {new_status}.' },
+    fa: { subject: 'به‌روزرسانی استعلام موجودی', text: 'وضعیت استعلام موجودی شما اکنون {new_status} است.' },
+  },
   // ------------------------------------------------------ notifications (W5)
   'system.welcome': {
     en: { subject: 'Welcome to CarPal', text: 'Your account is ready. Add your car to get reminders and better matches.' },

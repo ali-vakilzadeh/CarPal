@@ -14,8 +14,11 @@ import {
   VehicleCards,
   VehicleService,
   type AppointmentServiceRecord,
+  type HistoryEntry,
+  type IssueCard,
   type OpenReminder,
   type OwnedVehicle,
+  type ServiceVisit,
   type VehicleCard,
 } from '../interface/vehicles.js';
 
@@ -81,6 +84,102 @@ export class DbVehicleCards extends VehicleCards {
       .execute();
     return rows;
   }
+
+  async serviceVisits(scope: TxScope, providerOrgId: string): Promise<ServiceVisit[]> {
+    // RLS owner_all: only records of the caller's own vehicles (user or fleet context).
+    const rows = await scope.db
+      .selectFrom('vehicle.vehicle_service_records as r')
+      .innerJoin('vehicle.vehicles as v', 'v.id', 'r.vehicle_id')
+      .select([
+        'r.id',
+        'r.vehicle_id',
+        'r.service_date',
+        'r.verification_status',
+        'r.appointment_id',
+        'r.service_system_node_id',
+        'r.service_task_node_id',
+      ])
+      .where('r.provider_organization_id', '=', providerOrgId)
+      .where('r.verification_status', '<>', 'self_reported')
+      .where('r.status', '<>', 'removed')
+      .where('r.deleted_at', 'is', null)
+      .where('v.deleted_at', 'is', null)
+      .where((eb) =>
+        scope.context.orgId
+          ? eb.and([eb('v.owner_type', '=', 'organization'), eb('v.owner_id', '=', scope.context.orgId)])
+          : eb.and([eb('v.owner_type', '=', 'user'), eb('v.owner_id', '=', scope.context.userId ?? null)]),
+      )
+      .orderBy('r.service_date', 'desc')
+      .orderBy('r.id', 'desc')
+      .limit(50)
+      .execute();
+    return rows.map((r) => ({
+      id: r.id,
+      vehicleId: r.vehicle_id,
+      serviceDate: new Date(r.service_date).toISOString().slice(0, 10),
+      verificationStatus: r.verification_status,
+      appointmentId: r.appointment_id,
+      serviceSystemNodeId: r.service_system_node_id,
+      serviceTaskNodeId: r.service_task_node_id,
+    }));
+  }
+
+  async serviceHistory(scope: TxScope, vehicleId: string, limit: number): Promise<HistoryEntry[]> {
+    if (!(await this.visible(scope, vehicleId))) return [];
+    const rows = await scope.db
+      .selectFrom('vehicle.vehicle_service_records')
+      .select(['id', 'service_date', 'service_system_node_id', 'service_task_node_id', 'description', 'mileage_km'])
+      .where('vehicle_id', '=', vehicleId)
+      .where('status', '=', 'active')
+      .where('deleted_at', 'is', null)
+      .orderBy('service_date', 'desc')
+      .orderBy('id', 'desc')
+      .limit(limit)
+      .execute();
+    return rows.map((r) => ({
+      id: r.id,
+      serviceDate: new Date(r.service_date).toISOString().slice(0, 10),
+      serviceSystemNodeId: r.service_system_node_id,
+      serviceTaskNodeId: r.service_task_node_id,
+      description: r.description,
+      mileageKm: r.mileage_km === null ? null : Number(r.mileage_km),
+    }));
+  }
+
+  async appointmentRecords(scope: TxScope, appointmentIds: readonly string[]): Promise<Map<string, string>> {
+    const ids = [...new Set(appointmentIds)].slice(0, 500);
+    if (ids.length === 0) return new Map();
+    // RLS: the owner's records, or the provider of record's (provider_read).
+    const rows = await scope.db
+      .selectFrom('vehicle.vehicle_service_records')
+      .select(['id', 'appointment_id'])
+      .where('appointment_id', 'in', ids)
+      .where('status', '<>', 'removed')
+      .where('deleted_at', 'is', null)
+      .execute();
+    return new Map(rows.map((r) => [r.appointment_id!, r.id]));
+  }
+
+  async issue(scope: TxScope, issueId: string): Promise<IssueCard | null> {
+    const i = await scope.db
+      .selectFrom('vehicle.vehicle_issues as i')
+      .innerJoin('vehicle.vehicles as v', 'v.id', 'i.vehicle_id')
+      .select(['i.id', 'i.vehicle_id', 'i.title', 'i.description', 'i.symptom_node_id', 'i.urgency_level', 'i.status'])
+      .where('i.id', '=', issueId)
+      .where('i.deleted_at', 'is', null)
+      .where('v.deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (!i || !(await this.visible(scope, i.vehicle_id))) return null;
+    return {
+      id: i.id,
+      vehicleId: i.vehicle_id,
+      title: i.title,
+      description: i.description,
+      symptomNodeId: i.symptom_node_id,
+      urgencyLevel: i.urgency_level,
+      status: i.status,
+    };
+  }
 }
 
 @Injectable()
@@ -96,6 +195,11 @@ export class DbVehicleService extends VehicleService {
         service_task_node_id: r.serviceTaskNodeId ?? null,
         description: r.description ?? null,
         mileage_km: r.mileageKm ?? null,
+        parts_used: JSON.stringify(r.partsUsed ?? []),
+        cost_amount: r.cost?.amount ?? null,
+        currency: r.cost?.currency ?? null,
+        cost_breakdown: r.costBreakdown ? JSON.stringify(r.costBreakdown) : null,
+        warranty_note: r.warrantyNote ?? null,
         source_type: 'appointment_completed',
         verification_status: 'appointment_verified',
         appointment_id: r.appointmentId,

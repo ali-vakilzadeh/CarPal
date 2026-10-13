@@ -112,4 +112,24 @@ export abstract class InventoryRead {
   abstract vendorItemIds(scope: TxScope, vendorOrgId: string): Promise<string[]>;
   /** Vendors with which the context organization has an approved trade account (trade-only items in search). */
   abstract tradeVendorIds(scope: TxScope): Promise<Set<string>>;
+  /**
+   * Stock inquiries visible in the caller's RLS context (the requester's own,
+   * the vendor's, or all in the system context) as review visits (52 §21
+   * inquiry_verified: a completed inquiry of the author). Filters combine.
+   */
+  abstract inquiryVisits(
+    scope: TxScope,
+    f: { ids?: readonly string[]; vendorOrgId?: string; requesterUserId?: string; completedSince?: Date; limit?: number },
+  ): Promise<InquiryVisit[]>;
+}
+
+/** A stock inquiry as a review visit (no message text, no vehicle snapshot). */
+export interface InquiryVisit {
+  id: string;
+  vendorOrgId: string;
+  requesterUserId: string;
+  requesterType: string;
+  status: string;
+  /** closed_at of a completed inquiry. */
+  completedAt: Date | null;
 }

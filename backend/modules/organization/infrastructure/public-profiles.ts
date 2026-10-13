@@ -291,6 +291,7 @@ export class DbPublicProfiles extends PublicProfiles {
         'o.name',
         'o.organization_type',
         'o.verification_status',
+        'o.trust_score',
         'o.description_translations as o_description',
         'p.id as p_id',
         'p.price_tier as p_price_tier',
@@ -447,6 +448,7 @@ export class DbPublicProfiles extends PublicProfiles {
         name: r.name,
         organization_type: r.organization_type,
         verified: r.verification_status === 'verified',
+        trust_score: r.trust_score === null ? null : Number(r.trust_score),
         description_translations: ((p?.description_translations ?? v?.description_translations ?? r.o_description) as T) ?? null,
         locations: locations
           .filter((l) => l.organization_id === r.id)

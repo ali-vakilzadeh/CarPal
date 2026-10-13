@@ -113,4 +113,38 @@ export class DbTrustRead extends TrustRead {
       .executeTakeFirst();
     return row?.subject_organization_id ?? null;
   }
+
+  async appointmentReviewState(
+    scope: TxScope,
+    userId: string,
+    appointmentIds: readonly string[],
+  ): Promise<Map<string, { reviewed: boolean; invitationExpiresAt: Date | null }>> {
+    const ids = [...new Set(appointmentIds)].slice(0, 500);
+    const out = new Map<string, { reviewed: boolean; invitationExpiresAt: Date | null }>();
+    if (ids.length === 0) return out;
+    const [reviews, invitations] = await Promise.all([
+      scope.db
+        .selectFrom('trust.reviews')
+        .select('context_appointment_id')
+        .where('author_user_id', '=', userId)
+        .where('context_appointment_id', 'in', ids)
+        .where('status', '<>', 'removed')
+        .where('deleted_at', 'is', null)
+        .execute(),
+      scope.db
+        .selectFrom('trust.review_requests')
+        .select(['appointment_id', 'expires_at'])
+        .where('invited_user_id', '=', userId)
+        .where('appointment_id', 'in', ids)
+        .where('status', 'in', ['sent', 'opened', 'reminded', 'converted'])
+        .where('deleted_at', 'is', null)
+        .execute(),
+    ]);
+    const reviewed = new Set(reviews.map((r) => r.context_appointment_id));
+    for (const id of ids) {
+      const inv = invitations.find((i) => i.appointment_id === id);
+      out.set(id, { reviewed: reviewed.has(id), invitationExpiresAt: inv?.expires_at ? new Date(inv.expires_at) : null });
+    }
+    return out;
+  }
 }

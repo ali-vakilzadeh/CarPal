@@ -15,6 +15,7 @@ import { InventoryRead } from '#modules/inventory/interface/inventory.js';
 import { PublicProfiles, type OrgSearchSource } from '#modules/organization/interface/public-profiles.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { TrustRead } from '#modules/trust/interface/trust.js';
+import { AppointmentFacts } from '#modules/appointment/interface/appointments.js';
 import { CONFIDENCE_LEVEL } from '../domain/ranking.js';
 
 export const INDEX = {
@@ -62,6 +63,10 @@ export type ProviderDoc = SearchDocument & {
   verified: boolean;
   fleet_friendly: boolean;
   ev_ready: boolean;
+  /** 54 §3 trust score (0–100, W3), null until scored. */
+  trust_score: number | null;
+  /** Earliest open appointment slot in the next 14 days (ISO), null without a calendar (54 §5.1 operational fit). */
+  next_available_at: string | null;
 };
 
 export type VendorDoc = SearchDocument & {
@@ -125,6 +130,7 @@ export class SearchProjections {
     @InjectLogger() private readonly logger: Logger,
     @Optional() private readonly trust?: TrustRead,
     @Optional() private readonly community?: CommunityRead,
+    @Optional() private readonly appointments?: AppointmentFacts,
   ) {}
 
   get index() {
@@ -142,7 +148,12 @@ export class SearchProjections {
     return s.locations.map((l) => ({ ...l }));
   }
 
-  async #providerDoc(s: OrgSearchSource, rating: { overall: number | null; count: number }, badges: string[]): Promise<ProviderDoc> {
+  async #providerDoc(
+    s: OrgSearchSource,
+    rating: { overall: number | null; count: number },
+    badges: string[],
+    nextAvailable: Date | null,
+  ): Promise<ProviderDoc> {
     const p = s.provider!;
     const caps = p.capabilities;
     return {
@@ -200,6 +211,8 @@ export class SearchProjections {
       verified: s.verified,
       fleet_friendly: badges.includes('fleet_friendly'),
       ev_ready: badges.includes('ev_ready') || p.certification_types.includes('ev_high_voltage'),
+      trust_score: s.trust_score,
+      next_available_at: nextAvailable ? nextAvailable.toISOString() : null,
     };
   }
 
@@ -246,7 +259,8 @@ export class SearchProjections {
           const s = sources.get(orgId);
           const rating = (ratings.get(orgId) as { overall: number | null; count: number } | undefined) ?? { overall: null, count: 0 };
           const orgBadges = ((badges.get(orgId) ?? []) as { badge_type: string }[]).map((b) => b.badge_type);
-          if (s?.provider) await this.index.upsert(INDEX.providers, orgId, await this.#providerDoc(s, rating, orgBadges));
+          const next = s?.provider && this.appointments ? await this.appointments.nextOpenSlot(scope, orgId, new Date()) : null;
+          if (s?.provider) await this.index.upsert(INDEX.providers, orgId, await this.#providerDoc(s, rating, orgBadges, next));
           else await this.index.remove(INDEX.providers, orgId);
           const itemCategories = s?.vendor ? await this.#reindexVendorItems(scope, s) : await this.#dropVendorItems(orgId);
           if (s?.vendor) await this.index.upsert(INDEX.vendors, orgId, await this.#vendorDoc(s, rating, itemCategories));

@@ -486,8 +486,11 @@ export class SearchService {
       let res = await this.infra.search.search(INDEX.providers, { filters, ...(text ? { text } : {}), ...(geo ? { geo } : {}), size: 500 });
       if (res.hits.length === 0 && text && (services.size || vehicle))
         res = await this.infra.search.search(INDEX.providers, { filters, ...(geo ? { geo } : {}), size: 500 });
+      const availableBy = f?.available_within_days ? Date.now() + f.available_within_days * 86_400_000 : null;
       for (const h of res.hits) {
         const d = h.source as ProviderDoc;
+        // SearchFilters.available_within_days (S7): an open slot in the window (providers without a calendar are left out).
+        if (availableBy !== null && (!d.next_available_at || Date.parse(d.next_available_at) > availableBy)) continue;
         const scored = scoreProvider(d, h.distanceKm, ctx);
         candidates.push({
           targetType: 'organization',

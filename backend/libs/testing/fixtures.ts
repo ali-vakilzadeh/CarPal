@@ -217,6 +217,68 @@ export class Fixtures {
     return id;
   }
 
+  /**
+   * An appointment row (appointment.appointments) of a user at a provider, as
+   * appointments.create stores it, moved through the status table to
+   * `status` in the system context (requested → confirmed → checked_in →
+   * in_progress → completed). One preferred window; confirmed start `start`
+   * (default: 2 days ago, so a completed visit counts for Path 1).
+   */
+  async appointment(
+    provider: TestOrg,
+    requester: TestUser,
+    vehicleId: string,
+    o: {
+      status?: 'requested' | 'confirmed' | 'checked_in' | 'in_progress' | 'completed';
+      start?: Date;
+      serviceSystemNodeId?: string;
+      locationId?: string | null;
+    } = {},
+  ): Promise<string> {
+    const id = uuidv7();
+    const start = o.start ?? new Date(Date.now() - 2 * 86_400_000);
+    const path = ['confirmed', 'checked_in', 'in_progress', 'completed'] as const;
+    const target = o.status ?? 'requested';
+    await this.tx.run({ actorType: 'system' }, async ({ db }) => {
+      await db
+        .insertInto('appointment.appointments')
+        .values({
+          id,
+          requester_type: 'user',
+          requester_user_id: requester.id,
+          provider_organization_id: provider.id,
+          provider_location_id: o.locationId ?? null,
+          vehicle_id: vehicleId,
+          source: 'direct_search',
+          appointment_type: 'repair',
+          service_mode: 'in_shop',
+          service_system_node_id: o.serviceSystemNodeId ?? null,
+          description: 'Brakes squeal when stopping at low speed.',
+          content_locale: 'en',
+          urgency_level: 'medium',
+          status: 'requested',
+        })
+        .execute();
+      await db
+        .insertInto('appointment.appointment_time_windows')
+        .values({ appointment_id: id, start_at: start, end_at: new Date(start.getTime() + 3_600_000), priority: 1 })
+        .execute();
+      for (const status of path) {
+        if (target === 'requested') break;
+        await db
+          .updateTable('appointment.appointments')
+          .set({
+            status,
+            ...(status === 'confirmed' ? { confirmed_start_at: start, confirmed_end_at: new Date(start.getTime() + 3_600_000) } : {}),
+          })
+          .where('id', '=', id)
+          .execute();
+        if (status === target) break;
+      }
+    });
+    return id;
+  }
+
   /** A background job row (core.background_jobs) owned by a user, optionally of an organization. */
   async job(
     owner: TestUser,

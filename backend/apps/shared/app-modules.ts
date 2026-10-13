@@ -8,6 +8,8 @@ import type { Logger } from '#libs/observability/index.js';
 import { PlatformOpsModule } from '#libs/platform/index.js';
 import { PlatformModule, type RuntimeHost } from '#libs/runtime/index.js';
 import { AppointmentApiModule } from '#modules/appointment/appointment-api.module.js';
+import { AppointmentWorkerModule } from '#modules/appointment/appointment-worker.module.js';
+import { AppointmentModule } from '#modules/appointment/appointment.module.js';
 import { BillingModule } from '#modules/billing/billing.module.js';
 import { CommunityApiModule } from '#modules/community/community-api.module.js';
 import { CommunityModule } from '#modules/community/community.module.js';
@@ -28,6 +30,7 @@ import { OrganizationApiModule } from '#modules/organization/organization-api.mo
 import { OrganizationModule } from '#modules/organization/organization.module.js';
 import { TaxonomyModule } from '#modules/taxonomy/taxonomy.module.js';
 import { TrustApiModule } from '#modules/trust/trust-api.module.js';
+import { TrustWorkerModule } from '#modules/trust/trust-worker.module.js';
 import { TrustModule } from '#modules/trust/trust.module.js';
 import { VehicleApiModule } from '#modules/vehicle/vehicle-api.module.js';
 import { VehicleWorkerModule } from '#modules/vehicle/vehicle-worker.module.js';
@@ -60,6 +63,7 @@ const DOMAIN_MODULES = [
   VehicleModule,
   InventoryModule,
   TrustModule,
+  AppointmentModule,
   CommunityModule,
   DiscoveryModule,
   NotificationModule,
@@ -122,5 +126,7 @@ export const workerAppModule = (o: AppOptions): DynamicModule =>
     NotificationDispatchModule,
     VehicleWorkerModule,
     InventoryWorkerModule,
+    AppointmentWorkerModule,
+    TrustWorkerModule,
     SchedulerModule,
   ]);

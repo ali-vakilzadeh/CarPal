@@ -3,7 +3,8 @@
 //                          serves: OrganizationDirectory (L4), OrgCards,
 //                          ProviderCapabilities, PublicProfiles (public
 //                          projections for S6), VendorCatalog and OrgLocations
-//                          (inventory, S5), the OrganizationExtensions
+//                          (inventory, S5), ProviderBooking (appointments,
+//                          S7), TrustFigures (W3 trust scoring, S7), the OrganizationExtensions
 //                          registry, its media attachment targets and the
 //                          consent.withdrawn consumer (run by the worker).
 //   OrganizationApiModule  §7-§9 operations on the api host (organization-api.module.ts)
@@ -13,16 +14,20 @@ import type { TxScope } from '#libs/tenancy/index.js';
 import { AttachmentTargets, type AttachmentTarget } from '#modules/media/interface/media.js';
 import { ConsentWithdrawnPortfolioConsumer } from './events/consent-withdrawn.consumer.js';
 import { ReactionChangedPortfolioConsumer } from './events/reaction-changed.consumer.js';
+import { DbProviderBooking } from './infrastructure/booking.js';
 import { DbOrganizationDirectory } from './infrastructure/organization-directory.js';
 import { DbOrgCards } from './infrastructure/org-cards.js';
 import { DbProviderCapabilities } from './infrastructure/provider-capabilities.js';
 import { DbPublicOrgCards } from './infrastructure/public-org-cards.js';
 import { DbPublicProfiles } from './infrastructure/public-profiles.js';
+import { DbTrustFigures } from './infrastructure/trust-figures.js';
 import { DbOrgLocations, DbVendorCatalog } from './infrastructure/vendor-catalog.js';
+import { ProviderBooking } from './interface/booking.js';
 import { OrganizationExtensions } from './interface/extensions.js';
 import { OrgCards } from './interface/org-cards.js';
 import { ProviderCapabilities } from './interface/provider-capabilities.js';
 import { PublicOrgCards, PublicProfiles } from './interface/public-profiles.js';
+import { TrustFigures } from './interface/trust-figures.js';
 import { OrgLocations, VendorCatalog } from './interface/vendor-catalog.js';
 
 const orgTarget = (id: string | undefined, groups: string[]): AttachmentTarget | null =>
@@ -81,6 +86,8 @@ export class OrganizationRegistrations implements OnModuleInit {
     { provide: PublicOrgCards, useClass: DbPublicOrgCards },
     { provide: VendorCatalog, useClass: DbVendorCatalog },
     { provide: OrgLocations, useClass: DbOrgLocations },
+    { provide: ProviderBooking, useClass: DbProviderBooking },
+    { provide: TrustFigures, useClass: DbTrustFigures },
     // One registry per application context (contexts share a process in pnpm dev and tests).
     { provide: OrganizationExtensions, useFactory: () => new OrganizationExtensions() },
     OrganizationRegistrations,
@@ -95,6 +102,8 @@ export class OrganizationRegistrations implements OnModuleInit {
     PublicOrgCards,
     VendorCatalog,
     OrgLocations,
+    ProviderBooking,
+    TrustFigures,
     OrganizationExtensions,
   ],
 })

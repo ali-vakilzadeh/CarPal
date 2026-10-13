@@ -31,6 +31,47 @@ export abstract class VehicleCards {
   abstract visible(scope: TxScope, vehicleId: string): Promise<OwnedVehicle | null>;
   /** Open (due or overdue, else upcoming) reminders of a vehicle the caller owns, most urgent first (Discover feed tips). */
   abstract openReminders(scope: TxScope, vehicleId: string, limit: number): Promise<OpenReminder[]>;
+  /**
+   * Service records of the caller's own vehicles at a provider that prove a
+   * visit (verification_status other than self_reported, not removed): 52
+   * §21 service_record_verified for reviews. Newest first, ≤ 50.
+   */
+  abstract serviceVisits(scope: TxScope, providerOrgId: string): Promise<ServiceVisit[]>;
+  /** Active service history of a vehicle the caller owns, newest first (pre-visit report under consent, S7). */
+  abstract serviceHistory(scope: TxScope, vehicleId: string, limit: number): Promise<HistoryEntry[]>;
+  /** An issue of a vehicle the caller owns (40 SearchRequest.issue_id, AppointmentCreate.related_issue_id), else null. */
+  abstract issue(scope: TxScope, issueId: string): Promise<IssueCard | null>;
+  /** Service records of appointments visible to the caller (owner, or provider of record), by appointment id. */
+  abstract appointmentRecords(scope: TxScope, appointmentIds: readonly string[]): Promise<Map<string, string>>;
+}
+
+export interface ServiceVisit {
+  id: string;
+  vehicleId: string;
+  serviceDate: string;
+  verificationStatus: string;
+  appointmentId: string | null;
+  serviceSystemNodeId: string;
+  serviceTaskNodeId: string | null;
+}
+
+export interface HistoryEntry {
+  id: string;
+  serviceDate: string;
+  serviceSystemNodeId: string;
+  serviceTaskNodeId: string | null;
+  description: string | null;
+  mileageKm: number | null;
+}
+
+export interface IssueCard {
+  id: string;
+  vehicleId: string;
+  title: string;
+  description: string;
+  symptomNodeId: string | null;
+  urgencyLevel: string;
+  status: string;
 }
 
 export interface OpenReminder {
@@ -51,6 +92,12 @@ export interface AppointmentServiceRecord {
   serviceTaskNodeId?: string | null;
   description?: string | null;
   mileageKm?: number | null;
+  /** 40 PartUsed without inventory references (the provider names the parts it used). */
+  partsUsed?: { name: string; part_number?: string; quantity: number }[];
+  /** 40 completion final_cost (Money: amount + currency). */
+  cost?: { amount: string; currency: string } | null;
+  costBreakdown?: Record<string, string> | null;
+  warrantyNote?: string | null;
 }
 
 export abstract class VehicleService {

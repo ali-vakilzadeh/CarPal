@@ -33,6 +33,9 @@ const ORG_EVENTS = [
   'badge.revoked',
   'trust.score.changed',
   'moderation.action.taken',
+  // S7: availability (next open slot) changes with confirmations and calendar edits.
+  'appointment.confirmed',
+  'appointment.availability.changed',
 ];
 
 const str = (v: unknown): string | null => (typeof v === 'string' && /^[0-9a-f-]{36}$/.test(v) ? v : null);

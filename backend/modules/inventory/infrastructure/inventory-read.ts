@@ -14,6 +14,7 @@ import { bestConfidence, type FitmentConfidence } from '../domain/rules.js';
 import {
   InventoryRead,
   type FitmentVehicle,
+  type InquiryVisit,
   type InventorySearchSource,
   type PublicInventoryCard,
   type PublicInventoryItemParts,
@@ -258,5 +259,32 @@ export class DbInventoryRead extends InventoryRead {
       .where('deleted_at', 'is', null)
       .execute();
     return new Set(rows.map((r) => r.vendor_organization_id));
+  }
+
+  async inquiryVisits(
+    scope: TxScope,
+    f: { ids?: readonly string[]; vendorOrgId?: string; requesterUserId?: string; completedSince?: Date; limit?: number },
+  ): Promise<InquiryVisit[]> {
+    if (f.ids && f.ids.length === 0) return [];
+    let q = scope.db
+      .selectFrom('inventory.stock_inquiries')
+      .select(['id', 'vendor_organization_id', 'requester_user_id', 'requester_type', 'status', 'closed_at'])
+      .where('deleted_at', 'is', null);
+    if (f.ids) q = q.where('id', 'in', [...f.ids].slice(0, 500));
+    if (f.vendorOrgId) q = q.where('vendor_organization_id', '=', f.vendorOrgId);
+    if (f.requesterUserId) q = q.where('requester_user_id', '=', f.requesterUserId);
+    if (f.completedSince) q = q.where('status', '=', 'completed').where('closed_at', '>=', f.completedSince);
+    const rows = await q
+      .orderBy('id', 'desc')
+      .limit(Math.min(f.limit ?? 50, 500))
+      .execute();
+    return rows.map((r) => ({
+      id: r.id,
+      vendorOrgId: r.vendor_organization_id,
+      requesterUserId: r.requester_user_id,
+      requesterType: r.requester_type,
+      status: r.status,
+      completedAt: r.status === 'completed' && r.closed_at ? new Date(r.closed_at) : null,
+    }));
   }
 }
