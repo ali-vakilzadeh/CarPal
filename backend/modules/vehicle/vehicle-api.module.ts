@@ -4,6 +4,13 @@
 // TaxonomyModule, BillingModule and InventoryModule (global) in the same
 // application.
 import { Module } from '@nestjs/common';
+import {
+  TransferViews,
+  VehicleTransferCancelHandler,
+  VehicleTransferDecideHandler,
+  VehicleTransferRequestHandler,
+  VehicleTransfersListHandler,
+} from './application/transfer-ops.js';
 import type { CarpalConfig } from '#libs/config/index.js';
 import { CARPAL_CONFIG } from '#libs/runtime/index.js';
 import {
@@ -56,6 +63,12 @@ import { LocalVinDecoder, UnconfiguredVinDecoder, VinDecoder } from './infrastru
 
 @Module({
   providers: [
+    // vehicle transfers (GD-33)
+    TransferViews,
+    VehicleTransferRequestHandler,
+    VehicleTransfersListHandler,
+    VehicleTransferDecideHandler,
+    VehicleTransferCancelHandler,
     // Lite: local model-year decoding; full: a regional decoder adapter is still to be written (503 until then).
     {
       provide: VinDecoder,

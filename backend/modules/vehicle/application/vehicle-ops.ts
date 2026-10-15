@@ -29,6 +29,7 @@ import {
   loadVehicle,
   openVin,
   sealVin,
+  assertVinFree,
   setChangeReason,
   vehicleAccess,
   vehiclesPath,
@@ -36,8 +37,8 @@ import {
 } from './common.js';
 
 registerConstraintErrors({
-  // 52 §8: a VIN is unique per owner among non-archived vehicles.
-  vehicles_vin_per_owner_uq: { code: 'DUPLICATE', pointer: '/vin', fieldCode: 'not_unique' },
+  // GD-33: one owner per VIN among non-archived vehicles (assertVinFree answers first; this is the race guard).
+  vehicles_vin_uq: { code: 'DUPLICATE', pointer: '/vin', fieldCode: 'not_unique' },
 });
 
 export type VehicleWrite = {
@@ -58,6 +59,7 @@ export type VehicleWrite = {
   ownership_start_date?: string;
   primary_photo_media_id?: string;
   notes?: string;
+  data_sharing?: 'appointments' | 'private';
 };
 
 type VehicleColumns = Omit<VehicleWrite, 'vin'>;
@@ -78,7 +80,16 @@ const COLUMNS: (keyof VehicleColumns)[] = [
   'ownership_start_date',
   'primary_photo_media_id',
   'notes',
+  'data_sharing',
 ];
+
+/** GD-34: only a fleet owner or manager decides whether a fleet vehicle's data is shared through appointments. */
+function sharingErrors(a: VehicleAccess, b: Partial<VehicleWrite>): FieldError[] {
+  if (b.data_sharing === undefined) return [];
+  return a.fleet && (a.role === 'fleet_owner' || a.role === 'fleet_manager')
+    ? []
+    : [{ pointer: '/data_sharing', code: 'conditional_forbidden' }];
+}
 
 /** Field rules the schema cannot express (52 Vehicle: year ≤ current year + 2, ownership start not in the future). */
 function fieldErrors(b: Partial<VehicleWrite>): FieldError[] {
@@ -111,6 +122,45 @@ function completeness(v: Partial<Record<keyof VehicleColumns, unknown>> & { vinP
     mileage: set('mileage_km'),
     ownershipStart: set('ownership_start_date'),
     photo: set('primary_photo_media_id'),
+  });
+}
+
+/**
+ * An accepted AI vehicle-field suggestion (40 ai.suggestion_decide, target
+ * vehicle): the same taxonomy rules as vehicles.update, pointers under
+ * `base` (/edited_payload or /decision). Caller's transaction and RLS context.
+ */
+export async function applyVehicleSuggestion(
+  scope: TxScope,
+  taxonomy: TaxonomyResolver,
+  owner: { type: 'user' | 'organization'; id: string },
+  vehicleId: string,
+  patch: { series_node_id?: string; engine_type_node_id?: string; fuel_type_node_id?: string },
+  base: string,
+): Promise<void> {
+  const v = await scope.db
+    .selectFrom('vehicle.vehicles')
+    .selectAll()
+    .where('id', '=', vehicleId)
+    .where('owner_type', '=', owner.type)
+    .where('owner_id', '=', owner.id)
+    .where('deleted_at', 'is', null)
+    .forUpdate()
+    .executeTakeFirst();
+  if (!v) throw new ApiError('NOT_FOUND');
+  if (patch.series_node_id) await taxonomy.requireDescendant(patch.series_node_id, v.model_node_id, `${base}/series_node_id`);
+  if (patch.engine_type_node_id) await taxonomy.require(patch.engine_type_node_id, ['engine_type'], `${base}/engine_type_node_id`);
+  if (patch.fuel_type_node_id) await taxonomy.require(patch.fuel_type_node_id, ['fuel_type'], `${base}/fuel_type_node_id`);
+  const set: Record<string, unknown> = Object.fromEntries(Object.entries(patch).filter(([, x]) => x !== undefined));
+  if (Object.keys(set).length === 0) return;
+  if (v.vin_decode_status === 'decoded' || v.vin_decode_status === 'partial') set.vin_decode_status = 'manual';
+  set.profile_completeness = completeness({ ...v, ...set, vinPresent: v.vin_hash !== null });
+  await scope.db.updateTable('vehicle.vehicles').set(set).where('id', '=', v.id).execute();
+  await publishEvent(scope, {
+    type: 'vehicle.updated',
+    aggregateType: 'vehicle',
+    aggregateId: v.id,
+    payload: { fields: Object.keys(patch).sort() },
   });
 }
 
@@ -197,6 +247,7 @@ export class VehicleCreator {
     await checkChain(this.taxonomy, b);
     const id = uuidv7();
     const sealed = b.vin ? sealVin(this.crypto, id, b.vin) : null;
+    if (sealed) await assertVinFree(scope, sealed.vin_hash, owner);
     if (b.primary_photo_media_id)
       await this.media.requireReady(scope, [b.primary_photo_media_id], {
         owner,
@@ -252,6 +303,7 @@ export class VehiclesCreateHandler implements OperationHandler {
 
   async handle(ctx: OperationContext<VehicleWrite>): Promise<OperationResult> {
     const a = vehicleAccess(ctx);
+    failIf(sharingErrors(a, ctx.body));
     const body = await ctx.tx(async (scope) => {
       const row = await this.creator.create(scope, a.owner, ctx.body, { userId: a.userId, driver: a.driver });
       return this.views.one(scope, row);
@@ -287,7 +339,7 @@ export class VehiclesUpdateHandler implements OperationHandler {
   async handle(ctx: OperationContext<Partial<VehicleWrite>>): Promise<OperationResult> {
     const a = vehicleAccess(ctx);
     const b = ctx.body;
-    failIf(fieldErrors(b));
+    failIf([...fieldErrors(b), ...sharingErrors(a, b)]);
     const body = await ctx.tx(async (scope) => {
       const v = await loadVehicle(scope, a, ctx.params.vehicle_id!, true);
       checkVersion(v.version, ctx.ifMatch);
@@ -306,8 +358,10 @@ export class VehiclesUpdateHandler implements OperationHandler {
       const set: Record<string, unknown> = Object.fromEntries(COLUMNS.filter((k) => b[k] !== undefined).map((k) => [k, b[k]]));
       const newVin = b.vin !== undefined && !(v.vin_hash && this.crypto.hmac.verify('vin-hash', b.vin, v.vin_hash));
       if (newVin) {
-        // A new VIN is re-sealed and re-checked for duplicates (unique per owner; warning across owners).
-        Object.assign(set, sealVin(this.crypto, v.id, b.vin!), {
+        // A new VIN is re-sealed and must not belong to any other vehicle (GD-33).
+        const sealed = sealVin(this.crypto, v.id, b.vin!);
+        await assertVinFree(scope, sealed.vin_hash, a.owner, v.id);
+        Object.assign(set, sealed, {
           vin_decode_status: 'not_attempted',
           vin_decoded_at: null,
           vin_decoder_source: null,

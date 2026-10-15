@@ -28,7 +28,6 @@ afterAll(async () => {
   await app.close();
 });
 
-const VIN = '1HGCM82633A004352';
 const VIN_CHARS = 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789';
 
 /** A fresh North American VIN with a valid check digit (the test database is shared across runs, GD-13). */
@@ -76,12 +75,15 @@ describe('S5 acceptance: vehicle limit and VIN secrecy', () => {
 
   it('returns only vin_present + vin_last4, stores ciphertext + keyed hash, and reveals the VIN only with AAL2 (audited)', async () => {
     const { c, user } = await userClient();
+    // One owner per VIN (GD-33) on a shared test database: a fresh VIN per run.
+    const VIN = uniqueVin();
     // Lower case and Persian digits are normalized before the check (40 Vin).
-    const created = await c.post('/v1/me/vehicles', vehicleBody(n, { vin: '1hgcm82633a00435۲', mileage_km: 120_000 }));
+    const typed = VIN.toLowerCase().slice(0, -1) + '۰۱۲۳۴۵۶۷۸۹'[Number(VIN.at(-1))]!;
+    const created = await c.post('/v1/me/vehicles', vehicleBody(n, { vin: typed, mileage_km: 120_000 }));
     expect(created.status).toBe(201);
     expect(created.body).toMatchObject({
       vin_present: true,
-      vin_last4: '4352',
+      vin_last4: VIN.slice(-4),
       vin_decode_status: 'not_attempted',
       owner_type: 'user',
       owner_id: user.id,
@@ -119,7 +121,7 @@ describe('S5 acceptance: vehicle limit and VIN secrecy', () => {
 });
 
 describe('vehicles (40 §12.2)', () => {
-  it('checks the VIN format and the check digit where it is mandatory, unique per owner with a warning across owners', async () => {
+  it('checks the VIN format and the check digit where it is mandatory; one owner per VIN, another owner may ask for a transfer (GD-33)', async () => {
     const a = await userClient();
     const b = await userClient();
     expect((await a.c.post('/v1/me/vehicles', vehicleBody(n, { vin: '1HGCM82643A004352' }))).body).toMatchObject({
@@ -128,22 +130,28 @@ describe('vehicles (40 §12.2)', () => {
     });
     expect((await a.c.post('/v1/me/vehicles', vehicleBody(n, { vin: 'IHGCM82633A004352' }))).body.code).toBe('VIN_INVALID');
     // The pilot region's VINs (WMI N*) carry no mandatory check digit.
-    expect((await a.c.post('/v1/me/vehicles', vehicleBody(n, { vin: 'NAAN01CA9EK123456' }))).status).toBe(201);
+    const regional = `NAAN01CA9EK${String(Math.floor(Math.random() * 1e6)).padStart(6, '0')}`;
+    expect((await a.c.post('/v1/me/vehicles', vehicleBody(n, { vin: regional }))).status).toBe(201);
     const vin = uniqueVin();
     const first = await a.c.post('/v1/me/vehicles', vehicleBody(n, { vin }));
     expect(first.body.duplicate_vin_warning).toBe(false);
     const dup = await a.c.post('/v1/me/vehicles', vehicleBody(n, { vin }));
     expect(dup.status).toBe(409);
     expect(dup.body).toMatchObject({ code: 'DUPLICATE', errors: [{ pointer: '/vin', code: 'not_unique' }] });
+    expect(dup.body.vin_transfer_available).toBeUndefined();
     const other = await b.c.post('/v1/me/vehicles', vehicleBody(n, { vin }));
-    expect(other.status).toBe(201);
-    expect(other.body.duplicate_vin_warning).toBe(true);
-    expect((await a.c.get(`/v1/me/vehicles/${first.body.id}`)).body.duplicate_vin_warning).toBe(true);
+    expect(other.status).toBe(409);
+    expect(other.body).toMatchObject({
+      code: 'DUPLICATE',
+      vin_transfer_available: true,
+      errors: [{ pointer: '/vin', code: 'not_unique' }],
+    });
+    expect((await a.c.get(`/v1/me/vehicles/${first.body.id}`)).body.duplicate_vin_warning).toBe(false);
   });
 
   it('updates with If-Match, checks the taxonomy chain and the year, decodes the VIN as suggestions and marks manual overrides', async () => {
     const { c, user } = await userClient();
-    const v = (await c.post('/v1/me/vehicles', vehicleBody(n, { vin: VIN, series_node_id: n.series }))).body;
+    const v = (await c.post('/v1/me/vehicles', vehicleBody(n, { vin: uniqueVin(), series_node_id: n.series }))).body;
     expect((await c.patch(`/v1/me/vehicles/${v.id}`, { nickname: 'Daily' }, 9)).status).toBe(412);
     expect((await c.patch(`/v1/me/vehicles/${v.id}`, { model_node_id: n.otherModel }, v.version)).body.code).toBe('TAXONOMY_MISMATCH');
     expect((await c.patch(`/v1/me/vehicles/${v.id}`, { year: 2100 }, v.version)).body.errors).toEqual([

@@ -24,6 +24,7 @@ import { rateString } from './domain/rules.js';
 import { DbInventoryRead } from './infrastructure/inventory-read.js';
 import { InventoryRead } from './interface/inventory.js';
 import { InventoryAdminRegistrations } from './application/admin-registrations.js';
+import { InventoryAiRegistrations } from './application/ai-registrations.js';
 
 export { InventoryBulkUpdater, InventoryImporter } from './application/importer.js';
 export { IMPORT_QUEUE } from './application/import-ops.js';
@@ -129,6 +130,7 @@ export class InventoryRegistrations implements OnModuleInit {
     InventoryImporter,
     InventoryBulkUpdater,
     InventoryRegistrations,
+    InventoryAiRegistrations,
   ],
   exports: [InventoryRead, CatalogQuality, ItemReferences, InventoryImporter, InventoryBulkUpdater],
 })

@@ -5,7 +5,8 @@
 //                        billing UsageCounters max_vehicles; organization
 //                        visits 'service_record', customer check and vehicle
 //                        owners; media attachment targets 'vehicle' and
-//                        'vehicle_issue'; identity ConsentScopes 'vehicle'.
+//                        'vehicle_issue'; identity ConsentScopes 'vehicle';
+//                        the AI context sources and suggestion appliers (S9).
 //   VehicleApiModule     §12 operations on the api host (vehicle-api.module.ts)
 //   VehicleWorkerModule  the hourly W15 reminder rule on the worker (vehicle-worker.module.ts)
 import { Global, Injectable, Module, Optional, type OnModuleInit } from '@nestjs/common';
@@ -14,6 +15,7 @@ import { ConsentScopes, PersonalDataRegistry } from '#modules/identity/interface
 import { AttachmentTargets, type AttachmentTarget } from '#modules/media/interface/media.js';
 import { OrganizationExtensions } from '#modules/organization/interface/extensions.js';
 import { repointColumns, TaxonomyReferences } from '#modules/taxonomy/interface/taxonomy-resolver.js';
+import { VehicleAiRegistrations } from './application/ai-registrations.js';
 import { VehicleCreator } from './application/vehicle-ops.js';
 import { COUNTING_STATUSES } from './domain/rules.js';
 import { DbVehicleCards, DbVehicleService, isServiceCustomer, serviceRecordVisit, vehicleOwner } from './infrastructure/vehicles.js';
@@ -229,6 +231,7 @@ export class VehicleRegistrations implements OnModuleInit {
     VehicleCreator,
     { provide: VehicleService, useClass: DbVehicleService },
     VehicleRegistrations,
+    VehicleAiRegistrations,
   ],
   exports: [VehicleCards, VehicleService, VehicleCreator],
 })

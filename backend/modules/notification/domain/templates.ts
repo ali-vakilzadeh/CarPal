@@ -243,6 +243,37 @@ export const TEMPLATES: Catalog = {
       text: 'یک درخواست {approval_type} برای یکی از خودروهای ناوگان به تأیید شما نیاز دارد.',
     },
   },
+  'vehicle.transfer_requested': {
+    en: {
+      subject: 'Someone asked to take over one of your vehicles',
+      text: 'A buyer says they bought one of your vehicles and asked for it to be transferred. Accept or reject the request in CarPal.',
+    },
+    fa: {
+      subject: 'درخواست انتقال یکی از خودروهای شما',
+      text: 'خریداری اعلام کرده یکی از خودروهای شما را خریده و درخواست انتقال داده است. در کارپال درخواست را بپذیرید یا رد کنید.',
+    },
+  },
+  'vehicle.transfer_decided': {
+    en: { subject: 'Your vehicle transfer request was answered', text: 'The owner answered your transfer request: {status}.' },
+    fa: { subject: 'به درخواست انتقال خودروی شما پاسخ داده شد', text: 'مالک به درخواست انتقال شما پاسخ داد: {status}.' },
+  },
+  'fleet.vehicle_data_shared': {
+    en: {
+      subject: 'Vehicle data shared with a provider',
+      text: 'A fleet appointment shared the vehicle service history and {document_count} document(s) with the provider. Mark the vehicle private to stop sharing.',
+    },
+    fa: {
+      subject: 'اطلاعات خودرو با تعمیرکار به اشتراک گذاشته شد',
+      text: 'یک نوبت ناوگان سابقه سرویس خودرو و {document_count} سند را با تعمیرکار به اشتراک گذاشت. برای توقف اشتراک، خودرو را خصوصی کنید.',
+    },
+  },
+  'ai.suggestion_ready': {
+    en: {
+      subject: 'Your assistant result is ready',
+      text: 'The result you asked for is ready, with {suggestion_count} suggestion(s) to review.',
+    },
+    fa: { subject: 'نتیجه دستیار آماده است', text: 'نتیجه درخواستی شما آماده است و {suggestion_count} پیشنهاد برای بررسی دارد.' },
+  },
   'fleet.approval_decided': {
     en: { subject: 'Your fleet request was decided', text: 'Your {approval_type} request was {status}.' },
     fa: { subject: 'درباره درخواست ناوگان شما تصمیم گرفته شد', text: 'درخواست {approval_type} شما {status} شد.' },

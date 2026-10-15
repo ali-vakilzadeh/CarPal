@@ -93,6 +93,8 @@ export const FORWARDED_EVENTS: Record<string, readonly string[]> = {
   'portfolio.published': [],
   'qna.question.created': [],
   'user.deletion.completed': [],
+  // S9: AI quality (insight type and visibility only; no subject or owner ids).
+  'ai.insight.generated': ['insight_type', 'visibility', 'suggestion_count'],
 };
 
 /** Payload keys that identify a person: the actor of the event (pseudonymized), never stored as properties. */
@@ -126,6 +128,10 @@ export const GAUGES = {
   'gauge.reports_open': 'count',
   'gauge.review_approvals_pending': 'count',
   'gauge.dsr_open': 'count',
+  'gauge.ai_suggestions_pending': 'count',
+  'gauge.ai_feedback_accepted': 'count',
+  'gauge.ai_feedback_rejected': 'count',
+  'gauge.ai_hallucination_reports': 'count',
 } as const;
 
 export type DashboardKey =
@@ -169,7 +175,14 @@ export const DASHBOARDS: Record<DashboardKey, string[]> = {
   ],
   vendor_value: [countMetric('inquiry.sent'), countMetric('profile.viewed'), 'gauge.vendors_published'],
   fleet_value: [countMetric('fleet.approval.requested'), countMetric('fleet.approval.decided'), 'gauge.fleets_active'],
-  ai_quality: [countMetric('ai.insight.generated'), countMetric('search.started')],
+  ai_quality: [
+    countMetric('ai.insight.generated'),
+    countMetric('search.started'),
+    'gauge.ai_suggestions_pending',
+    'gauge.ai_feedback_accepted',
+    'gauge.ai_feedback_rejected',
+    'gauge.ai_hallucination_reports',
+  ],
   growth: [
     countMetric('user.registered'),
     countMetric('provider.profile.published'),

@@ -17,6 +17,7 @@ import { ConsentScopes, PersonalDataRegistry } from '#modules/identity/interface
 import { AttachmentTargets } from '#modules/media/interface/media.js';
 import { OrganizationExtensions, type VisitInfo } from '#modules/organization/interface/extensions.js';
 import { repointColumns, TaxonomyReferences } from '#modules/taxonomy/interface/taxonomy-resolver.js';
+import { AppointmentAiRegistrations } from './application/ai-registrations.js';
 import { DbAppointmentFacts } from './infrastructure/appointment-facts.js';
 import { AppointmentFacts } from './interface/appointments.js';
 
@@ -174,7 +175,7 @@ export class AppointmentRegistrations implements OnModuleInit {
 
 @Global()
 @Module({
-  providers: [{ provide: AppointmentFacts, useClass: DbAppointmentFacts }, AppointmentRegistrations],
+  providers: [{ provide: AppointmentFacts, useClass: DbAppointmentFacts }, AppointmentRegistrations, AppointmentAiRegistrations],
   exports: [AppointmentFacts],
 })
 export class AppointmentModule {}

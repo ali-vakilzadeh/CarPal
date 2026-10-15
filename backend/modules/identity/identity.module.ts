@@ -19,7 +19,13 @@ import { FourEyesExecutors, ModerationTargets, PurposeQueues, retentionCutoff, R
 import { MetricGauges } from '#modules/analytics/interface/analytics.js';
 import { UsageCounters } from '#modules/billing/interface/billing.js';
 import { DbAccountAdmin, grantPlatformRole, startDeletion } from './application/admin-ops.js';
-import { DsrDeadlineRule, DsrDeletionConsumer, DsrExporter, identityPersonalData } from './application/dsr-worker.js';
+import {
+  DsrDeadlineRule,
+  DsrDeletionConsumer,
+  DsrExporter,
+  identityPersonalData,
+  VehicleTransferConsentConsumer,
+} from './application/dsr-worker.js';
 
 export { DSR_EXPORT_QUEUE } from './application/admin-ops.js';
 export { DsrExporter };
@@ -185,6 +191,7 @@ export class IdentityAdminRegistrations implements OnModuleInit {
     { provide: AccountAdmin, useClass: DbAccountAdmin },
     IdentityAdminRegistrations,
     DsrDeletionConsumer,
+    VehicleTransferConsentConsumer,
   ],
   exports: [
     MembershipDirectory,

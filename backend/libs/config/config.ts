@@ -74,6 +74,8 @@ const EnvSchema = z
     CARPAL_DB_PASSWORD_WORKER: loginRolePassword('carpal_worker'),
     CARPAL_DB_PASSWORD_ANALYTICS_WRITER: loginRolePassword('carpal_analytics_writer'),
     CARPAL_DB_PASSWORD_ANALYTICS_READER: loginRolePassword('carpal_analytics_reader'),
+    /** MCP gateway / AI orchestration role (41 §3.3): the ai_mcp schema only. Lite runs the gateway in process (GD-35). */
+    CARPAL_DB_PASSWORD_AI: loginRolePassword('carpal_ai'),
 
     // --- Full-mode services (GD-04). Unused in lite mode.
     CARPAL_REDIS_URL: z.string().default('redis://127.0.0.1:6379'),
@@ -123,6 +125,32 @@ const EnvSchema = z
     // --- Discovery (S6)
     /** W2: rebuild the search projections when the worker starts (the lite index is in memory, so it starts empty). */
     CARPAL_SEARCH_REBUILD_ON_START: bool.default(true),
+
+    // --- AI / MCP (S9, GD-35)
+    /**
+     * McpClientPort adapter: stub = deterministic in-process tool results (schema-valid, EN/FA) until the
+     * real MCP gateway (D6) exists; unavailable = every tool call fails, so AI operations answer
+     * 503 AI_UNAVAILABLE and the non-AI paths carry on (53 §16.2). Defaults to stub in dev only.
+     */
+    CARPAL_MCP_MODE: z.enum(['stub', 'unavailable']).optional(),
+    /** Tool call time limit (53 §16.1 timeout error). */
+    CARPAL_MCP_TIMEOUT_MS: z.coerce.number().int().min(100).max(120_000).default(15_000),
+
+    // --- WebAuthn (S9, GD-31; 40 auth.webauthn_options "RP ID carpal.app")
+    CARPAL_WEBAUTHN_RP_ID: z.string().min(1).max(253).default('carpal.app'),
+    /** Origins allowed in clientDataJSON: the web apps and the mobile apps' origins (android:apk-key-hash:…). */
+    CARPAL_WEBAUTHN_ORIGINS: z
+      .string()
+      .transform((s, ctx) => {
+        try {
+          return JSON.parse(s) as unknown;
+        } catch {
+          ctx.addIssue({ code: 'custom', message: 'must be a JSON array' });
+          return z.NEVER;
+        }
+      })
+      .pipe(z.array(z.string().min(1).max(300)).min(1).max(20))
+      .optional(),
   })
   .superRefine((env, ctx) => {
     if (env.CARPAL_ENV !== 'dev' && env.CARPAL_MASTER_SECRET === DEV_MASTER_SECRET) {
@@ -141,6 +169,8 @@ export type InfraMode = RawEnv['CARPAL_INFRA'];
 export type AppDbRole = 'carpal_api' | 'carpal_admin_api' | 'carpal_auth' | 'carpal_worker';
 /** Login roles of the analytics database (43 §23): the W12 pipeline writes, dashboards and aggregation read. */
 export type AnalyticsDbRole = 'carpal_analytics_writer' | 'carpal_analytics_reader';
+/** MCP gateway and AI orchestration (41 §1 D6/D7): ai_mcp tables, outbox, jobs and audit only. */
+export type AiDbRole = 'carpal_ai';
 
 export interface CarpalConfig {
   env: CarpalEnv;
@@ -166,7 +196,7 @@ export interface CarpalConfig {
     analyticsName: string;
     poolMax: number;
     locale: string;
-    passwords: Record<AppDbRole | AnalyticsDbRole, string>;
+    passwords: Record<AppDbRole | AnalyticsDbRole | AiDbRole, string>;
   };
   services: { redisUrl: string; natsUrl: string; searchUrl: string; s3Endpoint: string; smtpUrl: string };
   secrets: { master: string; jwtPrivateJwks?: string; isDevMaster: boolean };
@@ -188,6 +218,8 @@ export interface CarpalConfig {
   geo: { locationCheckThresholdM: number };
   media: { rescanAfterMs: number };
   search: { rebuildOnStart: boolean };
+  mcp: { mode: 'stub' | 'unavailable'; timeoutMs: number };
+  webauthn: { rpId: string; rpName: string; origins: string[] };
 }
 
 /** Development redirect URIs (claimed HTTPS links for mobile, BFF callbacks for web). */
@@ -252,6 +284,7 @@ export function loadConfig(overrides: Record<string, string | undefined> = {}): 
         carpal_worker: e.CARPAL_DB_PASSWORD_WORKER,
         carpal_analytics_writer: e.CARPAL_DB_PASSWORD_ANALYTICS_WRITER,
         carpal_analytics_reader: e.CARPAL_DB_PASSWORD_ANALYTICS_READER,
+        carpal_ai: e.CARPAL_DB_PASSWORD_AI,
       },
     },
     services: {
@@ -284,6 +317,12 @@ export function loadConfig(overrides: Record<string, string | undefined> = {}): 
     geo: { locationCheckThresholdM: e.CARPAL_LOCATION_CHECK_THRESHOLD_M },
     media: { rescanAfterMs: e.CARPAL_MEDIA_RESCAN_AFTER_MS },
     search: { rebuildOnStart: e.CARPAL_SEARCH_REBUILD_ON_START },
+    mcp: { mode: e.CARPAL_MCP_MODE ?? (e.CARPAL_ENV === 'dev' ? 'stub' : 'unavailable'), timeoutMs: e.CARPAL_MCP_TIMEOUT_MS },
+    webauthn: {
+      rpId: e.CARPAL_WEBAUTHN_RP_ID,
+      rpName: 'CarPal',
+      origins: e.CARPAL_WEBAUTHN_ORIGINS ?? ['https://carpal.app', 'https://portal.carpal.app', 'https://admin.carpal.app'],
+    },
   };
   return deepFreeze(config);
 }

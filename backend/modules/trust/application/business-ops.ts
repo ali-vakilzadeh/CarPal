@@ -13,6 +13,7 @@ import { registerConstraintErrors } from '#libs/db/index.js';
 import { ACK, created, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
+import { AiReferences } from '#modules/ai-mcp/interface/ai.js';
 import { AppointmentFacts } from '#modules/appointment/interface/appointments.js';
 import { authorDisplayName, UserCards } from '#modules/identity/interface/identity.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
@@ -131,15 +132,27 @@ async function loadResponse(scope: TxScope, orgId: string, reviewId: string, id:
 @Injectable()
 @Operation('review_responses.create')
 export class ReviewResponsesCreateHandler implements OperationHandler {
-  constructor(private readonly views: ReviewViews) {}
+  constructor(
+    private readonly views: ReviewViews,
+    private readonly ai: AiReferences,
+  ) {}
 
   async handle(ctx: OperationContext<{ response_text: string; content_locale: string; ai_draft_insight_id?: string }>) {
     const m = member(ctx);
-    // AI response drafts arrive with the ai-mcp module (S9): no insight can be referenced yet.
-    if (ctx.body.ai_draft_insight_id) throw notFoundAt('/ai_draft_insight_id');
     const body = await ctx.tx(async (scope) => {
       const review = await loadSubjectReview(scope, m.orgId, ctx.params.review_id!);
       if (review.status !== 'published') throw new ApiError('INVALID_TRANSITION', { detail: review.status });
+      // An AI draft of this organization about this review (ai.review_response_draft, S9); the response stays a draft
+      // until a member publishes it (SEC-AI-3), and edits are recorded (52 ReviewResponse.edited_after_ai).
+      let draft: { id: string; text: string | null } | null = null;
+      if (ctx.body.ai_draft_insight_id) {
+        const i = await this.ai.usable(scope, ctx.body.ai_draft_insight_id, {
+          types: ['review_response_draft'],
+          subject: { type: 'review', id: review.id },
+        });
+        if (!i || i.organizationId !== m.orgId) throw notFoundAt('/ai_draft_insight_id');
+        draft = { id: i.id, text: typeof i.payload?.draft_text === 'string' ? i.payload.draft_text : null };
+      }
       const row = await scope.db
         .insertInto('trust.review_responses')
         .values({
@@ -147,6 +160,9 @@ export class ReviewResponsesCreateHandler implements OperationHandler {
           organization_id: m.orgId,
           response_text: ctx.body.response_text,
           content_locale: ctx.body.content_locale,
+          ai_assisted: draft !== null,
+          ai_draft_insight_id: draft?.id ?? null,
+          edited_after_ai: draft !== null && draft.text !== ctx.body.response_text,
           responded_by_user_id: m.userId,
           status: 'draft',
         })
@@ -189,7 +205,10 @@ export class ReviewResponsesUpdateHandler implements OperationHandler {
 @Injectable()
 @Operation('review_responses.publish')
 export class ReviewResponsesPublishHandler implements OperationHandler {
-  constructor(private readonly views: ReviewViews) {}
+  constructor(
+    private readonly views: ReviewViews,
+    private readonly ai: AiReferences,
+  ) {}
 
   async handle(ctx: OperationContext): Promise<OperationResult> {
     const m = member(ctx);
@@ -211,6 +230,8 @@ export class ReviewResponsesPublishHandler implements OperationHandler {
         .where('id', '=', r.id)
         .returningAll()
         .executeTakeFirstOrThrow();
+      // Publishing is the human approval of the AI draft it started from (SEC-AI-3).
+      if (row.ai_draft_insight_id) await this.ai.approveUse(scope, row.ai_draft_insight_id);
       await writeAudit(scope, { action: 'review.response_published', entityType: 'review_response', entityId: row.id, next: 'published' });
       await publishEvent(scope, {
         type: 'review.response.published',

@@ -15,6 +15,7 @@ import { toMfaMethod, toSession } from '../api/projections.js';
 import { newTotpSecret, otpauthUri } from '../domain/credentials.js';
 import { activeSecondFactors, getUser, methods, platformRoles } from '../infrastructure/accounts.js';
 import { caller, MeReader } from './common.js';
+import { WebAuthnService } from './webauthn.js';
 import { MfaService } from './mfa-service.js';
 
 type Position = { id?: string; o?: number } | undefined;
@@ -193,12 +194,39 @@ export class MfaTotpEnrollHandler implements OperationHandler {
   }
 }
 
+/**
+ * me.webauthn_register_options: creation options for a passkey or security
+ * key; a pending WebAuthn method holds the challenge (listed by me.mfa_list,
+ * activated by me.mfa_confirm with the attestation, DI S9).
+ */
+@Injectable()
+@Operation('me.webauthn_register_options')
+export class WebAuthnRegisterOptionsHandler implements OperationHandler {
+  constructor(private readonly webauthn: WebAuthnService) {}
+
+  async handle(ctx: OperationContext<{ label: string }>): Promise<OperationResult> {
+    const { userId } = caller(ctx);
+    const body = await ctx.tx(async (scope) => {
+      const user = await getUser(scope, userId);
+      if (!user) throw new ApiError('NOT_FOUND');
+      const r = await this.webauthn.registrationOptions(
+        scope,
+        { id: user.id, email: user.email, displayName: user.display_name ?? null },
+        ctx.body.label,
+      );
+      return r.options;
+    });
+    return { body };
+  }
+}
+
 @Injectable()
 @Operation('me.mfa_confirm')
 export class MfaConfirmHandler implements OperationHandler {
   constructor(
     private readonly mfa: MfaService,
     private readonly sessions: SessionStore,
+    private readonly webauthn: WebAuthnService,
   ) {}
 
   async handle(ctx: OperationContext<{ code?: string; attestation?: unknown }>): Promise<OperationResult> {
@@ -207,13 +235,15 @@ export class MfaConfirmHandler implements OperationHandler {
       const [m] = (await methods(scope, p.userId, ['totp_mfa', 'webauthn'], true)).filter((x) => x.id === ctx.params.method_id);
       if (!m) throw new ApiError('NOT_FOUND');
       if (m.status !== 'pending') throw new ApiError('INVALID_TRANSITION', { detail: `method is ${m.status}` });
-      // "C: one per method type": TOTP takes a code, WebAuthn an attestation (WebAuthn is not supported yet, S3 deviation).
+      // "C: one per method type": TOTP takes a code, WebAuthn an attestation (GD-31).
       if (m.method_type === 'totp_mfa') {
         if (ctx.body.attestation !== undefined) throw ApiError.validation([{ pointer: '/attestation', code: 'conditional_forbidden' }]);
         if (ctx.body.code === undefined) throw ApiError.validation([{ pointer: '/code', code: 'conditional_required' }]);
         if (!(await this.mfa.checkTotp(scope, m, ctx.body.code))) throw new ApiError('CODE_INVALID');
       } else {
-        throw new ApiError('INVALID_TRANSITION', { detail: 'WebAuthn credentials are not supported yet' });
+        if (ctx.body.code !== undefined) throw ApiError.validation([{ pointer: '/code', code: 'conditional_forbidden' }]);
+        if (ctx.body.attestation === undefined) throw ApiError.validation([{ pointer: '/attestation', code: 'conditional_required' }]);
+        await this.webauthn.confirmRegistration(scope, m, ctx.body.attestation);
       }
       const first = (await activeSecondFactors(scope, p.userId)).length === 0;
       const method = await scope.db

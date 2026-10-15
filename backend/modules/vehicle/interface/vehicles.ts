@@ -22,6 +22,17 @@ export interface OwnedVehicle extends VehicleCard {
   ownerType: 'user' | 'organization';
   ownerId: string;
   status: string;
+  /** GD-34: a fleet vehicle's documents and history reach providers of fleet appointments unless private. */
+  dataSharing: 'appointments' | 'private';
+}
+
+/** A document a fleet shares with the provider of one of its appointments (GD-34). */
+export interface SharedDocument {
+  id: string;
+  documentType: string;
+  title: string;
+  expiresAt: string | null;
+  mediaAssetId: string;
 }
 
 export abstract class VehicleCards {
@@ -29,6 +40,19 @@ export abstract class VehicleCards {
   abstract cards(scope: TxScope, ids: readonly string[]): Promise<Map<string, VehicleCard>>;
   /** A vehicle the caller's RLS context owns (the user's personal vehicle, or the fleet's), else null. */
   abstract visible(scope: TxScope, vehicleId: string): Promise<OwnedVehicle | null>;
+  /**
+   * The fleet that owns a vehicle (vehicle.vehicle_fleet_owner definer), for
+   * operations on {me} paths that also admit fleet members (40 triage.start
+   * USR | ORG(F*) DRV): the caller authorizes that organization next. Null for
+   * personal vehicles and unknown ids; never returned to clients.
+   */
+  abstract fleetOwner(scope: TxScope, vehicleId: string): Promise<string | null>;
+  /** Active document ids of a vehicle the caller owns, newest first (≤ 20): what a fleet appointment shares. */
+  abstract documentIds(scope: TxScope, vehicleId: string): Promise<string[]>;
+  /** Live: is the fleet vehicle's data shared through appointments (definer; any context, e.g. the provider's)? */
+  abstract fleetDataShared(scope: TxScope, vehicleId: string): Promise<boolean>;
+  /** The listed documents of a fleet vehicle still shared (definer); the caller has checked the appointment. */
+  abstract fleetSharedDocuments(scope: TxScope, vehicleId: string, ids: readonly string[]): Promise<SharedDocument[]>;
   /** Open (due or overdue, else upcoming) reminders of a vehicle the caller owns, most urgent first (Discover feed tips). */
   abstract openReminders(scope: TxScope, vehicleId: string, limit: number): Promise<OpenReminder[]>;
   /**
@@ -183,4 +207,29 @@ export abstract class VehicleService {
    * passed the vehicles.create input schema. Returns the vehicle id.
    */
   abstract createFleetVehicle(scope: TxScope, orgId: string, body: Record<string, unknown>, createdBy: string): Promise<string>;
+  /**
+   * An issue reported from a completed Help Me session (40 triage.complete
+   * create_issue; 52 VehicleIssue source ai_triage, or fleet_driver for a
+   * driver so the fleet approval workflow applies). The text is the user's own
+   * (AI output is referenced through ai_triage_insight_id, never stored as
+   * issue text). Emits vehicle.issue.reported. Caller's transaction, with the
+   * fleet as organization for fleet vehicles. Returns the issue id.
+   */
+  abstract reportTriageIssue(scope: TxScope, i: TriageIssue): Promise<string>;
+}
+
+export interface TriageIssue {
+  vehicleId: string;
+  /** The fleet owning the vehicle, or null for a personal vehicle. */
+  orgId: string | null;
+  driver: boolean;
+  userId: string;
+  title: string;
+  description: string;
+  locale: string;
+  symptomNodeId: string | null;
+  urgency: 'low' | 'medium' | 'high' | 'safety_critical';
+  triageSessionId: string;
+  aiInsightId: string | null;
+  mediaIds: readonly string[];
 }

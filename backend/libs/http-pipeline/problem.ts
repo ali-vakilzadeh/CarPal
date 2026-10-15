@@ -1,7 +1,7 @@
 // application/problem+json (40 §4.2, RFC 9457). Titles are localized, safe
 // and generic; they never carry internal detail, SQL, hostnames, ids of
 // out-of-scope objects or which authorization check failed (SEC-OUT-5).
-import type { ApiError, ErrorCode, FieldError } from '#libs/contract/index.js';
+import type { ApiError, ErrorCode, FieldError, TriageSafety } from '#libs/contract/index.js';
 import type { Locale } from '#libs/i18n/index.js';
 
 const TITLES: Record<ErrorCode, [en: string, fa: string]> = {
@@ -83,6 +83,9 @@ export interface Problem {
   requirements?: string[];
   consent_type?: string;
   entitlement_key?: string;
+  safety?: TriageSafety;
+  fallback_path?: string;
+  vin_transfer_available?: boolean;
 }
 
 export function toProblem(err: ApiError, requestId: string, locale: Locale): Problem {
@@ -99,5 +102,8 @@ export function toProblem(err: ApiError, requestId: string, locale: Locale): Pro
   if (x?.requirements?.length) p.requirements = x.requirements.slice(0, 20);
   if (x?.consent_type) p.consent_type = x.consent_type;
   if (x?.entitlement_key) p.entitlement_key = x.entitlement_key;
+  if (x?.safety) p.safety = x.safety;
+  if (x?.fallback_path) p.fallback_path = x.fallback_path;
+  if (x?.vin_transfer_available) p.vin_transfer_available = true;
   return p;
 }

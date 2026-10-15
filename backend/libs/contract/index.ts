@@ -11,7 +11,15 @@ export { OPERATION_IDS, type OperationId } from './generated/operation-ids.js';
 export { ERROR_CODES, type ErrorCode, type ErrorCodeInfo } from './generated/errors.js';
 export { ENUMS } from './generated/enums.js';
 export { ROLE_GROUPS, type RoleGroup, type RoleGroupName } from './generated/role-groups.js';
-export { ApiError, isApiError, type ApiErrorOptions, type FieldError, type FieldErrorCode, type ProblemExtensions } from './api-error.js';
+export {
+  ApiError,
+  isApiError,
+  type ApiErrorOptions,
+  type FieldError,
+  type FieldErrorCode,
+  type ProblemExtensions,
+  type TriageSafety,
+} from './api-error.js';
 
 type JsonSchema = Record<string, unknown>;
 

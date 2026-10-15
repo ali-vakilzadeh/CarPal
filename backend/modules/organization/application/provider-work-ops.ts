@@ -20,6 +20,7 @@ import {
 } from '#libs/http-pipeline/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { ConsentRequests } from '#modules/identity/interface/identity.js';
+import { AiReferences } from '#modules/ai-mcp/interface/ai.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { toCustomerNote, toJobLog, toPortfolioItem, type JobLogRow, type PortfolioRow } from '../api/projections.js';
@@ -376,6 +377,7 @@ export class PortfolioRules {
     private readonly taxonomy: TaxonomyResolver,
     private readonly ext: OrganizationExtensions,
     private readonly media: MediaService,
+    private readonly ai: AiReferences,
   ) {}
 
   async check(scope: TxScope, orgId: string, p: Partial<PortfolioWrite>, previous?: PortfolioRow): Promise<void> {
@@ -384,9 +386,22 @@ export class PortfolioRules {
     const caption = p.caption !== undefined ? p.caption : previous?.caption;
     const source = p.caption_source !== undefined ? p.caption_source : previous?.caption_source;
     if (caption && !source) errors.push({ pointer: '/caption_source', code: 'conditional_required' });
+    const insightId = p.ai_caption_insight_id !== undefined ? p.ai_caption_insight_id : (previous?.ai_caption_insight_id ?? undefined);
+    if (source === 'ai_approved' && !insightId) errors.push({ pointer: '/ai_caption_insight_id', code: 'conditional_required' });
+    if (p.ai_caption_insight_id && p.caption_source === 'manual')
+      errors.push({ pointer: '/ai_caption_insight_id', code: 'conditional_forbidden' });
     failIf(errors);
-    // An ai_approved caption needs an accepted AI insight (ai-mcp, S9): until then none can be cited.
-    if (p.caption_source === 'ai_approved' || p.ai_caption_insight_id) throw notFound('/ai_caption_insight_id');
+    // An ai_approved caption cites the organization's own showcase insight (ai.showcase_compose, S9); saving it is the
+    // human decision (SEC-AI-3). A staff member's draft waits for its approval request first (53 §14.2).
+    if (p.ai_caption_insight_id) {
+      const i = await this.ai.usable(scope, p.ai_caption_insight_id, {
+        types: ['showcase_caption', 'showcase_draft'],
+        ...(previous ? { subject: { type: 'portfolio_item', id: previous.id } } : {}),
+      });
+      if (!i || i.organizationId !== orgId) throw notFound('/ai_caption_insight_id');
+      if (await this.ai.awaitingApproval(scope, i.id)) throw new ApiError('INVALID_TRANSITION', { detail: 'approval_pending' });
+      await this.ai.approveUse(scope, i.id);
+    }
     await checkChain(this.taxonomy, { ...previous, ...p });
     await checkNodes(
       this.taxonomy,
@@ -487,6 +502,7 @@ export class ProviderPortfolioCreateHandler implements OperationHandler {
           appointment_id: b.appointment_id ?? null,
           caption: b.caption ?? null,
           caption_source: b.caption_source ?? null,
+          ai_caption_insight_id: b.ai_caption_insight_id ?? null,
           visibility: b.visibility,
           status: 'draft',
         })

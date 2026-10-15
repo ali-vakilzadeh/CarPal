@@ -232,15 +232,15 @@ describe('W6 processing rules', () => {
     ).toBe('MEDIA_NOT_READY');
   });
 
-  it('accepts MP4 up to 60 s and refuses longer videos', async () => {
+  it('accepts MP4 up to 15 s and refuses longer videos (GD-32)', async () => {
     const { org, token } = await app.fixtures.memberOf('provider', 'provider_staff');
     const owner = { type: 'organization' as const, id: org.id };
-    expect(await media.upload(token, { owner, purpose: 'portfolio', mime: 'video/mp4', bytes: tinyMp4(30) })).toMatchObject({
+    expect(await media.upload(token, { owner, purpose: 'portfolio', mime: 'video/mp4', bytes: tinyMp4(12) })).toMatchObject({
       scan_status: 'clean',
-      duration_seconds: 30,
+      duration_seconds: 12,
       exif_stripped: false,
     });
-    expect(await media.upload(token, { owner, purpose: 'portfolio', mime: 'video/mp4', bytes: tinyMp4(90) })).toMatchObject({
+    expect(await media.upload(token, { owner, purpose: 'portfolio', mime: 'video/mp4', bytes: tinyMp4(20) })).toMatchObject({
       scan_status: 'failed',
     });
   });
@@ -258,6 +258,10 @@ describe('upload_init and upload_complete rules', () => {
       checksum_sha256: 'A'.repeat(43) + '=',
     };
     expect((await init(base)).body.errors).toEqual([{ pointer: '/mime_type', code: 'enum' }]);
+    // GD-32: HEIC is converted to JPEG by the client; the server refuses it when the upload is requested.
+    expect((await init({ ...base, purpose: 'vehicle_photo', mime_type: 'image/heic' })).body.errors).toEqual([
+      { pointer: '/mime_type', code: 'enum' },
+    ]);
     expect((await init({ ...base, mime_type: 'image/png', file_size_bytes: 21 * 1024 * 1024 })).body.errors).toEqual([
       { pointer: '/file_size_bytes', code: 'out_of_range', limit: String(20 * 1024 * 1024) },
     ]);

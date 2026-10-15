@@ -17,6 +17,7 @@ import { AttachmentTargets } from '#modules/media/interface/media.js';
 import { OrganizationExtensions } from '#modules/organization/interface/extensions.js';
 import { DbTrustAdmin } from './application/admin-ops.js';
 import { TrustAdminRegistrations } from './application/admin-registrations.js';
+import { TrustAiRegistrations } from './application/ai-registrations.js';
 import { Invitations } from './application/invitation-ops.js';
 import { HelpfulCountConsumer, ReviewWorkflow, ReviewWorkflowConsumer, TrustScoringConsumer } from './application/review-workflow.js';
 import { TrustScorer } from './application/trust-scorer.js';
@@ -89,6 +90,7 @@ export class TrustRegistrations implements OnModuleInit {
     TrustRegistrations,
     { provide: TrustAdmin, useClass: DbTrustAdmin },
     TrustAdminRegistrations,
+    TrustAiRegistrations,
   ],
   exports: [TrustRead, TrustScorer, Invitations, ReviewWorkflow, TrustAdmin],
 })

@@ -32,6 +32,7 @@ import {
 import {
   AppointmentsCheckInHandler,
   AppointmentsCheckInLinkHandler,
+  AppointmentCreator,
   AppointmentsCreateHandler,
   AppointmentsDelayHandler,
   AppointmentsGetHandler,
@@ -44,7 +45,9 @@ import {
   Confirmation,
   NoteViews,
   PreVisitRequesterGetHandler,
+  TriageAppointmentDrafts,
 } from './application/requester-ops.js';
+import { AppointmentDrafts } from './interface/appointments.js';
 
 @Module({
   providers: [
@@ -53,6 +56,9 @@ import {
     PreVisitReports,
     Capacity,
     Confirmation,
+    AppointmentCreator,
+    // Help Me drafts for the ai-mcp facade (S9)
+    { provide: AppointmentDrafts, useClass: TriageAppointmentDrafts },
     // requester (§16.2)
     AppointmentsCreateHandler,
     AppointmentsListHandler,
@@ -88,5 +94,6 @@ import {
     AvailabilityTimeOffCancelHandler,
     PublicAvailabilityHandler,
   ],
+  exports: [AppointmentDrafts],
 })
 export class AppointmentApiModule {}

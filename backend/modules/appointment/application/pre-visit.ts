@@ -4,14 +4,16 @@
 // the provider never reads the customer's vehicle records: it reads the
 // stored report, and its history fields only while the requester's
 // service_history_sharing consent for this appointment is granted (SEC-AZ-8,
-// checked on every read, never cached). The AI summary is a stub (null) until
-// the ai-mcp module provides triage insights (S9); sending the request is the
-// user's approval of the previewed report (40 Appendix D, SEC-AI-3).
+// checked on every read, never cached). The AI summary is the triage_summary
+// insight of the linked Help Me session (S9), shown in the requester's
+// preview; sending the request is the user's approval of the previewed report
+// (40 Appendix D, SEC-AI-3).
 import { Injectable } from '@nestjs/common';
 import { ConsentChecker } from '#libs/consent-gate/index.js';
 import { iso, isoOrNull, meta } from '#libs/http-pipeline/index.js';
 import { l10n, type L10n, type Locale } from '#libs/i18n/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
+import { AiReferences } from '#modules/ai-mcp/interface/ai.js';
 import { MediaService, type MediaAttachmentView } from '#modules/media/interface/media.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { VehicleCards } from '#modules/vehicle/interface/vehicles.js';
@@ -34,14 +36,21 @@ export class PreVisitReports {
     private readonly taxonomy: TaxonomyResolver,
     private readonly consents: ConsentChecker,
     private readonly media: MediaService,
+    private readonly ai: AiReferences,
   ) {}
 
   /** (Re)generates the stored report of an appointment in the requester's transaction. */
   async generate(scope: TxScope, a: AppointmentRow, locale: Locale): Promise<void> {
     const card = (await this.vehicles.cards(scope, [a.vehicle_id])).get(a.vehicle_id);
     const issue = a.related_issue_id ? await this.vehicles.issue(scope, a.related_issue_id) : null;
-    const symptoms = [...new Set([a.symptom_node_id, issue?.symptomNodeId].filter((x): x is string => !!x))];
-    const likely = new Set([a.service_system_node_id, a.service_task_node_id].filter((x): x is string => !!x));
+    // The requester's own Help Me session (RLS self_all): its symptoms, likely systems and summary.
+    const triage = a.triage_session_id ? await this.ai.triage(scope, a.triage_session_id) : null;
+    const symptoms = [
+      ...new Set([a.symptom_node_id, issue?.symptomNodeId, ...(triage?.symptomNodeIds ?? [])].filter((x): x is string => !!x)),
+    ];
+    const likely = new Set(
+      [a.service_system_node_id, a.service_task_node_id, ...(triage?.likelySystemNodeIds ?? [])].filter((x): x is string => !!x),
+    );
     for (const s of symptoms) for (const m of await this.taxonomy.mappingsFrom(s)) if (likely.size < 20) likely.add(m.targetId);
     const labels = await this.taxonomy.labels(
       [card?.brandNodeId, card?.modelNodeId, card?.seriesNodeId, card?.engineTypeNodeId, ...likely].filter((x): x is string => !!x),
@@ -53,9 +62,12 @@ export class PreVisitReports {
           .filter(Boolean)
           .join(' ')
       : '—';
-    // History only with the appointment's service_history_sharing consent (52 PreVisitReport rule).
+    // History only with the appointment's service_history_sharing consent (52 PreVisitReport rule), or for a fleet
+    // request of a vehicle whose data is shared through appointments (GD-34; documents too).
+    const fleetShared = a.requester_type === 'fleet' && a.consent_to_share_history;
+    const shares = a.consent_to_share_history && (a.consent_reference_id !== null || fleetShared);
     let history: Awaited<ReturnType<VehicleCards['serviceHistory']>> = [];
-    if (a.consent_to_share_history && a.consent_reference_id) history = await this.vehicles.serviceHistory(scope, a.vehicle_id, 50);
+    if (shares) history = await this.vehicles.serviceHistory(scope, a.vehicle_id, 50);
     const related = history.filter((h) => !a.service_system_node_id || h.serviceSystemNodeId === a.service_system_node_id).slice(0, 20);
     const repairs: StoredRepair[] = related.map((h) => ({
       service_date: h.serviceDate,
@@ -63,16 +75,15 @@ export class PreVisitReports {
       description: clip(h.description ?? '', 500),
     }));
     const lastMileage = history.find((h) => h.mileageKm !== null)?.mileageKm ?? null;
-    const historySummary =
-      a.consent_to_share_history && a.consent_reference_id
-        ? history.length === 0
-          ? locale === 'fa'
-            ? 'سابقه سرویسی ثبت نشده است.'
-            : 'No service history recorded.'
-          : locale === 'fa'
-            ? `${history.length} سابقه سرویس؛ آخرین مورد ${history[0]!.serviceDate}.`
-            : `${history.length} service record(s); the latest on ${history[0]!.serviceDate}.`
-        : null;
+    const historySummary = shares
+      ? history.length === 0
+        ? locale === 'fa'
+          ? 'سابقه سرویسی ثبت نشده است.'
+          : 'No service history recorded.'
+        : locale === 'fa'
+          ? `${history.length} سابقه سرویس؛ آخرین مورد ${history[0]!.serviceDate}.`
+          : `${history.length} service record(s); the latest on ${history[0]!.serviceDate}.`
+      : null;
     const mediaIds = (await this.media.attachmentViews(scope, 'appointment', [a.id])).get(a.id)?.map((m) => m.attachment_id) ?? [];
     const values = {
       vehicle_summary: clip(vehicleSummary, 2000),
@@ -80,7 +91,8 @@ export class PreVisitReports {
       reported_symptom_node_ids: symptoms.slice(0, 20),
       triage_status: a.triage_status,
       issue_summary: clip(issue ? `${issue.title}: ${a.description}` : a.description, 2000),
-      ai_summary: null,
+      ai_triage_insight_id: triage?.resultInsightId ?? null,
+      ai_summary: triage?.summary ? clip(triage.summary, 2000) : null,
       likely_service_node_ids: [...likely].slice(0, 20),
       relevant_history_summary: historySummary,
       previous_related_repairs: historySummary === null ? null : JSON.stringify(repairs),
@@ -94,6 +106,8 @@ export class PreVisitReports {
       urgency_level: a.urgency_level,
       preferred_contact_channel: a.preferred_contact_channel,
       consent_reference_id: a.consent_to_share_history ? a.consent_reference_id : null,
+      fleet_data_shared: fleetShared,
+      shared_document_ids: fleetShared ? await this.vehicles.documentIds(scope, a.vehicle_id) : [],
       generated_at: new Date(),
       status: a.status === 'draft' ? 'draft' : 'shared',
     };
@@ -113,8 +127,10 @@ export class PreVisitReports {
       .where('deleted_at', 'is', null)
       .executeTakeFirst()) as ReportRow | undefined;
     if (!r) return null;
-    let historyAllowed = r.consent_reference_id !== null;
-    if (historyAllowed && side === 'provider')
+    let historyAllowed = r.consent_reference_id !== null || r.fleet_data_shared;
+    // GD-34: a fleet that marks the vehicle private stops sharing at once.
+    if (r.fleet_data_shared) historyAllowed = await this.vehicles.fleetDataShared(scope, a.vehicle_id);
+    else if (historyAllowed && side === 'provider')
       historyAllowed = await this.consents.isGranted(scope, {
         consentType: 'service_history_sharing',
         subject: { type: 'user', id: a.requester_user_id },
@@ -140,6 +156,21 @@ export class PreVisitReports {
     const keep = new Set(arr(r.media_attachment_ids));
     const media: MediaAttachmentView[] = (views.get(a.id) ?? []).filter((m) => keep.has(m.attachment_id)).slice(0, 20);
     const fallback: L10n = l10n({ en: '—' }, locale)!;
+    const docs =
+      r.fleet_data_shared && historyAllowed
+        ? await this.vehicles.fleetSharedDocuments(scope, a.vehicle_id, arr(r.shared_document_ids))
+        : null;
+    const sharedDocuments = docs
+      ? await Promise.all(
+          docs.map(async (d) => ({
+            document_id: d.id,
+            document_type: d.documentType,
+            title: d.title,
+            expires_at: d.expiresAt ? isoDate(d.expiresAt) : null,
+            download_url: (await this.media.signedDownload(scope, d.mediaAssetId))?.url ?? null,
+          })),
+        )
+      : null;
     return {
       ...meta(r),
       appointment_id: a.id,
@@ -159,6 +190,7 @@ export class PreVisitReports {
             description: x.description,
           }))
         : null,
+      shared_documents: sharedDocuments,
       known_warnings: arr(r.known_warnings).slice(0, 20),
       suggested_focus_areas: arr(r.suggested_focus_areas).slice(0, 20),
       media,

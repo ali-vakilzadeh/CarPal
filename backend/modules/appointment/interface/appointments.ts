@@ -1,7 +1,11 @@
 // Public interface of the appointment module (41 §4.2 interface/). The trust
 // module reads appointments as review visits (52 §21 appointment_verified),
 // review invitation sources and trust-scoring inputs (54 §1, §3.1, §4) here,
-// never from the appointment tables.
+// never from the appointment tables. The ai-mcp facade drafts the request of
+// a completed Help Me session through AppointmentDrafts (api host only).
+import type { OperationContext } from '#libs/http-pipeline/index.js';
+import type { Locale } from '#libs/i18n/index.js';
+import type { Urgency } from '#libs/safety-check/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 
 /** An appointment as a visit (appointment.visit_cards): parties, taxonomy, dates and status, no text. */
@@ -89,4 +93,31 @@ export abstract class AppointmentFacts {
    * or without a free slot.
    */
   abstract nextOpenSlot(scope: TxScope, providerOrgId: string, now: Date, days?: number): Promise<Date | null>;
+}
+
+export interface TriageDraft {
+  providerOrgId: string;
+  /** Pointer of the provider field for 422 errors (e.g. /draft_appointment_with). */
+  pointer: string;
+  vehicleId: string;
+  issueId: string | null;
+  triageSessionId: string;
+  matchResultId: string | null;
+  /** The user's own words from the session (never AI text). */
+  description: string;
+  locale: Locale;
+  urgency: Urgency;
+  symptomNodeId: string | null;
+  serviceSystemNodeId: string | null;
+  serviceTaskNodeId: string | null;
+}
+
+export abstract class AppointmentDrafts {
+  /**
+   * A personal draft request (status draft, no time windows) from a completed
+   * Help Me session (40 triage.complete draft_appointment_with), with the
+   * rules of appointments.create; nothing reaches the provider before the
+   * user submits it (SEC-AI-3). Caller's transaction. Returns its id.
+   */
+  abstract draftFromTriage(ctx: OperationContext, scope: TxScope, d: TriageDraft): Promise<string>;
 }

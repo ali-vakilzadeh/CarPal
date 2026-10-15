@@ -26,6 +26,7 @@ import type { TxScope } from '#libs/tenancy/index.js';
 import { toAttachmentView, toMediaAsset } from '../api/projections.js';
 import { encryptedAtRest, mediaTypeOf, PURPOSES, SIZE_LIMIT, type MimeType } from '../domain/purposes.js';
 import { displayKeyOf, findVisibleAsset, keys, servableToOwner, type AssetRow, type VisibleAsset } from '../infrastructure/assets.js';
+import { AiReferences } from '#modules/ai-mcp/interface/ai.js';
 import { AttachmentTargets } from '../interface/media.js';
 import { MediaUrls } from './media-service.js';
 
@@ -386,9 +387,10 @@ export class MediaDeleteHandler implements OperationHandler {
   }
 }
 
+type RedactionRegion = { x: string | number; y: string | number; w: string | number; h: string | number };
 type RedactionDecision = {
   decision: 'apply_suggestions' | 'apply_regions' | 'not_needed';
-  regions?: { x: string; y: string; w: string; h: string }[];
+  regions?: RedactionRegion[];
 };
 
 @Injectable()
@@ -397,6 +399,7 @@ export class MediaRedactionDecideHandler implements OperationHandler {
   constructor(
     private readonly authorizer: Authorizer,
     private readonly jobs: JobService,
+    private readonly ai: AiReferences,
   ) {}
 
   async handle(ctx: OperationContext<RedactionDecision>): Promise<OperationResult> {
@@ -414,9 +417,19 @@ export class MediaRedactionDecideHandler implements OperationHandler {
     const job = await ctx.tx(async (scope) => {
       const { row: a, orgId } = await asset(ctx, this.authorizer, scope, ctx.params.media_id!, { lock: true });
       if (a.media_type !== 'image' || !servableToOwner(a)) throw new ApiError('MEDIA_NOT_READY');
-      // AI suggestions (plates, faces) come from the ai-mcp module (S9): none can be applied before.
-      if (b.decision === 'apply_suggestions' && !a.redaction_insight_id)
-        throw ApiError.validation([{ pointer: '/decision', code: 'enum' }]);
+      // AI suggestions (plates, faces) of an insight the caller may use (ai-mcp, S9); applying them is the human decision.
+      let regions = b.regions;
+      if (b.decision === 'apply_suggestions') {
+        const insight = a.redaction_insight_id
+          ? await this.ai.usable(scope, a.redaction_insight_id, { types: ['redaction_suggestion'] })
+          : null;
+        const suggested = ((insight?.payload?.media as { media_asset_id: string; regions: RedactionRegion[] }[] | undefined) ?? []).find(
+          (m) => m.media_asset_id === a.id,
+        );
+        if (!insight || !suggested?.regions.length) throw ApiError.validation([{ pointer: '/decision', code: 'enum' }]);
+        regions = suggested.regions.map(({ x, y, w, h }) => ({ x, y, w, h }));
+        await this.ai.approveUse(scope, insight.id);
+      }
       await scope.db
         .updateTable('media.media_assets')
         .set({ redaction_status: b.decision === 'not_needed' ? 'not_needed' : 'pending' })
@@ -428,7 +441,7 @@ export class MediaRedactionDecideHandler implements OperationHandler {
         organizationId: orgId,
         owningModule: 'media',
         // Relative coordinates only; the worker reads them from the job row.
-        inputSummary: { media_asset_id: a.id, decision: b.decision, ...(b.regions ? { regions: b.regions } : {}) },
+        inputSummary: { media_asset_id: a.id, decision: b.decision, ...(regions ? { regions } : {}) },
         queue: MEDIA_REDACTION_QUEUE,
       });
     });

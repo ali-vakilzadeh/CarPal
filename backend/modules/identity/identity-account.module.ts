@@ -41,11 +41,13 @@ import {
   MfaListHandler,
   MfaRemoveHandler,
   MfaTotpEnrollHandler,
+  WebAuthnRegisterOptionsHandler,
   RecoveryCodesRegenerateHandler,
   SessionRevokeHandler,
   SessionsListHandler,
   SessionsRevokeAllHandler,
 } from './application/security-ops.js';
+import { WebAuthnService } from './application/webauthn.js';
 
 @Module({
   providers: [
@@ -67,6 +69,8 @@ import {
     SessionsRevokeAllHandler,
     MfaListHandler,
     MfaTotpEnrollHandler,
+    WebAuthnRegisterOptionsHandler,
+    WebAuthnService,
     MfaConfirmHandler,
     MfaRemoveHandler,
     RecoveryCodesRegenerateHandler,

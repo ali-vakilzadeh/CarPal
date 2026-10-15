@@ -12199,6 +12199,75 @@
             }
           ]
         },
+        "shared_documents": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "document_id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                  },
+                  "document_type": {
+                    "type": "string",
+                    "enum": [
+                      "insurance",
+                      "registration",
+                      "warranty",
+                      "invoice",
+                      "inspection_report",
+                      "other"
+                    ]
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120,
+                    "pattern": "^[^\\r\\n]*$"
+                  },
+                  "expires_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "download_url": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2048,
+                        "pattern": "^https://[^\\s@#/?]+([/?][^\\s#]*)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "document_id",
+                  "document_type",
+                  "title",
+                  "expires_at",
+                  "download_url"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 20
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "fleet appointments of a non-private vehicle (GD-34)"
+        },
         "known_warnings": {
           "type": "array",
           "items": {
@@ -12300,6 +12369,7 @@
         "likely_services",
         "relevant_history_summary",
         "previous_related_repairs",
+        "shared_documents",
         "known_warnings",
         "suggested_focus_areas",
         "media",
@@ -12382,6 +12452,61 @@
           "maxLength": 60,
           "pattern": "^[^\\r\\n]*$",
           "description": "with ENTITLEMENT_REQUIRED: the plan entitlement"
+        },
+        "safety": {
+          "type": "object",
+          "properties": {
+            "flag": {
+              "type": "boolean"
+            },
+            "level": {
+              "type": "string",
+              "enum": [
+                "none",
+                "warning",
+                "urgent"
+              ]
+            },
+            "message_i18n_key": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "pattern": "^[^\\r\\n]*$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "urgent_help_available": {
+              "type": "boolean"
+            },
+            "do_not_drive": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "flag",
+            "level",
+            "message_i18n_key",
+            "urgent_help_available",
+            "do_not_drive"
+          ],
+          "additionalProperties": false,
+          "description": "with AI_UNAVAILABLE on Help Me triage: the server-computed safety block (SEC-AI-7)"
+        },
+        "fallback_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "with AI_UNAVAILABLE: the non-AI path to continue with (e.g. /v1/search)"
+        },
+        "vin_transfer_available": {
+          "type": "boolean",
+          "description": "with DUPLICATE at /vin: another owner has this VIN; vehicles.transfer_request can ask for it (GD-33)"
         }
       },
       "required": [
@@ -21716,6 +21841,13 @@
           "minLength": 1,
           "maxLength": 2000
         },
+        "data_sharing": {
+          "type": "string",
+          "enum": [
+            "appointments",
+            "private"
+          ]
+        },
         "owner_type": {
           "$ref": "#/$defs/OwnerType"
         },
@@ -21852,7 +21984,7 @@
         "duplicate_vin_warning"
       ],
       "additionalProperties": false,
-      "description": "derived: same VIN exists for another owner"
+      "description": "derived: same VIN exists for another owner (always false since GD-33: one owner per VIN)"
     },
     "VehicleDocument": {
       "type": "object",
@@ -22169,6 +22301,152 @@
       ],
       "additionalProperties": false
     },
+    "VehicleTransfer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "updated_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "incoming",
+            "outgoing"
+          ],
+          "description": "incoming = asked of the caller as current owner"
+        },
+        "vehicle_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the owner's vehicle (outgoing to the owner), or the buyer's once accepted"
+        },
+        "vehicle_summary": {
+          "type": "object",
+          "properties": {
+            "brand_node_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            "model_node_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            "year": {
+              "type": "integer",
+              "minimum": 1950,
+              "maximum": 2100
+            },
+            "vin_last4": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 4,
+                  "maxLength": 4,
+                  "pattern": "^[^\\r\\n]*$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "brand_node_id",
+            "model_node_id",
+            "year",
+            "vin_last4"
+          ],
+          "additionalProperties": false
+        },
+        "requester_display": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "shown to the current owner only; the owner is never disclosed to the buyer"
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "accepted",
+            "rejected",
+            "cancelled",
+            "expired"
+          ]
+        },
+        "decided_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "id",
+        "created_at",
+        "updated_at",
+        "version",
+        "direction",
+        "vehicle_id",
+        "vehicle_summary",
+        "requester_display",
+        "message",
+        "status",
+        "decided_at",
+        "expires_at"
+      ],
+      "additionalProperties": false
+    },
     "VehicleWrite": {
       "type": "object",
       "properties": {
@@ -22277,6 +22555,13 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 2000
+        },
+        "data_sharing": {
+          "type": "string",
+          "enum": [
+            "appointments",
+            "private"
+          ]
         }
       },
       "required": [
@@ -22284,7 +22569,8 @@
         "model_node_id",
         "year"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "fleet vehicles only, set by F+: private stops sharing documents and history with providers of fleet appointments (GD-34)"
     },
     "VendorCoverage": {
       "type": "object",
@@ -22926,6 +23212,13 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 2000
+            },
+            "data_sharing": {
+              "type": "string",
+              "enum": [
+                "appointments",
+                "private"
+              ]
             }
           },
           "additionalProperties": false

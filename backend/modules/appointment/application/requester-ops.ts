@@ -23,7 +23,9 @@ import { MediaService } from '#modules/media/interface/media.js';
 import { Messenger } from '#modules/notification/interface/messenger.js';
 import { ProviderBooking } from '#modules/organization/interface/booking.js';
 import { VehicleCards, VehicleService } from '#modules/vehicle/interface/vehicles.js';
+import { AiReferences } from '#modules/ai-mcp/interface/ai.js';
 import { toHistory, toNote, type AppointmentRow } from '../api/projections.js';
+import { AppointmentDrafts, type TriageDraft } from '../interface/appointments.js';
 import {
   CHECK_IN_LINK_GRACE_MS,
   MAX_OPEN_PER_PROVIDER,
@@ -246,9 +248,14 @@ export class Confirmation {
   }
 }
 
+/**
+ * appointments.create in the caller's transaction (also the draft of a Help
+ * Me session, AppointmentDrafts): validation, the provider and vehicle
+ * checks, consents, the safety check, the pre-visit report and, when
+ * submitted, the request itself. `role` is the requester's fleet role.
+ */
 @Injectable()
-@Operation('appointments.create')
-export class AppointmentsCreateHandler implements OperationHandler {
+export class AppointmentCreator {
   constructor(
     private readonly facts: AccountFacts,
     private readonly booking: ProviderBooking,
@@ -258,137 +265,214 @@ export class AppointmentsCreateHandler implements OperationHandler {
     private readonly safety: SafetyCheck,
     private readonly matches: MatchResults,
     private readonly reports: PreVisitReports,
-    private readonly views: AppointmentViews,
     private readonly issues: VehicleService,
+    private readonly ai: AiReferences,
     @Optional() private readonly fleet?: FleetWorkflow,
   ) {}
 
   /** The request is sent: the issue it came from is scheduled (requester context: the provider cannot see issues). */
-  private async submitted(scope: TxScope, a: AppointmentRow): Promise<void> {
+  async submitted(scope: TxScope, a: AppointmentRow): Promise<void> {
     if (a.related_issue_id) await this.issues.markIssueScheduled(scope, a.related_issue_id, a.id);
+    // SEC-AI-3: sending the request approves the AI triage summary the preview showed (40 Appendix D).
+    if (a.triage_session_id) {
+      const t = await this.ai.triage(scope, a.triage_session_id);
+      if (t?.resultInsightId) await this.ai.approveUse(scope, t.resultInsightId);
+    }
     await requested(scope, a);
+    // GD-34: the fleet's owners and managers are told when a request shares a vehicle's data with a provider.
+    if (a.requester_type === 'fleet' && a.consent_to_share_history && a.requester_organization_id) {
+      const docs = (await this.vehicles.documentIds(scope, a.vehicle_id)).length;
+      await publishEvent(scope, {
+        type: 'fleet.vehicle_data.shared',
+        aggregateType: 'appointment',
+        aggregateId: a.id,
+        payload: {
+          fleet_organization_id: a.requester_organization_id,
+          vehicle_id: a.vehicle_id,
+          provider_organization_id: a.provider_organization_id,
+          document_count: docs,
+        },
+      });
+    }
   }
 
-  async handle(ctx: OperationContext<AppointmentCreate>): Promise<OperationResult> {
-    const r = requester(ctx);
-    const b = ctx.body;
+  async create(ctx: OperationContext, scope: TxScope, r: Requester, role: string | null, b: AppointmentCreate): Promise<AppointmentRow> {
     const errors: FieldError[] = [...descriptionErrors(b.description), ...windowErrors(b.time_windows, Date.now())];
     if (b.submit && b.time_windows.length === 0) errors.push({ pointer: '/time_windows', code: 'conditional_required' });
     if ((b.source === 'ai_match' || b.source === 'fleet_workflow') && !b.service_system_node_id)
       errors.push({ pointer: '/service_system_node_id', code: 'conditional_required' });
     if (b.source === 'fleet_workflow' && !r.orgId) errors.push({ pointer: '/source', code: 'enum' });
     failIf(errors);
-    // Help Me triage sessions arrive in S9: such references cannot resolve yet. Fleet approvals belong to fleet requests only.
-    if (b.triage_session_id) throw notFoundAt('/triage_session_id');
+    // Help Me sessions are personal (the triage user's own session); fleet approvals belong to fleet requests only.
+    if (b.triage_session_id && r.orgId) throw notFoundAt('/triage_session_id');
     if (b.fleet_approval_id && !r.orgId) throw notFoundAt('/fleet_approval_id');
-    const body = await ctx.tx(async (scope) => {
-      if (!(await this.facts.hasVerifiedContact(scope, r.userId))) throw new ApiError('VERIFIED_CONTACT_REQUIRED');
-      const provider = await this.booking.provider(scope, b.provider_organization_id);
-      if (!provider) throw notFoundAt('/provider_organization_id');
-      if (!provider.serviceModes.includes(b.service_mode)) failIf([{ pointer: '/service_mode', code: 'enum' }]);
-      if (b.provider_location_id && !provider.locationIds.includes(b.provider_location_id)) throw notFoundAt('/provider_location_id');
-      const vehicle = await this.vehicles.visible(scope, b.vehicle_id);
-      if (!vehicle || !['active', 'in_repair'].includes(vehicle.status)) throw notFoundAt('/vehicle_id');
-      if (b.related_issue_id) {
-        const issue = await this.vehicles.issue(scope, b.related_issue_id);
-        if (!issue || issue.vehicleId !== b.vehicle_id || !['open', 'investigating'].includes(issue.status))
-          throw notFoundAt('/related_issue_id');
-      }
-      if (b.submit) await checkRequestCaps(scope, r, provider.orgId, null);
-      // A fleet books with an approved fleet approval while its workflow is on (owners and managers decide themselves, S8).
-      const fleetApprovalId =
-        r.orgId && this.fleet
-          ? await this.fleet.appointmentApproval(scope, {
-              orgId: r.orgId,
-              approvalId: b.fleet_approval_id ?? null,
-              vehicleId: b.vehicle_id,
-              providerOrgId: provider.orgId,
-              role: ctx.access.org!.role,
-            })
-          : null;
-      const id = uuidv7();
-      let consentId: string | null = null;
-      // share_history: two consents scoped to this appointment and granted to the provider, atomically (40 AppointmentCreate).
-      // Fleet vehicles have no personal consent subject (DI-38): fleets do not share history through appointments yet.
-      if (b.share_history && !r.orgId) {
-        for (const consentType of ['vehicle_data_sharing', 'service_history_sharing'] as const)
-          consentId = await this.grants.grantScoped(scope, {
-            subjectUserId: r.userId,
-            consentType,
-            scope: { type: 'appointment', id },
-            grantee: { type: 'organization', id: provider.orgId },
-            policyVersion: b.share_history.policy_version,
-          });
-      }
-      const safety = await this.safety.check(b.description);
-      const row = await scope.db
-        .insertInto('appointment.appointments')
-        .values({
-          id,
-          requester_type: r.orgId ? 'fleet' : 'user',
-          requester_user_id: r.userId,
-          requester_organization_id: r.orgId,
-          provider_organization_id: provider.orgId,
-          provider_location_id: b.provider_location_id ?? provider.locationIds[0] ?? null,
-          vehicle_id: b.vehicle_id,
-          source: b.source,
-          match_result_id: null,
-          related_issue_id: b.related_issue_id ?? null,
-          fleet_approval_id: fleetApprovalId,
-          appointment_type: b.appointment_type,
-          service_mode: b.service_mode,
-          service_system_node_id: b.service_system_node_id ?? null,
-          service_task_node_id: b.service_task_node_id ?? null,
-          symptom_node_id: b.symptom_node_id ?? null,
-          safety_flag: safety.safety_flag,
-          description: b.description,
-          content_locale: b.content_locale,
-          urgency_level: b.urgency_level,
-          customer_expectations: b.customer_expectations ?? null,
-          preferred_contact_channel: b.preferred_contact_channel ?? null,
-          consent_to_share_history: consentId !== null,
-          consent_reference_id: consentId,
-          status: b.submit ? 'requested' : 'draft',
-        })
+    if (!(await this.facts.hasVerifiedContact(scope, r.userId))) throw new ApiError('VERIFIED_CONTACT_REQUIRED');
+    const provider = await this.booking.provider(scope, b.provider_organization_id);
+    if (!provider) throw notFoundAt('/provider_organization_id');
+    if (!provider.serviceModes.includes(b.service_mode)) failIf([{ pointer: '/service_mode', code: 'enum' }]);
+    if (b.provider_location_id && !provider.locationIds.includes(b.provider_location_id)) throw notFoundAt('/provider_location_id');
+    const vehicle = await this.vehicles.visible(scope, b.vehicle_id);
+    if (!vehicle || !['active', 'in_repair'].includes(vehicle.status)) throw notFoundAt('/vehicle_id');
+    if (b.related_issue_id) {
+      const issue = await this.vehicles.issue(scope, b.related_issue_id);
+      if (!issue || issue.vehicleId !== b.vehicle_id || !['open', 'investigating'].includes(issue.status))
+        throw notFoundAt('/related_issue_id');
+    }
+    if (b.triage_session_id) {
+      // The caller's own completed session about this vehicle (RLS self_all).
+      const t = await this.ai.triage(scope, b.triage_session_id);
+      if (!t || t.vehicleId !== b.vehicle_id || t.status !== 'completed') throw notFoundAt('/triage_session_id');
+    }
+    if (b.submit) await checkRequestCaps(scope, r, provider.orgId, null);
+    // A fleet books with an approved fleet approval while its workflow is on (owners and managers decide themselves, S8).
+    const fleetApprovalId =
+      r.orgId && this.fleet
+        ? await this.fleet.appointmentApproval(scope, {
+            orgId: r.orgId,
+            approvalId: b.fleet_approval_id ?? null,
+            vehicleId: b.vehicle_id,
+            providerOrgId: provider.orgId,
+            role: role ?? '',
+          })
+        : null;
+    const id = uuidv7();
+    let consentId: string | null = null;
+    // share_history: two consents scoped to this appointment and granted to the provider, atomically (40 AppointmentCreate).
+    // Fleet vehicles have no personal consent subject: a fleet shares through the vehicle's data_sharing instead (GD-34).
+    if (b.share_history && !r.orgId) {
+      for (const consentType of ['vehicle_data_sharing', 'service_history_sharing'] as const)
+        consentId = await this.grants.grantScoped(scope, {
+          subjectUserId: r.userId,
+          consentType,
+          scope: { type: 'appointment', id },
+          grantee: { type: 'organization', id: provider.orgId },
+          policyVersion: b.share_history.policy_version,
+        });
+    }
+    // GD-34: a fleet request shares the vehicle's history and documents with the provider unless the vehicle is private.
+    const fleetShares = !!r.orgId && vehicle.ownerType === 'organization' && vehicle.dataSharing === 'appointments';
+    const safety = await this.safety.check(b.description);
+    const row = await scope.db
+      .insertInto('appointment.appointments')
+      .values({
+        id,
+        requester_type: r.orgId ? 'fleet' : 'user',
+        requester_user_id: r.userId,
+        requester_organization_id: r.orgId,
+        provider_organization_id: provider.orgId,
+        provider_location_id: b.provider_location_id ?? provider.locationIds[0] ?? null,
+        vehicle_id: b.vehicle_id,
+        source: b.source,
+        match_result_id: null,
+        related_issue_id: b.related_issue_id ?? null,
+        triage_session_id: b.triage_session_id ?? null,
+        fleet_approval_id: fleetApprovalId,
+        appointment_type: b.appointment_type,
+        service_mode: b.service_mode,
+        service_system_node_id: b.service_system_node_id ?? null,
+        service_task_node_id: b.service_task_node_id ?? null,
+        symptom_node_id: b.symptom_node_id ?? null,
+        safety_flag: safety.safety_flag,
+        description: b.description,
+        content_locale: b.content_locale,
+        urgency_level: b.urgency_level,
+        customer_expectations: b.customer_expectations ?? null,
+        preferred_contact_channel: b.preferred_contact_channel ?? null,
+        consent_to_share_history: consentId !== null || fleetShares,
+        consent_reference_id: consentId,
+        status: b.submit ? 'requested' : 'draft',
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    await replaceWindows(scope, id, b.time_windows);
+    if (fleetApprovalId) await this.fleet!.linkAppointment(scope, fleetApprovalId, id);
+    if (b.triage_session_id) await this.ai.linkAppointment(scope, b.triage_session_id, id);
+    await scope.db
+      .insertInto('appointment.appointment_participants')
+      .values({ appointment_id: id, user_id: r.userId, organization_id: r.orgId, participant_role: participantRole(role) })
+      .execute();
+    if (b.media_ids?.length)
+      await this.media.syncAttachments(scope, b.media_ids, {
+        type: 'appointment',
+        id,
+        role: 'gallery',
+        owner: r.orgId ? { type: 'organization', id: r.orgId } : { type: 'user', id: r.userId },
+        purposes: PHOTO_PURPOSES,
+        pointer: '/media_ids',
+      });
+    let current = row;
+    if (b.match_result_id) {
+      // Only a result of the caller's own session that ranked this provider (RLS via_session).
+      if (!(await this.matches.linkAppointment(scope, b.match_result_id, provider.orgId, id))) throw notFoundAt('/match_result_id');
+      current = await scope.db
+        .updateTable('appointment.appointments')
+        .set({ match_result_id: b.match_result_id })
+        .where('id', '=', id)
         .returningAll()
         .executeTakeFirstOrThrow();
-      await replaceWindows(scope, id, b.time_windows);
-      if (fleetApprovalId) await this.fleet!.linkAppointment(scope, fleetApprovalId, id);
-      await scope.db
-        .insertInto('appointment.appointment_participants')
-        .values({ appointment_id: id, user_id: r.userId, organization_id: r.orgId, participant_role: participantRole(ctx) })
-        .execute();
-      if (b.media_ids?.length)
-        await this.media.syncAttachments(scope, b.media_ids, {
-          type: 'appointment',
-          id,
-          role: 'gallery',
-          owner: r.orgId ? { type: 'organization', id: r.orgId } : { type: 'user', id: r.userId },
-          purposes: PHOTO_PURPOSES,
-          pointer: '/media_ids',
-        });
-      let current = row;
-      if (b.match_result_id) {
-        // Only a result of the caller's own session that ranked this provider (RLS via_session).
-        if (!(await this.matches.linkAppointment(scope, b.match_result_id, provider.orgId, id))) throw notFoundAt('/match_result_id');
-        current = await scope.db
-          .updateTable('appointment.appointments')
-          .set({ match_result_id: b.match_result_id })
-          .where('id', '=', id)
-          .returningAll()
-          .executeTakeFirstOrThrow();
-      }
-      await this.reports.generate(scope, current, ctx.locale);
-      if (b.submit) await this.submitted(scope, current);
-      return this.views.one(scope, current, 'requester', ctx.locale);
-    });
+    }
+    await this.reports.generate(scope, current, ctx.locale);
+    if (b.submit) await this.submitted(scope, current);
+    return current;
+  }
+}
+
+@Injectable()
+@Operation('appointments.create')
+export class AppointmentsCreateHandler implements OperationHandler {
+  constructor(
+    private readonly creator: AppointmentCreator,
+    private readonly views: AppointmentViews,
+  ) {}
+
+  async handle(ctx: OperationContext<AppointmentCreate>): Promise<OperationResult> {
+    const r = requester(ctx);
+    const body = await ctx.tx(async (scope) =>
+      this.views.one(scope, await this.creator.create(ctx, scope, r, ctx.access.org?.role ?? null, ctx.body), 'requester', ctx.locale),
+    );
     return created(body, `${basePath(r)}/${body.id}`);
   }
 }
 
+/** AppointmentDrafts: the draft request of a completed Help Me session (40 triage.complete draft_appointment_with). */
+@Injectable()
+export class TriageAppointmentDrafts extends AppointmentDrafts {
+  constructor(
+    private readonly creator: AppointmentCreator,
+    private readonly booking: ProviderBooking,
+  ) {
+    super();
+  }
+
+  async draftFromTriage(ctx: OperationContext, scope: TxScope, d: TriageDraft): Promise<string> {
+    if (ctx.principal.kind !== 'user') throw new ApiError('NOT_FOUND');
+    const provider = await this.booking.provider(scope, d.providerOrgId);
+    if (!provider) throw notFoundAt(d.pointer);
+    const text = d.description.trim();
+    const row = await this.creator.create(ctx, scope, { userId: ctx.principal.userId, orgId: null, driver: false }, null, {
+      provider_organization_id: provider.orgId,
+      vehicle_id: d.vehicleId,
+      source: d.serviceSystemNodeId ? 'ai_match' : 'direct_search',
+      ...(d.matchResultId ? { match_result_id: d.matchResultId } : {}),
+      ...(d.issueId ? { related_issue_id: d.issueId } : {}),
+      triage_session_id: d.triageSessionId,
+      appointment_type: 'diagnosis',
+      service_mode: provider.serviceModes[0]!,
+      ...(d.serviceSystemNodeId ? { service_system_node_id: d.serviceSystemNodeId } : {}),
+      ...(d.serviceTaskNodeId ? { service_task_node_id: d.serviceTaskNodeId } : {}),
+      ...(d.symptomNodeId ? { symptom_node_id: d.symptomNodeId } : {}),
+      description: [...([...text].length >= 10 ? text : `Help Me: ${text}`.padEnd(10, '.'))].slice(0, 3000).join(''),
+      content_locale: d.locale,
+      urgency_level: d.urgency,
+      time_windows: [],
+      submit: false,
+    });
+    return row.id;
+  }
+}
+
 /** 52 AppointmentParticipant.participant_role of the requester side. */
-function participantRole(ctx: OperationContext): 'requester' | 'fleet_manager' | 'fleet_maintenance_coordinator' {
-  const role = ctx.access.org?.role;
+function participantRole(role: string | null): 'requester' | 'fleet_manager' | 'fleet_maintenance_coordinator' {
   if (role === 'fleet_maintenance_coordinator') return 'fleet_maintenance_coordinator';
   if (role === 'fleet_owner' || role === 'fleet_manager') return 'fleet_manager';
   return 'requester';
@@ -534,7 +618,7 @@ export class AppointmentsTransitionHandler implements OperationHandler {
     private readonly confirmation: Confirmation,
     private readonly reports: PreVisitReports,
     private readonly views: AppointmentViews,
-    private readonly issues: VehicleService,
+    private readonly creator: AppointmentCreator,
   ) {}
 
   async handle(ctx: OperationContext<Transition>): Promise<OperationResult> {
@@ -580,8 +664,7 @@ export class AppointmentsTransitionHandler implements OperationHandler {
         await this.reports.generate(scope, row, ctx.locale);
         await statusChanged(scope, a, row, 'requester');
         if (a.status === 'draft') {
-          if (row.related_issue_id) await this.issues.markIssueScheduled(scope, row.related_issue_id, row.id);
-          await requested(scope, row);
+          await this.creator.submitted(scope, row);
         }
       } else {
         const reason = (b as { cancellation_reason: string }).cancellation_reason;

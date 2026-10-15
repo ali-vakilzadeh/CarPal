@@ -114,6 +114,15 @@ export interface SearchRequest {
   limit?: number;
 }
 
+export interface RunOptions {
+  previousChips?: IntentChip[];
+  /** 52 MatchSession.source: search, or ai_triage for a Help Me match. */
+  source?: 'search' | 'ai_triage';
+  triageSessionId?: string;
+  /** The issue the triage created (already authorized by the caller). */
+  issueId?: string | null;
+}
+
 /** What a session keeps beyond its columns (in interpreted_intent, never returned). */
 interface StoredIntent extends InterpretedIntent {
   location: LocationInput;
@@ -672,13 +681,18 @@ export class SearchService {
   // -------------------------------------------------------------- sessions
 
   /** search.run / search.refine: interpret, rank, store the session and its results, answer the first page. */
-  async run(ctx: OperationContext, req: SearchRequest, o: { previousChips?: IntentChip[] } = {}) {
+  async run(ctx: OperationContext, req: SearchRequest, o: RunOptions = {}) {
+    return ctx.tx((scope) => this.runIn(ctx, scope, req, o));
+  }
+
+  /** search.run in the caller's transaction (also Help Me matches, 40 triage.complete find_providers). */
+  async runIn(ctx: OperationContext, scope: TxScope, req: SearchRequest, o: RunOptions = {}) {
     const locale = ctx.locale;
     const userId = ctx.principal.kind === 'user' ? ctx.principal.userId : null;
     const anonKey = ctx.principal.kind === 'anonymous' ? ctx.principal.anonKey : null;
     const limit = req.limit ?? 20;
     const safety = await this.safety.check(req.query_text ?? '');
-    return ctx.tx(async (scope) => {
+    {
       const r = await this.resolve(ctx, scope, req);
       // SEC-BF-8 / SEC-AI-7: the server's safety check can only raise the urgency the client sent.
       const urgency = SafetyCheck.merge(safety.urgency, req.urgency_level ?? null);
@@ -700,7 +714,9 @@ export class SearchService {
           requester_user_id: userId,
           anonymous_key_hash: userId ? null : anonKey,
           requester_organization_id: r.orgContext,
-          source: 'search',
+          source: o.source ?? 'search',
+          issue_id: o.issueId ?? null,
+          triage_session_id: o.triageSessionId ?? null,
           search_mode: req.search_mode,
           entry_point: req.entry_point,
           target_type: intent.target_type,
@@ -788,7 +804,7 @@ export class SearchService {
         next_cursor: sorted.length > limit ? ctx.cursorFor('search.page', { session_id: session.id }, { o: limit }) : null,
         vehicle_filter_fallback: ranked.fallback,
       };
-    });
+    }
   }
 
   /** Stored results → 40 ResultCard (current public cards; results of organizations no longer public are skipped). */

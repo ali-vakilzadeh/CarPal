@@ -51,6 +51,7 @@ export function toVehicle(v: VehicleRow, d: VehicleDerived) {
       'primary_photo_media_id',
       'notes',
     ] as const),
+    data_sharing: v.data_sharing,
     brand_node_id: v.brand_node_id,
     model_node_id: v.model_node_id,
     year: v.year,

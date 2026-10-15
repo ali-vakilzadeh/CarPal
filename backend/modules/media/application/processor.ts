@@ -156,7 +156,7 @@ export class MediaProcessor {
     );
     if (!a || a.scan_status !== 'clean') return { errorCode: 'MEDIA_NOT_READY' };
     let status: 'completed' | 'not_needed' | 'failed' = 'not_needed';
-    if (input.decision === 'apply_regions' && input.regions?.length) {
+    if ((input.decision === 'apply_regions' || input.decision === 'apply_suggestions') && input.regions?.length) {
       try {
         await this.#blur(a, input.regions);
         status = 'completed';

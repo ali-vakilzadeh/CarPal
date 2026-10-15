@@ -283,3 +283,29 @@ export class DsrDeadlineRule extends ScheduledRule {
     });
   }
 }
+
+/** vehicle.transferred (GD-33): the previous owner's consents scoped to the vehicle end with the ownership. */
+@Injectable()
+export class VehicleTransferConsentConsumer extends EventConsumer {
+  readonly name = 'identity.vehicle_transferred';
+  readonly subjects = ['vehicle.transferred'];
+
+  constructor(private readonly tx: TxRunner) {
+    super();
+  }
+
+  async handle(e: EventEnvelope): Promise<void> {
+    if (e.payload.from_owner_type !== 'user') return;
+    await this.tx.run({ actorType: 'system' }, ({ db }) =>
+      db
+        .updateTable('identity.consent_records')
+        .set({ withdrawn_at: new Date() })
+        .where('subject_type', '=', 'user')
+        .where('subject_id', '=', String(e.payload.from_owner_id))
+        .where('scope_entity_type', '=', 'vehicle')
+        .where('scope_entity_id', '=', e.aggregateId)
+        .where('withdrawn_at', 'is', null)
+        .execute(),
+    );
+  }
+}

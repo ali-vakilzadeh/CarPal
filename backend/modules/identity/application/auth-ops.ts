@@ -39,7 +39,8 @@ import {
 } from '../infrastructure/accounts.js';
 import { OTP_MAX_ATTEMPTS, OTP_RESEND_MS, OTP_TTL_MS } from '../infrastructure/auth-state.js';
 import { IdentityMessages } from '../infrastructure/messages.js';
-import { AuthServer, type AuthNext } from './auth-server.js';
+import { AuthServer, completePasskeySignin, type AuthNext } from './auth-server.js';
+import { CHALLENGE_TTL_MS, WebAuthnService } from './webauthn.js';
 import { withMinLatency } from './common.js';
 import { MfaService } from './mfa-service.js';
 
@@ -578,6 +579,29 @@ export class OtpVerifyHandler implements OperationHandler {
   }
 }
 
+/** auth.webauthn_options: request options for sign-in (passkey), the second factor or step-up (challenge 5 min). */
+@Injectable()
+@Operation('auth.webauthn_options')
+export class WebAuthnOptionsHandler implements OperationHandler {
+  constructor(
+    private readonly auth: AuthServer,
+    private readonly webauthn: WebAuthnService,
+  ) {}
+
+  async handle(ctx: OperationContext<{ interaction_id: string; purpose: 'signin' | 'mfa' | 'step_up' }>): Promise<OperationResult> {
+    const b = ctx.body;
+    const i = await this.auth.interaction(ctx, b.interaction_id);
+    // The second factor and step-up follow a first factor; a passkey sign-in starts before one.
+    if (b.purpose !== 'signin' && (!i.userId || !i.mfaPending)) throw new ApiError('INVALID_CREDENTIALS');
+    if (b.purpose === 'signin' && i.userId) throw new ApiError('INVALID_CREDENTIALS');
+    await ctx.rateLimit('auth.signin', 'account', i.userId ?? i.id);
+    const options = await ctx.tx((scope) => this.webauthn.authenticationOptions(scope, i.userId ?? null), { readOnly: true });
+    i.webauthn = { challenge: options.challenge, purpose: b.purpose, expiresAt: Date.now() + CHALLENGE_TTL_MS };
+    await this.auth.state.saveInteraction(i);
+    return { body: options };
+  }
+}
+
 type MfaVerify = {
   interaction_id: string;
   method: 'totp_mfa' | 'webauthn' | 'recovery_code';
@@ -592,6 +616,7 @@ export class MfaVerifyHandler implements OperationHandler {
   constructor(
     private readonly auth: AuthServer,
     private readonly mfa: MfaService,
+    private readonly webauthn: WebAuthnService,
   ) {}
 
   async handle(ctx: OperationContext<MfaVerify>): Promise<OperationResult> {
@@ -603,20 +628,38 @@ export class MfaVerifyHandler implements OperationHandler {
       if (f !== needed && b[f] !== undefined) throw ApiError.validation([{ pointer: `/${f}`, code: 'conditional_forbidden' }]);
     }
     const i = await this.auth.interaction(ctx, b.interaction_id);
-    if (!i.userId || !i.mfaPending) throw new ApiError('INVALID_CREDENTIALS');
-    await ctx.rateLimit('auth.signin', 'account', i.userId);
-    const ok = await ctx.tx(async (scope) => {
-      if (b.method === 'totp_mfa') return this.mfa.verifyAnyTotp(scope, i.userId!, b.code!);
-      if (b.method === 'recovery_code') return this.mfa.useRecoveryCode(scope, i.userId!, b.recovery_code!);
-      return false; // WebAuthn assertions are not supported yet (S3 deviation)
+    const ceremony = i.webauthn && i.webauthn.expiresAt > Date.now() ? i.webauthn : null;
+    // A passkey as the only factor (auth.webauthn_options purpose signin, GD-31): the credential names the account.
+    const passkeySignin = !i.userId && b.method === 'webauthn' && ceremony?.purpose === 'signin';
+    if (!passkeySignin && (!i.userId || !i.mfaPending)) throw new ApiError('INVALID_CREDENTIALS');
+    await ctx.rateLimit('auth.signin', 'account', i.userId ?? i.id);
+    const result = await ctx.tx(async (scope) => {
+      if (b.method === 'totp_mfa')
+        return (await this.mfa.verifyAnyTotp(scope, i.userId!, b.code!)) ? { deviceBound: false, userId: i.userId! } : null;
+      if (b.method === 'recovery_code')
+        return (await this.mfa.useRecoveryCode(scope, i.userId!, b.recovery_code!)) ? { deviceBound: false, userId: i.userId! } : null;
+      if (!ceremony) return null;
+      const v = await this.webauthn.verifyAssertion(scope, b.assertion, ceremony.challenge, i.userId ?? null);
+      if (!v) return null;
+      if (passkeySignin) {
+        const user = await getUser(scope, v.userId);
+        if (!user || user.status === 'suspended' || user.status === 'deleted') return null;
+      }
+      return v;
     });
-    if (!ok || (i.clientId === 'cp-web-admin' && b.method !== 'webauthn')) {
+    // SEC-ADM-2: the admin client accepts device-bound WebAuthn only (aal3).
+    if (!result || (i.clientId === 'cp-web-admin' && (b.method !== 'webauthn' || !result.deviceBound))) {
       i.mfaFailures += 1;
+      delete i.webauthn;
       // Too many wrong second factors end the interaction.
       if (i.mfaFailures >= OTP_MAX_ATTEMPTS) await this.auth.state.dropInteraction(i.id);
       else await this.auth.state.saveInteraction(i);
       throw new ApiError('INVALID_CREDENTIALS');
     }
+    if (passkeySignin) return { body: await completePasskeySignin(this.auth.state, i, result.userId, result.deviceBound) };
+    delete i.webauthn;
+    if (b.method === 'webauthn')
+      return { body: await this.auth.afterSecondFactor(i, result.deviceBound ? 'hwk' : 'swk', result.deviceBound ? 'aal3' : 'aal2') };
     return { body: await this.auth.afterSecondFactor(i, b.method === 'totp_mfa' ? 'otp' : 'rc') };
   }
 }

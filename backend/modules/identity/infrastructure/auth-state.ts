@@ -52,6 +52,8 @@ export interface Interaction {
   mfaFailures: number;
   completed?: boolean;
   otp?: PendingOtp;
+  /** The open WebAuthn ceremony of auth.webauthn_options (challenge valid 5 min). */
+  webauthn?: { challenge: string; purpose: 'signin' | 'mfa' | 'step_up'; expiresAt: number };
 }
 
 export interface AuthCodeGrant {

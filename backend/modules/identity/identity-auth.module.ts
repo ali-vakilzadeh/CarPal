@@ -1,7 +1,7 @@
 // Authorization server operations of the identity module (40 §6.2) on the
 // auth host (id.carpal.app). Needs IdentityModule in the same application.
-// auth.webauthn_options and auth.social_start stay unbound (501) until
-// WebAuthn and Google/Apple sign-in are built (S3 deferral).
+// WebAuthn (GD-31) is served here; auth.social_start stays unbound (501)
+// until Google/Apple sign-in is built after the MVP (OQ-06, PM-01).
 import { Module } from '@nestjs/common';
 import {
   AuthorizeHandler,
@@ -18,12 +18,16 @@ import {
   SigninPasswordHandler,
   SignupHandler,
   TokenHandler,
+  WebAuthnOptionsHandler,
 } from './application/auth-ops.js';
+import { WebAuthnService } from './application/webauthn.js';
 import { AuthServer } from './application/auth-server.js';
 
 @Module({
   providers: [
     AuthServer,
+    WebAuthnService,
+    WebAuthnOptionsHandler,
     DiscoveryHandler,
     JwksHandler,
     AuthorizeHandler,

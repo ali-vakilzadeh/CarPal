@@ -13,6 +13,7 @@ import { OrganizationDirectory } from '#libs/authz/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { AttachmentTargets, type AttachmentTarget } from '#modules/media/interface/media.js';
 import { OrganizationAdminRegistrations } from './application/admin-registrations.js';
+import { OrganizationAiRegistrations } from './application/ai-registrations.js';
 import { ConsentWithdrawnPortfolioConsumer } from './events/consent-withdrawn.consumer.js';
 import { ReactionChangedPortfolioConsumer } from './events/reaction-changed.consumer.js';
 import { DbProviderBooking } from './infrastructure/booking.js';
@@ -96,6 +97,7 @@ export class OrganizationRegistrations implements OnModuleInit {
     { provide: OrganizationExtensions, useFactory: () => new OrganizationExtensions() },
     OrganizationRegistrations,
     OrganizationAdminRegistrations,
+    OrganizationAiRegistrations,
     ConsentWithdrawnPortfolioConsumer,
     ReactionChangedPortfolioConsumer,
   ],

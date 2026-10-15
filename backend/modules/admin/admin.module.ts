@@ -51,10 +51,11 @@ import {
   FlagUpdateHandler,
 } from './application/platform-ops.js';
 import { RetentionListHandler, RetentionUpdateHandler } from './application/platform-ops.js';
-import { DbFourEyes, DbModerationLog, QueuePurposeVerifier } from './infrastructure/admin-services.js';
+import { DbFourEyes, DbModerationIntake, DbModerationLog, QueuePurposeVerifier } from './infrastructure/admin-services.js';
 import {
   FourEyes,
   FourEyesExecutors,
+  ModerationIntake,
   ModerationLog,
   ModerationTargets,
   PurposeQueues,
@@ -164,11 +165,22 @@ export class FlagCacheListener implements OnApplicationBootstrap, OnApplicationS
     StaffNames,
     { provide: FourEyes, useClass: DbFourEyes },
     { provide: ModerationLog, useClass: DbModerationLog },
+    { provide: ModerationIntake, useClass: DbModerationIntake },
     { provide: PurposeVerifier, useClass: QueuePurposeVerifier },
     AdminRegistrations,
     FlagCacheListener,
   ],
-  exports: [FourEyesExecutors, PurposeQueues, ModerationTargets, RetentionHandlers, StaffNames, FourEyes, ModerationLog, PurposeVerifier],
+  exports: [
+    FourEyesExecutors,
+    PurposeQueues,
+    ModerationTargets,
+    RetentionHandlers,
+    StaffNames,
+    FourEyes,
+    ModerationLog,
+    ModerationIntake,
+    PurposeVerifier,
+  ],
 })
 export class AdminModule {}
 

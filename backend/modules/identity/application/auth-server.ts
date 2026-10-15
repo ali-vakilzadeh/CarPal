@@ -92,7 +92,7 @@ export class AuthServer {
     const factors = await activeSecondFactors(scope, user.id);
     i.mfaEnrolled = factors.length > 0;
     if (i.clientId === 'cp-web-admin') {
-      // SEC-ADM-2: staff sign in with hardware WebAuthn (aal3); not available yet (S3 deviation).
+      // SEC-ADM-2: staff complete every sign-in with a device-bound WebAuthn credential (aal3, auth.mfa_verify).
       i.mfaPending = true;
       await this.state.saveInteraction(i);
       return { next: 'mfa', mfa_methods: ['webauthn'] };
@@ -107,9 +107,10 @@ export class AuthServer {
     return { next: 'complete' };
   }
 
-  async afterSecondFactor(i: Interaction, amr: string): Promise<AuthNext> {
+  /** A second factor proven: aal2, or aal3 for a device-bound WebAuthn credential (SEC-AU-10). */
+  async afterSecondFactor(i: Interaction, amr: string, acr: 'aal2' | 'aal3' = 'aal2'): Promise<AuthNext> {
     i.mfaPending = false;
-    i.acr = 'aal2';
+    i.acr = acr;
     i.amr = [...i.amr, amr];
     i.authTime = Math.floor(Date.now() / 1000);
     i.completed = true;
@@ -314,4 +315,18 @@ export class AuthServer {
   tokensService(): TokenService {
     return this.tokens;
   }
+}
+
+/** A passkey used as the only factor (auth.webauthn_options purpose signin): aal2, aal3 when device-bound (SEC-AU-10). */
+export async function completePasskeySignin(state: AuthState, i: Interaction, userId: string, deviceBound: boolean): Promise<AuthNext> {
+  i.userId = userId;
+  i.amr = [deviceBound ? 'hwk' : 'swk'];
+  i.acr = deviceBound ? 'aal3' : 'aal2';
+  i.authTime = Math.floor(Date.now() / 1000);
+  i.mfaEnrolled = true;
+  i.mfaPending = false;
+  i.completed = true;
+  delete i.webauthn;
+  await state.saveInteraction(i);
+  return { next: 'complete' };
 }

@@ -2,12 +2,14 @@
 // behind the registrations other modules call (vehicle.module.ts): the
 // provider-side lookups use the vehicle.vehicle_owner definer, because a
 // provider's context cannot read a customer's vehicle.
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { sql } from 'kysely';
 import { ApiError } from '#libs/contract/index.js';
 import { registerConstraintErrors } from '#libs/db/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
+import { FleetWorkflow } from '#modules/fleet/interface/fleet.js';
+import { MediaService } from '#modules/media/interface/media.js';
 import type { JobLogVerification, VisitInfo } from '#modules/organization/interface/extensions.js';
 import { VehicleCreator, type VehicleWrite } from '../application/vehicle-ops.js';
 import { issueOpen } from '../domain/rules.js';
@@ -20,6 +22,8 @@ import {
   type OpenReminder,
   type OwnedVehicle,
   type ServiceVisit,
+  type SharedDocument,
+  type TriageIssue,
   type VehicleCard,
   type FleetIssueRow,
   type FleetServiceRow,
@@ -72,7 +76,49 @@ export class DbVehicleCards extends VehicleCards {
       .executeTakeFirst();
     // RLS owner_all: only the owner user's or the owner organization's context reads it.
     if (!v) return null;
-    return { ...toCard(v), ownerType: v.owner_type as OwnedVehicle['ownerType'], ownerId: v.owner_id, status: v.status };
+    return {
+      ...toCard(v),
+      ownerType: v.owner_type as OwnedVehicle['ownerType'],
+      ownerId: v.owner_id,
+      status: v.status,
+      dataSharing: v.data_sharing as OwnedVehicle['dataSharing'],
+    };
+  }
+
+  async documentIds(scope: TxScope, vehicleId: string): Promise<string[]> {
+    const rows = await scope.db
+      .selectFrom('vehicle.vehicle_documents')
+      .select('id')
+      .where('vehicle_id', '=', vehicleId)
+      .where('status', '=', 'active')
+      .where('deleted_at', 'is', null)
+      .orderBy('id', 'desc')
+      .limit(20)
+      .execute();
+    return rows.map((r) => r.id);
+  }
+
+  async fleetDataShared(scope: TxScope, vehicleId: string): Promise<boolean> {
+    const { rows } = await sql<{ shared: boolean }>`SELECT vehicle.fleet_data_shared(${vehicleId}::uuid) AS shared`.execute(scope.db);
+    return rows[0]?.shared === true;
+  }
+
+  async fleetSharedDocuments(scope: TxScope, vehicleId: string, ids: readonly string[]): Promise<SharedDocument[]> {
+    if (ids.length === 0) return [];
+    const { rows } = await sql<{ id: string; document_type: string; title: string; expires_at: string | null; media_asset_id: string }>`
+      SELECT * FROM vehicle.fleet_shared_documents(${vehicleId}::uuid, ${[...ids]}::uuid[])`.execute(scope.db);
+    return rows.map((r) => ({
+      id: r.id,
+      documentType: r.document_type,
+      title: r.title,
+      expiresAt: r.expires_at,
+      mediaAssetId: r.media_asset_id,
+    }));
+  }
+
+  async fleetOwner(scope: TxScope, vehicleId: string): Promise<string | null> {
+    const { rows } = await sql<{ org: string | null }>`SELECT vehicle.vehicle_fleet_owner(${vehicleId}::uuid) AS org`.execute(scope.db);
+    return rows[0]?.org ?? null;
   }
 
   async openReminders(scope: TxScope, vehicleId: string, limit: number): Promise<OpenReminder[]> {
@@ -340,8 +386,59 @@ export class DbVehicleCards extends VehicleCards {
 
 @Injectable()
 export class DbVehicleService extends VehicleService {
-  constructor(private readonly creator: VehicleCreator) {
+  constructor(
+    private readonly creator: VehicleCreator,
+    private readonly media: MediaService,
+    @Optional() private readonly fleet?: FleetWorkflow,
+  ) {
     super();
+  }
+
+  async reportTriageIssue(scope: TxScope, i: TriageIssue): Promise<string> {
+    const row = await scope.db
+      .insertInto('vehicle.vehicle_issues')
+      .values({
+        vehicle_id: i.vehicleId,
+        title: i.title,
+        description: i.description,
+        content_locale: i.locale,
+        symptom_node_id: i.symptomNodeId,
+        urgency_level: i.urgency,
+        source: i.driver ? 'fleet_driver' : 'ai_triage',
+        reported_by_user_id: i.userId,
+        triage_session_id: i.triageSessionId,
+        ai_triage_insight_id: i.aiInsightId,
+        fleet_approval_status: i.driver ? 'pending' : null,
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    if (i.mediaIds.length)
+      await this.media.syncAttachments(scope, i.mediaIds, {
+        owner: i.orgId ? { type: 'organization', id: i.orgId } : { type: 'user', id: i.userId },
+        purposes: ['issue_photo', 'vehicle_photo'],
+        pointer: '/media_ids',
+        type: 'vehicle_issue',
+        id: row.id,
+        role: 'issue_photo',
+      });
+    await publishEvent(scope, {
+      type: 'vehicle.issue.reported',
+      aggregateType: 'vehicle_issue',
+      aggregateId: row.id,
+      payload: { vehicle_id: i.vehicleId, urgency_level: i.urgency, safety_flag: i.urgency === 'safety_critical', source: row.source },
+    });
+    // A driver's report starts the fleet approval workflow (as issues.create, S8).
+    if (i.driver && i.orgId && this.fleet) {
+      const status = await this.fleet.driverIssue(scope, {
+        orgId: i.orgId,
+        vehicleId: i.vehicleId,
+        issueId: row.id,
+        driverUserId: i.userId,
+      });
+      if (status !== 'pending')
+        await scope.db.updateTable('vehicle.vehicle_issues').set({ fleet_approval_status: status }).where('id', '=', row.id).execute();
+    }
+    return row.id;
   }
 
   async recordAppointmentService(scope: TxScope, r: AppointmentServiceRecord): Promise<string> {

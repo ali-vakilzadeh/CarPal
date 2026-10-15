@@ -11,6 +11,7 @@ import { ACK, created, Operation, type OperationContext, type OperationHandler, 
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { MediaService } from '#modules/media/interface/media.js';
+import { AiReferences } from '#modules/ai-mcp/interface/ai.js';
 import { PublicProfiles } from '#modules/organization/interface/public-profiles.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { toPost, type PostRow } from '../api/projections.js';
@@ -69,6 +70,7 @@ export class PostRules {
   constructor(
     private readonly profiles: PublicProfiles,
     private readonly taxonomy: TaxonomyResolver,
+    private readonly ai: AiReferences,
   ) {}
 
   /** References and conditionals of the merged post. */
@@ -78,8 +80,14 @@ export class PostRules {
     p: PostFacts & { taxonomy_node_ids?: string[]; ai_caption_insight_id?: string },
   ): Promise<void> {
     const errors: FieldError[] = postErrors(p) as FieldError[];
-    // AI captions need accepted insights from the AI module (S9).
-    if (p.ai_caption_insight_id) errors.push({ pointer: '/ai_caption_insight_id', code: 'reference_not_found' });
+    // An AI showcase text of this organization (ai.showcase_compose, S9); saving the post is the human decision and the
+    // post still goes through moderation (SEC-AI-3). A staff member's draft waits for its approval request (53 §14.2).
+    if (p.ai_caption_insight_id) {
+      const i = await this.ai.usable(scope, p.ai_caption_insight_id, { types: ['showcase_caption', 'showcase_draft'] });
+      if (!i || i.organizationId !== orgId) errors.push({ pointer: '/ai_caption_insight_id', code: 'reference_not_found' });
+      else if (await this.ai.awaitingApproval(scope, i.id)) throw new ApiError('INVALID_TRANSITION', { detail: 'approval_pending' });
+      else await this.ai.approveUse(scope, i.id);
+    }
     if (p.portfolio_item_id) {
       const item = await this.profiles.portfolioItemStatus(scope, p.portfolio_item_id);
       if (!item || item.organizationId !== orgId) errors.push({ pointer: '/portfolio_item_id', code: 'reference_not_found' });

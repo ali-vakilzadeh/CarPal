@@ -98,6 +98,40 @@ export function sealVin(crypto: CryptoServices, vehicleId: string, vin: string) 
   };
 }
 
+/** The current (non-archived) vehicle of a VIN hash, whoever owns it (vehicle.vehicle_by_vin_hash definer; server-side only). */
+export async function vehicleByVinHash(scope: TxScope, vinHash: Buffer) {
+  const { rows } = await sql<{
+    id: string;
+    owner_type: 'user' | 'organization';
+    owner_id: string;
+    brand_node_id: string;
+    model_node_id: string;
+    year: number;
+    vin_last4: string | null;
+  }>`SELECT * FROM vehicle.vehicle_by_vin_hash(${vinHash})`.execute(scope.db);
+  return rows[0] ?? null;
+}
+
+/**
+ * GD-33: one VIN has one owner. A VIN of the caller's own vehicle is a plain
+ * 409 DUPLICATE; a VIN of another owner says a transfer can be requested
+ * (vin_transfer_available, "Did you buy this car?") without naming the owner.
+ */
+export async function assertVinFree(
+  scope: TxScope,
+  vinHash: Buffer,
+  owner: { type: 'user' | 'organization'; id: string },
+  exceptVehicleId?: string,
+): Promise<void> {
+  const v = await vehicleByVinHash(scope, vinHash);
+  if (!v || v.id === exceptVehicleId) return;
+  const mine = v.owner_type === owner.type && v.owner_id === owner.id;
+  throw new ApiError('DUPLICATE', {
+    errors: [{ pointer: '/vin', code: 'not_unique' }],
+    ...(mine ? {} : { extensions: { vin_transfer_available: true } }),
+  });
+}
+
 export const openVin = (crypto: CryptoServices, row: Pick<VehicleRow, 'id' | 'vin_encrypted'>): string | null =>
   row.vin_encrypted ? crypto.envelope.decryptString(row.vin_encrypted, `vehicle.vin:${row.id}`) : null;
 

@@ -80,6 +80,7 @@ export function expandPath(path: string, aliases: AliasTable): string[] {
 const DUAL_SCOPES: Record<string, [RouteScope, RouteScope]> = {
   V: ['me', 'fleet'],
   A: ['me', 'fleet'],
+  VT: ['me', 'fleet'],
   RQ: ['me', 'org'],
 };
 
@@ -328,7 +329,7 @@ export function parseOperations(doc: string): Operation[] {
 
     const host = hostFor(pathTemplate);
     const paths = host === 'storage' ? [pathTemplate] : expandPath(pathTemplate, aliases);
-    const dual = /^\{(V|A|RQ)\}/.exec(pathTemplate)?.[1];
+    const dual = /^\{(VT|V|A|RQ)\}/.exec(pathTemplate)?.[1];
     let routes: Route[];
     if (dual) {
       if (paths.length !== 2 || alternatives.length !== 2) {

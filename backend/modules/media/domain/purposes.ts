@@ -7,7 +7,8 @@ export type MimeType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/heic' 
 export type Privacy = 'public' | 'shared' | 'private' | 'internal';
 
 const MB = 1024 * 1024;
-const IMAGES: MimeType[] = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
+// GD-32: clients convert HEIC to JPEG before upload; image/heic is refused when the upload is requested.
+const IMAGES: MimeType[] = ['image/jpeg', 'image/png', 'image/webp'];
 const PDF: MimeType[] = ['application/pdf'];
 const VIDEO: MimeType[] = ['video/mp4'];
 const CSV: MimeType[] = ['text/csv'];
@@ -23,9 +24,9 @@ export const SIZE_LIMIT: Record<MimeType, number> = {
   'text/csv': 20 * MB,
 };
 
-/** SEC-UP-2: at most 40 megapixels per image, 60 s per video. */
+/** SEC-UP-2: at most 40 megapixels per image, 15 s per video (GD-32). */
 export const MAX_PIXELS = 40_000_000;
-export const MAX_VIDEO_SECONDS = 60;
+export const MAX_VIDEO_SECONDS = 15;
 
 interface PurposePolicy {
   types: MimeType[];

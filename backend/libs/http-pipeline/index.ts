@@ -9,6 +9,8 @@ export {
   operationIdsOf,
   markOverride,
   isOverride,
+  ChecksOwnFlags,
+  checksOwnFlags,
   ok,
   created,
   accepted,

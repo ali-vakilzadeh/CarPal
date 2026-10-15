@@ -4574,6 +4574,13 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 2000
+          },
+          "data_sharing": {
+            "type": "string",
+            "enum": [
+              "appointments",
+              "private"
+            ]
           }
         },
         "additionalProperties": false
@@ -4634,6 +4641,169 @@
           "vin"
         ],
         "additionalProperties": false
+      }
+    },
+    "vehicles.transfer_request": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "org_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "type": "object",
+        "properties": {
+          "vin": {
+            "type": "string",
+            "pattern": "^[A-HJ-NPR-Z0-9]{17}$",
+            "x-vin": true
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "vin"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/VehicleTransfer"
+      }
+    },
+    "vehicles.transfers_list": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "incoming",
+              "outgoing"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "rejected",
+              "cancelled",
+              "expired"
+            ]
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "org_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/VehicleTransfer"
+            }
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "vehicles.transfer_decide": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "transfer_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "org_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "reject"
+            ]
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/VehicleTransfer"
+      }
+    },
+    "vehicles.transfer_cancel": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "transfer_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "org_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/VehicleTransfer"
       }
     },
     "vehicles.vin_decode": {

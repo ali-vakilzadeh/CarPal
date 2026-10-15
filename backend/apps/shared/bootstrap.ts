@@ -69,6 +69,8 @@ export function logDeviations(config: CarpalConfig, logger: Logger): void {
       'lite infrastructure: in-process KV, event bus and queue; run all deployables in one process (pnpm dev)',
     );
   logger.warn({ deviation: 'GD-05' }, 'operations without a handler answer 501 NOT_IMPLEMENTED');
+  if (config.mcp.mode === 'stub')
+    logger.warn({ deviation: 'GD-35' }, 'CARPAL_MCP_MODE=stub: AI tools return deterministic stub results (no MCP gateway, no model)');
 }
 
 /** Stops on SIGINT/SIGTERM. */

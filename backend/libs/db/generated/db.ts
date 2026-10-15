@@ -514,6 +514,7 @@ export interface AppointmentPreVisitReports {
   deleted_at: Timestamp | null;
   deletion_reason: string | null;
   fleet_approval_status: string | null;
+  fleet_data_shared: Generated<boolean>;
   generated_at: Timestamp | null;
   id: Generated<string>;
   issue_summary: string;
@@ -526,6 +527,7 @@ export interface AppointmentPreVisitReports {
   previous_related_repairs: Json | null;
   relevant_history_summary: string | null;
   reported_symptom_node_ids: Generated<string[]>;
+  shared_document_ids: Generated<string[]>;
   status: Generated<string>;
   suggested_focus_areas: Generated<string[]>;
   triage_status: string;
@@ -2204,6 +2206,7 @@ export interface VehicleVehicles {
   color: string | null;
   created_at: Generated<Timestamp>;
   created_by: Generated<string | null>;
+  data_sharing: Generated<string>;
   deleted_at: Timestamp | null;
   deletion_reason: string | null;
   drivetrain: string | null;
@@ -2276,6 +2279,29 @@ export interface VehicleVehicleStatusHistory {
   old_status: string | null;
   reason: string | null;
   vehicle_id: string;
+}
+
+export interface VehicleVehicleTransfers {
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  decided_at: Timestamp | null;
+  decided_by: string | null;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  expires_at: Timestamp;
+  from_owner_id: string;
+  from_owner_type: string;
+  id: Generated<string>;
+  message: string | null;
+  requested_by_user_id: string;
+  status: Generated<string>;
+  to_owner_id: string;
+  to_owner_type: string;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  vehicle_id: string;
+  vehicle_summary: Json;
+  version: Generated<number>;
 }
 
 export interface DB {
@@ -2380,5 +2406,6 @@ export interface DB {
   "vehicle.vehicle_mileage_logs": VehicleVehicleMileageLogs;
   "vehicle.vehicle_service_records": VehicleVehicleServiceRecords;
   "vehicle.vehicle_status_history": VehicleVehicleStatusHistory;
+  "vehicle.vehicle_transfers": VehicleVehicleTransfers;
   "vehicle.vehicles": VehicleVehicles;
 }

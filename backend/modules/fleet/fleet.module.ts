@@ -64,6 +64,29 @@ export { FLEET_EXPORT_QUEUE, FLEET_IMPORT_QUEUE, FleetExporter, FleetImporter } 
  * cost_estimate approval is opened for the fleet (system context: the
  * provider cannot write fleet records).
  */
+/** vehicle.transferred (GD-33): a vehicle that left a fleet keeps no driver assignment there. */
+@Injectable()
+export class FleetVehicleTransferConsumer extends EventConsumer {
+  readonly name = 'fleet.vehicle_transferred';
+  readonly subjects = ['vehicle.transferred'];
+
+  constructor(private readonly tx: TxRunner) {
+    super();
+  }
+
+  async handle(e: EventEnvelope): Promise<void> {
+    if (e.payload.from_owner_type !== 'organization') return;
+    await this.tx.run({ actorType: 'system' }, ({ db }) =>
+      db
+        .updateTable('fleet.fleet_vehicle_assignments')
+        .set({ status: 'ended', ended_at: new Date() })
+        .where('vehicle_id', '=', e.aggregateId)
+        .where('status', '=', 'active')
+        .execute(),
+    );
+  }
+}
+
 @Injectable()
 export class FleetCostApprovalConsumer extends EventConsumer {
   readonly name = 'fleet.cost_approvals';
@@ -192,6 +215,7 @@ export class FleetRegistrations implements OnModuleInit {
     FleetReports,
     ApprovalViews,
     FleetCostApprovalConsumer,
+    FleetVehicleTransferConsumer,
     FleetRegistrations,
     // api host (§18.2); other hosts skip them.
     FleetProfileGetHandler,

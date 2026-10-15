@@ -2,7 +2,8 @@
 // modules share this folder:
 //   DiscoveryModule        (global, every deployable) the search projections
 //                          (SearchProjections), the search service and
-//                          MatchResults (appointments from results, S7).
+//                          MatchResults (appointments from results, S7) and
+//                          TriageMatching (Help Me matches, S9).
 //   DiscoveryApiModule     search, map, safety and feed operations on the api host.
 //   DiscoveryWorkerModule  W2: the indexer consumer and its W15 rules (change
 //                          sweep, nightly reconciliation, rebuild at start);
@@ -11,12 +12,19 @@ import { Global, Module } from '@nestjs/common';
 import { SearchService } from './application/search-service.js';
 import { DbMatchResults } from './infrastructure/match-results.js';
 import { SearchProjections } from './infrastructure/projections.js';
-import { MatchResults } from './interface/match-results.js';
+import { MatchResults, TriageMatching } from './interface/match-results.js';
+import { SearchTriageMatching } from './application/triage-matching.js';
 import { DiscoveryAdminRegistrations } from './application/admin-registrations.js';
 
 @Global()
 @Module({
-  providers: [DiscoveryAdminRegistrations, SearchProjections, SearchService, { provide: MatchResults, useClass: DbMatchResults }],
-  exports: [SearchProjections, SearchService, MatchResults],
+  providers: [
+    DiscoveryAdminRegistrations,
+    SearchProjections,
+    SearchService,
+    { provide: MatchResults, useClass: DbMatchResults },
+    { provide: TriageMatching, useClass: SearchTriageMatching },
+  ],
+  exports: [SearchProjections, SearchService, MatchResults, TriageMatching],
 })
 export class DiscoveryModule {}

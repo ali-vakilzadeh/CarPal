@@ -1,11 +1,12 @@
 // One connection pool per database login role (41 §3.3): the api deployable
 // connects as carpal_api, admin-api as carpal_admin_api, the auth server as
-// carpal_auth and workers as carpal_worker. Pools are never handed to
+// carpal_auth and workers as carpal_worker; the in-process MCP gateway of
+// lite mode writes its own schema as carpal_ai (GD-35). Pools are never handed to
 // business code; queries run only through TxRunner (libs/tenancy), which sets
 // the RLS context first.
 import { Kysely, PostgresDialect } from 'kysely';
 import pg from 'pg';
-import type { AnalyticsDbRole, AppDbRole, CarpalConfig } from '#libs/config/index.js';
+import type { AiDbRole, AnalyticsDbRole, AppDbRole, CarpalConfig } from '#libs/config/index.js';
 import type { DB as AnalyticsDB } from './generated/analytics-db.js';
 import type { DB } from './generated/db.js';
 
@@ -25,11 +26,11 @@ export interface PoolOptions {
 }
 
 export class Database {
-  readonly role: AppDbRole;
+  readonly role: AppDbRole | AiDbRole;
   readonly pool: pg.Pool;
   readonly #kysely: Kysely<DB>;
 
-  constructor(config: CarpalConfig, role: AppDbRole, options: PoolOptions = {}) {
+  constructor(config: CarpalConfig, role: AppDbRole | AiDbRole, options: PoolOptions = {}) {
     this.role = role;
     this.pool = new pg.Pool({
       host: config.db.host,

@@ -2,7 +2,7 @@
 // are immutable except a single withdrawal (DB trigger); withdrawal takes
 // effect on the next read of shared data (the consent gate is never cached)
 // and emits consent.withdrawn for modules holding consent-gated copies.
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { sql } from 'kysely';
 import { OrganizationDirectory } from '#libs/authz/index.js';
 import { writeAudit } from '#libs/audit/index.js';
@@ -12,6 +12,7 @@ import { Operation, created, type OperationContext, type OperationHandler, type 
 import { consumeFailure, LinkTokens } from '#libs/link-tokens/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
+import { AiReferences } from '#modules/ai-mcp/interface/ai.js';
 import { OrgCards, toOrgSummary } from '#modules/organization/interface/org-cards.js';
 import { toConsentRecord } from '../api/projections.js';
 import { ConsentScopes } from '../interface/identity.js';
@@ -70,6 +71,8 @@ export class ConsentWriter {
   constructor(
     private readonly scopes: ConsentScopes,
     private readonly orgs: OrganizationDirectory,
+    // Absent on the auth server (no ai-mcp module there): MCP clients cannot be named.
+    @Optional() private readonly ai?: AiReferences,
   ) {}
 
   /** Validates a ConsentGrant (C: id unless platform; SEC-AZ-4 references) and inserts the record. */
@@ -85,8 +88,8 @@ export class ConsentWriter {
       if (!org || org.status === 'merged' || org.status === 'archived')
         throw ApiError.validation([{ pointer: '/granted_to/id', code: 'reference_not_found' }], 'REFERENCE_NOT_FOUND');
     }
-    // MCP clients are registered on the admin plane (S8/S9); until then none can be named.
-    if (g.granted_to?.type === 'mcp_client')
+    // An internal MCP client of the registry (ai-mcp, S9), active in this environment.
+    if (g.granted_to?.type === 'mcp_client' && !(await this.ai?.activeMcpClient(g.granted_to.id!)))
       throw ApiError.validation([{ pointer: '/granted_to/id', code: 'reference_not_found' }], 'REFERENCE_NOT_FOUND');
     if (g.scope) {
       const verify = this.scopes.get(g.scope.type);

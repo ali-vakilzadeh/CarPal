@@ -51,6 +51,21 @@ export interface ProblemExtensions {
   consent_type?: string;
   /** ENTITLEMENT_REQUIRED: the plan entitlement key. */
   entitlement_key?: string;
+  /** AI_UNAVAILABLE on Help Me triage: the server-computed safety block (40 triage.start, SEC-AI-7). */
+  safety?: TriageSafety;
+  /** AI_UNAVAILABLE: the non-AI path the client can take instead (e.g. direct search). */
+  fallback_path?: string;
+  /** DUPLICATE at /vin: another owner has the VIN; a transfer can be requested (GD-33). */
+  vin_transfer_available?: boolean;
+}
+
+/** 40 SafetyBlock & { do_not_drive }. */
+export interface TriageSafety {
+  flag: boolean;
+  level: 'none' | 'warning' | 'urgent';
+  message_i18n_key: string | null;
+  urgent_help_available: boolean;
+  do_not_drive: boolean;
 }
 
 export class ApiError extends Error {

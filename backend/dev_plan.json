@@ -6,7 +6,7 @@
     "status": "in_progress",
     "progress": {
       "as_of": "2026-10-15",
-      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening).",
+      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations).",
       "stages": [
         {
           "stage": "S1",
@@ -90,24 +90,51 @@
         {
           "stage": "S9",
           "title": "AI/MCP facade, contract test sweep, OpenAPI, hardening pass",
-          "status": "not_started",
-          "ops_target": 23,
-          "note": "ops_target 23 = the §21 AI operations; the 3 deferred S3 identity operations (WebAuthn x2, social sign-in) also remain open (27 operations answer 501 with media.upload_put counted by the coverage tool)."
+          "status": "in_progress",
+          "ops_target": 25,
+          "note": "ops_target 25 = the 23 §21 AI operations + the 2 WebAuthn operations (OQ-04 answered 2026-10-15). auth.social_start is deferred post-MVP (OQ-06, PM-01); media.upload_put is the storage PUT counted by the coverage tool. S9.T7 carries the other decision follow-ups of 2026-10-15 (GD-30..GD-34).",
+          "parts": [
+            {
+              "part": "S9a",
+              "title": "AI/MCP facade, AI integrations, AI worker skeletons, decision follow-ups",
+              "status": "done",
+              "ops_target": 25,
+              "completed_at": "2026-10-15",
+              "ops_implemented": 29,
+              "tests_after_part": "511 passing"
+            },
+            {
+              "part": "S9b",
+              "title": "Contract test sweep (L22 generator over all operations)",
+              "status": "not_started"
+            },
+            {
+              "part": "S9c",
+              "title": "OpenAPI, CI, coverage closure, next-iteration list, README",
+              "status": "not_started"
+            }
+          ]
         }
       ],
       "operations": {
-        "implemented": 375,
-        "returning_501": 27,
-        "deferred_with_reason": 3,
-        "total": 402,
-        "note": "pnpm contract:coverage counts media.upload_put (storage PUT, served by the storage listener) as not implemented; real API gaps: 23 §21 AI ops + 3 deferred identity ops."
+        "implemented": 404,
+        "returning_501": 2,
+        "deferred_with_reason": 2,
+        "total": 406,
+        "note": "After S9a (pnpm contract:coverage): 404/406; auth.social_start (post-MVP, PM-01) and media.upload_put (storage PUT, counted by the tool until S9c) answer 501."
       },
-      "next_stage": "S9",
+      "next_stage": "S9b",
       "before_starting_S9": [
         "Run `pnpm db:reset` once: S8 added the definer admin.moderation_action_affects to Docs/43 (and 42 §5.3). No new npm dependency; optional env CARPAL_DB_PASSWORD_ANALYTICS_READER.",
         "Read S8.report.notes_for_next and recommendations_for_next_stages.S9 (updated after S8): AI records need their PersonalData/retention/moderation registrations; the contract-test generator must know the admin-plane mechanics (staff client, purpose headers, four-eyes 202s, CarPal-Reason on DELETE).",
         "Docs/40 changed in S8 (versions on FeatureFlag, McpClientView, TaxonomyNode; CarPal-Reason header): the OpenAPI generator must describe them.",
-        "All checks were green at the end of S8: pnpm lint (432 modules), typecheck, build, format:check, contract:check, db:codegen --verify, test:all (460 tests, 63 files); pnpm dev starts all hosts (api 301 implemented routes, admin-api 60/60, auth 14/16)."
+        "All checks were green at the end of S8: pnpm lint (432 modules), typecheck, build, format:check, contract:check, db:codegen --verify, test:all (460 tests, 63 files); pnpm dev starts all hosts (api 301 implemented routes, admin-api 60/60, auth 14/16).",
+        "Decisions of 2026-10-15 recorded (OQ-01, 04, 06-11 -> GD-30..GD-34, PM-01, S9.T7). New npm dependency for S9: @simplewebauthn/server."
+      ],
+      "before_starting_S9b": [
+        "Run `pnpm db:reset` once (Docs/43 changed: vehicle_fleet_owner, vehicle_transfers, VIN uniqueness, data_sharing, pre-visit sharing columns, fleet_assistant tools). New npm dependency @simplewebauthn/server 14.0.3; new env CARPAL_DB_PASSWORD_AI (dev carpal_ai_dev), CARPAL_MCP_MODE, CARPAL_MCP_TIMEOUT_MS, CARPAL_WEBAUTHN_RP_ID, CARPAL_WEBAUTHN_ORIGINS.",
+        "S9b generator: AI operations need the dev flags (seeded on), CARPAL_MCP_MODE=stub and a worker for 202 jobs; the kill switch pattern is the FlagService override in apps/testing/ai.int.test.ts; WebAuthn needs libs/testing/webauthn.ts (SoftAuthenticator); {VT} is a dual-scope alias like {V}. AI record owners are resolved through AiOwners (carpal_ai store) before RLS reads.",
+        "S9b BOLA targets added in S9a: insights, suggestions, approval requests, triage sessions, vehicle transfers (buyer vs owner), fleet pre-visit shared documents."
       ]
     },
     "purpose": "Breaks the first (scratch) build of the CarPal backend into 9 stages, each sized to run in its own context window. Every stage writes its report back into this file so the next context can see what is done, what was decided and what to watch out for.",
@@ -482,6 +509,42 @@
       "stage": "S8",
       "decision": "DSR execution: every module registers a PersonalDataHandler (export sections, erase). admin.dsr_export creates a data_export job (W8) that writes one encrypted CSV bundle (long format) owned by the user, delivered through DataExportFiles; admin.dsr_execute_deletion is 4EYES and its executor publishes user.deletion.requested; the worker consumer identity.dsr_deletion runs all erase handlers in one system transaction (idempotent), completes the request, publishes user.deletion.completed and revokes sessions. Authored public content stays under 'former member'.",
       "reason": "41 §2.4 W8 \"through each module's export interface\", 52 DataSubjectRequest, MVP §14; module boundaries kept (GD-15)."
+    },
+    {
+      "id": "GD-30",
+      "stage": "S9",
+      "decision": "Environments: the development laptop and CI run lite mode only. Docker (full mode: Postgres + pgvector, Redis, NATS, OpenSearch, MinIO) runs on a test server; full-mode adapters are verified there, not in the scratch build.",
+      "reason": "OQ-01 answered 2026-10-15: the local laptop is not capable enough for Docker."
+    },
+    {
+      "id": "GD-31",
+      "stage": "S9",
+      "decision": "WebAuthn (passkeys and staff aal3 sign-in) uses @simplewebauthn/server (FIDO2 conformant, the TypeScript library of github.com/google/webauthndemo; behaviour checked against webauthn.io). Not written in-house. auth.webauthn_options and me.webauthn_register_options are built in S9.",
+      "reason": "OQ-04 answered 2026-10-15; SEC-ADM-2 needs real staff aal3 sign-in."
+    },
+    {
+      "id": "GD-32",
+      "stage": "S9",
+      "decision": "Media policy: videos are at most 15 seconds (all purposes). PDFs are never public and never reachable anonymously (no public URL, no anonymous link); authenticated fleet appointment sharing (GD-34) is the one exception that may include PDFs. HEIC is converted to JPEG automatically by the client before upload; the backend refuses image/heic at upload request as a safety net. Malware scanning, transcoding and PDF sanitizing keep the lite stand-ins.",
+      "reason": "OQ-07 and OQ-08 answered and clarified 2026-10-15. Changes SEC-UP-2 (60 s -> 15 s) in Docs/40."
+    },
+    {
+      "id": "GD-33",
+      "stage": "S9",
+      "decision": "VIN: lite decoder only (model year); one VIN has one owner across the platform (one non-archived vehicle per VIN, personal or fleet). Registering a VIN that is already owned answers 409 DUPLICATE with a transfer hint; the client asks 'Did you buy this car?' and, on yes, creates a vehicle transfer request to the previous owner (user, or fleet owner/manager for a fleet vehicle). The previous owner accepts or rejects; on acceptance every record connected to the vehicle (service records, documents, issues, reminders, media) moves to the new owner and the vehicle leaves the previous owner's garage. Requests expire if not answered; the previous owner's identity is not disclosed to the claimant before acceptance.",
+      "reason": "OQ-10 answered and clarified 2026-10-15. Replaces 52 §8 'unique per owner, warning across owners'; adds transfer operations to Docs/40."
+    },
+    {
+      "id": "GD-34",
+      "stage": "S9",
+      "decision": "Fleet vehicle data sharing: a provider sees a fleet vehicle's documents and service history only through an appointment for that vehicle; fleet managers are notified when sharing starts. A fleet owner or manager can mark a vehicle private, which stops sharing (appointments still work with the basic vehicle snapshot only). This sharing may include PDFs (the GD-32 exception). No organization-level vehicle_data_sharing consent.",
+      "reason": "OQ-11 / DI-38 answered 2026-10-15."
+    },
+    {
+      "id": "GD-35",
+      "stage": "S9",
+      "decision": "AI/MCP in the scratch build: the ai-mcp facade calls tools through McpClientPort; lite mode runs the MCP gateway in process with its own carpal_ai pool (AI output and registry reads only), a deterministic schema-valid stub (CARPAL_MCP_MODE=stub, dev default) or \"unavailable\" (staging/prod default until D6/D7 exist). Access logs are handed to W13 on the mcp.access_log queue; context packages come from the owning modules (AiContextSources); suggestions are applied by the owning modules (SuggestionAppliers).",
+      "reason": "41 §1 D6/D7 and §3.3 (own DB role for the gateway), SEC-AI-1..7; the real gateway and orchestrator are out of scope for S9."
     }
   ],
   "conventions": {
@@ -2553,7 +2616,7 @@
     {
       "id": "S9",
       "title": "AI/MCP facade, contract test sweep, OpenAPI, hardening pass",
-      "status": "not_started",
+      "status": "in_progress",
       "depends_on": [
         "S8"
       ],
@@ -2577,7 +2640,8 @@
         "events": [
           "ai.insight.generated"
         ],
-        "ops_target": 23
+        "ops_target": 25,
+        "ops_note": "25 = the 23 §21 AI operations + auth.webauthn_options and me.webauthn_register_options (OQ-04 answered). auth.social_start is deferred post-MVP (PM-01); media.upload_put is served by the storage listener and must be counted by the coverage tool or listed."
       },
       "context_to_read": [
         "backend/dev_plan.json all reports, deviations_log and handoff_notes",
@@ -2588,33 +2652,45 @@
       "tasks": [
         {
           "id": "S9.T1",
-          "status": "not_started",
-          "title": "McpClientPort + lite stub (deterministic, schema-valid structured payloads, EN/FA), policy pre-checks (flag, kill switch, consent, tenancy) → 503 AI_UNAVAILABLE with a fallback hint; AiInsight/AiSuggestion/ApprovalRequest storage; ai.insight.generated."
+          "status": "done",
+          "title": "McpClientPort + lite stub (deterministic, schema-valid structured payloads, EN/FA), policy pre-checks (flag, kill switch, consent, tenancy) → 503 AI_UNAVAILABLE with a fallback hint; AiInsight/AiSuggestion/ApprovalRequest storage; ai.insight.generated.",
+          "part": "S9a"
         },
         {
           "id": "S9.T2",
-          "status": "not_started",
-          "title": "§21 ops: Help Me triage (session, safety-first via L18, triage.complete → vehicle.issue.reported), asynchronous feature requests (202 Job), insights list/get, suggestions accept/reject, approvals (never self-approved). Replace the AI stubs left in S4/S5/S7 (provider/vendor insights, fitment suggestions, pre-visit summary)."
+          "status": "done",
+          "title": "§21 ops: Help Me triage (session, safety-first via L18, triage.complete → vehicle.issue.reported), asynchronous feature requests (202 Job), insights list/get, suggestions accept/reject, approvals (never self-approved). Replace the AI stubs left in S4/S5/S7 (provider/vendor insights, fitment suggestions, pre-visit summary).",
+          "part": "S9a"
         },
         {
           "id": "S9.T3",
-          "status": "not_started",
-          "title": "Worker skeletons W9-W11, W13, W14 consuming their events through the MCP port; W10 skill heatmap from 54 §2.3 (rule-based, without AI); W11 rule-based review pattern checks that only open moderation cases."
+          "status": "done",
+          "title": "Worker skeletons W9-W11, W13, W14 consuming their events through the MCP port; W10 skill heatmap from 54 §2.3 (rule-based, without AI); W11 rule-based review pattern checks that only open moderation cases.",
+          "part": "S9a"
         },
         {
           "id": "S9.T4",
           "status": "not_started",
-          "title": "Contract test generator (L22) from operations.json + schemas: schema conformance, BOLA and BFLA matrices for every op, projection tests for SEC-OUT-1 fields, kill switch → AI 503 while search, profiles and appointments still succeed."
+          "title": "Contract test generator (L22) from operations.json + schemas: schema conformance, BOLA and BFLA matrices for every op, projection tests for SEC-OUT-1 fields, kill switch → AI 503 while search, profiles and appointments still succeed.",
+          "part": "S9b"
         },
         {
           "id": "S9.T5",
           "status": "not_started",
-          "title": "Generate shared/api-contracts/openapi.yaml (OpenAPI 3.1) from the registry and schemas; CI check that it matches the router; add a GitHub Actions workflow for backend lint, build and test (lite mode)."
+          "title": "Generate shared/api-contracts/openapi.yaml (OpenAPI 3.1) from the registry and schemas; CI check that it matches the router; add a GitHub Actions workflow for backend lint, build and test (lite mode).",
+          "part": "S9c"
         },
         {
           "id": "S9.T6",
           "status": "not_started",
-          "title": "pnpm contract:coverage → zero 501 ops, or a reviewed list of deferred ops; consolidate deviations_log into a 'next iteration' list (strict auth, full-mode verification with Docker, BFFs, real providers); update backend/README.md with how to run."
+          "title": "pnpm contract:coverage → zero 501 ops, or a reviewed list of deferred ops; consolidate deviations_log into a 'next iteration' list (strict auth, full-mode verification with Docker, BFFs, real providers); update backend/README.md with how to run.",
+          "part": "S9c"
+        },
+        {
+          "id": "S9.T7",
+          "status": "done",
+          "title": "Decision follow-ups of 2026-10-15: WebAuthn with @simplewebauthn/server (auth.webauthn_options, me.webauthn_register_options, passkey and staff aal3 sign-in; GD-31); media policy (videos <= 15 s, no anonymous/public PDFs with the fleet-sharing exception, HEIC refused at upload request; GD-32); one owner per VIN with the 'Did you buy this car?' transfer flow (new transfer operations; GD-33); fleet vehicle private flag + appointment-bound sharing + fleet manager notification (GD-34). Update Docs/40, 43 and 52 to match.",
+          "part": "S9a"
         }
       ],
       "deliverables": [
@@ -2644,11 +2720,207 @@
         "tests": null,
         "deviations": [],
         "notes_for_next": []
-      }
+      },
+      "split_note": "Split into three parts on 2026-10-15 (user request): S9 is the most sensitive stage, so each part ends with every check green, its own report under parts[].report and a commit. Order is fixed: S9a completes the API surface, S9b sweeps the complete surface with generated contract tests (and fixes what they find), S9c describes the final surface in OpenAPI, adds CI and closes the backend.",
+      "parts": [
+        {
+          "id": "S9a",
+          "title": "AI/MCP facade, AI integrations, AI worker skeletons, decision follow-ups",
+          "status": "done",
+          "tasks": [
+            "S9.T1",
+            "S9.T2",
+            "S9.T3",
+            "S9.T7"
+          ],
+          "ops_target": 25,
+          "steps": [
+            "S9a.1 (T1) McpClientPort + lite stub (deterministic, schema-valid payloads in EN/FA, SEC-AI-2 delimited user text), policy pre-checks (flag, kill switch, consent, tenancy, MCP client status) -> 503 AI_UNAVAILABLE with fallback hint, McpAccessLog per call, AiInsight/AiSuggestion/ApprovalRequest/AiEvaluationRecord storage, ai.insight.generated, AI job runner (job kind ai_insight).",
+            "S9a.2 (T2) Help Me triage: triage.start/reply/get/complete, safety first via L18 (AI never lowers the urgency), complete -> vehicle issue (vehicle.issue.reported), match session, appointment draft.",
+            "S9a.3 (T2) The 12 asynchronous feature requests of 40 §21.3 (202 Job) and ai.skill_heatmap.",
+            "S9a.4 (T2) Insights, suggestions and approvals of 40 §21.4: insight_get/feedback, suggestions_list/mine/decide (acceptance applies the change through the owning module's interface), approvals_list/decide (never self-approved).",
+            "S9a.5 (T2) Replace the AI placeholders of S4-S8: appointment pre-visit summary and triage references, vehicle issue ai_triage_insight_id, community post and portfolio captions (ai_caption_insight_id), review response drafts (ai_draft_insight_id), media redaction suggestions, inventory fitment suggestions and import normalization, provider capability/coverage suggestions (pending_provider_approval), consents naming MCP clients.",
+            "S9a.6 (T2) S8 registries for AI records: PersonalDataRegistry (triage sessions, insights, suggestions, approval requests: export + erase), RetentionHandlers (TriageSession), TaxonomyReferences (triage node columns, heatmap nodes), MetricGauges (ai_quality), ModerationTargets (ai_output already exists).",
+            "S9a.7 (T3) Worker skeletons W9 ai-insight-generator, W10 skill-heatmap (54 §2.3, rule-based), W11 fraud-detection (rule-based review pattern checks that only open moderation cases), W13 mcp-audit-logger, W14 embedding-indexer (lite: stub vectors behind the port).",
+            "S9a.8 (T7) Decision follow-ups of 2026-10-15: WebAuthn with @simplewebauthn/server (2 ops + passkey and staff aal3 sign-in), media policy (video <= 15 s, no anonymous/public PDFs except fleet sharing, HEIC refused at request), one owner per VIN with the vehicle transfer flow (new operations: request, list, decide, cancel; records move on acceptance), fleet vehicle private flag + appointment-bound sharing + fleet manager notification; Docs/40, 43, 52 updated."
+          ],
+          "out_of_scope": [
+            "Discovery AI (semantic search with embeddings, AI query interpretation, AI match explanations): stays rule-based; listed for the next iteration (needs a real model; the lite stub adds nothing over the rules).",
+            "auth.social_start (post-MVP, PM-01)."
+          ],
+          "acceptance_criteria": [
+            "pnpm contract:coverage: every operation implemented (402 + the new vehicle transfer operations) except auth.social_start (PM-01) and media.upload_put (storage PUT), both explained.",
+            "Kill switch and per-feature flags turn every FLAG(ai.*) operation into 503 AI_UNAVAILABLE while search, profiles and appointments still succeed; triage still returns the safety block when AI is down.",
+            "No AI output becomes public or operational without a human operation (SEC-AI-3); AI context never crosses tenants (SEC-AI-4); every MCP call writes an access log row.",
+            "AI records are exported and erased by DSR; TriageSession retention runs.",
+            "All checks green: lint, typecheck, build, format:check, contract:check, db:codegen --verify, test:all."
+          ],
+          "report": {
+            "started_at": "2026-10-15",
+            "completed_at": "2026-10-15",
+            "summary": "S9a closed the API surface: the 23 §21 AI operations through an in-process MCP gateway (McpClientPort with a deterministic, schema-valid EN/FA lite stub or \"unavailable\"; carpal_ai store; flag/kill switch, client registry, tenancy and SEC-AI-5 payload checks; AiInsight/AiSuggestion/ApprovalRequest storage; ai.insight.generated; McpAccessLog via W13), Help Me triage with safety first (503 still carries the safety block), completion into an issue, a Help Me match session and an appointment draft whose pre-visit report shows the AI summary, the asynchronous feature requests run by W9 in the requester's RLS context, suggestions applied through the owning modules and approval requests never decided by their requester. The AI placeholders of S4-S8 are replaced (pre-visit summary, triage references, captions on portfolio items and posts, review response drafts, media redaction suggestions, AI fitment, import normalization, capability/coverage suggestions, consents naming MCP clients). AI records joined the S8 registries (DSR, TriageSession retention, taxonomy merges, ai_quality gauges). Workers W9-W11, W13, W14 exist (W10/W11 rule-based, W14 a skeleton). Decision follow-ups of 2026-10-15: WebAuthn with @simplewebauthn/server 14.0.3 (2 ops, passkey sign-in, staff aal3 with device-bound keys), media policy (video <= 15 s, HEIC refused at upload_init, PDFs never public), one owner per VIN with the \"Did you buy this car?\" transfer (4 new operations), fleet vehicle data sharing through appointments with a private flag and a fleet-manager notification. Contract: 406 operations / 458 routes; 404 implemented.",
+            "ops_implemented": [
+              "triage.start",
+              "triage.reply",
+              "triage.get",
+              "triage.complete",
+              "ai.vehicle_suggestions",
+              "ai.service_history_insights",
+              "ai.profile_helper",
+              "ai.skill_heatmap",
+              "ai.review_response_draft",
+              "ai.review_insights",
+              "ai.showcase_compose",
+              "ai.appointment_suggestions",
+              "ai.inventory_normalize",
+              "ai.fitment_suggest",
+              "ai.inventory_gaps",
+              "ai.fleet_suggestions",
+              "ai.insight_get",
+              "ai.insight_feedback",
+              "ai.suggestions_list",
+              "ai.suggestions_mine",
+              "ai.suggestion_decide",
+              "ai.approvals_list",
+              "ai.approval_decide",
+              "auth.webauthn_options",
+              "me.webauthn_register_options",
+              "vehicles.transfer_request",
+              "vehicles.transfers_list",
+              "vehicles.transfer_decide",
+              "vehicles.transfer_cancel"
+            ],
+            "ops_deferred": [
+              {
+                "op": "auth.social_start",
+                "reason": "Google/Apple sign-in is post-MVP (OQ-06, PM-01); the route keeps its 501 placeholder."
+              },
+              {
+                "op": "media.upload_put",
+                "reason": "Served by the storage listener (signed PUT), not an API route; the coverage tool still counts it (S9c teaches it the storage route)."
+              }
+            ],
+            "files_created": [
+              "backend/modules/ai-mcp/{ai-mcp-api.module.ts, ai-mcp-worker.module.ts}",
+              "backend/modules/ai-mcp/interface/ai.ts (AiReferences, SuggestionAppliers, AiContextSources)",
+              "backend/modules/ai-mcp/domain/{tools.ts, payloads.ts, ai-domain.test.ts}",
+              "backend/modules/ai-mcp/application/{mcp-port.ts, gateway.ts, references.ts, triage-ops.ts, features.ts, insight-ops.ts, registrations.ts, ai-workers.ts}",
+              "backend/modules/ai-mcp/infrastructure/{ai-store.ts, lite-mcp.ts}",
+              "backend/modules/ai-mcp/api/projections.ts",
+              "backend/modules/{vehicle,organization,trust,inventory,appointment}/application/ai-registrations.ts",
+              "backend/modules/discovery/application/triage-matching.ts",
+              "backend/modules/identity/application/webauthn.ts",
+              "backend/modules/vehicle/application/transfer-ops.ts",
+              "backend/modules/media/application/transfer-consumer.ts",
+              "backend/workers/{ai-insight-generator, mcp-audit-logger}/*.module.ts",
+              "backend/libs/testing/webauthn.ts (software authenticator)",
+              "backend/apps/testing/{ai, webauthn, vehicle-transfer}.int.test.ts"
+            ],
+            "tests": "511 passing (pnpm test:all, 67 files): S9a added 51 (unit: ai-mcp domain 38 incl. every stub tool schema-valid in EN and FA; integration: ai 8, webauthn 2, vehicle-transfer 3) and nothing regressed (the contract and baseline count tests moved to 406 operations / 458 routes / 103 tables). Acceptance: kill switch -> every AI operation 503 while search and appointments succeed, and triage's 503 still carries the safety block; triage completes into an issue, a Help Me match session and a draft whose pre-visit report shows the AI summary; every tool call lands in the MCP access log (W13); W9 jobs store insights and pending suggestions; a staff draft waits for an approval its requester cannot decide (403 SELF_APPROVAL_FORBIDDEN); AI records are invisible across tenants (404); DSR export/erase and TriageSession retention cover AI records. Also green: pnpm lint (466 modules), typecheck, build, format:check, contract:check, db:codegen --verify; contract:coverage 404/406.",
+            "deviations": [
+              "GD-35: the MCP gateway runs in process (lite) with its own carpal_ai pool; McpClientPort = deterministic stub (dev default) or \"unavailable\" (staging/prod default until D6/D7 exist): every AI operation then answers 503 AI_UNAVAILABLE and the non-AI paths carry on.",
+              "triage.start / triage.reply check their own FLAG (ChecksOwnFlags) so the 503 carries the safety block; Problem gained safety, fallback_path and vin_transfer_available (Docs/40 §4.2).",
+              "Triage turns are validated but not stored as insights; the final triage_summary insight is created on completion (user-private: organization null, also for fleet vehicles). Fleet membership for triage on fleet vehicles is resolved through the vehicle.vehicle_fleet_owner definer; draft_appointment_with is personal sessions only; fleet viewers cannot create issues.",
+              "Approval requests are created for staff-level members' drafts of external actions only (publish_showcase by provider_staff, apply_inventory_normalization by vendor_staff); drafts by P+/V+ are approved by the domain publish operation (SEC-AI-3). ORG(by approver_role) admits the approver role or a higher role of the same organization type.",
+              "Suggestion appliers: vehicle (series/engine/fuel), maintenance_reminder (add, source ai_suggestion), inventory_item (normalized name, category). Profile-gap suggestions are informational (action review). Capability/coverage, fitment and redaction suggestions are pending domain records decided with provider.gated_decide / fitment.decide / media.redaction_decide.",
+              "ai.suggestions_list, ai.suggestions_mine and ai.approvals_list default to status pending when no status is given.",
+              "Context packages come from the owning modules through AiContextSources (registered readers over their own tables); search.part_demand reads aggregated match-session counts in the worker's system context (W9 only).",
+              "W9 event-driven insights are limited to imports that asked for AI normalization (vendor.inventory.imported); the other 41 §2.4 W9 events are not wired (the §21 operations are on demand, no unrequested AI output).",
+              "W10 classification uses the capability level when category rating and local demand are not available (>=3 strong; rising or level 2 emerging; <=1 weak; opportunity not assigned); rating_trend, repeat customers and local demand stay null.",
+              "W11 rules: repeated text (hash of normalized text, >= 2 reviews in 7 days) and five same-extreme ratings within 24 h; the new-account burst signal needs identity facts and is not computed. Cases: source ai_flag, reason fake, severity medium.",
+              "W14 is a skeleton (no embedding model in lite); semantic search, AI query interpretation and AI match explanations stay rule-based (next iteration).",
+              "DSR erase anonymizes personal insights (owner null, internal, \"[erased]\") because append-only evaluation records reference them; evaluation records keep actor ids and comments (append-only for every role).",
+              "A failed AI job ends with error_code AI_UNAVAILABLE (no retry).",
+              "The fleet_assistant MCP client got vehicle.extract_fields, vehicle.suggest_maintenance and vehicle.summarize_history (Docs/43 §22.5) for the fleet path of ai.vehicle_suggestions / ai.service_history_insights.",
+              "WebAuthn: a pending authentication method holds the registration challenge; clients take its id from me.mfa_list (me.webauthn_register_options returns standard creation options only). Passkey sign-in = auth.webauthn_options purpose signin + auth.mfa_verify method webauthn without a first factor. Device-bound credentials (no backup flags) give aal3, synced passkeys aal2; the admin client accepts device-bound keys only. RP ID carpal.app, origins from CARPAL_WEBAUTHN_ORIGINS; algorithms EdDSA/ES256/RS256.",
+              "Media (GD-32): image/heic left the accepted upload types (422 at media.upload_init); MAX_VIDEO_SECONDS 15.",
+              "VIN (GD-33): global unique index vehicles_vin_uq; Vehicle.duplicate_vin_warning stays in the contract but is always false. Transfers: 4 new operations and the {VT} path alias (contract 406 ops / 458 routes); acceptance through vehicle.accept_transfer; vehicle.transferred moves media ownership, ends fleet driver assignments and withdraws the previous owner's vehicle-scoped consents.",
+              "Fleet sharing (GD-34): Vehicle.data_sharing (fleet owners/managers); appointments.consent_to_share_history may be true without a consent record for fleet requests (Docs/43 constraint relaxed); PreVisitReport.shared_documents with 5-minute URLs; providers check the vehicle's sharing live; fleet.vehicle_data.shared notifies fleet owners and managers. Fleet approvals do not copy ai_triage_insight_id.",
+              "SearchService.run was split into runIn (Help Me matches in the caller's transaction); Help Me match sessions store issue_id and triage_session_id.",
+              "The coverage tool reads every id of a multi-id @Operation(...) decorator."
+            ],
+            "notes_for_next": [
+              "Run `pnpm db:reset` once (Docs/43 changed: vehicle_fleet_owner, vehicle_transfers, VIN uniqueness, data_sharing, pre-visit sharing columns, fleet_assistant tools). New npm dependency @simplewebauthn/server 14.0.3; new env CARPAL_DB_PASSWORD_AI (dev carpal_ai_dev), CARPAL_MCP_MODE, CARPAL_MCP_TIMEOUT_MS, CARPAL_WEBAUTHN_RP_ID, CARPAL_WEBAUTHN_ORIGINS.",
+              "S9b generator: AI operations need the dev flags (seeded on), CARPAL_MCP_MODE=stub and a worker for 202 jobs; the kill switch pattern is the FlagService override in apps/testing/ai.int.test.ts; WebAuthn needs libs/testing/webauthn.ts (SoftAuthenticator); {VT} is a dual-scope alias like {V}. AI record owners are resolved through AiOwners (carpal_ai store) before RLS reads.",
+              "S9b BOLA targets added in S9a: insights, suggestions, approval requests, triage sessions, vehicle transfers (buyer vs owner), fleet pre-visit shared documents.",
+              "S9c OpenAPI: Problem.safety / fallback_path / vin_transfer_available, WebAuthn option/credential JSON, VehicleTransfer, Vehicle.data_sharing, PreVisitReport.shared_documents, InsightPayload / SuggestionPayload schemas (modules/ai-mcp/domain/payloads.ts); teach contract:coverage the storage route (media.upload_put).",
+              "Next iteration: the real MCP gateway/orchestrator (D6/D7) behind McpClientPort, embeddings and semantic search (W14), discovery AI, W9 event-driven insights, W10 category ratings/local demand, W11 account-age signals."
+            ]
+          }
+        },
+        {
+          "id": "S9b",
+          "title": "Contract test sweep (L22 generator over all operations)",
+          "status": "not_started",
+          "tasks": [
+            "S9.T4"
+          ],
+          "depends_on": [
+            "S9a"
+          ],
+          "steps": [
+            "S9b.1 Generator from operations.json + schemas: one generated suite per module under apps/testing/contract (or tests/contract), with per-op fixtures resolvers (owner, other tenant, anonymous, wrong role, staff).",
+            "S9b.2 Schema conformance of every success response; BOLA matrix (other user / other organization -> 404) and BFLA matrix (role below the sec line -> 404/401) for every operation.",
+            "S9b.3 Admin-plane mechanics: staff client cp-web-admin with aal3, purpose resolver for PURP routes, 202 PendingChange for 4EYES, CarPal-Reason for RSN DELETEs, pii.read audit for staff PII responses.",
+            "S9b.4 Projection tests for SEC-OUT-1 fields (no credentials, token hashes, VINs or private fields in public/staff views); kill switch -> AI 503 while search, profiles and appointments succeed.",
+            "S9b.5 Fix the defects the sweep finds in S3-S9a modules (budgeted work, not optional); record each in the deviations or the report."
+          ],
+          "acceptance_criteria": [
+            "Generated BOLA/BFLA suites pass for every implemented operation.",
+            "Schema conformance and projection suites pass; findings fixed or listed with a reason.",
+            "All checks green."
+          ],
+          "report": {
+            "started_at": null,
+            "completed_at": null,
+            "summary": null,
+            "ops_implemented": [],
+            "ops_deferred": [],
+            "files_created": [],
+            "tests": null,
+            "deviations": [],
+            "notes_for_next": []
+          }
+        },
+        {
+          "id": "S9c",
+          "title": "OpenAPI, CI, coverage closure, next-iteration list, README",
+          "status": "not_started",
+          "tasks": [
+            "S9.T5",
+            "S9.T6"
+          ],
+          "depends_on": [
+            "S9b"
+          ],
+          "steps": [
+            "S9c.1 Generate shared/api-contracts/openapi.yaml (OpenAPI 3.1) from the registry and schemas, including the items listed in recommendations_for_next_stages.S9 (OAuth forms and ProtocolError, CarPal-Reason/CarPal-Access-Purpose, 202 PendingChange, server-defined Json schemas, x-vin, body cursors, ETags, deferred ops).",
+            "S9c.2 pnpm openapi:check (file matches the router and the registry) and a GitHub Actions workflow for backend lint, typecheck, build, format, contract checks and tests in lite mode (embedded PostgreSQL).",
+            "S9c.3 pnpm contract:coverage: zero unexplained 501s (teach it the storage route); reviewed ops_deferred list.",
+            "S9c.4 Consolidate deviations_log (111+) and open recommendations into a 'next_iteration' list (strict auth, full-mode verification on the Docker test server, BFFs, real providers, discovery AI, PM backlog), update backend/README.md, mark S9 and the scratch build done."
+          ],
+          "acceptance_criteria": [
+            "All 402 operations implemented or listed with a reason in ops_deferred.",
+            "OpenAPI check passes locally and in CI.",
+            "next_iteration list and README written; all checks green."
+          ],
+          "report": {
+            "started_at": null,
+            "completed_at": null,
+            "summary": null,
+            "ops_implemented": [],
+            "ops_deferred": [],
+            "files_created": [],
+            "tests": null,
+            "deviations": [],
+            "notes_for_next": []
+          }
+        }
+      ]
     }
   ],
   "coverage_summary": {
-    "total_operations": 402,
+    "total_operations": 406,
     "by_stage_target": {
       "S1": 0,
       "S2": 4,
@@ -2660,10 +2932,10 @@
       "S8": 82,
       "S9": 23
     },
-    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501. After S6 (pnpm contract:coverage): discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71 (the other 7 are admin ops of S8), trust 1/36 (public.org_reviews), appointment 1/31 (public.availability placeholder); 236 implemented, 166 answer 501. After S7 (pnpm contract:coverage): appointment 31/31, trust 28/36 (the other 8 are §23.4 admin operations of S8); 293 implemented, 109 answer 501. After S8 (pnpm contract:coverage): fleet 20/20, admin 16/16, analytics 3/3, organization 71/71, billing 7/7, taxonomy 13/13, trust 36/36, identity 58/61 (3 deferred S3 ops), media 10/11 (media.upload_put is the storage PUT), ai-mcp 4/27 (the admin oversight data ops; 23 §21 ops for S9); 375 implemented, 27 answer 501; admin-api serves 60/60 routes.",
-    "implemented": 375,
-    "returning_501": 27,
-    "total_routes": 450,
+    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501. After S6 (pnpm contract:coverage): discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71 (the other 7 are admin ops of S8), trust 1/36 (public.org_reviews), appointment 1/31 (public.availability placeholder); 236 implemented, 166 answer 501. After S7 (pnpm contract:coverage): appointment 31/31, trust 28/36 (the other 8 are §23.4 admin operations of S8); 293 implemented, 109 answer 501. After S8 (pnpm contract:coverage): fleet 20/20, admin 16/16, analytics 3/3, organization 71/71, billing 7/7, taxonomy 13/13, trust 36/36, identity 58/61 (3 deferred S3 ops), media 10/11 (media.upload_put is the storage PUT), ai-mcp 4/27 (the admin oversight data ops; 23 §21 ops for S9); 375 implemented, 27 answer 501; admin-api serves 60/60 routes. After S9a: 4 vehicle transfer operations added to the contract (406 operations, 458 routes); 404 implemented, 2 answer 501 (auth.social_start PM-01, media.upload_put storage PUT).",
+    "implemented": 404,
+    "returning_501": 2,
+    "total_routes": 458,
     "by_module_after_S3": {
       "identity": "47/61",
       "billing": "4/7",
@@ -2775,6 +3047,25 @@
       "community": "25/25",
       "notification": "7/7",
       "ai-mcp": "4/27",
+      "analytics": "3/3",
+      "admin": "16/16"
+    },
+    "by_module_after_S9a": {
+      "identity": "60/61",
+      "billing": "7/7",
+      "taxonomy": "13/13",
+      "platform": "4/4",
+      "organization": "71/71",
+      "media": "10/11",
+      "vehicle": "35/35",
+      "inventory": "32/32",
+      "discovery": "7/7",
+      "trust": "36/36",
+      "appointment": "31/31",
+      "fleet": "20/20",
+      "community": "25/25",
+      "notification": "7/7",
+      "ai-mcp": "27/27",
       "analytics": "3/3",
       "admin": "16/16"
     }
@@ -3334,6 +3625,106 @@
       "stage": "S8",
       "date": "2026-10-15",
       "deviation": "WebAuthn (OQ-04) is still not implemented: staff aal3 sessions exist only through fixtures/tests; auth.webauthn_options, me.webauthn_register_options and auth.social_start stay deferred (S3)."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "GD-35: the MCP gateway runs in process (lite) with its own carpal_ai pool; McpClientPort = deterministic stub (dev default) or \"unavailable\" (staging/prod default until D6/D7 exist): every AI operation then answers 503 AI_UNAVAILABLE and the non-AI paths carry on."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "triage.start / triage.reply check their own FLAG (ChecksOwnFlags) so the 503 carries the safety block; Problem gained safety, fallback_path and vin_transfer_available (Docs/40 §4.2)."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "Triage turns are validated but not stored as insights; the final triage_summary insight is created on completion (user-private: organization null, also for fleet vehicles). Fleet membership for triage on fleet vehicles is resolved through the vehicle.vehicle_fleet_owner definer; draft_appointment_with is personal sessions only; fleet viewers cannot create issues."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "Approval requests are created for staff-level members' drafts of external actions only (publish_showcase by provider_staff, apply_inventory_normalization by vendor_staff); drafts by P+/V+ are approved by the domain publish operation (SEC-AI-3). ORG(by approver_role) admits the approver role or a higher role of the same organization type."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "Suggestion appliers: vehicle (series/engine/fuel), maintenance_reminder (add, source ai_suggestion), inventory_item (normalized name, category). Profile-gap suggestions are informational (action review). Capability/coverage, fitment and redaction suggestions are pending domain records decided with provider.gated_decide / fitment.decide / media.redaction_decide."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "ai.suggestions_list, ai.suggestions_mine and ai.approvals_list default to status pending when no status is given."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "Context packages come from the owning modules through AiContextSources (registered readers over their own tables); search.part_demand reads aggregated match-session counts in the worker's system context (W9 only)."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "W9 event-driven insights are limited to imports that asked for AI normalization (vendor.inventory.imported); the other 41 §2.4 W9 events are not wired (the §21 operations are on demand, no unrequested AI output)."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "W10 classification uses the capability level when category rating and local demand are not available (>=3 strong; rising or level 2 emerging; <=1 weak; opportunity not assigned); rating_trend, repeat customers and local demand stay null."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "W11 rules: repeated text (hash of normalized text, >= 2 reviews in 7 days) and five same-extreme ratings within 24 h; the new-account burst signal needs identity facts and is not computed. Cases: source ai_flag, reason fake, severity medium."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "W14 is a skeleton (no embedding model in lite); semantic search, AI query interpretation and AI match explanations stay rule-based (next iteration)."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "DSR erase anonymizes personal insights (owner null, internal, \"[erased]\") because append-only evaluation records reference them; evaluation records keep actor ids and comments (append-only for every role)."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "A failed AI job ends with error_code AI_UNAVAILABLE (no retry)."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "The fleet_assistant MCP client got vehicle.extract_fields, vehicle.suggest_maintenance and vehicle.summarize_history (Docs/43 §22.5) for the fleet path of ai.vehicle_suggestions / ai.service_history_insights."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "WebAuthn: a pending authentication method holds the registration challenge; clients take its id from me.mfa_list (me.webauthn_register_options returns standard creation options only). Passkey sign-in = auth.webauthn_options purpose signin + auth.mfa_verify method webauthn without a first factor. Device-bound credentials (no backup flags) give aal3, synced passkeys aal2; the admin client accepts device-bound keys only. RP ID carpal.app, origins from CARPAL_WEBAUTHN_ORIGINS; algorithms EdDSA/ES256/RS256."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "Media (GD-32): image/heic left the accepted upload types (422 at media.upload_init); MAX_VIDEO_SECONDS 15."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "VIN (GD-33): global unique index vehicles_vin_uq; Vehicle.duplicate_vin_warning stays in the contract but is always false. Transfers: 4 new operations and the {VT} path alias (contract 406 ops / 458 routes); acceptance through vehicle.accept_transfer; vehicle.transferred moves media ownership, ends fleet driver assignments and withdraws the previous owner's vehicle-scoped consents."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "Fleet sharing (GD-34): Vehicle.data_sharing (fleet owners/managers); appointments.consent_to_share_history may be true without a consent record for fleet requests (Docs/43 constraint relaxed); PreVisitReport.shared_documents with 5-minute URLs; providers check the vehicle's sharing live; fleet.vehicle_data.shared notifies fleet owners and managers. Fleet approvals do not copy ai_triage_insight_id."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "SearchService.run was split into runIn (Help Me matches in the caller's transaction); Help Me match sessions store issue_id and triage_session_id."
+    },
+    {
+      "stage": "S9a",
+      "date": "2026-10-15",
+      "deviation": "The coverage tool reads every id of a multi-id @Operation(...) decorator."
     }
   ],
   "handoff_notes": [
@@ -3389,7 +3780,10 @@
       "question": "Install Docker Desktop (enables full mode: Postgres + pgvector, Redis, NATS, Elasticsearch, MinIO) or stay on lite mode for the whole scratch build?",
       "default_if_unanswered": "Lite mode; full-mode adapters written but unverified.",
       "owner": "user",
-      "note": "Still open. Lite mode covers PostgreSQL fully (embedded PG16). Docker would add pgvector, Redis, NATS and OpenSearch for full-mode verification."
+      "note": "Still open. Lite mode covers PostgreSQL fully (embedded PG16). Docker would add pgvector, Redis, NATS and OpenSearch for full-mode verification.",
+      "answer": "Answered 2026-10-15: Docker will be installed on a test server, not on the local laptop (not capable enough). The laptop stays on lite mode (embedded PG16); full mode (Postgres + pgvector, Redis, NATS, OpenSearch, MinIO) is verified on the test server.",
+      "status": "answered",
+      "follow_up": "GD-30. S9 keeps lite mode locally and in CI; full-mode verification (docker compose, full adapters, discovery/OpenSearch integration tests) runs on the test server once it is ready and is listed in the next-iteration list until then."
     },
     {
       "id": "OQ-02",
@@ -3411,7 +3805,10 @@
       "question": "Which WebAuthn server library may the backend use (e.g. @simplewebauthn/server), or should WebAuthn be written in-house? Needed for passkeys, staff aal3 sign-in (SEC-ADM-2) and the three deferred S3 operations.",
       "default_if_unanswered": "Stay deferred; staff sign-in only through fixtures until S8 needs it.",
       "owner": "user",
-      "s8_note": "S8 built the admin plane without it: staff aal3 sessions exist only in tests. Needed before any real staff sign-in."
+      "s8_note": "S8 built the admin plane without it: staff aal3 sessions exist only in tests. Needed before any real staff sign-in.",
+      "answer": "Answered 2026-10-15: use FIDO2 WebAuthn (as on webauthn.io) with the most compatible TypeScript package: @simplewebauthn/server, the library used by Google's TypeScript demo (github.com/google/webauthndemo, @simplewebauthn/server ^14).",
+      "status": "answered",
+      "follow_up": "GD-31. S9.T7: add the @simplewebauthn/server dependency and build auth.webauthn_options, me.webauthn_register_options and passkey sign-in, including staff aal3 sign-in (SEC-ADM-2) instead of test fixtures only."
     },
     {
       "id": "OQ-05",
@@ -3423,38 +3820,59 @@
       "id": "OQ-06",
       "question": "Is Google/Apple sign-in (auth.social_start, SEC-AU-13) needed for the pilot region, and which provider credentials will be available?",
       "default_if_unanswered": "Deferred; password and one-time-code sign-in only.",
-      "owner": "user / product"
+      "owner": "user / product",
+      "answer": "Answered 2026-10-15: Google and Apple sign-in are not needed for the MVP. Plan placeholders now and build them in the first post-MVP development.",
+      "status": "deferred_post_mvp",
+      "follow_up": "PM-01 in post_mvp_backlog. S9.T6 lists auth.social_start as deferred (reason: post-MVP, PM-01); the route keeps its 501 placeholder."
     },
     {
       "id": "OQ-07",
       "question": "Which tools may W6 use in full mode for malware scanning (e.g. ClamAV), video transcoding (ffmpeg) and PDF sanitizing (e.g. qpdf/pdfcpu)? Lite mode has none of them (S4 deviations).",
       "default_if_unanswered": "Lite stand-ins stay: EICAR check only, videos never publicly servable, PDFs private only.",
-      "owner": "user / security"
+      "owner": "user / security",
+      "answer": "Answered 2026-10-15: go with the default (lite stand-ins: EICAR check only, videos never publicly servable without transcoding). Videos are limited to 15 seconds. PDF sharing is not permitted: PDFs stay private to their owner and are never public or shared.",
+      "status": "answered",
+      "follow_up": "GD-32. S9.T7: MAX_VIDEO_SECONDS 60 -> 15 (modules/media/domain/purposes.ts, processor tests) and Docs/40 SEC-UP-2; PDFs never public, never behind anonymous links; authenticated fleet appointment sharing may include PDFs.",
+      "clarification": "2026-10-15 (user): 'PDF sharing is not permitted' means anonymous/public PDF sharing is not permitted; fleet sharing (GD-34) is the exception, so PDFs may reach the provider of a fleet appointment."
     },
     {
       "id": "OQ-08",
       "question": "HEIC photos (iPhone default): ship a libheif build with HEVC (licensing) or ask clients to convert to JPEG before upload?",
       "default_if_unanswered": "Clients convert to JPEG; HEIC uploads fail processing.",
-      "owner": "user / product"
+      "owner": "user / product",
+      "answer": "Answered 2026-10-15: the iOS app compresses HEIC photos to lightweight JPEG before upload; the backend does not ship libheif/HEVC.",
+      "status": "answered",
+      "follow_up": "GD-32. S9.T7: refuse image/heic when the upload is requested (422 instead of a failed processing run after upload) and describe it in Docs/40 §17 and the OpenAPI file.",
+      "clarification": "2026-10-15 (user): the client compresses HEIC to JPEG automatically before upload."
     },
     {
       "id": "OQ-09",
       "question": "Profile completeness weights (WP0) for providers and vendors, and whether publishing needs a minimum completeness (52 §21 'profile complete enough').",
       "default_if_unanswered": "Equal weights over the MVP Module C criteria; publishing needs only the listed rules.",
-      "owner": "user / WP0"
+      "owner": "user / WP0",
+      "answer": "Answered 2026-10-15: go with the defaults: equal weights over the MVP Module C criteria; publishing needs only the listed rules (no minimum completeness).",
+      "status": "answered",
+      "follow_up": "None: the code already uses the defaults."
     },
     {
       "id": "OQ-10",
       "question": "Which VIN decoder may the backend call in full mode for the pilot region (40 vehicles.vin_decode, \"optional pluggable VIN decode\"), and under which terms (cost per call, data sent)?",
       "default_if_unanswered": "Lite decoder only (model year from the VIN); full mode answers 503 UNAVAILABLE(decoder).",
-      "owner": "user / product"
+      "owner": "user / product",
+      "answer": "Answered 2026-10-15: use the lite decoder (model year from the VIN; full mode keeps answering 503 UNAVAILABLE(decoder)). Prevent repeated VIN registration: one VIN has one owner.",
+      "status": "answered",
+      "follow_up": "GD-33. S9.T7: global unique vin_hash among non-archived vehicles; a duplicate VIN answers 409 DUPLICATE with a transfer hint; new vehicle transfer operations (request by the claimant, list and decide by the previous owner, cancel, expiry) added to Docs/40 and the registry; acceptance moves the vehicle and its records to the new owner.",
+      "clarification": "2026-10-15 (user): registering a VIN that already has an owner asks the new user 'Did you buy this car?'. On yes, a transfer request goes to the previous owner; once the previous owner accepts, all records connected to the VIN move to the new owner and the vehicle is removed from the previous owner."
     },
     {
       "id": "OQ-11",
       "question": "How does a fleet consent to share a fleet vehicle's documents and service history with a provider (DI-38): an organization-level vehicle_data_sharing consent by a fleet manager, or only through fleet appointments (S7/S8)?",
       "default_if_unanswered": "Fleets share their own documents by role; providers cannot log work on fleet vehicles outside appointments.",
       "owner": "user / privacy",
-      "s8_note": "S8: still open; fleet approvals are now bound to appointments, which remain the only way a fleet shares a vehicle with a provider."
+      "s8_note": "S8: still open; fleet approvals are now bound to appointments, which remain the only way a fleet shares a vehicle with a provider.",
+      "answer": "Answered 2026-10-15: vehicle documents and service history are shared with a provider through an appointment; the fleet manager is notified; a fleet manager can mark a vehicle as private, which prevents sharing.",
+      "status": "answered",
+      "follow_up": "GD-34. S9.T7: vehicle-level private flag set by fleet owners/managers, appointment-bound sharing of documents and service history (PDFs excluded, GD-32), notification to fleet managers when sharing starts; Docs/52 + 43 changes."
     },
     {
       "id": "OQ-12",
@@ -3607,5 +4025,24 @@
       "S8 recommendations applied: admin billing (assign closes change requests, audited, trial rule), DSR execution (transitions, W8 bundle, deletion with sessions revoked and pseudonym key deleted, user.deletion.completed), staff role/status changes invalidate authz and revoke sessions, onboarding reset sets reset_by, taxonomy admin invalidates the catalog and publishes taxonomy.node.merged, DI-09 decided, moderation queue for portfolio items/media/community/held reviews (intake rule), verification decide with organization.verified, location_correct, org_status with profiles suspended and authz invalidated, org_merge, media_download_url with PURP, fleet activation decided, retention handlers (media objects, match sessions, notifications, exports, outbox, jobs, tokens), community content leaves the index through community.content.changed, Path 2 decisions with the exact column set, dispute outcomes (objection, fake review −50 + badges, badge challenge, appeal), badge approval, admin trust penalties (12 months), driver assignments bound and set-based, fleet approvals from driver issues, bound to appointments, cost estimates above threshold, preferred_partners_only + bonus, fleet.approval.decided notifications, disputes about service records and moderation actions.",
       "Not done from the S8 list: WebAuthn staff sign-in (OQ-04, still deferred), DI-05 assist routes, DI-21 hybrid roles, DI-38/DI-58 fleet history sharing (fleets still share through appointments only), admin verification of service records/invoices (invoice_verified/admin_verified evidence), purge of removed vehicle documents' media beyond the generic MediaAsset policy and of unreferenced storage objects, moderation of review responses beyond hide/remove (DI-59), fleet trust signals (54 §8: downtime, first-time fix, cost accuracy) and fleet_friendly revocation by upheld fleet disputes, fleet system review invitations (fleet_confirmed), refresh_reaction_count after reaction moderation (reactions are not a moderation target), appointment/review funnels as dedicated dashboard metrics (they count as generic event metrics)."
     ]
-  }
+  },
+  "post_mvp_backlog": [
+    {
+      "id": "PM-01",
+      "title": "Google and Apple sign-in (auth.social_start, SEC-AU-13)",
+      "source": "OQ-06 answered 2026-10-15",
+      "when": "First development iteration after the MVP",
+      "placeholders_in_mvp": [
+        "auth.social_start stays registered on the auth host and answers 501 NOT_IMPLEMENTED; it is listed in S9.report.ops_deferred with reason 'post-MVP (PM-01)'.",
+        "Reserve env keys CARPAL_OIDC_GOOGLE_CLIENT_ID / _SECRET and CARPAL_OIDC_APPLE_* (documented in backend/README.md, not read yet).",
+        "The OpenAPI file marks the operation as not implemented (x-carpal-status: deferred-post-mvp)."
+      ],
+      "to_build": [
+        "OIDC authorization-code + PKCE client for Google and Apple (Apple: client secret JWT, private relay emails, name only on first sign-in).",
+        "Account linking: a verified provider email matching an existing account links only after the user signs in to that account (no silent takeover); new accounts follow the normal onboarding and consents.",
+        "Identity rows for the external subject (provider, sub), unlink in account settings, DSR export/erase registration.",
+        "Provider credentials per region and the client buttons (mobile + web)."
+      ]
+    }
+  ]
 }

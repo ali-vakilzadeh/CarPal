@@ -7,7 +7,9 @@ import { loadRegistry } from '#libs/contract/index.js';
 import { backendDir } from '../db/config.js';
 
 const SOURCE_DIRS = ['apps', 'libs', 'modules', 'workers'];
-const DECORATOR = /@Operation\(\s*['"]([a-z_]+\.[a-z_]+)['"]/g;
+// One decorator may bind several ids (@Operation('a.x', 'b.y'), e.g. the AI feature requests).
+const DECORATOR = /@Operation\(([^)]*)\)/g;
+const OP_ID = /['"]([a-z_]+\.[a-z_]+)['"]/g;
 
 function* tsFiles(dir: string): Generator<string> {
   let entries: string[];
@@ -28,7 +30,8 @@ export function implementedOperations(): Map<string, string> {
   const found = new Map<string, string>();
   for (const d of SOURCE_DIRS) {
     for (const file of tsFiles(join(backendDir, d))) {
-      for (const m of readFileSync(file, 'utf8').matchAll(DECORATOR)) found.set(m[1]!, relative(backendDir, file).replace(/\\/g, '/'));
+      for (const m of readFileSync(file, 'utf8').matchAll(DECORATOR))
+        for (const id of m[1]!.matchAll(OP_ID)) found.set(id[1]!, relative(backendDir, file).replace(/\\/g, '/'));
     }
   }
   return found;

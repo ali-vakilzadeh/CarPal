@@ -68,6 +68,12 @@ export const ROUTED_EVENTS = [
   'organization.verified',
   'organization.location.corrected',
   'dsr.deadline.approaching',
+  // S9: an AI result the member or user asked for is ready (in-app only, OQ-13 default for AI suggestions)
+  'ai.insight.generated',
+  // S9 decision follow-ups: vehicle transfers (GD-33) and fleet data shared with a provider (GD-34)
+  'vehicle.transfer.requested',
+  'vehicle.transfer.decided',
+  'fleet.vehicle_data.shared',
 ] as const;
 
 const PROVIDER_MEMBERS = ['provider_owner', 'provider_manager', 'provider_staff'];
@@ -507,6 +513,77 @@ export function routeS8(e: RoutedEvent): Intent[] {
           reference: null,
           organization_context_id: null,
           channels: ['in_app', 'email'],
+        },
+      ];
+    }
+    case 'vehicle.transfer.requested': {
+      // The current owner (user, or the fleet's owners and managers) decides; the buyer is not named in the message.
+      const ownerId = str(p.from_owner_id);
+      if (!ownerId) return [];
+      const fleet = p.from_owner_type === 'organization';
+      return [
+        {
+          audience: fleet ? { kind: 'members', orgId: ownerId, roles: FLEET_APPROVERS } : { kind: 'users', ids: [ownerId] },
+          event_type: 'system_announcement',
+          category: fleet ? 'fleet' : 'system',
+          priority: 'normal',
+          template_key: 'vehicle.transfer_requested',
+          params: {},
+          reference: { type: 'vehicle_transfer', id: e.aggregateId },
+          organization_context_id: fleet ? ownerId : null,
+          channels: ['in_app', 'push', 'email'],
+        },
+      ];
+    }
+    case 'vehicle.transfer.decided': {
+      const buyer = str(p.requested_by_user_id);
+      if (!buyer) return [];
+      return [
+        {
+          audience: { kind: 'users', ids: [buyer] },
+          event_type: 'system_announcement',
+          category: 'system',
+          priority: 'normal',
+          template_key: 'vehicle.transfer_decided',
+          params: { status: str(p.status) ?? 'rejected' },
+          reference: { type: 'vehicle_transfer', id: e.aggregateId },
+          organization_context_id: p.to_owner_type === 'organization' ? str(p.to_owner_id) : null,
+          channels: ['in_app', 'push', 'email'],
+        },
+      ];
+    }
+    case 'fleet.vehicle_data.shared': {
+      const fleet = str(p.fleet_organization_id);
+      if (!fleet) return [];
+      return [
+        {
+          audience: { kind: 'members', orgId: fleet, roles: FLEET_APPROVERS },
+          event_type: 'system_announcement',
+          category: 'fleet',
+          priority: 'normal',
+          template_key: 'fleet.vehicle_data_shared',
+          params: { document_count: num(p.document_count) },
+          reference: { type: 'appointment', id: e.aggregateId },
+          organization_context_id: fleet,
+          channels: ['in_app', 'email'],
+        },
+      ];
+    }
+    case 'ai.insight.generated': {
+      // Only answers to a §21.3 request (a job): background insights (W9 imports, W10, W11) notify nobody.
+      const requester = str(p.requested_by_user_id);
+      if (!requester || !str(p.job_id) || p.visibility === 'internal') return [];
+      return [
+        {
+          audience: { kind: 'users', ids: [requester] },
+          event_type: 'ai_suggestion_ready',
+          category: 'ai_suggestions',
+          priority: 'normal',
+          template_key: 'ai.suggestion_ready',
+          params: { suggestion_count: num(p.suggestion_count) },
+          reference: { type: 'ai_insight', id: e.aggregateId },
+          organization_context_id: str(p.organization_id),
+          channels: ['in_app'],
         },
       ];
     }

@@ -8,7 +8,7 @@ import type { Logger } from '#libs/observability/index.js';
 import { PlatformOpsModule } from '#libs/platform/index.js';
 import { PlatformModule, type RuntimeHost } from '#libs/runtime/index.js';
 import { AdminApiModule, AdminModule, AdminPublicModule, AdminWorkerModule } from '#modules/admin/admin.module.js';
-import { AiMcpModule } from '#modules/ai-mcp/ai-mcp.module.js';
+import { AiMcpApiModule, AiMcpModule } from '#modules/ai-mcp/ai-mcp.module.js';
 import { AnalyticsModule, AnalyticsWorkerModule } from '#modules/analytics/analytics.module.js';
 import { AppointmentApiModule } from '#modules/appointment/appointment-api.module.js';
 import { AppointmentWorkerModule } from '#modules/appointment/appointment-worker.module.js';
@@ -42,10 +42,12 @@ import { TrustModule } from '#modules/trust/trust.module.js';
 import { VehicleApiModule } from '#modules/vehicle/vehicle-api.module.js';
 import { VehicleWorkerModule } from '#modules/vehicle/vehicle-worker.module.js';
 import { VehicleModule } from '#modules/vehicle/vehicle.module.js';
+import { AiInsightGeneratorModule } from '#workers/ai-insight-generator/ai-insight-generator.module.js';
 import { AnalyticsPipelineModule } from '#workers/analytics-pipeline/analytics-pipeline.module.js';
 import { ConsumerHostModule } from '#workers/consumer-host/consumer-host.module.js';
 import { ExportJobsModule } from '#workers/export-jobs/export-jobs.module.js';
 import { ImportJobsModule } from '#workers/import-jobs/import-jobs.module.js';
+import { McpAuditLoggerModule } from '#workers/mcp-audit-logger/mcp-audit-logger.module.js';
 import { MediaProcessorModule } from '#workers/media-processor/media-processor.module.js';
 import { NotificationDispatchModule } from '#workers/notification-dispatch/notification-dispatch.module.js';
 import { OutboxRelayModule } from '#workers/outbox-relay/outbox-relay.module.js';
@@ -118,6 +120,7 @@ export const apiAppModule = (o: AppOptions): DynamicModule =>
     DiscoveryApiModule,
     NotificationApiModule,
     AdminPublicModule,
+    AiMcpApiModule,
     PlatformOpsModule,
   ]);
 
@@ -129,7 +132,7 @@ export const adminApiAppModule = (o: AppOptions): DynamicModule =>
 export const authAppModule = (o: AppOptions): DynamicModule =>
   root('auth', o, [IdentityModule, NotificationMessagingModule, IdentityAuthModule]);
 
-/** D5 workers: W1 outbox relay, event consumers, W2 search indexer, W5 notification dispatch, W6 media processor, W7 import jobs, W8 export jobs, W12 analytics pipeline, W15 scheduler and module rules. */
+/** D5 workers: W1 outbox relay, event consumers, W2 search indexer, W5 notification dispatch, W6 media processor, W7 import jobs, W8 export jobs, W9-W11/W14 AI workers, W12 analytics pipeline, W13 MCP audit logger, W15 scheduler and module rules. */
 export const workerAppModule = (o: AppOptions): DynamicModule =>
   root('worker', o, [
     ...DOMAIN_MODULES,
@@ -150,5 +153,7 @@ export const workerAppModule = (o: AppOptions): DynamicModule =>
     AnalyticsPipelineModule,
     FleetWorkerModule,
     ExportJobsModule,
+    AiInsightGeneratorModule,
+    McpAuditLoggerModule,
     SchedulerModule,
   ]);

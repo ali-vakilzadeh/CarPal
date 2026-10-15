@@ -42,7 +42,7 @@ import {
   type ClientInfo,
 } from './headers.js';
 import { normalizeInput, normalizeString } from './normalize.js';
-import type { OperationContext, OperationHandler, OperationResult } from './operation.js';
+import { checksOwnFlags, type OperationContext, type OperationHandler, type OperationResult } from './operation.js';
 import { toProblem } from './problem.js';
 import type { RouteEntry, RouteTable } from './router.js';
 import { parseStrictJson } from './strict-json.js';
@@ -280,11 +280,12 @@ export class HttpPipeline {
     });
     if (grant.org) Object.assign(x.extraHeaders, (await d.rateLimiter.check(buckets, { ...subject, orgId: grant.org.id }, 'org')).headers);
 
-    // 7. Feature flags
+    // 7. Feature flags (a ChecksOwnFlags handler applies them itself, after its safety check)
     const flagCtx = this.#flagContext(x.principal, grant);
-    for (const t of tags('FLAG')) if (!t.qualifier) for (const key of t.args) await d.flags.require(key, flagCtx);
-
     const handler = d.handlers.get(op.opId);
+    if (!handler || !checksOwnFlags(handler))
+      for (const t of tags('FLAG')) if (!t.qualifier) for (const key of t.args) await d.flags.require(key, flagCtx);
+
     if (!handler) return this.#notImplemented(x);
 
     // 8. Validation

@@ -68,7 +68,7 @@ describe('installation', () => {
     expect(s.baseline?.upToDate).toBe(true);
   });
 
-  it('has 17 schemas and 102 tables (42 §2)', async () => {
+  it('has 17 schemas and 103 tables (42 §2; S9 vehicle_transfers)', async () => {
     expect(await count(su, 'SELECT count(*) AS n FROM pg_namespace WHERE nspname = ANY($1)', [MODULE_SCHEMAS])).toBe(17);
     const tables = await count(
       su,
@@ -76,7 +76,7 @@ describe('installation', () => {
         WHERE s.nspname = ANY($1) AND c.relkind IN ('r', 'p') AND NOT c.relispartition`,
       [MODULE_SCHEMAS],
     );
-    expect(tables).toBe(102);
+    expect(tables).toBe(103);
   });
 
   it('enables row-level security on every module table', async () => {

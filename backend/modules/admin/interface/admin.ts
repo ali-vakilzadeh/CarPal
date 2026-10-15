@@ -255,6 +255,27 @@ export abstract class ModerationLog {
   abstract openCases(scope: TxScope, targetType: string, targetId: string): Promise<number>;
 }
 
+/** An automated flag (W11 fraud detection, AI moderation hints): it only opens a case, humans decide (52 ModerationCase). */
+export interface AutomatedFlag {
+  targetType: ModerationTargetType;
+  targetId: string;
+  reason: 'fake' | 'spam' | 'other';
+  severity: 'low' | 'medium' | 'high';
+  /** 0–100 risk score of the flag. */
+  riskScore: number | null;
+  /** The internal fraud_flag insight behind an ai_flag case; null for a plain system rule. */
+  insightId: string | null;
+}
+
+export abstract class ModerationIntake {
+  /**
+   * Opens an ai_flag (insight) or system_rule case for the target unless an
+   * open case exists; system context. Returns the case id, or null when one
+   * was already open.
+   */
+  abstract open(scope: TxScope, f: AutomatedFlag): Promise<string | null>;
+}
+
 export type { AccessPurpose, PurposeKind };
 
 /** An active DataRetentionPolicy (52) handed to the module that owns the entity type. */

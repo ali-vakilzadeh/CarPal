@@ -1679,9 +1679,12 @@ CREATE TABLE vehicle.vehicles (
   profile_completeness   core.score NOT NULL DEFAULT 0,
   obd_profile            jsonb,
   CHECK ((vin_encrypted IS NULL) = (vin_hash IS NULL) AND (vin_hash IS NULL) = (vin_last4 IS NULL)),
+  -- GD-34: a fleet vehicle's documents and service history reach the provider of a fleet appointment unless private.
+  data_sharing           text NOT NULL DEFAULT 'appointments' CHECK (data_sharing IN ('appointments','private')),
   CONSTRAINT vehicles_mvp_reserved CHECK (obd_profile IS NULL)            -- Phase 2 OBDII hook
 );
-CREATE UNIQUE INDEX vehicles_vin_per_owner_uq ON vehicle.vehicles (owner_type, owner_id, vin_hash)
+-- GD-33: one VIN has one owner across the platform (one non-archived vehicle per VIN); a buyer asks for a transfer.
+CREATE UNIQUE INDEX vehicles_vin_uq ON vehicle.vehicles (vin_hash)
   WHERE vin_hash IS NOT NULL AND status <> 'archived' AND deleted_at IS NULL;
 CREATE INDEX vehicles_vin_hash_idx ON vehicle.vehicles (vin_hash) WHERE vin_hash IS NOT NULL;   -- duplicate VIN warning
 CREATE INDEX vehicles_owner_idx ON vehicle.vehicles (owner_type, owner_id, status);
@@ -1922,6 +1925,19 @@ AS $$
    WHERE v.id = p_vehicle_id AND v.owner_type = 'user' AND v.deleted_at IS NULL
 $$;
 
+-- Fleet owning a vehicle, for {me} operations that also admit fleet members
+-- (40 triage.start USR | ORG(F*) DRV): the backend authorizes the caller's
+-- membership in that organization before it reads the vehicle. Null for
+-- personal vehicles and unknown ids; never returned to clients (backend S9).
+CREATE FUNCTION vehicle.vehicle_fleet_owner(p_vehicle_id uuid)
+RETURNS uuid
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT v.owner_id FROM vehicle.vehicles v
+   WHERE v.id = p_vehicle_id AND v.owner_type = 'organization' AND v.deleted_at IS NULL
+$$;
+
 -- Vehicle.duplicate_vin_warning (40 §12.1): which of the caller's own
 -- vehicles share their VIN hash with a non-archived vehicle of another
 -- owner. Only vehicles of the caller (user or organization context) are
@@ -1938,6 +1954,107 @@ AS $$
      AND EXISTS (SELECT 1 FROM vehicle.vehicles o
                   WHERE o.vin_hash = v.vin_hash AND o.id <> v.id AND o.deleted_at IS NULL AND o.status <> 'archived'
                     AND (o.owner_type, o.owner_id) IS DISTINCT FROM (v.owner_type, v.owner_id))
+$$;
+
+-- Vehicle transfers (GD-33): a user (or fleet) registering a VIN that is already owned asks the current owner
+-- to transfer the vehicle; on acceptance the vehicle and every record linked to it move to the new owner.
+CREATE TABLE vehicle.vehicle_transfers (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  vehicle_id           uuid NOT NULL REFERENCES vehicle.vehicles (id),
+  from_owner_type      core.owner_type NOT NULL,
+  from_owner_id        uuid NOT NULL,
+  to_owner_type        core.owner_type NOT NULL,
+  to_owner_id          uuid NOT NULL,
+  requested_by_user_id uuid NOT NULL,
+  -- Brand, model, year and VIN last four at request time (the buyer cannot read the owner's vehicle).
+  vehicle_summary      jsonb NOT NULL CHECK (jsonb_typeof(vehicle_summary) = 'object'),
+  message              text CHECK (char_length(message) <= 500),
+  status               text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','accepted','rejected','cancelled','expired')),
+  decided_by           uuid,
+  decided_at           timestamptz,
+  expires_at           timestamptz NOT NULL,
+  CHECK ((from_owner_type, from_owner_id) IS DISTINCT FROM (to_owner_type, to_owner_id)),
+  CHECK (status NOT IN ('accepted','rejected') OR (decided_by IS NOT NULL AND decided_at IS NOT NULL))
+);
+CREATE UNIQUE INDEX vehicle_transfers_pending_uq ON vehicle.vehicle_transfers (vehicle_id, to_owner_type, to_owner_id)
+  WHERE status = 'pending';
+CREATE INDEX vehicle_transfers_from_idx ON vehicle.vehicle_transfers (from_owner_type, from_owner_id, status);
+CREATE INDEX vehicle_transfers_to_idx ON vehicle.vehicle_transfers (to_owner_type, to_owner_id, status);
+COMMENT ON TABLE vehicle.vehicle_transfers IS 'GD-33 VehicleTransfer — "Did you buy this car?"; the owner decides';
+
+-- The current (non-archived) vehicle of a VIN hash, for vehicles.transfer_request: the claimant cannot read
+-- another owner's vehicle. Server-side only; the owner is never disclosed to the claimant (backend S9).
+CREATE FUNCTION vehicle.vehicle_by_vin_hash(p_vin_hash bytea)
+RETURNS TABLE (id uuid, owner_type text, owner_id uuid, brand_node_id uuid, model_node_id uuid, year integer, vin_last4 text)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT v.id, v.owner_type, v.owner_id, v.brand_node_id, v.model_node_id, v.year, v.vin_last4
+    FROM vehicle.vehicles v
+   WHERE v.vin_hash = p_vin_hash AND v.status <> 'archived' AND v.deleted_at IS NULL
+   LIMIT 1
+$$;
+
+-- Accepting a transfer (vehicles.transfer_decide): only the current owner (core.me() or core.my_org()) decides a
+-- pending, unexpired transfer. The vehicle changes owner; its records follow vehicle_id. Personal fields of the
+-- previous owner (nickname, notes, plate) are cleared and fleet data sharing returns to the default.
+CREATE FUNCTION vehicle.accept_transfer(p_transfer_id uuid)
+RETURNS TABLE (vehicle_id uuid, from_owner_type text, from_owner_id uuid, to_owner_type text, to_owner_id uuid)
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+DECLARE
+  t vehicle.vehicle_transfers%ROWTYPE;
+BEGIN
+  SELECT * INTO t FROM vehicle.vehicle_transfers x WHERE x.id = p_transfer_id FOR UPDATE;
+  IF NOT FOUND OR NOT ((t.from_owner_type = 'user' AND t.from_owner_id = core.me())
+                       OR (t.from_owner_type = 'organization' AND t.from_owner_id = core.my_org())) THEN
+    RAISE EXCEPTION 'NOT_FOUND: transfer' USING ERRCODE = '23514';
+  END IF;
+  IF t.status <> 'pending' OR t.expires_at <= now() THEN
+    RAISE EXCEPTION 'INVALID_TRANSITION: transfer is not pending' USING ERRCODE = '23514';
+  END IF;
+  UPDATE vehicle.vehicles v
+     SET owner_type = t.to_owner_type, owner_id = t.to_owner_id, nickname = NULL, notes = NULL,
+         license_plate = NULL, data_sharing = 'appointments'
+   WHERE v.id = t.vehicle_id AND v.owner_type = t.from_owner_type AND v.owner_id = t.from_owner_id AND v.deleted_at IS NULL;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'INVALID_TRANSITION: vehicle changed' USING ERRCODE = '23514';
+  END IF;
+  UPDATE vehicle.vehicle_transfers x SET status = 'accepted', decided_by = core.me(), decided_at = now() WHERE x.id = t.id;
+  -- Other pending requests for the same vehicle end with it.
+  UPDATE vehicle.vehicle_transfers x SET status = 'expired'
+   WHERE x.vehicle_id = t.vehicle_id AND x.status = 'pending' AND x.id <> t.id;
+  RETURN QUERY SELECT t.vehicle_id, t.from_owner_type::text, t.from_owner_id, t.to_owner_type::text, t.to_owner_id;
+END
+$$;
+
+-- Whether a fleet vehicle's data is shared through appointments right now (GD-34): providers check it on every
+-- read of a fleet appointment's pre-visit report (a vehicle marked private stops sharing at once).
+CREATE FUNCTION vehicle.fleet_data_shared(p_vehicle_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT coalesce((SELECT v.owner_type = 'organization' AND v.data_sharing = 'appointments'
+                     FROM vehicle.vehicles v WHERE v.id = p_vehicle_id AND v.deleted_at IS NULL), false)
+$$;
+
+-- Documents a fleet shares with the provider of one of its appointments (GD-34): active documents of an
+-- organization-owned vehicle whose data_sharing is not private. The caller has checked the appointment.
+CREATE FUNCTION vehicle.fleet_shared_documents(p_vehicle_id uuid, p_ids uuid[])
+RETURNS TABLE (id uuid, document_type text, title text, expires_at date, media_asset_id uuid)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT d.id, d.document_type, d.title, d.expires_at, d.media_asset_id
+    FROM vehicle.vehicle_documents d
+    JOIN vehicle.vehicles v ON v.id = d.vehicle_id
+   WHERE d.vehicle_id = p_vehicle_id AND d.id = ANY (p_ids[1:20]) AND d.status = 'active' AND d.deleted_at IS NULL
+     AND v.owner_type = 'organization' AND v.data_sharing = 'appointments' AND v.deleted_at IS NULL
 $$;
 
 \echo '== 10. inventory (WP7)'
@@ -2651,7 +2768,8 @@ CREATE TABLE appointment.appointments (
   CHECK (status <> 'cancelled' OR (cancelled_by IS NOT NULL AND cancellation_reason IS NOT NULL)),
   CHECK (status <> 'completed' OR completed_at IS NOT NULL),
   CHECK (cost_estimate_amount IS NULL OR cost_estimate_currency IS NOT NULL),
-  CHECK (NOT consent_to_share_history OR consent_reference_id IS NOT NULL),
+  -- Personal requests share history under a consent; fleet requests through the vehicle's data_sharing (GD-34).
+  CHECK (NOT consent_to_share_history OR consent_reference_id IS NOT NULL OR requester_type = 'fleet'),
   CONSTRAINT appointments_mvp_reserved CHECK (payment_reference_future IS NULL)
 );
 CREATE INDEX appointments_provider_idx ON appointment.appointments (provider_organization_id, status, confirmed_start_at);
@@ -2853,8 +2971,11 @@ CREATE TABLE appointment.pre_visit_reports (
   generated_at              timestamptz,
   status                    text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','generated','shared','archived')),
   CHECK (triage_status <> 'not_provided' OR ai_triage_insight_id IS NULL),
+  -- GD-34: a fleet appointment shares the vehicle's history and documents unless the vehicle is private.
+  fleet_data_shared         boolean NOT NULL DEFAULT false,
+  shared_document_ids       uuid[] NOT NULL DEFAULT '{}' CHECK (cardinality(shared_document_ids) <= 20),
   CONSTRAINT pre_visit_reports_history_consent CHECK ((relevant_history_summary IS NULL AND previous_related_repairs IS NULL)
-                                                      OR consent_reference_id IS NOT NULL),
+                                                      OR consent_reference_id IS NOT NULL OR fleet_data_shared),
   CONSTRAINT pre_visit_reports_mvp_reserved CHECK (obd_summary_future IS NULL)
 );
 COMMENT ON TABLE appointment.pre_visit_reports IS '52 PreVisitReport (MVP Module H) — history only with service_history_sharing consent';
@@ -4229,6 +4350,18 @@ CREATE POLICY provider_read ON vehicle.vehicle_service_records FOR SELECT USING 
 CREATE POLICY provider_insert ON vehicle.vehicle_service_records FOR INSERT
   WITH CHECK (provider_organization_id = core.my_org() AND created_by_type = 'organization'
               AND source_type IN ('provider_logged','appointment_completed'));
+-- Vehicle transfers (GD-33): both parties read; the claimant creates and cancels; the owner decides
+-- (rejection here, acceptance through vehicle.accept_transfer).
+CREATE POLICY party_read ON vehicle.vehicle_transfers FOR SELECT
+  USING ((from_owner_type = 'user' AND from_owner_id = core.me()) OR (from_owner_type = 'organization' AND from_owner_id = core.my_org())
+         OR (to_owner_type = 'user' AND to_owner_id = core.me()) OR (to_owner_type = 'organization' AND to_owner_id = core.my_org()));
+CREATE POLICY claimant_insert ON vehicle.vehicle_transfers FOR INSERT
+  WITH CHECK (status = 'pending' AND requested_by_user_id = core.me()
+              AND ((to_owner_type = 'user' AND to_owner_id = core.me()) OR (to_owner_type = 'organization' AND to_owner_id = core.my_org())));
+CREATE POLICY party_update ON vehicle.vehicle_transfers FOR UPDATE
+  USING ((from_owner_type = 'user' AND from_owner_id = core.me()) OR (from_owner_type = 'organization' AND from_owner_id = core.my_org())
+         OR (to_owner_type = 'user' AND to_owner_id = core.me()) OR (to_owner_type = 'organization' AND to_owner_id = core.my_org()))
+  WITH CHECK (status IN ('pending','rejected','cancelled'));
 -- Documents explicitly shared with a provider.
 CREATE POLICY shared_read ON vehicle.vehicle_documents FOR SELECT
   USING (visibility = 'shared_with_provider' AND status = 'active' AND shared_with_organization_id = core.my_org());
@@ -4955,7 +5088,9 @@ SELECT core.system_actor_id(), c.name, c.client_type, c.scopes, c.resources,
            'res:provider.capabilities','res:match.provider_candidates'],
      ARRAY['tool:fleet.summarize_vehicle_health','tool:fleet.suggest_provider','tool:fleet.draft_approval_recommendation',
            'tool:fleet.create_issue_report','tool:fleet.generate_cost_report','tool:match.provider_to_need','tool:match.explain',
-           'tool:triage.safety_check','tool:appointment.draft_request'],
+           'tool:triage.safety_check','tool:appointment.draft_request',
+           -- 40 ai.vehicle_suggestions / ai.service_history_insights on fleet vehicles (backend S9)
+           'tool:vehicle.extract_fields','tool:vehicle.suggest_maintenance','tool:vehicle.summarize_history'],
      'mcp.org'),
     ('matching_engine', 'matching_engine',
      ARRAY['read:provider.profile:public','read:vehicle.summary:consented'],

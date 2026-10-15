@@ -26,6 +26,24 @@ export function Operation(...opIds: OperationId[]) {
 export const operationIdsOf = (cls: unknown): string[] | undefined =>
   typeof cls === 'function' ? (cls as unknown as Record<symbol, string[] | undefined>)[OPERATION_IDS] : undefined;
 
+const OWN_FLAGS = Symbol.for('carpal.operation-own-flags');
+
+/**
+ * Safety-first degradation (40 triage.start, SEC-AI-7): the handler checks
+ * the operation's FLAG tags itself, so it can still answer the server-side
+ * safety block inside its 503 AI_UNAVAILABLE. Every other handler relies on
+ * the pipeline's flag step.
+ */
+export function ChecksOwnFlags<T extends Ctor>(target: T): T {
+  (target as unknown as Record<symbol, boolean>)[OWN_FLAGS] = true;
+  return target;
+}
+
+export const checksOwnFlags = (handler: unknown): boolean =>
+  typeof handler === 'object' &&
+  handler !== null &&
+  (handler.constructor as unknown as Record<symbol, boolean | undefined>)[OWN_FLAGS] === true;
+
 const OVERRIDE = Symbol.for('carpal.operation-override');
 
 /** Test harness only: a handler that replaces the module's real handler of the same operation. */

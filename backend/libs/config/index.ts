@@ -7,5 +7,6 @@ export {
   type InfraMode,
   type AppDbRole,
   type AnalyticsDbRole,
+  type AiDbRole,
 } from './config.js';
 export { backendDir, repoDir, dataDir, regionConfigDir } from './paths.js';

@@ -12,9 +12,11 @@ import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
 import { toPendingChange, type PendingChangeRow } from '../api/projections.js';
 import {
   FourEyes,
+  ModerationIntake,
   ModerationLog,
   PurposeQueues,
   StaffNames,
+  type AutomatedFlag,
   type ModerationActionRecord,
   type PendingChangeRequest,
   type PendingChangeView,
@@ -183,5 +185,20 @@ export class QueuePurposeVerifier implements PurposeVerifier {
     return this.tx.run({ actorType: 'staff', userId: staffUserId }, (scope) => resolver(scope, staffUserId, purpose.id, opId), {
       readOnly: true,
     });
+  }
+}
+
+@Injectable()
+export class DbModerationIntake extends ModerationIntake {
+  async open(scope: TxScope, f: AutomatedFlag): Promise<string | null> {
+    const { rows } = await sql<{ id: string }>`
+      INSERT INTO admin.moderation_cases (case_type, target_entity_type, target_entity_id, source, reason, severity, ai_risk_score, ai_flag_insight_id)
+      SELECT ${f.targetType}, ${f.targetType}, ${f.targetId}::uuid, ${f.insightId ? 'ai_flag' : 'system_rule'}, ${f.reason}, ${f.severity},
+             ${f.riskScore}, ${f.insightId}::uuid
+       WHERE NOT EXISTS (SELECT 1 FROM admin.moderation_cases c
+                          WHERE c.target_entity_type = ${f.targetType} AND c.target_entity_id = ${f.targetId}::uuid
+                            AND c.status IN ('open','investigating','escalated') AND c.deleted_at IS NULL)
+      RETURNING id`.execute(scope.db);
+    return rows[0]?.id ?? null;
   }
 }
