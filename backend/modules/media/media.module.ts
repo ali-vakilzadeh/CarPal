@@ -7,6 +7,7 @@
 // The W6 worker host (workers/media-processor) runs MediaProcessor.
 import { Global, Injectable, Module, Optional, type OnModuleInit } from '@nestjs/common';
 import { ConsentScopes, DataExportFiles } from '#modules/identity/interface/identity.js';
+import { AdminMediaDownloadUrlHandler, MediaAdminRegistrations } from './application/admin-ops.js';
 import { DbMediaService, MediaExportFiles, MediaUrls } from './application/media-service.js';
 import { MediaProcessor } from './application/processor.js';
 import { AttachmentTargets, MediaService } from './interface/media.js';
@@ -53,6 +54,9 @@ export class MediaRegistrations implements OnModuleInit {
     { provide: DataExportFiles, useClass: MediaExportFiles },
     MediaProcessor,
     MediaRegistrations,
+    MediaAdminRegistrations,
+    // admin-api host only (other hosts skip it: the route is not theirs).
+    AdminMediaDownloadUrlHandler,
   ],
   exports: [AttachmentTargets, MediaService, DataExportFiles, MediaUrls, MediaProcessor],
 })

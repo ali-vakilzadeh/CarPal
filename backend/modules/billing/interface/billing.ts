@@ -29,6 +29,14 @@ export interface SubscriptionSummary {
 export abstract class SubscriptionReader {
   /** The user's personal subscription summary (Individual Free is created when missing), in the caller's transaction. */
   abstract summaryForUser(scope: TxScope, userId: string): Promise<SubscriptionSummary>;
+  /**
+   * The same summary for staff views (40 StaffUserView.subscription): reads
+   * only, a user without a subscription row is shown on the default
+   * individual plan (staff cannot create subscriptions on read).
+   */
+  abstract staffSummaryForUser(scope: TxScope, userId: string): Promise<SubscriptionSummary>;
+  /** 40 Subscription of a subscriber for staff views (StaffOrgView): the current one, else the latest; null when none exists. */
+  abstract staffSubscription(scope: TxScope, subscriber: Subscriber): Promise<unknown>;
 }
 
 export interface Subscriber {

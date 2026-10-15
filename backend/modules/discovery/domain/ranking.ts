@@ -47,6 +47,8 @@ export interface MatchContext {
   /** Distance at which the distance factor reaches 0. */
   maxDistanceKm: number;
   favorites: ReadonlySet<string>;
+  /** Preferred providers of the searching fleet (as_organization_id, S8). */
+  preferred?: ReadonlySet<string>;
   /** Ranking time (availability fit); defaults to now. */
   now?: number;
 }
@@ -157,10 +159,15 @@ function confidenceOf(score: number, evidence: boolean): Scored['confidence'] {
 const urgent = (u: MatchContext['urgency']): boolean => u === 'high' || u === 'safety_critical';
 
 function withBonus(base: number, orgId: string, ctx: MatchContext, reasons: Reason[]): number {
-  // 54 §5.1 user preference bonus: +5 for a favourite (fleet preferred partners join in S8), capped at +10.
-  if (!ctx.favorites.has(orgId)) return base;
-  reasons.push({ reason_type: 'user_preference', values: { favorite: true } });
-  return base + 5;
+  // 54 §5.1 user preference bonus: +5 for a favourite and +5 for a fleet preferred partner, capped at +10.
+  const favorite = ctx.favorites.has(orgId);
+  const preferred = !!ctx.preferred?.has(orgId);
+  if (!favorite && !preferred) return base;
+  reasons.push({
+    reason_type: 'user_preference',
+    values: { ...(favorite ? { favorite: true } : {}), ...(preferred ? { preferred_partner: true } : {}) },
+  });
+  return base + Math.min(10, (favorite ? 5 : 0) + (preferred ? 5 : 0));
 }
 
 /** 54 §5.1 provider match score. */

@@ -98,8 +98,9 @@ describe('installation', () => {
       'admin.feature_flags': 22,
       'admin.data_retention_policies': 17,
       'ai_mcp.mcp_clients': 8,
-      // Integration tests add fixture accounts (@test.carpal.app, libs/testing) to the shared database.
-      "identity.user_accounts WHERE email NOT LIKE '%@test.carpal.app'": 2,
+      // Integration tests add fixture accounts (@test.carpal.app, libs/testing) to the shared database;
+      // DSR deletion tests anonymize some of them (deleted-<id>@deleted.carpal.invalid).
+      "identity.user_accounts WHERE email NOT LIKE '%@test.carpal.app' AND email NOT LIKE '%@deleted.carpal.invalid'": 2,
     };
     for (const [table, n] of Object.entries(expected)) {
       expect(await count(su, `SELECT count(*) AS n FROM ${table}`), table).toBe(n);

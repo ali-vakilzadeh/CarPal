@@ -4627,6 +4627,23 @@ END
 $$;
 COMMENT ON FUNCTION billing.ensure_user_subscription IS 'Creates the default individual subscription when missing (system or the user themself)';
 
+-- Appeals of moderation actions (40 disputes.create, target moderation_action;
+-- S8): the user or organization an action affected may appeal it, but the
+-- staff log itself stays unreadable to them. Only the affected parties leave.
+CREATE FUNCTION admin.moderation_action_affects(p_action_id uuid)
+RETURNS TABLE (user_id uuid, organization_id uuid)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT CASE WHEN a.target_entity_type = 'user' THEN a.target_entity_id
+              WHEN a.params ->> 'user_id' ~ '^[0-9a-f-]{36}$' THEN (a.params ->> 'user_id')::uuid END,
+         CASE WHEN a.target_entity_type = 'organization' THEN a.target_entity_id
+              WHEN a.params ->> 'subject_organization_id' ~ '^[0-9a-f-]{36}$' THEN (a.params ->> 'subject_organization_id')::uuid END
+    FROM admin.moderation_actions a
+   WHERE a.id = p_action_id
+$$;
+COMMENT ON FUNCTION admin.moderation_action_affects IS 'Parties a moderation action affected (appeals), no other fields';
+
 -- ------------------------------------------------------------- 21.3 grants
 REVOKE ALL ON ALL TABLES IN SCHEMA core, identity, organization, billing, taxonomy, vehicle, inventory, discovery,
   trust, appointment, fleet, community, media, notification, admin, analytics, ai_mcp FROM PUBLIC;

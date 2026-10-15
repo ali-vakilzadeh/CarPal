@@ -172,6 +172,12 @@ export abstract class MediaService {
 
   /** Readiness of the active attachments of one record. */
   abstract attachedAssets(scope: TxScope, type: AttachedToType, id: string): Promise<AttachedAsset[]>;
+  /**
+   * Moderation decision for the active attachments of a record moderated as
+   * a whole (a portfolio item approved by the moderation queue makes its
+   * media publicly servable, 52 §15). Staff or system context.
+   */
+  abstract moderateAttached(scope: TxScope, type: AttachedToType, id: string, status: 'approved' | 'rejected'): Promise<number>;
 
   /** Signed URLs of organization logos that may be shown publicly (52 §15 public rules), by organization id. */
   abstract logoUrls(scope: TxScope, orgIds: readonly string[]): Promise<Map<string, string>>;

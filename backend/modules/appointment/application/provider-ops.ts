@@ -138,7 +138,22 @@ export class ProviderAppointmentsUpdateHandler implements OperationHandler {
         .where('id', '=', a.id)
         .returningAll()
         .executeTakeFirstOrThrow();
-      // Fleet cost thresholds and approvals belong to the fleet module (S8): no fleet.approval.requested before it exists.
+      // 40 Appendix A: a cost estimate on a fleet appointment asks the fleet; the fleet module opens a cost_estimate
+      // approval when it is above the fleet's threshold (consumer fleet.cost_approvals, S8).
+      if (b.cost_estimate && a.requester_type === 'fleet' && a.requester_organization_id)
+        await publishEvent(scope, {
+          type: 'fleet.approval.requested',
+          aggregateType: 'appointment',
+          aggregateId: a.id,
+          payload: {
+            organization_id: a.requester_organization_id,
+            appointment_id: a.id,
+            vehicle_id: a.vehicle_id,
+            approval_type: 'cost_estimate',
+            cost_estimate: b.cost_estimate,
+            requested_by_user_id: a.requester_user_id,
+          },
+        });
       return this.views.one(scope, row, 'provider', ctx.locale);
     });
     return { body };

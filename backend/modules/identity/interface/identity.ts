@@ -214,3 +214,51 @@ export abstract class Recipients {
   /** Active members of an organization with one of `roles` (all active members when empty). */
   abstract members(scope: TxScope, orgId: string, roles: readonly string[]): Promise<string[]>;
 }
+
+/**
+ * Account status changes by staff (40 admin.user_status, admin.case_action
+ * suspend_account / reactivate_account). Suspension and deactivation revoke
+ * every session after commit; roles are re-read at once (SEC-AU-3).
+ */
+export abstract class AccountAdmin {
+  /** Sets the account status in the caller's (staff) transaction; 404 NOT_FOUND for unknown or deleted accounts. */
+  abstract setStatus(
+    scope: TxScope,
+    userId: string,
+    status: 'active' | 'suspended' | 'deactivated',
+    o: { reason: string; suspendUntil?: string | null },
+  ): Promise<{ previous: string; next: string }>;
+  /** Staff review views (40 StaffReviewApprovalView.author_history): account age and verified contact, no contact data. */
+  abstract facts(scope: TxScope, userId: string): Promise<{ createdAt: Date; verifiedContact: boolean } | null>;
+}
+
+/** One section of a DSR export bundle (40 admin.dsr_export): records as flat field maps. */
+export interface PersonalDataSection {
+  section: string;
+  records: { id: string; fields: Record<string, string | number | boolean | null> }[];
+}
+
+/**
+ * A module's part of data subject requests (40 §6.5, admin.dsr_export,
+ * admin.dsr_execute_deletion; 41 §2.4 W8 "through each module's export
+ * interface"). Both run in the worker's system context. `erase` deletes the
+ * module's private data of the user and anonymizes what must stay (authored
+ * public content keeps its text, its author becomes "former member").
+ */
+export interface PersonalDataHandler {
+  export?(scope: TxScope, userId: string): Promise<PersonalDataSection[]>;
+  erase?(scope: TxScope, userId: string): Promise<number>;
+}
+
+export class PersonalDataRegistry {
+  readonly #handlers = new Map<string, PersonalDataHandler>();
+
+  register(module: string, handler: PersonalDataHandler): void {
+    if (this.#handlers.has(module)) throw new Error(`personal data handler ${module} registered twice`);
+    this.#handlers.set(module, handler);
+  }
+
+  entries(): [string, PersonalDataHandler][] {
+    return [...this.#handlers.entries()];
+  }
+}

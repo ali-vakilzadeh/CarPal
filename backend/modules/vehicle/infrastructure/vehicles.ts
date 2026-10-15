@@ -9,6 +9,7 @@ import { registerConstraintErrors } from '#libs/db/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import type { JobLogVerification, VisitInfo } from '#modules/organization/interface/extensions.js';
+import { VehicleCreator, type VehicleWrite } from '../application/vehicle-ops.js';
 import { issueOpen } from '../domain/rules.js';
 import {
   VehicleCards,
@@ -20,6 +21,10 @@ import {
   type OwnedVehicle,
   type ServiceVisit,
   type VehicleCard,
+  type FleetIssueRow,
+  type FleetServiceRow,
+  type FleetVehicleFigures,
+  type FleetVehicleRow,
 } from '../interface/vehicles.js';
 
 registerConstraintErrors({
@@ -146,6 +151,157 @@ export class DbVehicleCards extends VehicleCards {
     }));
   }
 
+  async serviceRecordParties(scope: TxScope, recordId: string) {
+    // RLS: the owner's records, or the provider of record's (provider_read); the vehicle owner through the definer.
+    const r = await scope.db
+      .selectFrom('vehicle.vehicle_service_records')
+      .select(['vehicle_id', 'provider_organization_id'])
+      .where('id', '=', recordId)
+      .where('status', '<>', 'removed')
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (!r) return null;
+    const { rows } = await sql<{ owner_id: string | null }>`SELECT vehicle.vehicle_owner(${r.vehicle_id}::uuid) AS owner_id`.execute(
+      scope.db,
+    );
+    const owner = rows[0]?.owner_id;
+    if (owner) return { ownerType: 'user' as const, ownerId: owner, providerOrgId: r.provider_organization_id };
+    // vehicle_owner answers personal vehicles only: fleet vehicles are read by their owner directly.
+    const v = await scope.db
+      .selectFrom('vehicle.vehicles')
+      .select(['owner_type', 'owner_id'])
+      .where('id', '=', r.vehicle_id)
+      .executeTakeFirst();
+    return v
+      ? { ownerType: v.owner_type as 'user' | 'organization', ownerId: v.owner_id, providerOrgId: r.provider_organization_id }
+      : null;
+  }
+
+  async fleetVehicles(scope: TxScope, orgId: string, vehicleIds?: readonly string[]): Promise<FleetVehicleRow[]> {
+    let q = scope.db
+      .selectFrom('vehicle.vehicles')
+      .select([
+        'id',
+        'brand_node_id',
+        'model_node_id',
+        'year',
+        'nickname',
+        'license_plate',
+        'vin_last4',
+        'status',
+        'mileage_km',
+        'created_at',
+      ])
+      .where('owner_type', '=', 'organization')
+      .where('owner_id', '=', orgId)
+      .where('deleted_at', 'is', null);
+    if (vehicleIds) q = q.where('id', 'in', vehicleIds.length ? [...vehicleIds] : ['00000000-0000-7000-8000-000000000000']);
+    const rows = await q.orderBy('id').limit(100_000).execute();
+    return rows.map((r) => ({
+      id: r.id,
+      brandNodeId: r.brand_node_id,
+      modelNodeId: r.model_node_id,
+      year: r.year,
+      nickname: r.nickname,
+      licensePlate: r.license_plate,
+      vinLast4: r.vin_last4,
+      status: r.status,
+      mileageKm: r.mileage_km,
+      createdAt: r.created_at,
+    }));
+  }
+
+  async fleetServiceRecords(
+    scope: TxScope,
+    orgId: string,
+    from: string,
+    to: string,
+    vehicleIds?: readonly string[],
+  ): Promise<FleetServiceRow[]> {
+    let q = scope.db
+      .selectFrom('vehicle.vehicle_service_records as r')
+      .innerJoin('vehicle.vehicles as v', 'v.id', 'r.vehicle_id')
+      .select([
+        'r.id',
+        'r.vehicle_id',
+        'r.service_date',
+        'r.provider_organization_id',
+        'r.service_system_node_id',
+        'r.service_task_node_id',
+        'r.cost_amount',
+        'r.currency',
+        'r.appointment_id',
+      ])
+      .where('v.owner_type', '=', 'organization')
+      .where('v.owner_id', '=', orgId)
+      .where('r.status', '<>', 'removed')
+      .where('r.deleted_at', 'is', null)
+      .where('r.service_date', '>=', from)
+      .where('r.service_date', '<=', to);
+    if (vehicleIds?.length) q = q.where('r.vehicle_id', 'in', [...vehicleIds]);
+    const rows = await q.orderBy('r.service_date').limit(100_000).execute();
+    return rows.map((r) => ({
+      id: r.id,
+      vehicleId: r.vehicle_id,
+      serviceDate: String(r.service_date).slice(0, 10),
+      providerOrgId: r.provider_organization_id,
+      serviceSystemNodeId: r.service_system_node_id,
+      serviceTaskNodeId: r.service_task_node_id,
+      costAmount: r.cost_amount,
+      currency: r.currency,
+      appointmentId: r.appointment_id,
+    }));
+  }
+
+  async fleetIssues(scope: TxScope, orgId: string, from: Date, to: Date): Promise<FleetIssueRow[]> {
+    const rows = await scope.db
+      .selectFrom('vehicle.vehicle_issues as i')
+      .innerJoin('vehicle.vehicles as v', 'v.id', 'i.vehicle_id')
+      .select(['i.id', 'i.vehicle_id', 'i.symptom_node_id', 'i.source', 'i.status', 'i.created_at'])
+      .where('v.owner_type', '=', 'organization')
+      .where('v.owner_id', '=', orgId)
+      .where('i.deleted_at', 'is', null)
+      .where('i.created_at', '>=', from)
+      .where('i.created_at', '<', to)
+      .limit(100_000)
+      .execute();
+    return rows.map((r) => ({
+      id: r.id,
+      vehicleId: r.vehicle_id,
+      symptomNodeId: r.symptom_node_id,
+      source: r.source,
+      status: r.status,
+      createdAt: r.created_at,
+    }));
+  }
+
+  async fleetDashboard(scope: TxScope, orgId: string): Promise<FleetVehicleFigures> {
+    const { rows } = await sql<{ total: string; due: string; in_repair: string; open_issues: string; driver_issues: string }>`
+      SELECT (SELECT count(*) FROM vehicle.vehicles v WHERE v.owner_type = 'organization' AND v.owner_id = ${orgId}::uuid
+                 AND v.status IN ('active','in_repair') AND v.deleted_at IS NULL) AS total,
+             (SELECT count(DISTINCT r.vehicle_id) FROM vehicle.maintenance_reminders r JOIN vehicle.vehicles v ON v.id = r.vehicle_id
+               WHERE v.owner_type = 'organization' AND v.owner_id = ${orgId}::uuid AND v.deleted_at IS NULL
+                 AND r.status IN ('due','overdue') AND r.deleted_at IS NULL) AS due,
+             (SELECT count(*) FROM vehicle.vehicles v WHERE v.owner_type = 'organization' AND v.owner_id = ${orgId}::uuid
+                 AND v.status = 'in_repair' AND v.deleted_at IS NULL) AS in_repair,
+             (SELECT count(*) FROM vehicle.vehicle_issues i JOIN vehicle.vehicles v ON v.id = i.vehicle_id
+               WHERE v.owner_type = 'organization' AND v.owner_id = ${orgId}::uuid AND v.deleted_at IS NULL
+                 AND i.status IN ('open','investigating','scheduled') AND i.deleted_at IS NULL) AS open_issues,
+             (SELECT count(*) FROM vehicle.vehicle_issues i JOIN vehicle.vehicles v ON v.id = i.vehicle_id
+               WHERE v.owner_type = 'organization' AND v.owner_id = ${orgId}::uuid AND v.deleted_at IS NULL
+                 AND i.source = 'fleet_driver' AND i.status IN ('open','investigating','scheduled') AND i.deleted_at IS NULL) AS driver_issues`.execute(
+      scope.db,
+    );
+    const r = rows[0]!;
+    return {
+      total: Number(r.total),
+      dueForService: Number(r.due),
+      inRepair: Number(r.in_repair),
+      openIssues: Number(r.open_issues),
+      driverReportedIssues: Number(r.driver_issues),
+    };
+  }
+
   async appointmentRecords(scope: TxScope, appointmentIds: readonly string[]): Promise<Map<string, string>> {
     const ids = [...new Set(appointmentIds)].slice(0, 500);
     if (ids.length === 0) return new Map();
@@ -184,6 +340,10 @@ export class DbVehicleCards extends VehicleCards {
 
 @Injectable()
 export class DbVehicleService extends VehicleService {
+  constructor(private readonly creator: VehicleCreator) {
+    super();
+  }
+
   async recordAppointmentService(scope: TxScope, r: AppointmentServiceRecord): Promise<string> {
     const row = await scope.db
       .insertInto('vehicle.vehicle_service_records')
@@ -230,6 +390,24 @@ export class DbVehicleService extends VehicleService {
         service_system_node_id: row.service_system_node_id,
         appointment_id: r.appointmentId,
       },
+    });
+    return row.id;
+  }
+
+  async setIssueApproval(scope: TxScope, issueId: string, status: 'approved' | 'rejected'): Promise<void> {
+    await scope.db
+      .updateTable('vehicle.vehicle_issues')
+      .set({ fleet_approval_status: status })
+      .where('id', '=', issueId)
+      .where('source', '=', 'fleet_driver')
+      .where('deleted_at', 'is', null)
+      .execute();
+  }
+
+  async createFleetVehicle(scope: TxScope, orgId: string, body: Record<string, unknown>, createdBy: string): Promise<string> {
+    const row = await this.creator.create(scope, { type: 'organization', id: orgId }, body as unknown as VehicleWrite, {
+      userId: createdBy,
+      driver: false,
     });
     return row.id;
   }

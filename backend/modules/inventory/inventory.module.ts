@@ -17,11 +17,13 @@ import { UsageCounters } from '#modules/billing/interface/billing.js';
 import { ConsentScopes } from '#modules/identity/interface/identity.js';
 import { AttachmentTargets, MediaService } from '#modules/media/interface/media.js';
 import { OrganizationExtensions } from '#modules/organization/interface/extensions.js';
+import { repointColumns, TaxonomyReferences } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { CatalogQuality, ItemReferences } from './application/common.js';
 import { InventoryBulkUpdater, InventoryImporter } from './application/importer.js';
 import { rateString } from './domain/rules.js';
 import { DbInventoryRead } from './infrastructure/inventory-read.js';
 import { InventoryRead } from './interface/inventory.js';
+import { InventoryAdminRegistrations } from './application/admin-registrations.js';
 
 export { InventoryBulkUpdater, InventoryImporter } from './application/importer.js';
 export { IMPORT_QUEUE } from './application/import-ops.js';
@@ -58,9 +60,14 @@ export class InventoryRegistrations implements OnModuleInit {
     @Optional() private readonly ext?: OrganizationExtensions,
     @Optional() private readonly targets?: AttachmentTargets,
     @Optional() private readonly scopes?: ConsentScopes,
+    @Optional() private readonly taxonomyRefs?: TaxonomyReferences,
   ) {}
 
   onModuleInit(): void {
+    // admin.taxonomy_merge (S8): item categories follow a merged node.
+    this.taxonomyRefs?.register('inventory', (scope, from, into) =>
+      repointColumns(scope, [['inventory.inventory_items', 'part_category_node_id']], from, into),
+    );
     // 52 InventoryItem: active items count toward max_inventory_items (read after the subscriber lock).
     this.counters?.register('max_inventory_items', (scope, s) =>
       s.type === 'organization' ? countActive(scope, s.id) : Promise.resolve(0),
@@ -115,6 +122,7 @@ export class InventoryRegistrations implements OnModuleInit {
 @Global()
 @Module({
   providers: [
+    InventoryAdminRegistrations,
     { provide: InventoryRead, useClass: DbInventoryRead },
     CatalogQuality,
     ItemReferences,

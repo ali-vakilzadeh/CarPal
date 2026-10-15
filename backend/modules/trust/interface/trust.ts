@@ -58,3 +58,15 @@ export const REVIEW_WINDOW_MS = 7 * 86_400_000;
 
 /** 40 PublicOrgCard.overall_rating: Dec<1,2> (two decimals at most). */
 export const ratingString = (avg: number | null): string | null => (avg === null ? null : String(Math.round(avg * 100) / 100));
+
+/** Trust operations staff run from other modules' admin flows (moderation, user views). */
+export abstract class TrustAdmin {
+  /**
+   * Revokes a badge (admin.case_action revoke_badge) in the staff transaction:
+   * status revoked with the reason, audit entry and badge.revoked. Null when
+   * the badge does not exist or is already revoked.
+   */
+  abstract revokeBadge(scope: TxScope, badgeId: string, reason: string): Promise<{ organizationId: string } | null>;
+  /** StaffUserView.counts: reviews the user wrote and their open disputes. */
+  abstract userCounts(scope: TxScope, userId: string): Promise<{ reviews: number; openDisputes: number }>;
+}

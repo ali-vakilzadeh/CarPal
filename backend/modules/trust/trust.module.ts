@@ -9,15 +9,19 @@
 //   TrustApiModule     §15 operations and public.org_reviews on the api host.
 //   TrustWorkerModule  W15 rules: Path 2 deadline, invitation reminders and
 //                      expiry, the nightly trust sweep (hosted by the worker).
+//   TrustAdminModule   §23.4 review approvals, disputes and badge approval on
+//                      the admin-api host (trust-admin.module.ts).
 import { Global, Injectable, Module, Optional, type OnModuleInit } from '@nestjs/common';
 import { sql } from 'kysely';
 import { AttachmentTargets } from '#modules/media/interface/media.js';
 import { OrganizationExtensions } from '#modules/organization/interface/extensions.js';
+import { DbTrustAdmin } from './application/admin-ops.js';
+import { TrustAdminRegistrations } from './application/admin-registrations.js';
 import { Invitations } from './application/invitation-ops.js';
 import { HelpfulCountConsumer, ReviewWorkflow, ReviewWorkflowConsumer, TrustScoringConsumer } from './application/review-workflow.js';
 import { TrustScorer } from './application/trust-scorer.js';
 import { DbTrustRead } from './infrastructure/trust-read.js';
-import { ratingString, TrustRead } from './interface/trust.js';
+import { ratingString, TrustAdmin, TrustRead } from './interface/trust.js';
 
 const inPeriod = (period: { from: string; to: string }) => ({
   from: new Date(`${period.from}T00:00:00Z`),
@@ -83,7 +87,9 @@ export class TrustRegistrations implements OnModuleInit {
     TrustScoringConsumer,
     HelpfulCountConsumer,
     TrustRegistrations,
+    { provide: TrustAdmin, useClass: DbTrustAdmin },
+    TrustAdminRegistrations,
   ],
-  exports: [TrustRead, TrustScorer, Invitations, ReviewWorkflow],
+  exports: [TrustRead, TrustScorer, Invitations, ReviewWorkflow, TrustAdmin],
 })
 export class TrustModule {}

@@ -41,8 +41,72 @@ export abstract class VehicleCards {
   abstract serviceHistory(scope: TxScope, vehicleId: string, limit: number): Promise<HistoryEntry[]>;
   /** An issue of a vehicle the caller owns (40 SearchRequest.issue_id, AppointmentCreate.related_issue_id), else null. */
   abstract issue(scope: TxScope, issueId: string): Promise<IssueCard | null>;
+  /**
+   * The parties of a service record the caller can see (RLS: the owner, or
+   * the provider of record): disputes about service records (40 §15.3).
+   */
+  abstract serviceRecordParties(
+    scope: TxScope,
+    recordId: string,
+  ): Promise<{ ownerType: 'user' | 'organization'; ownerId: string; providerOrgId: string | null } | null>;
+  /** A fleet's vehicles (fleet context or system): dashboards, reports, exports. Never the VIN, only its last four. */
+  abstract fleetVehicles(scope: TxScope, orgId: string, vehicleIds?: readonly string[]): Promise<FleetVehicleRow[]>;
+  /** Active service records of a fleet's vehicles with service dates in [from, to] (YYYY-MM-DD). */
+  abstract fleetServiceRecords(
+    scope: TxScope,
+    orgId: string,
+    from: string,
+    to: string,
+    vehicleIds?: readonly string[],
+  ): Promise<FleetServiceRow[]>;
+  /** Issues of a fleet's vehicles reported in [from, to). */
+  abstract fleetIssues(scope: TxScope, orgId: string, from: Date, to: Date): Promise<FleetIssueRow[]>;
+  /** 40 FleetDashboard vehicle figures. */
+  abstract fleetDashboard(scope: TxScope, orgId: string): Promise<FleetVehicleFigures>;
   /** Service records of appointments visible to the caller (owner, or provider of record), by appointment id. */
   abstract appointmentRecords(scope: TxScope, appointmentIds: readonly string[]): Promise<Map<string, string>>;
+}
+
+export interface FleetVehicleRow {
+  id: string;
+  brandNodeId: string;
+  modelNodeId: string;
+  year: number;
+  nickname: string | null;
+  licensePlate: string | null;
+  vinLast4: string | null;
+  status: string;
+  mileageKm: number | null;
+  createdAt: Date;
+}
+
+export interface FleetServiceRow {
+  id: string;
+  vehicleId: string;
+  serviceDate: string;
+  providerOrgId: string | null;
+  serviceSystemNodeId: string;
+  serviceTaskNodeId: string | null;
+  costAmount: string | null;
+  currency: string | null;
+  appointmentId: string | null;
+}
+
+export interface FleetIssueRow {
+  id: string;
+  vehicleId: string;
+  symptomNodeId: string | null;
+  source: string;
+  status: string;
+  createdAt: Date;
+}
+
+export interface FleetVehicleFigures {
+  total: number;
+  dueForService: number;
+  inRepair: number;
+  openIssues: number;
+  driverReportedIssues: number;
 }
 
 export interface ServiceVisit {
@@ -110,4 +174,13 @@ export abstract class VehicleService {
   abstract recordAppointmentService(scope: TxScope, r: AppointmentServiceRecord): Promise<string>;
   /** An issue converted into an appointment becomes scheduled (40 VehicleIssue.converted_appointment_id). */
   abstract markIssueScheduled(scope: TxScope, issueId: string, appointmentId: string): Promise<void>;
+  /** A fleet approval was decided for a driver's issue (52 VehicleIssue.fleet_approval_status). */
+  abstract setIssueApproval(scope: TxScope, issueId: string, status: 'approved' | 'rejected'): Promise<void>;
+  /**
+   * Creates a fleet vehicle with the rules of vehicles.create (taxonomy
+   * chain, VIN sealing and per-owner uniqueness, max_vehicles inside the
+   * transaction, vehicle.created): fleet CSV imports (W7). The body has
+   * passed the vehicles.create input schema. Returns the vehicle id.
+   */
+  abstract createFleetVehicle(scope: TxScope, orgId: string, body: Record<string, unknown>, createdBy: string): Promise<string>;
 }

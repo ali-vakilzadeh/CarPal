@@ -535,6 +535,9 @@ export class HttpPipeline {
       // DoD: an AUD operation writes its audit entry (analytics.write_audit) when it succeeds.
       if (route.security.tags.some((t) => t.tag === 'AUD') && !marks.has(AUDIT_MARK))
         throw new ApiError('INTERNAL', { detail: `${op.opId} is AUD but wrote no audit entry` });
+      // SEC-LOG-4: a staff read of a PII response writes its read-audit entry (pii.read with the access purpose).
+      if (x.principal.kind === 'staff' && route.security.tags.some((t) => t.tag === 'PII') && !marks.has(AUDIT_MARK))
+        throw new ApiError('INTERNAL', { detail: `${op.opId} is PII but wrote no read-audit entry` });
     }
     // SEC-IC-3: versioned resources carry ETag "v<version>".
     if (body && typeof body === 'object' && Number.isInteger((body as { version?: unknown }).version))

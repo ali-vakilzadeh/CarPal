@@ -36,8 +36,12 @@ function parseValue(type: string, raw: string | null): EntitlementValue {
   return raw === null ? null : Number(raw);
 }
 
-export async function loadPlans(scope: TxScope, filter: { audience?: string; ids?: string[] } = {}): Promise<PlanWithEntitlements[]> {
-  let q = scope.db.selectFrom('billing.plans').selectAll().where('status', '=', 'active').where('deleted_at', 'is', null);
+export async function loadPlans(
+  scope: TxScope,
+  filter: { audience?: string; ids?: string[]; includeInactive?: boolean } = {},
+): Promise<PlanWithEntitlements[]> {
+  let q = scope.db.selectFrom('billing.plans').selectAll().where('deleted_at', 'is', null);
+  if (!filter.includeInactive) q = q.where('status', '=', 'active');
   if (filter.audience) q = q.where('audience', '=', filter.audience);
   if (filter.ids) q = q.where('id', 'in', filter.ids.length ? filter.ids : ['00000000-0000-7000-8000-000000000000']);
   const plans = await q.execute();

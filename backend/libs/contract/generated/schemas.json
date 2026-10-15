@@ -4391,6 +4391,11 @@
         "updated_at": {
           "type": "string",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
         }
       },
       "required": [
@@ -4401,9 +4406,11 @@
         "targeting",
         "environment",
         "updated_by_display",
-        "updated_at"
+        "updated_at",
+        "version"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "version: If-Match of admin.flag_update"
     },
     "FeedItem": {
       "type": "object",
@@ -8377,6 +8384,11 @@
             "suspended",
             "revoked"
           ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
         }
       },
       "required": [
@@ -8389,9 +8401,11 @@
         "rate_limit_policy",
         "geo_restrictions",
         "environment",
-        "status"
+        "status",
+        "version"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "If-Match of admin.mcp_client_update"
     },
     "McpRiskLevel": {
       "type": "string",
@@ -20410,6 +20424,11 @@
               "type": "null"
             }
           ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
         }
       },
       "required": [
@@ -20425,7 +20444,8 @@
         "status",
         "merged_into_id"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "staff responses only (If-Match of admin.taxonomy_node_update)"
     },
     "TaxonomyNodeWrite": {
       "type": "object",

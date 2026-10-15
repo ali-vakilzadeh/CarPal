@@ -5,6 +5,8 @@
 // catalog changes (taxonomy.node.merged, admin edits).
 import type { TaxonomyType } from '#libs/contract/generated/enums.js';
 import type { L10n, Locale } from '#libs/i18n/index.js';
+import { sql } from 'kysely';
+import type { TxScope } from '#libs/tenancy/index.js';
 
 export interface TaxonomyNodeRecord {
   id: string;
@@ -69,4 +71,45 @@ export abstract class TaxonomyResolver {
   abstract version(): Promise<TaxonomyVersionInfo>;
   /** Drops the cache (admin taxonomy changes, taxonomy.node.merged). */
   abstract invalidate(): void;
+}
+
+/**
+ * Re-pointing of taxonomy references when a node is merged (40
+ * admin.taxonomy_merge: "every reference is re-pointed in a background job
+ * before the node becomes merged"). Each module owning taxonomy references
+ * registers a handler; it runs in the worker's system context and returns the
+ * number of rows re-pointed. References a module cannot move (unique
+ * constraints) stay on the merged node and resolve through canonicalId().
+ */
+export type TaxonomyRepointer = (scope: TxScope, fromId: string, intoId: string) => Promise<number>;
+
+export class TaxonomyReferences {
+  readonly #handlers = new Map<string, TaxonomyRepointer>();
+
+  register(module: string, handler: TaxonomyRepointer): void {
+    if (this.#handlers.has(module)) throw new Error(`taxonomy references of ${module} registered twice`);
+    this.#handlers.set(module, handler);
+  }
+
+  entries(): [string, TaxonomyRepointer][] {
+    return [...this.#handlers.entries()];
+  }
+}
+
+/** Re-points simple (non-unique) node columns: `UPDATE table SET column = into WHERE column = from`. */
+export async function repointColumns(
+  scope: TxScope,
+  columns: readonly (readonly [table: string, column: string])[],
+  fromId: string,
+  intoId: string,
+): Promise<number> {
+  let n = 0;
+  for (const [table, column] of columns) {
+    const r =
+      await sql`UPDATE ${sql.table(table)} SET ${sql.ref(column)} = ${intoId}::uuid WHERE ${sql.ref(column)} = ${fromId}::uuid`.execute(
+        scope.db,
+      );
+    n += Number(r.numAffectedRows ?? 0);
+  }
+  return n;
 }

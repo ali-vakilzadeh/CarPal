@@ -234,8 +234,43 @@ export const TEMPLATES: Catalog = {
     fa: { subject: 'خودروی ناوگان نیاز به سرویس دارد', text: 'یادآوری {reminder_type} یکی از خودروهای ناوگان {status} است.' },
   },
   'fleet.approval_needed': {
-    en: { subject: 'Driver issue waiting for approval', text: 'A driver reported an issue that needs your approval.' },
-    fa: { subject: 'گزارش راننده منتظر تأیید', text: 'یک راننده مشکلی گزارش کرده که به تأیید شما نیاز دارد.' },
+    en: {
+      subject: 'A fleet request is waiting for approval',
+      text: 'A {approval_type} request for one of your fleet vehicles needs your approval.',
+    },
+    fa: {
+      subject: 'درخواستی در ناوگان منتظر تأیید است',
+      text: 'یک درخواست {approval_type} برای یکی از خودروهای ناوگان به تأیید شما نیاز دارد.',
+    },
+  },
+  'fleet.approval_decided': {
+    en: { subject: 'Your fleet request was decided', text: 'Your {approval_type} request was {status}.' },
+    fa: { subject: 'درباره درخواست ناوگان شما تصمیم گرفته شد', text: 'درخواست {approval_type} شما {status} شد.' },
+  },
+  'moderation.action_taken': {
+    en: {
+      subject: 'An update from CarPal moderation',
+      text: 'Our moderators took an action ({action_type}) on your {target_type}. You can appeal it from your account.',
+    },
+    fa: {
+      subject: 'خبری از ناظران کارپال',
+      text: 'ناظران ما درباره {target_type} شما اقدامی ({action_type}) انجام دادند. می‌توانید از حساب خود اعتراض کنید.',
+    },
+  },
+  'organization.verified': {
+    en: { subject: 'Your business is verified', text: 'CarPal verified your business identity and location. Your profile now shows it.' },
+    fa: { subject: 'کسب‌وکار شما تأیید شد', text: 'کارپال هویت و موقعیت کسب‌وکار شما را تأیید کرد و این در نمایه شما نمایش داده می‌شود.' },
+  },
+  'organization.location_corrected': {
+    en: {
+      subject: 'Your location was corrected',
+      text: 'CarPal corrected the map pin or address of one of your locations. Please review it.',
+    },
+    fa: { subject: 'موقعیت شما اصلاح شد', text: 'کارپال نشانگر نقشه یا نشانی یکی از شعبه‌های شما را اصلاح کرد. لطفاً آن را بررسی کنید.' },
+  },
+  'admin.dsr_deadline': {
+    en: { subject: 'Data requests are due soon', text: '{request_count} data subject requests are due within 3 days.' },
+    fa: { subject: 'مهلت درخواست‌های داده نزدیک است', text: '{request_count} درخواست داده تا ۳ روز دیگر سررسید می‌شوند.' },
   },
   'community.followed_update': {
     en: {

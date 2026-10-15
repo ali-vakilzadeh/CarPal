@@ -7,17 +7,22 @@ import type { Infra } from '#libs/infra/index.js';
 import type { Logger } from '#libs/observability/index.js';
 import { PlatformOpsModule } from '#libs/platform/index.js';
 import { PlatformModule, type RuntimeHost } from '#libs/runtime/index.js';
+import { AdminApiModule, AdminModule, AdminPublicModule, AdminWorkerModule } from '#modules/admin/admin.module.js';
+import { AiMcpModule } from '#modules/ai-mcp/ai-mcp.module.js';
+import { AnalyticsModule, AnalyticsWorkerModule } from '#modules/analytics/analytics.module.js';
 import { AppointmentApiModule } from '#modules/appointment/appointment-api.module.js';
 import { AppointmentWorkerModule } from '#modules/appointment/appointment-worker.module.js';
 import { AppointmentModule } from '#modules/appointment/appointment.module.js';
-import { BillingModule } from '#modules/billing/billing.module.js';
+import { BillingModule, BillingWorkerModule } from '#modules/billing/billing.module.js';
 import { CommunityApiModule } from '#modules/community/community-api.module.js';
 import { CommunityModule } from '#modules/community/community.module.js';
 import { DiscoveryApiModule } from '#modules/discovery/discovery-api.module.js';
 import { DiscoveryModule } from '#modules/discovery/discovery.module.js';
+import { FleetModule, FleetWorkerModule } from '#modules/fleet/fleet.module.js';
 import { IdentityAccountModule } from '#modules/identity/identity-account.module.js';
+import { IdentityAdminModule } from '#modules/identity/identity-admin.module.js';
 import { IdentityAuthModule } from '#modules/identity/identity-auth.module.js';
-import { IdentityModule } from '#modules/identity/identity.module.js';
+import { IdentityModule, IdentityWorkerModule } from '#modules/identity/identity.module.js';
 import { InventoryApiModule } from '#modules/inventory/inventory-api.module.js';
 import { InventoryWorkerModule } from '#modules/inventory/inventory-worker.module.js';
 import { InventoryModule } from '#modules/inventory/inventory.module.js';
@@ -26,16 +31,20 @@ import { MediaModule } from '#modules/media/media.module.js';
 import { NotificationApiModule } from '#modules/notification/notification-api.module.js';
 import { NotificationMessagingModule } from '#modules/notification/notification-messaging.module.js';
 import { NotificationModule } from '#modules/notification/notification.module.js';
+import { OrganizationAdminModule } from '#modules/organization/organization-admin.module.js';
 import { OrganizationApiModule } from '#modules/organization/organization-api.module.js';
 import { OrganizationModule } from '#modules/organization/organization.module.js';
 import { TaxonomyModule } from '#modules/taxonomy/taxonomy.module.js';
+import { TrustAdminModule } from '#modules/trust/trust-admin.module.js';
 import { TrustApiModule } from '#modules/trust/trust-api.module.js';
 import { TrustWorkerModule } from '#modules/trust/trust-worker.module.js';
 import { TrustModule } from '#modules/trust/trust.module.js';
 import { VehicleApiModule } from '#modules/vehicle/vehicle-api.module.js';
 import { VehicleWorkerModule } from '#modules/vehicle/vehicle-worker.module.js';
 import { VehicleModule } from '#modules/vehicle/vehicle.module.js';
+import { AnalyticsPipelineModule } from '#workers/analytics-pipeline/analytics-pipeline.module.js';
 import { ConsumerHostModule } from '#workers/consumer-host/consumer-host.module.js';
+import { ExportJobsModule } from '#workers/export-jobs/export-jobs.module.js';
 import { ImportJobsModule } from '#workers/import-jobs/import-jobs.module.js';
 import { MediaProcessorModule } from '#workers/media-processor/media-processor.module.js';
 import { NotificationDispatchModule } from '#workers/notification-dispatch/notification-dispatch.module.js';
@@ -64,10 +73,14 @@ const DOMAIN_MODULES = [
   InventoryModule,
   TrustModule,
   AppointmentModule,
+  FleetModule,
   CommunityModule,
   DiscoveryModule,
   NotificationModule,
   NotificationMessagingModule,
+  AdminModule,
+  AiMcpModule,
+  AnalyticsModule,
 ];
 
 function root(host: RuntimeHost, o: AppOptions, imports: NonNullable<DynamicModule['imports']>): DynamicModule {
@@ -104,17 +117,19 @@ export const apiAppModule = (o: AppOptions): DynamicModule =>
     CommunityApiModule,
     DiscoveryApiModule,
     NotificationApiModule,
+    AdminPublicModule,
     PlatformOpsModule,
   ]);
 
 /** D3 admin API: the same modules with the admin plane ({adm}) routes only. */
-export const adminApiAppModule = (o: AppOptions): DynamicModule => root('admin-api', o, [...DOMAIN_MODULES]);
+export const adminApiAppModule = (o: AppOptions): DynamicModule =>
+  root('admin-api', o, [...DOMAIN_MODULES, AdminApiModule, IdentityAdminModule, TrustAdminModule, OrganizationAdminModule]);
 
 /** D1 auth server: identity account logic behind /oauth/*, /v1/auth/*, /.well-known/* (carpal_auth: identity schema only). */
 export const authAppModule = (o: AppOptions): DynamicModule =>
   root('auth', o, [IdentityModule, NotificationMessagingModule, IdentityAuthModule]);
 
-/** D5 workers: W1 outbox relay, event consumers, W2 search indexer, W5 notification dispatch, W6 media processor, W7 import jobs, W15 scheduler and module rules. */
+/** D5 workers: W1 outbox relay, event consumers, W2 search indexer, W5 notification dispatch, W6 media processor, W7 import jobs, W8 export jobs, W12 analytics pipeline, W15 scheduler and module rules. */
 export const workerAppModule = (o: AppOptions): DynamicModule =>
   root('worker', o, [
     ...DOMAIN_MODULES,
@@ -128,5 +143,12 @@ export const workerAppModule = (o: AppOptions): DynamicModule =>
     InventoryWorkerModule,
     AppointmentWorkerModule,
     TrustWorkerModule,
+    AdminWorkerModule,
+    IdentityWorkerModule,
+    BillingWorkerModule,
+    AnalyticsWorkerModule,
+    AnalyticsPipelineModule,
+    FleetWorkerModule,
+    ExportJobsModule,
     SchedulerModule,
   ]);

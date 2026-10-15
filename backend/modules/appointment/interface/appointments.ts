@@ -48,7 +48,24 @@ export interface ProviderAppointmentStats {
   lastCompletedAt: Date | null;
 }
 
+/** A fleet appointment for fleet reports (40 fleet.report downtime / provider usage, 54 §8). */
+export interface FleetAppointmentFact {
+  id: string;
+  vehicleId: string;
+  providerOrgId: string;
+  status: string;
+  createdAt: Date;
+  checkedInAt: Date | null;
+  /** First ready_for_pickup, else completion (54 §8 fleet_downtime_avg end point). */
+  finishedAt: Date | null;
+  serviceSystemNodeId: string | null;
+  costEstimateAmount: string | null;
+  costEstimateCurrency: string | null;
+}
+
 export abstract class AppointmentFacts {
+  /** Appointments a fleet requested, created in [from, to) (fleet context or system). */
+  abstract fleetAppointments(scope: TxScope, fleetOrgId: string, from: Date, to: Date): Promise<FleetAppointmentFact[]>;
   /** Visits by id in any RLS context (definer appointment.visit_cards). */
   abstract visits(scope: TxScope, ids: readonly string[]): Promise<Map<string, AppointmentVisit>>;
   /** The signed-in user's own appointments with a provider (requester), newest first, ≤ 50. */

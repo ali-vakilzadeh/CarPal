@@ -25,6 +25,7 @@ import { InventoryRead } from '#modules/inventory/interface/inventory.js';
 import { PublicOrgCards, type PublicOrgCard } from '#modules/organization/interface/public-profiles.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { VehicleCards } from '#modules/vehicle/interface/vehicles.js';
+import { FleetPartners } from '#modules/fleet/interface/fleet.js';
 import { interpret, ngrams, type TermNode } from '../domain/intent.js';
 import {
   FITMENT_WEIGHT,
@@ -175,6 +176,7 @@ export class SearchService {
     private readonly cards: PublicOrgCards,
     @InjectInfra() private readonly infra: Infra,
     @Optional() private readonly community?: CommunityRead,
+    @Optional() private readonly partners?: FleetPartners,
   ) {}
 
   /** City names of the region config in every locale, analyzed → city_key. */
@@ -473,12 +475,16 @@ export class SearchService {
       ? Math.max(r.bbox.north - r.bbox.south, r.bbox.east - r.bbox.west) * 111 * 0.5
       : (f?.distance_km ?? DEFAULT_RADIUS_KM);
     // Capabilities in a requested node or above it count for the request (54 §5.1 capability fit).
-    const ctx: MatchContext = { services: lineage, partCategories: parts, vehicle, urgency, maxDistanceKm, favorites };
+    // Searching as a fleet: its preferred providers get the 54 §5.1 bonus (and are the only results with preferred_partners_only).
+    const preferred = new Set(
+      r.orgContext && this.partners ? (await this.partners.preferredProviders(scope, r.orgContext)).map((p) => p.organizationId) : [],
+    );
+    const ctx: MatchContext = { services: lineage, partCategories: parts, vehicle, urgency, maxDistanceKm, favorites, preferred };
     const geo = this.#geo(r, origin);
     const target = intent.target_type;
     const candidates: Candidate[] = [];
-    // Fleet preferred partners arrive with the fleet module (S8): the filter fails closed until then.
-    if (f?.preferred_partners_only) return { candidates, fallback: false, vehicle, services, parts };
+    // SearchFilters.preferred_partners_only: the searching fleet's active preferred providers only (none without a fleet context).
+    if (f?.preferred_partners_only && preferred.size === 0) return { candidates, fallback: false, vehicle, services, parts };
 
     if (target === 'provider' || target === 'place') {
       const filters = this.#providerFilters(services, lineage, f);
@@ -489,6 +495,7 @@ export class SearchService {
       const availableBy = f?.available_within_days ? Date.now() + f.available_within_days * 86_400_000 : null;
       for (const h of res.hits) {
         const d = h.source as ProviderDoc;
+        if (f?.preferred_partners_only && !preferred.has(d.organization_id)) continue;
         // SearchFilters.available_within_days (S7): an open slot in the window (providers without a calendar are left out).
         if (availableBy !== null && (!d.next_available_at || Date.parse(d.next_available_at) > availableBy)) continue;
         const scored = scoreProvider(d, h.distanceKm, ctx);
@@ -507,7 +514,8 @@ export class SearchService {
         });
       }
     }
-    if (target === 'vendor' || target === 'place' || target === 'inventory_item') {
+    // Preferred partners are providers (52 FleetPreferredPartner preferred_provider): no vendor results under the filter.
+    if (!f?.preferred_partners_only && (target === 'vendor' || target === 'place' || target === 'inventory_item')) {
       const partIntent = parts.size > 0 || target === 'inventory_item' || (!!residual && target !== 'place');
       const items = partIntent || vehicle ? await this.#items(r, vehicle, parts, residual, trade, origin) : [];
       if (target === 'inventory_item') {

@@ -9,10 +9,11 @@
 import { Global, Module } from '@nestjs/common';
 import { NotificationDispatcher } from './application/dispatcher.js';
 import { NotificationDispatchConsumer } from './events/dispatch.consumer.js';
+import { NotificationAdminRegistrations } from './application/admin-registrations.js';
 
 @Global()
 @Module({
-  providers: [NotificationDispatcher, NotificationDispatchConsumer],
+  providers: [NotificationAdminRegistrations, NotificationDispatcher, NotificationDispatchConsumer],
   exports: [NotificationDispatcher],
 })
 export class NotificationModule {}

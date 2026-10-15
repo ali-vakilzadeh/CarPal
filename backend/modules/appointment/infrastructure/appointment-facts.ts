@@ -7,7 +7,12 @@ import { addDays, zonedToUtc } from '#libs/geo/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { ProviderBooking } from '#modules/organization/interface/booking.js';
 import { CAPACITY_STATUSES, openSlots, PATH1_DELAY_MS, todayIn } from '../domain/rules.js';
-import { AppointmentFacts, type AppointmentVisit, type ProviderAppointmentStats } from '../interface/appointments.js';
+import {
+  AppointmentFacts,
+  type AppointmentVisit,
+  type ProviderAppointmentStats,
+  type FleetAppointmentFact,
+} from '../interface/appointments.js';
 import { activeRules, busyIntervals, toRuleInput } from './calendar.js';
 
 type VisitRow = {
@@ -64,6 +69,41 @@ const VISIT_COLUMNS = [
 export class DbAppointmentFacts extends AppointmentFacts {
   constructor(private readonly booking: ProviderBooking) {
     super();
+  }
+
+  async fleetAppointments(scope: TxScope, fleetOrgId: string, from: Date, to: Date): Promise<FleetAppointmentFact[]> {
+    const { rows } = await sql<{
+      id: string;
+      vehicle_id: string;
+      provider_organization_id: string;
+      status: string;
+      created_at: Date;
+      checked_in_at: Date | null;
+      finished_at: Date | null;
+      service_system_node_id: string | null;
+      cost_estimate_amount: string | null;
+      cost_estimate_currency: string | null;
+    }>`
+      SELECT a.id, a.vehicle_id, a.provider_organization_id, a.status, a.created_at, a.checked_in_at,
+             coalesce((SELECT min(h.changed_at) FROM appointment.appointment_status_history h
+                        WHERE h.appointment_id = a.id AND h.new_status = 'ready_for_pickup'), a.completed_at) AS finished_at,
+             a.service_system_node_id, a.cost_estimate_amount, a.cost_estimate_currency
+        FROM appointment.appointments a
+       WHERE a.requester_type = 'fleet' AND a.requester_organization_id = ${fleetOrgId}::uuid
+         AND a.created_at >= ${from} AND a.created_at < ${to} AND a.deleted_at IS NULL AND a.status <> 'draft'
+       ORDER BY a.created_at LIMIT 100000`.execute(scope.db);
+    return rows.map((r) => ({
+      id: r.id,
+      vehicleId: r.vehicle_id,
+      providerOrgId: r.provider_organization_id,
+      status: r.status,
+      createdAt: r.created_at,
+      checkedInAt: r.checked_in_at,
+      finishedAt: r.finished_at,
+      serviceSystemNodeId: r.service_system_node_id,
+      costEstimateAmount: r.cost_estimate_amount,
+      costEstimateCurrency: r.cost_estimate_currency,
+    }));
   }
 
   async nextOpenSlot(scope: TxScope, providerOrgId: string, now: Date, days = 14): Promise<Date | null> {

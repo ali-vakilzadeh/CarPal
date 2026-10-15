@@ -7,7 +7,7 @@ import { Injectable } from '@nestjs/common';
 import { ApiError } from '#libs/contract/index.js';
 import { EntitlementChecker, type CheckOptions, type EntitlementDecision, type EntitlementKey } from '#libs/entitlements/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
-import { toSummary, type Usage } from '../api/projections.js';
+import { toSubscription, toSummary, type Usage } from '../api/projections.js';
 import {
   COUNTER_KEYS,
   SubscriptionReader,
@@ -60,6 +60,44 @@ export class SubscriptionService extends SubscriptionReader {
       if (counter) usage[field] = await counter(scope, s);
     }
     return usage;
+  }
+
+  async staffSubscription(scope: TxScope, subscriber: Subscriber): Promise<unknown> {
+    const sub =
+      (await currentSubscription(scope, subscriber)) ??
+      (await scope.db
+        .selectFrom('billing.subscriptions')
+        .selectAll()
+        .where('subscriber_type', '=', subscriber.type)
+        .where('subscriber_id', '=', subscriber.id)
+        .where('deleted_at', 'is', null)
+        .orderBy('id', 'desc')
+        .executeTakeFirst());
+    if (!sub) return null;
+    const [plan] = await loadPlans(scope, { ids: [sub.plan_id], includeInactive: true });
+    if (!plan) return null;
+    return toSubscription(sub, plan, effectiveEntitlements(sub, plan), await this.usage(scope, subscriber));
+  }
+
+  async staffSummaryForUser(scope: TxScope, userId: string): Promise<SubscriptionSummary> {
+    const s: Subscriber = { type: 'user', id: userId };
+    const vehicles = this.counters.get('max_vehicles');
+    const active = vehicles ? await vehicles(scope, s) : 0;
+    const sub = await currentSubscription(scope, s);
+    if (sub) {
+      const [plan] = await loadPlans(scope, { ids: [sub.plan_id] });
+      if (plan) return toSummary(sub, plan, effectiveEntitlements(sub, plan), active);
+    }
+    const [plan] = (await loadPlans(scope, { audience: 'individual' })).filter((p) => p.plan.is_default_for_audience);
+    if (!plan) throw new ApiError('INTERNAL', { detail: 'no default individual plan' });
+    const max = plan.entitlements.get('max_vehicles')?.value;
+    return {
+      plan_key: plan.plan.plan_key as PlanKey,
+      status: 'active',
+      max_vehicles: typeof max === 'number' ? max : null,
+      active_vehicles: active,
+      trial_ends_at: null,
+    };
   }
 
   async summaryForUser(scope: TxScope, userId: string): Promise<SubscriptionSummary> {

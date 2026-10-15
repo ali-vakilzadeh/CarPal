@@ -62,6 +62,12 @@ export const ROUTED_EVENTS = [
   'review.published',
   'review.response.published',
   'inquiry.status_changed',
+  // S8: fleet decisions, moderation outcomes, verification and location corrections, DSR deadlines (staff)
+  'fleet.approval.decided',
+  'moderation.action.taken',
+  'organization.verified',
+  'organization.location.corrected',
+  'dsr.deadline.approaching',
 ] as const;
 
 const PROVIDER_MEMBERS = ['provider_owner', 'provider_manager', 'provider_staff'];
@@ -257,7 +263,7 @@ function routeS7(e: RoutedEvent): Intent[] {
       ];
     }
     default:
-      return [];
+      return routeS8(e);
   }
 }
 
@@ -348,8 +354,10 @@ export function route(e: RoutedEvent): Intent[] {
       ];
     }
     case 'fleet.approval.requested': {
+      // Only an approval that exists (a provider's cost estimate below the fleet threshold opens none, S8).
       const fleet = str(p.organization_id);
-      if (!fleet) return [];
+      const approval = str(p.approval_id);
+      if (!fleet || !approval) return [];
       return [
         {
           audience: { kind: 'members', orgId: fleet, roles: FLEET_APPROVERS },
@@ -357,8 +365,8 @@ export function route(e: RoutedEvent): Intent[] {
           category: 'fleet',
           priority: 'normal',
           template_key: 'fleet.approval_needed',
-          params: {},
-          reference: { type: 'vehicle_issue', id: e.aggregateId },
+          params: { approval_type: str(p.approval_type) ?? 'repair_request' },
+          reference: { type: 'fleet_approval', id: approval },
           organization_context_id: fleet,
           channels: ALL,
         },
@@ -403,5 +411,106 @@ export function route(e: RoutedEvent): Intent[] {
     }
     default:
       return routeS7(e);
+  }
+}
+
+/** Moderation actions the affected user or organization is told about (52 Notification moderation_update). */
+const NOTIFIED_ACTIONS = ['approve', 'hide', 'remove', 'restore', 'request_changes', 'warn_user', 'suspend_account', 'reactivate_account'];
+const ORG_ADMINS = ['provider_owner', 'provider_manager', 'vendor_owner', 'fleet_owner', 'fleet_manager'];
+
+/** S8 routes: fleet decisions, moderation outcomes, verification, location corrections and staff DSR alerts. */
+export function routeS8(e: RoutedEvent): Intent[] {
+  const p = e.payload;
+  switch (e.type) {
+    case 'fleet.approval.decided': {
+      const requester = str(p.requested_by_user_id);
+      const fleet = str(p.organization_id);
+      if (!requester || !fleet) return [];
+      return [
+        {
+          audience: { kind: 'users', ids: [requester] },
+          event_type: 'system_announcement',
+          category: 'fleet',
+          priority: 'normal',
+          template_key: 'fleet.approval_decided',
+          params: { approval_type: str(p.approval_type) ?? 'repair_request', status: String(p.status ?? 'approved') },
+          reference: { type: 'fleet_approval', id: e.aggregateId },
+          organization_context_id: fleet,
+          channels: ['in_app', 'push', 'email'],
+        },
+      ];
+    }
+    case 'moderation.action.taken': {
+      const action = String(p.action_type ?? '');
+      if (!NOTIFIED_ACTIONS.includes(action)) return [];
+      const params = { action_type: action, target_type: String(p.target_type ?? 'content') };
+      const reference = str(p.target_id) ? { type: String(p.target_type ?? 'content'), id: str(p.target_id)! } : null;
+      const user = str(p.user_id);
+      if (user)
+        return [
+          {
+            audience: { kind: 'users', ids: [user] },
+            event_type: 'moderation_update',
+            category: 'moderation',
+            priority: action === 'suspend_account' ? 'critical' : 'normal',
+            template_key: 'moderation.action_taken',
+            params,
+            reference,
+            organization_context_id: null,
+            channels: ['in_app', 'email'],
+          },
+        ];
+      const org = str(p.organization_id);
+      if (!org) return [];
+      return [
+        {
+          audience: { kind: 'members', orgId: org, roles: ORG_ADMINS },
+          event_type: 'moderation_update',
+          category: 'moderation',
+          priority: 'normal',
+          template_key: 'moderation.action_taken',
+          params,
+          reference,
+          organization_context_id: org,
+          channels: ['in_app', 'email'],
+        },
+      ];
+    }
+    case 'organization.verified':
+    case 'organization.location.corrected': {
+      const org = str(p.organization_id) ?? e.aggregateId;
+      return [
+        {
+          audience: { kind: 'members', orgId: org, roles: ORG_ADMINS },
+          event_type: 'moderation_update',
+          category: 'moderation',
+          priority: 'normal',
+          template_key: e.type === 'organization.verified' ? 'organization.verified' : 'organization.location_corrected',
+          params: {},
+          reference: { type: e.type === 'organization.verified' ? 'organization' : 'organization_location', id: e.aggregateId },
+          organization_context_id: org,
+          channels: ['in_app', 'email'],
+        },
+      ];
+    }
+    case 'dsr.deadline.approaching': {
+      const staff = Array.isArray(p.staff_user_ids) ? p.staff_user_ids.map(str).filter((x): x is string => !!x) : [];
+      if (staff.length === 0) return [];
+      return [
+        {
+          audience: { kind: 'users', ids: staff.slice(0, 200) },
+          event_type: 'moderation_alert',
+          category: 'system',
+          priority: 'critical',
+          template_key: 'admin.dsr_deadline',
+          params: { request_count: num(p.request_count) },
+          reference: null,
+          organization_context_id: null,
+          channels: ['in_app', 'email'],
+        },
+      ];
+    }
+    default:
+      return [];
   }
 }

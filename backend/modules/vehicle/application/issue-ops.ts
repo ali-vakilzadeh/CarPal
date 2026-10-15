@@ -3,14 +3,16 @@
 // runs on the server (SEC-BF-8): it sets the derived safety_flag and the
 // urgency can never be below the level it found (an AI or client value only
 // raises it, SEC-AI-7). A fleet driver's report starts the fleet approval
-// workflow (fleet_approval_status pending, fleet.approval.requested; the
-// FleetApproval record itself belongs to the fleet module, S8).
-import { Injectable } from '@nestjs/common';
+// workflow: the fleet module opens the repair request and publishes
+// fleet.approval.requested (status pending), or approves at once when the
+// fleet has the approval workflow off (S8).
+import { Injectable, Optional } from '@nestjs/common';
 import { ApiError, type FieldError } from '#libs/contract/index.js';
 import { created, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import { SafetyCheck, type Urgency } from '#libs/safety-check/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
+import { FleetWorkflow } from '#modules/fleet/interface/fleet.js';
 import { UserCards } from '#modules/identity/interface/identity.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { toIssue, type IssueRow, type VehicleRow } from '../api/projections.js';
@@ -133,6 +135,7 @@ export class IssuesCreateHandler implements OperationHandler {
     private readonly safety: SafetyCheck,
     private readonly media: MediaService,
     private readonly views: IssueViews,
+    @Optional() private readonly fleet?: FleetWorkflow,
   ) {}
 
   async handle(ctx: OperationContext<IssueWrite>): Promise<OperationResult> {
@@ -165,13 +168,14 @@ export class IssuesCreateHandler implements OperationHandler {
         aggregateId: row.id,
         payload: { vehicle_id: v.id, urgency_level: urgency, safety_flag: view.safety_flag, source: row.source },
       });
-      if (a.driver)
-        await publishEvent(scope, {
-          type: 'fleet.approval.requested',
-          aggregateType: 'vehicle_issue',
-          aggregateId: row.id,
-          payload: { organization_id: a.orgId, vehicle_id: v.id, vehicle_issue_id: row.id, requested_by_user_id: a.userId },
-        });
+      // A driver's report starts the fleet approval workflow (the fleet module opens the repair request, S8).
+      if (a.driver && this.fleet) {
+        const status = await this.fleet.driverIssue(scope, { orgId: a.orgId!, vehicleId: v.id, issueId: row.id, driverUserId: a.userId });
+        if (status !== 'pending') {
+          await scope.db.updateTable('vehicle.vehicle_issues').set({ fleet_approval_status: status }).where('id', '=', row.id).execute();
+          return { ...view, fleet_approval_status: status };
+        }
+      }
       return view;
     });
     return created(body, `${vehiclesPath(a)}/${ctx.params.vehicle_id}/issues/${body.id}`);

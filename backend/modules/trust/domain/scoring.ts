@@ -103,6 +103,8 @@ export interface ProviderScoreInputs {
   countedEvidence: number;
   /** Published 1–2 star reviews older than 7 days without a published response. */
   unansweredNegative: number;
+  /** §3.3 moderation penalties (moderationPenalties()), negative points by key. */
+  moderation?: Record<string, number>;
 }
 
 export interface IntegrityInputs {
@@ -149,6 +151,7 @@ export function providerTrustScore(x: ProviderScoreInputs, now: Date): ScoreBrea
   const penalties: Record<string, number> = {};
   if (x.unansweredNegative > 0) penalties.unanswered_negative_reviews = -Math.min(20, 5 * x.unansweredNegative);
   if (s.confirmed90 > 0 && s.providerCancelledAfterConfirm90 / s.confirmed90 > 0.1) penalties.provider_cancellations = -10;
+  Object.assign(penalties, x.moderation ?? {});
   const total = Object.values(penalties).reduce((a, b) => a + b, 0);
   return {
     score: Math.max(0, Math.round(raw + total)),
@@ -163,6 +166,7 @@ export interface VendorScoreInputs {
   catalogQualityScore: number;
   integrity: IntegrityInputs;
   unansweredNegative: number;
+  moderation?: Record<string, number>;
 }
 
 /** 54 §3.2 vendor trust score; inquiry responsiveness from the measured response time (inquiry_fulfillment_rate: DI-40). */
@@ -174,12 +178,37 @@ export function vendorTrustScore(x: VendorScoreInputs, now: Date): ScoreBreakdow
   const raw = 100 * (0.4 * review + 0.25 * inquiry + 0.2 * catalog + 0.15 * profile);
   const penalties: Record<string, number> = {};
   if (x.unansweredNegative > 0) penalties.unanswered_negative_reviews = -Math.min(20, 5 * x.unansweredNegative);
+  Object.assign(penalties, x.moderation ?? {});
   const total = Object.values(penalties).reduce((a, b) => a + b, 0);
   return {
     score: Math.max(0, Math.round(raw + total)),
     components: { review_quality: review, inquiry_responsiveness: inquiry, catalog_quality: catalog, profile_integrity: profile },
     penalties,
   };
+}
+
+/** A §3.3 penalty input from moderation (admin points, confirmed violations, confirmed fake reviews). */
+export interface ModerationPenaltyInput {
+  kind: 'admin_trust_penalty' | 'content_violation' | 'fake_review';
+  points: number;
+}
+
+/**
+ * 54 §3.3 from moderation within the last 12 months: manual admin penalties
+ * add up (capped at 100), a confirmed content or policy violation is −20, a
+ * confirmed fake or self-review is −50 and revokes every badge.
+ */
+export function moderationPenalties(inputs: readonly ModerationPenaltyInput[]): {
+  penalties: Record<string, number>;
+  revokeAllBadges: boolean;
+} {
+  const penalties: Record<string, number> = {};
+  const admin = inputs.filter((i) => i.kind === 'admin_trust_penalty').reduce((a, i) => a + Math.max(0, i.points), 0);
+  if (admin > 0) penalties.admin_trust_penalty = -Math.min(100, admin);
+  if (inputs.some((i) => i.kind === 'content_violation')) penalties.policy_violation = -20;
+  const fake = inputs.some((i) => i.kind === 'fake_review');
+  if (fake) penalties.fake_review = -50;
+  return { penalties, revokeAllBadges: fake };
 }
 
 /** 54 §3.2 hybrid: both scores weighted by each side's counted review volume (equal without reviews). */

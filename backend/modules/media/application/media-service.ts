@@ -282,6 +282,28 @@ export class DbMediaService extends MediaService {
     return out;
   }
 
+  async moderateAttached(scope: TxScope, type: AttachedToType, id: string, status: 'approved' | 'rejected'): Promise<number> {
+    const r = await scope.db
+      .updateTable('media.media_assets')
+      .set({ moderation_status: status })
+      .where((eb) =>
+        eb(
+          'id',
+          'in',
+          eb
+            .selectFrom('media.media_attachments')
+            .select('media_asset_id')
+            .where('attached_to_type', '=', type)
+            .where('attached_to_id', '=', id)
+            .where('status', '=', 'active')
+            .where('deleted_at', 'is', null),
+        ),
+      )
+      .where('status', '=', 'active')
+      .executeTakeFirst();
+    return Number(r.numUpdatedRows);
+  }
+
   async attachedAssets(scope: TxScope, type: AttachedToType, id: string): Promise<AttachedAsset[]> {
     return (await this.#attachments(scope, type, [id])).map((r) => ({
       attachmentId: r.id,

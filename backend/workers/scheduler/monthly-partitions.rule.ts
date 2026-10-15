@@ -1,7 +1,7 @@
 // 41 §6.3 "daily: create next monthly partitions (audit, MCP log, analytics)"
 // (libs): core.ensure_monthly_partitions keeps three months ahead (worker role
-// only). The analytics database's partitions come with the analytics
-// pipeline (S8).
+// only). The analytics database's partitions are kept by the analytics
+// module's rule (analytics.monthly_partitions, S8).
 import { Injectable } from '@nestjs/common';
 import { sql } from 'kysely';
 import { ScheduledRule } from '#libs/jobs/index.js';

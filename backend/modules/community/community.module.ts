@@ -9,6 +9,7 @@ import { Global, Injectable, Module, Optional, type OnModuleInit } from '@nestjs
 import { AttachmentTargets } from '#modules/media/interface/media.js';
 import { DbCommunityRead } from './infrastructure/community-read.js';
 import { CommunityRead } from './interface/community.js';
+import { CommunityAdminRegistrations } from './application/admin-registrations.js';
 
 @Injectable()
 export class CommunityRegistrations implements OnModuleInit {
@@ -51,7 +52,7 @@ export class CommunityRegistrations implements OnModuleInit {
 
 @Global()
 @Module({
-  providers: [{ provide: CommunityRead, useClass: DbCommunityRead }, CommunityRegistrations],
+  providers: [{ provide: CommunityRead, useClass: DbCommunityRead }, CommunityRegistrations, CommunityAdminRegistrations],
   exports: [CommunityRead],
 })
 export class CommunityModule {}

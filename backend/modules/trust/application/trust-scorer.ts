@@ -7,11 +7,12 @@
 // A score change of more than 5 points and every badge award or revocation
 // are audited (54 §9.4) and published (trust.score.changed, badge.awarded,
 // badge.revoked: the W2 indexer rebuilds the organization).
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { sql } from 'kysely';
 import { writeAudit } from '#libs/audit/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
+import { ModerationLog } from '#modules/admin/interface/admin.js';
 import { AppointmentFacts, type ProviderAppointmentStats } from '#modules/appointment/interface/appointments.js';
 import { ProviderCapabilities } from '#modules/organization/interface/provider-capabilities.js';
 import { TrustFigures, type EvidenceItem, type OrgTrustFacts } from '#modules/organization/interface/trust-figures.js';
@@ -28,6 +29,7 @@ import {
   isStale,
   JOB_TYPES,
   LEVEL_RANK,
+  moderationPenalties,
   providerTrustScore,
   reviewEvidenceWeight,
   RULE_VERSION,
@@ -37,6 +39,7 @@ import {
   type ConfidenceLevel,
   type CountedReview,
   type IntegrityInputs,
+  type ModerationPenaltyInput,
   type ScoreBreakdown,
 } from '../domain/scoring.js';
 
@@ -62,6 +65,7 @@ export class TrustScorer {
     private readonly appointments: AppointmentFacts,
     private readonly vehicles: VehicleCards,
     private readonly taxonomy: TaxonomyResolver,
+    @Optional() private readonly moderation?: ModerationLog,
   ) {}
 
   /** Recomputes an organization in its own system transaction; returns the new trust score (null when not scored). */
@@ -77,6 +81,9 @@ export class TrustScorer {
     const providerReviews = reviews.filter((r) => r.subjectType === 'provider');
     const vendorReviews = reviews.filter((r) => r.subjectType === 'vendor');
     const unanswered = await this.unansweredNegative(scope, orgId, now);
+    const mod = moderationPenalties(await this.penaltyInputs(scope, orgId, now));
+    // 54 §4: every badge goes when a fake review is confirmed or the organization is suspended.
+    const revokeAllBadges = mod.revokeAllBadges || facts.status === 'suspended';
     const integrity: IntegrityInputs = {
       verified: facts.verificationStatus === 'verified',
       businessIdentityVerified: facts.verifiedTypes.includes('business_identity'),
@@ -89,9 +96,16 @@ export class TrustScorer {
     let stats: ProviderAppointmentStats | null = null;
     if (facts.provider) {
       stats = await this.appointments.stats(scope, orgId, now);
-      const counted = await this.provider(scope, facts, providerReviews, stats, now);
+      const counted = await this.provider(scope, facts, providerReviews, stats, now, revokeAllBadges);
       provider = providerTrustScore(
-        { reviews: providerReviews, stats, integrity, countedEvidence: counted, unansweredNegative: unanswered.provider },
+        {
+          reviews: providerReviews,
+          stats,
+          integrity,
+          countedEvidence: counted,
+          unansweredNegative: unanswered.provider,
+          moderation: mod.penalties,
+        },
         now,
       );
     }
@@ -104,6 +118,7 @@ export class TrustScorer {
           catalogQualityScore: facts.vendor.catalogQualityScore,
           integrity: { ...integrity, profileCompleteness: facts.vendor.profileCompleteness },
           unansweredNegative: unanswered.vendor,
+          moderation: mod.penalties,
         },
         now,
       );
@@ -196,6 +211,22 @@ export class TrustScorer {
     return { provider: n('provider'), vendor: n('vendor') };
   }
 
+  /**
+   * 54 §3.3 penalty inputs of the last 12 months: moderation actions on the
+   * organization or its content (admin module), and upheld fake-review
+   * disputes about its reviews.
+   */
+  private async penaltyInputs(scope: TxScope, orgId: string, now: Date): Promise<ModerationPenaltyInput[]> {
+    const since = new Date(now.getTime() - 365 * 86_400_000);
+    const out: ModerationPenaltyInput[] = (await this.moderation?.penalties(scope, orgId, since)) ?? [];
+    const { rows } = await sql<{ n: string }>`
+      SELECT count(*) AS n FROM trust.disputes d JOIN trust.reviews r ON r.id = d.target_entity_id
+       WHERE d.target_entity_type = 'review' AND d.dispute_type = 'fake_review' AND d.status = 'resolved_upheld'
+         AND d.resolved_at >= ${since} AND r.subject_organization_id = ${orgId}::uuid AND d.deleted_at IS NULL`.execute(scope.db);
+    if (Number(rows[0]!.n) > 0) out.push({ kind: 'fake_review', points: 50 });
+    return out;
+  }
+
   /** Provider side: evidence sync, capability confidence, badges, response time and staleness. Returns the counted evidence. */
   private async provider(
     scope: TxScope,
@@ -203,6 +234,7 @@ export class TrustScorer {
     reviews: ReviewFact[],
     stats: ProviderAppointmentStats,
     now: Date,
+    revokeAllBadges = false,
   ): Promise<number> {
     const orgId = facts.orgId;
     const completed = await this.appointments.completed(scope, orgId);
@@ -290,22 +322,24 @@ export class TrustScorer {
     await this.badges(
       scope,
       orgId,
-      badgeDecisions(
-        {
-          verifiedTypes: facts.verifiedTypes,
-          capabilities: caps.map((c) => ({
-            id: c.id,
-            brandNodeId: c.brandNodeId,
-            serviceSystemNodeId: c.serviceSystemNodeId,
-            level: levels.get(c.id) ?? 'self_declared',
-          })),
-          reviews,
-          stats,
-          evVerifiedCertification: facts.certifications.some((c) => c.type === 'ev_high_voltage' && c.verified),
-          evSystemNodeId: await this.evSystem(),
-        },
-        now,
-      ),
+      revokeAllBadges
+        ? []
+        : badgeDecisions(
+            {
+              verifiedTypes: facts.verifiedTypes,
+              capabilities: caps.map((c) => ({
+                id: c.id,
+                brandNodeId: c.brandNodeId,
+                serviceSystemNodeId: c.serviceSystemNodeId,
+                level: levels.get(c.id) ?? 'self_declared',
+              })),
+              reviews,
+              stats,
+              evVerifiedCertification: facts.certifications.some((c) => c.type === 'ev_high_voltage' && c.verified),
+              evSystemNodeId: await this.evSystem(),
+            },
+            now,
+          ),
     );
     return linked.filter((e) => e.baseWeight > 0).length;
   }

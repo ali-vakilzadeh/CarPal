@@ -12,9 +12,11 @@ import { Global, Injectable, Module, Optional, type OnModuleInit } from '@nestjs
 import { OrganizationDirectory } from '#libs/authz/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { AttachmentTargets, type AttachmentTarget } from '#modules/media/interface/media.js';
+import { OrganizationAdminRegistrations } from './application/admin-registrations.js';
 import { ConsentWithdrawnPortfolioConsumer } from './events/consent-withdrawn.consumer.js';
 import { ReactionChangedPortfolioConsumer } from './events/reaction-changed.consumer.js';
 import { DbProviderBooking } from './infrastructure/booking.js';
+import { DbOrgLifecycle } from './infrastructure/lifecycle.js';
 import { DbOrganizationDirectory } from './infrastructure/organization-directory.js';
 import { DbOrgCards } from './infrastructure/org-cards.js';
 import { DbProviderCapabilities } from './infrastructure/provider-capabilities.js';
@@ -23,6 +25,7 @@ import { DbPublicProfiles } from './infrastructure/public-profiles.js';
 import { DbTrustFigures } from './infrastructure/trust-figures.js';
 import { DbOrgLocations, DbVendorCatalog } from './infrastructure/vendor-catalog.js';
 import { ProviderBooking } from './interface/booking.js';
+import { OrgLifecycle } from './interface/lifecycle.js';
 import { OrganizationExtensions } from './interface/extensions.js';
 import { OrgCards } from './interface/org-cards.js';
 import { ProviderCapabilities } from './interface/provider-capabilities.js';
@@ -88,9 +91,11 @@ export class OrganizationRegistrations implements OnModuleInit {
     { provide: OrgLocations, useClass: DbOrgLocations },
     { provide: ProviderBooking, useClass: DbProviderBooking },
     { provide: TrustFigures, useClass: DbTrustFigures },
+    { provide: OrgLifecycle, useClass: DbOrgLifecycle },
     // One registry per application context (contexts share a process in pnpm dev and tests).
     { provide: OrganizationExtensions, useFactory: () => new OrganizationExtensions() },
     OrganizationRegistrations,
+    OrganizationAdminRegistrations,
     ConsentWithdrawnPortfolioConsumer,
     ReactionChangedPortfolioConsumer,
   ],
@@ -104,6 +109,7 @@ export class OrganizationRegistrations implements OnModuleInit {
     OrgLocations,
     ProviderBooking,
     TrustFigures,
+    OrgLifecycle,
     OrganizationExtensions,
   ],
 })

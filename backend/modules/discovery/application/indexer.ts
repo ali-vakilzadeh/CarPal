@@ -29,6 +29,7 @@ const ORG_EVENTS = [
   // S7-S8 producers (reviews, badges, trust scores, moderation); consumed now so they need no indexer change.
   'review.published',
   'review.approved',
+  'review.removed',
   'badge.awarded',
   'badge.revoked',
   'trust.score.changed',
@@ -76,10 +77,13 @@ export class SearchIndexerConsumer extends EventConsumer {
         else await this.projections.reindexOrgs([e.aggregateId]);
         return;
       }
-      case 'portfolio.published':
+      case 'portfolio.published': {
+        // Moderation approves on the admin plane (no path organization): the payload names it (S8).
+        const org = str(p.organization_id) ?? e.organizationId;
         await this.projections.reindexCommunity([{ type: 'portfolio_item', id: e.aggregateId }]);
-        if (e.organizationId) await this.projections.reindexOrgs([e.organizationId]);
+        if (org) await this.projections.reindexOrgs([org]);
         return;
+      }
       case 'community.content.changed':
         await this.projections.reindexCommunity([
           { type: (p.entity_type as CommunityEntity) ?? e.aggregateType, id: str(p.entity_id) ?? e.aggregateId },

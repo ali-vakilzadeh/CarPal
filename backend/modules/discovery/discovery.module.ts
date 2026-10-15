@@ -12,10 +12,11 @@ import { SearchService } from './application/search-service.js';
 import { DbMatchResults } from './infrastructure/match-results.js';
 import { SearchProjections } from './infrastructure/projections.js';
 import { MatchResults } from './interface/match-results.js';
+import { DiscoveryAdminRegistrations } from './application/admin-registrations.js';
 
 @Global()
 @Module({
-  providers: [SearchProjections, SearchService, { provide: MatchResults, useClass: DbMatchResults }],
+  providers: [DiscoveryAdminRegistrations, SearchProjections, SearchService, { provide: MatchResults, useClass: DbMatchResults }],
   exports: [SearchProjections, SearchService, MatchResults],
 })
 export class DiscoveryModule {}

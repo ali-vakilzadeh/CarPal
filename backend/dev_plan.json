@@ -2,11 +2,11 @@
   "meta": {
     "title": "CarPal backend — scratch build plan and stage log",
     "created": "2026-10-10",
-    "last_updated": "2026-10-13",
+    "last_updated": "2026-10-15",
     "status": "in_progress",
     "progress": {
-      "as_of": "2026-10-13",
-      "summary": "S1-S7 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles with publication, the capability portfolio, work records and the media pipeline (W6), vehicles and service history, vendor inventory and stock inquiries, discovery (search, map, ranking, Discover feed), public profiles, community and notifications, and now appointments (requests, capacity-safe confirmation, check-in, completion with the service record, notes, calendar, availability and time off, the consent-gated pre-visit report, reminders) and reviews and trust (Path 1 / Path 2, invitations with one-time codes, business approval and objections, responses, disputes, W4 review workflow, W3 trust scoring with evidence, capability confidence, trust scores, signals and badges feeding search). 293 of 402 operations are implemented; 109 answer 501 behind their full guards. Next: S8 (fleet; admin plane incl. review approval and dispute resolution; analytics and audit; DSR execution).",
+      "as_of": "2026-10-15",
+      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening).",
       "stages": [
         {
           "stage": "S1",
@@ -79,29 +79,35 @@
         {
           "stage": "S8",
           "title": "Fleet; admin plane; analytics and audit; DSR execution",
-          "status": "not_started",
-          "ops_target": 82
+          "status": "done",
+          "ops_target": 82,
+          "completed_at": "2026-10-15",
+          "ops_implemented": 82,
+          "ops_deferred": 0,
+          "tests_after_stage": 460,
+          "note": "20 fleet (§18) + events.ingest and reports.create (§22) + 60 admin plane (§23, incl. the 4 ai-mcp oversight data operations)."
         },
         {
           "stage": "S9",
           "title": "AI/MCP facade, contract test sweep, OpenAPI, hardening pass",
           "status": "not_started",
-          "ops_target": 23
+          "ops_target": 23,
+          "note": "ops_target 23 = the §21 AI operations; the 3 deferred S3 identity operations (WebAuthn x2, social sign-in) also remain open (27 operations answer 501 with media.upload_put counted by the coverage tool)."
         }
       ],
       "operations": {
-        "implemented": 293,
-        "returning_501": 109,
+        "implemented": 375,
+        "returning_501": 27,
         "deferred_with_reason": 3,
-        "total": 402
+        "total": 402,
+        "note": "pnpm contract:coverage counts media.upload_put (storage PUT, served by the storage listener) as not implemented; real API gaps: 23 §21 AI ops + 3 deferred identity ops."
       },
-      "next_stage": "S8",
-      "before_starting_S8": [
-        "Run `pnpm db:reset` once: S7 added definers to Docs/43 (appointment.requester_contact/check_in_contact/visit_cards/busy_intervals, trust.invitation_contact/invitation_by_token/claim_invitation, media.shared_attachments) and made appointment.capacity_available SECURITY DEFINER. No new npm dependency.",
-        "Read S7.report.notes_for_next and recommendations_for_next_stages.S8: Path 2 reviews wait for the CarPal reviewer decision (§23.4) and objection disputes for their resolution; verified_business badges wait for admin approval.",
-        "Trust: after any admin change that affects trust (review approval/removal, dispute outcome, moderation action, badge approval, verification decision) publish the matching event (review.approved, review.removed, moderation.action.taken, organization.verified …) or call TrustScorer.recompute(orgId); W3 and W2 converge from there.",
-        "Fleet: decide DI-38/DI-58 before wiring fleet approvals into appointments (fleet_approval_id is refused today) and fleet drivers into appointments (GD-20).",
-        "All checks were green at the end of S7: pnpm lint (382 modules), typecheck, build, format:check, contract:check, db:codegen --verify, test:all (413 tests, 58 files); pnpm dev starts all hosts (api 279 implemented routes) with the trust consumers (trust.review_workflow, trust.scoring, trust.helpful_count) and the W15 rules appointment.reminders, trust.approval_deadline, trust.invitations, trust.nightly."
+      "next_stage": "S9",
+      "before_starting_S9": [
+        "Run `pnpm db:reset` once: S8 added the definer admin.moderation_action_affects to Docs/43 (and 42 §5.3). No new npm dependency; optional env CARPAL_DB_PASSWORD_ANALYTICS_READER.",
+        "Read S8.report.notes_for_next and recommendations_for_next_stages.S9 (updated after S8): AI records need their PersonalData/retention/moderation registrations; the contract-test generator must know the admin-plane mechanics (staff client, purpose headers, four-eyes 202s, CarPal-Reason on DELETE).",
+        "Docs/40 changed in S8 (versions on FeatureFlag, McpClientView, TaxonomyNode; CarPal-Reason header): the OpenAPI generator must describe them.",
+        "All checks were green at the end of S8: pnpm lint (432 modules), typecheck, build, format:check, contract:check, db:codegen --verify, test:all (460 tests, 63 files); pnpm dev starts all hosts (api 301 implemented routes, admin-api 60/60, auth 14/16)."
       ]
     },
     "purpose": "Breaks the first (scratch) build of the CarPal backend into 9 stages, each sized to run in its own context window. Every stage writes its report back into this file so the next context can see what is done, what was decided and what to watch out for.",
@@ -230,6 +236,10 @@
         {
           "stage": "S7",
           "change": "After S7: 293 operations implemented, 109 answer 501 (3 of them the deferred S3 operations). appointment 31/31, trust 28/36 (the other 8 are §23.4 admin operations of S8)."
+        },
+        {
+          "stage": "S8",
+          "change": "After S8: 375 operations implemented, 27 answer 501 (23 §21 AI operations, 3 deferred S3 identity operations, media.upload_put = storage PUT). fleet 20/20, admin 16/16, analytics 3/3, identity 58/61, organization 71/71, billing 7/7, taxonomy 13/13, trust 36/36, media 10/11, ai-mcp 4/27; admin-api serves 60/60 routes."
         }
       ]
     },
@@ -360,6 +370,10 @@
         {
           "stage": "S7",
           "change": "New interfaces: appointment AppointmentFacts; organization ProviderBooking and TrustFigures; discovery MatchResults; trust TrustRead.appointmentReviewState (and the exported TrustScorer, Invitations, ReviewWorkflow inside the trust module); vehicle VehicleCards.serviceVisits/serviceHistory/issue/appointmentRecords; inventory InventoryRead.inquiryVisits; media MediaService.sharedAttachmentViews; identity AccountFacts.verifiedEmail and ConsentGrants service_history_sharing. Registered: organization visits appointment (job logs inherit appointment_verified from completed appointments), the appointment customer check, insight sources provider.requests_received/completion_rate (appointment) and provider.overall_rating/review_count/category_ratings (trust); media attachment targets appointment and review; identity ConsentScopes appointment. New consumers: trust.review_workflow (W4), trust.scoring (W3), trust.helpful_count."
+        },
+        {
+          "stage": "S8",
+          "change": "New registries (useFactory per context): admin FourEyesExecutors, PurposeQueues, ModerationTargets, RetentionHandlers; identity PersonalDataRegistry; taxonomy TaxonomyReferences; analytics MetricGauges. New ports/interfaces: admin FourEyes, ModerationLog, StaffNames; identity AccountAdmin; trust TrustAdmin; organization OrgLifecycle; fleet FleetDrivers, FleetWorkflow, FleetPartners (and libs/authz DriverAssignments bound); billing staff summaries; vehicle fleet reads and createFleetVehicle; appointment fleetAppointments; media moderateAttached. Every module registers its admin parts in application/admin-registrations.ts."
         }
       ]
     },
@@ -385,13 +399,25 @@
       "id": "GD-19",
       "decision": "Organization lifecycle in S4: org.create inserts a draft organization (RLS create_draft) with the creator's owner membership and the audience's default plan in one transaction; the first successful provider.publish or vendor.publish moves a draft organization to active (DI-18). Fleets stay draft until S8 decides their activation (fleet profile).",
       "reason": "52 §21 requires an active organization to publish but no operation of 40 activates one, and 56 §2.11 allows publishing while verification is pending.",
-      "stage": "S4"
+      "stage": "S4",
+      "amendments": [
+        {
+          "stage": "S8",
+          "change": "Decided: a draft (or pending_verification) fleet organization becomes active with its first fleet.profile_put, through organization OrgLifecycle.activate (authz cache refreshed after commit)."
+        }
+      ]
     },
     {
       "id": "GD-20",
       "decision": "DRV in a principal alternative admits fleet drivers in addition to the ORG role group (ORG(FC) DRV = FC + fleet_driver), always limited to vehicles assigned to them: on routes with a path vehicle the authorizer checks DriverAssignments per request (also for a qualified DRV such as DRV(own reports), whose qualifier the use case applies on top); lists are filtered by the use case (grant.driverScoped). A driver admitted only through DRV gets matchedGroups [\"DRV\"]. The BOLA/BFLA matrix (libs/testing) follows the same rule.",
       "reason": "40 issues.create (ORG(FC) DRV) says a fleet driver's report starts the fleet approval workflow, and mileage_add is ORG(FC) DRV, but FC does not contain fleet_driver: read as an AND, drivers could never report. 40 §0.4 defines DRV as \"fleet driver: allowed only on vehicles with an active FleetVehicleAssignment\". Until S8 binds real assignments (NoDriverAssignments), drivers reach no vehicle (fail closed).",
-      "stage": "S5"
+      "stage": "S5",
+      "amendments": [
+        {
+          "stage": "S8",
+          "change": "Assignments are real: DbDriverAssignments (fleet) answers the authorizer in the driver's own RLS context (the API roles cannot use the system context); vehicles.list filters drivers set-based (FleetDrivers.assignedVehicleIds); appointments list/get show drivers their own requests and those of assigned vehicles."
+        }
+      ]
     },
     {
       "id": "GD-21",
@@ -420,6 +446,10 @@
         {
           "stage": "S7",
           "change": "S7 routes (appointments, reviews, invitations, inquiry answers) in routing.ts routeS7; the ci check-in link, review invitation links and their one-time codes are Messenger mails (appointment.check_in_link, review.invitation, review.invitation_code), never notifications."
+        },
+        {
+          "stage": "S8",
+          "change": "routeS8: fleet.approval.requested (only with approval_id), fleet.approval.decided, moderation.action.taken (affected user or organization admins), organization.verified, organization.location.corrected, dsr.deadline.approaching (staff); EN/FA templates added."
         }
       ]
     },
@@ -434,6 +464,24 @@
       "decision": "Reviews and trust: the server decides the confirmation path at reviews.create (Path 1 from a visit of the author that took place, inside the 7-day window for appointments; Path 2 otherwise, business-confirmed when a business sent the invitation); W4 publishes Path 1 reviews after text checks; W3 recomputes one organization from scratch on every relevant event and nightly (evidence rows synced through organization TrustFigures — inserted active, revoked, never edited — capability confidence, trust score with penalties, change-only trust signals, rule badges with audit and events, staleness). Scores and weights are the 54 launch defaults under RULE_VERSION 54-2026-10.",
       "reason": "52 §11/§21 and 54: evidence over claims, no unverified reviews, idempotent recomputation converges with at-least-once events and the nightly sweep; the organization module owns capabilities and the trust_score column (GD-15), the trust module owns every number.",
       "stage": "S7"
+    },
+    {
+      "id": "GD-27",
+      "stage": "S8",
+      "decision": "Admin plane mechanics: (1) every admin handler lives in the module that owns the operation (registry module), with staffOf(ctx); (2) 4EYES operations file a pending change (FourEyes.request, one pending per op and target, 72 h) and return 202 PendingChange; approval runs the executor the owning module registered (FourEyesExecutors) inside the approver's transaction, then marks the change approved — requester ≠ approver (also the DB check), moderators decide required_role platform_moderator changes only; (3) CarPal-Access-Purpose is verified by the authorizer through PurposeQueues resolvers owned by the module of each queue (case: open and unassigned/assigned to the caller; dispute: idem; dsr, verification, approval: open items of shared queues); (4) staff reads of private data write pii.read with the purpose (auditStaffRead) and the pipeline refuses a staff PII response without an audit entry (dev/test); (5) moderation acts on other modules' records only through ModerationTargets (exists, snapshot, subjectOrganization, author, apply, pending); (6) RSN on DELETE reads CarPal-Reason (DI-09).",
+      "reason": "40 §23 / SEC-ADM-3..6 and GD-15: staff need cross-module powers, but every table stays owned by its module; executors and resolvers keep the rules next to the data."
+    },
+    {
+      "id": "GD-28",
+      "stage": "S8",
+      "decision": "Product analytics: events.ingest validates client events against a registry (names, property kinds, ±skew) and enqueues accepted batches (analytics.ingest); the worker pseudonymizes actors with analytics.actor_pseudonyms (HMAC-SHA256 of the user id under a per-user key; no key is created for deleted accounts) and writes events.analytics_events in carpal_analytics as carpal_analytics_writer; business events are copied by the analytics.pipeline consumer with allowlisted non-personal payload keys. Daily metrics: hourly recomputation of yesterday and today (event counts per name, gauges registered by owning modules) read with carpal_analytics_reader; dashboards read daily_metrics only.",
+      "reason": "52 AnalyticsEvent/ActorPseudonym and 43 §21 grants (the API roles cannot read pseudonym keys); deleting the key makes past events unlinkable (S8 acceptance)."
+    },
+    {
+      "id": "GD-29",
+      "stage": "S8",
+      "decision": "DSR execution: every module registers a PersonalDataHandler (export sections, erase). admin.dsr_export creates a data_export job (W8) that writes one encrypted CSV bundle (long format) owned by the user, delivered through DataExportFiles; admin.dsr_execute_deletion is 4EYES and its executor publishes user.deletion.requested; the worker consumer identity.dsr_deletion runs all erase handlers in one system transaction (idempotent), completes the request, publishes user.deletion.completed and revokes sessions. Authored public content stays under 'former member'.",
+      "reason": "41 §2.4 W8 \"through each module's export interface\", 52 DataSubjectRequest, MVP §14; module boundaries kept (GD-15)."
     }
   ],
   "conventions": {
@@ -493,7 +541,8 @@
       "id": "DI-05",
       "issue": "40 admin.assist_session_start says staff call allowlisted operations \"through {adm}/assist/{assist_session_id}/… with the same bodies as the portal\", but does not say how the \"…\" suffix maps to the portal paths (e.g. is org.update reached at {adm}/assist/{id}/orgs/{org_id}?). The registry carries the 20 allowlisted op ids (assistAllowlist) but no assist routes.",
       "action": "S8 decides the mapping (proposal: the portal path after /v1, e.g. /v1/admin/assist/{assist_session_id}/orgs/{org_id}) and the doc is corrected.",
-      "status": "open"
+      "status": "open",
+      "s8_note": "S8: assist sessions are started/ended and recorded, but the {adm}/assist/{assist_session_id}/… routes are still not in the registry, so staff cannot call the allowlisted operations yet. Proposal unchanged (portal path after /v1 under /v1/admin/assist/{id}/…); needs a 40 change and a router mapping (S9 or later)."
     },
     {
       "id": "DI-06",
@@ -517,7 +566,8 @@
       "id": "DI-09",
       "issue": "admin.platform_role_revoke and admin.synonym_delete are DELETE operations with RSN, but DELETE takes no body (TR-6) and RSN means 'request body must contain reason'.",
       "action": "Decide in S8: make them POST .../revoke and POST .../delete with { reason }, or carry the reason in a header. A unit test pins the list of RSN operations whose input lacks reason.",
-      "status": "open"
+      "status": "resolved in S8",
+      "s8_note": "Decided: RSN DELETE operations take the reason from the CarPal-Reason header (40 §1.3 updated); 422 VALIDATION_FAILED at /reason when missing."
     },
     {
       "id": "DI-10",
@@ -591,7 +641,8 @@
       "id": "DI-21",
       "issue": "Hybrid organizations: one membership per user and organization (role_memberships_org_uq), but {prv} routes need P* / P+ roles and {vnd} routes need V* / V+ roles, so the creator (provider_owner) cannot manage the vendor side; widening role groups is a contract change (40 §0.5).",
       "action": "Decide before the hybrid UI ships: e.g. in a hybrid organization provider_owner also satisfies V+/V* and vendor_owner P+/P*, or allow two memberships per user in hybrid organizations. S4 leaves the groups as written (workaround: invite a vendor_owner).",
-      "status": "open"
+      "status": "open",
+      "s8_note": "S8: still undecided (no admin tooling changed role groups)."
     },
     {
       "id": "DI-22",
@@ -694,7 +745,8 @@
       "id": "DI-38",
       "issue": "vehicle_data_sharing is a personal consent (52 ConsentRecord: organization subjects only for the three *_ai_use types), but fleet vehicles belong to an organization: 40 does not say how a fleet shares documents or service history with a provider, or how a provider logs work on a fleet vehicle.",
       "action": "S5: a fleet shares its own documents by its coordinators' decision (FC role, no consent record); provider.service_record_create and job-log vehicle links fail closed (403 CONSENT_REQUIRED) for fleet vehicles. Needs a decision in S7/S8 (e.g. an organization-subject vehicle_data_sharing, or appointments as the only path for fleets). S7: fleet appointment requests ignore share_history (DI-58); providers record work on fleet vehicles through appointments (provider.service_record_create with appointment_id needs no consent).",
-      "status": "open"
+      "status": "open",
+      "s8_note": "S8: fleets still share history with providers only through appointments (no organization-subject vehicle_data_sharing); fleet approvals are now bound to appointments. Decision still needed (OQ-11)."
     },
     {
       "id": "DI-39",
@@ -784,7 +836,8 @@
       "id": "DI-53",
       "issue": "40 SearchFilters.available_within_days and preferred_partners_only depend on availability (S7) and fleet preferred partners (S8); public.availability computes slots from availability rules that do not exist yet.",
       "action": "S6: available_within_days is ignored, preferred_partners_only fails closed (no results), public.availability answers { slots: [] } after checking the provider and location. S7/S8 replace them. S7: public.availability computes slots; available_within_days filters providers by their indexed next open slot (providers without a calendar are left out); preferred_partners_only still fails closed until S8.",
-      "status": "resolved in S7"
+      "status": "resolved in S7",
+      "s8_note": "S8: preferred_partners_only now returns the searching fleet's active preferred providers (as_organization_id), and the +5 fleet preferred-partner bonus applies."
     },
     {
       "id": "DI-54",
@@ -832,6 +885,54 @@
       "id": "DI-61",
       "issue": "52 ProviderCapabilityEvidence.base_weight is an integer (smallint in 43), but 54 §1.1 review weights are fractional for Path 2 (8 × 0.6 = 4.8, 4 × 0.6 = 2.4).",
       "action": "S7 rounds (5 and 2). Change the column to numeric(5,2) in a numbered migration if calibration needs exact weights.",
+      "status": "open"
+    },
+    {
+      "id": "DI-62",
+      "issue": "40 admin.flag_update, admin.mcp_client_update and admin.taxonomy_node_update are ETAG, but FeatureFlag, McpClientView and TaxonomyNode had no version, so clients could not send If-Match.",
+      "action": "S8: Docs/40 gained version on FeatureFlag and McpClientView and an optional version on TaxonomyNode (staff responses); contract regenerated.",
+      "status": "resolved in S8"
+    },
+    {
+      "id": "DI-63",
+      "issue": "40 Appendix A lacks events S8 needs: feature_flag.changed (flag cache bust in every process), user.deletion.requested (approved deletion handed to the worker), dsr.deadline.approaching (staff alert); fleet.approval.requested from provider.appointments_update has no approval yet (the fleet decides by threshold).",
+      "action": "S8 publishes them with id-only/plain payloads; fleet.approval.requested carries approval_id when an approval exists (W5 notifies only those). Add them to Appendix A and 52 §20.",
+      "status": "open"
+    },
+    {
+      "id": "DI-64",
+      "issue": "52 Notification.event_type has no type for fleet approval decisions, DSR deadline alerts or verification outcomes.",
+      "action": "S8 uses system_announcement (fleet decisions), moderation_alert (DSR deadlines) and moderation_update (moderation outcomes, verification, location corrections). Suggest fleet_approval_decided, dsr_deadline_alert and verification_decided in 52 and 43.",
+      "status": "open"
+    },
+    {
+      "id": "DI-65",
+      "issue": "40 admin.analytics_dashboard takes region and organization_type filters, but 43 events.daily_metrics aggregates have a free dimension_key and 52 names no dimensions.",
+      "action": "S8 stores aggregates without dimensions and ignores both filters. Decide the dimensions (region, org type, platform) before dashboards are used.",
+      "status": "open"
+    },
+    {
+      "id": "DI-66",
+      "issue": "40 admin.user_status suspend_until has no rule that lifts the suspension, and 52 UserAccount has no suspended_until column.",
+      "action": "S8 records it on the moderation action only. Suggest a column or a W15 rule reading moderation actions.",
+      "status": "open"
+    },
+    {
+      "id": "DI-67",
+      "issue": "40 admin.org_merge says references are re-pointed, but no module interface lists organization references (memberships, locations, profiles, reviews, appointments …), and unique keys collide.",
+      "action": "S8 marks the duplicate merged and unpublishes it; references resolve through merged_into_organization_id. Needs an OrganizationReferences registry (like TaxonomyReferences) with per-module conflict rules.",
+      "status": "open"
+    },
+    {
+      "id": "DI-68",
+      "issue": "40 admin.dispute_resolve: for review_approval_objection, 52 §11 says an upheld objection publishes the review with disputed_by_business, i.e. 'upheld' means the review is upheld, not the business's objection.",
+      "action": "S8 follows 52: resolved_upheld publishes (reviewer decision approved by the dispute decider, reason objection_upheld); resolved_rejected rejects the review. Suggest wording in 40 that names the outcome for the review explicitly.",
+      "status": "open"
+    },
+    {
+      "id": "DI-69",
+      "issue": "43 media.media_assets.mime_type allows images, video, PDF and CSV only, so a DSR export bundle cannot be JSON.",
+      "action": "S8 writes the bundle as one CSV in long format (section, record_id, field, value). Suggest allowing application/json (or zip) for system_export if a structured bundle is required.",
       "status": "open"
     }
   ],
@@ -2218,7 +2319,7 @@
     {
       "id": "S8",
       "title": "Fleet; admin plane; analytics and audit; DSR execution",
-      "status": "not_started",
+      "status": "done",
       "depends_on": [
         "S7"
       ],
@@ -2261,38 +2362,45 @@
       "tasks": [
         {
           "id": "S8.T1",
-          "status": "not_started",
-          "title": "Fleet: profile, vehicle assignments (one active driver per vehicle; switch the DRV guard and vehicle interface stub from S5 to real data), drivers, preferred partners, approvals (no self-approval; wire the appointment and issue hooks from S5/S7), reports (FR roles), import_create via W7, export via W8 (formula-safe CSV)."
+          "status": "done",
+          "title": "Fleet: profile, vehicle assignments (one active driver per vehicle; switch the DRV guard and vehicle interface stub from S5 to real data), drivers, preferred partners, approvals (no self-approval; wire the appointment and issue hooks from S5/S7), reports (FR roles), import_create via W7, export via W8 (formula-safe CSV).",
+          "result": "done: modules/fleet (20 ops, fleet-ops.ts, reports.ts, transfer-ops.ts): profile (ETAG(if exists); the first save activates a draft fleet through organization OrgLifecycle — GD-19 decided; enabling the workflow needs fleet_approval_workflow_enabled), dashboard, assignments (one active per vehicle, drivers are active fleet_driver members, driver names only under fleet_driver_data_visibility), preferred partners, approvals (no self-approval, needs_more_info, decisions update the driver's issue), reports (7 types, groupings, ≤ 366 days, reporting currency), exports (W8 formula-safe CSV, 7-day file, 5-min URLs) and imports (W7, vehicles.create schema + rules per row, error report). DriverAssignments is bound (driver's own RLS context); vehicles.list filters drivers set-based (FleetDrivers); Vehicle.assigned_driver is filled; a driver's issue opens a repair_request approval (FleetWorkflow.driverIssue, or 'approved' with the workflow off); fleet appointments need an approved approval while the workflow is on unless the requester is an owner/manager (FleetWorkflow.appointmentApproval, linkAppointment); provider cost estimates on fleet appointments publish fleet.approval.requested and the consumer fleet.cost_approvals opens a cost_estimate approval above the threshold; drivers read appointments of assigned vehicles (list/get). Search: SearchFilters.preferred_partners_only and the +5 preferred-partner bonus (FleetPartners)."
         },
         {
           "id": "S8.T2",
-          "status": "not_started",
-          "title": "Admin plane foundations on admin-api: aal3 sessions, RSN, PURP header bound to a queue item, PII read-audit, 4EYES via admin.pending_admin_changes (FOUR_EYES_PENDING 202, SELF_APPROVAL_FORBIDDEN, expiry rule), assist sessions (≤ 4 h)."
+          "status": "done",
+          "title": "Admin plane foundations on admin-api: aal3 sessions, RSN, PURP header bound to a queue item, PII read-audit, 4EYES via admin.pending_admin_changes (FOUR_EYES_PENDING 202, SELF_APPROVAL_FORBIDDEN, expiry rule), assist sessions (≤ 4 h).",
+          "result": "done: modules/admin (admin.module.ts: AdminModule/AdminApiModule/AdminPublicModule/AdminWorkerModule; interface/admin.ts): staffOf, FourEyes (pending_admin_changes, one pending change per op and target, 72 h) + FourEyesExecutors registry (executors run in the approver's transaction; requester ≠ approver, moderators decide moderation changes only, expired → 409), PurposeQueues registry behind the authorizer's PurposeVerifier (case: admin; dispute, approval: trust; dsr: identity; verification: organization), auditStaffRead (pii.read with access_purpose) plus a pipeline guard (a staff response on a PII route without an audit entry is a 500 in dev/test), assist sessions (≤ 4 h, one active per organization, recorded as assist_onboarding). aal3 for staff was already enforced (S2)."
         },
         {
           "id": "S8.T3",
-          "status": "not_started",
-          "title": "§23.2 users, organizations and plans: user/org status, verification decide (organization.verified), location correct, subscription assign, plan update, DSR queue and execution (export bundle via each module's export interface; deletion/anonymization handlers; user.deletion.completed)."
+          "status": "done",
+          "title": "§23.2 users, organizations and plans: user/org status, verification decide (organization.verified), location correct, subscription assign, plan update, DSR queue and execution (export bundle via each module's export interface; deletion/anonymization handlers; user.deletion.completed).",
+          "result": "done: identity admin (identity-admin.module.ts, admin-ops.ts): users_search (exactly one identifier, every result audited), user_get, user_status (AccountAdmin: sessions revoked and authz cache dropped after commit, moderation action + moderation.action.taken), sessions revoke, platform role grant (4EYES) / revoke (immediate, CarPal-Reason header, last admin kept), onboarding reset, DSR queue/update (transition table; export needs its bundle; deletion completes only through execution), dsr_export (W8 DsrExporter: every module's PersonalData section into one encrypted CSV owned by the user) and dsr_execute_deletion (4EYES → user.deletion.requested → worker identity.dsr_deletion: every module's erase, account anonymized, DSR completed, user.deletion.completed). organization admin (organization-admin.module.ts): orgs_search, org_get (PURP PII), org_status (profiles follow: published ↔ suspended), org_merge (4EYES: merged + merged_into, profiles unpublished), verifications_queue (location check, wrong-location reports), verification_decide (far_apart blocks location; verified when business_identity and location are verified; organization.verified), location_correct (admin_corrected, check resolved to consistent, organization.location.corrected). billing: subscription_assign (current cancelled, change requests assigned), plans_list, plan_update (4EYES)."
         },
         {
           "id": "S8.T4",
-          "status": "not_started",
-          "title": "§23.3 taxonomy administration (create/update/merge with approval → taxonomy.node.merged; consumers re-point xrefs) and §23.4 moderation: content reports (reports.create), moderation cases and actions, review approval queue (Path 2 decide → review.approved/published), disputes resolve, portfolio moderation (unblocks S4 publish), badge approve."
+          "status": "done",
+          "title": "§23.3 taxonomy administration (create/update/merge with approval → taxonomy.node.merged; consumers re-point xrefs) and §23.4 moderation: content reports (reports.create), moderation cases and actions, review approval queue (Path 2 decide → review.approved/published), disputes resolve, portfolio moderation (unblocks S4 publish), badge approve.",
+          "result": "done: taxonomy admin (9 ops; merge = 4EYES → job taxonomy.merge in W7 host: every module's TaxonomyReferences re-pointer, node merged, taxonomy.node.merged). Moderation: reports.create (reporter context; users/organizations through definer cards; review.reported), reports_list/triage (one case gathers every open report of a target), cases list/get (target snapshot)/assign/action/close, ModerationTargets registry (review, review_response, badge: trust; post, comment, question, answer: community; portfolio_item, organization, organization_location: organization; media_asset: media; inventory_item, inventory_fitment: inventory; user: identity; ai_output: ai-mcp), moderation intake rule (held content → system_rule cases), review approval queue/get/decide (Path 2: business step first, rating never a rejection reason, approved_without_visit weight 0.6, review.approved + review.published), move to approval path (4EYES), disputes queue/get/resolve (decider ≠ first reviewer / acting moderator; upheld objection → published with disputed_by_business; upheld fake_review → removed with the −50 input; badge challenge → revoked; appeal → restore), badge_approve. disputes.create now accepts service_record and moderation_action targets (definer admin.moderation_action_affects). W3 applies moderation penalties (admin points, −20 violation, −50 fake + all badges, suspended org → no badges)."
         },
         {
           "id": "S8.T5",
-          "status": "not_started",
-          "title": "§23.5 flags (update + cache bust + kill switch), retention policies, audit search, analytics dashboard (daily_metrics), MCP client admin records (data only)."
+          "status": "done",
+          "title": "§23.5 flags (update + cache bust + kill switch), retention policies, audit search, analytics dashboard (daily_metrics), MCP client admin records (data only).",
+          "result": "done: flags list/update (If-Match: FeatureFlag gained version; kill switch on immediate, off and featured.enabled on via 4EYES; cache dropped at once here and in every process through feature_flag.changed), retention list/update (4EYES) + daily retention rule with RetentionHandlers per entity type, audit_search (≤ 93 days, audited), analytics_dashboard (daily_metrics: event counts + registered gauges), MCP client admin records (list, update with ETag: suspension/revocation immediate, scope/resource/tool changes and reactivation via 4EYES; McpClientView gained version), ai_insights_search, mcp_access_log_search (audited), media_download_url (PURP, clean active files only, audited)."
         },
         {
           "id": "S8.T6",
-          "status": "not_started",
-          "title": "Analytics: events.ingest (client events, allowlisted names, batch ≤ 50), W12 pipeline: pseudonymize actors (analytics.actor_pseudonyms), write events.analytics_events in carpal_analytics, daily aggregates; partition maintenance rule (core.ensure_monthly_partitions)."
+          "status": "done",
+          "title": "Analytics: events.ingest (client events, allowlisted names, batch ≤ 50), W12 pipeline: pseudonymize actors (analytics.actor_pseudonyms), write events.analytics_events in carpal_analytics, daily aggregates; partition maintenance rule (core.ensure_monthly_partitions).",
+          "result": "done: events.ingest (registered client events and property schemas, ≤ 50, clock skew ±; accepted batches go to the analytics.ingest queue), W12 (workers/analytics-pipeline + AnalyticsEventConsumer for forwarded domain events): pseudonymization in the worker with analytics.actor_pseudonyms (no key for deleted accounts), rows in carpal_analytics via carpal_analytics_writer; DailyMetricsRule (hourly, yesterday and today) with gauges from MetricGauges; AnalyticsPartitionsRule (events.ensure_monthly_partitions). DSR deletion deletes the pseudonym key (acceptance tested)."
         },
         {
           "id": "S8.T7",
-          "status": "not_started",
-          "title": "Remaining W15 rules: trials → default plan, DSR deadline alerts, pending admin changes/assist sessions expiry, retention apply, expired uploads/link tokens/jobs."
+          "status": "done",
+          "title": "Remaining W15 rules: trials → default plan, DSR deadline alerts, pending admin changes/assist sessions expiry, retention apply, expired uploads/link tokens/jobs.",
+          "result": "done: billing.trial_expiry (daily, trials → audience default plan), identity.dsr_deadlines (daily, staff alert dsr.deadline.approaching → W5), admin.expiry (hourly: pending changes and assist sessions), admin.retention (daily: DomainEventOutbox, BackgroundJob, VerificationToken, MediaAsset removed/pending_upload objects, MatchSession anonymize, Notification, NotificationDelivery, FleetExport; archive policies keep rows), libs.jobs_expiry (hourly), admin.moderation_intake (5 min). Expired uploads were already handled by media.discard_expired_uploads (S4)."
         }
       ],
       "deliverables": [
@@ -2310,15 +2418,136 @@
         "Admin web UI"
       ],
       "report": {
-        "started_at": null,
-        "completed_at": null,
-        "summary": null,
-        "ops_implemented": [],
+        "started_at": "2026-10-14",
+        "completed_at": "2026-10-15",
+        "summary": "All 82 S8 operations are implemented: §18 fleet (20), §22 events.ingest and reports.create, and the §23 admin plane (60, including the 4 MCP/AI oversight data operations). The admin plane runs only on admin-api with aal3 staff sessions, purpose-bound reads with pii.read audit entries, four-eyes changes executed by registered executors in the approver's transaction, moderation (reports, cases, actions on content owned by other modules through ModerationTargets, an intake rule for held content), Path 2 reviewer decisions, disputes, badge approval, verification, location correction, organization status and merges, billing and taxonomy administration (merge job re-pointing references), flags with the kill switch, retention, audit search, MCP records and assist sessions. DSRs are executed: W8 builds a per-user export bundle from every module's PersonalData handler, and an approved deletion erases/anonymizes across modules in the worker, deletes the analytics pseudonym key and publishes user.deletion.completed. Analytics: events.ingest → W12 (pseudonymized) → daily metrics and dashboards. Fleets: profile (activates the fleet), dashboard, driver assignments (drivers now reach assigned vehicles), partners (search filter and ranking bonus), approvals wired into driver issues, fleet appointments and provider cost estimates, reports, CSV exports (W8) and vehicle imports (W7). Remaining W15 rules (trials, DSR deadlines, expiry, retention, jobs) are scheduled. The four acceptance criteria are covered by integration tests.",
+        "ops_implemented": [
+          "fleet.profile_get",
+          "fleet.profile_put",
+          "fleet.dashboard",
+          "fleet.assignments_list",
+          "fleet.assignment_set",
+          "fleet.assignment_end",
+          "fleet.partners_list",
+          "fleet.partner_create",
+          "fleet.partner_update",
+          "fleet.approvals_list",
+          "fleet.approval_create",
+          "fleet.approval_get",
+          "fleet.approval_decide",
+          "fleet.report",
+          "fleet.export_create",
+          "fleet.exports_list",
+          "fleet.export_download",
+          "fleet.import_create",
+          "fleet.imports_list",
+          "fleet.import_error_report",
+          "events.ingest",
+          "reports.create",
+          "admin.users_search",
+          "admin.user_get",
+          "admin.user_status",
+          "admin.user_sessions_revoke",
+          "admin.platform_role_grant",
+          "admin.platform_role_revoke",
+          "admin.onboarding_reset",
+          "admin.orgs_search",
+          "admin.org_get",
+          "admin.org_status",
+          "admin.org_merge",
+          "admin.verifications_queue",
+          "admin.verification_decide",
+          "admin.location_correct",
+          "admin.assist_session_start",
+          "admin.assist_session_end",
+          "admin.subscription_assign",
+          "admin.plans_list",
+          "admin.plan_update",
+          "admin.taxonomy_node_create",
+          "admin.taxonomy_node_update",
+          "admin.taxonomy_merge",
+          "admin.synonyms_list",
+          "admin.synonym_create",
+          "admin.synonym_decide",
+          "admin.synonym_delete",
+          "admin.mappings_list",
+          "admin.mapping_upsert",
+          "admin.review_approvals_queue",
+          "admin.review_approval_get",
+          "admin.review_approval_decide",
+          "admin.review_move_to_approval_path",
+          "admin.reports_list",
+          "admin.report_triage",
+          "admin.cases_list",
+          "admin.case_get",
+          "admin.case_assign",
+          "admin.case_action",
+          "admin.case_close",
+          "admin.disputes_queue",
+          "admin.dispute_get",
+          "admin.dispute_resolve",
+          "admin.badge_approve",
+          "admin.flags_list",
+          "admin.flag_update",
+          "admin.retention_list",
+          "admin.retention_update",
+          "admin.audit_search",
+          "admin.dsr_queue",
+          "admin.dsr_update",
+          "admin.dsr_export",
+          "admin.dsr_execute_deletion",
+          "admin.media_download_url",
+          "admin.ai_insights_search",
+          "admin.mcp_clients_list",
+          "admin.mcp_client_update",
+          "admin.mcp_access_log_search",
+          "admin.analytics_dashboard",
+          "admin.four_eyes_list",
+          "admin.four_eyes_decide"
+        ],
         "ops_deferred": [],
-        "files_created": [],
-        "tests": null,
-        "deviations": [],
-        "notes_for_next": []
+        "files_created": [
+          "modules/admin: admin.module.ts (AdminModule global, AdminApiModule, AdminPublicModule, AdminWorkerModule); interface/admin.ts (staffOf, auditStaffRead, headerReasonOf, StaffNames, FourEyes, FourEyesExecutors, PurposeQueues, ModerationTargets, ModerationLog, RetentionHandlers); infrastructure/admin-services.ts (DbFourEyes, DbModerationLog, QueuePurposeVerifier); application/{common,four-eyes-ops,moderation-ops,platform-ops,admin-rules}.ts; api/projections.ts",
+          "modules/fleet: fleet.module.ts (FleetModule global, FleetWorkerModule); interface/fleet.ts (FleetDrivers, FleetWorkflow, FleetPartners); infrastructure/fleet-services.ts (DbDriverAssignments, DriverNames, Db* services); application/{fleet-ops,reports,transfer-ops}.ts; api/projections.ts",
+          "modules/analytics: analytics.module.ts (AnalyticsModule, AnalyticsWorkerModule); interface/analytics.ts (MetricGauges); domain/events.ts + analytics-domain.test.ts; application/{pipeline,analytics-ops}.ts",
+          "modules/ai-mcp: ai-mcp.module.ts, application/admin-ops.ts (admin data ops, ai_output moderation target)",
+          "per-module admin parts: identity/{identity-admin.module.ts, application/admin-ops.ts, application/dsr-worker.ts}; organization/{organization-admin.module.ts, application/admin-ops.ts, application/admin-registrations.ts, interface/lifecycle.ts, infrastructure/lifecycle.ts}; trust/{trust-admin.module.ts, application/admin-ops.ts, application/admin-registrations.ts}; billing/application/admin-ops.ts; taxonomy/application/admin-ops.ts (+ TaxonomyReferences, repointColumns in interface); media/application/admin-ops.ts (+ MediaService.moderateAttached); community/inventory/notification/discovery application/admin-registrations.ts",
+          "cross-module changes: vehicle (VehicleCreator shared by vehicles.create and fleet imports; VehicleCards.fleet*/serviceRecordParties; VehicleService.setIssueApproval/createFleetVehicle; driver hooks), appointment (fleet approval hook, cost estimate event, drivers of assigned vehicles, AppointmentFacts.fleetAppointments), trust (moderation penalties in W3, dispute targets), discovery (preferred partners, indexer fixes), notification (routeS8 + templates), identity (AccountAdmin, PersonalDataRegistry), billing (staffSummaryForUser, staffSubscription)",
+          "workers: export-jobs/export-jobs.module.ts (W8), analytics-pipeline/analytics-pipeline.module.ts (W12), import-jobs (fleet imports, taxonomy merges), scheduler/jobs-expiry.rule.ts",
+          "libs: config CARPAL_DB_PASSWORD_ANALYTICS_READER; db AnalyticsDatabase; http-pipeline PII read-audit guard",
+          "apps/testing: s8-support.ts, admin.int.test.ts (17), moderation.int.test.ts (11), fleet.int.test.ts (9), s8-rules.test.ts (6)",
+          "Docs: 40 (FeatureFlag.version, McpClientView.version, TaxonomyNode.version?, CarPal-Reason header); 43 + 42 §5.3 (definer admin.moderation_action_affects)"
+        ],
+        "tests": "460 passing (pnpm test:all, 63 files): S8 added 47 (unit: analytics domain 5, s8 rules 6; integration: admin 17, moderation 11, fleet 10 incl. preferred-partner search) and nothing regressed. Acceptance: admin routes return 404 on the api host and consumer tokens 401 on admin-api (also staff without the role 404, staff below aal3 401); a four-eyes platform role grant by admin A is refused for A (403 SELF_APPROVAL_FORBIDDEN), never listed for A, and applied only after B approves; staff PII reads write pii.read with access_purpose (user_get, org_get, users_search) and the pipeline refuses unaudited staff PII responses; a DSR deletion approved through four-eyes runs in the worker, anonymizes the account, revokes sessions, completes the request, publishes user.deletion.completed and deletes the analytics pseudonym key. Also green: pnpm lint (432 modules), typecheck, build, format:check, contract:check, db:codegen --verify; pnpm dev starts all hosts (api 301 implemented routes, admin-api 60/60) with the new consumers (identity.dsr_deletion, fleet.cost_approvals, analytics.pipeline) and W15 rules. Shared-DB hygiene (GD-13): the admin test deletes the taxonomy nodes and MCP client it creates, and the baseline seed count ignores accounts anonymized by DSR deletion (@deleted.carpal.invalid), so repeated runs stay green.",
+        "deviations": [
+          "Docs/40 changed (contract regenerated): FeatureFlag and McpClientView gained version (their update operations are ETAG; clients could not send If-Match), TaxonomyNode gained an optional version (staff responses only), §1.3 gained the CarPal-Reason header (DI-09 decided). Docs/43 + 42 §5.3 gained the definer admin.moderation_action_affects: run `pnpm db:reset` once.",
+          "DI-09 decided: RSN on DELETE (admin.platform_role_revoke, admin.synonym_delete) reads the reason from the CarPal-Reason header (422 VALIDATION_FAILED at /reason when missing).",
+          "Purpose binding (SEC-ADM-5): case and dispute purposes must be unassigned or assigned to the caller; DSR, verification and approval items form shared open queues (any staff member with the operation's role may act on an open item). A purpose is not checked against the record being read (a case about user A can be used to read user B); S9 hardening may bind them.",
+          "Four-eyes: one pending change per operation and target (409 DUPLICATE for a second); executors run in the approver's transaction with the approver as actor, the audit entry names the original requester. admin.mcp_client_update reactivation also needs a second admin (only suspension and revocation are immediate).",
+          "Assisted onboarding: sessions are recorded (≤ 4 h, one active per organization, assist_onboarding action) but the {adm}/assist/{session}/… routes are not served (not in the registry): DI-05 stays open.",
+          "case_action: actions owned by dedicated operations (verify_organization, reject_verification, confirm/reject_review_approval, request_evidence, correct_location, assist_onboarding) answer 409 INVALID_TRANSITION; merge_duplicate files an admin.org_merge four-eyes change; warn_user only records and notifies.",
+          "admin.user_status suspend_until is recorded on the moderation action but suspensions are not lifted automatically (no rule yet).",
+          "admin.org_merge marks the duplicate merged and unpublishes its profiles; memberships, locations, reviews and other references are not re-pointed (they resolve through merged_into_organization_id).",
+          "Taxonomy merge re-points simple node columns in vehicle, appointment, trust (reviews), organization (portfolio items), inventory (item categories), fleet (partners) and taxonomy itself; rows with unique keys (capabilities, coverage, service categories, review tags, synonym/mapping duplicates) keep the merged id and resolve through canonicalId.",
+          "Events outside 40 Appendix A: feature_flag.changed (cache bust), user.deletion.requested (approved deletion → worker), dsr.deadline.approaching (staff alert), review.removed/review.response.removed from moderation; fleet.approval.requested is also published by provider.appointments_update WITHOUT an approval (the fleet consumer decides; W5 notifies only events with approval_id).",
+          "Notifications: fleet.approval.decided uses event_type system_announcement (52 Notification.event_type has no decision type); moderation outcomes, verification and location corrections use moderation_update; DSR alerts moderation_alert to platform admins and support.",
+          "DSR export bundle is CSV in long format (section, record_id, field, value): media mime types allow PDF/CSV only, not JSON. Erasure: identity anonymizes the account (email deleted-<id>@deleted.carpal.invalid, status deleted) and deletes credentials, tokens, onboarding; consents withdrawn; memberships removed; vehicles soft-deleted with VIN/plate cleared; media removed; notifications, preferences, push tokens deleted; match sessions anonymized; provider notes about the user deleted; driver assignments ended; appointment descriptions replaced; unpublished reviews removed (published reviews stay under 'former member'); inquiry vehicle snapshots cleared; pseudonym key deleted. AI records (triage sessions, insights) are not erased yet (S9).",
+          "Analytics: dashboards ignore the region and organization_type query filters (aggregates are stored without dimensions); retention of AnalyticsEvent (writer cannot delete), McpAccessLog (append-only) and AuditLog/Review/DSR archive policies are not applied; analytics never blocks the product (a failed ingest batch is logged and dropped).",
+          "Fleet: approval_workflow_enabled defaults to on without a profile (DB default); coordinators (and drivers) need an approved repair_request or provider_selection approval for fleet appointments while the workflow is on, owners and managers do not; drivers read appointments of their assigned vehicles (list/get) but only their own requests elsewhere; dashboard active_repairs = max(active fleet appointments, vehicles in_repair); reports compute per request (no materialized aggregates); exports keep files 7 days; FleetExport retention deletes rows (their private files stay unreachable). Fleet trust signals (54 §8) and fleet_friendly revocation are not computed yet.",
+          "A fleet search with preferred_partners_only returns preferred providers only (vendors and items are left out); the preferred bonus is +5, cumulative with a favourite up to +10.",
+          "Moderation intake opens system_rule cases (reason other, severity low) for held reviews (pending_moderation), community content (moderation pending), portfolio items (pending_review) and public media (moderation pending, except portfolio media which follow their item).",
+          "The API roles cannot use the system RLS context: driver assignment checks run in the driver's own context; report targets are checked in the reporter's context (definer cards for users and organizations).",
+          "WebAuthn (OQ-04) is still not implemented: staff aal3 sessions exist only through fixtures/tests; auth.webauthn_options, me.webauthn_register_options and auth.social_start stay deferred (S3)."
+        ],
+        "notes_for_next": [
+          "Run `pnpm db:reset` once (Docs/43 changed: admin.moderation_action_affects). Commands from backend/ after `source tools/use-local-node.sh`. No new npm dependency; new env CARPAL_DB_PASSWORD_ANALYTICS_READER (dev default carpal_analytics_reader_dev).",
+          "Layout as before; S8 adds per-module admin parts: <module>-admin.module.ts (admin-api handlers) or handlers inside the global module (billing, taxonomy, media, ai-mcp: other hosts skip routes that are not theirs), and application/admin-registrations.ts per module (purpose queues, four-eyes executors, moderation targets, retention handlers, PersonalData, TaxonomyReferences, MetricGauges).",
+          "Admin plane recipe: staffOf(ctx) for the caller; PURP reads call auditStaffRead (the pipeline refuses unaudited staff PII responses); 4EYES operations call FourEyes.request and return 202, the module registers the executor (FourEyesExecutors.register(opId, fn)) in onModuleInit; RSN on DELETE uses headerReasonOf(ctx). Staff tests: s8-support staff(app, role) / staffApi (CarPal-Client cp-web-admin), purpose(kind, id), openCase(app), query(app, sql), events(app, {...}).",
+          "New interfaces: admin (FourEyes, FourEyesExecutors, PurposeQueues, ModerationTargets, ModerationLog, RetentionHandlers, StaffNames), identity (AccountAdmin, PersonalDataRegistry), trust (TrustAdmin), organization (OrgLifecycle), fleet (FleetDrivers, FleetWorkflow, FleetPartners), analytics (MetricGauges), taxonomy (TaxonomyReferences, repointColumns), billing (SubscriptionReader.staffSummaryForUser/staffSubscription), vehicle (VehicleCards.fleetVehicles/fleetServiceRecords/fleetIssues/fleetDashboard/serviceRecordParties, VehicleService.setIssueApproval/createFleetVehicle), appointment (AppointmentFacts.fleetAppointments), media (MediaService.moderateAttached).",
+          "Workers: W7 import-jobs hosts inventory imports, fleet imports (fleet.import) and taxonomy merges (taxonomy.merge); W8 export-jobs hosts fleet exports (fleet.export) and DSR bundles (identity.dsr_export); W12 analytics-pipeline hosts analytics.ingest; consumers identity.dsr_deletion, fleet.cost_approvals, analytics.pipeline.",
+          "Analytics database: AnalyticsPools (writer inserts events and upserts daily_metrics; reader reads events and metrics). Tests read it through worker.get(AnalyticsPools).",
+          "S9 AI work must register PersonalData (triage sessions, insights, suggestions), ModerationTargets for new AI records if any, TaxonomyReferences for AI node references, and RetentionHandlers TriageSession; ai-mcp already exists as a module (AiMcpModule) with the admin data operations."
+        ]
       }
     },
     {
@@ -2431,9 +2660,9 @@
       "S8": 82,
       "S9": 23
     },
-    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501. After S6 (pnpm contract:coverage): discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71 (the other 7 are admin ops of S8), trust 1/36 (public.org_reviews), appointment 1/31 (public.availability placeholder); 236 implemented, 166 answer 501. After S7 (pnpm contract:coverage): appointment 31/31, trust 28/36 (the other 8 are §23.4 admin operations of S8); 293 implemented, 109 answer 501.",
-    "implemented": 293,
-    "returning_501": 109,
+    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501. After S6 (pnpm contract:coverage): discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71 (the other 7 are admin ops of S8), trust 1/36 (public.org_reviews), appointment 1/31 (public.availability placeholder); 236 implemented, 166 answer 501. After S7 (pnpm contract:coverage): appointment 31/31, trust 28/36 (the other 8 are §23.4 admin operations of S8); 293 implemented, 109 answer 501. After S8 (pnpm contract:coverage): fleet 20/20, admin 16/16, analytics 3/3, organization 71/71, billing 7/7, taxonomy 13/13, trust 36/36, identity 58/61 (3 deferred S3 ops), media 10/11 (media.upload_put is the storage PUT), ai-mcp 4/27 (the admin oversight data ops; 23 §21 ops for S9); 375 implemented, 27 answer 501; admin-api serves 60/60 routes.",
+    "implemented": 375,
+    "returning_501": 27,
     "total_routes": 450,
     "by_module_after_S3": {
       "identity": "47/61",
@@ -2529,6 +2758,25 @@
       "ai-mcp": "0/27",
       "analytics": "0/3",
       "admin": "0/16"
+    },
+    "by_module_after_S8": {
+      "identity": "58/61",
+      "billing": "7/7",
+      "taxonomy": "13/13",
+      "platform": "4/4",
+      "organization": "71/71",
+      "media": "10/11",
+      "vehicle": "31/31",
+      "inventory": "32/32",
+      "discovery": "7/7",
+      "trust": "36/36",
+      "appointment": "31/31",
+      "fleet": "20/20",
+      "community": "25/25",
+      "notification": "7/7",
+      "ai-mcp": "4/27",
+      "analytics": "3/3",
+      "admin": "16/16"
     }
   },
   "deviations_log": [
@@ -2996,6 +3244,96 @@
       "stage": "S7",
       "date": "2026-10-13",
       "deviation": "The plan's KV slot cache was not built: slots are computed per request from the rules, time off and the busy_intervals definer."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "Docs/40 changed (contract regenerated): FeatureFlag and McpClientView gained version (their update operations are ETAG; clients could not send If-Match), TaxonomyNode gained an optional version (staff responses only), §1.3 gained the CarPal-Reason header (DI-09 decided). Docs/43 + 42 §5.3 gained the definer admin.moderation_action_affects: run `pnpm db:reset` once."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "DI-09 decided: RSN on DELETE (admin.platform_role_revoke, admin.synonym_delete) reads the reason from the CarPal-Reason header (422 VALIDATION_FAILED at /reason when missing)."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "Purpose binding (SEC-ADM-5): case and dispute purposes must be unassigned or assigned to the caller; DSR, verification and approval items form shared open queues (any staff member with the operation's role may act on an open item). A purpose is not checked against the record being read (a case about user A can be used to read user B); S9 hardening may bind them."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "Four-eyes: one pending change per operation and target (409 DUPLICATE for a second); executors run in the approver's transaction with the approver as actor, the audit entry names the original requester. admin.mcp_client_update reactivation also needs a second admin (only suspension and revocation are immediate)."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "Assisted onboarding: sessions are recorded (≤ 4 h, one active per organization, assist_onboarding action) but the {adm}/assist/{session}/… routes are not served (not in the registry): DI-05 stays open."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "case_action: actions owned by dedicated operations (verify_organization, reject_verification, confirm/reject_review_approval, request_evidence, correct_location, assist_onboarding) answer 409 INVALID_TRANSITION; merge_duplicate files an admin.org_merge four-eyes change; warn_user only records and notifies."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "admin.user_status suspend_until is recorded on the moderation action but suspensions are not lifted automatically (no rule yet)."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "admin.org_merge marks the duplicate merged and unpublishes its profiles; memberships, locations, reviews and other references are not re-pointed (they resolve through merged_into_organization_id)."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "Taxonomy merge re-points simple node columns in vehicle, appointment, trust (reviews), organization (portfolio items), inventory (item categories), fleet (partners) and taxonomy itself; rows with unique keys (capabilities, coverage, service categories, review tags, synonym/mapping duplicates) keep the merged id and resolve through canonicalId."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "Events outside 40 Appendix A: feature_flag.changed (cache bust), user.deletion.requested (approved deletion → worker), dsr.deadline.approaching (staff alert), review.removed/review.response.removed from moderation; fleet.approval.requested is also published by provider.appointments_update WITHOUT an approval (the fleet consumer decides; W5 notifies only events with approval_id)."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "Notifications: fleet.approval.decided uses event_type system_announcement (52 Notification.event_type has no decision type); moderation outcomes, verification and location corrections use moderation_update; DSR alerts moderation_alert to platform admins and support."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "DSR export bundle is CSV in long format (section, record_id, field, value): media mime types allow PDF/CSV only, not JSON. Erasure: identity anonymizes the account (email deleted-<id>@deleted.carpal.invalid, status deleted) and deletes credentials, tokens, onboarding; consents withdrawn; memberships removed; vehicles soft-deleted with VIN/plate cleared; media removed; notifications, preferences, push tokens deleted; match sessions anonymized; provider notes about the user deleted; driver assignments ended; appointment descriptions replaced; unpublished reviews removed (published reviews stay under 'former member'); inquiry vehicle snapshots cleared; pseudonym key deleted. AI records (triage sessions, insights) are not erased yet (S9)."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "Analytics: dashboards ignore the region and organization_type query filters (aggregates are stored without dimensions); retention of AnalyticsEvent (writer cannot delete), McpAccessLog (append-only) and AuditLog/Review/DSR archive policies are not applied; analytics never blocks the product (a failed ingest batch is logged and dropped)."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "Fleet: approval_workflow_enabled defaults to on without a profile (DB default); coordinators (and drivers) need an approved repair_request or provider_selection approval for fleet appointments while the workflow is on, owners and managers do not; drivers read appointments of their assigned vehicles (list/get) but only their own requests elsewhere; dashboard active_repairs = max(active fleet appointments, vehicles in_repair); reports compute per request (no materialized aggregates); exports keep files 7 days; FleetExport retention deletes rows (their private files stay unreachable). Fleet trust signals (54 §8) and fleet_friendly revocation are not computed yet."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "A fleet search with preferred_partners_only returns preferred providers only (vendors and items are left out); the preferred bonus is +5, cumulative with a favourite up to +10."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "Moderation intake opens system_rule cases (reason other, severity low) for held reviews (pending_moderation), community content (moderation pending), portfolio items (pending_review) and public media (moderation pending, except portfolio media which follow their item)."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "The API roles cannot use the system RLS context: driver assignment checks run in the driver's own context; report targets are checked in the reporter's context (definer cards for users and organizations)."
+    },
+    {
+      "stage": "S8",
+      "date": "2026-10-15",
+      "deviation": "WebAuthn (OQ-04) is still not implemented: staff aal3 sessions exist only through fixtures/tests; auth.webauthn_options, me.webauthn_register_options and auth.social_start stay deferred (S3)."
     }
   ],
   "handoff_notes": [
@@ -3038,6 +3376,11 @@
       "date": "2026-10-13",
       "from": "S7",
       "note": "S7 done: appointments (requests, capacity-safe confirmation, ci check-in, completion with the service record, notes, participants, calendar, availability rules, time off, pre-visit report, reminders) and reviews and trust (Path 1/Path 2, invitations with code and grant, approvals and objections, responses, disputes, W4 workflow, W3 scoring with evidence, confidence, trust score, signals and badges; search uses trust scores and the next open slot) — all 57 ops, 413 tests green. Docs/43 changed (S7 definers): run pnpm db:reset once. Next: S8 (fleet, admin plane incl. review approval and dispute resolution, analytics and audit, DSR execution). Read S7.report.notes_for_next and recommendations_for_next_stages.S8."
+    },
+    {
+      "date": "2026-10-15",
+      "from": "S8",
+      "note": "S8 done: fleets (profile activates the fleet, driver assignments bound, approvals wired into driver issues/fleet appointments/provider cost estimates, partners in search, reports, W8 exports, W7 imports), the admin plane on admin-api (four-eyes, purpose-bound PII reads with audit, moderation with cases and intake, Path 2 decisions, disputes, badges, verification, locations, org status/merge, billing, taxonomy with merge jobs, flags/kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle, deletion across modules, pseudonym key deleted) and product analytics (events.ingest → W12 → daily metrics → dashboards) — all 82 ops, 460 tests green. Docs/43 changed (admin.moderation_action_affects) and Docs/40 changed (versions, CarPal-Reason): run pnpm db:reset once. Next: S9. Read S8.report.notes_for_next and recommendations_for_next_stages.S9."
     }
   ],
   "open_questions": [
@@ -3060,13 +3403,15 @@
       "id": "OQ-03",
       "question": "Proposed entitlement values beyond max_vehicles and proposed retention periods (41 §10) are seeded as-is. Confirm before S8.",
       "default_if_unanswered": "Use the seeded proposed values.",
-      "owner": "user / WP3"
+      "owner": "user / WP3",
+      "s8_note": "S8 applies the seeded retention policies (daily rule) and plan entitlements; staff can now change both through four-eyes operations. Still to confirm before launch."
     },
     {
       "id": "OQ-04",
       "question": "Which WebAuthn server library may the backend use (e.g. @simplewebauthn/server), or should WebAuthn be written in-house? Needed for passkeys, staff aal3 sign-in (SEC-ADM-2) and the three deferred S3 operations.",
       "default_if_unanswered": "Stay deferred; staff sign-in only through fixtures until S8 needs it.",
-      "owner": "user"
+      "owner": "user",
+      "s8_note": "S8 built the admin plane without it: staff aal3 sessions exist only in tests. Needed before any real staff sign-in."
     },
     {
       "id": "OQ-05",
@@ -3108,7 +3453,8 @@
       "id": "OQ-11",
       "question": "How does a fleet consent to share a fleet vehicle's documents and service history with a provider (DI-38): an organization-level vehicle_data_sharing consent by a fleet manager, or only through fleet appointments (S7/S8)?",
       "default_if_unanswered": "Fleets share their own documents by role; providers cannot log work on fleet vehicles outside appointments.",
-      "owner": "user / privacy"
+      "owner": "user / privacy",
+      "s8_note": "S8: still open; fleet approvals are now bound to appointments, which remain the only way a fleet shares a vehicle with a provider."
     },
     {
       "id": "OQ-12",
@@ -3127,10 +3473,28 @@
       "question": "Search defaults not fixed by 54: default radius (S6: 50 km, 25 km for the Discover feed), neutral scores without data (0.5), capability fit per confidence level (0.1 / 0.45 / 0.8 / 0.92 / 1.0) and rating trust weighting (full weight from 10 reviews).",
       "default_if_unanswered": "The S6 values, revisited when S7 adds trust scores and availability.",
       "owner": "user / product (WP8)"
+    },
+    {
+      "id": "OQ-15",
+      "question": "Fleet approval workflow: may fleet owners and managers book appointments without an approval while the workflow is on (S8 default), and should drivers be allowed to request appointments for their assigned vehicles?",
+      "default_if_unanswered": "Owners/managers book freely; coordinators need an approved repair_request or provider_selection; drivers report issues only.",
+      "owner": "user / product (Module K)"
+    },
+    {
+      "id": "OQ-16",
+      "question": "Moderation intake: should held content (links/contact data in community text and Path 1 reviews, public media, showcase items) open low-severity cases automatically (S8), or should moderators work from per-type queues instead?",
+      "default_if_unanswered": "Automatic system_rule cases every 5 minutes, one per target.",
+      "owner": "user / trust & safety"
+    },
+    {
+      "id": "OQ-17",
+      "question": "Which analytics dimensions should dashboards support (region, organization type, platform, entry point), and for how long may search.zero_result query text be kept?",
+      "default_if_unanswered": "No dimensions; no query text in analytics events (only language and mode).",
+      "owner": "user / product (MVP §16) / privacy"
     }
   ],
   "recommendations_for_next_stages": {
-    "written_after": "S7",
+    "written_after": "S8",
     "general": [
       "Keep each stage to the S3 module layout (notes_for_next) and copy the account/billing handlers as templates for CRUD with If-Match, keyset paging and audit.",
       "Bind ports instead of reading other modules' tables: add methods to the owning module's interface/ (GD-15) and register extensions in onModuleInit.",
@@ -3219,7 +3583,13 @@
       "OpenAPI: describe the server-defined Json schemas of S6 (MatchReasonValues, FeedCard, TemplateParams, DI-50) and the ETag header of questions (DI-47).",
       "Push: a real push gateway adapter (FCM/APNs/Web Push) for PushSender in full mode; revoke push tokens on sign-out/session end (DI-52).",
       "AI pre-visit summary: triage sessions (Help Me) set triage_session_id and ai_triage_insight_id; the summary goes to pre_visit_reports.ai_summary in the preview and is approved by the user's submit (40 Appendix D); review response drafts from AiInsight (ai_draft_insight_id, ai_assisted, edited_after_ai) and review insights (ai_sentiment, ai_complaint_flags) stay internal.",
-      "OpenAPI: describe Json<BadgeEvaluation> (ProviderBadge.evaluation_snapshot) and the MatchReasonValues availability value next_available_at; the ci and ri link flows need an anonymous token."
+      "OpenAPI: describe Json<BadgeEvaluation> (ProviderBadge.evaluation_snapshot) and the MatchReasonValues availability value next_available_at; the ci and ri link flows need an anonymous token.",
+      "(after S8) AI module: ai-mcp now exists as AiMcpModule (admin data operations only); add the §21 facade there. Register AI records with the S8 registries: PersonalDataRegistry ('ai_mcp': triage sessions, insights, suggestions, approval requests — export and erase), RetentionHandlers ('TriageSession'), ModerationTargets (ai_output exists; add suggestions if they become public), TaxonomyReferences for AI node references, MetricGauges for AI quality (ai_quality dashboard: insights generated, accepted/rejected feedback, hallucination reports).",
+      "(after S8) Contract test generator (S9.T4): admin routes need the staff client (cp-web-admin, aal3), a valid purpose for PURP routes (openCase etc. from apps/testing/s8-support.ts or a generic resolver), 202 PendingChange for 4EYES routes, and CarPal-Reason for RSN DELETEs; staff PII responses must write pii.read. Add a projection test that staff views never contain credentials, token hashes or VINs.",
+      "(after S8) OpenAPI (S9.T5): describe CarPal-Reason and CarPal-Access-Purpose, the 202 PendingChange alternate responses, FeatureFlag/McpClientView/TaxonomyNode versions, Json<TargetSnapshot> (case_get) and Json<RegisteredEventProperties> (events.ingest registry in modules/analytics/domain/events.ts).",
+      "(after S8) Hardening: bind purposes to the record being read (a case about user A should not unlock user B), auto-lift suspensions (DI-66), organization merge re-pointing registry (DI-67), WebAuthn for staff aal3 (OQ-04) and the 3 deferred identity operations, dashboard dimensions (DI-65), assist routes (DI-05), AnalyticsEvent retention through partition drops (writer lacks DELETE; consider a definer or a dedicated role).",
+      "(after S8) Fleet: compute 54 §8 fleet trust signals in W3 from AppointmentFacts.fleetAppointments and service record costs (downtime avg, first-time fix rate, cost estimate accuracy) and the fleet_friendly revocation by upheld fleet disputes; decide DI-38/OQ-11; consider fleet_confirmed review invitations after fleet appointments (manager confirmation).",
+      "(after S8) S9 scope correction: 27 operations answer 501, not 23 — the 23 §21 AI operations plus auth.webauthn_options, me.webauthn_register_options, auth.social_start (deferred since S3) and media.upload_put (the storage PUT, implemented by the storage listener but counted by the coverage tool). S9.T6 should list the last four explicitly or teach the coverage tool about the storage route."
     ],
     "S4_done": [
       "All S4 recommendations from S3 were applied: SubscriptionWriter for the default plan (hybrid → provider_basic, DI-20), invitations through identity OrgMemberships + identity.accept_invitation with Authorizer.invalidateUser, ConsentScopes media_asset and portfolio_item, cn requests through identity ConsentRequests (link mailed by identity), requireDescendant chains, DI-10 resolved, DataExportFiles bound, OrgCards.logo_url, textArray for domain arrays."
@@ -3232,6 +3602,10 @@
     ],
     "S7_done": [
       "All S7 recommendations from S6 were applied, with these adjustments: user display names through UserCards; review_invitations consent through ConsentChecker; the appointment ConsentScopes verifier registered; appointment_capacity_tools_enabled as requireEntitlement delta 0 for concurrency > 1 or buffers; visits/customer check/insights registered; evidence from completed appointments, published reviews, portfolio items, verified job logs and certifications (revoked when the source stops counting); the exact address released to the requester from confirmation; VehicleService.recordAppointmentService at completion; provider.service_record_create opened for appointments (provider_logged/provider_confirmed, checked in or later); Path 1 inquiry_verified and service_record_verified; trust events published with organization_id; trust_score and next_available_at in the provider document and ranking; community.reaction.changed consumed for helpful_count; S7 notifications and inquiry.status_changed (inquiry_answered) routed; match_results.appointment_id set through MatchResults. Not done: issue_id in search (DI-49) and DI-38 (fleet sharing) remain open; markIssueScheduled runs when the request is sent, not at confirmation."
+    ],
+    "S8_done": [
+      "S8 recommendations applied: admin billing (assign closes change requests, audited, trial rule), DSR execution (transitions, W8 bundle, deletion with sessions revoked and pseudonym key deleted, user.deletion.completed), staff role/status changes invalidate authz and revoke sessions, onboarding reset sets reset_by, taxonomy admin invalidates the catalog and publishes taxonomy.node.merged, DI-09 decided, moderation queue for portfolio items/media/community/held reviews (intake rule), verification decide with organization.verified, location_correct, org_status with profiles suspended and authz invalidated, org_merge, media_download_url with PURP, fleet activation decided, retention handlers (media objects, match sessions, notifications, exports, outbox, jobs, tokens), community content leaves the index through community.content.changed, Path 2 decisions with the exact column set, dispute outcomes (objection, fake review −50 + badges, badge challenge, appeal), badge approval, admin trust penalties (12 months), driver assignments bound and set-based, fleet approvals from driver issues, bound to appointments, cost estimates above threshold, preferred_partners_only + bonus, fleet.approval.decided notifications, disputes about service records and moderation actions.",
+      "Not done from the S8 list: WebAuthn staff sign-in (OQ-04, still deferred), DI-05 assist routes, DI-21 hybrid roles, DI-38/DI-58 fleet history sharing (fleets still share through appointments only), admin verification of service records/invoices (invoice_verified/admin_verified evidence), purge of removed vehicle documents' media beyond the generic MediaAsset policy and of unreferenced storage objects, moderation of review responses beyond hide/remove (DI-59), fleet trust signals (54 §8: downtime, first-time fix, cost accuracy) and fleet_friendly revocation by upheld fleet disputes, fleet system review invitations (fleet_confirmed), refresh_reaction_count after reaction moderation (reactions are not a moderation target), appointment/review funnels as dedicated dashboard metrics (they count as generic event metrics)."
     ]
   }
 }

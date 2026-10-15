@@ -6,7 +6,7 @@
 // Transitions follow the 40 §16.1 requester column (checked here and by the
 // appointments_status trigger). Sending the request approves the previewed
 // pre-visit report (40 Appendix D).
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { sql } from 'kysely';
 import { ApiError, type FieldError } from '#libs/contract/index.js';
 import { uuidv7 } from '#libs/crypto/index.js';
@@ -17,6 +17,7 @@ import { publishEvent } from '#libs/outbox/index.js';
 import { SafetyCheck } from '#libs/safety-check/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { MatchResults } from '#modules/discovery/interface/match-results.js';
+import { FleetDrivers, FleetWorkflow } from '#modules/fleet/interface/fleet.js';
 import { AccountFacts, ConsentGrants, UserCards } from '#modules/identity/interface/identity.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { Messenger } from '#modules/notification/interface/messenger.js';
@@ -259,6 +260,7 @@ export class AppointmentsCreateHandler implements OperationHandler {
     private readonly reports: PreVisitReports,
     private readonly views: AppointmentViews,
     private readonly issues: VehicleService,
+    @Optional() private readonly fleet?: FleetWorkflow,
   ) {}
 
   /** The request is sent: the issue it came from is scheduled (requester context: the provider cannot see issues). */
@@ -276,9 +278,9 @@ export class AppointmentsCreateHandler implements OperationHandler {
       errors.push({ pointer: '/service_system_node_id', code: 'conditional_required' });
     if (b.source === 'fleet_workflow' && !r.orgId) errors.push({ pointer: '/source', code: 'enum' });
     failIf(errors);
-    // Help Me triage sessions (S9) and fleet approvals (S8) do not exist yet: such references cannot resolve.
+    // Help Me triage sessions arrive in S9: such references cannot resolve yet. Fleet approvals belong to fleet requests only.
     if (b.triage_session_id) throw notFoundAt('/triage_session_id');
-    if (b.fleet_approval_id) throw notFoundAt('/fleet_approval_id');
+    if (b.fleet_approval_id && !r.orgId) throw notFoundAt('/fleet_approval_id');
     const body = await ctx.tx(async (scope) => {
       if (!(await this.facts.hasVerifiedContact(scope, r.userId))) throw new ApiError('VERIFIED_CONTACT_REQUIRED');
       const provider = await this.booking.provider(scope, b.provider_organization_id);
@@ -293,6 +295,17 @@ export class AppointmentsCreateHandler implements OperationHandler {
           throw notFoundAt('/related_issue_id');
       }
       if (b.submit) await checkRequestCaps(scope, r, provider.orgId, null);
+      // A fleet books with an approved fleet approval while its workflow is on (owners and managers decide themselves, S8).
+      const fleetApprovalId =
+        r.orgId && this.fleet
+          ? await this.fleet.appointmentApproval(scope, {
+              orgId: r.orgId,
+              approvalId: b.fleet_approval_id ?? null,
+              vehicleId: b.vehicle_id,
+              providerOrgId: provider.orgId,
+              role: ctx.access.org!.role,
+            })
+          : null;
       const id = uuidv7();
       let consentId: string | null = null;
       // share_history: two consents scoped to this appointment and granted to the provider, atomically (40 AppointmentCreate).
@@ -321,6 +334,7 @@ export class AppointmentsCreateHandler implements OperationHandler {
           source: b.source,
           match_result_id: null,
           related_issue_id: b.related_issue_id ?? null,
+          fleet_approval_id: fleetApprovalId,
           appointment_type: b.appointment_type,
           service_mode: b.service_mode,
           service_system_node_id: b.service_system_node_id ?? null,
@@ -339,6 +353,7 @@ export class AppointmentsCreateHandler implements OperationHandler {
         .returningAll()
         .executeTakeFirstOrThrow();
       await replaceWindows(scope, id, b.time_windows);
+      if (fleetApprovalId) await this.fleet!.linkAppointment(scope, fleetApprovalId, id);
       await scope.db
         .insertInto('appointment.appointment_participants')
         .values({ appointment_id: id, user_id: r.userId, organization_id: r.orgId, participant_role: participantRole(ctx) })
@@ -382,7 +397,10 @@ function participantRole(ctx: OperationContext): 'requester' | 'fleet_manager' |
 @Injectable()
 @Operation('appointments.list')
 export class AppointmentsListHandler implements OperationHandler {
-  constructor(private readonly views: AppointmentViews) {}
+  constructor(
+    private readonly views: AppointmentViews,
+    @Optional() private readonly drivers?: FleetDrivers,
+  ) {}
 
   async handle(ctx: OperationContext<undefined, { group?: keyof typeof REQUESTER_GROUPS; vehicle_id?: string; limit: number }>) {
     const r = requester(ctx);
@@ -393,7 +411,13 @@ export class AppointmentsListHandler implements OperationHandler {
         q = r.orgId
           ? q.where('requester_organization_id', '=', r.orgId)
           : q.where('requester_type', '=', 'user').where('requester_user_id', '=', r.userId);
-        if (r.driver) q = q.where('requester_user_id', '=', r.userId);
+        if (r.driver) {
+          // A driver sees their own requests and those of the vehicles assigned to them (GD-20, S8).
+          const assigned = [...((await this.drivers?.assignedVehicleIds(scope, r.orgId!, r.userId)) ?? [])];
+          q = assigned.length
+            ? q.where((eb) => eb.or([eb('requester_user_id', '=', r.userId), eb('vehicle_id', 'in', assigned)]))
+            : q.where('requester_user_id', '=', r.userId);
+        }
         if (ctx.query.group) q = q.where('status', 'in', [...REQUESTER_GROUPS[ctx.query.group]]);
         if (ctx.query.vehicle_id) q = q.where('vehicle_id', '=', ctx.query.vehicle_id);
         if (after) q = q.where('id', '<', after);
@@ -412,12 +436,18 @@ export class AppointmentsListHandler implements OperationHandler {
 @Injectable()
 @Operation('appointments.get')
 export class AppointmentsGetHandler implements OperationHandler {
-  constructor(private readonly views: AppointmentViews) {}
+  constructor(
+    private readonly views: AppointmentViews,
+    @Optional() private readonly drivers?: FleetDrivers,
+  ) {}
 
   async handle(ctx: OperationContext): Promise<OperationResult> {
     const r = requester(ctx);
     const body = await ctx.tx(
-      async (scope) => this.views.one(scope, await loadAsRequester(scope, r, ctx.params.appointment_id!), 'requester', ctx.locale),
+      async (scope) => {
+        if (r.driver) r.assigned = [...((await this.drivers?.assignedVehicleIds(scope, r.orgId!, r.userId)) ?? [])];
+        return this.views.one(scope, await loadAsRequester(scope, r, ctx.params.appointment_id!), 'requester', ctx.locale);
+      },
       { readOnly: true },
     );
     return { body };

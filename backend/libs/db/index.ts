@@ -4,7 +4,7 @@
 // TxRunner transactions (libs/tenancy), which set the RLS context first.
 export type { DB } from './generated/db.js';
 export type { DB as AnalyticsDB } from './generated/analytics-db.js';
-export { Database, type PoolOptions } from './database.js';
+export { AnalyticsDatabase, Database, type PoolOptions } from './database.js';
 export {
   mapDbError,
   isPgError,

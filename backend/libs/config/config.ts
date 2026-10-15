@@ -73,6 +73,7 @@ const EnvSchema = z
     CARPAL_DB_PASSWORD_AUTH: loginRolePassword('carpal_auth'),
     CARPAL_DB_PASSWORD_WORKER: loginRolePassword('carpal_worker'),
     CARPAL_DB_PASSWORD_ANALYTICS_WRITER: loginRolePassword('carpal_analytics_writer'),
+    CARPAL_DB_PASSWORD_ANALYTICS_READER: loginRolePassword('carpal_analytics_reader'),
 
     // --- Full-mode services (GD-04). Unused in lite mode.
     CARPAL_REDIS_URL: z.string().default('redis://127.0.0.1:6379'),
@@ -138,6 +139,8 @@ export type CarpalEnv = RawEnv['CARPAL_ENV'];
 export type InfraMode = RawEnv['CARPAL_INFRA'];
 /** Database login roles used by the deployables (41 §3.3). */
 export type AppDbRole = 'carpal_api' | 'carpal_admin_api' | 'carpal_auth' | 'carpal_worker';
+/** Login roles of the analytics database (43 §23): the W12 pipeline writes, dashboards and aggregation read. */
+export type AnalyticsDbRole = 'carpal_analytics_writer' | 'carpal_analytics_reader';
 
 export interface CarpalConfig {
   env: CarpalEnv;
@@ -163,7 +166,7 @@ export interface CarpalConfig {
     analyticsName: string;
     poolMax: number;
     locale: string;
-    passwords: Record<AppDbRole | 'carpal_analytics_writer', string>;
+    passwords: Record<AppDbRole | AnalyticsDbRole, string>;
   };
   services: { redisUrl: string; natsUrl: string; searchUrl: string; s3Endpoint: string; smtpUrl: string };
   secrets: { master: string; jwtPrivateJwks?: string; isDevMaster: boolean };
@@ -248,6 +251,7 @@ export function loadConfig(overrides: Record<string, string | undefined> = {}): 
         carpal_auth: e.CARPAL_DB_PASSWORD_AUTH,
         carpal_worker: e.CARPAL_DB_PASSWORD_WORKER,
         carpal_analytics_writer: e.CARPAL_DB_PASSWORD_ANALYTICS_WRITER,
+        carpal_analytics_reader: e.CARPAL_DB_PASSWORD_ANALYTICS_READER,
       },
     },
     services: {

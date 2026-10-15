@@ -1,15 +1,17 @@
 // Disputes and mediation requests (40 §15.3, 52 Dispute). A party raises one
 // about a review, an appointment or a badge it is part of; outcomes are
-// decided by CarPal staff (S8 admin plane) and feed trust signals. Service
-// record and moderation action disputes need the S8 queues and are refused
-// until then (REFERENCE_NOT_FOUND). Moderator notes and the assignee never
-// leave the server.
+// decided by CarPal staff (admin.dispute_resolve) and feed trust signals. A
+// service record is disputed by its vehicle owner or provider of record, a
+// moderation action by the user or organization it affected (S8). Moderator
+// notes and the assignee never leave the server.
 import { Injectable } from '@nestjs/common';
 import { ApiError } from '#libs/contract/index.js';
 import { created, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
+import { ModerationLog } from '#modules/admin/interface/admin.js';
 import { AppointmentFacts } from '#modules/appointment/interface/appointments.js';
+import { VehicleCards } from '#modules/vehicle/interface/vehicles.js';
 import { toDispute, type DisputeRow } from '../api/projections.js';
 import { afterId, failIf, notFoundAt, pageOf, signedIn } from './common.js';
 
@@ -31,7 +33,11 @@ const TYPES_BY_TARGET: Record<string, string[]> = {
 @Injectable()
 @Operation('disputes.create')
 export class DisputesCreateHandler implements OperationHandler {
-  constructor(private readonly appointments: AppointmentFacts) {}
+  constructor(
+    private readonly appointments: AppointmentFacts,
+    private readonly vehicles: VehicleCards,
+    private readonly moderation: ModerationLog,
+  ) {}
 
   async handle(ctx: OperationContext<DisputeCreate>): Promise<OperationResult> {
     const c = signedIn(ctx);
@@ -104,8 +110,20 @@ export class DisputesCreateHandler implements OperationHandler {
       if (!b) throw notFoundAt('/target/id');
       return;
     }
-    // Service record and moderation action disputes arrive with the S8 queues.
-    throw notFoundAt('/target/id');
+    if (t.type === 'service_record') {
+      const p = await this.vehicles.serviceRecordParties(scope, t.id);
+      const party =
+        p &&
+        (orgId
+          ? p.providerOrgId === orgId || (p.ownerType === 'organization' && p.ownerId === orgId)
+          : p.ownerType === 'user' && p.ownerId === userId);
+      if (!party) throw notFoundAt('/target/id');
+      return;
+    }
+    // Moderation actions are staff records: only the parties they affected may appeal (definer, no other fields).
+    const a = await this.moderation.affects(scope, t.id);
+    const affected = a && (orgId ? a.organizationId === orgId : a.userId === userId);
+    if (!affected) throw notFoundAt('/target/id');
   }
 }
 

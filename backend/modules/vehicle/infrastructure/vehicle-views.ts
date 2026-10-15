@@ -2,15 +2,19 @@
 // and batched for lists: open issues, the next reminder date, the primary
 // photo URL (media, signed for the owner) and the duplicate VIN warning
 // (definer vehicle.duplicate_vin_flags: other owners stay invisible).
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { sql } from 'kysely';
 import type { TxScope } from '#libs/tenancy/index.js';
+import { FleetDrivers } from '#modules/fleet/interface/fleet.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { toVehicle, type VehicleDerived, type VehicleRow } from '../api/projections.js';
 
 @Injectable()
 export class VehicleViews {
-  constructor(private readonly media: MediaService) {}
+  constructor(
+    private readonly media: MediaService,
+    @Optional() private readonly drivers?: FleetDrivers,
+  ) {}
 
   async derived(scope: TxScope, rows: readonly VehicleRow[]): Promise<Map<string, VehicleDerived>> {
     const ids = rows.map((r) => r.id);
@@ -38,13 +42,15 @@ export class VehicleViews {
       scope,
       rows.map((r) => r.primary_photo_media_id).filter((x): x is string => !!x),
     );
+    const fleetIds = rows.filter((r) => r.owner_type === 'organization').map((r) => r.id);
+    const drivers = fleetIds.length && this.drivers ? await this.drivers.assignedDrivers(scope, fleetIds) : new Map();
     const openIssues = new Map(issues.map((i) => [i.vehicle_id, Number(i.n)]));
     const next = new Map(reminders.map((r) => [r.vehicle_id, r.next]));
     const duplicates = new Set(dup.map((d) => d.id));
     for (const r of rows)
       out.set(r.id, {
-        // Driver assignments arrive with the fleet module (S8).
-        assignedDriver: null,
+        // The active fleet driver (FleetVehicleAssignment, S8).
+        assignedDriver: drivers.get(r.id) ?? null,
         openIssueCount: openIssues.get(r.id) ?? 0,
         nextReminderDue: next.get(r.id) ?? null,
         primaryPhotoUrl: r.primary_photo_media_id ? (photos.get(r.primary_photo_media_id) ?? null) : null,

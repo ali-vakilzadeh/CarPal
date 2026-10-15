@@ -13,9 +13,10 @@
 import { Global, Injectable, Module, Optional, type OnModuleInit } from '@nestjs/common';
 import { sql } from 'kysely';
 import type { TxScope } from '#libs/tenancy/index.js';
-import { ConsentScopes } from '#modules/identity/interface/identity.js';
+import { ConsentScopes, PersonalDataRegistry } from '#modules/identity/interface/identity.js';
 import { AttachmentTargets } from '#modules/media/interface/media.js';
 import { OrganizationExtensions, type VisitInfo } from '#modules/organization/interface/extensions.js';
+import { repointColumns, TaxonomyReferences } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { DbAppointmentFacts } from './infrastructure/appointment-facts.js';
 import { AppointmentFacts } from './interface/appointments.js';
 
@@ -49,9 +50,62 @@ export class AppointmentRegistrations implements OnModuleInit {
     @Optional() private readonly ext?: OrganizationExtensions,
     @Optional() private readonly targets?: AttachmentTargets,
     @Optional() private readonly scopes?: ConsentScopes,
+    @Optional() private readonly taxonomyRefs?: TaxonomyReferences,
+    @Optional() private readonly personal?: PersonalDataRegistry,
   ) {}
 
   onModuleInit(): void {
+    // DSR (S8): the user's requests are exported; on deletion the provider keeps the appointment as a business
+    // record without the customer's own words (description replaced, expectations cleared).
+    this.personal?.register('appointment', {
+      async export(scope, userId) {
+        const rows = await scope.db
+          .selectFrom('appointment.appointments')
+          .select(['id', 'provider_organization_id', 'vehicle_id', 'status', 'description', 'confirmed_start_at', 'created_at'])
+          .where('requester_type', '=', 'user')
+          .where('requester_user_id', '=', userId)
+          .where('deleted_at', 'is', null)
+          .execute();
+        return [
+          {
+            section: 'appointments',
+            records: rows.map((a) => ({
+              id: a.id,
+              fields: {
+                provider_organization_id: a.provider_organization_id,
+                vehicle_id: a.vehicle_id,
+                status: a.status,
+                description: a.description,
+                confirmed_start_at: a.confirmed_start_at ? a.confirmed_start_at.toISOString() : null,
+                created_at: a.created_at.toISOString(),
+              },
+            })),
+          },
+        ];
+      },
+      async erase(scope, userId) {
+        const r = await scope.db
+          .updateTable('appointment.appointments')
+          .set({ description: 'Removed at the request of the customer.', customer_expectations: null })
+          .where('requester_type', '=', 'user')
+          .where('requester_user_id', '=', userId)
+          .executeTakeFirst();
+        return Number(r.numUpdatedRows);
+      },
+    });
+    // admin.taxonomy_merge (S8): appointment node references follow a merged node.
+    this.taxonomyRefs?.register('appointment', (scope, from, into) =>
+      repointColumns(
+        scope,
+        [
+          ['appointment.appointments', 'service_system_node_id'],
+          ['appointment.appointments', 'service_task_node_id'],
+          ['appointment.appointments', 'symptom_node_id'],
+        ],
+        from,
+        into,
+      ),
+    );
     this.ext?.registerVisits('appointment', appointmentVisit);
     // 52 ProviderCustomerNote: the user has requested an appointment from the provider.
     this.ext?.registerCustomerCheck(async (scope, providerOrgId, userId) => {

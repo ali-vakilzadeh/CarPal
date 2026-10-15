@@ -22,8 +22,10 @@ import { PATH1_DELAY_MS, visitTookPlace, type Side } from '../domain/rules.js';
 export interface Requester {
   userId: string;
   orgId: string | null;
-  /** A fleet driver (F* includes fleet_driver, DRV): only their own requests until S8 binds assignments (GD-20). */
+  /** A fleet driver (F* includes fleet_driver, DRV): their own requests and, for reads, those of their assigned vehicles (GD-20, S8). */
   driver: boolean;
+  /** A driver's assigned vehicles (fleet module), set by read handlers. */
+  assigned?: readonly string[];
 }
 
 export function requester(ctx: OperationContext): Requester {
@@ -53,7 +55,10 @@ export async function loadAsRequester(scope: TxScope, r: Requester, id: string, 
   q = r.orgId
     ? q.where('requester_organization_id', '=', r.orgId)
     : q.where('requester_type', '=', 'user').where('requester_user_id', '=', r.userId);
-  if (r.driver) q = q.where('requester_user_id', '=', r.userId);
+  if (r.driver)
+    q = r.assigned?.length
+      ? q.where((eb) => eb.or([eb('requester_user_id', '=', r.userId), eb('vehicle_id', 'in', [...r.assigned!])]))
+      : q.where('requester_user_id', '=', r.userId);
   const row = await (lock ? q.forUpdate() : q).executeTakeFirst();
   if (!row) throw new ApiError('NOT_FOUND');
   return row;

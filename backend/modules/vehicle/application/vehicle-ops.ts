@@ -7,7 +7,6 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { sql } from 'kysely';
 import { writeAudit } from '#libs/audit/index.js';
-import { DriverAssignments } from '#libs/authz/index.js';
 import { ApiError, type FieldError } from '#libs/contract/index.js';
 import { CryptoServices, uuidv7 } from '#libs/crypto/index.js';
 import { registerConstraintErrors } from '#libs/db/index.js';
@@ -15,6 +14,7 @@ import { EntitlementChecker, requireEntitlement } from '#libs/entitlements/index
 import { created, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
+import { FleetDrivers } from '#modules/fleet/interface/fleet.js';
 import { UserCards } from '#modules/identity/interface/identity.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
@@ -122,7 +122,7 @@ const mileageSource = (a: VehicleAccess): 'user' | 'fleet_driver' => (a.driver ?
 export class VehiclesListHandler implements OperationHandler {
   constructor(
     private readonly views: VehicleViews,
-    @Optional() private readonly drivers?: DriverAssignments,
+    @Optional() private readonly drivers?: FleetDrivers,
   ) {}
 
   async handle(
@@ -135,6 +135,9 @@ export class VehiclesListHandler implements OperationHandler {
     const q = ctx.query;
     const body = await ctx.tx(
       async (scope) => {
+        // SEC-AZ-7: a driver sees only vehicles assigned to them (none when the fleet module is absent: fail closed).
+        const assigned = a.driver ? ((await this.drivers?.assignedVehicleIds(scope, a.orgId!, a.userId)) ?? new Set<string>()) : null;
+        if (assigned && assigned.size === 0) return ctx.page([], null);
         const fetch = (after: string | undefined, n: number) => {
           let s = scope.db
             .selectFrom('vehicle.vehicles as v')
@@ -142,6 +145,7 @@ export class VehiclesListHandler implements OperationHandler {
             .where('v.owner_type', '=', a.owner.type)
             .where('v.owner_id', '=', a.owner.id)
             .where('v.deleted_at', 'is', null);
+          if (assigned) s = s.where('v.id', 'in', [...assigned]);
           if (q.status) s = s.where('v.status', '=', q.status);
           if (q.brand_node_id) s = s.where('v.brand_node_id', '=', q.brand_node_id);
           if (q.has_open_issues !== undefined) {
@@ -157,16 +161,7 @@ export class VehiclesListHandler implements OperationHandler {
           if (after) s = s.where('v.id', '<', after);
           return s.orderBy('v.id', 'desc').limit(n).execute();
         };
-        // SEC-AZ-7: a driver sees only vehicles assigned to them (no assignments exist before the fleet module, S8).
-        const keep = async (r: VehicleRow) => !a.driver || (this.drivers ? await this.drivers.isAssigned(a.orgId!, a.userId, r.id) : false);
-        const rows: VehicleRow[] = [];
-        let after = afterId(ctx);
-        for (;;) {
-          const chunk = await fetch(after, Math.max(q.limit + 1, 50));
-          for (const r of chunk) if (rows.length <= q.limit && (await keep(r))) rows.push(r);
-          if (rows.length > q.limit || chunk.length < Math.max(q.limit + 1, 50)) break;
-          after = chunk.at(-1)!.id;
-        }
+        const rows: VehicleRow[] = await fetch(afterId(ctx), q.limit + 1);
         const page = rows.slice(0, q.limit);
         return ctx.page(await this.views.many(scope, page), rows.length > q.limit ? { id: page.at(-1)!.id } : null);
       },
@@ -176,64 +171,92 @@ export class VehiclesListHandler implements OperationHandler {
   }
 }
 
+/**
+ * Creating a vehicle (vehicles.create and fleet CSV imports, W7): taxonomy
+ * chain, VIN sealing, max_vehicles inside the caller's transaction (the
+ * subscriber lock serializes parallel creates), the first mileage reading and
+ * vehicle.created. Returns the stored row (re-read: the mileage trigger
+ * mirrors the reading onto the vehicle).
+ */
 @Injectable()
-@Operation('vehicles.create')
-export class VehiclesCreateHandler implements OperationHandler {
+export class VehicleCreator {
   constructor(
     private readonly taxonomy: TaxonomyResolver,
     private readonly entitlements: EntitlementChecker,
     private readonly media: MediaService,
     private readonly crypto: CryptoServices,
+  ) {}
+
+  async create(
+    scope: TxScope,
+    owner: { type: 'user' | 'organization'; id: string },
+    b: VehicleWrite,
+    actor: { userId: string; driver: boolean },
+  ): Promise<VehicleRow> {
+    failIf(fieldErrors(b));
+    await checkChain(this.taxonomy, b);
+    const id = uuidv7();
+    const sealed = b.vin ? sealVin(this.crypto, id, b.vin) : null;
+    if (b.primary_photo_media_id)
+      await this.media.requireReady(scope, [b.primary_photo_media_id], {
+        owner,
+        purposes: ['vehicle_photo'],
+        pointer: '/primary_photo_media_id',
+      });
+    // 52 §21: a new vehicle is active and counts toward max_vehicles.
+    await requireEntitlement(this.entitlements, scope, owner, 'max_vehicles', 1);
+    const values = Object.fromEntries(COLUMNS.filter((k) => b[k] !== undefined).map((k) => [k, b[k]]));
+    await scope.db
+      .insertInto('vehicle.vehicles')
+      .values({
+        ...values,
+        id,
+        owner_type: owner.type,
+        owner_id: owner.id,
+        brand_node_id: b.brand_node_id,
+        model_node_id: b.model_node_id,
+        year: b.year,
+        ...(sealed ?? {}),
+        status: 'active',
+        profile_completeness: completeness({ ...b, vinPresent: !!sealed }),
+      })
+      .execute();
+    if (b.mileage_km !== undefined)
+      await scope.db
+        .insertInto('vehicle.vehicle_mileage_logs')
+        .values({
+          vehicle_id: id,
+          mileage_km: b.mileage_km,
+          recorded_at: new Date(),
+          source: actor.driver ? 'fleet_driver' : 'user',
+          recorded_by: actor.userId,
+        })
+        .execute();
+    await publishEvent(scope, {
+      type: 'vehicle.created',
+      aggregateType: 'vehicle',
+      aggregateId: id,
+      payload: { owner_type: owner.type, owner_id: owner.id, vin_present: !!sealed },
+    });
+    return scope.db.selectFrom('vehicle.vehicles').selectAll().where('id', '=', id).executeTakeFirstOrThrow();
+  }
+}
+
+@Injectable()
+@Operation('vehicles.create')
+export class VehiclesCreateHandler implements OperationHandler {
+  constructor(
+    private readonly creator: VehicleCreator,
     private readonly views: VehicleViews,
   ) {}
 
   async handle(ctx: OperationContext<VehicleWrite>): Promise<OperationResult> {
     const a = vehicleAccess(ctx);
-    const b = ctx.body;
-    failIf(fieldErrors(b));
-    await checkChain(this.taxonomy, b);
-    const id = uuidv7();
-    const sealed = b.vin ? sealVin(this.crypto, id, b.vin) : null;
     const body = await ctx.tx(async (scope) => {
-      if (b.primary_photo_media_id)
-        await this.media.requireReady(scope, [b.primary_photo_media_id], {
-          owner: a.owner,
-          purposes: ['vehicle_photo'],
-          pointer: '/primary_photo_media_id',
-        });
-      // 52 §21: a new vehicle is active and counts toward max_vehicles.
-      await requireEntitlement(this.entitlements, scope, a.owner, 'max_vehicles', 1);
-      const values = Object.fromEntries(COLUMNS.filter((k) => b[k] !== undefined).map((k) => [k, b[k]]));
-      await scope.db
-        .insertInto('vehicle.vehicles')
-        .values({
-          ...values,
-          id,
-          owner_type: a.owner.type,
-          owner_id: a.owner.id,
-          brand_node_id: b.brand_node_id,
-          model_node_id: b.model_node_id,
-          year: b.year,
-          ...(sealed ?? {}),
-          status: 'active',
-          profile_completeness: completeness({ ...b, vinPresent: !!sealed }),
-        })
-        .execute();
-      if (b.mileage_km !== undefined)
-        await scope.db
-          .insertInto('vehicle.vehicle_mileage_logs')
-          .values({ vehicle_id: id, mileage_km: b.mileage_km, recorded_at: new Date(), source: mileageSource(a), recorded_by: a.userId })
-          .execute();
-      await publishEvent(scope, {
-        type: 'vehicle.created',
-        aggregateType: 'vehicle',
-        aggregateId: id,
-        payload: { owner_type: a.owner.type, owner_id: a.owner.id, vin_present: !!sealed },
-      });
-      // Re-read: the mileage trigger mirrors the reading onto the vehicle (a new version).
-      return this.views.one(scope, await loadVehicle(scope, a, id));
+      const row = await this.creator.create(scope, a.owner, ctx.body, { userId: a.userId, driver: a.driver });
+      return this.views.one(scope, row);
     });
-    return created(body, `${vehiclesPath(a)}/${id}`);
+    return created(body, `${vehiclesPath(a)}/${body.id}`);
   }
 }
 
