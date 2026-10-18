@@ -2,11 +2,11 @@
   "meta": {
     "title": "CarPal backend — scratch build plan and stage log",
     "created": "2026-10-10",
-    "last_updated": "2026-10-15",
+    "last_updated": "2026-10-18",
     "status": "in_progress",
     "progress": {
-      "as_of": "2026-10-15",
-      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations).",
+      "as_of": "2026-10-18",
+      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult.",
       "stages": [
         {
           "stage": "S1",
@@ -106,7 +106,10 @@
             {
               "part": "S9b",
               "title": "Contract test sweep (L22 generator over all operations)",
-              "status": "not_started"
+              "status": "done",
+              "completed_at": "2026-10-18",
+              "routes_swept": 457,
+              "tests_after_part": "992 passing (85 files)"
             },
             {
               "part": "S9c",
@@ -123,7 +126,7 @@
         "total": 406,
         "note": "After S9a (pnpm contract:coverage): 404/406; auth.social_start (post-MVP, PM-01) and media.upload_put (storage PUT, counted by the tool until S9c) answer 501."
       },
-      "next_stage": "S9b",
+      "next_stage": "S9c",
       "before_starting_S9": [
         "Run `pnpm db:reset` once: S8 added the definer admin.moderation_action_affects to Docs/43 (and 42 §5.3). No new npm dependency; optional env CARPAL_DB_PASSWORD_ANALYTICS_READER.",
         "Read S8.report.notes_for_next and recommendations_for_next_stages.S9 (updated after S8): AI records need their PersonalData/retention/moderation registrations; the contract-test generator must know the admin-plane mechanics (staff client, purpose headers, four-eyes 202s, CarPal-Reason on DELETE).",
@@ -135,6 +138,13 @@
         "Run `pnpm db:reset` once (Docs/43 changed: vehicle_fleet_owner, vehicle_transfers, VIN uniqueness, data_sharing, pre-visit sharing columns, fleet_assistant tools). New npm dependency @simplewebauthn/server 14.0.3; new env CARPAL_DB_PASSWORD_AI (dev carpal_ai_dev), CARPAL_MCP_MODE, CARPAL_MCP_TIMEOUT_MS, CARPAL_WEBAUTHN_RP_ID, CARPAL_WEBAUTHN_ORIGINS.",
         "S9b generator: AI operations need the dev flags (seeded on), CARPAL_MCP_MODE=stub and a worker for 202 jobs; the kill switch pattern is the FlagService override in apps/testing/ai.int.test.ts; WebAuthn needs libs/testing/webauthn.ts (SoftAuthenticator); {VT} is a dual-scope alias like {V}. AI record owners are resolved through AiOwners (carpal_ai store) before RLS reads.",
         "S9b BOLA targets added in S9a: insights, suggestions, approval requests, triage sessions, vehicle transfers (buyer vs owner), fleet pre-visit shared documents."
+      ],
+      "before_starting_S9c": [
+        "No pnpm db:reset needed (S9b changed no SQL). No new npm dependency, no new env variable.",
+        "Docs/40 changed in S9b: VinDecodeResult.suggested is Partial<Omit<VehicleWrite,'vin'>> (DI-70); the OpenAPI generator describes the regenerated schema.",
+        "pnpm contract:check now also runs tools/contract/contract-tests.ts --check (the generated sweep suites must match operations.json). A new or changed operation needs pnpm contract:generate, pnpm contract:tests and a resolver in apps/testing/contract/resolvers/<module>.ts (the suite fails without one).",
+        "pnpm test:all takes about 8 minutes on the laptop (the sweep about 3.5 minutes of it); the CI workflow of S9c must allow for that and run the integration project with one worker (fileParallelism false, embedded PostgreSQL).",
+        "Read S9b.report.notes_for_next and the S9b entries of deviations_log."
       ]
     },
     "purpose": "Breaks the first (scratch) build of the CarPal backend into 9 stages, each sized to run in its own context window. Every stage writes its report back into this file so the next context can see what is done, what was decided and what to watch out for.",
@@ -545,6 +555,12 @@
       "stage": "S9",
       "decision": "AI/MCP in the scratch build: the ai-mcp facade calls tools through McpClientPort; lite mode runs the MCP gateway in process with its own carpal_ai pool (AI output and registry reads only), a deterministic schema-valid stub (CARPAL_MCP_MODE=stub, dev default) or \"unavailable\" (staging/prod default until D6/D7 exist). Access logs are handed to W13 on the mcp.access_log queue; context packages come from the owning modules (AiContextSources); suggestions are applied by the owning modules (SuggestionAppliers).",
       "reason": "41 §1 D6/D7 and §3.3 (own DB role for the gateway), SEC-AI-1..7; the real gateway and orchestrator are out of scope for S9."
+    },
+    {
+      "id": "GD-36",
+      "stage": "S9",
+      "decision": "Contract sweep (S9b, 40 Appendix C, L22): tools/contract/contract-tests.ts generates one Vitest suite per module from operations.json (apps/testing/contract/generated, never edited by hand, checked by pnpm contract:check); each operation has a resolver in apps/testing/contract/resolvers/<module>.ts that builds its fixtures and the owner's call; the runner derives the generic checks (closed schemas, admin mechanics, same-organization BFLA, BOLA, kill switch, projection) from the registry, and the pipeline's CARPAL_VALIDATE_RESPONSES checks the success response. The guard-level BFLA matrix stays in routes.int.test.ts.",
+      "reason": "Every operation is swept from the registry, so a new or changed operation cannot skip the contract tests; resolvers keep the requests real (linked records, plans, consents) without a schema-driven body synthesizer."
     }
   ],
   "conventions": {
@@ -997,6 +1013,12 @@
       "issue": "43 media.media_assets.mime_type allows images, video, PDF and CSV only, so a DSR export bundle cannot be JSON.",
       "action": "S8 writes the bundle as one CSV in long format (section, record_id, field, value). Suggest allowing application/json (or zip) for system_export if a structured bundle is required.",
       "status": "open"
+    },
+    {
+      "id": "DI-70",
+      "issue": "40 VinDecodeResult.suggested was Partial<VehicleWrite>, which includes vin: the closed response schema of vehicles.vin_decode admitted a full VIN although SEC-OUT-2 allows it only from vehicles.vin_reveal.",
+      "action": "S9b changed 40 to Partial<Omit<VehicleWrite,'vin'>> and regenerated libs/contract/generated; the static projection test checks that only vehicles.vin_reveal can return a VIN.",
+      "status": "resolved"
     }
   ],
   "stages": [
@@ -2670,7 +2692,7 @@
         },
         {
           "id": "S9.T4",
-          "status": "not_started",
+          "status": "done",
           "title": "Contract test generator (L22) from operations.json + schemas: schema conformance, BOLA and BFLA matrices for every op, projection tests for SEC-OUT-1 fields, kill switch → AI 503 while search, profiles and appointments still succeed.",
           "part": "S9b"
         },
@@ -2851,7 +2873,7 @@
         {
           "id": "S9b",
           "title": "Contract test sweep (L22 generator over all operations)",
-          "status": "not_started",
+          "status": "done",
           "tasks": [
             "S9.T4"
           ],
@@ -2871,15 +2893,46 @@
             "All checks green."
           ],
           "report": {
-            "started_at": null,
-            "completed_at": null,
-            "summary": null,
+            "started_at": "2026-10-18",
+            "completed_at": "2026-10-18",
+            "summary": "S9b built the contract sweep of 40 Appendix C over the whole API surface. tools/contract/contract-tests.ts generates one suite per module (apps/testing/contract/generated/<module>.contract.int.test.ts, 17 files, every HTTP route of operations.json except the storage PUT); pnpm contract:check fails when they are stale. Each operation has a resolver (apps/testing/contract/resolvers/<module>.ts, 406 of them, branching per route scope for the {V}/{A}/{RQ}/{VT} aliases) that builds real fixtures through the API or the system context and describes the owner's call; the runner (apps/testing/contract/runner.ts) derives the checks from the registry: closed schemas (unknown body member -> 422 UNKNOWN_FIELD, unknown query parameter -> 400 UNKNOWN_QUERY_PARAM), the success response checked by the pipeline (status, closed response schema, AUD audit entry, PII read-audit for staff), admin-plane mechanics (PURP without/with a foreign purpose -> 400/404, RSN DELETE without CarPal-Reason -> 422, 4EYES -> 202 PendingChange pending, then rejected by a second admin), same-organization BFLA (colleagues with every role outside the sec line send the owner's exact request -> 404), BOLA (another user, or the same role in another organization with its own path -> 404 NOT_FOUND / 422 REFERENCE_NOT_FOUND, never data; body references for SEC-AZ-4), the kill switch (every FLAG(ai.*) route -> 503 AI_UNAVAILABLE on a kill-switch host, and every other owner call of the sweep runs on that host and succeeds) and the SEC-OUT-1/2 projection scan (forbidden fields, password hashes, full VINs of the sweep, trade prices outside the vendor's members or an approved trade account). The guard-level BFLA matrix of every route stays in routes.int.test.ts. A unit test checks that the suites are fresh, that every route has a resolver and that no response schema of the registry can carry a SEC-OUT-1 field, a full VIN (only vehicles.vin_reveal) or price_trade outside the vendor's own inventory routes. Findings: published organizations had no slug, so public.org_get could not reach them (fixed: the first publish assigns a default slug); VinDecodeResult.suggested admitted vin (contract tightened). Everything else held: 457 owner calls, 716 schema negatives, 224 BOLA checks, 200 same-organization BFLA checks, 30 admin-plane checks and 16 kill-switch checks pass.",
             "ops_implemented": [],
-            "ops_deferred": [],
-            "files_created": [],
-            "tests": null,
-            "deviations": [],
-            "notes_for_next": []
+            "ops_deferred": [
+              {
+                "op": "auth.social_start",
+                "reason": "Post-MVP (OQ-06, PM-01): the sweep asserts its 501 NOT_IMPLEMENTED (answered before input validation, GD-05)."
+              },
+              {
+                "op": "media.upload_put",
+                "reason": "The signed storage PUT (host storage) is not an API route: the generated suite does not list it; media.int.test.ts covers it. S9c teaches contract:coverage the storage route."
+              }
+            ],
+            "files_created": [
+              "backend/tools/contract/contract-tests.ts (generator + --check; pnpm contract:tests)",
+              "backend/apps/testing/contract/{harness.ts, runner.ts, projection.ts, domain.ts, contract-sweep.test.ts}",
+              "backend/apps/testing/contract/resolvers/{admin, ai-mcp, analytics, appointment, billing, community, discovery, fleet, identity, inventory, media, notification, organization, platform, taxonomy, trust, vehicle}.ts",
+              "backend/apps/testing/contract/generated/*.contract.int.test.ts (17 generated suites)"
+            ],
+            "tests": "992 passing (85 files) (pnpm test:all): S9b added 474 integration tests (17 suites: 457 routes + one registry/resolver check per module) and 7 unit tests (6 sweep checks: suites fresh, every route has a resolver, no SEC-OUT-1 field / full VIN / trade price reachable in any response schema, the dynamic scan itself; 1 defaultSlug rule). Sweep figures (pnpm vitest run apps/testing/contract --reporter=verbose prints one line per module): 457 owner calls, 716 schema negatives, 200 same-organization BFLA checks, 224 BOLA checks (236 not applicable: public, staff-plane, collection routes), 30 admin-plane checks, 16 kill-switch checks; about 3.5 minutes. Also green: pnpm lint (489 modules), typecheck, build, format:check, contract:check (incl. contract:tests --check), db:codegen --verify; contract:coverage 404/406 (unchanged).",
+            "deviations": [
+              "GD-36: contract sweep = generated per-module suites (route lists from operations.json) + hand-written per-operation resolvers; request bodies are written per operation (copied from the module tests) rather than synthesized from the schemas, because valid requests need linked records (taxonomy chains, media of the right purpose, consents, plans).",
+              "Defect fixed (found by the sweep): org.create never sets a slug and nothing else did, so a published organization had no public profile URL (public.org_get resolves by slug only). activateOrganization (provider.publish, vendor.publish) now assigns defaultSlug(name, id) when the slug is null: Latin letters/digits of the name + the last 12 hex digits of the id (\"org-<hex>\" for non-Latin names); owners change it with org.update.",
+              "Contract hardening (DI-70): Docs/40 VinDecodeResult.suggested is Partial<Omit<VehicleWrite,'vin'>> instead of Partial<VehicleWrite>, so the closed response schema enforces SEC-OUT-2 (the lite decoder never suggested a VIN; the sweep checks it).",
+              "The sweep's api host runs with the AI kill switch on for every non-AI operation (and the Should-have flags community.comments/feed and qna on): graceful degradation is proven for the whole non-AI surface, not only search, profiles and appointments.",
+              "BOLA expectations that are not 404/422, by design: search.page -> 400 CURSOR_MISMATCH (the required cursor is signed for its caller and session, refused before the session is read); provider.service_record_create with another customer's vehicle -> 403 CONSENT_REQUIRED (unknown vehicles fail closed like a missing consent); LNK operations (org.invitation_accept, review_invitations.verify, consents.request_view/respond) -> 403 LINK_RECIPIENT_MISMATCH for another signed-in user.",
+              "Accepted as designed (no data, no existence oracle): notifications.mark_read ignores ids outside the caller's notifications (RLS; checked in the resolver that they stay unread) and inventory.bulk_update skips items outside the vendor; public-by-design references (follows/favorites of published organizations, transfer requests by VIN, trade account and partner requests naming published organizations) have no BOLA check.",
+              "Entitlement (ENT) and consent (CNS) gates run before body-reference checks, so the cross-tenant attackers of inventory.import_create, fleet.import_create, ai.inventory_normalize and ai.fleet_suggestions are organizations on the same plan with the same consent.",
+              "Purpose binding (SEC-ADM-5) is checked per queue item in the caller's queue (as the contract words it), not per record: a purpose of an open case about user A also unlocks user B. Kept for the next iteration (hardening list of S8).",
+              "ai.profile_helper needs an existing provider profile (404 otherwise); the sweep calls it on a published provider.",
+              "Sweep fixtures that the shared test database must not keep (seeded taxonomy counts, MCP clients) are removed when a suite ends (Harness.onClose); four-eyes requests are rejected by a second admin and stale pending changes of fixed targets (plans, retention policies) are expired first."
+            ],
+            "notes_for_next": [
+              "S9c OpenAPI: describe the regenerated VinDecodeResult (DI-70); the resolvers in apps/testing/contract/resolvers are a source of valid request examples per operation.",
+              "S9c CI: run pnpm lint, typecheck, build, format:check, contract:check (now including the sweep-suite freshness check), db:codegen --verify and pnpm test:all (about 8 minutes; integration project single worker on embedded PostgreSQL).",
+              "S9c README: document pnpm contract:tests and the rule that every new operation needs a resolver (the generated suite fails otherwise); point to the per-module stats line of the verbose reporter.",
+              "Appendix C items outside the sweep stay where they are: C.5 security mechanics (DPoP, refresh-family reuse, IDEM replay/conflict, ETAG, single-use links, step-up, timings, map-link SSRF) in pipeline/auth-server/organization tests; C.6 rate limits and load shedding in the pipeline tests; C.7 business rules in the module tests.",
+              "Next iteration: purpose binding to the record being read (SEC-ADM-5 hardening); a generic READ_ONLY_FIELD probe per input schema (S fields), which needs the S-field list from 52 in the generator."
+            ]
           }
         },
         {
@@ -2932,7 +2985,7 @@
       "S8": 82,
       "S9": 23
     },
-    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501. After S6 (pnpm contract:coverage): discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71 (the other 7 are admin ops of S8), trust 1/36 (public.org_reviews), appointment 1/31 (public.availability placeholder); 236 implemented, 166 answer 501. After S7 (pnpm contract:coverage): appointment 31/31, trust 28/36 (the other 8 are §23.4 admin operations of S8); 293 implemented, 109 answer 501. After S8 (pnpm contract:coverage): fleet 20/20, admin 16/16, analytics 3/3, organization 71/71, billing 7/7, taxonomy 13/13, trust 36/36, identity 58/61 (3 deferred S3 ops), media 10/11 (media.upload_put is the storage PUT), ai-mcp 4/27 (the admin oversight data ops; 23 §21 ops for S9); 375 implemented, 27 answer 501; admin-api serves 60/60 routes. After S9a: 4 vehicle transfer operations added to the contract (406 operations, 458 routes); 404 implemented, 2 answer 501 (auth.social_start PM-01, media.upload_put storage PUT).",
+    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501. After S6 (pnpm contract:coverage): discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71 (the other 7 are admin ops of S8), trust 1/36 (public.org_reviews), appointment 1/31 (public.availability placeholder); 236 implemented, 166 answer 501. After S7 (pnpm contract:coverage): appointment 31/31, trust 28/36 (the other 8 are §23.4 admin operations of S8); 293 implemented, 109 answer 501. After S8 (pnpm contract:coverage): fleet 20/20, admin 16/16, analytics 3/3, organization 71/71, billing 7/7, taxonomy 13/13, trust 36/36, identity 58/61 (3 deferred S3 ops), media 10/11 (media.upload_put is the storage PUT), ai-mcp 4/27 (the admin oversight data ops; 23 §21 ops for S9); 375 implemented, 27 answer 501; admin-api serves 60/60 routes. After S9a: 4 vehicle transfer operations added to the contract (406 operations, 458 routes); 404 implemented, 2 answer 501 (auth.social_start PM-01, media.upload_put storage PUT). After S9b: unchanged 404/406 implemented (auth.social_start answers 501 by decision, media.upload_put is the storage PUT); every HTTP route (457) is swept by the generated contract suites.",
     "implemented": 404,
     "returning_501": 2,
     "total_routes": 458,
@@ -3725,6 +3778,56 @@
       "stage": "S9a",
       "date": "2026-10-15",
       "deviation": "The coverage tool reads every id of a multi-id @Operation(...) decorator."
+    },
+    {
+      "stage": "S9b",
+      "date": "2026-10-18",
+      "deviation": "GD-36: contract sweep = generated per-module suites (route lists from operations.json) + hand-written per-operation resolvers; request bodies are written per operation (copied from the module tests) rather than synthesized from the schemas, because valid requests need linked records (taxonomy chains, media of the right purpose, consents, plans)."
+    },
+    {
+      "stage": "S9b",
+      "date": "2026-10-18",
+      "deviation": "Defect fixed (found by the sweep): org.create never sets a slug and nothing else did, so a published organization had no public profile URL (public.org_get resolves by slug only). activateOrganization (provider.publish, vendor.publish) now assigns defaultSlug(name, id) when the slug is null: Latin letters/digits of the name + the last 12 hex digits of the id (\"org-<hex>\" for non-Latin names); owners change it with org.update."
+    },
+    {
+      "stage": "S9b",
+      "date": "2026-10-18",
+      "deviation": "Contract hardening (DI-70): Docs/40 VinDecodeResult.suggested is Partial<Omit<VehicleWrite,'vin'>> instead of Partial<VehicleWrite>, so the closed response schema enforces SEC-OUT-2 (the lite decoder never suggested a VIN; the sweep checks it)."
+    },
+    {
+      "stage": "S9b",
+      "date": "2026-10-18",
+      "deviation": "The sweep's api host runs with the AI kill switch on for every non-AI operation (and the Should-have flags community.comments/feed and qna on): graceful degradation is proven for the whole non-AI surface, not only search, profiles and appointments."
+    },
+    {
+      "stage": "S9b",
+      "date": "2026-10-18",
+      "deviation": "BOLA expectations that are not 404/422, by design: search.page -> 400 CURSOR_MISMATCH (the required cursor is signed for its caller and session, refused before the session is read); provider.service_record_create with another customer's vehicle -> 403 CONSENT_REQUIRED (unknown vehicles fail closed like a missing consent); LNK operations (org.invitation_accept, review_invitations.verify, consents.request_view/respond) -> 403 LINK_RECIPIENT_MISMATCH for another signed-in user."
+    },
+    {
+      "stage": "S9b",
+      "date": "2026-10-18",
+      "deviation": "Accepted as designed (no data, no existence oracle): notifications.mark_read ignores ids outside the caller's notifications (RLS; checked in the resolver that they stay unread) and inventory.bulk_update skips items outside the vendor; public-by-design references (follows/favorites of published organizations, transfer requests by VIN, trade account and partner requests naming published organizations) have no BOLA check."
+    },
+    {
+      "stage": "S9b",
+      "date": "2026-10-18",
+      "deviation": "Entitlement (ENT) and consent (CNS) gates run before body-reference checks, so the cross-tenant attackers of inventory.import_create, fleet.import_create, ai.inventory_normalize and ai.fleet_suggestions are organizations on the same plan with the same consent."
+    },
+    {
+      "stage": "S9b",
+      "date": "2026-10-18",
+      "deviation": "Purpose binding (SEC-ADM-5) is checked per queue item in the caller's queue (as the contract words it), not per record: a purpose of an open case about user A also unlocks user B. Kept for the next iteration (hardening list of S8)."
+    },
+    {
+      "stage": "S9b",
+      "date": "2026-10-18",
+      "deviation": "ai.profile_helper needs an existing provider profile (404 otherwise); the sweep calls it on a published provider."
+    },
+    {
+      "stage": "S9b",
+      "date": "2026-10-18",
+      "deviation": "Sweep fixtures that the shared test database must not keep (seeded taxonomy counts, MCP clients) are removed when a suite ends (Harness.onClose); four-eyes requests are rejected by a second admin and stale pending changes of fixed targets (plans, retention policies) are expired first."
     }
   ],
   "handoff_notes": [
@@ -3772,6 +3875,11 @@
       "date": "2026-10-15",
       "from": "S8",
       "note": "S8 done: fleets (profile activates the fleet, driver assignments bound, approvals wired into driver issues/fleet appointments/provider cost estimates, partners in search, reports, W8 exports, W7 imports), the admin plane on admin-api (four-eyes, purpose-bound PII reads with audit, moderation with cases and intake, Path 2 decisions, disputes, badges, verification, locations, org status/merge, billing, taxonomy with merge jobs, flags/kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle, deletion across modules, pseudonym key deleted) and product analytics (events.ingest → W12 → daily metrics → dashboards) — all 82 ops, 460 tests green. Docs/43 changed (admin.moderation_action_affects) and Docs/40 changed (versions, CarPal-Reason): run pnpm db:reset once. Next: S9. Read S8.report.notes_for_next and recommendations_for_next_stages.S9."
+    },
+    {
+      "date": "2026-10-18",
+      "from": "S9b",
+      "note": "S9b done: the contract sweep of 40 Appendix C runs over all 457 HTTP routes (17 generated suites + 406 resolvers; schema negatives, BOLA, same-organization BFLA, admin-plane mechanics, kill switch, SEC-OUT-1 projections) — it fixed the missing public slug of published organizations and tightened VinDecodeResult (DI-70). 992 passing (85 files); all checks green. No db:reset needed. Next: S9c (OpenAPI, CI, coverage closure, next-iteration list, README). Read S9b.report.notes_for_next and meta.progress.before_starting_S9c."
     }
   ],
   "open_questions": [
@@ -4024,6 +4132,13 @@
     "S8_done": [
       "S8 recommendations applied: admin billing (assign closes change requests, audited, trial rule), DSR execution (transitions, W8 bundle, deletion with sessions revoked and pseudonym key deleted, user.deletion.completed), staff role/status changes invalidate authz and revoke sessions, onboarding reset sets reset_by, taxonomy admin invalidates the catalog and publishes taxonomy.node.merged, DI-09 decided, moderation queue for portfolio items/media/community/held reviews (intake rule), verification decide with organization.verified, location_correct, org_status with profiles suspended and authz invalidated, org_merge, media_download_url with PURP, fleet activation decided, retention handlers (media objects, match sessions, notifications, exports, outbox, jobs, tokens), community content leaves the index through community.content.changed, Path 2 decisions with the exact column set, dispute outcomes (objection, fake review −50 + badges, badge challenge, appeal), badge approval, admin trust penalties (12 months), driver assignments bound and set-based, fleet approvals from driver issues, bound to appointments, cost estimates above threshold, preferred_partners_only + bonus, fleet.approval.decided notifications, disputes about service records and moderation actions.",
       "Not done from the S8 list: WebAuthn staff sign-in (OQ-04, still deferred), DI-05 assist routes, DI-21 hybrid roles, DI-38/DI-58 fleet history sharing (fleets still share through appointments only), admin verification of service records/invoices (invoice_verified/admin_verified evidence), purge of removed vehicle documents' media beyond the generic MediaAsset policy and of unreferenced storage objects, moderation of review responses beyond hide/remove (DI-59), fleet trust signals (54 §8: downtime, first-time fix, cost accuracy) and fleet_friendly revocation by upheld fleet disputes, fleet system review invitations (fleet_confirmed), refresh_reaction_count after reaction moderation (reactions are not a moderation target), appointment/review funnels as dedicated dashboard metrics (they count as generic event metrics)."
+    ],
+    "S9b_done": [
+      "S9c OpenAPI: describe the regenerated VinDecodeResult (DI-70); the resolvers in apps/testing/contract/resolvers are a source of valid request examples per operation.",
+      "S9c CI: run pnpm lint, typecheck, build, format:check, contract:check (now including the sweep-suite freshness check), db:codegen --verify and pnpm test:all (about 8 minutes; integration project single worker on embedded PostgreSQL).",
+      "S9c README: document pnpm contract:tests and the rule that every new operation needs a resolver (the generated suite fails otherwise); point to the per-module stats line of the verbose reporter.",
+      "Appendix C items outside the sweep stay where they are: C.5 security mechanics (DPoP, refresh-family reuse, IDEM replay/conflict, ETAG, single-use links, step-up, timings, map-link SSRF) in pipeline/auth-server/organization tests; C.6 rate limits and load shedding in the pipeline tests; C.7 business rules in the module tests.",
+      "Next iteration: purpose binding to the record being read (SEC-ADM-5 hardening); a generic READ_ONLY_FIELD probe per input schema (S fields), which needs the S-field list from 52 in the generator."
     ]
   },
   "post_mvp_backlog": [

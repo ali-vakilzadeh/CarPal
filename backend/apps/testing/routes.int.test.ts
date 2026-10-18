@@ -38,7 +38,7 @@ async function call(app: TestApp, method: string, encoding: string, r: Materiali
 }
 
 describe('every contract route is registered on its host and passes the pipeline', () => {
-  it('covers all 449 HTTP routes of the registry (the storage PUT is not an API route)', () => {
+  it('covers every HTTP route of the registry (the storage PUT is not an API route)', () => {
     const total = [...apps.values()].reduce((n, a) => n + a.http.routes.entries.length, 0);
     const registry = loadRegistry();
     expect(total).toBe(registry.routeCount - registry.operations.flatMap((o) => o.routes).filter((r) => r.host === 'storage').length);

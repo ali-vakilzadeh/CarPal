@@ -11,7 +11,14 @@ import type { TxScope } from '#libs/tenancy/index.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { toCertification, toProviderProfile, type CertificationRow, type ProviderProfileRow } from '../api/projections.js';
-import { completeness, insightsPeriod, isFutureDate, PROVIDER_COMPLETENESS, providerPublishUnmet } from '../domain/profile-rules.js';
+import {
+  completeness,
+  defaultSlug,
+  insightsPeriod,
+  isFutureDate,
+  PROVIDER_COMPLETENESS,
+  providerPublishUnmet,
+} from '../domain/profile-rules.js';
 import { OrganizationExtensions } from '../interface/extensions.js';
 import { ProfileFacts } from '../infrastructure/facts.js';
 import { afterId, checkNodes, checkVersion, failIf, json, member, pageOf, profileUpdated, publicationChanged } from './common.js';
@@ -135,8 +142,19 @@ export class ProviderProfilePutHandler implements OperationHandler {
   }
 }
 
-/** A draft organization goes live with its first published profile (DI-18). */
+/**
+ * A draft organization goes live with its first published profile (DI-18).
+ * A published organization without a slug gets its default slug (S9b), so
+ * its public profile is reachable through public.org_get.
+ */
 export async function activateOrganization(scope: TxScope, orgId: string): Promise<boolean> {
+  const org = await scope.db.selectFrom('organization.organizations').select(['name', 'slug']).where('id', '=', orgId).executeTakeFirst();
+  if (org && !org.slug)
+    await scope.db
+      .updateTable('organization.organizations')
+      .set({ slug: defaultSlug(org.name, orgId) })
+      .where('id', '=', orgId)
+      .execute();
   const r = await scope.db
     .updateTable('organization.organizations')
     .set({ status: 'active' })

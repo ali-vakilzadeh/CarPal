@@ -132,3 +132,22 @@ export function insightsPeriod(from: string, to: string): FieldError[] {
 
 /** 52: dates that must not be in the future (job_date, issued_at), compared on the calendar date (UTC). */
 export const isFutureDate = (date: string, now = new Date()): boolean => date > now.toISOString().slice(0, 10);
+
+/**
+ * S9b: the slug a published organization gets when it has none, so its
+ * public profile (public.org_get by slug) is reachable. Latin letters and
+ * digits of the name (diacritics dropped), then the last 12 hex digits of the
+ * id for uniqueness; non-Latin names (Persian) give "org-<hex>". Matches the
+ * Slug pattern (≤ 80 characters). Owners can change it with org.update.
+ */
+export function defaultSlug(name: string, orgId: string): string {
+  const base = name
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+    .replace(/-+$/, '');
+  return `${base || 'org'}-${orgId.replace(/-/g, '').slice(-12)}`;
+}

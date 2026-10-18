@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   completeness,
+  defaultSlug,
   insightsPeriod,
   isFutureDate,
   openNow,
@@ -144,5 +145,14 @@ describe('publish rules (52 §21) and completeness (MVP Module C)', () => {
     expect(insightsPeriod('2026-02-01', '2026-01-01')[0]).toMatchObject({ code: 'order' });
     expect(isFutureDate('2999-01-01')).toBe(true);
     expect(isFutureDate('2020-01-01')).toBe(false);
+  });
+
+  it('derives a default slug from the name and the id (S9b)', () => {
+    const id = '01a14d07-04d0-7779-bae8-0bbc0ea7ec35';
+    expect(defaultSlug('Réza Auto & Suspension', id)).toBe('reza-auto-suspension-0bbc0ea7ec35');
+    expect(defaultSlug('تعمیرگاه رضا', id)).toBe('org-0bbc0ea7ec35');
+    const long = defaultSlug('a'.repeat(59) + ' b'.repeat(10), id);
+    expect(long.length).toBeLessThanOrEqual(80);
+    expect(long).toMatch(/^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/);
   });
 });
