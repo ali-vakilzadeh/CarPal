@@ -68,6 +68,8 @@ export interface AttachmentTarget {
   owner: MediaOwner;
   /** Role groups for organization-owned records (ignored for user-owned ones). */
   groups: string[];
+  /** The fleet vehicle the record belongs to: fleet drivers see its media only while the vehicle is assigned to them (SEC-AZ-7). */
+  vehicleId?: string;
 }
 
 export type AttachmentTargetResolver = (scope: TxScope, targetId: string) => Promise<AttachmentTarget | null>;

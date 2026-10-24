@@ -1,0 +1,258 @@
+{
+  "meta": {
+    "title": "CarPal backend — risk control plan",
+    "created": "2026-10-24",
+    "last_updated": "2026-10-24",
+    "owner": "Backend lead (security owner until a dedicated role exists)",
+    "purpose": "Register of security and privacy risks that are known but not (fully) closed by the scratch build: what can go wrong, which controls exist, what is still missing, and the plan and owner for closing each one. Started after S9b at the user's request (2026-10-24) with the staff access-purpose issue; risks found while closing S9c are added with their source.",
+    "how_to_use": [
+      "Add a risk when a review, a stage report or a test finds a weakness that is not fixed in the same stage. Give it the next RCP id; never reuse or delete ids.",
+      "Rate likelihood and impact on the scales below before (inherent) and after (residual) the planned treatment; rating = likelihood x impact.",
+      "Each treatment action has an owner, a target stage and an acceptance test. Mark actions done only when the test exists and passes.",
+      "Change a risk's status only with a history entry (date, what changed, who decided). Accepted risks name who accepted them and when they are reviewed again.",
+      "dev_plan.json next_iteration items that close a risk refer to its RCP id."
+    ],
+    "scales": {
+      "likelihood": {
+        "1": "rare: needs several independent failures or an attacker with unusual access",
+        "2": "unlikely: needs insider access plus intent, or a secret the attacker should not have",
+        "3": "possible: any member of a common role can do it with normal access",
+        "4": "likely: reachable by ordinary users with no special knowledge",
+        "5": "almost certain: happens in normal use"
+      },
+      "impact": {
+        "1": "negligible: no personal or business data exposed",
+        "2": "minor: low-sensitivity data of one tenant",
+        "3": "moderate: business data of one tenant, or personal data of a few people",
+        "4": "major: personal data (PII) of arbitrary users, or one tenant's private records at scale",
+        "5": "severe: platform-wide exposure, credentials, or legal/regulatory breach across tenants"
+      },
+      "rating_bands": {
+        "1-4": "low",
+        "5-9": "medium",
+        "10-15": "high",
+        "16-25": "critical"
+      }
+    },
+    "statuses": ["open", "in_treatment", "mitigated", "accepted", "closed"]
+  },
+  "risks": [
+    {
+      "id": "RCP-01",
+      "title": "Staff access purpose is not bound to the record being read (SEC-ADM-5)",
+      "category": "authorization / privacy (admin plane)",
+      "status": "open",
+      "owner": "Backend lead; admin-plane module owner",
+      "source": "S9b deviations (purpose binding checked per queue item, not per record); recommendations_for_next_stages.S9 hardening list after S8; user decision 2026-10-24 to track it here.",
+      "rules": ["40 SEC-ADM-5", "40 SEC-LOG-4", "40 1.3 CarPal-Access-Purpose"],
+      "description": "A staff member's CarPal-Access-Purpose header (case:<id>, dispute:<id>, dsr:<id>, verification:<id>, approval:<id>) is accepted when the named item is open in their queue or assigned to them (QueuePurposeVerifier + PurposeQueues). The verifier does not check that the record being read is the subject of that item. A moderator with any open case can therefore read the PII of any user or organization under that case's purpose; the read is audit-logged (pii.read) but with a purpose that does not justify it.",
+      "scenario": "Moderator M is assigned case C about a post by user A. M calls admin.user_get for user B (unrelated) with CarPal-Access-Purpose: case:C. The pipeline accepts the purpose, returns B's profile and writes a pii.read audit entry naming case C. Nothing flags the mismatch.",
+      "affected_operations": [
+        "admin.users_search",
+        "admin.user_get",
+        "admin.org_get",
+        "admin.verification_decide",
+        "admin.review_approval_get",
+        "admin.review_approval_decide",
+        "admin.case_get",
+        "admin.case_action",
+        "admin.dispute_get",
+        "admin.dispute_resolve",
+        "admin.dsr_update",
+        "admin.dsr_export",
+        "admin.dsr_execute_deletion",
+        "admin.media_download_url"
+      ],
+      "current_controls": [
+        "admin-api reachable only through the staff gateway; staff sessions need WebAuthn aal3 with device-bound keys (SEC-ADM-1/2, GD-31).",
+        "Staff role sets per operation (STF(...)); the sweep's BFLA matrix refuses every other staff role.",
+        "PURP header required and well-formed (400 without it); the item must be open in the caller's queue or assigned to them (404 otherwise, swept for every PURP route).",
+        "Every staff PII read writes pii.read with the purpose (SEC-LOG-4; the pipeline refuses a PII response without its read-audit entry).",
+        "Mutations need a reason (RSN) and write AuditLog; DSR deletion is four-eyes (4EYES)."
+      ],
+      "gaps": [
+        "No link between the purpose item's subjects and the record of the request (user_id, org_id, review_id, media owner, search criteria).",
+        "admin.users_search accepts any criteria under any valid purpose.",
+        "No detective control reviews pii.read entries whose record is unrelated to the purpose."
+      ],
+      "inherent": { "likelihood": 3, "impact": 4, "rating": 12, "band": "high" },
+      "residual_after_treatment": { "likelihood": 1, "impact": 4, "rating": 4, "band": "low" },
+      "treatment": {
+        "strategy": "reduce",
+        "actions": [
+          {
+            "id": "RCP-01.A1",
+            "action": "Purpose subjects: each PurposeQueues kind also returns the subjects of its item (case: target record, its author and organization; dispute: the parties, the review and the organization; dsr: the requesting user and their organizations; verification: the organization; approval: the review, its author and the organization).",
+            "owner": "admin module",
+            "target": "next iteration, first hardening stage",
+            "status": "not_started",
+            "acceptance": "Unit tests per kind: subjects of a fixture item are exactly the expected ids."
+          },
+          {
+            "id": "RCP-01.A2",
+            "action": "Record binding: every PURP operation resolves the subject of its request (path user_id/org_id/review_id/request_id, media owner, search criteria) and the verifier admits the purpose only when that subject is among the item's subjects; otherwise 404 NOT_FOUND (no oracle). admin.users_search under a purpose is limited to the item's subjects.",
+            "owner": "admin module + owning modules' admin read ports",
+            "target": "next iteration, first hardening stage",
+            "status": "not_started",
+            "acceptance": "Integration test of the scenario above: user B under case C -> 404; user A under case C -> 200 with pii.read naming C."
+          },
+          {
+            "id": "RCP-01.A3",
+            "action": "Contract: reword SEC-ADM-5 to 'a purpose about the record being read' and record a doc issue; regenerate the contract and the OpenAPI file.",
+            "owner": "backend lead",
+            "target": "with A2",
+            "status": "not_started",
+            "acceptance": "pnpm contract:check and pnpm openapi:check green with the new wording."
+          },
+          {
+            "id": "RCP-01.A4",
+            "action": "Sweep: the contract runner's admin mechanics send each PURP route with a valid purpose of an unrelated open item (another subject) and expect 404, next to the existing missing/foreign-purpose checks.",
+            "owner": "testing (L22)",
+            "target": "with A2",
+            "status": "not_started",
+            "acceptance": "Generated suites fail when any PURP route accepts an unrelated purpose."
+          },
+          {
+            "id": "RCP-01.A5",
+            "action": "Interim detective control until A2 ships: a periodic audit query lists pii.read entries whose record is not a subject of the named purpose item; the security owner reviews the list weekly once staff use the admin plane.",
+            "owner": "security owner",
+            "target": "before the pilot gives staff production access",
+            "status": "not_started",
+            "acceptance": "Query documented in backend/README.md (admin plane) and run once against seeded data."
+          }
+        ]
+      },
+      "decision_needed": null,
+      "review_date": "Start of the next iteration",
+      "history": [
+        {
+          "date": "2026-10-18",
+          "note": "Found and documented in S9b (deviations_log): purpose binding is per queue item, not per record; kept for the next iteration."
+        },
+        { "date": "2026-10-24", "note": "User decision: track as a risk in risk_control_plan.json (RCP-01) with a treatment plan." }
+      ]
+    },
+    {
+      "id": "RCP-02",
+      "title": "Fleet drivers could read fleet records of vehicles not assigned to them",
+      "category": "authorization (object level, fleet tenants)",
+      "status": "mitigated",
+      "owner": "Backend lead; vehicle, media and ai-mcp module owners",
+      "source": "S9c review of the S9b BFLA scope after the user's requirement of 2026-10-24: organization-wide fleet roles see the whole fleet, drivers only the equipment linked to them.",
+      "rules": ["40 SEC-AZ-7", "40 SEC-AZ-2/3", "40 0.4 DRV"],
+      "description": "Role group F* contains fleet_driver, so a fleet route tagged ORG(F*) without DRV admitted a driver for every vehicle of the fleet, and records reached by id with ORG(ANY) ignored the assignment. Three leaks: vehicles.status_history on any fleet vehicle; media.get/download_url of any fleet-owned media (vehicle photos, documents); ai.suggestions_list, ai.insight_get, ai.insight_feedback and ai.suggestion_decide on the fleet's AI records (vehicle priorities, reasons, insight ids). The S9b sweep did not see them: its same-organization BFLA only tries roles outside the sec line, and a driver is inside ORG(F*).",
+      "affected_operations": [
+        "vehicles.status_history",
+        "media.get",
+        "media.download_url",
+        "media.delete / attachment_update / detach / redaction_decide (changes)",
+        "ai.suggestions_list",
+        "ai.insight_get",
+        "ai.insight_feedback",
+        "ai.suggestion_decide"
+      ],
+      "current_controls": [
+        "Contract: vehicles.status_history, appointments.history and appointments.notes_list carry DRV (the last two already filtered by the handler); SEC-AZ-7 extended to fleet records reached by id (DI-71).",
+        "Media: a driver owns fleet media only when they uploaded it or it is attached to a record of a vehicle assigned to them (AttachmentTarget.vehicleId + Authorizer.isDriverAssigned); changes are limited to their own uploads.",
+        "AI: fleet AI records are requested by FC/F+ only, so drivers get 404 on them (a driver's Help Me triage stays personal).",
+        "Sweep: a fleet-driver dimension sends the owner's request as an unassigned driver on every {flt} vehicle and appointment route the sec line opens to drivers (404, or none of the owner's records on lists); DRV routes with a path vehicle stay in the BFLA matrix.",
+        "apps/testing/fleet-visibility.int.test.ts proves each fix (all three tests fail on the S9b code)."
+      ],
+      "gaps": [
+        "Media attached to other fleet records (appointments, stock inquiries) only reaches a driver through their own uploads; no driver-specific rule beyond vehicles and issues exists yet."
+      ],
+      "inherent": { "likelihood": 3, "impact": 3, "rating": 9, "band": "medium" },
+      "residual_after_treatment": { "likelihood": 1, "impact": 3, "rating": 3, "band": "low" },
+      "treatment": {
+        "strategy": "reduce",
+        "actions": [
+          {
+            "id": "RCP-02.A1",
+            "action": "Fix the three leaks and add the sweep's fleet-driver dimension.",
+            "owner": "backend",
+            "target": "S9c",
+            "status": "done",
+            "acceptance": "fleet-visibility.int.test.ts and the generated suites pass; the vehicle suite fails on the S9b contract (status_history without DRV)."
+          }
+        ]
+      },
+      "decision_needed": null,
+      "review_date": "With RCP-03",
+      "history": [{ "date": "2026-10-24", "note": "Found and fixed in S9c (DI-71)." }]
+    },
+    {
+      "id": "RCP-03",
+      "title": "Fleet role model is narrower than the product expectation (operators, mechanics, dispatch, links)",
+      "category": "authorization design (fleet tenants)",
+      "status": "open",
+      "owner": "Product owner (decision); backend lead (implementation)",
+      "source": "User statement of 2026-10-24: organization-wide accounts (admin, fleet manager, dispatching manager) access the whole fleet; drivers, operators and mechanics see only equipment linked to them; links are assigned by the fleet manager and the dispatch manager.",
+      "rules": ["40 0.5 role groups F*, F+, FC, FR", "40 SEC-AZ-7", "52 RoleMembership.role", "52 FleetVehicleAssignment"],
+      "description": "The contract's fleet roles are fleet_owner, fleet_manager, fleet_maintenance_coordinator, fleet_driver and fleet_viewer. Owner, manager and coordinator (FC) are organization-wide and assign drivers; fleet_viewer is also organization-wide (read-only, reports). Only fleet_driver is limited to linked vehicles, and a vehicle has at most one active assignment, to a driver. There are no operator or mechanic roles, no dispatch-manager role (the coordinator is closest), and no way to link several people, or a non-driver, to a vehicle.",
+      "current_controls": [
+        "Drivers reach only their assigned vehicles everywhere (RCP-02).",
+        "Assignments are set and ended by FC (owner, manager, coordinator) with audit; ending one removes the driver's access at once."
+      ],
+      "gaps": [
+        "fleet_viewer sees every vehicle; if viewers are meant to be linked staff, this over-shares.",
+        "Operators and in-house mechanics would have to be given fleet_driver (one vehicle at a time) or an organization-wide role (over-sharing).",
+        "One active assignment per vehicle: shift work or a mechanic linked to several vehicles is not representable."
+      ],
+      "inherent": { "likelihood": 3, "impact": 3, "rating": 9, "band": "medium" },
+      "residual_after_treatment": null,
+      "treatment": {
+        "strategy": "decide, then reduce",
+        "actions": [
+          {
+            "id": "RCP-03.A1",
+            "action": "Decide the target fleet role model: map 'dispatching manager' (fleet_maintenance_coordinator or a new role), decide whether fleet_viewer stays organization-wide, and whether operators/mechanics become roles limited to linked vehicles with several links per vehicle (assignment kinds).",
+            "owner": "product owner",
+            "target": "before the next iteration's fleet work",
+            "status": "not_started",
+            "acceptance": "Decision recorded in dev_plan.json open_questions (OQ-18) and global_decisions."
+          },
+          {
+            "id": "RCP-03.A2",
+            "action": "Implement the decision: 52 role enum and FleetVehicleAssignment (kinds, many per vehicle), Docs/43 constraint and RLS, 40 role groups and DRV generalised to 'linked roles', authorizer DriverAssignments -> VehicleLinks, sweep dimension per linked role.",
+            "owner": "backend",
+            "target": "next iteration",
+            "status": "not_started",
+            "acceptance": "Sweep: every linked role reaches only linked vehicles; organization-wide roles reach all."
+          }
+        ]
+      },
+      "decision_needed": "OQ-18 in dev_plan.json",
+      "review_date": "Next iteration planning",
+      "history": [
+        { "date": "2026-10-24", "note": "Opened in S9c from the user's statement; implementation waits for the role-model decision." }
+      ]
+    },
+    {
+      "id": "RCP-04",
+      "title": "Link-token validity is visible to whoever holds the token",
+      "category": "information disclosure (accepted)",
+      "status": "accepted",
+      "owner": "Backend lead",
+      "source": "S9c integrity check of the BOLA expectations that are not 404 (user request of 2026-10-24).",
+      "rules": ["40 SEC-LT", "40 4.4 LINK_RECIPIENT_MISMATCH, LINK_EXPIRED"],
+      "description": "For a link token bound to another person (org.invitation_accept, review_invitations.verify, consents.request_view, consents.request_respond), another signed-in user gets 403 LINK_RECIPIENT_MISMATCH, while an unknown token gets 410 LINK_EXPIRED. The difference tells the holder of a token that it is valid.",
+      "current_controls": [
+        "Tokens are 256-bit secrets sent only to the bound recipient; guessing is infeasible.",
+        "The 403 body carries only the Problem base (checked by the sweep): no recipient name, email or organization.",
+        "Rate limits on link operations; single-use links are consumed by the recipient."
+      ],
+      "gaps": ["A person who obtains someone else's link (forwarded mail) learns that it is still valid."],
+      "inherent": { "likelihood": 2, "impact": 1, "rating": 2, "band": "low" },
+      "residual_after_treatment": { "likelihood": 2, "impact": 1, "rating": 2, "band": "low" },
+      "treatment": {
+        "strategy": "accept",
+        "actions": [],
+        "reason": "The contract requires the distinct code so the client can tell the user to sign in with the invited account; the information is available only to someone who already holds the secret."
+      },
+      "accepted_by": "Pending confirmation by the product owner (proposed in S9c)",
+      "decision_needed": null,
+      "review_date": "When link flows change",
+      "history": [{ "date": "2026-10-24", "note": "Proposed for acceptance in S9c after the integrity check." }]
+    }
+  ]
+}

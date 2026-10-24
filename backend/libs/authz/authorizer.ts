@@ -267,6 +267,11 @@ export class Authorizer {
     return this.#memberships(userId);
   }
 
+  /** DRV for records reached without a vehicle in the path (media by id): the vehicle is assigned to the driver (SEC-AZ-7). */
+  async isDriverAssigned(orgId: string, driverUserId: string, vehicleId: string): Promise<boolean> {
+    return this.o.drivers.isAssigned(orgId, driverUserId, vehicleId);
+  }
+
   async #memberships(userId: string): Promise<Membership[]> {
     return this.#cached(`authz:mem:${userId}`, () => this.o.memberships.memberships(userId, 'user'));
   }

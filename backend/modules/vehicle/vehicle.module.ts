@@ -24,8 +24,8 @@ import { VehicleCards, VehicleService } from './interface/vehicles.js';
 export { VehicleReminderRule } from './application/reminder-rule.js';
 
 /** Media on a vehicle or an issue belongs to the vehicle's owner; fleet coordinators (FC) attach for a fleet. */
-const ownerTarget = (v: { owner_type: string; owner_id: string } | undefined): AttachmentTarget | null =>
-  v ? { owner: { type: v.owner_type as 'user' | 'organization', id: v.owner_id }, groups: ['FC'] } : null;
+const ownerTarget = (v: { owner_type: string; owner_id: string; vehicle_id: string } | undefined): AttachmentTarget | null =>
+  v ? { owner: { type: v.owner_type as 'user' | 'organization', id: v.owner_id }, groups: ['FC'], vehicleId: v.vehicle_id } : null;
 
 @Injectable()
 export class VehicleRegistrations implements OnModuleInit {
@@ -191,7 +191,7 @@ export class VehicleRegistrations implements OnModuleInit {
       ownerTarget(
         await scope.db
           .selectFrom('vehicle.vehicles')
-          .select(['owner_type', 'owner_id'])
+          .select(['owner_type', 'owner_id', 'id as vehicle_id'])
           .where('id', '=', id)
           .where('deleted_at', 'is', null)
           .executeTakeFirst(),
@@ -202,7 +202,7 @@ export class VehicleRegistrations implements OnModuleInit {
         await scope.db
           .selectFrom('vehicle.vehicle_issues as i')
           .innerJoin('vehicle.vehicles as v', 'v.id', 'i.vehicle_id')
-          .select(['v.owner_type', 'v.owner_id'])
+          .select(['v.owner_type', 'v.owner_id', 'v.id as vehicle_id'])
           .where('i.id', '=', id)
           .where('i.deleted_at', 'is', null)
           .where('v.deleted_at', 'is', null)

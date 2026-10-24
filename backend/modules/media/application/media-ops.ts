@@ -45,17 +45,19 @@ function caller(ctx: OperationContext): string {
 /**
  * The asset, owned by the caller or by an organization the caller may act
  * for (SEC-AZ-2 through authorizeOrg). Public assets of others are visible
- * (`owned` false) only where `allowPublic`.
+ * (`owned` false) only where `allowPublic`. Reads pass the attachment
+ * targets, so a fleet driver also reads the media of their assigned
+ * vehicles; changes stay with the driver's own uploads (SEC-AZ-7).
  */
 async function asset(
   ctx: OperationContext,
   authorizer: Authorizer,
   scope: TxScope,
   id: string,
-  o: { lock?: boolean; allowPublic?: boolean } = {},
+  o: { lock?: boolean; allowPublic?: boolean; targets?: AttachmentTargets } = {},
 ) {
   const userId = caller(ctx);
-  const v = await findVisibleAsset(scope, authorizer, userId, id, o.lock);
+  const v = await findVisibleAsset(scope, authorizer, userId, id, o.lock, o.targets);
   if (!v || v.row.status === 'pending_upload' || v.row.status === 'removed') throw new ApiError('NOT_FOUND');
   if (v.orgId) await ctx.authorizeOrg(v.orgId, ['ANY']);
   if (!v.owned && !(o.allowPublic && v.row.publicly_servable)) throw new ApiError('NOT_FOUND');
@@ -184,10 +186,14 @@ export class MediaGetHandler implements OperationHandler {
   constructor(
     private readonly authorizer: Authorizer,
     private readonly urls: MediaUrls,
+    private readonly targets: AttachmentTargets,
   ) {}
 
   async handle(ctx: OperationContext): Promise<OperationResult> {
-    const v = await ctx.tx((scope) => asset(ctx, this.authorizer, scope, ctx.params.media_id!, { allowPublic: true }), { readOnly: true });
+    const v = await ctx.tx(
+      (scope) => asset(ctx, this.authorizer, scope, ctx.params.media_id!, { allowPublic: true, targets: this.targets }),
+      { readOnly: true },
+    );
     const a = v.row;
     const servable = v.owned ? servableToOwner(a) : !!a.publicly_servable;
     const thumb = servable && a.thumbnail_reference ? (await this.urls.sign(a.thumbnail_reference, a)).url : null;
@@ -201,10 +207,14 @@ export class MediaDownloadUrlHandler implements OperationHandler {
   constructor(
     private readonly authorizer: Authorizer,
     private readonly urls: MediaUrls,
+    private readonly targets: AttachmentTargets,
   ) {}
 
   async handle(ctx: OperationContext<{ variant: 'original' | 'display' | 'thumbnail' }>): Promise<OperationResult> {
-    const v = await ctx.tx((scope) => asset(ctx, this.authorizer, scope, ctx.params.media_id!, { allowPublic: true }), { readOnly: true });
+    const v = await ctx.tx(
+      (scope) => asset(ctx, this.authorizer, scope, ctx.params.media_id!, { allowPublic: true, targets: this.targets }),
+      { readOnly: true },
+    );
     const a = v.row;
     const variant = ctx.body.variant;
     // original: owner only (40); others: owner, or anyone for publicly servable media (52 §15).

@@ -1,0 +1,101 @@
+# Backend CI (S9c, 41 §8): every check of the scratch build in lite mode
+# (embedded PostgreSQL 16 from the embedded-postgres package, in-process
+# adapters for Redis/NATS/search/storage; no Docker, no services).
+#
+#   static       lint, typecheck, build, format, contract + OpenAPI checks,
+#                coverage (no unexplained 501), unit tests
+#   integration  embedded PostgreSQL, db:codegen --verify, the integration
+#                project (single worker, fileParallelism false: suites share
+#                the cluster). The suite takes about 8 minutes on a developer
+#                laptop (the contract sweep about 3.5 of them); hosted runners
+#                are slower, hence the 45-minute timeout.
+#
+# Together the two jobs run what `pnpm test:all` runs locally.
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'Docs/**'
+      - 'shared/api-contracts/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'Docs/**'
+      - 'shared/api-contracts/**'
+      - '.github/workflows/backend-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  static:
+    name: Static checks and unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: backend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: backend/.node-version
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Lint (ESLint + module boundaries)
+        run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm format:check
+      - name: Contract registry and sweep suites match Docs/40
+        run: pnpm contract:check
+      - name: OpenAPI file matches the registry and the router
+        run: pnpm openapi:check
+      - name: Every operation implemented or deferred with a reason
+        run: pnpm contract:coverage --strict
+      - name: Unit tests
+        run: pnpm test
+
+  integration:
+    name: Integration tests (embedded PostgreSQL)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: backend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: backend/.node-version
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Install the database (Docs/43) into the embedded cluster
+        run: pnpm db:setup
+      - name: Generated table types match the installed database
+        run: pnpm db:codegen --verify
+      - name: Integration tests (single worker)
+        run: pnpm test:int
+      - name: PostgreSQL log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-log
+          path: backend/.data/*.log
+          if-no-files-found: ignore
+          retention-days: 7

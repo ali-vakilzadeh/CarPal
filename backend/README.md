@@ -2,7 +2,7 @@
 
 Node.js + NestJS (TypeScript, ESM) **modular monolith** with event-driven workers. See `Docs/02.Detailed project plan.md` §1 and `Docs/41.backend plan.md`. Each module owns its own PostgreSQL schema and talks to other modules only through its public `interface/` or domain events, so any module can later be extracted into its own service.
 
-Build progress and stage-by-stage notes: [`dev_plan.json`](dev_plan.json).
+Build progress and stage-by-stage notes: [`dev_plan.json`](dev_plan.json) — the scratch build (S1–S9) is done; what comes next is its `next_iteration` list. Known risks and their treatment: [`risk_control_plan.json`](risk_control_plan.json).
 
 ## Quick start
 
@@ -29,8 +29,10 @@ The system Node may stay older (another project pins 20.10); the backend needs N
 | `pnpm db:start` / `db:stop` / `db:status`             | Embedded PostgreSQL 16 on `127.0.0.1:54329`, data in `.data/pg`                           |
 | `pnpm db:setup` / `db:reset`                          | Install the baseline (`Docs/43.db_setup.sql`) and pending migrations / drop and reinstall |
 | `pnpm db:codegen [--verify]`                          | Regenerate Kysely table types in `libs/db/generated/` from the installed DB               |
-| `pnpm contract:generate` / `contract:check`           | Regenerate / verify `libs/contract/generated/` from `Docs/40.API contract.md`             |
-| `pnpm contract:coverage`                              | Operations with a handler vs. the 402 in the contract                                     |
+| `pnpm contract:generate` / `contract:check`           | Regenerate / verify `libs/contract/generated/` and the sweep suites from Docs/40          |
+| `pnpm contract:tests`                                 | Regenerate the contract sweep suites (`apps/testing/contract/generated/`)                 |
+| `pnpm contract:coverage [--strict]`                   | Operations served vs. the 406 of the contract; `--strict` fails on an unexplained 501     |
+| `pnpm openapi:generate` / `openapi:check`             | Write / verify `shared/api-contracts/openapi.yaml` (OpenAPI 3.1) against registry, router |
 
 ## Local infrastructure ("lite" and "full" mode)
 
@@ -90,6 +92,25 @@ There are no Nest controllers: `libs/http-pipeline` mounts the routes of `operat
 | `tools/`                                                                       | Dev and build tooling: DB runtime and installer, contract generator, local Node setup. Never imported by deployable code.                                                                                                                              | WP1           |
 
 Every module follows the layout of 41 §4.2 (`<name>.module.ts`, `interface/`, `api/`, `application/`, `domain/`, `infrastructure/`, `events/`, `projections/`, `tests/`); folders are created when a stage adds code to them. `pnpm lint` fails if one module imports another module's internals.
+
+## Contract, sweep and OpenAPI
+
+Docs/40 is the single source. `pnpm contract:generate` turns it into the registry (`libs/contract/generated/`); everything else is derived from that and checked in CI:
+
+- **Router**: only registry routes exist on each host (the request pipeline above).
+- **Contract sweep** (S9b, 40 Appendix C): `pnpm contract:tests` generates one suite per module (`apps/testing/contract/generated/<module>.contract.int.test.ts`, every HTTP route). For each route a hand-written **resolver** in `apps/testing/contract/resolvers/<module>.ts` builds real fixtures and describes the owner's call; the runner (`apps/testing/contract/runner.ts`) derives the checks from the sec line: closed schemas, the success response, admin-plane mechanics (purpose, reason, four-eyes), same-organization BFLA, fleet drivers without an assignment (SEC-AZ-7), BOLA (refusals other than 404 must name their code, carry no data and answer a non-existent record alike), the AI kill switch and SEC-OUT-1 projections. **Every new operation needs a resolver** — its generated suite fails without one — and a changed operation needs `pnpm contract:generate && pnpm contract:tests`. `pnpm vitest run apps/testing/contract --reporter=verbose` prints one stats line per module (owner calls, negatives, BFLA, fleet-driver, BOLA and existence-oracle checks).
+- **OpenAPI**: `pnpm openapi:generate` writes `shared/api-contracts/openapi.yaml` (OpenAPI 3.1, JSON Schema 2020-12) from the registry and schemas plus the server-defined `Json<…>` schemas (AI payloads from `modules/ai-mcp/domain/payloads.ts`, analytics event properties from `modules/analytics/domain/events.ts`). Never edit it; `pnpm openapi:check` fails when it is stale, when a schema does not compile or a reference does not resolve, or when it and the router of any host disagree. Each operation carries `x-carpal-op-id`, `x-carpal-host`, `x-carpal-sec` (the raw sec line), `x-carpal-security` and `x-carpal-status` (`implemented`, `deferred-post-mvp`, `storage-listener`).
+- **Coverage**: `pnpm contract:coverage --strict` — 405 of 406 operations are served (media.upload_put by the storage listener); `auth.social_start` answers 501 by decision (PM-01). A deferred operation is listed with its reason in `tools/contract/coverage.ts` (`DEFERRED_OPERATIONS`), never left silent.
+
+## CI
+
+`.github/workflows/backend-ci.yml` runs in lite mode on every push or pull request touching `backend/`, `Docs/` or `shared/api-contracts/`: a **static** job (lint, typecheck, build, format:check, contract:check, openapi:check, contract:coverage --strict, unit tests) and an **integration** job (embedded PostgreSQL, db:setup, db:codegen --verify, the integration project on one worker). Together they are `pnpm test:all`, about 8 minutes locally (the sweep ≈ 3.5 of them); the integration job allows 45 minutes. On Linux the `@embedded-postgres/linux-x64` package needs its install script (allowed in `package.json` `pnpm.onlyBuiltDependencies`).
+
+## Authorization notes
+
+- **Fleets** (SEC-AZ-7): fleet_owner, fleet_manager, fleet_maintenance_coordinator and fleet_viewer see the whole fleet; a **fleet_driver** sees only the vehicles assigned to them (one active assignment per vehicle, set by FC) — their vehicle and appointment reads (`DRV`), the media they uploaded or that is attached to an assigned vehicle's records, and no fleet AI records. Further fleet roles (operators, mechanics, dispatch) are an open decision (OQ-18, RCP-03).
+- **Admin plane**: a `CarPal-Access-Purpose` is accepted for any open item in the staff member's queue; binding it to the record being read is planned (RCP-01). Until then, review `pii.read` audit entries against their purposes.
+- **Reserved, not read yet** (PM-01, Google/Apple sign-in): `CARPAL_OIDC_GOOGLE_CLIENT_ID`, `CARPAL_OIDC_GOOGLE_CLIENT_SECRET`, `CARPAL_OIDC_APPLE_CLIENT_ID`, `CARPAL_OIDC_APPLE_TEAM_ID`, `CARPAL_OIDC_APPLE_KEY_ID`, `CARPAL_OIDC_APPLE_PRIVATE_KEY`.
 
 ## Conventions
 

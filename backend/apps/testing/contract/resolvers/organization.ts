@@ -6,7 +6,7 @@ import { mailedToken } from '../../s4-support.js';
 import { uniquePoint } from '../../s6-support.js';
 import { openCase, purpose, REASON } from '../../s8-support.js';
 import { sharedProvider, showcase } from '../domain.js';
-import { ok, type Actor, type Harness, type Json, type Published, type Resolvers } from '../harness.js';
+import { ok, type Actor, type Harness, type Json, type Published, type Resolvers, LINK_SECRET } from '../harness.js';
 
 const location = (o: Json = {}) => ({
   address_line_1: '1200 Valiasr Street',
@@ -117,7 +117,7 @@ export const resolvers: Resolvers = {
     return {
       as: invitee,
       body: { token: mailedToken(h.api, invitee.user.email, 'organization.member_invitation') },
-      bola: { attackers: [await h.stranger()], expect: [403] },
+      bola: { attackers: [await h.stranger()], expect: [403], code: 'LINK_RECIPIENT_MISMATCH', absent: LINK_SECRET },
     };
   },
   'org.member_update': async (h) => {

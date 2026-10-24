@@ -54,6 +54,8 @@
     "contract:check": "tsx --conditions=source tools/contract/generate.ts --check && tsx --conditions=source tools/contract/contract-tests.ts --check",
     "contract:tests": "tsx --conditions=source tools/contract/contract-tests.ts",
     "contract:coverage": "tsx --conditions=source tools/contract/coverage.ts",
+    "openapi:generate": "tsx --conditions=source tools/contract/openapi.ts",
+    "openapi:check": "tsx --conditions=source tools/contract/openapi.ts --check",
     "node:setup": "node tools/setup-local-node.mjs",
     "test:watch": "vitest --project unit",
     "format:check": "prettier --check ."
@@ -92,6 +94,7 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "@embedded-postgres/linux-x64",
       "@embedded-postgres/windows-x64",
       "@swc/core",
       "esbuild"

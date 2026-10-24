@@ -134,11 +134,22 @@ export const resolvers: Resolvers = {
   'inventory.bulk_update': async (h) => {
     const v = await vendor(h);
     const [a, b] = [await newItem(h, v), await newItem(h, v, { status: 'draft' })];
-    // Items of another vendor are skipped by the job (RLS), never touched.
+    const patch = { stock_status: 'out_of_stock', visibility: 'hidden' };
+    // Items of another vendor are skipped by the job, never touched, and the job ends as for ids that do not exist.
+    const rival = await h.rival('vendor', v.role!);
+    const foreign = ok(await rival.c.post(`${inv(rival)}/bulk`, { item_ids: [a.id, b.id], patch }), 'rival bulk');
+    const none = ok(await rival.c.post(`${inv(rival)}/bulk`, { item_ids: [h.newId(), h.newId()], patch }), 'bulk of unknown ids');
+    await h.settle();
+    const ending = async (id: unknown) => {
+      const j = ok(await rival.c.get(`/v1/jobs/${id}`), 'job');
+      return { status: j.status, error_code: j.error_code ?? null, result: j.result ?? null };
+    };
+    expect(await ending(foreign.id)).toEqual(await ending(none.id));
+    for (const item of [a, b]) expect(ok(await v.c.get(`${inv(v)}/${item.id}`), 'item')).toMatchObject({ version: item.version });
     return {
       as: v,
-      body: { item_ids: [a.id, b.id], patch: { stock_status: 'out_of_stock', visibility: 'hidden' } },
-      bola: 'ids outside the vendor are skipped by the job (RLS); the request itself carries no record of the caller',
+      body: { item_ids: [a.id, b.id], patch },
+      bola: "checked in the resolver: a rival vendor's job skips these ids and ends exactly as for unknown ids",
     };
   },
   'inventory.duplicate_mark': async (h) => {

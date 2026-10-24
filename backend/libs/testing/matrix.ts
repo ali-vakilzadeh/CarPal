@@ -129,8 +129,9 @@ export function routeMatrix(op: Operation, route: Route): RouteMatrix {
           denied.push({ spec: { kind: 'member', orgType, role, ...(acr ? { acr } : {}) }, status: 404, why: `role ${role} not allowed` });
       }
     }
-    const first = allowed.find((a) => a.kind === 'member');
-    if (first) denied.push({ spec: { ...first, foreignOrg: true }, status: 404, why: 'member of another organization (BOLA)' });
+    // Every allowed role, held in another organization of the right type (SEC-AZ-2: membership of the path organization).
+    for (const m of allowed.filter((a) => a.kind === 'member'))
+      denied.push({ spec: { ...m, foreignOrg: true }, status: 404, why: `${(m as { role: string }).role} of another organization (BOLA)` });
   }
   if (admin)
     for (const r of STAFF_ROLES)

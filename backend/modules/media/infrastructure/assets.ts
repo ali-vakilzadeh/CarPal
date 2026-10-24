@@ -7,6 +7,7 @@ import type { Selectable } from 'kysely';
 import type { Authorizer } from '#libs/authz/index.js';
 import { registerConstraintErrors, type DB } from '#libs/db/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
+import type { AttachmentTargets } from '../interface/media.js';
 
 export type AssetRow = Selectable<DB['media.media_assets']>;
 export type AttachmentRow = Selectable<DB['media.media_attachments']>;
@@ -40,7 +41,10 @@ export interface VisibleAsset {
 /**
  * Finds an asset the caller may see. An organization-owned asset switches
  * the transaction to that organization's context (the caller's role there
- * comes from the authorizer, so membership and status are checked).
+ * comes from the authorizer, so membership and status are checked). A fleet
+ * driver owns the fleet's media only when they uploaded it or it is attached
+ * to a record of a vehicle assigned to them (SEC-AZ-7); anything else of the
+ * fleet is a foreign asset to them.
  */
 export async function findVisibleAsset(
   scope: TxScope,
@@ -48,6 +52,7 @@ export async function findVisibleAsset(
   userId: string,
   assetId: string,
   lock = false,
+  targets?: AttachmentTargets,
 ): Promise<VisibleAsset | null> {
   const find = () => {
     const q = scope.db.selectFrom('media.media_assets').selectAll().where('id', '=', assetId).where('deleted_at', 'is', null);
@@ -60,13 +65,56 @@ export async function findVisibleAsset(
     const m = memberships.find((x) => x.orgId === row.owner_id);
     if (!m) return { row, owned: false, orgId: null };
     await scope.setOrganization(m.orgId, m.role);
-    return { row: (await find()) ?? row, owned: true, orgId: m.orgId };
+    const r = (await find()) ?? row;
+    return {
+      row: r,
+      owned: m.role !== 'fleet_driver' || (await driverReaches(scope, authorizer, targets, m.orgId, userId, r)),
+      orgId: m.orgId,
+    };
   }
   for (const m of memberships) {
     await scope.setOrganization(m.orgId, m.role);
     const r = await find();
-    if (r) return { row: r, owned: r.owner_type === 'organization' && r.owner_id === m.orgId, orgId: m.orgId };
+    if (r) {
+      const own = r.owner_type === 'organization' && r.owner_id === m.orgId;
+      return {
+        row: r,
+        owned: own && (m.role !== 'fleet_driver' || (await driverReaches(scope, authorizer, targets, m.orgId, userId, r))),
+        orgId: m.orgId,
+      };
+    }
   }
   await scope.setOrganization(null);
   return null;
+}
+
+/** A fleet driver's own upload, or an asset attached to a record of a vehicle assigned to them. */
+async function driverReaches(
+  scope: TxScope,
+  authorizer: Authorizer,
+  targets: AttachmentTargets | undefined,
+  orgId: string,
+  userId: string,
+  row: AssetRow,
+): Promise<boolean> {
+  if (row.uploaded_by === userId) return true;
+  if (!targets) return false;
+  const attachments = await scope.db
+    .selectFrom('media.media_attachments')
+    .select(['attached_to_type', 'attached_to_id'])
+    .where('media_asset_id', '=', row.id)
+    .where('status', '=', 'active')
+    .where('deleted_at', 'is', null)
+    .execute();
+  for (const a of attachments) {
+    const t = await targets.get(a.attached_to_type)?.(scope, a.attached_to_id);
+    if (
+      t?.vehicleId &&
+      t.owner.type === 'organization' &&
+      t.owner.id === orgId &&
+      (await authorizer.isDriverAssigned(orgId, userId, t.vehicleId))
+    )
+      return true;
+  }
+  return false;
 }

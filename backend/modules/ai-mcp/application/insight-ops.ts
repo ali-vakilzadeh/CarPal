@@ -36,6 +36,13 @@ interface Owner {
 }
 
 /**
+ * Fleet AI records are requested by FC/F+ and concern the whole fleet or any
+ * of its vehicles, so fleet drivers never see them (SEC-AZ-7; a driver's
+ * Help Me triage is personal). WP0 narrowing of ORG(ANY).
+ */
+const fleetDriver = (org: { type: string; role: string }): boolean => org.type === 'fleet' && org.role === 'fleet_driver';
+
+/**
  * Authorizes the caller for an AI record's owner and switches the RLS context
  * to its organization: members of the organization (groups), or the owner
  * user of a personal record. Anything else is 404 (SEC-AZ-2).
@@ -45,6 +52,7 @@ async function enterOwner(ctx: OperationContext, scope: TxScope, o: Owner | unde
   if (!o) throw new ApiError('NOT_FOUND');
   if (o.organizationId) {
     const org = await ctx.authorizeOrg(o.organizationId, groups);
+    if (fleetDriver(org)) throw new ApiError('NOT_FOUND');
     await scope.setOrganization(org.id, org.role);
     return { role: org.role };
   }
@@ -159,7 +167,7 @@ export class AiInsightFeedbackHandler implements OperationHandler {
 export class AiSuggestionsListHandler implements OperationHandler {
   async handle(ctx: OperationContext<undefined, { status?: string; target_type?: string; limit: number }>): Promise<OperationResult> {
     const org = ctx.access.org;
-    if (!org) throw new ApiError('NOT_FOUND');
+    if (!org || fleetDriver(org)) throw new ApiError('NOT_FOUND');
     const q = ctx.query;
     const body = await ctx.tx(
       async (scope) => {

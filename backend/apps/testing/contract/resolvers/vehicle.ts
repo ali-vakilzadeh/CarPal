@@ -288,7 +288,14 @@ export const resolvers: Resolvers = {
       body: { vehicle_id: vehicleId, service_date: '2026-09-15', service_system_node_id: h.n.system, description: 'Brake pads' },
       // CNS: a provider without the owner's consent (unknown vehicles alike) gets 403 CONSENT_REQUIRED, never data.
       bodyRefs: true,
-      bola: { attackers: [await h.rival('provider', 'provider_staff')], expect: [403] },
+      bola: {
+        attackers: [await h.rival('provider', 'provider_staff')],
+        expect: [403],
+        code: 'CONSENT_REQUIRED',
+        absent: {
+          body: { vehicle_id: h.newId(), service_date: '2026-09-15', service_system_node_id: h.n.system, description: 'Brake pads' },
+        },
+      },
     };
   },
   'issues.list': async (h, route) => {

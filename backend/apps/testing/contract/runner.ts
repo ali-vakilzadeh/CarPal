@@ -12,10 +12,17 @@
 //   3. BFLA (insiders)     on organization routes, colleagues of the owner
 //                          with every role outside the sec line send the
 //                          owner's exact request → 404 (401 below the step-up)
+//      fleet drivers       on {flt} vehicle and appointment routes a driver
+//                          of the owner's fleet without an assignment sends
+//                          the owner's request → 404 (SEC-AZ-7); on lists
+//                          the driver sees none of the owner's records
 //   4. BOLA                another user / a member of another organization
 //                          with the same role → 404 NOT_FOUND or 422
 //                          REFERENCE_NOT_FOUND, never data; the owner's call
-//                          still succeeds afterwards (no side effect)
+//                          still succeeds afterwards (no side effect). Other
+//                          refusals by design (CURSOR_MISMATCH, CONSENT_REQUIRED,
+//                          LINK_RECIPIENT_MISMATCH) name their code, carry no
+//                          data and answer a non-existent record the same way
 //   5. kill switch         FLAG(ai.*) routes → 503 AI_UNAVAILABLE on the
 //                          kill-switch host; every other route of the sweep
 //                          runs its owner call on that host and must succeed
@@ -26,6 +33,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadRegistry, loadSchemas, type Operation, type Route } from '#libs/contract/index.js';
 import { uuidv7 } from '#libs/crypto/index.js';
+import { rolesFor } from '#libs/authz/index.js';
 import { routeMatrix, TEST_CLIENT, type TestRequest, type TestResponse } from '#libs/testing/index.js';
 import type { TestApp } from '../test-app.js';
 import { Harness, type BolaSpec, type Caller, type Case, type Json, type Resolvers } from './harness.js';
@@ -41,6 +49,8 @@ interface Stats {
   bola: number;
   bolaSkipped: number;
   bfla: number;
+  driver: number;
+  oracle: number;
   killSwitch: number;
   admin: number;
 }
@@ -57,6 +67,21 @@ function objectParams(op: Operation, route: Route): string[] {
 
 const tenantRoute = (route: Route) =>
   route.pathParams.includes('org_id') && route.security.principals.some((alt) => alt.some((t) => t.tag === 'ORG'));
+
+/** {flt} vehicle and appointment routes whose sec line admits fleet drivers (F*, ANY or DRV): only assigned vehicles (SEC-AZ-7). */
+const driverRoute = (route: Route) =>
+  /^\/v1\/orgs\/\{org_id\}\/fleet\/(vehicles|appointments)(\/|$)/.test(route.path) &&
+  route.security.principals.some((alt) =>
+    alt.some((t) => {
+      if (t.tag === 'DRV') return true;
+      if (t.tag !== 'ORG') return false;
+      const { roles, anyMember } = rolesFor(t.args, 'fleet');
+      return anyMember || roles.has('fleet_driver');
+    }),
+  );
+
+const ids = (res: TestResponse<Json>): string[] =>
+  Array.isArray(res.body?.items) ? (res.body.items as Json[]).map((i) => String(i.id)) : [];
 
 function build(
   op: Operation,
@@ -106,6 +131,9 @@ function build(
     ...(body !== undefined ? { body } : {}),
   };
 }
+
+/** Problem members a BOLA refusal may carry (40 §4.2): no data of the record. */
+const PROBLEM_BASE = new Set(['type', 'title', 'status', 'code', 'request_id', 'consent_type']);
 
 const code = (res: TestResponse<Json>) => (res.body && typeof res.body === 'object' ? (res.body.code as string | undefined) : undefined);
 const brief = (res: TestResponse<Json>) => `${res.status} ${code(res) ?? ''} ${res.text.slice(0, 300)}`;
@@ -163,18 +191,34 @@ async function runRoute(h: Harness, op: Operation, route: Route, c: Case, stats:
   }
 
   // 3. BFLA with real records: lower roles of the owner's own organization.
-  if (tenantRoute(route) && c.as.kind === 'member' && c.bfla !== false) {
-    const type = c.as.org!.type;
-    const roles = routeMatrix(op, route)
-      .denied.filter((d) => d.spec.kind === 'member' && !d.spec.foreignOrg && d.spec.orgType === type)
-      .map((d) => (d.spec as { role: string }).role);
-    for (const role of roles) {
-      const colleague = await h.colleague(c.as, role);
+  // (A driver on a DRV route with a path vehicle is one of them: the matrix denies drivers without an assignment.)
+  const owner = c.as.kind === 'member' ? c.as : null;
+  const bflaRoles =
+    tenantRoute(route) && owner && c.bfla !== false
+      ? routeMatrix(op, route)
+          .denied.filter((d) => d.spec.kind === 'member' && !d.spec.foreignOrg && d.spec.orgType === owner.org!.type)
+          .map((d) => (d.spec as { role: string }).role)
+      : [];
+  if (owner) {
+    for (const role of bflaRoles) {
+      const colleague = await h.colleague(owner, role);
       const res = await send(build(op, route, c, colleague));
       stats.bfla++;
       if (res.status !== 404 || code(res) !== 'NOT_FOUND')
         problems.push(`BFLA as ${role} of the same organization: ${brief(res)} (want 404 NOT_FOUND)`);
     }
+  }
+
+  // 3b. Fleet drivers without an assignment (records of a path vehicle or appointment; lists after the owner's call).
+  const driver =
+    driverRoute(route) && owner?.org?.type === 'fleet' && c.driver === undefined && !bflaRoles.includes('fleet_driver')
+      ? await h.colleague(owner, 'fleet_driver')
+      : null;
+  if (driver && objectParams(op, route).length > 0) {
+    const res = await send(build(op, route, c, driver));
+    stats.driver++;
+    if (res.status !== 404 || code(res) !== 'NOT_FOUND')
+      problems.push(`fleet driver without an assignment: ${brief(res)} (want 404 NOT_FOUND)`);
   }
 
   // 4. BOLA.
@@ -192,12 +236,30 @@ async function runRoute(h: Harness, op: Operation, route: Route, c: Case, stats:
       );
       stats.bola++;
       const okStatus = bola.expect
-        ? bola.expect.includes(res.status)
+        ? bola.expect.includes(res.status) && (!bola.code || code(res) === bola.code)
         : (res.status === 404 && code(res) === 'NOT_FOUND') || (res.status === 422 && code(res) === 'REFERENCE_NOT_FOUND');
       if (!okStatus)
         problems.push(
-          `BOLA as ${attacker.kind}: ${brief(res)} (want ${bola.expect?.join('/') ?? '404 NOT_FOUND / 422 REFERENCE_NOT_FOUND'})`,
+          `BOLA as ${attacker.kind}: ${brief(res)} (want ${bola.expect?.join('/') ?? '404 NOT_FOUND / 422 REFERENCE_NOT_FOUND'}${bola.code ? ` ${bola.code}` : ''})`,
         );
+      if (bola.expect) {
+        const extra = Object.keys(res.body ?? {}).filter((k) => !PROBLEM_BASE.has(k));
+        if (extra.length) problems.push(`BOLA as ${attacker.kind}: the refusal carries ${extra.join(', ')}`);
+        if (bola.absent && typeof bola.absent === 'object') {
+          const a = bola.absent;
+          const none = await send(
+            build(op, route, c, attacker, {
+              params: { ...swap, ...bola.params, ...a.params },
+              ...('body' in a ? { body: a.body } : 'body' in bola ? { body: bola.body } : {}),
+              ...(a.query ? { queryAll: a.query } : bola.query ? { queryAll: bola.query } : {}),
+            }),
+          );
+          stats.oracle++;
+          if (none.status !== res.status || code(none) !== code(res))
+            problems.push(`existence oracle as ${attacker.kind}: foreign record ${brief(res)} vs no record ${brief(none)}`);
+        } else if (!bola.absent)
+          problems.push(`BOLA as ${attacker.kind}: a refusal other than 404 needs an absent-record comparison or a reason`);
+      }
     }
   }
 
@@ -224,6 +286,16 @@ async function runRoute(h: Harness, op: Operation, route: Route, c: Case, stats:
       (c.as.org.type === 'vendor' || c.as.org.type === 'hybrid_provider_vendor') &&
       route.path.includes('/vendor/'));
   for (const v of projectionViolations(res.body, { opId: op.opId, vins: h.vins, tradeAllowed })) problems.push(`projection ${v}`);
+  if (driver && objectParams(op, route).length === 0 && route.method === 'GET') {
+    const owned = new Set(ids(res));
+    const seen = await send(build(op, route, c, driver));
+    stats.driver++;
+    const leaked = ids(seen).filter((id) => owned.has(id));
+    if (seen.status !== 200 || owned.size === 0 || leaked.length > 0)
+      problems.push(
+        `fleet driver list: ${seen.status}, ${leaked.length} of the owner's ${owned.size} records visible (want 200, none of a non-empty owner list)`,
+      );
+  }
   if (c.check) {
     try {
       await c.check(res);
@@ -237,7 +309,19 @@ async function runRoute(h: Harness, op: Operation, route: Route, c: Case, stats:
 /** One generated suite per module: every route of the module, in registry order. */
 export function contractSuite(module: string, resolvers: Resolvers, routes: readonly RouteRef[]): void {
   const registry = loadRegistry();
-  const stats: Stats = { routes: 0, owner: 0, skipped: [], negatives: 0, bola: 0, bolaSkipped: 0, bfla: 0, killSwitch: 0, admin: 0 };
+  const stats: Stats = {
+    routes: 0,
+    owner: 0,
+    skipped: [],
+    negatives: 0,
+    bola: 0,
+    bolaSkipped: 0,
+    bfla: 0,
+    driver: 0,
+    oracle: 0,
+    killSwitch: 0,
+    admin: 0,
+  };
   let h: Harness;
 
   beforeAll(async () => {
@@ -247,7 +331,8 @@ export function contractSuite(module: string, resolvers: Resolvers, routes: read
     await h?.close();
     console.log(
       `contract sweep ${module}: ${stats.routes} routes, ${stats.owner} owner calls, ${stats.negatives} schema negatives, ` +
-        `${stats.bfla} same-organization BFLA checks, ${stats.bola} BOLA checks (${stats.bolaSkipped} n/a), ` +
+        `${stats.bfla} same-organization BFLA checks, ${stats.driver} fleet-driver checks, ${stats.bola} BOLA checks (${stats.bolaSkipped} n/a, ` +
+        `${stats.oracle} existence-oracle checks), ` +
         `${stats.killSwitch} kill-switch checks, ${stats.admin} admin-plane checks` +
         (stats.skipped.length ? `; skipped: ${stats.skipped.join('; ')}` : ''),
     );

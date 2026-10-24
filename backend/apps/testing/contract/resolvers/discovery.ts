@@ -46,7 +46,8 @@ export const resolvers: Resolvers = {
       params: { session_id: s.body.session_id as string },
       query: { cursor: s.body.next_cursor as string },
       // The cursor (required) is signed for its caller and session: another caller is refused before the session is read.
-      bola: { ...(await otherCaller(h)), expect: [400] },
+      // The same cursor for a session that does not exist is refused alike (the session is never read).
+      bola: { ...(await otherCaller(h)), expect: [400], code: 'CURSOR_MISMATCH', absent: { params: { session_id: h.newId() } } },
       check: async () => {
         const res = await h.apiKill.request<Json>({
           path: `/v1/search/${s.body.session_id}/results?cursor=${encodeURIComponent(s.body.next_cursor)}`,

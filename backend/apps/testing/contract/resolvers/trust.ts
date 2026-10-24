@@ -7,7 +7,7 @@ import { sql } from 'kysely';
 import { expect } from 'vitest';
 import { purpose, REASON } from '../../s8-support.js';
 import { sharedProvider } from '../domain.js';
-import { ok, type Actor, type Harness, type Json, type Published, type Resolvers } from '../harness.js';
+import { ok, type Actor, type Harness, type Json, type Published, type Resolvers, LINK_SECRET } from '../harness.js';
 
 const path2Body = (p: Published, o: Json = {}) => ({
   subject_organization_id: p.id,
@@ -150,7 +150,11 @@ export const resolvers: Resolvers = {
     );
     const code = h.api.mail(inv.invitee.user.email, 'review.invitation_code').at(-1)!.variables.code!;
     // Another signed-in user cannot verify a link sent to someone else.
-    return { as: inv.invitee, body: { token: inv.token, code }, bola: { attackers: [await h.stranger()], expect: [403] } };
+    return {
+      as: inv.invitee,
+      body: { token: inv.token, code },
+      bola: { attackers: [await h.stranger()], expect: [403], code: 'LINK_RECIPIENT_MISMATCH', absent: LINK_SECRET },
+    };
   },
   'review_invitations.send': async (h) => {
     const p = await sharedProvider(h);

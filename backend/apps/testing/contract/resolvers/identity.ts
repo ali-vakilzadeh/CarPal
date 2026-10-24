@@ -7,7 +7,7 @@ import { expect } from 'vitest';
 import { LinkTokens } from '#libs/link-tokens/index.js';
 import { base32Decode, hotp, totpStep } from '#modules/identity/domain/credentials.js';
 import { openCase, purpose, REASON } from '../../s8-support.js';
-import { ok, type Actor, type Harness, type Json, type Resolvers } from '../harness.js';
+import { ok, type Actor, type Harness, type Json, type Resolvers, LINK_SECRET } from '../harness.js';
 
 const REDIRECT = 'https://carpal.app/oauth/callback';
 const PASSWORD = 'correct horse battery staple';
@@ -323,14 +323,18 @@ export const resolvers: Resolvers = {
   'consents.request_view': async (h) => {
     const as = await h.user();
     // A link sent to someone else: 403 LINK_RECIPIENT_MISMATCH for any other signed-in user.
-    return { as, body: { token: await consentRequest(h, as) }, bola: { attackers: [await h.stranger()], expect: [403] } };
+    return {
+      as,
+      body: { token: await consentRequest(h, as) },
+      bola: { attackers: [await h.stranger()], expect: [403], code: 'LINK_RECIPIENT_MISMATCH', absent: LINK_SECRET },
+    };
   },
   'consents.request_respond': async (h) => {
     const as = await h.user();
     return {
       as,
       body: { token: await consentRequest(h, as), decision: 'grant', policy_version: '2026-10' },
-      bola: { attackers: [await h.stranger()], expect: [403] },
+      bola: { attackers: [await h.stranger()], expect: [403], code: 'LINK_RECIPIENT_MISMATCH', absent: LINK_SECRET },
     };
   },
   'org.consents_list': async (h) => {

@@ -147,6 +147,10 @@ const SUGGESTION_SCHEMAS: Record<string, z.ZodType> = {
   }),
 };
 
+/** The payload schemas by insight type and by suggestion target (40 Json<InsightPayload> / Json<SuggestionPayload>; OpenAPI components). */
+export const INSIGHT_PAYLOAD_SCHEMAS: Readonly<Partial<Record<InsightType, z.ZodType>>> = SCHEMAS;
+export const SUGGESTION_PAYLOAD_SCHEMAS: Readonly<Record<string, z.ZodType>> = SUGGESTION_SCHEMAS;
+
 export function payloadSchema(type: InsightType): z.ZodType | undefined {
   return SCHEMAS[type];
 }

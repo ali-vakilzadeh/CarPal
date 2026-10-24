@@ -88,6 +88,13 @@ export interface BolaSpec {
   query?: Record<string, string>;
   /** Accepted statuses (default 404 NOT_FOUND or 422 REFERENCE_NOT_FOUND). */
   expect?: number[];
+  /** With expect: the exact code of the refusal (its body must carry no data beyond the Problem base). */
+  code?: string;
+  /**
+   * With expect (no existence oracle): the attackers' call about a record that does not exist must be
+   * answered exactly like the call about the foreign record; a string says why it may differ.
+   */
+  absent?: { params?: Record<string, string>; body?: unknown; query?: Record<string, string> } | string;
 }
 
 /** One call the sweep makes as the owner of a resource, and the checks around it. */
@@ -113,6 +120,8 @@ export interface Case {
   bola?: 'auto' | string | BolaSpec;
   /** false skips the same-organization BFLA check (the resolver checks the roles itself). */
   bfla?: false;
+  /** Skips the fleet-driver check of {flt} vehicle and appointment routes, with the reason. */
+  driver?: string;
   /** The body references the owner's records (SEC-AZ-4): attackers send the same body. */
   bodyRefs?: boolean;
   /** Skip the generic unknown-field / unknown-query checks, with the reason. */
@@ -130,6 +139,9 @@ export type Resolver = (h: Harness, route: Route) => Promise<Case | Skip>;
 export type Resolvers = Record<string, Resolver>;
 
 export const skip = (reason: string): Skip => ({ skip: reason });
+
+/** BolaSpec.absent of link-token operations (SEC-LT): an unknown token is 410 LINK_EXPIRED, a valid one 403 LINK_RECIPIENT_MISMATCH. */
+export const LINK_SECRET = 'a valid link token is a 256-bit secret: its holder learns only that it is valid, never whose it is';
 
 export class Harness {
   readonly vins = new Set<string>();
