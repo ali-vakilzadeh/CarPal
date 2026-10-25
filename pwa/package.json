@@ -1,0 +1,75 @@
+{
+  "name": "@carpal/pwa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CarPal consumer PWA (WP19): Next.js app, consumer BFF and hosted sign-in UI.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=24.7"
+  },
+  "packageManager": "pnpm@10.5.2",
+  "scripts": {
+    "dev": "node tools/sync-design-system.mjs --public && next dev --port 3000",
+    "build": "node tools/sync-design-system.mjs --public && next build",
+    "start": "next start --port 3000",
+    "lint": "eslint . && node tools/check-logical-css.mjs",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run --project unit --project dom",
+    "test:int": "vitest run --project integration --passWithNoTests",
+    "test:watch": "vitest --project unit --project dom",
+    "e2e": "pnpm build && playwright test",
+    "e2e:install": "playwright install chromium",
+    "contract:generate": "tsx tools/contract/generate.ts",
+    "contract:check": "tsx tools/contract/generate.ts --check",
+    "ds:sync": "node tools/sync-design-system.mjs",
+    "ds:check": "node tools/sync-design-system.mjs --check",
+    "i18n:check": "tsx tools/i18n-check.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm contract:check && pnpm i18n:check && pnpm ds:check"
+  },
+  "dependencies": {
+    "@carpal/api-contracts": "link:../shared/api-contracts",
+    "@carpal/i18n": "link:../shared/i18n",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "16.4.3",
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "^24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "eslint": "10.13.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "^17.13.0",
+    "jsdom": "30.1.3",
+    "prettier": "3.9.10",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.0",
+    "vitest": "5.0.5",
+    "yaml": "2.9.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ],
+    "ignoredBuiltDependencies": [
+      "sharp",
+      "unrs-resolver"
+    ]
+  }
+}

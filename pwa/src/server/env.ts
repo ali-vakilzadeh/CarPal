@@ -1,0 +1,57 @@
+// Server-only environment (P1.T7). Validated once at startup (src/instrumentation.ts) and on first use.
+import 'server-only';
+import { z } from 'zod';
+
+const url = z.url();
+const optionalUrl = z.preprocess((v) => (v === '' ? undefined : v), url.optional());
+
+const schema = z
+  .object({
+    /** Deployment environment; prod enforces https origins and the Redis session store. */
+    CARPAL_ENV: z.enum(['dev', 'staging', 'prod']).default('dev'),
+    /** Public origin of the PWA (canonical URLs, Origin checks of the BFF in P2). */
+    CARPAL_PWA_ORIGIN: url.default('http://localhost:3000'),
+    /** Backend hosts (backend `pnpm dev` in lite mode). */
+    CARPAL_API_URL: url.default('http://127.0.0.1:8080'),
+    CARPAL_AUTH_URL: url.default('http://127.0.0.1:8082'),
+    /** Media/storage host; signed media URLs and upload tickets point here (CSP img-src/connect-src, BA-06). */
+    CARPAL_STORAGE_URL: url.default('http://127.0.0.1:8083'),
+    /** Overrides config.client region.map.style_url (GD-12). */
+    CARPAL_PWA_MAP_STYLE_URL: optionalUrl,
+    /** BFF session store (GD-08): lite = in-memory (one process), redis = shared. */
+    CARPAL_PWA_SESSION_STORE: z.enum(['lite', 'redis']).default('lite'),
+    CARPAL_PWA_REDIS_URL: optionalUrl,
+  })
+  .superRefine((env, ctx) => {
+    if (env.CARPAL_PWA_SESSION_STORE === 'redis' && !env.CARPAL_PWA_REDIS_URL) {
+      ctx.addIssue({ code: 'custom', path: ['CARPAL_PWA_REDIS_URL'], message: 'required when CARPAL_PWA_SESSION_STORE=redis' });
+    }
+    if (env.CARPAL_ENV === 'prod') {
+      for (const key of ['CARPAL_PWA_ORIGIN', 'CARPAL_STORAGE_URL'] as const) {
+        if (!env[key].startsWith('https://')) ctx.addIssue({ code: 'custom', path: [key], message: 'must be https in prod' });
+      }
+      if (env.CARPAL_PWA_SESSION_STORE !== 'redis') {
+        ctx.addIssue({ code: 'custom', path: ['CARPAL_PWA_SESSION_STORE'], message: 'prod needs the redis session store' });
+      }
+    }
+  });
+
+export type ServerEnv = z.infer<typeof schema>;
+
+/** Parses an environment record; throws one error that lists every invalid variable. */
+export function parseServerEnv(source: Record<string, string | undefined>): ServerEnv {
+  const picked = Object.fromEntries(Object.keys(schema.shape).map((k) => [k, source[k] === '' ? undefined : source[k]]));
+  const result = schema.safeParse(picked);
+  if (!result.success) {
+    const lines = result.error.issues.map((i) => `  ${i.path.join('.') || '(env)'}: ${i.message}`);
+    throw new Error(`Invalid PWA environment:\n${lines.join('\n')}`);
+  }
+  return result.data;
+}
+
+let cached: ServerEnv | undefined;
+
+export function serverEnv(): ServerEnv {
+  cached ??= parseServerEnv(process.env);
+  return cached;
+}

@@ -2,14 +2,14 @@
   "meta": {
     "title": "CarPal consumer PWA (WP19, pwa/) — scratch build plan and stage log",
     "created": "2026-10-12",
-    "last_updated": "2026-10-12",
-    "status": "planned",
+    "last_updated": "2026-10-25",
+    "status": "in_progress",
     "progress": {
-      "as_of": "2026-10-12",
-      "summary": "Plan written. No stage started. The PWA is built from scratch in pwa/ against the existing backend (backend/dev_plan.json: S1-S6 done, 236 of 402 operations implemented). Of the 182 operations a consumer client can call, 140 are implemented in the backend today; the missing 42 are reviews and appointments (backend S7), reports and analytics events (backend S8), Help Me triage and AI (backend S9), and WebAuthn/social sign-in (deferred).",
+      "as_of": "2026-10-25",
+      "summary": "Plan written 2026-10-12 against backend S1-S6. Re-aligned 2026-10-25 with the finished backend scratch build (backend S1-S9c: 405 of 406 operations served; only auth.social_start answers 501, post-MVP) and the Docs/40 changes since (vehicle transfers, Problem members safety/fallback_path/vin_transfer_available, SEC-UP-2 HEIC/15 s video/PDF rules, DRV on fleet reads): see backend_alignment (BA-01..BA-35), the new doc issues DI-16..DI-23, the 2026-10-25 amendments of GD-04/05/07/08/09/11/13/17 and the per-stage amendments. P1 done 2026-10-25 (foundation: toolchain, generated contract, design tokens, i18n skeleton, locale routing; pnpm check, build and e2e smoke green). Next: P2.",
       "stages": [
-        { "stage": "P1", "title": "Foundation: workspace, toolchain, contract types, design tokens", "status": "not_started" },
-        { "stage": "P2", "title": "Consumer BFF: session, OAuth, API forwarding, security headers", "status": "not_started" },
+        { "stage": "P1", "title": "Foundation: workspace, toolchain, contract types, design tokens", "status": "done", "completed_at": "2026-10-25" },
+        { "stage": "P2", "title": "Consumer BFF: session, OAuth, API forwarding, security headers", "status": "in_progress" },
         { "stage": "P3", "title": "Design system, i18n and formatting, app shell and global patterns", "status": "not_started" },
         { "stage": "P4", "title": "Hosted sign-in UI and web onboarding", "status": "not_started" },
         { "stage": "P5", "title": "Public SEO pages: landing, provider, vendor, part, showcase", "status": "not_started" },
@@ -17,13 +17,13 @@
         { "stage": "P7", "title": "My Garage: vehicles, service history, documents, issues, reminders, uploads", "status": "not_started" },
         { "stage": "P8", "title": "Community: home timeline, Q&A, follows and favourites, comments, reactions, reports", "status": "not_started" },
         { "stage": "P9", "title": "Notifications, settings, account and My Activity", "status": "not_started" },
-        { "stage": "P10", "title": "Help Me and appointment requests; appointments", "status": "not_started", "backend_dependency": "backend S7 (appointments), backend S9 (triage)" },
-        { "stage": "P11", "title": "Reviews, review invitations and showcase consent", "status": "not_started", "backend_dependency": "backend S7 (reviews and trust)" },
-        { "stage": "P12", "title": "PWA capabilities (offline, install, web push) and fleet driver reporting", "status": "not_started", "backend_dependency": "backend S8 (fleet) for the driver part" },
+        { "stage": "P10", "title": "Help Me and appointment requests; appointments", "status": "not_started", "backend_dependency": "backend S7 (appointments), backend S9 (triage) — both done 2026-10-24 (BA-01)" },
+        { "stage": "P11", "title": "Reviews, review invitations and showcase consent", "status": "not_started", "backend_dependency": "backend S7 (reviews and trust) — done (BA-01)" },
+        { "stage": "P12", "title": "PWA capabilities (offline, install, web push) and fleet driver reporting", "status": "not_started", "backend_dependency": "backend S8 (fleet) — done; fleet role model OQ-18 still open in backend (BA-22)" },
         { "stage": "P13", "title": "Hardening: key-flow E2E, accessibility, performance, security, docs", "status": "not_started" }
       ],
-      "screens": { "total": 30, "done": 0, "partial": 0, "deferred_by_contract": 0 },
-      "next_stage": "P1"
+      "screens": { "total": 30, "done": 0, "partial": 1, "deferred_by_contract": 1, "note": "partial: W-SYS-01 (404 only, P1); deferred: W-PUB-07 (DI-03)" },
+      "next_stage": "P2"
     },
     "purpose": "Breaks the consumer PWA (Docs/22 W- screens, WP19 'Consumer PWA') into stages that can each run in a fresh context. Each stage reports back into this file, so the next context knows what is done, what changed, and what to watch out for.",
     "how_to_use": [
@@ -63,12 +63,7 @@
   "environment": {
     "checked_on": "2026-10-12",
     "os": "Windows 11, Git Bash + PowerShell",
-    "available": {
-      "system_node": "20.10.0 (must stay; another project uses it)",
-      "local_node": "24.21.0 LTS in backend/.tools/node (installed by backend/tools/setup-local-node.mjs). The PWA reuses it (GD-02).",
-      "pnpm": "10.5.2",
-      "backend": "pnpm dev in backend/ runs api :8080, admin-api :8081, auth :8082, storage :8083 and the workers in one process (lite mode, embedded PostgreSQL on :54329). Email/SMS/push go to backend/.data/outbox-*.jsonl."
-    },
+    "available": { "system_node": "20.10.0 (must stay; another project uses it)", "local_node": "24.21.0 LTS in backend/.tools/node (installed by backend/tools/setup-local-node.mjs). The PWA reuses it (GD-02).", "pnpm": "10.5.2", "backend": "pnpm dev in backend/ runs api :8080, admin-api :8081, auth :8082, storage :8083 and the workers in one process (lite mode, embedded PostgreSQL on :54329). Email/SMS/push go to backend/.data/outbox-*.jsonl." },
     "missing": [
       "docker (backend runs in lite mode only)",
       "Playwright browsers (P1 installs Chromium only; see OQ-08)",
@@ -77,14 +72,56 @@
   },
 
   "backend_readiness": {
+    "superseded_on": "2026-10-25",
+    "current": "Backend scratch build done (backend/dev_plan.json meta.progress, 2026-10-24): 405 of 406 operations served (pnpm contract:coverage --strict, 0 unexplained 501s). Consumer audience recounted from operations.json on 2026-10-25: 160 api-host operations with a USR/PUB/LNK principal outside {org} paths (all implemented), 16 auth-host operations (auth.social_start answers 501 by decision, PM-01), plus 18 {flt} operations that admit DRV for the P12 driver views. The 2026-10-12 snapshot below is kept for history; its 'missing' lists and the S3-era auth facts on WebAuthn no longer apply (BA-01, BA-09). Facts re-verified 2026-10-25: cp-web-consumer/cp-ssr clients and lifetimes unchanged; CARPAL_SIGNIN_URL and CARPAL_OAUTH_REDIRECT_URIS unchanged (dev default still https://carpal.app/bff/oauth/callback); storage CORS (DI-08) and auth-host Origin checks (DI-09) still missing.",
     "as_of": "2026-10-12",
     "source": "backend/libs/contract/generated/operations.json filtered to routes on the api/auth hosts with a USR or PUB principal, compared with the @Operation handlers in backend/.",
     "consumer_operations": 182,
     "implemented": 140,
     "missing_by_backend_stage": {
-      "backend S7": ["reviews.eligibility", "reviews.create", "reviews.mine_list", "reviews.mine_get", "reviews.mine_update", "reviews.mine_withdraw", "reviews.evidence_add", "review_invitations.mine_list", "review_invitations.open", "review_invitations.verify", "disputes.create", "disputes.mine_list", "disputes.get", "disputes.withdraw", "appointments.create", "appointments.list", "appointments.get", "appointments.update", "appointments.transition", "appointments.delay", "appointments.check_in", "appointments.check_in_link", "appointments.history", "appointments.notes_list", "appointments.note_create", "pre_visit.requester_get", "public.availability (placeholder today: answers no slots)"],
+      "backend S7": [
+        "reviews.eligibility",
+        "reviews.create",
+        "reviews.mine_list",
+        "reviews.mine_get",
+        "reviews.mine_update",
+        "reviews.mine_withdraw",
+        "reviews.evidence_add",
+        "review_invitations.mine_list",
+        "review_invitations.open",
+        "review_invitations.verify",
+        "disputes.create",
+        "disputes.mine_list",
+        "disputes.get",
+        "disputes.withdraw",
+        "appointments.create",
+        "appointments.list",
+        "appointments.get",
+        "appointments.update",
+        "appointments.transition",
+        "appointments.delay",
+        "appointments.check_in",
+        "appointments.check_in_link",
+        "appointments.history",
+        "appointments.notes_list",
+        "appointments.note_create",
+        "pre_visit.requester_get",
+        "public.availability (placeholder today: answers no slots)"
+      ],
       "backend S8": ["events.ingest", "reports.create", "fleet driver assignment reads (fleet module)"],
-      "backend S9": ["triage.start", "triage.reply", "triage.get", "triage.complete", "ai.vehicle_suggestions", "ai.service_history_insights", "ai.insight_get", "ai.insight_feedback", "ai.suggestions_mine", "ai.suggestion_decide", "ai.approval_decide"],
+      "backend S9": [
+        "triage.start",
+        "triage.reply",
+        "triage.get",
+        "triage.complete",
+        "ai.vehicle_suggestions",
+        "ai.service_history_insights",
+        "ai.insight_get",
+        "ai.insight_feedback",
+        "ai.suggestions_mine",
+        "ai.suggestion_decide",
+        "ai.approval_decide"
+      ],
       "deferred_in_backend": ["auth.webauthn_options", "auth.social_start", "me.webauthn_register_options"]
     },
     "auth_server_facts": [
@@ -99,132 +136,92 @@
   },
 
   "global_decisions": [
-    {
-      "id": "GD-01",
-      "decision": "One Next.js app (App Router, React Server Components, TypeScript strict, ESM) in pwa/, managed by pnpm with its own lockfile (no root workspace, so backend/ stays untouched). Styling with Tailwind CSS v4 (CSS-first config). Exact versions are the current stable releases at P1 install time and are recorded in the P1 report.",
-      "reason": "Docs/02 §2 names React + Next.js + Tailwind for the consumer PWA (SSR for public SEO pages). A standalone package mirrors backend/ and avoids reworking the backend's install.",
-      "stage": "plan"
-    },
-    {
-      "id": "GD-02",
-      "decision": "Node: the PWA runs on the project-local Node 24 that backend/ already installed. pwa/tools/use-local-node.sh and use-local-node.ps1 put backend/.tools/node first on PATH (and run backend's setup script if it is missing). pwa/.node-version = 24.21.0.",
-      "reason": "System Node must stay 20.10 (backend environment note). One local Node for both packages avoids a second download.",
-      "stage": "plan"
-    },
-    {
-      "id": "GD-03",
-      "decision": "The consumer BFF (Docs/41 D4/G2, Docs/40 SEC-WEB) is built inside the PWA as server-only code (pwa/src/server/bff/) mounted by Next.js route handlers: /api/v1/[...path] (1:1 forwarder), /bff/login, /bff/oauth/callback, /bff/logout, /bff/session, /bff/csrf. The BFF code is written over standard Request/Response with no Next.js imports, so it can later move to backend/api-gateway/ unchanged.",
-      "reason": "SEC-WEB-1/2 require a same-origin BFF that holds the tokens; backend/dev_plan.json defers BFFs to backend/api-gateway 'later' and none of backend S7-S9 builds them. Building it with the PWA is the only way to make the PWA work, and keeping it framework-free keeps the Docs/41 placement possible.",
-      "stage": "plan"
-    },
+    { "id": "GD-01", "decision": "One Next.js app (App Router, React Server Components, TypeScript strict, ESM) in pwa/, managed by pnpm with its own lockfile (no root workspace, so backend/ stays untouched). Styling with Tailwind CSS v4 (CSS-first config). Exact versions are the current stable releases at P1 install time and are recorded in the P1 report.", "reason": "Docs/02 §2 names React + Next.js + Tailwind for the consumer PWA (SSR for public SEO pages). A standalone package mirrors backend/ and avoids reworking the backend's install.", "stage": "plan" },
+    { "id": "GD-02", "decision": "Node: the PWA runs on the project-local Node 24 that backend/ already installed. pwa/tools/use-local-node.sh and use-local-node.ps1 put backend/.tools/node first on PATH (and run backend's setup script if it is missing). pwa/.node-version = 24.21.0.", "reason": "System Node must stay 20.10 (backend environment note). One local Node for both packages avoids a second download.", "stage": "plan" },
+    { "id": "GD-03", "decision": "The consumer BFF (Docs/41 D4/G2, Docs/40 SEC-WEB) is built inside the PWA as server-only code (pwa/src/server/bff/) mounted by Next.js route handlers: /api/v1/[...path] (1:1 forwarder), /bff/login, /bff/oauth/callback, /bff/logout, /bff/session, /bff/csrf. The BFF code is written over standard Request/Response with no Next.js imports, so it can later move to backend/api-gateway/ unchanged.", "reason": "SEC-WEB-1/2 require a same-origin BFF that holds the tokens; backend/dev_plan.json defers BFFs to backend/api-gateway 'later' and none of backend S7-S9 builds them. Building it with the PWA is the only way to make the PWA work, and keeping it framework-free keeps the Docs/41 placement possible.", "stage": "plan" },
     {
       "id": "GD-04",
       "decision": "Contract types are generated, never hand-written. pwa/tools/contract/generate.ts reads backend/libs/contract/generated/{operations.json,schemas.json,operation-schemas.json,enums.ts,errors.ts} and writes shared/api-contracts/generated/ (operation map: opId → method, path template, path params, query, input/response TypeScript types, sec tags such as IDEM/ETAG/AAL2/FLAG; enums; error codes). `pnpm contract:generate` regenerates; `pnpm contract:check` fails when stale. The PWA imports it through a linked package (@carpal/api-contracts, 'link:../shared/api-contracts').",
       "reason": "Docs/02 §6.1 'strict API contracts: TypeScript clients generated into shared/api-contracts; a breaking API change fails the PWA build'. The backend's OpenAPI file is a backend S9 item, but its generated registry already exists and is checked against Docs/40.",
-      "stage": "plan"
+      "stage": "plan",
+      "amendments": [
+        { "stage": "alignment 2026-10-25", "change": "shared/api-contracts/openapi.yaml now exists (backend S9c, GD-37; written and checked only by backend `pnpm openapi:check`). The PWA generator still reads backend/libs/contract/generated/ (it carries the parsed sec tags the BFF allowlist needs) and writes only shared/api-contracts/generated/** and shared/api-contracts/package.json + index files; it never writes openapi.yaml. The server-defined Json<…> shapes (MatchReasonValues, FeedCard, TemplateParams, InsightPayload, SuggestionPayload, WebAuthn option/credential JSON …; backend DI-50) are taken from the OpenAPI components, so the generator reads openapi.yaml for those types only. The registry now has 406 operations / 458 routes, the {VT} dual-scope alias (vehicle transfers) and multi-route operations; the generator must emit every route of an operation with its scope (me | fleet | org).", "reason": "BA-24; avoids two writers of shared/api-contracts and closes the x-server-schema gap." }
+      ]
     },
     {
       "id": "GD-05",
       "decision": "Hosted sign-in UI (Docs/40 §6.2 'hosted sign-in UI on id.carpal.app', screens of W-AUTH-01 / S-AUTH-02,03,07,08,09) is built in the PWA codebase as its own route group (/id/signin/...). Dev topology: the PWA proxies /id/oauth/*, /id/v1/auth/* and /id/.well-known/* to the auth host (127.0.0.1:8082), so the hosted UI and the auth endpoints share one origin and the interaction cookie is first-party. Backend env for dev: CARPAL_SIGNIN_URL=http://localhost:3000/id/signin and CARPAL_OAUTH_REDIRECT_URIS={\"cp-web-consumer\":[\"http://localhost:3000/bff/oauth/callback\"]}. The BFF exchanges codes and refresh tokens server-to-server directly with :8082.",
       "reason": "The interaction cookie is set by the auth host, so the sign-in page must be on the same origin as /v1/auth/*. No sign-in UI exists in backend/. Production placement (id.carpal.app served from the PWA build, or a separate small app) is OQ-03.",
-      "stage": "plan"
+      "stage": "plan",
+      "amendments": [
+        { "stage": "alignment 2026-10-25", "change": "Dev backend env (backend/.env, loaded by `pnpm dev`) also needs CARPAL_WEBAUTHN_RP_ID=localhost and CARPAL_WEBAUTHN_ORIGINS=[\"http://localhost:3000\"] (defaults are carpal.app and https origins; passkeys are now implemented, BA-09). Completion of the hosted UI re-requests the same /oauth/authorize URL (cookie-bound interaction); an unknown or expired interaction answers 410 LINK_EXPIRED, which the hosted UI turns into 'This sign-in page expired' plus a restart of /bff/login with the same return URL (BA-12). /oauth/token errors are RFC 6749 JSON (ProtocolError), not problem+json; the BFF maps both. DPoP proofs sent to /oauth/token must use htu = <issuer>/oauth/token (issuer from the discovery document), even though the BFF connects to 127.0.0.1:8082 (DI-17, GD-07 amendment).", "reason": "BA-09, BA-12; verified in backend/libs/config/config.ts and modules/identity/application/auth-server.ts on 2026-10-25." }
+      ]
     },
-    {
-      "id": "GD-06",
-      "decision": "'Intent survives sign-in' (Docs/22 principle 2) is done with a context modal plus a redirect, not a credentials modal: a gated action opens a small modal ('Sign in to follow Reza Auto Suspension') with Log in / Sign up; the action (type, target, return URL, form draft) is stored server-side in the BFF pre-session (TTL 30 min, size-capped), the browser goes through the hosted sign-in, and on return the page replays the action once and shows its toast.",
-      "reason": "Credentials must be entered on the hosted sign-in origin (GD-05; frame-ancestors 'none' forbids an iframe). Logged as DI-01.",
-      "stage": "plan"
-    },
+    { "id": "GD-06", "decision": "'Intent survives sign-in' (Docs/22 principle 2) is done with a context modal plus a redirect, not a credentials modal: a gated action opens a small modal ('Sign in to follow Reza Auto Suspension') with Log in / Sign up; the action (type, target, return URL, form draft) is stored server-side in the BFF pre-session (TTL 30 min, size-capped), the browser goes through the hosted sign-in, and on return the page replays the action once and shows its toast.", "reason": "Credentials must be entered on the hosted sign-in origin (GD-05; frame-ancestors 'none' forbids an iframe). Logged as DI-01.", "stage": "plan" },
     {
       "id": "GD-07",
       "decision": "Tokens per audience: (a) signed-in browser sessions use the user's cp-web-consumer tokens (refresh rotated in the BFF; a refresh-reuse error ends the session); (b) guests get an anonymous cp-web-consumer token (scope 'public.read search', 15 min, no refresh) created lazily per pre-session (SEC-AU-14); (c) server rendering of public pages uses a cached cp-ssr client-credentials token (public.read). Every BFF call sends CarPal-Client 'cp-web-consumer/<version> (web 1.0)' (or cp-ssr), Accept-Language from the URL locale, and CarPal-Timezone from the browser.",
       "reason": "Docs/40 §2.2, SEC-AU-14, §1.3. If a PUB operation rejects the cp-ssr scope (e.g. search.run for directory pages), SSR falls back to an anonymous token held by the server (DI-16).",
-      "stage": "plan"
+      "stage": "plan",
+      "amendments": [
+        { "stage": "alignment 2026-10-25", "change": "Correction: the cp-ssr scope question is DI-14 (the 'DI-16' in the reason above is a typo). Anonymous tokens are DPoP-bound by the BFF: each pre-session holds its own ES256 key pair (server-side, in the session record) and every anonymous grant for that pre-session carries a DPoP proof made with it, so the backend's anonymous key (HMAC of cnf.jkt) stays the same across the 15-minute renewals. Without a proof the auth server gives every anonymous token a new random subject, so a guest's search sessions (search.page / search.refine), match sessions and rate-limit attribution would be lost at each renewal (DI-17). In lite mode the API does not check the binding; in strict mode the BFF adds a DPoP proof (htu = API URL, ath) to every API call made with a bound token. The token client takes a pluggable client-authentication strategy (none in lite; private_key_jwt over mTLS for cp-web-consumer and cp-ssr in strict mode, backend NI-01) and a PoW hook for the ATT anonymous grant in strict mode (DI-22).", "reason": "DI-17, DI-22, BA-26; verified in backend modules/identity/application/auth-ops.ts (#anonymous: subject uuidv7 unless DPoP) and libs/auth/authenticator.ts (anonKey from cnf.jkt ?? sub)." }
+      ]
     },
     {
       "id": "GD-08",
       "decision": "BFF session store behind a port: lite = in-memory Map with TTL (single process, dev); full = Redis adapter (written, not verified, like the backend's full mode). Session cookie __Host-cp_sid (Secure; HttpOnly; SameSite=Strict; Path=/), 256-bit random id, holds nothing but the id. CSRF: synchronizer token bound to the session, sent as X-CSRF-Token by the typed client on every non-GET call, plus Sec-Fetch-Site same-origin and Origin == app origin checks (SEC-WEB-3). The forwarder only allows the consumer audience from the generated registry (USR/PUB operations on the api host; no {org}, {adm} or fleet-manager paths) (SEC-WEB-5), strips cookies and browser-only headers, and passes CarPal-Retry-After-Ms / CarPal-Poll-After-Ms / retry_after_ms through unchanged (SEC-RL-5).",
       "reason": "Docs/40 SEC-WEB-1..5, SEC-RL-5. The browser on http://localhost accepts Secure cookies (localhost is a secure context).",
-      "stage": "plan"
+      "stage": "plan",
+      "amendments": [
+        { "stage": "alignment 2026-10-25", "change": "Allowlist rule made precise: the forwarder admits a route when it is on the api host and either (a) it has no {org_id} path parameter and one of its principal alternatives contains USR, PUB or LNK (160 operations), or (b) it is a /v1/orgs/{org_id}/fleet/… route whose principal alternatives contain DRV (18 operations: vehicles.list/get/mileage_add/mileage_list/status_history, issues.create/list/get/update, reminders.list, service_records.list/get, appointments.list/get/history/notes_list/check_in/delay) — fleet drivers use the consumer PWA (P12) and the backend checks the assignment per request (SEC-AZ-7, backend GD-20/GD-38). Auth-host operations are never forwarded by /api/v1 (they go through the /id proxy of GD-05). Media operations on single paths (USR | ORG(ANY)) fall under (a).", "reason": "BA-22; without (b) the P12 driver views could not reach their routes." }
+      ]
     },
     {
       "id": "GD-09",
       "decision": "Data access: server components call the backend through a server-side typed client (same generated operation map) for public reads; client components use TanStack Query over the browser-side typed client that calls the BFF (/api/v1/...). The typed client adds Idempotency-Key (UUIDv7, kept across automatic retries) for IDEM operations and If-Match from the last ETag for ETAG operations, maps problem+json to typed errors (code catalog from the registry), and implements SEC-RL-4 once: honour retry/poll delays + 0-20 % jitter; otherwise exponential backoff with full jitter (base 500 ms, cap 30 s, 5 attempts) for safe methods and IDEM requests only; pause an operation after 3 consecutive 503s.",
       "reason": "Docs/40 §2.7 and §2.8 are client obligations 'enforced by contract tests'; centralizing them avoids every screen re-implementing them.",
-      "stage": "plan"
+      "stage": "plan",
+      "amendments": [
+        { "stage": "alignment 2026-10-25", "change": "(1) ApiProblem carries the optional Problem members of Docs/40 §4.2: errors (FieldError list), requirements, consent_type, entitlement_key, safety (SafetyBlock & do_not_drive), fallback_path, vin_transfer_available (BA-03). (2) ETags are read from the ETag response header, never derived from a body version (questions carry no version in the body, backend DI-47); onboarding.update sends If-Match \"v1\" when no ETag is known for the flow (backend DI-14). (3) Automatic retries only when the server delay is ≤ 30 s; longer delays (e.g. the 3600 s of the appointment request caps, backend DI-55) are surfaced to the screen as a typed RateLimited error with the time, never slept on. (4) 400 CURSOR_MISMATCH on a page request means the cursor is no longer valid for this caller (e.g. a guest whose pre-session expired): the client re-runs the first page instead of showing an error. (5) A 412 VERSION_MISMATCH on a user edit becomes 'This changed elsewhere — reload' without losing input; reactions bump the version of posts and answers (backend S6), so the client refreshes the cached ETag after a reaction.", "reason": "BA-03, BA-15, BA-16, BA-19." }
+      ]
     },
-    {
-      "id": "GD-10",
-      "decision": "i18n: i18next + react-i18next. Dictionaries live in shared/i18n/locales/{en,fa}.json (nested keys, namespaced per area) and are bundled into the PWA as the fallback; at runtime the PWA may fetch a newer version from config.client i18n.base_url/version and cache it. `pnpm i18n:check` fails if any en key is missing in fa (Docs/02 §3.1). Locale is the first URL segment (/fa, /en; default from region config = fa); <html lang dir> are set on the server. Dates use Intl with calendar 'persian' for fa (Jalali) and gregorian for en; digits follow the UI language (Intl 'fa' → Persian digits); plates, phones, codes and URLs stay as typed and are isolated with <bdi>. No date library unless Intl falls short (record it if added).",
-      "reason": "Docs/02 §3.1-3.4, design system 'Bidirectional layout' and 'Content fundamentals'.",
-      "stage": "plan"
-    },
+    { "id": "GD-10", "decision": "i18n: i18next + react-i18next. Dictionaries live in shared/i18n/locales/{en,fa}.json (nested keys, namespaced per area) and are bundled into the PWA as the fallback; at runtime the PWA may fetch a newer version from config.client i18n.base_url/version and cache it. `pnpm i18n:check` fails if any en key is missing in fa (Docs/02 §3.1). Locale is the first URL segment (/fa, /en; default from region config = fa); <html lang dir> are set on the server. Dates use Intl with calendar 'persian' for fa (Jalali) and gregorian for en; digits follow the UI language (Intl 'fa' → Persian digits); plates, phones, codes and URLs stay as typed and are isolated with <bdi>. No date library unless Intl falls short (record it if added).", "reason": "Docs/02 §3.1-3.4, design system 'Bidirectional layout' and 'Content fundamentals'.", "stage": "plan" },
     {
       "id": "GD-11",
       "decision": "Design system: pwa/tools/sync-design-system.mjs copies tokens.css, tokens.json, fonts/ and components/bundle.css from Docs/carpal-design-system/ into shared/design-system/web/ (with --check for CI); Docs stays the source of truth. Tailwind's @theme maps the semantic tokens (ink, surface, accent, signal, border-inactive, space-*, radius-*, control-md, tap-min …); no raw hex or px values outside the token file. The design-system components (Button, Icon, TextField, Chip, Badge, Avatar, PostCard, Tagged, TopBar, TabBar, fmt) are ported as typed React components under pwa/src/components/ds/, keeping the class names and props of components/index.d.ts. Themes light | sun | dark via data-theme on <html>; sun follows prefers-contrast: more, dark follows prefers-color-scheme, both overridable in settings.",
       "reason": "Docs/carpal-design-system/CLAUDE.md (Web section) and README. Tailwind is kept for layout only, because Docs/02 names it; components keep the system's own CSS classes.",
-      "stage": "plan"
+      "stage": "plan",
+      "amendments": [
+        { "stage": "alignment 2026-10-25", "change": "The PWA needs what mobile/preview already had to add to the design system (DI-21): the extra icons of mobile/preview/js/kit.js EX (close, down, up, calendar, clock, camera, video, image, doc, shield, info, help, lock, eye, phone, globe, spark, download, trash, edit, flag, filter, sliders, map, list, logout, refresh, offline, scan, gauge, bookmark, thumb, truck, copy, send …; send and logout mirror in RTL), Chip iconEnd, TextField end/prefix slots, the urgency colour mapping (safety-critical = danger edge + icon; urgent = signal fill; soon = signal-soft; not urgent = success outline; always icon + word), the outlined safety banner (no on-danger token), and the invisible ::after extension of 40 px controls to the 48 px tap-min. P3 ports them from kit.js into ds/ with the same names and marks them 'proposed DS addition' in a comment; the tokens stay untouched (no new hex values). shared/design-system/web/ also receives the two WOFF2 fonts and their licence files.", "reason": "DI-21; keeps web and the native preview on one vocabulary." },
+        { "stage": "P1", "change": "Delivery and Tailwind mapping as built: the browser loads /ds/tokens.css and /ds/components/bundle.css as static same-origin stylesheets (copied from shared/design-system/web into the gitignored public/ds by `node tools/sync-design-system.mjs --public`, run by `pnpm dev`/`pnpm build`), and the layout preloads only /ds/fonts/<current language face>.woff2. src/app/globals.css resets Tailwind's colour, spacing, radius, shadow, font, text, container and breakpoint scales and maps tokens with @theme inline: colours by semantic name (bg-surface, text-ink, border-border-inactive …), spacing 1-6/8/12 = --space-*, plus tap, control, control-sm, icon, avatar, bar; max-w-measure; rounded-ds-sm/md/lg/pill, shadow-ds-1/2/signal/focus, font-latin/font-persian (prefixed because e.g. --radius-md: var(--radius-md) would be self-referencing); breakpoints md 768 px and xl 1200 px.", "reason": "Keeps tokens.css byte-identical to Docs, gives the font a stable preload URL, and makes non-token utilities impossible rather than just discouraged." }
+      ]
     },
-    {
-      "id": "GD-12",
-      "decision": "Map: MapLibre GL JS, loaded with a dynamic import only on W-MAP-01, the W-SRCH-01 map pane and on click elsewhere (profiles show a static preview first). Style URL from config.client region.map.style_url, overridable by the PWA env CARPAL_PWA_MAP_STYLE_URL. When no style is reachable (the pilot URLs are placeholders today), the map renders a built-in minimal style (plain background, no basemap) so pins, clusters, list sync and keyboard control still work, with the '© OpenStreetMap contributors' attribution always shown. No public OSM tile servers in committed config.",
-      "reason": "Docs/02 §2 (MapLibre, own tiles, public OSM servers not used), Docs/22 W-MAP-01 'map code loads only on this page', shared/region-config/ir-pilot.json placeholders. Tile source is OQ-02.",
-      "stage": "plan"
-    },
+    { "id": "GD-12", "decision": "Map: MapLibre GL JS, loaded with a dynamic import only on W-MAP-01, the W-SRCH-01 map pane and on click elsewhere (profiles show a static preview first). Style URL from config.client region.map.style_url, overridable by the PWA env CARPAL_PWA_MAP_STYLE_URL. When no style is reachable (the pilot URLs are placeholders today), the map renders a built-in minimal style (plain background, no basemap) so pins, clusters, list sync and keyboard control still work, with the '© OpenStreetMap contributors' attribution always shown. No public OSM tile servers in committed config.", "reason": "Docs/02 §2 (MapLibre, own tiles, public OSM servers not used), Docs/22 W-MAP-01 'map code loads only on this page', shared/region-config/ir-pilot.json placeholders. Tile source is OQ-02.", "stage": "plan" },
     {
       "id": "GD-13",
       "decision": "Graceful degradation is part of every screen: 501 NOT_IMPLEMENTED (backend not there yet), 503 AI_UNAVAILABLE, flags off in config.client (map.enabled, qna.enabled, community.*, ai.*, featured.enabled), 404 (never 403, SEC-AZ-2) and 410 each map to a defined UI state from Docs/21/22 ('not available yet', AI-off fallback, no access, removed). A screen never crashes or loops on them.",
       "reason": "The backend is mid-build (backend_readiness); Docs/40 SEC-AI-6 requires search, profiles and appointments to keep working without AI.",
-      "stage": "plan"
+      "stage": "plan",
+      "amendments": [
+        { "stage": "alignment 2026-10-25", "change": "Re-weighted: 501 now only comes from auth.social_start (post-MVP, never called) and stays a defensive state. The degradations that will really happen are: (a) AI 503 AI_UNAVAILABLE — staging/prod run CARPAL_MCP_MODE=unavailable until the real MCP gateway exists (backend GD-35, NI-09), so the AI-off path is the expected pilot state, not an edge case; dev defaults to the deterministic stub; E2E covers both by starting the backend with CARPAL_MCP_MODE=unavailable for the AI-off suite; the triage 503 body carries safety and fallback_path (BA-02); (b) flags off by default in the seeds: community.feed.enabled, community.comments.enabled and qna.enabled are false (Should-have), featured.enabled false, map.enabled and the ai.* flags true (DI-18); (c) moderation holds: community text and Path 1 reviews with links, emails or phone numbers are held for the moderation queue (backend GD-22) and public media stay private until moderated, so 'Being reviewed' and media placeholders are normal states.", "reason": "BA-01, BA-02, BA-17, DI-18." }
+      ]
     },
-    {
-      "id": "GD-14",
-      "decision": "Page URLs follow Docs/22 §6 except that they never carry free search text, coordinates, emails, phones, VINs or link tokens in the path or query (TR-7 spirit). Search pages are /<locale>/search/<search_session_id> plus enumerated filter params; the query text lives in the search session. Link tokens arrive in the fragment (/l/<type>#<token>, SEC-LT-2) and are POSTed. Help Me uses /<locale>/help/<session_id>/<step>.",
-      "reason": "Docs/40 TR-7 and SEC-LT-2 vs. Docs/22 '/fa/search?…' (DI-05).",
-      "stage": "plan"
-    },
-    {
-      "id": "GD-15",
-      "decision": "Security of pages: nonce-based CSP set in Next.js middleware (script-src 'nonce-…' 'strict-dynamic'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; img-src self + media host + tile host; connect-src self + tile host), Trusted Types required, COOP/CORP same-origin, Permissions-Policy (geolocation=(self), camera=(self), others off), Referrer-Policy strict-origin-when-cross-origin, HSTS in prod. All API text renders as text: dangerouslySetInnerHTML is banned by lint (except the JSON-LD script, built with a serializer that escapes '<'). Private pages send Cache-Control: no-store and robots noindex.",
-      "reason": "Docs/40 SEC-WEB-4, SEC-IN-5, Docs/22 §6 (private pages never indexed).",
-      "stage": "plan"
-    },
-    {
-      "id": "GD-16",
-      "decision": "Tests: Vitest + Testing Library (jsdom) for units and components (*.test.ts[x] next to the code); BFF integration tests (*.int.test.ts) run the BFF handlers against the live backend in lite mode; Playwright E2E (tests/e2e/) runs the built PWA against `pnpm dev` in backend/, Chromium only for now, with @axe-core/playwright on every visited page. E2E users sign up through the real hosted sign-in; one-time codes and email links are read from backend/.data/outbox-*.jsonl by a test helper (dev only). Tests use fresh emails under @test.carpal.app and assert only on their own data.",
-      "reason": "Docs/02 WP19 tests (Playwright, RTL, accessibility); mirrors backend GD-13 (shared DB, own rows).",
-      "stage": "plan"
-    },
+    { "id": "GD-14", "decision": "Page URLs follow Docs/22 §6 except that they never carry free search text, coordinates, emails, phones, VINs or link tokens in the path or query (TR-7 spirit). Search pages are /<locale>/search/<search_session_id> plus enumerated filter params; the query text lives in the search session. Link tokens arrive in the fragment (/l/<type>#<token>, SEC-LT-2) and are POSTed. Help Me uses /<locale>/help/<session_id>/<step>.", "reason": "Docs/40 TR-7 and SEC-LT-2 vs. Docs/22 '/fa/search?…' (DI-05).", "stage": "plan" },
+    { "id": "GD-15", "decision": "Security of pages: nonce-based CSP set in Next.js middleware (script-src 'nonce-…' 'strict-dynamic'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; img-src self + media host + tile host; connect-src self + tile host), Trusted Types required, COOP/CORP same-origin, Permissions-Policy (geolocation=(self), camera=(self), others off), Referrer-Policy strict-origin-when-cross-origin, HSTS in prod. All API text renders as text: dangerouslySetInnerHTML is banned by lint (except the JSON-LD script, built with a serializer that escapes '<'). Private pages send Cache-Control: no-store and robots noindex.", "reason": "Docs/40 SEC-WEB-4, SEC-IN-5, Docs/22 §6 (private pages never indexed).", "stage": "plan" },
+    { "id": "GD-16", "decision": "Tests: Vitest + Testing Library (jsdom) for units and components (*.test.ts[x] next to the code); BFF integration tests (*.int.test.ts) run the BFF handlers against the live backend in lite mode; Playwright E2E (tests/e2e/) runs the built PWA against `pnpm dev` in backend/, Chromium only for now, with @axe-core/playwright on every visited page. E2E users sign up through the real hosted sign-in; one-time codes and email links are read from backend/.data/outbox-*.jsonl by a test helper (dev only). Tests use fresh emails under @test.carpal.app and assert only on their own data.", "reason": "Docs/02 WP19 tests (Playwright, RTL, accessibility); mirrors backend GD-13 (shared DB, own rows).", "stage": "plan" },
     {
       "id": "GD-17",
       "decision": "Analytics: a small client queue batches registered events (search, map, directions, funnel; Docs/52 §18 names only) and sends them to events.ingest with platform 'web_pwa' (≤ 50 per request, on an interval and on visibilitychange). No personal data in properties. Cookie consent (Docs/22 §2.5) gates non-essential events. While the backend answers 501 (until backend S8), the queue drops events silently.",
       "reason": "Docs/40 §22.2 events.ingest, MVP §16 metrics, Docs/22 cookie consent.",
-      "stage": "plan"
+      "stage": "plan",
+      "amendments": [
+        { "stage": "alignment 2026-10-25", "change": "events.ingest is implemented (backend S8, GD-28). The accepted event names and property vocabularies are the backend registry CLIENT_EVENTS in backend/modules/analytics/domain/events.ts (map.opened, map.pin_selected, map.vehicle_filter_toggled, map.directions_tapped, search.started, search.safety_banner_shown, search.chip_edited, search.result_opened, profile.viewed, app.opened, onboarding.step_completed); an unknown name or property makes the backend drop that event. The PWA keeps a typed copy of the registry and a unit test that reads the backend file and fails when a PWA event name or property is not registered (drift check). Contact/Call reveal has no registered event (DI-10): it sends search.result_event 'selected' when opened from a search result, otherwise nothing.", "reason": "BA-20." }
+      ]
     }
   ],
 
   "conventions": {
-    "folder_layout": {
-      "pwa/package.json, next.config.ts, tsconfig.json, eslint.config.js, vitest.config.ts, playwright.config.ts, .env.example, .node-version": "Package root. Scripts listed in commands_expected.",
-      "pwa/src/app/[locale]/(public)/": "SSR public pages: landing, shop/<slug>, parts-seller/<slug>, parts/<vendor>/<item>, post/<id>-<slug>, questions, <city>/<category>[/<brand>], member/<id> (if ever enabled), map, search.",
-      "pwa/src/app/[locale]/(app)/": "Signed-in tools: home, garage, help, appointments, review, settings, notifications, saved, activity. Layout checks the BFF session and redirects to sign-in with the return URL.",
-      "pwa/src/app/id/": "Hosted sign-in UI (GD-05): signin, signup, verify, reset, mfa, locked. Its own minimal layout, no app shell.",
-      "pwa/src/app/l/[type]/": "Link-token landing pages (ri, ci, ev, pr, cn): read the fragment on the client, POST it.",
-      "pwa/src/app/api/v1/[...path]/route.ts, pwa/src/app/bff/*/route.ts": "Thin Next.js adapters over pwa/src/server/bff/ (GD-03).",
-      "pwa/src/server/bff/": "session store port + lite/redis adapters, oauth (PKCE, state, nonce, code exchange, refresh rotation, logout/revoke), forwarder (allowlist from the registry, header hygiene), csrf, pending-intent store, token providers (user, anonymous, cp-ssr). No Next.js imports.",
-      "pwa/src/server/ssr/": "Server-side typed client and cached public reads for RSC pages; SEO helpers (metadata, hreflang, canonical, JSON-LD builders, sitemap).",
-      "pwa/src/lib/api/": "Typed client over the generated operation map; errors; retry/backoff; idempotency; ETag cache; TanStack Query helpers.",
-      "pwa/src/lib/{i18n,format,config,analytics,geo}/": "i18next setup and loaders; Jalali dates, digits, currency, distance; config.client and taxonomy cache; event queue; directions links from region config.",
-      "pwa/src/components/ds/": "Ported design-system components (GD-11).",
-      "pwa/src/components/shell/": "Global header, left navigation, right rail, bottom tab bar, auth-intent modal, toasts with Undo, modal-with-URL, cookie banner, system pages.",
-      "pwa/src/features/<area>/": "One folder per area (auth, onboarding, profiles, search, map, garage, media, community, notifications, settings, activity, help, appointments, reviews, fleet-driver, pwa): components, hooks, view models, tests.",
-      "pwa/src/sw/": "Service worker source (P12).",
-      "pwa/tests/e2e/": "Playwright specs and helpers (outbox reader, user factory).",
-      "pwa/tools/": "use-local-node.{sh,ps1}, contract/generate.ts, sync-design-system.mjs, i18n-check.ts.",
-      "shared/api-contracts/": "@carpal/api-contracts: generated TypeScript from the backend registry (GD-04). Never edited by hand.",
-      "shared/i18n/": "@carpal/i18n: locales/en.json, locales/fa.json (shared with mobile and portals later).",
-      "shared/design-system/web/": "Synced copy of the design-system tokens, fonts and component CSS (GD-11)."
-    },
+    "folder_layout": { "pwa/package.json, next.config.ts, tsconfig.json, eslint.config.js, vitest.config.ts, playwright.config.ts, .env.example, .node-version": "Package root. Scripts listed in commands_expected.", "pwa/src/app/[locale]/(public)/": "SSR public pages: landing, shop/<slug>, parts-seller/<slug>, parts/<vendor>/<item>, post/<id>-<slug>, questions, <city>/<category>[/<brand>], member/<id> (if ever enabled), map, search.", "pwa/src/app/[locale]/(app)/": "Signed-in tools: home, garage, help, appointments, review, settings, notifications, saved, activity. Layout checks the BFF session and redirects to sign-in with the return URL.", "pwa/src/app/id/": "Hosted sign-in UI (GD-05): signin, signup, verify, reset, mfa, locked. Its own minimal layout, no app shell.", "pwa/src/app/l/[type]/": "Link-token landing pages (ri, ci, ev, pr, cn): read the fragment on the client, POST it.", "pwa/src/app/api/v1/[...path]/route.ts, pwa/src/app/bff/*/route.ts": "Thin Next.js adapters over pwa/src/server/bff/ (GD-03).", "pwa/src/server/bff/": "session store port + lite/redis adapters, oauth (PKCE, state, nonce, code exchange, refresh rotation, logout/revoke), forwarder (allowlist from the registry, header hygiene), csrf, pending-intent store, token providers (user, anonymous, cp-ssr). No Next.js imports.", "pwa/src/server/ssr/": "Server-side typed client and cached public reads for RSC pages; SEO helpers (metadata, hreflang, canonical, JSON-LD builders, sitemap).", "pwa/src/lib/api/": "Typed client over the generated operation map; errors; retry/backoff; idempotency; ETag cache; TanStack Query helpers.", "pwa/src/lib/{i18n,format,config,analytics,geo}/": "i18next setup and loaders; Jalali dates, digits, currency, distance; config.client and taxonomy cache; event queue; directions links from region config.", "pwa/src/components/ds/": "Ported design-system components (GD-11).", "pwa/src/components/shell/": "Global header, left navigation, right rail, bottom tab bar, auth-intent modal, toasts with Undo, modal-with-URL, cookie banner, system pages.", "pwa/src/features/<area>/": "One folder per area (auth, onboarding, profiles, search, map, garage, media, community, notifications, settings, activity, help, appointments, reviews, fleet-driver, pwa): components, hooks, view models, tests.", "pwa/src/sw/": "Service worker source (P12).", "pwa/tests/e2e/": "Playwright specs and helpers (outbox reader, user factory).", "pwa/tools/": "use-local-node.{sh,ps1}, contract/generate.ts, sync-design-system.mjs, i18n-check.ts.", "shared/api-contracts/": "@carpal/api-contracts: generated TypeScript from the backend registry (GD-04). Never edited by hand.", "shared/i18n/": "@carpal/i18n: locales/en.json, locales/fa.json (shared with mobile and portals later).", "shared/design-system/web/": "Synced copy of the design-system tokens, fonts and component CSS (GD-11)." },
     "naming": "Screens are named by their Docs/22 id in a comment at the top of the page file (e.g. // W-GAR-01 My Garage (mirrors C-GARAGE-01/02/06/08/09)). API calls are made by operation id: api('vehicles.list', { query }) — never by hand-written paths.",
     "ui_rules": [
       "Logical properties only (start/end, ms-/me-/ps-/pe-/start-/end-); lint forbids left/right utilities and properties.",
@@ -243,17 +240,7 @@
       "SEO for public pages (title, description, canonical, hreflang, JSON-LD, preview image, index/noindex per Docs/22 §6); no-store and noindex for private pages.",
       "Tests: component tests for the view model/states; at least one Playwright path through the screen in EN or FA with an axe check (the key-flow E2E suites come in P13)."
     ],
-    "commands_expected": {
-      "setup": "cd pwa && source tools/use-local-node.sh (PowerShell: . tools\\use-local-node.ps1) && pnpm install",
-      "dev": "pnpm dev (Next.js on :3000; needs `pnpm dev` running in backend/ with the env of GD-05)",
-      "build": "pnpm build && pnpm start",
-      "check": "pnpm check = lint + typecheck + test + contract:check + i18n:check + ds:check",
-      "lint": "pnpm lint (ESLint incl. RTL/logical-property and no-dangerouslySetInnerHTML rules)",
-      "test": "pnpm test (Vitest unit/component) / pnpm test:int (BFF against the live backend) / pnpm e2e (Playwright)",
-      "contract": "pnpm contract:generate | pnpm contract:check",
-      "i18n": "pnpm i18n:check",
-      "design_system": "pnpm ds:sync | pnpm ds:check"
-    },
+    "commands_expected": { "setup": "cd pwa && source tools/use-local-node.sh (PowerShell: . tools\\use-local-node.ps1) && pnpm install", "dev": "pnpm dev (Next.js on :3000; needs `pnpm dev` running in backend/ with the env of GD-05)", "build": "pnpm build && pnpm start", "check": "pnpm check = lint + typecheck + test + contract:check + i18n:check + ds:check", "lint": "pnpm lint (ESLint incl. RTL/logical-property and no-dangerouslySetInnerHTML rules)", "test": "pnpm test (Vitest unit/component) / pnpm test:int (BFF against the live backend) / pnpm e2e (Playwright)", "contract": "pnpm contract:generate | pnpm contract:check", "i18n": "pnpm i18n:check", "design_system": "pnpm ds:sync | pnpm ds:check" },
     "context_budget": "Each stage reads only its listed doc ranges. Use the generated operation map instead of re-reading Docs/40 operation blocks (read a block only when a field's meaning is unclear). Use mobile/preview for copy and states instead of re-reading all of Docs/21. Copy the patterns of the first finished screen of a kind (master-detail, wizard, SSR profile) instead of re-deriving them."
   },
 
@@ -267,13 +254,244 @@
     { "id": "DI-07", "issue": "Docs/22 W-FEED-01 feed tabs (For you, Following, Nearby, Showcases, Tips, Q&A), 'Not interested' and the '3 new posts' pill assume a personalised timeline; Docs/40 has feed.discover (PUB) and per-org posts.public_list.", "action": "P8 reads feed.discover's input/output and builds the tabs it supports; others hidden and listed in the P8 report.", "status": "open" },
     { "id": "DI-08", "issue": "Browsers upload media with a cross-origin signed PUT to the storage host (Docs/40 SEC-UP-1); backend's storage listener sends no CORS headers, so the preflight fails.", "action": "P7 adds CORS to the backend storage listener for configured web origins (PUT with the signed headers only, no credentials), with tests, and records it in backend/dev_plan.json. Production media host needs the same.", "status": "open" },
     { "id": "DI-09", "issue": "SEC-WEB-3 (Origin, Sec-Fetch-Site, CSRF) is not enforced on the auth host's /v1/auth/* endpoints.", "action": "The hosted UI sends the headers anyway; report to backend (strict-mode item).", "status": "open" },
-    { "id": "DI-10", "issue": "Docs/22 W-SRCH-01/W-PUB-02 'Call' reveals a number and 'logs a contact event'; no operation is named for that event.", "action": "P5 checks search.result_event (event types) and the registered analytics events; uses whichever fits, otherwise events.ingest with a registered name.", "status": "open" },
-    { "id": "DI-11", "issue": "Docs/22 W-NOTIF-01 offers consumer web push ('Get updates even when this tab is closed'); Docs/52 PushDeviceToken says web tokens serve provider and vendor portals and 'the consumer app does not receive business notifications'.", "action": "P12 checks push_tokens.register (platform enum) and the dispatcher; consumer web push is built if the contract allows platform web for a user, else hidden (OQ-07).", "status": "open" },
+    { "id": "DI-10", "issue": "Docs/22 W-SRCH-01/W-PUB-02 'Call' reveals a number and 'logs a contact event'; no operation is named for that event.", "action": "P5 checks search.result_event (event types) and the registered analytics events; uses whichever fits, otherwise events.ingest with a registered name.", "status": "decided 2026-10-25", "resolution": "Checked: search.result_event takes 'viewed'|'selected' only, and the backend analytics registry (CLIENT_EVENTS) has no contact event. Call reveal from a search result sends search.result_event 'selected'; elsewhere nothing is logged. Ask the backend owner to register profile.contact_revealed {target_type, entry_point} (GD-17 amendment)." },
+    { "id": "DI-11", "issue": "Docs/22 W-NOTIF-01 offers consumer web push ('Get updates even when this tab is closed'); Docs/52 PushDeviceToken says web tokens serve provider and vendor portals and 'the consumer app does not receive business notifications'.", "action": "P12 checks push_tokens.register (platform enum) and the dispatcher; consumer web push is built if the contract allows platform web for a user, else hidden (OQ-07).", "status": "decided 2026-10-25", "resolution": "Checked: PushTokenRegister.platform includes 'web' for USR, and the backend dispatcher (modules/notification/application/dispatcher.ts) sends personal notifications to all of the user's tokens including web ones. Consumer web push is built in P12. Side effect recorded as DI-16." },
     { "id": "DI-12", "issue": "Design system README: 'the web bundle (JS + CSS) is under 20 KB unminified'. A Next.js app cannot meet that for the whole page.", "action": "The budget applies to the design-system component layer (ds/ + its CSS). Page budgets: LCP ≤ 2.5 s on a mid-range phone on 4G for public pages (Docs/22 principle 5), measured in P13.", "status": "decided_in_plan" },
     { "id": "DI-13", "issue": "Docs/22 W-PUB-08 route /fa/parts/<vendor-slug>/<item-slug>; public.inventory_get is by item_id.", "action": "Route /<locale>/parts/<vendor-slug>/<item_id>-<item-slug>; a wrong slug 301s to the canonical one. Same pattern as posts and questions.", "status": "decided_in_plan" },
     { "id": "DI-14", "issue": "cp-ssr tokens carry scope public.read only; directory pages (W-PUB-04) and SSR question lists call search.run / questions.search (RL(search)), and the anonymous scope is 'public.read search'.", "action": "P5/P6 test whether the backend accepts cp-ssr for these; if not, SSR uses a server-held anonymous token (GD-07).", "status": "open" },
-    { "id": "DI-15", "issue": "Region config map URLs (shared/region-config/ir-pilot.json) are placeholders; no tile build exists.", "action": "GD-12 fallback style; OQ-02.", "status": "decided_in_plan" }
+    { "id": "DI-15", "issue": "Region config map URLs (shared/region-config/ir-pilot.json) are placeholders; no tile build exists.", "action": "GD-12 fallback style; OQ-02.", "status": "decided_in_plan" },
+    { "id": "DI-16", "added": "2026-10-25", "issue": "The backend dispatcher sends business notifications (organization context) to the user's web push tokens only, and a consumer PWA token and a portal token are both platform 'web' (backend GD-24). A user who is also a business member would get business pushes through the consumer PWA.", "action": "P12: the PWA service worker opens notifications with organization_context_id in the portal (URL from config) instead of a PWA route, and the in-app list filters them out (notifications.list without organization_id lists personal ones). Ask the backend owner to tell consumer and portal web tokens apart (e.g. a 'web_portal' platform or the CarPal-Client of the registering call).", "status": "open" },
+    { "id": "DI-17", "added": "2026-10-25", "issue": "The anonymous grant gives cp-web-consumer a token with a random subject unless the request carries a DPoP proof; the backend derives the anonymous key from cnf.jkt ?? sub, so every 15-minute renewal would make a guest a new anonymous principal: earlier search sessions answer 404/400 CURSOR_MISMATCH, Discover/feed pages restart and rate limits are no longer per device. Docs/40 SEC-AU-14 says only that consumer web visitors get the token 'through the BFF session'.", "action": "GD-07 amendment: one ES256 DPoP key per BFF pre-session, used for every anonymous grant of that pre-session (and for API proofs in strict mode). Search pages also re-run the stored search request when a session is no longer readable (GD-09 amendment 4).", "status": "decided_in_plan" },
+    { "id": "DI-18", "added": "2026-10-25", "issue": "community.feed.enabled, community.comments.enabled and qna.enabled are seeded off (Docs/43 seeds, Should-have), and the only way to change a flag is admin.flag_update on the admin plane (staff aal3 with a device-bound passkey, ETAG). P8 development and its E2E need them on, and the PWA must not write SQL.", "action": "P8.T0: add a small dev-only backend CLI (e.g. `pnpm dev:flags set <key> on|off`, refused unless CARPAL_ENV=dev) with a test, recorded in both plans (OQ-09 allows minimal backend changes). Until then the PWA shows the flag-off states (GD-13).", "status": "open" },
+    { "id": "DI-19", "added": "2026-10-25", "issue": "Docs/22 W-SRCH-01 has mode tabs Showcases and Q&A, but search.run's showcases/qna modes rank providers (backend DI-48) and there is no showcase search operation.", "action": "P6: the Q&A tab calls questions.search (only when qna.enabled); the Showcases tab is hidden until a showcase search exists; listed in the P6 report.", "status": "decided_in_plan" },
+    { "id": "DI-20", "added": "2026-10-25", "issue": "Organization slugs can change (≤ 2 per 30 days) and published organizations get a generated default slug ('<latin-name>-<12 hex>' or 'org-<12 hex>' for non-Latin names, backend S9b), but there is no slug history or redirect operation (backend DI-30): old /shop/<slug> links answer 404.", "action": "P5: profile pages 404 on unknown slugs (merged organizations still 301 through merged_into); sitemaps are regenerated from current slugs; ask the backend owner for a slug history read so old links can 301.", "status": "open" },
+    { "id": "DI-21", "added": "2026-10-25", "issue": "The design system bundle has 21 icons and no slots for trailing chip icons or field prefixes; the screens need more (mobile/preview README 'Design-system notes for review' 1-5).", "action": "GD-11 amendment: port the mobile/preview kit.js additions; propose them to the design-system owner.", "status": "decided_in_plan" },
+    { "id": "DI-22", "added": "2026-10-25", "issue": "ATT operations a web client calls — the anonymous grant, review_invitations.open, review submission, invitation acceptance, sign-up (SEC-MOB-3) — need CarPal-PoW from auth.pow_challenge on the web when strict mode is on (backend GD-06 enforces ATT only with CARPAL_STRICT_AUTH=1).", "action": "P2 adds a PoW solver (Web Worker for browser-initiated calls, server-side for the BFF's anonymous grant) behind a 'server asked' switch: it runs only when a call is refused for a missing proof or when strict mode is configured. Lite/dev never needs it.", "status": "decided_in_plan" },
+    { "id": "DI-23", "added": "2026-10-25", "issue": "P10.T5 planned the /l/ci check-in page 'for signed-in requester', but appointments.check_in_link is PUB LNK(ci): it works with the anonymous token too (backend S7: 'check-in by link needs an anonymous token like the other PUB link operations').", "action": "P10.T5 corrected (stage amendment): the page works for guests and signed-in users; LINK_EXPIRED 410 and INVALID_TRANSITION(outside_window) 409 states.", "status": "decided_in_plan" }
   ],
+
+  "backend_alignment": {
+    "reviewed_on": "2026-10-25",
+    "purpose": "Facts from the finished backend (backend/dev_plan.json global_decisions, doc_issues, deviations_log, stage reports, next_iteration; checked against the code and Docs/40 where noted) that change what the PWA stages must do. Each item names the stages it affects; stage amendments point back here. Read the items listed in a stage's amendments before starting it.",
+    "sources": [
+      "backend/dev_plan.json (S1-S9c, as of 2026-10-24)",
+      "git diff of Docs/40 since the plan commit 52e7b4f (vehicle transfers, Problem members, SEC-UP-2, SEC-AZ-7, DRV on fleet reads, CarPal-Reason, versions on staff types)",
+      "backend/libs/contract/generated/operations.json (406 ops / 458 routes)",
+      "backend code: libs/config/config.ts, libs/auth, modules/identity/application/auth-ops.ts + auth-server.ts, modules/notification/application/dispatcher.ts, modules/analytics/domain/events.ts, libs/infra/lite/sinks.ts, Docs/43 flag seeds"
+    ],
+    "items": [
+      {
+        "id": "BA-01",
+        "stages": ["all", "P10", "P11", "P12"],
+        "fact": "Backend scratch build done: 405/406 operations served; auth.social_start answers 501 by decision (post-MVP, PM-01).",
+        "pwa_impact": "No stage waits on a backend stage any more; the 'build against the contract with 501 states' fallback of how_to_use applies only to auth.social_start. Read backend/dev_plan.json next_iteration before a stage whose area appears there (NI-01 strict auth, NI-03 fleet roles, NI-08 BFFs)."
+      },
+      {
+        "id": "BA-02",
+        "stages": ["P7", "P10", "P13"],
+        "fact": "AI runs through a deterministic stub in dev (CARPAL_MCP_MODE=stub default) and is 'unavailable' by default in staging/prod until the real MCP gateway exists (backend GD-35, NI-09). triage.start/reply answer 503 AI_UNAVAILABLE with Problem.safety (SafetyBlock & do_not_drive) and Problem.fallback_path.",
+        "pwa_impact": "Every AI screen (garage suggestions and history insights, Help Me) must be complete in the AI-off state; Help Me shows the server safety block from the 503 body and continues with the category picker and search (fallback_path). Add an E2E run with the backend started with CARPAL_MCP_MODE=unavailable."
+      },
+      {
+        "id": "BA-03",
+        "stages": ["P2"],
+        "fact": "Problem gained optional members requirements, consent_type, entitlement_key (S4) and safety, fallback_path, vin_transfer_available (S9a).",
+        "pwa_impact": "GD-09 amendment (1): the typed ApiProblem exposes them; screens branch on them instead of parsing detail text."
+      },
+      {
+        "id": "BA-04",
+        "stages": ["P4", "P7", "P9"],
+        "fact": "One owner per VIN (backend GD-33): vehicles.create/update with a VIN that another owner has → 409 DUPLICATE at /vin with vin_transfer_available true. New operations vehicles.transfer_request {vin, message?} (USR, IDEM, ENT(max_vehicles); 422 REFERENCE_NOT_FOUND when no vehicle has the VIN, 409 DUPLICATE when already owned or asked), vehicles.transfers_list (direction incoming|outgoing, status), vehicles.transfer_decide {decision accept|reject} (owner, IDEM, AUD), vehicles.transfer_cancel (buyer). Requests expire after 14 days; the current owner is never disclosed to the buyer; acceptance moves the vehicle with its records and media to the buyer. Vehicle.duplicate_vin_warning is always false. Events vehicle.transfer.requested/decided and vehicle.transferred.",
+        "pwa_impact": "W-GAR-03 and the W-ONB-01 first-car step add the 'Did you buy this car?' flow on the 409 (keep the entered data; message field; pending state with Cancel). W-GAR-01 gets an 'Ownership requests' block (incoming: Accept/Reject with a clear warning of what moves; outgoing: status, expiry, Cancel) and a Needs-your-attention card. P9 maps the transfer notifications to these views. Never render duplicate_vin_warning."
+      },
+      {
+        "id": "BA-05",
+        "stages": ["P7", "P8", "P10", "P11", "P12"],
+        "fact": "Docs/40 SEC-UP-2 changed (backend GD-32): image/heic is refused at media.upload_init (422) — clients convert HEIC to JPEG first; video/mp4 at most 15 s; PDFs never public and never behind an anonymous link. Allowed: image/jpeg, image/png, image/webp (≤ 20 MB, ≤ 40 MP), video/mp4 (≤ 100 MB, ≤ 15 s), application/pdf (documents, ≤ 20 MB), text/csv (imports).",
+        "pwa_impact": "P7.T2: HEIC/HEIF conversion to JPEG in the browser is required (lazy-loaded WASM decoder in a worker; record the library); if it fails, say so and ask for a JPEG. Check video duration from the file's metadata before upload_init. PDFs only in private views through 5-minute signed URLs; never attach PDFs to public content (questions, answers, comments)."
+      },
+      {
+        "id": "BA-06",
+        "stages": ["P2", "P5", "P7", "P8"],
+        "fact": "Lite media facts: W6 processes uploads asynchronously; media.get answers 404 while an asset is pending_upload (backend DI-25); public media (posts, questions, showcases, portfolio) stay private until moderation approves them (S8 intake), author avatars are null; videos are never publicly servable in lite (no transcoding); signed URLs in lite point at the storage listener over http (CARPAL_STORAGE_URL, :8083; backend DI-26) — production uses media.carpal-usercontent.app; the storage PUT must use UploadTicket.url exactly as given (backend S9c).",
+        "pwa_impact": "CSP img-src/media-src/connect-src include the storage origin from env in dev and the media host in prod (GD-15). Public pages render fixed-size placeholders when an image is missing. The upload kit polls media.get/jobs.get with Poll-After and treats 404 right after upload_init as 'not ready'."
+      },
+      {
+        "id": "BA-07",
+        "stages": ["P7"],
+        "fact": "Re-verified 2026-10-25: the backend sends no Access-Control-* headers anywhere (storage listener included).",
+        "pwa_impact": "DI-08 and P7.T1 stay as planned (CORS on the storage listener for configured web origins, PUT + OPTIONS only, no credentials)."
+      },
+      {
+        "id": "BA-08",
+        "stages": ["P4"],
+        "fact": "Re-verified 2026-10-25: the auth host does not check Origin, Sec-Fetch-Site or CSRF on /v1/auth/*.",
+        "pwa_impact": "DI-09 stays; the hosted UI sends the headers anyway."
+      },
+      {
+        "id": "BA-09",
+        "stages": ["P4", "P9"],
+        "fact": "WebAuthn implemented (backend GD-31, @simplewebauthn/server 14.0.3): passkey sign-in = auth.webauthn_options {interaction_id, purpose: signin} + auth.mfa_verify {method: webauthn, assertion} without a first factor; AuthNext.mfa_methods may list webauthn; purpose step_up for re-authentication. Enrolment: me.webauthn_register_options {label} (USR AAL2) returns creation options; the pending method's id comes from me.mfa_list; me.mfa_confirm activates it. Synced passkeys give aal2, device-bound aal3. RP ID default carpal.app, origins from CARPAL_WEBAUTHN_ORIGINS.",
+        "pwa_impact": "P4.T4: passkeys are no longer hidden — 'Sign in with a passkey' on the identifier step and webauthn as an MFA method. P9.T2: passkey enrolment and removal in Sign-in & security. Use @simplewebauthn/browser at the major matching the server (record the version). Dev env per GD-05 amendment (RP ID localhost)."
+      },
+      {
+        "id": "BA-10",
+        "stages": ["P4"],
+        "fact": "Google/Apple sign-in is post-MVP (backend OQ-06, PM-01); auth.social_start answers 501.",
+        "pwa_impact": "No social buttons in the MVP hosted UI (P4 out_of_scope unchanged)."
+      },
+      {
+        "id": "BA-11",
+        "stages": ["P2", "P9"],
+        "fact": "AAL2 for accounts without a second factor is satisfied by a sign-in within the last 10 minutes (backend DI-11); auth.authorize accepts acr_values (aal1|aal2|aal3) and prompt (login|none); without prompt=login an existing auth session is reused.",
+        "pwa_impact": "Step-up = /bff/login?step_up=aal2 → /oauth/authorize with acr_values=aal2 and prompt=login, then the original action replays (GD-06 intent). The 401 STEP_UP_REQUIRED from the API carries acr_values and max_age=600 (SEC-AU-10)."
+      },
+      {
+        "id": "BA-12",
+        "stages": ["P2", "P4"],
+        "fact": "Hosted sign-in completion re-requests /oauth/authorize (cookie-bound interaction); interaction errors are 410 LINK_EXPIRED (backend DI-15). /oauth/token errors are RFC 6749 JSON; the auth server emits invalid_grant, invalid_dpop_proof, use_dpop_nonce, invalid_client, invalid_request, invalid_scope, unauthorized_client, unsupported_grant_type (backend S9c).",
+        "pwa_impact": "GD-05 amendment. The BFF maps invalid_grant on refresh to 'session ended' (sign in again), everything else to a generic sign-in error with the request id."
+      },
+      {
+        "id": "BA-13",
+        "stages": ["P4", "P9"],
+        "fact": "Auth form details from backend S3: a breached or trivial password is 422 VALIDATION_FAILED with code 'pattern' at /password or /new_password (DI-13); auth.email_verify answers 409 DUPLICATE when the new address was taken meanwhile (DI-16); SMS to a country code outside the region list is 422 VALIDATION_FAILED at /phone or /destination with code 'enum'; sign-up, sign-in, OTP and reset start have a fixed minimum latency of about 400 ms (SEC-AU-11); the breached-password list is small in lite.",
+        "pwa_impact": "Localized messages for each case ('Choose a less common password', 'This email is now used by another account', 'We can't send texts to this country yet'); spinners never time out before 10 s; enumeration-safe copy kept."
+      },
+      {
+        "id": "BA-14",
+        "stages": ["P4"],
+        "fact": "onboarding.update is ETAG but creates a missing flow when If-Match is \"v1\" (backend DI-14).",
+        "pwa_impact": "GD-09 amendment (2); onboarding saves send If-Match \"v1\" for the first save of a flow."
+      },
+      {
+        "id": "BA-15",
+        "stages": ["P2", "P7", "P8"],
+        "fact": "ETags come in the ETag header; questions have no version in the body (backend DI-47); reactions bump the version of posts and answers (S6); every update bumps version (core.tg_touch).",
+        "pwa_impact": "GD-09 amendment (2) and (5)."
+      },
+      {
+        "id": "BA-16",
+        "stages": ["P5", "P6", "P8"],
+        "fact": "search.run: guests may not send vehicle_id or location mode user_position (401 UNAUTHENTICATED); user_position needs a signed-in user with the location_usage consent (403 LOCATION_CONSENT_REQUIRED otherwise). search.page takes only a cursor and returns 20 results per page (backend DI-46); cursors are bound to caller and session (400 CURSOR_MISMATCH). search_mode showcases/qna rank providers (DI-48); issue_id is used only by Help Me matches; available_within_days keeps only providers with an indexed next open slot (providers without an online calendar drop out); default radius 50 km, Discover feed 25 km (backend OQ-14 proposals). feed.discover takes { location, vehicle_id?, cursor?, limit? } only.",
+        "pwa_impact": "Guests send brand/model/series/year as filters and chosen_city or map_center locations; 'Near me' for guests asks them to pick a city or sign in. The availability filter explains that providers without online booking are hidden. Q&A tab per DI-19. Feed tabs per DI-07: only the Discover stream exists."
+      },
+      {
+        "id": "BA-17",
+        "stages": ["P8", "P11"],
+        "fact": "Community: automatic pre-moderation (backend GD-22): posts, comments, questions and answers whose text contains a link, an email address or a phone number (also in Persian/Arabic digits) stay pending; edits are moderated again (a published post with a held edit goes back to draft). Deleting an accepted answer is 409 INVALID_TRANSITION (DI-51). reports.create is implemented; a second open report on the same target is 409 DUPLICATE (open_report_same_target). Flags per DI-18.",
+        "pwa_impact": "Composer and answer box warn before sending when the text contains a link, email or phone ('Posts with contact details are checked by our team first'); after sending, held content shows 'Being reviewed'. Delete is hidden for an accepted answer. Report modal: 'You already reported this' on 409. P8.T6 no longer needs a 501 state."
+      },
+      {
+        "id": "BA-18",
+        "stages": ["P9", "P12"],
+        "fact": "Notifications (backend GD-24, S6-S8): personal notifications go to every token of the user including platform web; business notifications only to web tokens (DI-16); a push token registered by another account is 409 DUPLICATE (backend DI-52); in-app notifications carry template_key + template_params and the client renders the text from its dictionary; secret-bearing messages (verification links and codes, invitations, consent links, ci check-in links, review invitation codes) are email/SMS only, never notifications; extra event types in use: system_announcement (fleet approval decisions, security alerts), moderation_update (moderation outcomes, verification, location corrections), moderation_alert (staff).",
+        "pwa_impact": "P9.T1: the dictionary gets an EN/FA entry for every consumer template_key in backend/modules/notification/domain/templates.ts and routing.ts (drift test like GD-17's); unknown keys fall back to a generic line with the reference link. P12.T3: revoke the push token on logout (push_tokens.revoke) and on account switch; on 409 tell the user that this browser is linked to another account."
+      },
+      {
+        "id": "BA-19",
+        "stages": ["P10"],
+        "fact": "Appointments (backend S7): the open-request caps (3 open per provider, 10 open in total, 7-day cooldown after a no-show at that provider) answer 429 RATE_LIMITED with retry-after 3600 (DI-55); a location without availability rules has no slots (public.availability returns none) but can still confirm requests (DI-56); slots are computed per request; an appointment created from an issue marks the issue scheduled when sent; the ci check-in link is mailed at confirmation and appointments.check_in_link is PUB LNK(ci) (DI-23); Appointment.requester_contact is only the verified email/phone of the preferred channel (DI-57); share_history creates the service_history_sharing consent for personal vehicles.",
+        "pwa_impact": "The request step explains the caps in one message (the 429 does not say which cap) and never auto-retries (GD-09 amendment 3); 'Request anyway' with preferred windows when no slots; /l/ci works without sign-in."
+      },
+      {
+        "id": "BA-20",
+        "stages": ["P3", "P5", "P6"],
+        "fact": "Analytics registry = backend CLIENT_EVENTS (see GD-17 amendment); events.ingest platform 'web_pwa'; ≤ 50 events per request; occurred_at within 5 min in the future and 7 days back.",
+        "pwa_impact": "GD-17 amendment; the queue stamps occurred_at at capture time and drops events older than 7 days."
+      },
+      {
+        "id": "BA-21",
+        "stages": ["P11"],
+        "fact": "Reviews (backend S7/S8): Path 1 reviews with links/emails/phones are held (pending_moderation, 'Being checked'); Path 2 reviews publish only after the business answer or the 7-day no_response rule plus the CarPal reviewer decision; one review without a visit per subject (eligibility already_reviewed); velocity limit 5 reviews per author per 24 h (REVIEW_NOT_ALLOWED); review_invitations.open is ATT (DI-22); LNK operations answer 403 LINK_RECIPIENT_MISMATCH to another signed-in user and 410 LINK_EXPIRED/LINK_USED otherwise (the distinction is accepted as RCP-04).",
+        "pwa_impact": "My Activity shows the real statuses; the mismatch state says 'This link was sent to another account — sign out and open it again'."
+      },
+      {
+        "id": "BA-22",
+        "stages": ["P2", "P12"],
+        "fact": "Fleet drivers (backend GD-20, GD-38, DI-71): DRV routes are the 18 {flt} operations listed in the GD-08 amendment plus triage.start (USR | ORG(F*) DRV on /v1/me/triage-sessions); a driver sees fleet media only when they uploaded it or it is attached to a record of an assigned vehicle; never fleet AI insights or suggestions; driver issue reports start the fleet approval workflow (fleet_approval_status pending); drivers report issues only (backend OQ-15 default). The fleet role model (OQ-18, RCP-03) may still change who is limited to linked vehicles.",
+        "pwa_impact": "GD-08 amendment. P12.T4 reads backend OQ-18/NI-03 first and builds only the assigned-vehicle views, issue reporting with photos and mileage, and read-only appointment status."
+      },
+      {
+        "id": "BA-23",
+        "stages": ["P2"],
+        "fact": "backend/dev_plan.json next_iteration NI-08 plans 'consumer, portal and admin BFFs (api-gateway/, WP19/WP20)'.",
+        "pwa_impact": "The consumer BFF is built once, in pwa/src/server/bff/ (GD-03), framework-free so it can move to backend/api-gateway/ unchanged. A note was added to backend NI-08 on 2026-10-25 so the backend reuses or moves it instead of writing a second one; NI-08 keeps the portal and admin BFFs."
+      },
+      {
+        "id": "BA-24",
+        "stages": ["P1"],
+        "fact": "shared/api-contracts/openapi.yaml exists (generated and checked by the backend, GD-37); the Json<…> shapes are written down as OpenAPI components (DI-50 resolved).",
+        "pwa_impact": "GD-04 amendment."
+      },
+      {
+        "id": "BA-25",
+        "stages": ["P4", "P13"],
+        "fact": "`pnpm dev` uses the real rate-limit buckets (CARPAL_RATE_LIMIT_SCALE default 1; backend tests use ×1000) and the auth buckets are small; mails, SMS and pushes go to backend/.data/outbox-mail.jsonl, outbox-sms.jsonl and outbox-push.jsonl.",
+        "pwa_impact": "The E2E README documents starting the backend with CARPAL_RATE_LIMIT_SCALE=100 for test runs (dev only); the outbox reader reads those three files."
+      },
+      {
+        "id": "BA-26",
+        "stages": ["P2"],
+        "fact": "Strict mode later (backend NI-01): private_key_jwt over mTLS for cp-web-consumer and cp-ssr at /oauth/token, DPoP nonces, ATT/PoW on the anonymous grant.",
+        "pwa_impact": "GD-07 amendment: pluggable client authentication and PoW hook; nothing strict is built in P2 beyond the seams and unit tests for them."
+      },
+      {
+        "id": "BA-27",
+        "stages": ["P5"],
+        "fact": "Default slugs and slug changes without history (backend S9b, DI-30).",
+        "pwa_impact": "DI-20."
+      },
+      {
+        "id": "BA-28",
+        "stages": ["P5", "P6"],
+        "fact": "HoursSpec day_of_week 0 = Sunday … 6 = Saturday (JavaScript getDay; backend DI-29); 'open now' is computed by the server with CarPal-Timezone.",
+        "pwa_impact": "Opening-hours tables start on Saturday for fa / the ir-pilot region and on the locale's first weekday otherwise, mapping indices by the 0 = Sunday rule; send CarPal-Timezone on every call (GD-07)."
+      },
+      {
+        "id": "BA-29",
+        "stages": ["P4", "P7"],
+        "fact": "Field rules enforced by the backend beyond the schema: IssueWrite.description at least 10 characters (DI-39, 422 too_short); vehicles.vin_reveal answers 404 for a vehicle without VIN (DI-42); VIN fields are upper-cased and Persian/Arabic digits normalized before the pattern check (x-vin), the ISO 3779 check digit is enforced only for WMI 1-5 and L (DI-37), invalid → 422 VIN_INVALID; Vehicle.data_sharing exists for fleet vehicles only (GD-34).",
+        "pwa_impact": "Client validation mirrors these (no check-digit check for other WMIs); Reveal VIN only when vin_present; consumer vehicle forms never send data_sharing."
+      },
+      {
+        "id": "BA-30",
+        "stages": ["P9"],
+        "fact": "DSR (backend GD-29): the export is one CSV in long format (section, record_id, field, value) downloaded through dsr.export_download; deletion anonymizes the account, removes vehicles, media, notifications and unpublished reviews, and keeps published reviews under 'former member'.",
+        "pwa_impact": "Data & account copy describes exactly this; the download explains the CSV format."
+      },
+      {
+        "id": "BA-31",
+        "stages": ["P7", "P10"],
+        "fact": "Consents are checked per scope type (vehicle, appointment, media_asset, portfolio_item, stock_inquiry); a vendor's inquiry vehicle snapshot is null while the vendor_fitment_context consent is missing (DI-44); consent withdrawal takes effect on the next request (SEC-AZ-8).",
+        "pwa_impact": "Consent rows show their effect immediately; the inquiry form explains what the vendor sees with and without sharing."
+      },
+      {
+        "id": "BA-32",
+        "stages": ["P3"],
+        "fact": "The taxonomy version is an opaque fingerprint string ('t<base36 ms>-<base36 rows>'), not semver; config.client reports the same value; the catalog can change at any time (refresh every 30 s on the server).",
+        "pwa_impact": "Taxonomy caches compare versions for equality only."
+      },
+      {
+        "id": "BA-33",
+        "stages": ["P5", "P6", "P8", "P13"],
+        "fact": "The lite search index is in memory per backend process, rebuilt at backend start, and catalog edits reach it through a one-minute sweep (backend GD-23, DI-45).",
+        "pwa_impact": "E2E tests that create providers, vendors or items poll search for up to about 90 s before asserting; a backend restart empties nothing permanent but takes a rebuild."
+      },
+      {
+        "id": "BA-34",
+        "stages": ["P8", "P13"],
+        "fact": "Moderation is staff work on admin-api (aal3, purpose-bound); held content becomes public only after a moderator decision.",
+        "pwa_impact": "E2E for public community content uses text without links or contact data (auto-approved); tests of held content assert the 'Being reviewed' state only."
+      },
+      {
+        "id": "BA-35",
+        "stages": ["all"],
+        "fact": "Root .gitignore ignores '*.env.*' (backend re-includes backend/.env.example).",
+        "pwa_impact": "P1 adds '!pwa/.env.example' to the root .gitignore."
+      }
+    ]
+  },
 
   "screen_coverage": {
     "note": "Docs/22 §3 inventory. Update status (not_started | partial | done | deferred) and the stage that delivered it.",
@@ -298,15 +516,15 @@
       { "id": "W-NOTIF-01", "name": "Notifications (panel and page)", "stage": "P9", "status": "not_started" },
       { "id": "W-GAR-01", "name": "My Garage", "stage": "P7", "status": "not_started" },
       { "id": "W-GAR-02", "name": "Service Record and Documents", "stage": "P7", "status": "not_started" },
-      { "id": "W-GAR-03", "name": "Add / Edit Vehicle", "stage": "P7", "status": "not_started" },
+      { "id": "W-GAR-03", "name": "Add / Edit Vehicle", "stage": "P7", "status": "not_started", "note": "Includes the 'Did you buy this car?' transfer flow (BA-04, P7.T8)." },
       { "id": "W-HELP-01", "name": "Help Me (web wizard)", "stage": "P10", "status": "not_started" },
       { "id": "W-APP-01", "name": "Appointments", "stage": "P10", "status": "not_started" },
       { "id": "W-REV-01", "name": "Write Review", "stage": "P11", "status": "not_started" },
       { "id": "W-REV-02", "name": "Showcase Consent Request", "stage": "P11", "status": "not_started" },
       { "id": "W-REV-03", "name": "Write Vendor Review", "stage": "P11", "status": "not_started" },
       { "id": "W-SET-01", "name": "Settings", "stage": "P9", "status": "not_started" },
-      { "id": "W-RPT-01", "name": "Report Content (modal)", "stage": "P8", "status": "not_started", "note": "reports.create is backend S8." },
-      { "id": "W-SYS-01", "name": "System Pages", "stage": "P3", "status": "not_started", "note": "Offline page completes in P12." },
+      { "id": "W-RPT-01", "name": "Report Content (modal)", "stage": "P8", "status": "not_started", "note": "reports.create is backend S8 (done 2026-10-15; BA-17)." },
+      { "id": "W-SYS-01", "name": "System Pages", "stage": "P3", "status": "partial", "note": "P1: localized 404 (global-not-found for unmatched URLs; client-drawn [locale]/not-found for notFound() from pages, see the P1 report). 410, suspended, no access and maintenance in P3; offline page completes in P12." },
       { "id": "W-MAP-01", "name": "Map View (full page)", "stage": "P6", "status": "not_started" }
     ],
     "extra": [
@@ -318,11 +536,20 @@
     {
       "id": "P1",
       "title": "Foundation: workspace, toolchain, contract types, design tokens",
-      "status": "not_started",
+      "status": "done",
+      "amendments": [
+        "2026-10-25 (BA-24, GD-04 amendment): the generator reads backend/libs/contract/generated/ for operations and schemas and shared/api-contracts/openapi.yaml only for the server-defined Json<…> components; it writes shared/api-contracts/generated/** and the package files, never openapi.yaml. 406 operations / 458 routes incl. the {VT} alias; every route of a multi-route operation is emitted with its scope.",
+        "2026-10-25 (BA-35): add '!pwa/.env.example' to the root .gitignore (root ignores *.env.*).",
+        "2026-10-25 (GD-11 amendment): ds:sync copies the font licence files with the fonts."
+      ],
       "depends_on": ["backend S1-S2 (contract registry exists)"],
       "goal": "A Next.js app in pwa/ that installs, builds, lints, type-checks and tests on the local Node 24, renders /fa and /en with the right lang/dir/theme and the design-system fonts, and has generated, checked contract types and synced design tokens.",
       "scope": {
-        "docs": ["Docs/02 §2 stack, §3 localization, §4 repo structure", "Docs/carpal-design-system README + CLAUDE.md", "Docs/40 §0 notation, §1 transport, §3-§5 (types, envelopes, errors, enums)"],
+        "docs": [
+          "Docs/02 §2 stack, §3 localization, §4 repo structure",
+          "Docs/carpal-design-system README + CLAUDE.md",
+          "Docs/40 §0 notation, §1 transport, §3-§5 (types, envelopes, errors, enums)"
+        ],
         "screens": [],
         "operations": ["health.get, config.client (smoke only)"]
       },
@@ -334,16 +561,16 @@
         "Docs/40.API contract.md lines 12-112 (notation, aliases, sec tags, role groups) and 436-583 (types, envelopes, problem, error catalog)"
       ],
       "tasks": [
-        { "id": "P1.T1", "task": "tools/use-local-node.{sh,ps1} reusing backend/.tools/node (GD-02); .node-version; verify node 24 + pnpm 10.", "status": "not_started" },
-        { "id": "P1.T2", "task": "Scaffold pwa/ by hand (no interactive create-next-app): package.json (type module, engines, packageManager, scripts of commands_expected), Next.js App Router, React, TypeScript strict (noUncheckedIndexedAccess, exactOptionalPropertyTypes like backend), Tailwind v4, ESLint flat config + Prettier matching backend style, Vitest + Testing Library, Playwright (Chromium only, OQ-08). Record exact versions.", "status": "not_started" },
-        { "id": "P1.T3", "task": "Lint rules: ban left/right CSS properties and Tailwind utilities (ml-/mr-/pl-/pr-/left-/right-/text-left/text-right/float-left…), ban dangerouslySetInnerHTML outside the JSON-LD helper, import boundaries (src/server/** is server-only; features never import each other's internals).", "status": "not_started" },
-        { "id": "P1.T4", "task": "tools/contract/generate.ts → shared/api-contracts/generated/ (operation map with method, path template, path params, query, input/response TS types, sec tags parsed into flags: idem, etag, aal2, flag keys, principals; enums; error codes) + package.json for @carpal/api-contracts; --check mode; unit test that fails when stale. Link it from pwa (link:../shared/api-contracts); configure Next (turbopack root / outputFileTracingRoot / transpilePackages) so linked packages outside pwa/ build.", "status": "not_started" },
-        { "id": "P1.T5", "task": "tools/sync-design-system.mjs (copy + --check) into shared/design-system/web/; tokens.css + @font-face imported once; Tailwind @theme mapped to the semantic tokens; preload only the current language's font.", "status": "not_started" },
-        { "id": "P1.T6", "task": "shared/i18n package skeleton (locales/en.json, fa.json with a 'common' namespace) and tools/i18n-check.ts (missing keys, empty values, placeholder mismatch).", "status": "not_started" },
-        { "id": "P1.T7", "task": "Env config with zod (server-only): CARPAL_PWA_ORIGIN, CARPAL_API_URL (http://127.0.0.1:8080), CARPAL_AUTH_URL (:8082), CARPAL_STORAGE_URL (:8083), CARPAL_PWA_MAP_STYLE_URL?, CARPAL_PWA_SESSION_STORE=lite|redis, CARPAL_PWA_REDIS_URL?, CARPAL_ENV; .env.example; startup validation.", "status": "not_started" },
-        { "id": "P1.T8", "task": "Locale routing: middleware redirects / to /<default locale> (Accept-Language among enabled locales, else region default fa); [locale] layout sets <html lang dir data-theme>; a placeholder home page per locale; not-found page.", "status": "not_started" },
-        { "id": "P1.T9", "task": "pwa/README.md (setup, run with backend, scripts, layout) and pwa/.gitignore entries (.next, test results, playwright report); add pwa/ items to the root .gitignore if needed.", "status": "not_started" },
-        { "id": "P1.T10", "task": "Green run: pnpm check, pnpm build, one Playwright smoke test (/fa renders rtl, /en ltr, fonts load, axe clean).", "status": "not_started" }
+        { "id": "P1.T1", "task": "tools/use-local-node.{sh,ps1} reusing backend/.tools/node (GD-02); .node-version; verify node 24 + pnpm 10.", "status": "done" },
+        { "id": "P1.T2", "task": "Scaffold pwa/ by hand (no interactive create-next-app): package.json (type module, engines, packageManager, scripts of commands_expected), Next.js App Router, React, TypeScript strict (noUncheckedIndexedAccess, exactOptionalPropertyTypes like backend), Tailwind v4, ESLint flat config + Prettier matching backend style, Vitest + Testing Library, Playwright (Chromium only, OQ-08). Record exact versions.", "status": "done" },
+        { "id": "P1.T3", "task": "Lint rules: ban left/right CSS properties and Tailwind utilities (ml-/mr-/pl-/pr-/left-/right-/text-left/text-right/float-left…), ban dangerouslySetInnerHTML outside the JSON-LD helper, import boundaries (src/server/** is server-only; features never import each other's internals).", "status": "done" },
+        { "id": "P1.T4", "task": "tools/contract/generate.ts → shared/api-contracts/generated/ (operation map with method, path template, path params, query, input/response TS types, sec tags parsed into flags: idem, etag, aal2, flag keys, principals; enums; error codes) + package.json for @carpal/api-contracts; --check mode; unit test that fails when stale. Link it from pwa (link:../shared/api-contracts); configure Next (turbopack root / outputFileTracingRoot / transpilePackages) so linked packages outside pwa/ build.", "status": "done" },
+        { "id": "P1.T5", "task": "tools/sync-design-system.mjs (copy + --check) into shared/design-system/web/; tokens.css + @font-face imported once; Tailwind @theme mapped to the semantic tokens; preload only the current language's font.", "status": "done" },
+        { "id": "P1.T6", "task": "shared/i18n package skeleton (locales/en.json, fa.json with a 'common' namespace) and tools/i18n-check.ts (missing keys, empty values, placeholder mismatch).", "status": "done" },
+        { "id": "P1.T7", "task": "Env config with zod (server-only): CARPAL_PWA_ORIGIN, CARPAL_API_URL (http://127.0.0.1:8080), CARPAL_AUTH_URL (:8082), CARPAL_STORAGE_URL (:8083), CARPAL_PWA_MAP_STYLE_URL?, CARPAL_PWA_SESSION_STORE=lite|redis, CARPAL_PWA_REDIS_URL?, CARPAL_ENV; .env.example; startup validation.", "status": "done" },
+        { "id": "P1.T8", "task": "Locale routing: middleware redirects / to /<default locale> (Accept-Language among enabled locales, else region default fa); [locale] layout sets <html lang dir data-theme>; a placeholder home page per locale; not-found page.", "status": "done" },
+        { "id": "P1.T9", "task": "pwa/README.md (setup, run with backend, scripts, layout) and pwa/.gitignore entries (.next, test results, playwright report); add pwa/ items to the root .gitignore if needed.", "status": "done" },
+        { "id": "P1.T10", "task": "Green run: pnpm check, pnpm build, one Playwright smoke test (/fa renders rtl, /en ltr, fonts load, axe clean).", "status": "done" }
       ],
       "deliverables": ["pwa/ package with scripts", "shared/api-contracts/generated/", "shared/design-system/web/", "shared/i18n/ skeleton", "pwa/README.md"],
       "acceptance_criteria": [
@@ -353,19 +580,70 @@
         "Playwright smoke + axe pass in Chromium."
       ],
       "out_of_scope": ["BFF and auth (P2)", "real screens"],
-      "report": { "started_at": null, "completed_at": null, "summary": null, "versions": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+      "report": {
+        "started_at": "2026-10-25",
+        "completed_at": "2026-10-25",
+        "summary": "P1 done. pwa/ is a hand-written Next.js 16 App Router package on the backend's local Node 24 (tools/use-local-node.{sh,ps1}, .node-version 24.21.0) with its own pnpm lockfile; shared/api-contracts (generated: operation map with routes, principals and parsed sec tags for all 406 operations / 458 routes, request/response types per operation, the 314 Docs/40 types plus the server-defined Json<…> shapes from openapi.yaml, enums, error codes, role groups), shared/i18n (EN/FA 'common' namespace, 19 keys) and shared/design-system/web (synced tokens, component CSS, fonts and licences) are linked packages or synced copies, each with a --check that fails on drift (verified by changing each source). The proxy redirects / and locale-less paths to the remembered, Accept-Language or region-default locale and stores ?theme= choices; the [locale] root layout sets <html lang dir data-theme>, links the design-system CSS from /ds and preloads only the current language's font. A placeholder home page (mirrors mobile S-AUTH-01: hero mark, word mark, promise, three trust points, language and theme links) and a localized 404 exist. Lint has two local rules (logical properties only; token-only values) plus a CSS checker, the dangerouslySetInnerHTML ban and the import boundaries; env is validated with zod at startup.",
+        "versions": { "node": "24.21.0 (backend/.tools/node)", "pnpm": "10.5.2", "next": "16.4.3 (Turbopack, proxy.ts)", "react": "19.3.1", "react-dom": "19.3.1", "typescript": "5.9.3 (7.0.2 exists, but typescript-eslint 8.72 needs < 6.1; matches backend ~5.9)", "tailwindcss": "4.3.3 (+ @tailwindcss/postcss 4.3.3)", "zod": "4.6.7", "eslint": "10.13.0 (+ @eslint/js 10.0.1, typescript-eslint 8.72.0, @next/eslint-plugin-next 16.4.3, eslint-plugin-react-hooks 7.1.1)", "prettier": "3.9.10 (backend style: single quotes, width 140, trailing commas, LF)", "vitest": "5.0.5 (+ @vitejs/plugin-react 6.1.2, jsdom 30.1.3, @testing-library/react 16.3.3, @testing-library/jest-dom 7.0.1)", "playwright": "1.64.1 (Chromium 1248 only) + @axe-core/playwright 4.14.0", "tsx": "4.23.15", "yaml": "2.9.1 (reads openapi.yaml components in the contract generator)" },
+        "deviations": [
+          "Next.js 16 names middleware 'proxy' (src/proxy.ts) and runs it on the Node.js runtime; the plan's 'middleware' means this file (P2.T8 adds the security headers there).",
+          "tsconfig exactOptionalPropertyTypes is false: the plan said 'like backend', and backend/tsconfig.json has it false. allowJs is on so the tests can import the plain-JS tools.",
+          "Design-system files are served as static files from /ds (copied from shared/design-system/web into the gitignored public/ds by `sync-design-system.mjs --public`, run by `pnpm dev` and `pnpm build`) instead of being imported into the CSS bundle, so tokens.css stays byte-identical and the current language's font can be preloaded at a stable URL. P13 may add cache-busting for /ds.",
+          "Tailwind's default colour, spacing, radius, shadow, font, text, container and breakpoint scales are reset; utilities map only to tokens. Theme keys whose name equals a token name would be self-referencing, so radii, shadows and fonts use prefixed names (rounded-ds-md, shadow-ds-1, font-latin/font-persian); breakpoints are md 768 px and xl 1200 px (Docs/22).",
+          "Experimental Next.js flags: experimental.globalNotFound (the root layout is under the dynamic [locale] segment, so unmatched URLs get app/global-not-found.tsx with its own document) and experimental.turbopackAdditionalRoots (Turbopack root stays pwa/ and follows the pnpm links into ../shared; setting outputFileTracingRoot to the repository would have made the whole repo, including backend/.data, the Turbopack root).",
+          "notFound() thrown by a page renders, in Next.js 16.4.3, as an empty server shell (<html id=\"__next_error__\">, status 404, localized title, noindex) and the [locale]/not-found.tsx body is drawn on the client; unmatched URLs are fully server-rendered by global-not-found.tsx. Checked against Next's app-render (Fizz cannot catch the not-found error inside the client boundary). See notes_for_next.",
+          "P1 already ported a partial Icon (car, wrench, check and the proposed shield, doc, globe) to src/components/ds/icon.tsx for the placeholder; P3.T1 completes it.",
+          "Theme choice without JavaScript: the proxy stores ?theme=light|sun|dark in the cp_theme cookie and redirects; the layout reads the cookie. P3.T3 adds prefers-contrast/prefers-color-scheme and the settings switch.",
+          "The minimal server translator getTranslator() (typed dotted keys over shared/i18n) stands in for i18next until P3.T2; keys stay.",
+          "The contract package covers all 406 operations (it is shared with the portals later); the consumer allowlist is derived from it in P2 (GD-08 amendment).",
+          "`next dev` writes pwa/AGENTS.md (pointer to the bundled Next.js docs); kept, since later stages benefit from it.",
+          "health.get / config.client 'smoke only': covered by the operation-map tests (routes, sec tags); a live call needs the anonymous token of P2, so the live smoke moves to P2.T9."
+        ],
+        "notes_for_next": [
+          "Every command from pwa/ after `source tools/use-local-node.sh`. `pnpm check` runs everything except build and e2e; `pnpm e2e` builds and runs Playwright on port 3100 (next start), reusing a running server outside CI.",
+          "Read node_modules/next/dist/docs/ before using a Next.js API: request APIs (params, cookies, headers) are async only; the proxy is src/proxy.ts; `pnpm typecheck` runs `next typegen` first (LayoutProps/PageProps helpers exist but P1 types params by hand).",
+          "Locale: the proxy guarantees the first path segment is fa or en and passes it to components without params as the x-carpal-locale request header (src/server/request-locale.ts). Its matcher skips /api, /bff, /id, /l, /_next, /ds and files with an extension — P2 adds /api/v1 and /bff route handlers and P4 the /id routes outside it, each needing its own root layout (only [locale] has one).",
+          "P2.T8 security headers: the layout loads /ds/tokens.css and /ds/components/bundle.css as same-origin stylesheets and Next's own CSS; there are no inline scripts of ours. Keep style-src 'self' compatible (React 19 hoists the <link precedence> tags).",
+          "404s: unmatched URLs → app/global-not-found.tsx (server-rendered); notFound() from a page → client-drawn [locale]/not-found.tsx inside an empty 404 shell. P3.T8 (system pages) and P5 (profiles, parts, posts: 404/410 with noindex) must pick a strategy: re-check a newer Next.js 16.x, or render the system page as the page's own content and get the status from the proxy/route (e.g. a rewrite to a status route) — record the choice.",
+          "Contract: import from '@carpal/api-contracts' (OPERATIONS, OperationTypes, OperationInput/Response, ENUMS, ERROR_CODES, ROLE_GROUPS, CONTRACT). After a backend contract change run `pnpm contract:generate`; `pnpm test` fails while it is stale. The generator reads backend/libs/contract/generated and, for x-server-schema types only, shared/api-contracts/openapi.yaml (sub-schemas get names like InsightPayload_triage_summary).",
+          "Design system: use DS classes (cp-btn, cp-chip, cp-badge …) and the token utilities; screen-level helpers taken from mobile/preview live in globals.css @layer components with a pwa- prefix (pwa-wordmark, pwa-hero-mark, pwa-tile). Only the 6 icons above exist yet.",
+          "Strings: add keys to both shared/i18n/locales/en.json and fa.json (i18n:check also rejects extra fa keys); take EN/FA copy from mobile/preview/js/screens-*.js.",
+          "The working tree had backend changes not made by this stage (backend/tools/contract/openapi.test.ts, backend/deploy/, timestamps 2026-10-24 23:37-00:11); P1 did not touch them."
+        ],
+        "tests_after_stage": "pnpm check green (lint; typecheck; 51 Vitest tests in 11 files: unit 9 files, dom 1 file — lint rules via RuleTester, CSS checker, i18n check, design-system sync, schema→TS converter, contract freshness and operation map, env, locales, dictionary, proxy, preference links and 404 body; contract:check; i18n:check; ds:check). pnpm build green. pnpm e2e: 7 Playwright tests in Chromium (locale redirects incl. Accept-Language and remembered choice, /fa rtl + Vazirmatn loaded, /en ltr + Atkinson loaded, theme switching light/sun/dark with the Night ground colour, localized 404 with status 404), axe clean on every visited page in all three themes."
+      }
     },
 
     {
       "id": "P2",
       "title": "Consumer BFF: session, OAuth, API forwarding, security headers",
-      "status": "not_started",
+      "status": "in_progress",
+      "amendments": [
+        "2026-10-25: read backend_alignment BA-03, BA-11, BA-12, BA-15, BA-16, BA-22, BA-23, BA-26 and the 2026-10-25 amendments of GD-05, GD-07, GD-08 and GD-09 first.",
+        "P2.T1/P2.T5: the pre-session record also holds an ES256 DPoP key pair; anonymous grants carry a proof with it so the anonymous principal stays stable for the pre-session (DI-17).",
+        "P2.T2: step-up = acr_values=aal2 + prompt=login (BA-11); refresh invalid_grant ends the session; ProtocolError JSON mapped separately from problem+json (BA-12).",
+        "P2.T4: allowlist per GD-08 amendment (consumer routes + DRV {flt} routes).",
+        "P2.T6: ApiProblem members, ETag from header, retry cap ≤ 30 s, CURSOR_MISMATCH re-run, 412 handling (GD-09 amendment).",
+        "New task P2.T10: strict-mode seams with unit tests, not enabled in lite: client-authentication strategy for /oauth/token (none | private_key_jwt), DPoP proofs on API calls for bound tokens, PoW solver hook for ATT operations (DI-22).",
+        "BA-23: the BFF code must stay free of Next.js imports (GD-03) — backend NI-08 will move or reuse it."
+      ],
       "depends_on": ["P1", "backend S3 (auth server)"],
       "goal": "The browser holds only __Host-cp_sid. The BFF signs users in through the authorization-code + PKCE flow, keeps and rotates tokens, gives guests an anonymous token, forwards the consumer operations 1:1 with CSRF protection, and the typed client implements the contract's idempotency, ETag and retry rules.",
       "scope": {
-        "docs": ["Docs/40 §1 transport, §2.2-2.3 clients and auth, §2.7-2.8 idempotency and rate limits, §2.10 link tokens, §2.12 SEC-WEB, §6.2 auth server", "Docs/41 §2.3 gateways and BFFs"],
+        "docs": [
+          "Docs/40 §1 transport, §2.2-2.3 clients and auth, §2.7-2.8 idempotency and rate limits, §2.10 link tokens, §2.12 SEC-WEB, §6.2 auth server",
+          "Docs/41 §2.3 gateways and BFFs"
+        ],
         "screens": [],
-        "operations": ["auth.discovery", "auth.jwks", "auth.authorize", "auth.token (authorization_code, refresh_token, anonymous, client_credentials for cp-ssr)", "auth.revoke", "me.get (session check)", "config.client"]
+        "operations": [
+          "auth.discovery",
+          "auth.jwks",
+          "auth.authorize",
+          "auth.token (authorization_code, refresh_token, anonymous, client_credentials for cp-ssr)",
+          "auth.revoke",
+          "me.get (session check)",
+          "config.client"
+        ]
       },
       "context_to_read": [
         "Docs/40.API contract.md lines 113-176 (transport, headers), 198-228 (clients, SEC-AU), 271-320 (SEC-IC, SEC-RL), 335-376 (SEC-LT, SEC-UP, SEC-WEB), 760-912 (auth server operations)",
@@ -392,19 +670,36 @@
         "IDEM retries reuse the same Idempotency-Key; 429 with CarPal-Retry-After-Ms is respected."
       ],
       "out_of_scope": ["the sign-in pages themselves (P4)", "mTLS and private_key_jwt (strict mode; backend GD-06)"],
-      "report": { "started_at": null, "completed_at": null, "summary": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
+      "report": { "started_at": "2026-10-25", "completed_at": null, "summary": null, "deviations": [], "notes_for_next": [], "tests_after_stage": null }
     },
 
     {
       "id": "P3",
       "title": "Design system, i18n and formatting, app shell and global patterns",
       "status": "not_started",
+      "amendments": [
+        "2026-10-25 (DI-21, GD-11 amendment): P3.T1 also ports the mobile/preview kit.js additions (extra icons, Chip iconEnd, TextField end/prefix, urgency colours, outlined safety banner, tap-target extension).",
+        "2026-10-25 (GD-13 amendment): P3.T5 state components include 'feature off' (flag), 'Being reviewed' (moderation hold) and AI-off as first-class states.",
+        "2026-10-25 (BA-20, GD-17 amendment): P3.T6 queue skeleton uses the typed copy of the backend CLIENT_EVENTS registry plus the drift test.",
+        "2026-10-25 (BA-32): taxonomy versions are opaque strings compared for equality."
+      ],
       "depends_on": ["P1", "P2"],
       "goal": "Every later screen can be assembled from ported design-system components inside a responsive, RTL-correct shell with the global header, navigation, right rail, toasts, URL-addressable modals, the auth-intent modal, cookie consent and system pages, using EN/FA dictionaries and locale-aware formatting.",
       "scope": {
-        "docs": ["Docs/22 §1-§2 (principles, layout system, header, navigation, right rail, global patterns), W-SYS-01", "Docs/21 §1-§2 (app shell, global patterns, shared components), §7 a11y/l10n checklist", "Docs/carpal-design-system components/*/README.md"],
+        "docs": [
+          "Docs/22 §1-§2 (principles, layout system, header, navigation, right rail, global patterns), W-SYS-01",
+          "Docs/21 §1-§2 (app shell, global patterns, shared components), §7 a11y/l10n checklist",
+          "Docs/carpal-design-system components/*/README.md"
+        ],
         "screens": ["W-SYS-01 (404, 410, suspended, no access, maintenance; offline in P12)"],
-        "operations": ["config.client", "taxonomy.version", "taxonomy.snapshot", "taxonomy.suggest (header search suggestions)", "vehicles.list (vehicle context chip)", "notifications.unread_count (bell badge)"]
+        "operations": [
+          "config.client",
+          "taxonomy.version",
+          "taxonomy.snapshot",
+          "taxonomy.suggest (header search suggestions)",
+          "vehicles.list (vehicle context chip)",
+          "notifications.unread_count (bell badge)"
+        ]
       },
       "context_to_read": [
         "Docs/22.Social_WebUI_user_screens.md lines 18-80 and 527-538",
@@ -439,12 +734,39 @@
       "id": "P4",
       "title": "Hosted sign-in UI and web onboarding",
       "status": "not_started",
+      "amendments": [
+        "2026-10-25: read BA-04, BA-08, BA-09, BA-10, BA-12, BA-13, BA-14, BA-25, BA-29 first.",
+        "P4.T1: an expired interaction (410 LINK_EXPIRED) restarts /bff/login with the same return URL (BA-12).",
+        "P4.T4 changed: passkeys are implemented in the backend — add 'Sign in with a passkey' (auth.webauthn_options purpose signin → auth.mfa_verify method webauthn) and webauthn as an MFA method when AuthNext.mfa_methods lists it; needs the dev env of the GD-05 amendment (BA-09). Social sign-in stays out (BA-10).",
+        "P4.T3/P4.T2: localized messages for breached password ('pattern'), out-of-region SMS ('enum'), email taken (409 on auth.email_verify) (BA-13).",
+        "P4.T6: onboarding saves send If-Match \"v1\" for a new flow (BA-14); the first-car step handles 409 DUPLICATE at /vin with vin_transfer_available → 'Did you buy this car?' → vehicles.transfer_request (BA-04); VIN input normalization without a check-digit check for non-NA/CN VINs (BA-29).",
+        "P4.T8: E2E runs the backend with CARPAL_RATE_LIMIT_SCALE=100 (BA-25)."
+      ],
       "depends_on": ["P2", "P3", "backend S3"],
       "goal": "A visitor can sign up (email or phone + code, or password), verify, sign in with a code or a password, pass MFA, reset a password, see locked/suspended states, and complete the 5-step web onboarding, then return to the page and action they started from.",
       "scope": {
         "docs": ["Docs/22 W-AUTH-01, W-ONB-01", "Docs/21 S-AUTH-02, 03, 04, 05, 07, 08, 09, C-ONB-01..03", "Docs/90 S-AUTH-* (lines 198-350)", "Docs/56 §1 user signup journey"],
         "screens": ["W-AUTH-01", "W-ONB-01"],
-        "operations": ["auth.signup", "auth.signin_password", "auth.otp_start", "auth.otp_verify", "auth.mfa_verify", "auth.email_verify", "auth.password_reset_start", "auth.password_reset_complete", "auth.pow_challenge (only if strict mode asks)", "onboarding.list", "onboarding.update", "onboarding.accept_terms", "me.update", "me.preferences_update", "consents.grant", "vehicles.create", "vehicles.vin_decode", "taxonomy.suggest"]
+        "operations": [
+          "auth.signup",
+          "auth.signin_password",
+          "auth.otp_start",
+          "auth.otp_verify",
+          "auth.mfa_verify",
+          "auth.email_verify",
+          "auth.password_reset_start",
+          "auth.password_reset_complete",
+          "auth.pow_challenge (only if strict mode asks)",
+          "onboarding.list",
+          "onboarding.update",
+          "onboarding.accept_terms",
+          "me.update",
+          "me.preferences_update",
+          "consents.grant",
+          "vehicles.create",
+          "vehicles.vin_decode",
+          "taxonomy.suggest"
+        ]
       },
       "context_to_read": [
         "Docs/22.Social_WebUI_user_screens.md lines 145-180",
@@ -477,12 +799,34 @@
       "id": "P5",
       "title": "Public SEO pages: landing, provider, vendor, part, showcase",
       "status": "not_started",
+      "amendments": [
+        "2026-10-25: read BA-06, BA-16, BA-20, BA-27, BA-28, BA-33 and DI-10 (decided), DI-14 (still to test), DI-20 first.",
+        "public.availability now computes slots (backend S7); providers without availability rules return none → the Request card shows 'Request anyway' (BA-19).",
+        "Guests' 'Your car' on the landing hero is sent as brand/model/series/year filters, never vehicle_id; location as chosen_city (BA-16).",
+        "Public media are often still private in lite (moderation) → fixed placeholders; no video on public pages in lite (BA-06).",
+        "Unknown slugs 404 (no slug history, DI-20); opening hours start on Saturday for fa with the 0 = Sunday index rule (BA-28)."
+      ],
       "depends_on": ["P3", "backend S4-S6"],
       "goal": "Server-rendered, indexable public pages that turn a search-engine visitor into a follower, a request or an inquiry, within the 2.5 s LCP budget.",
       "scope": {
         "docs": ["Docs/22 W-PUB-01, 02, 03, 05, 08, §6 URL map, §7 rules", "Docs/90 C-PROV-01, C-PROV-02, C-VEND-01 (lines 914-1200)", "Docs/54 §5 match reasons"],
         "screens": ["W-PUB-01", "W-PUB-02", "W-PUB-03", "W-PUB-05 (showcases; comments/reactions in P8)", "W-PUB-08"],
-        "operations": ["public.org_get", "public.org_reviews", "public.org_portfolio", "public.org_inventory_search", "public.inventory_get", "public.availability", "showcases.get", "posts.public_list", "feed.discover (landing blocks)", "follows.put/delete", "favorites.put/delete", "inquiries.create (Ask about stock)", "taxonomy.snapshot", "search.result_event (DI-10)"]
+        "operations": [
+          "public.org_get",
+          "public.org_reviews",
+          "public.org_portfolio",
+          "public.org_inventory_search",
+          "public.inventory_get",
+          "public.availability",
+          "showcases.get",
+          "posts.public_list",
+          "feed.discover (landing blocks)",
+          "follows.put/delete",
+          "favorites.put/delete",
+          "inquiries.create (Ask about stock)",
+          "taxonomy.snapshot",
+          "search.result_event (DI-10)"
+        ]
       },
       "context_to_read": [
         "Docs/22.Social_WebUI_user_screens.md lines 118-145, 181-255, 278-285, 540-575",
@@ -514,12 +858,33 @@
       "id": "P6",
       "title": "Search, map, directions and directory pages",
       "status": "not_started",
+      "amendments": [
+        "2026-10-25: read BA-16, BA-20, BA-28, BA-33, DI-17 and DI-19 first.",
+        "P6.T2: guests never send vehicle_id or user_position (401); the location chip offers city / map area to guests; 403 LOCATION_CONSENT_REQUIRED opens the location consent; pages after the first come from search.page (20 per page, cursor only); a stale session or cursor re-runs the stored request (GD-09 amendment 4, DI-17); the Q&A tab uses questions.search and the Showcases tab is hidden (DI-19); the availability filter explains that providers without online booking are hidden.",
+        "Analytics names only from the backend registry (search.started, search.chip_edited, search.safety_banner_shown, search.result_opened, map.*) (BA-20)."
+      ],
       "depends_on": ["P5", "backend S6"],
       "goal": "Native-language search without Help Me (chips, All mode, safety banner, filters with counts, sort), the map with pins/clusters/vehicle filter/Search this area, the Directions menu from region config, and indexable directory pages.",
       "scope": {
-        "docs": ["Docs/22 W-SRCH-01, W-MAP-01, W-PUB-04", "Docs/90 S-SHARED-01, 02, 03, 09, 10 (lines 351-616)", "Docs/21 C-SEARCH-01", "Docs/01 §10 Flow 5 (line ~3590), §12 search", "Docs/54 §5 (match reasons)"],
+        "docs": [
+          "Docs/22 W-SRCH-01, W-MAP-01, W-PUB-04",
+          "Docs/90 S-SHARED-01, 02, 03, 09, 10 (lines 351-616)",
+          "Docs/21 C-SEARCH-01",
+          "Docs/01 §10 Flow 5 (line ~3590), §12 search",
+          "Docs/54 §5 (match reasons)"
+        ],
         "screens": ["W-SRCH-01", "W-MAP-01", "W-PUB-04", "header search dropdown (S-SHARED-01)"],
-        "operations": ["search.run", "search.page", "search.refine", "search.result_event", "map.pins", "safety.check", "taxonomy.suggest", "me.preferences_get/update (navigation app choice)", "events.ingest (search/map/directions events; 501 until backend S8)"]
+        "operations": [
+          "search.run",
+          "search.page",
+          "search.refine",
+          "search.result_event",
+          "map.pins",
+          "safety.check",
+          "taxonomy.suggest",
+          "me.preferences_get/update (navigation app choice)",
+          "events.ingest (search/map/directions events; 501 until backend S8)"
+        ]
       },
       "context_to_read": [
         "Docs/22.Social_WebUI_user_screens.md lines 225-234, 286-332",
@@ -552,12 +917,35 @@
       "id": "P7",
       "title": "My Garage: vehicles, service history, documents, issues, reminders, uploads",
       "status": "not_started",
+      "amendments": [
+        "2026-10-25: read BA-02, BA-04, BA-05, BA-06, BA-07, BA-15, BA-29, BA-31 first.",
+        "P7.T2 changed: HEIC/HEIF → JPEG conversion in the browser is required (image/heic is refused at upload_init); videos are checked for ≤ 15 s before upload_init; PDFs only through private signed URLs (BA-05). Use UploadTicket.url as given; 404 from media.get right after init means 'not ready' (BA-06).",
+        "P7.T5: on 409 DUPLICATE at /vin with vin_transfer_available, offer 'Did you buy this car?' (BA-04); Reveal VIN only when vin_present (BA-29).",
+        "P7.T6: issue descriptions need at least 10 characters (BA-29).",
+        "New task P7.T8 (BA-04): vehicle ownership transfers — buyer side (request with message, pending with expiry and Cancel, outcome) and owner side ('Ownership requests' block in W-GAR-01 and a Needs-your-attention card: Accept with a clear list of what moves, Reject), using vehicles.transfer_request / transfers_list / transfer_decide / transfer_cancel; tests for both sides with two users.",
+        "AI suggestions and history insights work in dev with the backend stub and must degrade to the AI-off state (BA-02)."
+      ],
       "depends_on": ["P3", "P4", "backend S4-S5"],
       "goal": "A signed-in owner manages vehicles, mileage, service records (with print), documents and invoices (drag, drop, paste uploads through the media pipeline), issues and reminders in a master-detail garage, within the plan's vehicle limit.",
       "scope": {
         "docs": ["Docs/22 W-GAR-01, 02, 03", "Docs/21 §4.3 My Garage (lines 694-856), C-PLAN-01", "Docs/40 §12 vehicles, §17 media, §2.11 SEC-UP, §10 plans/subscription"],
         "screens": ["W-GAR-01", "W-GAR-02", "W-GAR-03"],
-        "operations": ["vehicles.* (31 ops on /v1/me/vehicles…)", "media.upload_init", "media.upload_complete", "media.get", "media.download_url", "media.attach", "media.attachment_update", "media.detach", "media.delete", "media.redaction_decide", "subscription.me_get", "plans.list", "jobs.get", "ai.vehicle_suggestions / ai.service_history_insights (backend S9; AI-off state until then)"]
+        "operations": [
+          "vehicles.* (31 ops on /v1/me/vehicles…)",
+          "media.upload_init",
+          "media.upload_complete",
+          "media.get",
+          "media.download_url",
+          "media.attach",
+          "media.attachment_update",
+          "media.detach",
+          "media.delete",
+          "media.redaction_decide",
+          "subscription.me_get",
+          "plans.list",
+          "jobs.get",
+          "ai.vehicle_suggestions / ai.service_history_insights (backend S9; AI-off state until then)"
+        ]
       },
       "context_to_read": [
         "Docs/22.Social_WebUI_user_screens.md lines 414-451",
@@ -590,12 +978,36 @@
       "id": "P8",
       "title": "Community: home timeline, Q&A, follows and favourites, comments, reactions, reports",
       "status": "not_started",
+      "amendments": [
+        "2026-10-25: read BA-15, BA-16, BA-17, BA-33, BA-34, DI-07 and DI-18 first.",
+        "New task P8.T0 (DI-18): a dev-only backend flag CLI (refused outside CARPAL_ENV=dev) with a test, recorded in both plans, to switch community.feed.enabled, community.comments.enabled and qna.enabled on for development and E2E.",
+        "P8.T1: feed.discover takes only location, vehicle_id, cursor, limit — build the Discover stream; other tabs stay hidden (DI-07, BA-16).",
+        "P8.T2/P8.T4: pre-send warning and 'Being reviewed' for text with links, emails or phone numbers; hide Delete on an accepted answer (BA-17).",
+        "P8.T6 changed: reports.create is implemented — no 501 state; 409 DUPLICATE → 'You already reported this' (BA-17)."
+      ],
       "depends_on": ["P5", "P6", "backend S6"],
       "goal": "Signed-in users get a home page with what needs attention and a Discover feed; everyone can read Q&A and showcases with comments and reactions; users can ask and answer questions, follow and favourite shops, and report content.",
       "scope": {
-        "docs": ["Docs/22 W-FEED-01, W-COMP-01, W-QA-01, W-QA-02, W-PUB-06, W-NET-01, W-RPT-01, §7", "Docs/56 §3-§4 (feed), §8-§11 (post detail, reactions, comments, saves, follows, content and moderation rules)", "Docs/21 §4.7 Community (lines 1097-1149)", "Docs/90 S-SHARED-08 report sheet"],
+        "docs": [
+          "Docs/22 W-FEED-01, W-COMP-01, W-QA-01, W-QA-02, W-PUB-06, W-NET-01, W-RPT-01, §7",
+          "Docs/56 §3-§4 (feed), §8-§11 (post detail, reactions, comments, saves, follows, content and moderation rules)",
+          "Docs/21 §4.7 Community (lines 1097-1149)",
+          "Docs/90 S-SHARED-08 report sheet"
+        ],
         "screens": ["W-FEED-01", "W-COMP-01 (question type only, DI-02)", "W-QA-01", "W-QA-02", "W-PUB-06", "W-NET-01 (DI-06)", "W-RPT-01", "W-PUB-05 comments + reactions"],
-        "operations": ["feed.discover", "questions.create/search/get/update", "answers.create/accept/delete", "comments.list/create/delete", "reactions.put/delete", "follows.list/put/delete", "favorites.list/put/delete", "posts.public_list", "showcases.get", "safety.check", "reports.create (backend S8)"]
+        "operations": [
+          "feed.discover",
+          "questions.create/search/get/update",
+          "answers.create/accept/delete",
+          "comments.list/create/delete",
+          "reactions.put/delete",
+          "follows.list/put/delete",
+          "favorites.list/put/delete",
+          "posts.public_list",
+          "showcases.get",
+          "safety.check",
+          "reports.create (backend S8)"
+        ]
       },
       "context_to_read": [
         "Docs/22.Social_WebUI_user_screens.md lines 256-266, 333-398, 521-526, 559-575",
@@ -626,12 +1038,26 @@
       "id": "P9",
       "title": "Notifications, settings, account and My Activity",
       "status": "not_started",
+      "amendments": [
+        "2026-10-25: read BA-04, BA-09, BA-11, BA-13, BA-18, BA-30 first.",
+        "P9.T1: dictionary entries for every consumer notification template_key from backend/modules/notification/domain/templates.ts + routing.ts with a drift test; deep links include vehicle transfer requests/decisions (BA-04) and the extra event types system_announcement / moderation_update (BA-18).",
+        "P9.T2: passkey enrolment and removal (me.webauthn_register_options → pending id from me.mfa_list → me.mfa_confirm) (BA-09); step-up with prompt=login (BA-11).",
+        "P9.T4: export/deletion copy per BA-30."
+      ],
       "depends_on": ["P4", "backend S3, S6"],
       "goal": "Users see and act on notifications, manage every setting section (profile, security, privacy and consents, AI, notifications matrix, language and region, cookies, data and account), and track their own content and requests.",
       "scope": {
         "docs": ["Docs/22 W-NOTIF-01, W-SET-01, W-ME-01", "Docs/21 §4.8, §4.9 (lines 1150-1271), §6 deep links", "Docs/90 S-SHARED-04, 05", "Docs/01 §14 privacy"],
         "screens": ["W-NOTIF-01", "W-SET-01", "W-ME-01 (reviews tab completes in P11)"],
-        "operations": ["notifications.list/unread_count/mark_read", "notification_prefs.get/put", "me.* (19 ops: profile, email/phone change, password, preferences, memberships, sessions, MFA)", "consents.list/grant/withdraw", "dsr.create/list/get/export_download", "inquiries.list/get/message/transition", "questions (mine) via the available filters"]
+        "operations": [
+          "notifications.list/unread_count/mark_read",
+          "notification_prefs.get/put",
+          "me.* (19 ops: profile, email/phone change, password, preferences, memberships, sessions, MFA)",
+          "consents.list/grant/withdraw",
+          "dsr.create/list/get/export_download",
+          "inquiries.list/get/message/transition",
+          "questions (mine) via the available filters"
+        ]
       },
       "context_to_read": [
         "Docs/22.Social_WebUI_user_screens.md lines 399-413, 506-520",
@@ -661,12 +1087,34 @@
       "id": "P10",
       "title": "Help Me and appointment requests; appointments",
       "status": "not_started",
+      "amendments": [
+        "2026-10-25: backend S7 and S9 are done (BA-01); read BA-02, BA-19, BA-31 and DI-23 first.",
+        "P10.T2: triage 503 AI_UNAVAILABLE carries Problem.safety and fallback_path — show the safety block and continue with the category picker/search; this is the default pilot state (BA-02).",
+        "P10.T3 corrected: the caps are 3 open requests per provider, 10 open in total and a 7-day cooldown after a no-show (one 429 RATE_LIMITED with retry-after 3600 for all three, no auto-retry); no slots → 'Request anyway' (BA-19).",
+        "P10.T5 corrected (DI-23): /l/ci works for guests and signed-in users (PUB LNK(ci)).",
+        "P10.T7: no longer blocked on the backend; run it against the stub and once with CARPAL_MCP_MODE=unavailable."
+      ],
       "depends_on": ["P6", "P7", "backend S7 (appointments)", "backend S9 (triage) — the request-without-triage path does not need S9"],
       "goal": "Flow 1 and Flow 5 on the web: describe a problem (or skip triage), get recommendations with explanations, send an appointment request with consent preview, and follow the appointment through confirmation, check-in and completion.",
       "scope": {
-        "docs": ["Docs/22 W-HELP-01, W-APP-01", "Docs/55 §2-§7 (C-HELP-01..08, decision logic, urgency and confidence handling, AI mapping, UX rules)", "Docs/21 §4.4, §4.5 (lines 857-1026)", "Docs/01 §10 Flow 1 and Flow 5", "Docs/10 Ch. 6-8"],
+        "docs": [
+          "Docs/22 W-HELP-01, W-APP-01",
+          "Docs/55 §2-§7 (C-HELP-01..08, decision logic, urgency and confidence handling, AI mapping, UX rules)",
+          "Docs/21 §4.4, §4.5 (lines 857-1026)",
+          "Docs/01 §10 Flow 1 and Flow 5",
+          "Docs/10 Ch. 6-8"
+        ],
         "screens": ["W-HELP-01", "W-APP-01", "/l/ci check-in link page", "Request card completion on W-PUB-02"],
-        "operations": ["triage.start/reply/get/complete (backend S9)", "safety.check", "search.run (recommendations fallback)", "public.availability", "appointments.create/list/get/update/transition/delay/check_in/check_in_link/history/notes_list/note_create", "pre_visit.requester_get", "consents.grant (vehicle data sharing for the request)", "media upload kit"]
+        "operations": [
+          "triage.start/reply/get/complete (backend S9)",
+          "safety.check",
+          "search.run (recommendations fallback)",
+          "public.availability",
+          "appointments.create/list/get/update/transition/delay/check_in/check_in_link/history/notes_list/note_create",
+          "pre_visit.requester_get",
+          "consents.grant (vehicle data sharing for the request)",
+          "media upload kit"
+        ]
       },
       "context_to_read": [
         "Docs/22.Social_WebUI_user_screens.md lines 452-480",
@@ -697,12 +1145,29 @@
       "id": "P11",
       "title": "Reviews, review invitations and showcase consent",
       "status": "not_started",
+      "amendments": [
+        "2026-10-25: backend S7/S8 done (BA-01); read BA-17, BA-21 and DI-22 first.",
+        "P11.T1/T5: held Path 1 reviews show 'Being checked'; already_reviewed and REVIEW_NOT_ALLOWED (5 per 24 h) explained (BA-21).",
+        "P11.T2: review_invitations.open is ATT — PoW hook only in strict mode (DI-22); 403 LINK_RECIPIENT_MISMATCH state (BA-21)."
+      ],
       "depends_on": ["P9", "P10", "backend S7 (reviews and trust)"],
       "goal": "Flow 6 and Sara Ch. 9 on the web: write provider and vendor reviews by both verification paths, open email invitations with the one-time code, answer showcase consent requests, and track reviews in My Activity.",
       "scope": {
-        "docs": ["Docs/22 W-REV-01, W-REV-02, W-REV-03, review parts of W-PUB-02/03 and W-ME-01", "Docs/21 §4.6 (lines 1027-1096)", "Docs/01 §10 Flow 6, Module F", "Docs/40 §2.10 SEC-LT"],
+        "docs": [
+          "Docs/22 W-REV-01, W-REV-02, W-REV-03, review parts of W-PUB-02/03 and W-ME-01",
+          "Docs/21 §4.6 (lines 1027-1096)",
+          "Docs/01 §10 Flow 6, Module F",
+          "Docs/40 §2.10 SEC-LT"
+        ],
         "screens": ["W-REV-01", "W-REV-02", "W-REV-03", "/l/ri and /l/cn link pages", "W-ME-01 Reviews tab"],
-        "operations": ["reviews.eligibility/create/mine_list/mine_get/mine_update/mine_withdraw/evidence_add", "review_invitations.mine_list/open/verify", "consents.request_view/respond", "disputes.mine_list/get/withdraw (user side, if applicable)", "reactions.put (Helpful on reviews)", "public.org_reviews"]
+        "operations": [
+          "reviews.eligibility/create/mine_list/mine_get/mine_update/mine_withdraw/evidence_add",
+          "review_invitations.mine_list/open/verify",
+          "consents.request_view/respond",
+          "disputes.mine_list/get/withdraw (user side, if applicable)",
+          "reactions.put (Helpful on reviews)",
+          "public.org_reviews"
+        ]
       },
       "context_to_read": [
         "Docs/22.Social_WebUI_user_screens.md lines 481-505",
@@ -733,12 +1198,30 @@
       "id": "P12",
       "title": "PWA capabilities (offline, install, web push) and fleet driver reporting",
       "status": "not_started",
+      "amendments": [
+        "2026-10-25: read BA-05, BA-18, BA-22, DI-11 (decided: build web push) and DI-16 first.",
+        "P12.T3: consumer web push is supported by the backend; revoke the token on logout/account switch; 409 DUPLICATE when the browser's token belongs to another account; notifications with organization_context_id open the portal (DI-16).",
+        "P12.T4: driver routes per the GD-08 amendment; read backend OQ-18/NI-03 (fleet role model) before building; drivers report issues and mileage and read status only (BA-22).",
+        "Driver photos go through the same HEIC → JPEG conversion (BA-05)."
+      ],
       "depends_on": ["P9", "P10", "backend S8 (fleet) for the driver part"],
       "goal": "The PWA installs, survives flaky networks with an offline shell and cached garage/appointments, keeps a bundled dictionary, offers web push at the right moment (if DI-11 allows), and lets fleet drivers report issues on their assigned vehicles from the browser.",
       "scope": {
-        "docs": ["pwa/README.md", "Docs/22 §2.5 PWA install, W-NOTIF-01 web push, W-SYS-01 offline", "Docs/02 WP19 (fleet driver reporting), §3.1 bundled dictionary", "Docs/55 §10.4 F-ISSUE-01 driver issue report", "Docs/40 §18 fleet (driver-visible ops), §20 push_tokens"],
+        "docs": [
+          "pwa/README.md",
+          "Docs/22 §2.5 PWA install, W-NOTIF-01 web push, W-SYS-01 offline",
+          "Docs/02 WP19 (fleet driver reporting), §3.1 bundled dictionary",
+          "Docs/55 §10.4 F-ISSUE-01 driver issue report",
+          "Docs/40 §18 fleet (driver-visible ops), §20 push_tokens"
+        ],
         "screens": ["W-SYS-01 offline", "install prompt", "web push opt-in", "DRV-WEB driver views"],
-        "operations": ["push_tokens.register/revoke", "notification_prefs.put (web push column)", "vehicles.list/get/mileage_add and vehicle issue ops with DRV", "media upload kit", "triage.start (DRV allowed)"]
+        "operations": [
+          "push_tokens.register/revoke",
+          "notification_prefs.put (web push column)",
+          "vehicles.list/get/mileage_add and vehicle issue ops with DRV",
+          "media upload kit",
+          "triage.start (DRV allowed)"
+        ]
       },
       "context_to_read": [
         "Docs/22.Social_WebUI_user_screens.md lines 65-80, 406-413, 527-538",
@@ -766,10 +1249,18 @@
       "id": "P13",
       "title": "Hardening: key-flow E2E, accessibility, performance, security, docs",
       "status": "not_started",
+      "amendments": [
+        "2026-10-25: add an AI-off run of the key flows (backend CARPAL_MCP_MODE=unavailable, BA-02); account for search indexing delay and rate-limit scale (BA-25, BA-33); add the vehicle transfer flow to the long journey test (BA-04); include DI-16/DI-17/DI-18/DI-20 in the next_iteration list."
+      ],
       "depends_on": ["P1-P12"],
       "goal": "Close the scratch build: the consumer key flows pass in EN and FA, accessibility and RTL are verified, public pages meet the LCP budget, the BFF passes a security review, and the deviations are consolidated into a next-iteration list.",
       "scope": {
-        "docs": ["Docs/01 §10 (Flows 1, 5, 6 for consumers), §15 NFRs", "Docs/02 WP19 acceptance and tests, WP21", "Docs/21 §7 a11y/l10n checklist", "Docs/40 Appendix C (contract test obligations that apply to clients: SEC-RL-4)"],
+        "docs": [
+          "Docs/01 §10 (Flows 1, 5, 6 for consumers), §15 NFRs",
+          "Docs/02 WP19 acceptance and tests, WP21",
+          "Docs/21 §7 a11y/l10n checklist",
+          "Docs/40 Appendix C (contract test obligations that apply to clients: SEC-RL-4)"
+        ],
         "screens": ["all"],
         "operations": ["all used"]
       },
@@ -796,14 +1287,19 @@
     }
   ],
 
-  "deviations_log": [],
+  "deviations_log": [
+    { "stage": "alignment", "date": "2026-10-25", "deviation": "Plan re-aligned with the finished backend before P1: backend_alignment BA-01..BA-35, DI-16..DI-23 (DI-10, DI-11 decided), amendments to GD-04/05/07/08/09/11/13/17, per-stage amendments; note added to backend/dev_plan.json next_iteration NI-08 (consumer BFF built in pwa/)." },
+    { "stage": "P1", "date": "2026-10-25", "deviation": "Next.js 16: middleware is src/proxy.ts (Node.js runtime); experimental.globalNotFound and experimental.turbopackAdditionalRoots are on (root layout under [locale]; Turbopack root stays pwa/ and follows the links into ../shared)." },
+    { "stage": "P1", "date": "2026-10-25", "deviation": "notFound() from a page renders as an empty 404 shell with the not-found body drawn on the client (Next.js 16.4.3); unmatched URLs are server-rendered by global-not-found.tsx. Strategy for P3.T8/P5 open." },
+    { "stage": "P1", "date": "2026-10-25", "deviation": "Design-system CSS and fonts served from /ds (public copy made by ds sync --public) instead of the CSS bundle; Tailwind default scales reset, prefixed utilities for radius/shadow/font (GD-11 amendment)." },
+    { "stage": "P1", "date": "2026-10-25", "deviation": "TypeScript 5.9.3 instead of the newest 7.0 (typescript-eslint support, backend parity); exactOptionalPropertyTypes false as in backend (the plan text said otherwise); allowJs on for the JS tools." },
+    { "stage": "P1", "date": "2026-10-25", "deviation": "Interim pieces ahead of P3: partial Icon port (6 glyphs), getTranslator() instead of i18next, ?theme= cookie switch in the proxy." }
+  ],
 
   "handoff_notes": [
-    {
-      "date": "2026-10-12",
-      "from": "plan",
-      "note": "Plan created after reviewing Docs/ (22 in full; 01/02 WP19, stack and l10n; 21 and 90 outlines; 40 transport, security, auth server, platform ops and the operation registry; 55/56 outlines; design system README and CLAUDE.md), mobile/preview, shared/, and the backend's README, dev_plan.json, auth clients and config. Key findings: (1) the consumer BFF is not built anywhere and the backend defers it, so P2 builds it inside the PWA (GD-03); (2) no hosted sign-in UI exists, so P4 builds it and dev proxies the auth host under /id (GD-05); (3) the storage host needs CORS for browser uploads (DI-08, P7); (4) several Docs/22 features have no operation (DI-02 consumer posts, DI-03 member page, DI-06 saved posts); (5) 42 consumer operations wait on backend S7-S9, so P10-P12 are scheduled late and every screen has 501/AI-off states (GD-13). Start with P1."
-    }
+    { "date": "2026-10-12", "from": "plan", "note": "Plan created after reviewing Docs/ (22 in full; 01/02 WP19, stack and l10n; 21 and 90 outlines; 40 transport, security, auth server, platform ops and the operation registry; 55/56 outlines; design system README and CLAUDE.md), mobile/preview, shared/, and the backend's README, dev_plan.json, auth clients and config. Key findings: (1) the consumer BFF is not built anywhere and the backend defers it, so P2 builds it inside the PWA (GD-03); (2) no hosted sign-in UI exists, so P4 builds it and dev proxies the auth host under /id (GD-05); (3) the storage host needs CORS for browser uploads (DI-08, P7); (4) several Docs/22 features have no operation (DI-02 consumer posts, DI-03 member page, DI-06 saved posts); (5) 42 consumer operations wait on backend S7-S9, so P10-P12 are scheduled late and every screen has 501/AI-off states (GD-13). Start with P1." },
+    { "date": "2026-10-25", "from": "alignment", "note": "Plan re-aligned with the finished backend (S1-S9c) and the Docs/40 changes since 2026-10-12, before P1. Added backend_alignment BA-01..BA-35, doc issues DI-16..DI-23 (DI-10 and DI-11 decided), amendments to GD-04/05/07/08/09/11/13/17 and an amendments list on every stage. The ones most likely to cause conflicts later: DI-17 (bind guest anonymous tokens with a per-pre-session DPoP key, or guest search sessions break every 15 min), the GD-08 allowlist rule for fleet drivers, BA-04 vehicle transfers (new garage and onboarding flow), BA-05 (browser HEIC → JPEG is mandatory, videos ≤ 15 s), DI-18 (community/Q&A flags are off in the seeds; P8 needs a dev flag CLI in backend), DI-16 (business pushes reach consumer web tokens) and BA-23 (backend NI-08 must reuse the PWA's consumer BFF; a note was added to backend/dev_plan.json NI-08). Then P1 started." },
+    { "date": "2026-10-25", "from": "P1", "note": "P1 done: Next.js 16.4.3 / React 19.3.1 / Tailwind 4.3.3 / TypeScript 5.9.3 package on the local Node 24; generated @carpal/api-contracts (406 operations with routes, principals and sec tags, typed IO, enums, errors), @carpal/i18n skeleton and synced shared/design-system/web, each with a drift check; locale routing in src/proxy.ts, [locale] root layout with lang/dir/data-theme, /ds stylesheets and per-language font preload; placeholder home page and localized 404; lint rules for logical properties and token-only values. pnpm check, build and 7 Playwright+axe smoke tests green. Next: P2 (consumer BFF). Read P1.report.notes_for_next first — especially the Next.js 16 notes (proxy, async request APIs, bundled docs) and the 404 behaviour." }
   ],
 
   "open_questions": [

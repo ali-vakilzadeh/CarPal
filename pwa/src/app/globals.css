@@ -1,0 +1,116 @@
+/* Tailwind CSS v4, used for layout only (GD-11). Colours, spacing, radii, shadows and fonts come from the design
+   system's semantic tokens (public/ds/tokens.css, loaded by the layout before this file); Tailwind's own scales are
+   switched off so a utility can only name a token. Theme names that equal a token name (radius-md, shadow-1,
+   font-fa …) would define the token in terms of itself, so those utilities carry a ds- prefix. Components keep the
+   design system's own classes (public/ds/components/bundle.css). Logical properties only: no left/right. */
+@import 'tailwindcss';
+
+@theme {
+  --color-*: initial;
+  --spacing-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+  --container-*: initial;
+  --breakpoint-*: initial;
+  /* Docs/22 §1 layout system: phone < 768, tablet 768-1199, desktop >= 1200. */
+  --breakpoint-md: 768px;
+  --breakpoint-xl: 1200px;
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-signal: var(--signal);
+  --color-signal-soft: var(--signal-soft);
+  --color-on-signal: var(--on-signal);
+  --color-border: var(--border);
+  --color-border-inactive: var(--border-inactive);
+  --color-divider: var(--divider);
+  --color-selector: var(--selector);
+  --color-selector-track: var(--selector-track);
+  --color-focus: var(--focus);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-scrim: var(--scrim);
+
+  --spacing-0: 0px;
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-8: var(--space-8);
+  --spacing-12: var(--space-12);
+  --spacing-tap: var(--tap-min);
+  --spacing-control: var(--control-md);
+  --spacing-control-sm: var(--control-sm);
+  --spacing-icon: var(--icon-md);
+  --spacing-icon-sm: var(--icon-sm);
+  --spacing-avatar: var(--avatar-md);
+  --spacing-bar: var(--bar-height);
+
+  --container-measure: var(--measure);
+
+  --radius-ds-sm: var(--radius-sm);
+  --radius-ds-md: var(--radius-md);
+  --radius-ds-lg: var(--radius-lg);
+  --radius-ds-pill: var(--radius-pill);
+
+  --shadow-ds-1: var(--shadow-1);
+  --shadow-ds-2: var(--shadow-2);
+  --shadow-ds-signal: var(--shadow-signal);
+  --shadow-ds-focus: var(--ring-focus);
+
+  --font-latin: var(--font-sans);
+  --font-persian: var(--font-fa);
+}
+
+@layer base {
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--ring-focus);
+  }
+}
+
+/* Screen-level building blocks taken from mobile/preview/css/preview.css (tokens only). */
+@layer components {
+  /* "CarPal" set in type (design system: Logo); always Latin. */
+  .pwa-wordmark {
+    font-family: var(--font-sans);
+    font-size: 34px;
+    line-height: 40px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .pwa-hero-mark {
+    display: inline-grid;
+    place-items: center;
+    inline-size: calc(var(--space-12) * 2);
+    block-size: calc(var(--space-12) * 2);
+    border-radius: var(--radius-pill);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .pwa-tile {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    inline-size: var(--control-sm);
+    block-size: var(--control-sm);
+    border-radius: var(--radius-md);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+}
