@@ -57,7 +57,12 @@ Environment variables are listed in [.env.example](.env.example) (copy to `.env.
 
 ```
 pwa/
-  src/app/[locale]/        localized pages; layout.tsx is the root layout (<html lang dir data-theme>)
+  src/app/[locale]/        localized pages; layout.tsx is the root layout (<html lang dir data-theme>, theme boot script,
+                           client providers: translations, config.client, session, theme, toasts, consent, auth intent)
+  src/app/[locale]/(shell)/  pages inside the app shell (header, navigation, right rail @rail slot):
+                           (public)/ guest-readable pages, (app)/ signed-in tools behind the session gate
+  src/app/[locale]/system/[kind]/  W-SYS-01 pages reached only through the proxy's status rewrite (410, 503 …)
+  src/app/[locale]/{not-found,forbidden,error}.tsx   404 / 403 / error-with-Retry boundaries
   src/app/global-not-found.tsx   server-rendered 404 for unmatched URLs (own document)
   src/proxy.ts             security headers (CSP nonce …), locale redirects, theme cookie, x-carpal-locale header (Next.js 16 "proxy" = middleware)
   src/instrumentation.ts   validates the environment at startup
@@ -67,11 +72,21 @@ pwa/
   src/server/bff-runtime.ts  the process-wide BFF built from the environment
   src/server/ssr/api.ts    typed client for server components (cp-ssr token, anonymous fallback)
   src/server/security-headers.ts  CSP (nonce, Trusted Types) and the other page headers, applied by src/proxy.ts
+  src/server/config.ts, taxonomy.ts, i18n.ts, session.ts   cached config.client, taxonomy snapshots, CDN-refreshed
+                           dictionaries and the session view for server rendering
+  src/server/system-status.ts  maintenance mode and status rewrites to the system pages
   src/server/              other server-only code (env, request locale)
   src/lib/api/             typed API client (operation ids, retries, Idempotency-Key, ETags), TanStack Query helpers, useSession
-  src/lib/                 other client-safe helpers (locales, dictionary, theme, design-system paths)
-  src/components/ds/       design-system components ported to typed React (P3 completes the set)
-  src/components/shell/    app shell pieces
+  src/lib/i18n/            i18next runtime (core, bundled dictionary, <I18nProvider>/useT), locales
+  src/lib/format/          numbers/digits, Jalali/Gregorian dates, relative time, money (IRR → toman), distance, <Bidi>
+  src/lib/config/          config.client and taxonomy in the browser (useFlag, useRegion, useTaxonomyNodes)
+  src/lib/analytics/       consent cookie, typed CLIENT_EVENTS copy, the events.ingest queue
+  src/lib/                 other client-safe helpers (theme, design-system paths, system page kinds)
+  src/components/ds/       design-system components ported to typed React (+ proposed additions, additions.css)
+  src/components/shell/    app shell (header, navigation, rail, footer) and global patterns (toast, URL modal, dialog,
+                           auth-intent modal, hover card, infinite list, skeletons, states, error boundary, cookie banner)
+  src/components/vehicle/  vehicle picker (brand → model → series)
+  src/features/dev-kit/    demo page of the P3 patterns (/<locale>/dev-kit, CARPAL_PWA_DEMO=1 only)
   tests/e2e/               Playwright specs
   tools/                   generators and checks (contract, design system, i18n, lint plugin, local Node)
 ../shared/api-contracts/   @carpal/api-contracts: generated TypeScript (+ backend-generated openapi.yaml)
@@ -91,4 +106,6 @@ pwa/
 ## Notes
 
 - The linked `shared/` packages ship TypeScript sources; Next.js compiles them (`transpilePackages`) and Turbopack reaches them through an additional root (`next.config.ts`), so `backend/` is never watched.
-- A `notFound()` thrown by a page is server-rendered by Next.js 16 as an empty shell with status 404 and drawn on the client by `[locale]/not-found.tsx`; unmatched URLs get the fully server-rendered `global-not-found.tsx`. See the P1 report.
+- A `notFound()` thrown by a page is server-rendered by Next.js 16 as an empty shell with status 404 and drawn on the client by `[locale]/not-found.tsx`; unmatched URLs get the fully server-rendered `global-not-found.tsx`. See the P1 report. `forbidden()` (403) works the same way (`experimental.authInterrupts`). Statuses a page cannot produce (410, 503) come from the proxy: `systemRewrite()` in `src/server/system-status.ts` (P3 report).
+- **Strings in client components:** `useT()` from `@/lib/i18n/client`; the root layout passes the namespaces in `CLIENT_NAMESPACES`, a feature area adds its own with `<I18nNamespaces>`. Server components: `const { t } = await serverI18n(locale)`. Counts use `{{count, number}}` (Persian digits in fa).
+- **Local switches:** `CARPAL_PWA_DEMO=1` enables `/<locale>/dev-kit` (pattern demo, gated Follow, `/dev-kit/status/<kind>`); `CARPAL_PWA_MAINTENANCE=on|<ISO time>` turns on maintenance mode.

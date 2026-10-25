@@ -28,6 +28,13 @@ const schema = z
     /** BFF session store (GD-08): lite = in-memory (one process), redis = shared. */
     CARPAL_PWA_SESSION_STORE: z.enum(['lite', 'redis']).default('lite'),
     CARPAL_PWA_REDIS_URL: optionalUrl,
+    /** Maintenance mode (W-SYS-01): empty/off = live, "on" = no estimate, an ISO time = until then. Every page answers 503. */
+    CARPAL_PWA_MAINTENANCE: z.string().max(40).optional(),
+    /** Test and demo pages (/<locale>/dev-kit, status rewrites): 1 in development and E2E only; refused in prod. */
+    CARPAL_PWA_DEMO: z
+      .enum(['0', '1'])
+      .default('0')
+      .transform((v) => v === '1'),
   })
   .superRefine((env, ctx) => {
     if (env.CARPAL_PWA_SESSION_STORE === 'redis' && !env.CARPAL_PWA_REDIS_URL) {
@@ -37,6 +44,7 @@ const schema = z
       for (const key of ['CARPAL_PWA_ORIGIN', 'CARPAL_STORAGE_URL'] as const) {
         if (!env[key].startsWith('https://')) ctx.addIssue({ code: 'custom', path: [key], message: 'must be https in prod' });
       }
+      if (env.CARPAL_PWA_DEMO) ctx.addIssue({ code: 'custom', path: ['CARPAL_PWA_DEMO'], message: 'must be 0 in prod' });
       if (env.CARPAL_PWA_SESSION_STORE !== 'redis') {
         ctx.addIssue({ code: 'custom', path: ['CARPAL_PWA_SESSION_STORE'], message: 'prod needs the redis session store' });
       }

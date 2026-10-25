@@ -1,5 +1,5 @@
 // Web Worker of the proof-of-work solver (pow.ts): searches the whole nonce range and posts the first solution.
-import { searchPow } from './pow';
+import { searchPow } from './pow-search';
 
 self.onmessage = async (e: MessageEvent<{ prefix: string; bits: number; maxTries: number }>) => {
   const { prefix, bits, maxTries } = e.data;

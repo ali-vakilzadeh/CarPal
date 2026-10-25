@@ -1,30 +1,52 @@
-// Minimal dictionary access for server components (P1). The i18next runtime with namespaces, CDN refresh and
-// formatting arrives in P3.T2; keys stay the same.
+// The bundled dictionaries (shared/i18n, the fallback copy of Docs/02 §3.1) for server code and tests. Server
+// components normally use serverI18n() (src/server/i18n.ts), which applies a newer CDN version when config.client
+// announces one; getTranslator() stays for synchronous callers and always reads the bundled copy. Client code never
+// imports this module (it would bundle every language): it gets its namespaces from <I18nProvider>.
 import en from '@carpal/i18n/locales/en.json';
 import fa from '@carpal/i18n/locales/fa.json';
+import { createI18n, translator } from './core';
+import type { Dictionary, Namespace, Resources, Translate } from './keys';
 import type { Locale } from './locales';
 
-type Dict = typeof en;
+export type { Dictionary, MessageKey, MessageVars, Namespace, Resources, Translate } from './keys';
 
-/** Dotted keys of the English dictionary (the reference language). */
-type Leaves<T, P extends string = ''> = {
-  [K in keyof T & string]: T[K] extends string ? `${P}${K}` : Leaves<T[K], `${P}${K}.`>;
-}[keyof T & string];
-export type MessageKey = Leaves<Dict>;
+export const BUNDLED: Record<Locale, Dictionary> = { en, fa };
+export const NAMESPACES = Object.keys(en) as Namespace[];
 
-const DICTIONARIES: Record<Locale, Dict> = { en, fa };
+const cache = new Map<Locale, Translate>();
 
-function lookup(dict: unknown, key: string): string | undefined {
-  let node = dict;
-  for (const part of key.split('.')) {
-    if (node === null || typeof node !== 'object') return undefined;
-    node = (node as Record<string, unknown>)[part];
+/** Translate function over the bundled dictionary of a locale. */
+export function getTranslator(locale: Locale): Translate {
+  let t = cache.get(locale);
+  if (!t) {
+    t = translator(createI18n(locale, BUNDLED[locale]));
+    cache.set(locale, t);
   }
-  return typeof node === 'string' ? node : undefined;
+  return t;
 }
 
-/** Returns a translate function for a locale; falls back to English, then to the key. */
-export function getTranslator(locale: Locale): (key: MessageKey) => string {
-  const dict = DICTIONARIES[locale];
-  return (key) => lookup(dict, key) ?? lookup(en, key) ?? key;
+/** The given namespaces of a dictionary (what a client provider receives). */
+export function pickNamespaces(dict: Dictionary, namespaces: readonly Namespace[]): Resources {
+  return Object.fromEntries(namespaces.map((ns) => [ns, dict[ns]])) as Resources;
+}
+
+type Tree = { [key: string]: string | Tree };
+
+/**
+ * A newer dictionary laid over the bundled one: string leaves of `update` replace or add, everything else keeps
+ * the bundled value, so a partial or older CDN file never removes a key the code uses.
+ */
+export function mergeDictionary(base: Dictionary, update: unknown): Dictionary {
+  const walk = (b: Tree, u: unknown): Tree => {
+    if (u === null || typeof u !== 'object' || Array.isArray(u)) return b;
+    const out: Tree = { ...b };
+    for (const [k, v] of Object.entries(u as Record<string, unknown>)) {
+      const current = b[k];
+      if (typeof v === 'string' && v.trim() !== '' && (current === undefined || typeof current === 'string')) out[k] = v;
+      else if (v !== null && typeof v === 'object' && (current === undefined || typeof current === 'object'))
+        out[k] = walk((current as Tree | undefined) ?? {}, v);
+    }
+    return out;
+  };
+  return walk(base as unknown as Tree, update) as unknown as Dictionary;
 }

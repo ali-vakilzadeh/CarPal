@@ -20,6 +20,7 @@ export default defineConfig({
     url: `http://localhost:${PORT}/fa`,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
-    env: { NEXT_TELEMETRY_DISABLED: '1', CARPAL_PWA_ORIGIN: `http://localhost:${PORT}` },
+    // CARPAL_PWA_DEMO exposes /<locale>/dev-kit (P3 pattern and status checks); never set in prod (env.ts refuses it).
+    env: { NEXT_TELEMETRY_DISABLED: '1', CARPAL_PWA_ORIGIN: `http://localhost:${PORT}`, CARPAL_PWA_DEMO: '1' },
   },
 });

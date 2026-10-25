@@ -36,11 +36,15 @@ export function currentPath(): string {
   return typeof location === 'undefined' ? '/' : `${location.pathname}${location.search}${location.hash}`;
 }
 
-/** /bff/login URL; `stepUp` re-authenticates at aal2/aal3 (prompt=login, BA-11). */
-export function loginUrl(o: { returnTo?: string; stepUp?: 'aal2' | 'aal3'; locale?: string } = {}): string {
+/**
+ * /bff/login URL; `stepUp` re-authenticates at aal2/aal3 (prompt=login, BA-11). `screen: 'signup'` asks the hosted
+ * sign-in to open on account creation (P3 sends the hint; the BFF and the hosted UI act on it from P4).
+ */
+export function loginUrl(o: { returnTo?: string; stepUp?: 'aal2' | 'aal3'; locale?: string; screen?: 'signup' } = {}): string {
   const p = new URLSearchParams({ return_to: o.returnTo ?? currentPath() });
   if (o.stepUp) p.set('step_up', o.stepUp);
   if (o.locale) p.set('locale', o.locale);
+  if (o.screen) p.set('screen', o.screen);
   return `/bff/login?${p.toString()}`;
 }
 

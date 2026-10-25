@@ -24,6 +24,7 @@ export { RedisSessionStore, RespClient } from './session/redis';
 export { privateKeyJwt, noClientAuthentication, TokenEndpointError, type ClientAuthentication } from './oauth/token-client';
 export type { Credential } from './tokens';
 export { dpopProof } from './oauth/dpop';
+export { sessionView, type SessionView } from './endpoints';
 
 export interface BffOptions {
   config: BffConfig;

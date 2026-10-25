@@ -12,6 +12,7 @@ describe('i18n check', () => {
 
   it('reads {{placeholders}}', () => {
     expect(placeholders('Hi {{ name }}, {{count}} new · {{name}}')).toEqual(['count', 'name']);
+    expect(placeholders('{{count, number}} open · {{ when , datetime }}')).toEqual(['count', 'when']);
   });
 
   it('reports missing, empty, mismatched and misshapen keys', () => {

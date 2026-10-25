@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { proxy } from './proxy';
 
 const request = (path: string, headers: Record<string, string> = {}) =>
@@ -25,6 +25,13 @@ describe('proxy (locale routing)', () => {
     expect(res.cookies.get('cp_theme')?.value).toBe('sun');
   });
 
+  it('?theme=auto deletes the stored choice (P3.T3)', () => {
+    const res = proxy(request('/fa?theme=auto', { cookie: 'cp_theme=dark' }));
+    expect(res.status).toBe(303);
+    expect(res.cookies.get('cp_theme')?.value).toBe('');
+    expect(res.headers.get('set-cookie')).toMatch(/cp_theme=;.*Max-Age=0/i);
+  });
+
   it('ignores unknown themes', () => {
     const res = proxy(request('/en?theme=neon'));
     expect(res.headers.get('location')).toBe('http://localhost:3000/en');
@@ -35,6 +42,48 @@ describe('proxy (locale routing)', () => {
     const res = proxy(request('/en/garage'));
     expect(res.headers.get('x-middleware-request-x-carpal-locale')).toBe('en');
     expect(res.cookies.get('cp_locale')?.value).toBe('en');
+  });
+});
+
+describe('proxy (system pages, P3.T8)', () => {
+  /** A fresh proxy module whose (cached) server env sees `vars`. */
+  async function proxyWith(vars: Record<string, string>) {
+    const saved = Object.fromEntries(Object.keys(vars).map((k) => [k, process.env[k]]));
+    Object.assign(process.env, vars);
+    vi.resetModules();
+    try {
+      const mod = await import('./proxy');
+      mod.proxy(request('/fa')); // reads and caches the env now
+      return mod.proxy;
+    } finally {
+      for (const [k, v] of Object.entries(saved)) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
+  }
+
+  it('never trusts a system marker sent by the client', () => {
+    const res = proxy(request('/fa/system/gone', { 'x-carpal-system': 'gone' }));
+    expect(res.headers.get('x-middleware-request-x-carpal-system')).toBeNull();
+    expect(res.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+
+  it('maintenance answers every localized page with the 503 system page', async () => {
+    const p = await proxyWith({ CARPAL_PWA_MAINTENANCE: 'on' });
+    const res = p(request('/en/shop/reza-auto'));
+    expect(res.status).toBe(503);
+    expect(res.headers.get('x-middleware-rewrite')).toBe('http://localhost:3000/en/system/maintenance');
+    expect(res.headers.get('retry-after')).toBe('300');
+    expect(res.headers.get('content-security-policy')).toContain("'nonce-");
+  });
+
+  it('demo builds rewrite /<locale>/dev-kit/status/<kind> with its status; other builds do not', async () => {
+    const demo = await proxyWith({ CARPAL_PWA_DEMO: '1' });
+    expect(demo(request('/fa/dev-kit/status/gone')).status).toBe(410);
+    expect(demo(request('/fa/dev-kit/status/no-access')).status).toBe(403);
+    expect(demo(request('/fa/dev-kit/status/suspended')).headers.get('x-middleware-rewrite')).toBeNull();
+    expect(proxy(request('/fa/dev-kit/status/gone')).headers.get('x-middleware-rewrite')).toBeNull();
   });
 });
 

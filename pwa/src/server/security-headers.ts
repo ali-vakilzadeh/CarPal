@@ -13,8 +13,13 @@ export interface CspOptions {
   tileOrigins: readonly string[];
 }
 
-/** Trusted Types policies the app may create: Next.js's own client policy and its bundler policy. */
-export const TRUSTED_TYPES_POLICIES = ['nextjs', 'nextjs#bundler'] as const;
+/**
+ * Trusted Types policies the app may create: Next.js's own client policy and its bundler policy, plus 'default'
+ * (P3): Next.js 16.4.3's Turbopack runtime loads lazy chunks with a plain script.src assignment and React creates
+ * <script> elements through innerHTML, so the boot script (src/lib/theme.ts BOOT_SCRIPT) installs a narrow default
+ * policy — same-origin /_next/static/ script URLs, and HTML that cannot create markup.
+ */
+export const TRUSTED_TYPES_POLICIES = ['nextjs', 'nextjs#bundler', 'default'] as const;
 
 export function contentSecurityPolicy(o: CspOptions): string {
   const media = o.mediaOrigins.join(' ');

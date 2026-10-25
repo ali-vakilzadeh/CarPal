@@ -2,28 +2,9 @@
 // decimal nonces. Runs in a Web Worker when one can be started, else on the main thread in slices so the page
 // stays responsive. Only used when the server asks (strict mode).
 
-const encoder = new TextEncoder();
+import { searchPow } from './pow-search';
 
-export function leadingZeroBits(hash: Uint8Array): number {
-  let bits = 0;
-  for (const byte of hash) {
-    if (byte === 0) {
-      bits += 8;
-      continue;
-    }
-    return bits + Math.clz32(byte) - 24;
-  }
-  return bits;
-}
-
-/** Tries nonces from `start` for `count` steps; the first solution, or null. */
-export async function searchPow(prefix: string, bits: number, start: number, count: number): Promise<string | null> {
-  for (let i = start; i < start + count; i++) {
-    const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(prefix + i)));
-    if (leadingZeroBits(hash) >= bits) return String(i);
-  }
-  return null;
-}
+export { leadingZeroBits, searchPow } from './pow-search';
 
 const SLICE = 2_000;
 const MAX_TRIES = 1 << 26;

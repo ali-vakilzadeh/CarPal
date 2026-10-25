@@ -12,7 +12,14 @@ describe('server env', () => {
       CARPAL_API_AUDIENCE: 'https://api.carpal.app',
       CARPAL_STRICT_AUTH: false,
       CARPAL_PWA_SESSION_STORE: 'lite',
+      CARPAL_PWA_DEMO: false,
     });
+  });
+
+  it('reads the demo switch and the maintenance value (P3)', () => {
+    expect(parseServerEnv({ CARPAL_PWA_DEMO: '1' }).CARPAL_PWA_DEMO).toBe(true);
+    expect(parseServerEnv({ CARPAL_PWA_MAINTENANCE: '2026-10-25T12:00:00Z' }).CARPAL_PWA_MAINTENANCE).toBe('2026-10-25T12:00:00Z');
+    expect(() => parseServerEnv({ CARPAL_PWA_DEMO: 'true' })).toThrow(/CARPAL_PWA_DEMO/);
   });
 
   it('treats empty values as unset', () => {
@@ -41,5 +48,15 @@ describe('server env', () => {
         CARPAL_PWA_REDIS_URL: 'redis://cache:6379',
       }).CARPAL_ENV,
     ).toBe('prod');
+    expect(() =>
+      parseServerEnv({
+        CARPAL_ENV: 'prod',
+        CARPAL_PWA_ORIGIN: 'https://carpal.app',
+        CARPAL_STORAGE_URL: 'https://media.carpal-usercontent.app',
+        CARPAL_PWA_SESSION_STORE: 'redis',
+        CARPAL_PWA_REDIS_URL: 'redis://cache:6379',
+        CARPAL_PWA_DEMO: '1',
+      }),
+    ).toThrow(/CARPAL_PWA_DEMO: must be 0 in prod/);
   });
 });

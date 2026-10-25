@@ -1,8 +1,10 @@
 // P2.T8/T9: page security headers (nonce CSP with Trusted Types, framing, COOP/CORP, Permissions-Policy), private
 // pages never cached or indexed, and the BFF's refusals that need no backend (allowlist 404, CSRF 403, guest session).
 import { expect, test } from '@playwright/test';
+import { decideCookies } from './support';
 
-test('pages carry a nonce CSP with Trusted Types and run without a policy violation', async ({ page }) => {
+test('pages carry a nonce CSP with Trusted Types and run without a policy violation', async ({ page, context, baseURL }) => {
+  await decideCookies(context, baseURL!);
   const violations: string[] = [];
   page.on('console', (m) => {
     if (m.type() === 'error') violations.push(m.text());
@@ -27,11 +29,14 @@ test('pages carry a nonce CSP with Trusted Types and run without a policy violat
   expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
   expect(headers['x-content-type-options']).toBe('nosniff');
 
-  // Next.js put the nonce on every script it rendered; the page hydrated (the theme links are client-routed).
-  const scripts = await page.locator('script').evaluateAll((els) => els.map((e) => (e as HTMLScriptElement).nonce));
-  expect(scripts.length).toBeGreaterThan(0);
-  expect(scripts.every((n) => n === nonce)).toBe(true);
-  await page.getByRole('link', { name: /night/i }).click();
+  // Next.js put the nonce on every script it rendered (and on the theme boot script); the page hydrated (the theme picker works).
+  // Every script tag the server sent carries the nonce; chunks the runtime adds later are trusted through
+  // 'strict-dynamic' and load through the Trusted Types default policy (P3).
+  const tags = (await res!.text()).match(/<script\b[^>]*>/g) ?? [];
+  expect(tags.length).toBeGreaterThan(0);
+  expect(tags.filter((t) => !t.includes(`nonce="${nonce}"`))).toEqual([]);
+  await page.locator('html[data-hydrated="true"]').waitFor({ state: 'attached' });
+  await page.getByRole('contentinfo').getByRole('link', { name: 'Night' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(violations).toEqual([]);
 

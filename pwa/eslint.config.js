@@ -71,7 +71,8 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/server/ssr/seo/**/*.{ts,tsx}'],
+    // JSON-LD (P5) and the constant pre-paint theme script (P3.T3) are the only inline HTML.
+    files: ['src/server/ssr/seo/**/*.{ts,tsx}', 'src/components/shell/theme-boot-script.tsx'],
     rules: { 'no-restricted-syntax': 'off' },
   },
   {

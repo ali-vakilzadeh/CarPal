@@ -25,7 +25,8 @@ export function flatten(dict: Dictionary, prefix = ''): Map<string, unknown> {
   return out;
 }
 
-const PLACEHOLDER = /\{\{\s*([\w.]+)\s*\}\}/g;
+// {{name}} or {{name, format}} (i18next built-in formatters such as 'number').
+const PLACEHOLDER = /\{\{\s*([\w.]+)\s*(?:,[^}]*)?\}\}/g;
 
 export function placeholders(text: string): string[] {
   return [...new Set([...text.matchAll(PLACEHOLDER)].map((m) => m[1] ?? ''))].sort();
