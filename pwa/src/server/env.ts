@@ -16,6 +16,13 @@ const schema = z
     CARPAL_AUTH_URL: url.default('http://127.0.0.1:8082'),
     /** Media/storage host; signed media URLs and upload tickets point here (CSP img-src/connect-src, BA-06). */
     CARPAL_STORAGE_URL: url.default('http://127.0.0.1:8083'),
+    /** Audience URL of the API host (backend CARPAL_API_AUDIENCE): the htu of DPoP proofs on API calls (GD-07). */
+    CARPAL_API_AUDIENCE: url.default('https://api.carpal.app'),
+    /** Mirrors the backend's CARPAL_STRICT_AUTH: PoW before ATT grants instead of after a refusal (DI-22). */
+    CARPAL_STRICT_AUTH: z
+      .enum(['0', '1'])
+      .default('0')
+      .transform((v) => v === '1'),
     /** Overrides config.client region.map.style_url (GD-12). */
     CARPAL_PWA_MAP_STYLE_URL: optionalUrl,
     /** BFF session store (GD-08): lite = in-memory (one process), redis = shared. */

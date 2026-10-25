@@ -4029,6 +4029,11 @@
       "date": "2026-10-24",
       "from": "S9c",
       "note": "S9c done — S9 and the scratch build are complete: OpenAPI 3.1 file generated and checked against registry and routers, GitHub Actions CI (not run on GitHub yet), coverage 405/406 with zero unexplained 501s, fleet-driver leaks fixed (DI-71, GD-38), BOLA refusals checked for existence oracles, risk_control_plan.json (RCP-01..04), next_iteration NI-01..NI-18. 999 passing (87 files); all checks green. Next: next_iteration, starting with RCP-01 and OQ-18."
+    },
+    {
+      "date": "2026-10-25",
+      "from": "pwa P2",
+      "note": "The consumer BFF now exists in pwa/src/server/bff/ (framework-free, Request/Response only; NI-08 should reuse or move it rather than write a second one). Backend change: comment-only lines in backend/.env.example documenting the PWA dev env (CARPAL_SIGNIN_URL, CARPAL_OAUTH_REDIRECT_URIS with https://localhost:3000/bff/oauth/callback, WebAuthn RP ID/origins); no code changed. Findings for the backend owner (pwa/dev_plan.json DI-24..DI-26): (1) Url is https-only, so a local browser sign-in needs the PWA on https (redirect_uri http://localhost is 422 pattern); (2) auth.token and /v1/auth/* are RL(auth.signin) with a 30 per 15 min per-IP-prefix window, and the pipeline takes the IP from the socket only, so every refresh, anonymous grant and hosted-UI sign-in that passes through the BFF counts against the BFF host's single IP — production needs a trusted forwarded client IP for the BFF (or exempting confidential-client token requests from the IP window); (3) token scopes are not enforced per operation (cp-ssr can call search.run), and a cp-ssr token is one anonymous principal (anonKey = HMAC(sub cp-ssr)), so all server rendering shares one public.read bucket (120/min, 3000/day) — cp-ssr needs its own bucket before P5/P6 SEO pages go live."
     }
   ],
   "open_questions": [

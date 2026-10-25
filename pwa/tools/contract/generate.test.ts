@@ -5,7 +5,8 @@ import { generateFiles, staleFiles } from './generate';
 describe('contract generation (GD-04)', () => {
   it('shared/api-contracts/generated is up to date with backend/libs/contract/generated', async () => {
     expect(staleFiles(await generateFiles())).toEqual([]);
-  });
+    // Generating all 406 operations takes a few seconds when the machine is busy (parallel workers, a running backend).
+  }, 30_000);
 
   it('exposes the operation map with routes and parsed sec tags', () => {
     expect(CONTRACT.operationCount).toBe(Object.keys(OPERATIONS).length);

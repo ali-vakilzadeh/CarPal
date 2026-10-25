@@ -9,12 +9,19 @@ describe('server env', () => {
       CARPAL_API_URL: 'http://127.0.0.1:8080',
       CARPAL_AUTH_URL: 'http://127.0.0.1:8082',
       CARPAL_STORAGE_URL: 'http://127.0.0.1:8083',
+      CARPAL_API_AUDIENCE: 'https://api.carpal.app',
+      CARPAL_STRICT_AUTH: false,
       CARPAL_PWA_SESSION_STORE: 'lite',
     });
   });
 
   it('treats empty values as unset', () => {
     expect(parseServerEnv({ CARPAL_PWA_MAP_STYLE_URL: '', CARPAL_API_URL: '' }).CARPAL_API_URL).toBe('http://127.0.0.1:8080');
+  });
+
+  it('reads the strict-mode switch as a boolean', () => {
+    expect(parseServerEnv({ CARPAL_STRICT_AUTH: '1' }).CARPAL_STRICT_AUTH).toBe(true);
+    expect(() => parseServerEnv({ CARPAL_STRICT_AUTH: 'yes' })).toThrow(/CARPAL_STRICT_AUTH/);
   });
 
   it('lists every invalid variable', () => {
