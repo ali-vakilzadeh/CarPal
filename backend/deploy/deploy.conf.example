@@ -1,0 +1,60 @@
+# CarPal backend deployment settings (sourced by every script in backend/deploy/).
+#
+# server-setup.sh copies this file to /carpal/config/deploy.conf on the first run.
+# Edit that copy on the server; the scripts read it after these defaults, so it only
+# needs the values you change. Plain bash: KEY=value, no spaces around "=".
+
+# --- Public names --------------------------------------------------------------------
+# Base domain. The hosts default to api.<DOMAIN>, id.<DOMAIN>, admin-api.<DOMAIN>, media.<DOMAIN>
+# (40 §1.1); set API_HOST, AUTH_HOST, ADMIN_HOST or MEDIA_HOST to override one.
+DOMAIN=example.com
+LETSENCRYPT_EMAIL=admin@example.com
+
+# --- Folders -------------------------------------------------------------------------
+CARPAL_ROOT=/carpal
+SRC_DIR=/carpal/backend/src          # code: backend/, Docs/, shared/, database/ (a copy of the repository subset)
+CONFIG_DIR=/carpal/config            # backend.env, db-admin.env, deploy.conf (secrets: never inside the code folder)
+DATA_DIR=/carpal/data                # runtime files of lite mode (mail/SMS/push outbox, dead letters); backend/.data points here
+UPLOAD_DIR=/carpal/upload            # media objects (signed-URL storage); /carpal/data/objects points here
+DB_DIR=/carpal/db                    # PostgreSQL cluster data (owned by postgres)
+BACKUP_DIR=/carpal/backups           # one folder per 0-predeploy.sh run
+LOG_DIR=/carpal/logs                 # logs of the deploy scripts (the service logs to journald)
+STAGING_DIR=/home/root/staging       # where WinSCP uploads the whole repository
+
+# Repository folders copied from staging to SRC_DIR (everything else in staging is ignored).
+SYNC_DIRS="backend Docs shared database"
+
+# --- Service -------------------------------------------------------------------------
+SERVICE_NAME=carpal-backend
+SERVICE_USER=carpal
+SERVICE_GROUP=carpal
+HEALTH_URL=http://127.0.0.1:8080/v1/health
+HEALTH_TIMEOUT_S=90
+
+# --- PostgreSQL (Ubuntu packages; data directory under DB_DIR) -------------------------
+PG_VERSION=16
+PG_CLUSTER=main
+PG_PORT=5432
+DB_NAME=carpal
+ANALYTICS_DB_NAME=carpal_analytics
+
+# --- Node.js (official build, checksum-verified; the version comes from backend/.node-version) ---
+NODE_VERSION_FALLBACK=24.21.0
+NODE_INSTALL_ROOT=/opt
+
+# --- 2-build.sh ------------------------------------------------------------------------
+RUN_CONTRACT_CHECKS=1                # pnpm contract:check, openapi:check, contract:coverage --strict
+RUN_TYPECHECK=1                      # pnpm typecheck
+RUN_LINT=0                           # pnpm lint (slow; CI runs it on every push)
+RUN_UNIT_TESTS=1                     # pnpm test (unit project only; never the integration tests, see deploy.md)
+RUN_DB_SETUP=1                       # pnpm db:setup (first install: baseline; later: pending migrations)
+BUILD_MEMORY_MB=3072                 # Node heap for tsc/vitest on small servers
+
+# --- 0-predeploy.sh --------------------------------------------------------------------
+KEEP_BACKUPS=7                       # backup folders kept (oldest removed first)
+BACKUP_NODE_MODULES=0                # 1 = include backend/node_modules in the code backup (bigger, but a rollback needs no install)
+
+# --- server-setup.sh -------------------------------------------------------------------
+ENABLE_UFW=0                         # 1 = enable the firewall (OpenSSH + Nginx Full only); check your SSH port first
+EXPOSE_ADMIN_API=0                   # 1 = publish admin-api.<DOMAIN> for ADMIN_ALLOW_IPS only (SEC-ADM-1); 0 = SSH tunnel only
+ADMIN_ALLOW_IPS=""                   # space-separated addresses or CIDRs allowed to reach admin-api when exposed

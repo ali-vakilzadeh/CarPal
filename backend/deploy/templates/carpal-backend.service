@@ -1,0 +1,47 @@
+# CarPal backend, lite mode: api, admin-api, auth, the worker and the signed-URL storage
+# listener in one process (dist/apps/dev/main.js). Lite adapters are in process, so the
+# deployables must not run as separate services (GD-04). Installed by server-setup.sh.
+[Unit]
+Description=CarPal backend (lite mode, all deployables in one process)
+Documentation=file://@BACKEND_DIR@/deploy/deploy.md
+After=network-online.target postgresql@@PG_VERSION@-@PG_CLUSTER@.service
+Wants=network-online.target postgresql@@PG_VERSION@-@PG_CLUSTER@.service
+
+[Service]
+Type=simple
+User=@SERVICE_USER@
+Group=@SERVICE_GROUP@
+WorkingDirectory=@BACKEND_DIR@
+EnvironmentFile=@CONFIG_DIR@/backend.env
+ExecStart=@NODE_BIN@/node --enable-source-maps dist/apps/dev/main.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+LimitNOFILE=65536
+UMask=0027
+
+# Hardening: read-only system and code, writable data folders only.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ReadWritePaths=@DATA_DIR@ @UPLOAD_DIR@
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

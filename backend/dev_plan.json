@@ -2,11 +2,11 @@
   "meta": {
     "title": "CarPal backend — scratch build plan and stage log",
     "created": "2026-10-10",
-    "last_updated": "2026-10-18",
-    "status": "in_progress",
+    "last_updated": "2026-10-24",
+    "status": "scratch_build_done",
     "progress": {
-      "as_of": "2026-10-18",
-      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult.",
+      "as_of": "2026-10-24",
+      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list.",
       "stages": [
         {
           "stage": "S1",
@@ -90,7 +90,7 @@
         {
           "stage": "S9",
           "title": "AI/MCP facade, contract test sweep, OpenAPI, hardening pass",
-          "status": "in_progress",
+          "status": "done",
           "ops_target": 25,
           "note": "ops_target 25 = the 23 §21 AI operations + the 2 WebAuthn operations (OQ-04 answered 2026-10-15). auth.social_start is deferred post-MVP (OQ-06, PM-01); media.upload_put is the storage PUT counted by the coverage tool. S9.T7 carries the other decision follow-ups of 2026-10-15 (GD-30..GD-34).",
           "parts": [
@@ -114,19 +114,25 @@
             {
               "part": "S9c",
               "title": "OpenAPI, CI, coverage closure, next-iteration list, README",
-              "status": "not_started"
+              "status": "done",
+              "completed_at": "2026-10-24",
+              "tests_after_part": "999 passing (87 files)"
             }
-          ]
+          ],
+          "completed_at": "2026-10-24",
+          "ops_implemented": 29,
+          "ops_deferred": 1,
+          "tests_after_stage": "999 passing (87 files)"
         }
       ],
       "operations": {
-        "implemented": 404,
-        "returning_501": 2,
-        "deferred_with_reason": 2,
+        "implemented": 405,
+        "returning_501": 1,
+        "deferred_with_reason": 1,
         "total": 406,
-        "note": "After S9a (pnpm contract:coverage): 404/406; auth.social_start (post-MVP, PM-01) and media.upload_put (storage PUT, counted by the tool until S9c) answer 501."
+        "note": "After S9c (pnpm contract:coverage --strict): 405/406 served — 404 by handlers and media.upload_put by the storage listener (the tool now recognises it); auth.social_start answers 501 by decision (post-MVP, PM-01, listed in tools/contract/coverage.ts DEFERRED_OPERATIONS). Unexplained 501s: 0."
       },
-      "next_stage": "S9c",
+      "next_stage": "next_iteration (see the top-level next_iteration list)",
       "before_starting_S9": [
         "Run `pnpm db:reset` once: S8 added the definer admin.moderation_action_affects to Docs/43 (and 42 §5.3). No new npm dependency; optional env CARPAL_DB_PASSWORD_ANALYTICS_READER.",
         "Read S8.report.notes_for_next and recommendations_for_next_stages.S9 (updated after S8): AI records need their PersonalData/retention/moderation registrations; the contract-test generator must know the admin-plane mechanics (staff client, purpose headers, four-eyes 202s, CarPal-Reason on DELETE).",
@@ -145,6 +151,13 @@
         "pnpm contract:check now also runs tools/contract/contract-tests.ts --check (the generated sweep suites must match operations.json). A new or changed operation needs pnpm contract:generate, pnpm contract:tests and a resolver in apps/testing/contract/resolvers/<module>.ts (the suite fails without one).",
         "pnpm test:all takes about 8 minutes on the laptop (the sweep about 3.5 minutes of it); the CI workflow of S9c must allow for that and run the integration project with one worker (fileParallelism false, embedded PostgreSQL).",
         "Read S9b.report.notes_for_next and the S9b entries of deviations_log."
+      ],
+      "before_starting_next_iteration": [
+        "No pnpm db:reset needed for S9c (no SQL change). New dev tooling only: pnpm openapi:generate / openapi:check, pnpm contract:coverage --strict; package.json allows the @embedded-postgres/linux-x64 build script (CI).",
+        "Docs/40 changed in S9c (DI-71): DRV on vehicles.status_history, appointments.history and appointments.notes_list; SEC-AZ-7 extended to fleet records reached by id. Regenerate with pnpm contract:generate, pnpm contract:tests and pnpm openapi:generate after any Docs/40 change.",
+        "The GitHub Actions workflow (.github/workflows/backend-ci.yml) was written and its YAML validated, but it has not run on GitHub yet: watch the first run (Linux embedded PostgreSQL, timings).",
+        "Decide OQ-18 (fleet role model, RCP-03) before fleet work; RCP-01 (purpose binding) is the first hardening item.",
+        "Read next_iteration, risk_control_plan.json and S9c.report.notes_for_next."
       ]
     },
     "purpose": "Breaks the first (scratch) build of the CarPal backend into 9 stages, each sized to run in its own context window. Every stage writes its report back into this file so the next context can see what is done, what was decided and what to watch out for.",
@@ -561,6 +574,18 @@
       "stage": "S9",
       "decision": "Contract sweep (S9b, 40 Appendix C, L22): tools/contract/contract-tests.ts generates one Vitest suite per module from operations.json (apps/testing/contract/generated, never edited by hand, checked by pnpm contract:check); each operation has a resolver in apps/testing/contract/resolvers/<module>.ts that builds its fixtures and the owner's call; the runner derives the generic checks (closed schemas, admin mechanics, same-organization BFLA, BOLA, kill switch, projection) from the registry, and the pipeline's CARPAL_VALIDATE_RESPONSES checks the success response. The guard-level BFLA matrix stays in routes.int.test.ts.",
       "reason": "Every operation is swept from the registry, so a new or changed operation cannot skip the contract tests; resolvers keep the requests real (linked records, plans, consents) without a schema-driven body synthesizer."
+    },
+    {
+      "id": "GD-37",
+      "stage": "S9c",
+      "decision": "OpenAPI is generated from the contract registry and schemas (tools/contract/openapi.ts), not from NestJS decorators (there are no controllers, GD-12); 40 \"generated from NestJS\" is read as \"generated from the backend that serves it\" and the equivalence is enforced by pnpm openapi:check against the registry and every host router.",
+      "reason": "The router is generated from the same registry; one source for routes, schemas and the published description."
+    },
+    {
+      "id": "GD-38",
+      "stage": "S9c",
+      "decision": "fleet drivers are narrowed below ORG(ANY) on fleet records reached by id (WP0 narrowing, 40 §0.5): fleet media only when uploaded by them or attached to an assigned vehicle record (changes: own uploads only); fleet AI insights and suggestions never (404).",
+      "reason": "User requirement of 2026-10-24: drivers, operators and mechanics see only the equipment linked to them; SEC-AZ-7."
     }
   ],
   "conventions": {
@@ -897,7 +922,8 @@
       "id": "DI-50",
       "issue": "Json<MatchReasonValues>, Json<FeedCard> and Json<TemplateParams> are server-defined schemas (x-server-schema) that 40 never writes down.",
       "action": "S6 shapes: MatchReasonValues = plain values per reason_type (level, jobs, system/task/brand node ids, offered, covered, avg_rating, reviews, distance_km, response_minutes/target, matching_items, fitment_confidence, in_stock_items, stock_status, urgency_level, fast, favorite, verified, badge); FeedCard per kind (organization card + distance; post excerpt; reminder title/type/status; showcase title, organization, thumbnail; question title/status/answer_count); TemplateParams = the template's placeholders (domain/templates.ts). Suggest documenting them in 40 and validating them (S9 OpenAPI).",
-      "status": "open"
+      "status": "resolved in S9c",
+      "resolution": "Written down as OpenAPI components in shared/api-contracts/openapi.yaml (generated; AI payloads and event properties from their validating schemas)."
     },
     {
       "id": "DI-51",
@@ -1019,6 +1045,12 @@
       "issue": "40 VinDecodeResult.suggested was Partial<VehicleWrite>, which includes vin: the closed response schema of vehicles.vin_decode admitted a full VIN although SEC-OUT-2 allows it only from vehicles.vin_reveal.",
       "action": "S9b changed 40 to Partial<Omit<VehicleWrite,'vin'>> and regenerated libs/contract/generated; the static projection test checks that only vehicles.vin_reveal can return a VIN.",
       "status": "resolved"
+    },
+    {
+      "id": "DI-71",
+      "issue": "40 vehicles.status_history, appointments.history and appointments.notes_list were USR | ORG(F*) without DRV; F* contains fleet_driver, so a driver could read the status history of any fleet vehicle (SEC-AZ-7). Fleet records reached by id (media, AI records, ORG(ANY)) had no driver rule.",
+      "action": "S9c added DRV to the three operations and extended SEC-AZ-7 (drivers: fleet media only when uploaded by them or attached to an assigned vehicle record, no fleet AI records); regenerated the contract, the sweep suites and the OpenAPI file.",
+      "status": "resolved in S9c"
     }
   ],
   "stages": [
@@ -2638,7 +2670,7 @@
     {
       "id": "S9",
       "title": "AI/MCP facade, contract test sweep, OpenAPI, hardening pass",
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [
         "S8"
       ],
@@ -2698,13 +2730,13 @@
         },
         {
           "id": "S9.T5",
-          "status": "not_started",
+          "status": "done",
           "title": "Generate shared/api-contracts/openapi.yaml (OpenAPI 3.1) from the registry and schemas; CI check that it matches the router; add a GitHub Actions workflow for backend lint, build and test (lite mode).",
           "part": "S9c"
         },
         {
           "id": "S9.T6",
-          "status": "not_started",
+          "status": "done",
           "title": "pnpm contract:coverage → zero 501 ops, or a reviewed list of deferred ops; consolidate deviations_log into a 'next iteration' list (strict auth, full-mode verification with Docker, BFFs, real providers); update backend/README.md with how to run.",
           "part": "S9c"
         },
@@ -2733,15 +2765,31 @@
         "BFFs"
       ],
       "report": {
-        "started_at": null,
-        "completed_at": null,
-        "summary": null,
-        "ops_implemented": [],
-        "ops_deferred": [],
-        "files_created": [],
-        "tests": null,
-        "deviations": [],
-        "notes_for_next": []
+        "started_at": "2026-10-15",
+        "completed_at": "2026-10-24",
+        "summary": "S9 done in three parts: S9a (AI/MCP facade, AI workers, WebAuthn, VIN transfers, fleet data sharing; 29 operations), S9b (contract sweep over all routes) and S9c (OpenAPI, CI, coverage closure, fleet-driver fixes, risk plan, next_iteration). See parts[].report.",
+        "ops_implemented": [
+          "see parts S9a (29 operations) and S9c (media.upload_put counted as served)"
+        ],
+        "ops_deferred": [
+          {
+            "op": "auth.social_start",
+            "reason": "Post-MVP (OQ-06, PM-01): registered on the auth host, answers 501 NOT_IMPLEMENTED; OpenAPI x-carpal-status deferred-post-mvp; tools/contract/coverage.ts DEFERRED_OPERATIONS."
+          }
+        ],
+        "files_created": [
+          "see parts[].report.files_created"
+        ],
+        "tests": "999 passing (87 files)",
+        "deviations": [
+          "see parts[].report.deviations"
+        ],
+        "notes_for_next": [
+          "Watch the first GitHub Actions run (Linux embedded PostgreSQL, the hydrate-symlinks install script, timings); shard the sweep if the integration job exceeds ~20 minutes.",
+          "After any Docs/40 change: pnpm contract:generate, pnpm contract:tests (add a resolver for new operations), pnpm openapi:generate; CI checks all three.",
+          "RCP-01 (purpose bound to the record) is the first hardening item; OQ-18 (fleet role model, RCP-03) must be decided before fleet work.",
+          "next_iteration holds the consolidated backlog (NI-01..NI-18) with sources; risk_control_plan.json holds the risks."
+        ]
       },
       "split_note": "Split into three parts on 2026-10-15 (user request): S9 is the most sensitive stage, so each part ends with every check green, its own report under parts[].report and a commit. Order is fixed: S9a completes the API surface, S9b sweeps the complete surface with generated contract tests (and fixes what they find), S9c describes the final surface in OpenAPI, adds CI and closes the backend.",
       "parts": [
@@ -2938,7 +2986,7 @@
         {
           "id": "S9c",
           "title": "OpenAPI, CI, coverage closure, next-iteration list, README",
-          "status": "not_started",
+          "status": "done",
           "tasks": [
             "S9.T5",
             "S9.T6"
@@ -2958,15 +3006,56 @@
             "next_iteration list and README written; all checks green."
           ],
           "report": {
-            "started_at": null,
-            "completed_at": null,
-            "summary": null,
-            "ops_implemented": [],
-            "ops_deferred": [],
-            "files_created": [],
-            "tests": null,
-            "deviations": [],
-            "notes_for_next": []
+            "started_at": "2026-10-24",
+            "completed_at": "2026-10-24",
+            "summary": "S9c described the final surface and closed the scratch build. tools/contract/openapi.ts generates shared/api-contracts/openapi.yaml (OpenAPI 3.1.0, JSON Schema 2020-12 dialect; 458 operations on 364 paths, 358 component schemas) from operations.json, schemas.json and operation-schemas.json: per-path servers (api, id, admin-api, media hosts), path/query/header parameters (CarPal-Client, DPoP, Idempotency-Key, If-Match incl. the conditional forms, CarPal-Access-Purpose, CarPal-Reason, CarPal-Attestation/PoW), JSON, OAuth form and raw storage bodies, success responses with ETag/Location headers, 202 PendingChange alternates, Problem responses per status with x-carpal-error-codes, RFC 6749 ProtocolError for /oauth/*, the TokenRequest form fields, body and query cursors, x-vin, the server-defined Json<...> schemas (InsightPayload and SuggestionPayload from the zod payload schemas, RegisteredEventProperties from the analytics registry, MatchReasonValues, FeedCard, TemplateParams, BadgeEvaluation, TargetSnapshot, WebAuthn assertion/attestation JSON), security schemes (DPoP, BFF bearer + mTLS, OIDC) and x-carpal-op-id/host/sec/security/status per operation. pnpm openapi:check (and a unit test) fail when the file is stale, a reference does not resolve, a schema does not compile, an operation id repeats, path parameters disagree, or the file and the RouteTable of any host (plus the storage route) differ; an independent validator (openapi-spec-validator, scratch venv) accepted the file and its YAML parses back to the generated document. contract:coverage now recognises the storage listener PUT, lists deferred operations with their reasons and fails with --strict on any unexplained 501 (405/406, 0 unexplained). .github/workflows/backend-ci.yml runs lint, typecheck, build, format, contract:check, openapi:check, coverage --strict and unit tests, and in a second job db:setup, db:codegen --verify and the integration project (45-minute timeout for the ~8-minute suite). Follow-ups of the S9b open points (user answers of 2026-10-24): (1) fleet visibility — the S9b BFLA sweep only tried roles outside the sec line and a fleet_driver is inside ORG(F*), so three driver leaks went unseen: vehicles.status_history on unassigned vehicles (no DRV), fleet-owned media by id (media.get/download_url, ORG(ANY)) and the fleet's AI insights and suggestions (ORG(ANY)); all fixed (DI-71), a fleet-driver dimension was added to the sweep (it fails on the S9b contract) and apps/testing/fleet-visibility.int.test.ts proves each fix (all three fail on the S9b code); the guard matrix now tries every allowed role from a foreign organization, not only the first; (2) integrity check of the non-404 BOLA refusals — they now name their code, carry only Problem base members and (CURSOR_MISMATCH, CONSENT_REQUIRED) answer a non-existent record identically; link-token refusals differ from unknown tokens by contract (accepted, RCP-04); inventory.bulk_update is checked to skip foreign ids exactly like unknown ids; (3) risk_control_plan.json created with the purpose-binding issue (RCP-01) plus RCP-02..04; (4) CI allows for the 8-minute suite. The deviations_log (152 entries) and the open recommendations, doc issues, open questions and PM backlog are consolidated into next_iteration (NI-01..NI-18).",
+            "ops_implemented": [
+              "media.upload_put (counted: served by the storage listener)"
+            ],
+            "ops_deferred": [
+              {
+                "op": "auth.social_start",
+                "reason": "Post-MVP (OQ-06, PM-01): registered on the auth host, answers 501 NOT_IMPLEMENTED; OpenAPI x-carpal-status deferred-post-mvp; tools/contract/coverage.ts DEFERRED_OPERATIONS."
+              }
+            ],
+            "files_created": [
+              "shared/api-contracts/openapi.yaml (generated)",
+              "backend/tools/contract/{openapi.ts, openapi.test.ts, yaml.ts}",
+              ".github/workflows/backend-ci.yml",
+              "backend/risk_control_plan.json",
+              "backend/apps/testing/fleet-visibility.int.test.ts"
+            ],
+            "files_changed": [
+              "Docs/40.API contract.md (DRV on three fleet reads, SEC-AZ-7 wording; DI-71)",
+              "backend/tools/contract/coverage.ts (storage route, deferred list, --strict)",
+              "backend/apps/testing/contract/{runner.ts, harness.ts} and resolvers (fleet-driver dimension, BOLA code/absent checks)",
+              "backend/libs/testing/matrix.ts (every allowed role from a foreign organization)",
+              "backend/libs/authz/authorizer.ts (isDriverAssigned)",
+              "backend/modules/media/{interface/media.ts, infrastructure/assets.ts, application/media-ops.ts} (driver rule)",
+              "backend/modules/vehicle/vehicle.module.ts (AttachmentTarget.vehicleId)",
+              "backend/modules/ai-mcp/{application/insight-ops.ts, domain/payloads.ts}",
+              "backend/package.json (openapi scripts, linux embedded-postgres build), backend/README.md"
+            ],
+            "tests": "999 passing (87 files) (pnpm test:all): S9c added 7 tests — openapi.test.ts (4: fresh, structural, router equivalence, statuses and server schemas) and fleet-visibility.int.test.ts (3: status history, fleet media, fleet AI records; each fails on the S9b code). The sweep gained fleet-driver checks (list overlap on {flt} lists; vehicle-scoped DRV routes stay in BFLA), BOLA codes and existence-oracle comparisons (search.page, provider.service_record_create), and routes.int.test.ts checks every allowed role of a foreign organization. Also green: pnpm lint, typecheck, build, format:check, contract:check, openapi:check, contract:coverage --strict, db:codegen --verify. The CI workflow itself has not run on GitHub yet. Full run on the laptop: 703 s (≈ 11.7 minutes; S9c widened the foreign-organization matrix and added the fleet-driver and oracle checks); the first full run had one failure, the OpenAPI structural test hitting the 5 s unit timeout under load (now 120 s; the unit project then passed 269/269).",
+            "deviations": [
+              "GD-37: OpenAPI is generated from the contract registry and schemas (tools/contract/openapi.ts), not from NestJS decorators (there are no controllers, GD-12); 40 \"generated from NestJS\" is read as \"generated from the backend that serves it\" and the equivalence is enforced by pnpm openapi:check against the registry and every host router.",
+              "GD-38: fleet drivers are narrowed below ORG(ANY) on fleet records reached by id (WP0 narrowing, 40 §0.5): fleet media only when uploaded by them or attached to an assigned vehicle record (changes: own uploads only); fleet AI insights and suggestions never (404).",
+              "DI-71: vehicles.status_history, appointments.history and appointments.notes_list got DRV in Docs/40 (the appointment reads were already filtered by the handler); SEC-AZ-7 text extended.",
+              "DI-50 resolved: the server-defined Json<...> schemas are written down as OpenAPI components; open-ended ones (MatchReasonValues, FeedCard, TemplateParams, BadgeEvaluation, TargetSnapshot) are described as constrained maps with their known keys rather than closed objects.",
+              "The storage PUT is documented as PUT /o/{object_key} on the media host with x-carpal-path-template <UploadTicket.url>: clients must use the ticket URL as given.",
+              "The YAML is written by a small in-repo emitter (tools/contract/yaml.ts) because S9c adds no npm dependency; strings are plain only when unambiguous, otherwise JSON-quoted.",
+              "S9b note corrected: routes.int.test.ts tried only the first allowed role from a foreign organization (not every role); it now tries every allowed role.",
+              "The fleet-driver sweep check runs on {flt} vehicle and appointment routes whose sec line admits drivers; on lists it requires 200 with none of the owner records (driver without an assignment).",
+              "Media attached to non-vehicle fleet records (appointments, stock inquiries) reaches a driver only through their own uploads (RCP-02 gap).",
+              "ProtocolError lists the RFC 6749 codes the auth server emits (invalid_grant, invalid_dpop_proof, use_dpop_nonce, invalid_client, invalid_request, invalid_scope, unauthorized_client, unsupported_grant_type) although 40 names only four.",
+              "Link-token refusals (LINK_RECIPIENT_MISMATCH vs LINK_EXPIRED) are distinguishable by the token holder by contract; accepted as RCP-04 (pending product confirmation)."
+            ],
+            "notes_for_next": [
+              "Watch the first GitHub Actions run (Linux embedded PostgreSQL, the hydrate-symlinks install script, timings); shard the sweep if the integration job exceeds ~20 minutes.",
+              "After any Docs/40 change: pnpm contract:generate, pnpm contract:tests (add a resolver for new operations), pnpm openapi:generate; CI checks all three.",
+              "RCP-01 (purpose bound to the record) is the first hardening item; OQ-18 (fleet role model, RCP-03) must be decided before fleet work.",
+              "next_iteration holds the consolidated backlog (NI-01..NI-18) with sources; risk_control_plan.json holds the risks."
+            ]
           }
         }
       ]
@@ -2985,9 +3074,9 @@
       "S8": 82,
       "S9": 23
     },
-    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501. After S6 (pnpm contract:coverage): discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71 (the other 7 are admin ops of S8), trust 1/36 (public.org_reviews), appointment 1/31 (public.availability placeholder); 236 implemented, 166 answer 501. After S7 (pnpm contract:coverage): appointment 31/31, trust 28/36 (the other 8 are §23.4 admin operations of S8); 293 implemented, 109 answer 501. After S8 (pnpm contract:coverage): fleet 20/20, admin 16/16, analytics 3/3, organization 71/71, billing 7/7, taxonomy 13/13, trust 36/36, identity 58/61 (3 deferred S3 ops), media 10/11 (media.upload_put is the storage PUT), ai-mcp 4/27 (the admin oversight data ops; 23 §21 ops for S9); 375 implemented, 27 answer 501; admin-api serves 60/60 routes. After S9a: 4 vehicle transfer operations added to the contract (406 operations, 458 routes); 404 implemented, 2 answer 501 (auth.social_start PM-01, media.upload_put storage PUT). After S9b: unchanged 404/406 implemented (auth.social_start answers 501 by decision, media.upload_put is the storage PUT); every HTTP route (457) is swept by the generated contract suites.",
-    "implemented": 404,
-    "returning_501": 2,
+    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501. After S6 (pnpm contract:coverage): discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71 (the other 7 are admin ops of S8), trust 1/36 (public.org_reviews), appointment 1/31 (public.availability placeholder); 236 implemented, 166 answer 501. After S7 (pnpm contract:coverage): appointment 31/31, trust 28/36 (the other 8 are §23.4 admin operations of S8); 293 implemented, 109 answer 501. After S8 (pnpm contract:coverage): fleet 20/20, admin 16/16, analytics 3/3, organization 71/71, billing 7/7, taxonomy 13/13, trust 36/36, identity 58/61 (3 deferred S3 ops), media 10/11 (media.upload_put is the storage PUT), ai-mcp 4/27 (the admin oversight data ops; 23 §21 ops for S9); 375 implemented, 27 answer 501; admin-api serves 60/60 routes. After S9a: 4 vehicle transfer operations added to the contract (406 operations, 458 routes); 404 implemented, 2 answer 501 (auth.social_start PM-01, media.upload_put storage PUT). After S9b: unchanged 404/406 implemented (auth.social_start answers 501 by decision, media.upload_put is the storage PUT); every HTTP route (457) is swept by the generated contract suites. After S9c (pnpm contract:coverage --strict): 405/406 — media.upload_put counted as served by the storage listener; auth.social_start answers 501 by decision (PM-01); 0 unexplained.",
+    "implemented": 405,
+    "returning_501": 1,
     "total_routes": 458,
     "by_module_after_S3": {
       "identity": "47/61",
@@ -3828,6 +3917,61 @@
       "stage": "S9b",
       "date": "2026-10-18",
       "deviation": "Sweep fixtures that the shared test database must not keep (seeded taxonomy counts, MCP clients) are removed when a suite ends (Harness.onClose); four-eyes requests are rejected by a second admin and stale pending changes of fixed targets (plans, retention policies) are expired first."
+    },
+    {
+      "stage": "S9c",
+      "date": "2026-10-24",
+      "deviation": "GD-37: OpenAPI is generated from the contract registry and schemas (tools/contract/openapi.ts), not from NestJS decorators (there are no controllers, GD-12); 40 \"generated from NestJS\" is read as \"generated from the backend that serves it\" and the equivalence is enforced by pnpm openapi:check against the registry and every host router."
+    },
+    {
+      "stage": "S9c",
+      "date": "2026-10-24",
+      "deviation": "GD-38: fleet drivers are narrowed below ORG(ANY) on fleet records reached by id (WP0 narrowing, 40 §0.5): fleet media only when uploaded by them or attached to an assigned vehicle record (changes: own uploads only); fleet AI insights and suggestions never (404)."
+    },
+    {
+      "stage": "S9c",
+      "date": "2026-10-24",
+      "deviation": "DI-71: vehicles.status_history, appointments.history and appointments.notes_list got DRV in Docs/40 (the appointment reads were already filtered by the handler); SEC-AZ-7 text extended."
+    },
+    {
+      "stage": "S9c",
+      "date": "2026-10-24",
+      "deviation": "DI-50 resolved: the server-defined Json<...> schemas are written down as OpenAPI components; open-ended ones (MatchReasonValues, FeedCard, TemplateParams, BadgeEvaluation, TargetSnapshot) are described as constrained maps with their known keys rather than closed objects."
+    },
+    {
+      "stage": "S9c",
+      "date": "2026-10-24",
+      "deviation": "The storage PUT is documented as PUT /o/{object_key} on the media host with x-carpal-path-template <UploadTicket.url>: clients must use the ticket URL as given."
+    },
+    {
+      "stage": "S9c",
+      "date": "2026-10-24",
+      "deviation": "The YAML is written by a small in-repo emitter (tools/contract/yaml.ts) because S9c adds no npm dependency; strings are plain only when unambiguous, otherwise JSON-quoted."
+    },
+    {
+      "stage": "S9c",
+      "date": "2026-10-24",
+      "deviation": "S9b note corrected: routes.int.test.ts tried only the first allowed role from a foreign organization (not every role); it now tries every allowed role."
+    },
+    {
+      "stage": "S9c",
+      "date": "2026-10-24",
+      "deviation": "The fleet-driver sweep check runs on {flt} vehicle and appointment routes whose sec line admits drivers; on lists it requires 200 with none of the owner records (driver without an assignment)."
+    },
+    {
+      "stage": "S9c",
+      "date": "2026-10-24",
+      "deviation": "Media attached to non-vehicle fleet records (appointments, stock inquiries) reaches a driver only through their own uploads (RCP-02 gap)."
+    },
+    {
+      "stage": "S9c",
+      "date": "2026-10-24",
+      "deviation": "ProtocolError lists the RFC 6749 codes the auth server emits (invalid_grant, invalid_dpop_proof, use_dpop_nonce, invalid_client, invalid_request, invalid_scope, unauthorized_client, unsupported_grant_type) although 40 names only four."
+    },
+    {
+      "stage": "S9c",
+      "date": "2026-10-24",
+      "deviation": "Link-token refusals (LINK_RECIPIENT_MISMATCH vs LINK_EXPIRED) are distinguishable by the token holder by contract; accepted as RCP-04 (pending product confirmation)."
     }
   ],
   "handoff_notes": [
@@ -3880,6 +4024,11 @@
       "date": "2026-10-18",
       "from": "S9b",
       "note": "S9b done: the contract sweep of 40 Appendix C runs over all 457 HTTP routes (17 generated suites + 406 resolvers; schema negatives, BOLA, same-organization BFLA, admin-plane mechanics, kill switch, SEC-OUT-1 projections) — it fixed the missing public slug of published organizations and tightened VinDecodeResult (DI-70). 992 passing (85 files); all checks green. No db:reset needed. Next: S9c (OpenAPI, CI, coverage closure, next-iteration list, README). Read S9b.report.notes_for_next and meta.progress.before_starting_S9c."
+    },
+    {
+      "date": "2026-10-24",
+      "from": "S9c",
+      "note": "S9c done — S9 and the scratch build are complete: OpenAPI 3.1 file generated and checked against registry and routers, GitHub Actions CI (not run on GitHub yet), coverage 405/406 with zero unexplained 501s, fleet-driver leaks fixed (DI-71, GD-38), BOLA refusals checked for existence oracles, risk_control_plan.json (RCP-01..04), next_iteration NI-01..NI-18. 999 passing (87 files); all checks green. Next: next_iteration, starting with RCP-01 and OQ-18."
     }
   ],
   "open_questions": [
@@ -4017,6 +4166,14 @@
       "question": "Which analytics dimensions should dashboards support (region, organization type, platform, entry point), and for how long may search.zero_result query text be kept?",
       "default_if_unanswered": "No dimensions; no query text in analytics events (only language and mode).",
       "owner": "user / product (MVP §16) / privacy"
+    },
+    {
+      "id": "OQ-18",
+      "question": "Fleet role model (RCP-03): which contract role is the \"dispatching manager\" (fleet_maintenance_coordinator, or a new role)? Should fleet_viewer stay organization-wide? Do operators and in-house mechanics become roles limited to linked vehicles, and may a vehicle be linked to several people (assignment kinds)?",
+      "default_if_unanswered": "Contract as is: owner, manager, coordinator and viewer see the whole fleet; only fleet_driver is limited, one active assignment per vehicle, set by FC.",
+      "owner": "user / product",
+      "status": null,
+      "raised_in": "S9c"
     }
   ],
   "recommendations_for_next_stages": {
@@ -4139,6 +4296,12 @@
       "S9c README: document pnpm contract:tests and the rule that every new operation needs a resolver (the generated suite fails otherwise); point to the per-module stats line of the verbose reporter.",
       "Appendix C items outside the sweep stay where they are: C.5 security mechanics (DPoP, refresh-family reuse, IDEM replay/conflict, ETAG, single-use links, step-up, timings, map-link SSRF) in pipeline/auth-server/organization tests; C.6 rate limits and load shedding in the pipeline tests; C.7 business rules in the module tests.",
       "Next iteration: purpose binding to the record being read (SEC-ADM-5 hardening); a generic READ_ONLY_FIELD probe per input schema (S fields), which needs the S-field list from 52 in the generator."
+    ],
+    "S9c_done": [
+      "Watch the first GitHub Actions run (Linux embedded PostgreSQL, the hydrate-symlinks install script, timings); shard the sweep if the integration job exceeds ~20 minutes.",
+      "After any Docs/40 change: pnpm contract:generate, pnpm contract:tests (add a resolver for new operations), pnpm openapi:generate; CI checks all three.",
+      "RCP-01 (purpose bound to the record) is the first hardening item; OQ-18 (fleet role model, RCP-03) must be decided before fleet work.",
+      "next_iteration holds the consolidated backlog (NI-01..NI-18) with sources; risk_control_plan.json holds the risks."
     ]
   },
   "post_mvp_backlog": [
@@ -4159,5 +4322,295 @@
         "Provider credentials per region and the client buttons (mobile + web)."
       ]
     }
-  ]
+  ],
+  "next_iteration": {
+    "written_after": "S9c",
+    "date": "2026-10-24",
+    "note": "Consolidates the deviations_log (S1-S9c), the open recommendations, the open doc issues and questions, risk_control_plan.json and the post-MVP backlog into the work of the first iteration after the scratch build. Sources name deviation entries by stage and index (#n = position in deviations_log), DI/OQ/RCP/PM ids. Priorities are proposals for planning.",
+    "items": [
+      {
+        "id": "NI-01",
+        "theme": "Security hardening",
+        "priority": "high",
+        "title": "Strict authentication mode (GD-06)",
+        "work": [
+          "Confidential client authentication at /oauth/token (private_key_jwt over mTLS for cp-web-* and cp-ssr).",
+          "DPoP-Nonce on the API hosts; App Attest / Play Integrity verification (PoW only today).",
+          "Risk-based sign-in SEC-AU-12 (new-device notices, slow-down per account and IP, impossible travel); session country.",
+          "Breached-password corpus (OQ-05) and its field code (DI-13); AAL2 for accounts without a second factor (DI-11)."
+        ],
+        "sources": [
+          "deviations S3 #18-21",
+          "recommendations S9",
+          "OQ-05",
+          "DI-11",
+          "DI-13"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-02",
+        "theme": "Security hardening",
+        "priority": "high",
+        "title": "Bind staff access purposes to the record being read (SEC-ADM-5)",
+        "work": [
+          "Purpose subjects per queue kind, record binding per PURP operation, contract wording, sweep check, interim pii.read review."
+        ],
+        "sources": [
+          "RCP-01",
+          "deviations S8 #95, S9b #138"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-03",
+        "theme": "Security hardening",
+        "priority": "high",
+        "title": "Fleet role model and vehicle links",
+        "work": [
+          "Decide OQ-18; implement linked roles (operators, mechanics, dispatch) with several links per vehicle; generalise DRV and the sweep dimension."
+        ],
+        "sources": [
+          "RCP-03",
+          "OQ-18",
+          "user requirement 2026-10-24"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-04",
+        "theme": "Security hardening",
+        "priority": "medium",
+        "title": "Admin-plane gaps",
+        "work": [
+          "Lift suspensions automatically (DI-66); organization merge re-pointing registry (DI-67); assist routes {adm}/assist/... (DI-05); staff WebAuthn sign-in through the hosted UI end to end."
+        ],
+        "sources": [
+          "DI-05",
+          "DI-66",
+          "DI-67",
+          "deviations S8 #97, #99, #100"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-05",
+        "theme": "Security hardening",
+        "priority": "medium",
+        "title": "Abuse and fraud signals; sweep extensions",
+        "work": [
+          "SEC-BF-1 review fraud signals (device-key hash, IP prefix, timing); W11 new-account burst signal.",
+          "Generic READ_ONLY_FIELD probe per input schema (needs the S-field list of 52 in the generator).",
+          "Driver rule for media attached to other fleet records (RCP-02 gap)."
+        ],
+        "sources": [
+          "deviations S7 #79, S9a #120",
+          "S9b notes_for_next",
+          "RCP-02"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-06",
+        "theme": "Full mode",
+        "priority": "high",
+        "title": "Verify full mode on the Docker test server",
+        "work": [
+          "docker compose stack (PostgreSQL + pgvector, Redis, NATS JetStream, OpenSearch, MinIO, Mailpit) with CARPAL_DB_MODE=external.",
+          "Redis adapters for KV, sessions, rate limits and idempotency; NATS event bus; OpenSearch index templates (geo_point, keyword filters); S3 SSE-KMS.",
+          "Run the integration suite and the contract sweep in full mode; add a full-mode CI job on the test server."
+        ],
+        "sources": [
+          "OQ-01",
+          "deviations S1 #3-4, S2 #13, S6 #67",
+          "recommendations S9"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-07",
+        "theme": "Real providers",
+        "priority": "high",
+        "title": "Full-mode adapters for external services",
+        "work": [
+          "Regional geocoder, VIN decoder (OQ-10, DI-37), push gateway FCM/APNs/Web Push and token revocation on sign-out (DI-52), real email/SMS providers.",
+          "W6 tools: malware scanning, video transcoding, PDF sanitising (OQ-07); encrypt raw uploads before W6 re-stores them."
+        ],
+        "sources": [
+          "OQ-07",
+          "OQ-10",
+          "DI-37",
+          "DI-52",
+          "deviations S4 #34-36, S5 #51"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-08",
+        "theme": "BFFs",
+        "priority": "high",
+        "title": "Consumer, portal and admin BFFs (api-gateway/, WP19/WP20)",
+        "work": [
+          "SEC-WEB-1 server-held tokens with __Host-cp_sid cookies, Bearer + mTLS to the API, SEC-WEB-3 protections, 1:1 forwarding (no widening).",
+          "Admin BFF on the private network (SEC-ADM-1); OpenAPI file as the client contract."
+        ],
+        "sources": [
+          "41 D4",
+          "S9 out_of_scope"
+        ],
+        "status": "not_started",
+        "note_2026_10_25": "Coordination with pwa/dev_plan.json (GD-03, BA-23): the consumer BFF is being built in the PWA stage P2 as framework-free code under pwa/src/server/bff/ (session store port, OAuth client, 1:1 forwarder with the registry allowlist, CSRF). NI-08 should move or reuse that code for the consumer BFF instead of writing a second one; the portal and admin BFFs stay with NI-08. The PWA plan also records backend follow-ups it needs: storage CORS (pwa DI-08), auth-host Origin checks (pwa DI-09), separate consumer/portal web push tokens (pwa DI-16), a dev-only feature-flag CLI (pwa DI-18), slug history (pwa DI-20) and a profile.contact_revealed analytics event (pwa DI-10)."
+      },
+      {
+        "id": "NI-09",
+        "theme": "AI",
+        "priority": "high",
+        "title": "Real MCP gateway and AI orchestrator (D6/D7) behind McpClientPort",
+        "work": [
+          "Replace the lite stub; keep SEC-AI-1..7 checks, McpAccessLog and the kill switch; staging/prod stay \"unavailable\" until then (GD-35)."
+        ],
+        "sources": [
+          "GD-35",
+          "S9a notes_for_next"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-10",
+        "theme": "AI",
+        "priority": "medium",
+        "title": "Discovery AI and AI workers",
+        "work": [
+          "Semantic search with embeddings (W14, pgvector), AI query interpretation, AI match explanations (search.semantic.enabled).",
+          "W9 event-driven insights; W10 category ratings, rating trend and local demand; failed-job retries."
+        ],
+        "sources": [
+          "deviations S9a #118-121, #123",
+          "recommendations S9"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-11",
+        "theme": "Product gaps",
+        "priority": "medium",
+        "title": "Fleet features",
+        "work": [
+          "Fleet trust signals of 54 §8 (downtime, first-time fix, cost estimate accuracy) and fleet_friendly revocation; fleet_confirmed review invitations; fleet history sharing beyond appointments (DI-38/DI-58)."
+        ],
+        "sources": [
+          "recommendations S8",
+          "DI-38",
+          "DI-58",
+          "deviations S7 #80"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-12",
+        "theme": "Product gaps",
+        "priority": "medium",
+        "title": "Hybrid provider-vendor organizations",
+        "work": [
+          "Default plan (DI-20) and roles for {prv} and {vnd} routes (DI-21)."
+        ],
+        "sources": [
+          "DI-20",
+          "DI-21",
+          "deviations S4 #47"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-13",
+        "theme": "Product gaps",
+        "priority": "medium",
+        "title": "Trust, moderation and analytics follow-ups",
+        "work": [
+          "Admin verification of service records/invoices; review response moderation (DI-59); reaction moderation counters; purge of unreferenced storage objects.",
+          "Analytics dimensions (DI-65, OQ-17) and AnalyticsEvent retention through partition drops; appointment/review funnels."
+        ],
+        "sources": [
+          "recommendations S8_done",
+          "DI-59",
+          "DI-65",
+          "OQ-17",
+          "deviations S8 #105"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-14",
+        "theme": "Contract and docs",
+        "priority": "medium",
+        "title": "Resolve the open doc issues with the document owners",
+        "work": [
+          "Events missing from 40 Appendix A: DI-36, DI-45, DI-54, DI-63; notification types DI-64.",
+          "Contract gaps: DI-06, DI-07, DI-12, DI-14, DI-15, DI-16, DI-25, DI-26, DI-27, DI-29, DI-30, DI-31, DI-39, DI-41, DI-42, DI-44, DI-46, DI-47, DI-48, DI-49, DI-51, DI-55, DI-56, DI-57, DI-60, DI-61, DI-68, DI-69.",
+          "Doc housekeeping: DI-01, DI-03, DI-18, DI-28, DI-40, DI-43."
+        ],
+        "sources": [
+          "doc_issues (52 open after S9c)"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-15",
+        "theme": "Decisions",
+        "priority": "medium",
+        "title": "Confirm the defaults of the unanswered open questions",
+        "work": [
+          "OQ-03 entitlements and retention, OQ-05 breached passwords, OQ-12 community pre-moderation, OQ-13 notification defaults, OQ-14 search defaults, OQ-15 fleet approval workflow, OQ-16 moderation intake, OQ-17 analytics dimensions, OQ-18 fleet roles; RCP-04 acceptance."
+        ],
+        "sources": [
+          "open_questions",
+          "RCP-04"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-16",
+        "theme": "Post-MVP backlog",
+        "priority": "low",
+        "title": "Google and Apple sign-in (PM-01)",
+        "work": [
+          "auth.social_start with OIDC + PKCE, account linking without silent takeover, identity rows, DSR registration; env keys reserved in README."
+        ],
+        "sources": [
+          "PM-01",
+          "OQ-06"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-17",
+        "theme": "Engineering",
+        "priority": "medium",
+        "title": "CI and test runtime",
+        "work": [
+          "Watch the first GitHub Actions run; shard the contract sweep or give each worker its own database if the integration job grows past ~20 minutes; load tests (k6, out of scope in S9).",
+          "Move the system Node to 24 LTS when the other project allows (environment note)."
+        ],
+        "sources": [
+          "S9c notes_for_next",
+          "environment.node_note"
+        ],
+        "status": "not_started"
+      },
+      {
+        "id": "NI-18",
+        "theme": "Engineering",
+        "priority": "medium",
+        "title": "Remove lite-only shortcuts before production",
+        "work": [
+          "Dev master secret and derived keys, relaxed fsync settings, the https rewrite of lite storage URLs (DI-26), per-process lite adapters, plaintext raw uploads before W6."
+        ],
+        "sources": [
+          "deviations S1 #4, S2 #13, S4 #33, #35",
+          "DI-26"
+        ],
+        "status": "not_started"
+      }
+    ]
+  }
 }
