@@ -24,6 +24,21 @@ export function createCsrfSource(doFetch: typeof fetch = (i, init) => fetch(i, i
   return { get: () => current ?? load(), refresh: load };
 }
 
+let shared: CsrfSource | undefined;
+
+/**
+ * The page's one CSRF source, shared by the typed client and the session helpers (intents, logout). Its first
+ * /bff/csrf also creates the pre-session when the browser has none, so it runs before any other BFF call (P4 fix).
+ */
+export function sharedCsrfSource(): CsrfSource {
+  return (shared ??= createCsrfSource());
+}
+
+/** After sign-out the BFF dropped the session: the next call fetches a new token (and pre-session). */
+export function resetSharedCsrfSource(): void {
+  shared = undefined;
+}
+
 const SAFE = new Set(['GET', 'HEAD']);
 
 export function pageLocale(): string {
@@ -43,6 +58,10 @@ export function browserTransport(o: { csrf: CsrfSource; locale?: () => string; f
   const locale = o.locale ?? pageLocale;
   return async (req) => {
     const prefix = req.host === 'auth' ? '/id' : '/api';
+    // One pre-session per page: a first API call racing the first /bff/csrf would make the BFF create two sessions,
+    // and whichever Set-Cookie arrived last would orphan the other's pending intents and sign-ins. So every api-host
+    // call waits for the page's /bff/csrf (cached after the first), which creates the pre-session when there is none.
+    if (req.host === 'api' && SAFE.has(req.method)) await o.csrf.get().catch(() => undefined);
     const send = async (refreshCsrf: boolean) => {
       const headers = new Headers(req.headers);
       headers.set('accept-language', locale());
@@ -85,6 +104,6 @@ export async function browserPow(purpose: PowPurpose, doFetch: typeof fetch = (i
 }
 
 export function createBrowserApiClient(o: Partial<ApiClientOptions> & { csrf?: CsrfSource } = {}): ApiClient {
-  const csrf = o.csrf ?? createCsrfSource();
+  const csrf = o.csrf ?? sharedCsrfSource();
   return createApiClient({ transport: browserTransport({ csrf }), solvePow: (p) => browserPow(p), ...o });
 }

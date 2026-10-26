@@ -11,12 +11,13 @@ import type { ApiClient } from '@/lib/api/client';
 import { ApiProvider } from '@/lib/api/query';
 import { SESSION_QUERY_KEY, type SessionView } from '@/lib/api/session';
 import { ConfigProvider, type PublicConfig } from '@/lib/config/client';
-import { TIME_ZONE_COOKIE } from '@/lib/format';
+import { DEFAULT_PRICE_DISPLAY, TIME_ZONE_COOKIE, type PriceDisplay } from '@/lib/format';
 import { FormatProvider } from '@/lib/format/client';
 import { I18nProvider } from '@/lib/i18n/client';
 import type { Locale } from '@/lib/i18n/locales';
 import type { Theme, ThemeChoice } from '@/lib/theme';
 import { IntentProvider } from './auth-intent';
+import { SessionNotices } from './session-notices';
 import { ThemeProvider } from './theme-controller';
 import { ToastProvider } from './toast';
 
@@ -49,6 +50,8 @@ export interface AppProvidersProps {
   resources: Resources;
   config: PublicConfig;
   timeZone: string;
+  /** This browser's price display (cp_price cookie, OQ-11). */
+  prices?: PriceDisplay;
   themeChoice: ThemeChoice;
   theme: Theme;
   consent: Consent | null;
@@ -64,13 +67,18 @@ export function AppProviders(p: AppProvidersProps) {
     <ApiProvider client={p.apiClient}>
       <SessionSeed initial={p.session} confirmed={p.sessionConfirmed}>
         <I18nProvider locale={p.locale} resources={p.resources}>
-          <FormatProvider timeZone={p.timeZone} distanceUnit={p.config.region.distance_unit_default}>
+          <FormatProvider
+            timeZone={p.timeZone}
+            distanceUnit={p.config.region.distance_unit_default}
+            prices={p.prices ?? DEFAULT_PRICE_DISPLAY}
+          >
             <ConfigProvider value={p.config}>
               <ThemeProvider initialChoice={p.themeChoice} initialTheme={p.theme}>
                 <ToastProvider>
                   <AnalyticsProvider initialConsent={p.consent}>
                     <IntentProvider>{p.children}</IntentProvider>
                   </AnalyticsProvider>
+                  <SessionNotices />
                 </ToastProvider>
               </ThemeProvider>
             </ConfigProvider>

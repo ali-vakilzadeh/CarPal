@@ -1,10 +1,12 @@
 // The BFF's OAuth client (P2.T2): /bff/login starts an authorization-code + PKCE request through the hosted sign-in
 // (/id/oauth/authorize, proxied to the auth host, GD-05); /bff/oauth/callback checks state and issuer, exchanges the
 // code server-to-server, verifies the ID token and rotates the session id (no fixation); /bff/logout revokes the
-// refresh token and drops the session. Step-up = acr_values + prompt=login (BA-11).
-import { clientHeader, redirectUri, type BffConfig } from '../config';
+// refresh token and drops the session. Step-up = acr_values + prompt=login (BA-11). P4: /bff/login also carries
+// what the hosted sign-in shows (screen=signup, the gated action's label, prompt=login for "Switch account"), and
+// /bff/login/restart starts an expired sign-in again with the same return URL (BA-12).
+import { clientHeader, KEEP_COOKIE, redirectUri, type BffConfig } from '../config';
 import { createPkce, randomToken, timingSafeEqual } from '../crypto';
-import { json, problem, redirect } from '../http';
+import { json, parseCookies, problem, redirect } from '../http';
 import type { SessionManager } from '../session/manager';
 import type { Acr, PendingLogin, SessionRecord } from '../session/types';
 import type { TokenClient, TokenResponse } from './token-client';
@@ -19,7 +21,15 @@ export interface FlowDeps {
 
 /** A sign-in started more than this long ago is forgotten (the auth host's interaction cookie lasts 30 min). */
 export const LOGIN_TTL_MS = 30 * 60_000;
+/**
+ * An expired sign-in is still remembered this long, only so /bff/login/restart can start it again with the same
+ * return URL (BA-12); its state is never accepted by the callback after LOGIN_TTL_MS.
+ */
+export const LOGIN_RESTART_MS = 12 * 3_600_000;
 const MAX_PENDING_LOGINS = 5;
+/** A step-up (prompt=login) must produce an authentication at least this recent (clock skew between the hosts). */
+const STEP_UP_SKEW_S = 5;
+const INTENT_ID = /^[A-Za-z0-9_-]{1,64}$/;
 const ACR_RANK: Record<Acr, number> = { aal1: 1, aal2: 2, aal3: 3 };
 export const isAcr = (v: unknown): v is Acr => v === 'aal1' || v === 'aal2' || v === 'aal3';
 
@@ -46,31 +56,77 @@ function localeOf(path: string, config: Pick<BffConfig, 'locales'>): string | un
   return first && config.locales.includes(first) ? first : undefined;
 }
 
-export async function login(request: Request, d: FlowDeps): Promise<Response> {
-  const q = new URL(request.url).searchParams;
-  const existing = await d.sessions.load(request);
-  const requestedLocale = q.get('locale');
-  const fallbackLocale = existing?.locale ?? d.config.locales[0]!;
-  const returnTo = safeReturnTo(
-    q.get('return_to'),
-    d.config.origin,
-    `/${requestedLocale && d.config.locales.includes(requestedLocale) ? requestedLocale : fallbackLocale}`,
-  );
-  const locale =
-    localeOf(returnTo, d.config) ?? (requestedLocale && d.config.locales.includes(requestedLocale) ? requestedLocale : fallbackLocale);
-  const stepUp = q.get('step_up');
+/** What a sign-in asks for, from the /bff/login query or from the expired sign-in being restarted. */
+interface LoginOptions {
+  returnTo: string;
+  locale: string;
+  acrValues?: Acr;
+  screen?: 'signup';
+  prompt?: 'login';
+  intentId?: string;
+}
 
+function loginOptions(q: URLSearchParams, existing: SessionRecord | null, config: BffConfig): LoginOptions {
+  const requested = q.get('locale');
+  const fallbackLocale = requested && config.locales.includes(requested) ? requested : (existing?.locale ?? config.locales[0]!);
+  const returnTo = safeReturnTo(q.get('return_to'), config.origin, `/${fallbackLocale}`);
+  const stepUp = q.get('step_up');
+  const intentId = q.get('intent');
+  return {
+    returnTo,
+    locale: localeOf(returnTo, config) ?? fallbackLocale,
+    ...(isAcr(stepUp) && stepUp !== 'aal1' ? { acrValues: stepUp } : {}),
+    ...(q.get('screen') === 'signup' ? { screen: 'signup' as const } : {}),
+    ...(q.get('prompt') === 'login' ? { prompt: 'login' as const } : {}),
+    ...(intentId && INTENT_ID.test(intentId) ? { intentId } : {}),
+  };
+}
+
+export async function login(request: Request, d: FlowDeps): Promise<Response> {
+  const existing = await d.sessions.load(request);
+  return startLogin(existing, loginOptions(new URL(request.url).searchParams, existing, d.config), d);
+}
+
+/**
+ * /bff/login/restart?state=… — the hosted sign-in's "Start again" after its interaction expired (410 LINK_EXPIRED,
+ * BA-12): a new sign-in with the return URL, level, screen and intent of the expired one. Unknown states start a plain
+ * sign-in that comes back to the locale home.
+ */
+export async function restartLogin(request: Request, d: FlowDeps): Promise<Response> {
+  const existing = await d.sessions.load(request);
+  const state = new URL(request.url).searchParams.get('state') ?? '';
+  const old = existing?.logins.find((l) => l.createdAt + LOGIN_RESTART_MS > d.now() && timingSafeEqual(l.state, state));
+  if (!old) return startLogin(existing, loginOptions(new URLSearchParams(), existing, d.config), d);
+  return startLogin(
+    existing,
+    {
+      returnTo: old.returnTo,
+      locale: localeOf(old.returnTo, d.config) ?? existing!.locale ?? d.config.locales[0]!,
+      ...(old.acrValues ? { acrValues: old.acrValues } : {}),
+      ...(old.screen ? { screen: old.screen } : {}),
+      ...(old.prompt ? { prompt: old.prompt } : {}),
+      ...(old.intentId ? { intentId: old.intentId } : {}),
+    },
+    d,
+  );
+}
+
+async function startLogin(existing: SessionRecord | null, o: LoginOptions, d: FlowDeps): Promise<Response> {
   const pkce = await createPkce();
   const pending: PendingLogin = {
     state: randomToken(32),
     nonce: randomToken(32),
     verifier: pkce.verifier,
-    returnTo,
+    returnTo: o.returnTo,
     createdAt: d.now(),
-    ...(isAcr(stepUp) && stepUp !== 'aal1' ? { acrValues: stepUp } : {}),
+    ...(o.acrValues ? { acrValues: o.acrValues } : {}),
+    ...(o.screen ? { screen: o.screen } : {}),
+    ...(o.prompt ? { prompt: o.prompt } : {}),
+    ...(o.intentId ? { intentId: o.intentId } : {}),
   };
+  const locale = o.locale;
   const addLogin = (r: SessionRecord) => {
-    r.logins = [...r.logins.filter((l) => l.createdAt + LOGIN_TTL_MS > d.now()), pending].slice(-MAX_PENDING_LOGINS);
+    r.logins = [...r.logins.filter((l) => l.createdAt + LOGIN_RESTART_MS > d.now()), pending].slice(-MAX_PENDING_LOGINS);
     r.locale = locale;
   };
   let setCookie: string | undefined;
@@ -99,6 +155,8 @@ export async function login(request: Request, d: FlowDeps): Promise<Response> {
     params.acr_values = pending.acrValues;
     params.prompt = 'login';
   }
+  // "Switch account": credentials again even when the auth host still has a sign-in for this browser.
+  if (pending.prompt) params.prompt = pending.prompt;
   for (const [k, v] of Object.entries(params)) authorize.searchParams.set(k, v);
   return redirect(authorize.toString(), 303, setCookie ? { 'set-cookie': setCookie } : undefined);
 }
@@ -145,14 +203,23 @@ export async function callback(request: Request, d: FlowDeps): Promise<Response>
     return back(pending.returnTo, 'failed', d.config.origin);
   }
   const acr = isAcr(claims.acr) ? claims.acr : 'aal1';
-  if (pending.acrValues && ACR_RANK[acr] < ACR_RANK[pending.acrValues]) {
-    await d.client.revoke(d.config.clientId, tokens.refresh_token!, 'refresh_token').catch(() => undefined);
-    return back(pending.returnTo, 'step_up', d.config.origin);
+  const authTime = typeof claims.auth_time === 'number' ? claims.auth_time : Math.floor(d.now() / 1000);
+  if (pending.acrValues) {
+    // prompt=login must have produced a new authentication. An account without a second factor meets aal2 through
+    // that recent sign-in (the API checks auth_time, BA-11), so only aal3 needs the level itself.
+    const fresh = authTime >= Math.floor(pending.createdAt / 1000) - STEP_UP_SKEW_S;
+    const enough = ACR_RANK[acr] >= ACR_RANK[pending.acrValues] || pending.acrValues === 'aal2';
+    if (!fresh || !enough) {
+      await d.client.revoke(d.config.clientId, tokens.refresh_token!, 'refresh_token').catch(() => undefined);
+      return back(pending.returnTo, 'step_up', d.config.origin);
+    }
   }
 
   // A previous sign-in of this browser (re-login, step-up) leaves no orphan session on the auth server.
   if (session.user) await d.client.revoke(d.config.clientId, session.user.refreshToken, 'refresh_token').catch(() => undefined);
   const profile = await loadProfile(tokens.access_token, d);
+  // "Keep me signed in" off (hosted sign-in, P4.T2): a browser-session cookie that also ends after one idle period.
+  const keep = parseCookies(request.headers.get('cookie')).get(KEEP_COOKIE) !== '0';
   const next = await d.sessions.rotate(session, (r) => {
     r.user = {
       accessToken: tokens.access_token,
@@ -161,14 +228,37 @@ export async function callback(request: Request, d: FlowDeps): Promise<Response>
       sub: String(claims.sub),
       sid: String(claims.sid ?? ''),
       acr,
-      authTime: typeof claims.auth_time === 'number' ? claims.auth_time : Math.floor(d.now() / 1000),
+      authTime,
       scope: tokens.scope,
     };
     if (profile) r.profile = profile;
     r.locale = localeOf(pending.returnTo, d.config) ?? profile?.locale ?? session.locale ?? d.config.locales[0]!;
     r.intents = session.intents.filter((i) => i.createdAt + INTENT_TTL_MS > d.now());
+    if (!keep) {
+      r.persistent = false;
+      r.absoluteExpiresAt = Math.min(r.absoluteExpiresAt, d.now() + d.config.sessionIdleMs);
+    }
   });
-  return redirect(pending.returnTo, 303, { 'set-cookie': d.sessions.cookie(next) });
+  return redirect(pending.returnTo, 303, [
+    ['set-cookie', d.sessions.cookie(next)],
+    ['set-cookie', `${KEEP_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`],
+  ]);
+}
+
+/**
+ * What the hosted sign-in shows for one of this browser's sign-ins (found by its state): the screen to open and the
+ * gated action's label. The hosted sign-in shares the session store in the GD-05 topology (same origin).
+ */
+export function loginHint(
+  session: SessionRecord | null,
+  state: string,
+  now: number,
+): { screen: 'signin' | 'signup'; context: string | null } {
+  const pending = session?.logins.find((l) => l.createdAt + LOGIN_TTL_MS > now && timingSafeEqual(l.state, state));
+  const intent = pending?.intentId
+    ? session!.intents.find((i) => i.id === pending.intentId && i.createdAt + INTENT_TTL_MS > now)
+    : undefined;
+  return { screen: pending?.screen ?? 'signin', context: intent?.label ?? null };
 }
 
 export const INTENT_TTL_MS = 30 * 60_000;

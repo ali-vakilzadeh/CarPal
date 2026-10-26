@@ -103,14 +103,16 @@ export function IntentProvider({ children }: { children: ReactNode }) {
     if (!pending) return;
     setBusy(mode);
     const returnTo = currentPath();
+    let intent: string;
     try {
-      await saveIntent({ type: pending.type, target: pending.target, draft: pending.draft, returnTo });
+      // The modal's heading becomes the hosted sign-in's context line ("Sign in to follow …", P4.T1).
+      intent = await saveIntent({ type: pending.type, target: pending.target, draft: pending.draft, returnTo, label: pending.title });
     } catch {
       setBusy(null);
       toast(t('shell.intent.failed'));
       return;
     }
-    goTo(loginUrl({ returnTo, locale, ...(mode === 'signup' ? { screen: 'signup' } : {}) }));
+    goTo(loginUrl({ returnTo, locale, intent, ...(mode === 'signup' ? { screen: 'signup' } : {}) }));
   };
 
   const value = useMemo(() => ({ gate, register }), [gate, register]);

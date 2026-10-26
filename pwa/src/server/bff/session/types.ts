@@ -30,6 +30,12 @@ export interface PendingLogin {
   verifier: string;
   returnTo: string;
   acrValues?: Acr;
+  /** The hosted sign-in opens on account creation (P4). */
+  screen?: 'signup';
+  /** prompt=login without step-up: "Switch account" asks for credentials again. */
+  prompt?: 'login';
+  /** The gated action this sign-in is for; its label is the hosted sign-in's context line (P4.T1). */
+  intentId?: string;
   createdAt: number;
 }
 
@@ -40,6 +46,8 @@ export interface PendingIntent {
   target?: string;
   returnTo: string;
   draft?: unknown;
+  /** Plain text shown above the hosted sign-in form, e.g. "Sign in to follow Reza Auto Suspension". */
+  label?: string;
   createdAt: number;
 }
 
@@ -49,6 +57,8 @@ export interface SessionRecord {
   lastSeenAt: number;
   /** Epoch ms after which the record is dropped whatever its activity (7 days for signed-in sessions). */
   absoluteExpiresAt: number;
+  /** false = "Keep me signed in" was off: a browser-session cookie and at most one idle period (P4.T2). */
+  persistent?: boolean;
   csrf: string;
   locale?: string;
   /** ES256 key pair (private JWK) that binds this pre-session's anonymous tokens (DI-17). */

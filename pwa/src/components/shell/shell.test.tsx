@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { guest, renderApp, signedIn } from '../../../tests/support/render-app';
 import { navigation, router } from '../../../tests/support/next-navigation';
 import { ApiProblem } from '@/lib/api/problem';
+import { SESSION_ENDED_EVENT } from '@/lib/api/query';
 import { useT } from '@/lib/i18n/client';
 import { goTo } from '@/lib/browser-nav';
 import { useGatedAction, useIntentHandler } from './auth-intent';
@@ -51,7 +52,8 @@ describe('header and navigation', () => {
     const header = screen.getByRole('banner');
     expect(within(header).getByRole('link', { name: 'ورود' })).toHaveAttribute(
       'href',
-      '/bff/login?return_to=%2Ffa%2Fquestions%3Fsort%3Dnew&locale=fa',
+      // Every sign-in comes back through the onboarding check (P4.T7).
+      '/bff/login?return_to=%2Ffa%2Fonboarding%3Fnext%3D%252Ffa%252Fquestions%253Fsort%253Dnew&locale=fa',
     );
     expect(within(header).getByRole('link', { name: 'ثبت‌نام' }).getAttribute('href')).toContain('screen=signup');
     expect(within(header).getByRole('link', { name: 'English' })).toHaveAttribute('href', '/en/questions?sort=new');
@@ -254,9 +256,15 @@ describe('auth intent (GD-06)', () => {
     const dialog = screen.getByRole('dialog', { name: 'Sign in to follow Reza' });
     expect(onRun).not.toHaveBeenCalled();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Log in' }));
-    await waitFor(() => expect(goTo).toHaveBeenCalledWith('/bff/login?return_to=%2Fen%2Fshop%2Freza&locale=en'));
+    await waitFor(() =>
+      expect(goTo).toHaveBeenCalledWith('/bff/login?return_to=%2Fen%2Fonboarding%3Fnext%3D%252Fen%252Fshop%252Freza&locale=en&intent=i1'),
+    );
     expect(posts).toEqual([
-      { url: '/bff/intents', body: { type: 'follow', target: 'shop-1', return_to: '/en/shop/reza' }, csrf: 'csrf-1' },
+      {
+        url: '/bff/intents',
+        body: { type: 'follow', target: 'shop-1', return_to: '/en/shop/reza', label: 'Sign in to follow Reza' },
+        csrf: 'csrf-1',
+      },
     ]);
   });
 
@@ -287,6 +295,29 @@ describe('auth intent (GD-06)', () => {
   });
 });
 
+describe('sign-in notices (P4)', () => {
+  it('SESSION_ENDED from the BFF and a sign-in that came back without success show a message', async () => {
+    window.history.replaceState(null, '', '/en/garage?signin=cancelled');
+    renderApp(<p>page</p>, { locale: 'en' });
+    expect(await screen.findByText('Sign-in was cancelled.')).toBeInTheDocument();
+    act(() => {
+      window.dispatchEvent(new Event(SESSION_ENDED_EVENT));
+    });
+    expect(await screen.findByText('You were signed out. Log in again to continue.')).toBeInTheDocument();
+  });
+
+  it('Switch account asks for credentials again (prompt=login)', () => {
+    navigation.reset('/fa/garage?signin=failed');
+    renderApp(<ShellFrame>page</ShellFrame>, { session: signedIn() });
+    fireEvent.click(screen.getByRole('button', { name: 'منوی حساب' }));
+    const href = screen.getByRole('link', { name: 'تغییر حساب' }).getAttribute('href')!;
+    const q = new URL(href, 'http://x').searchParams;
+    expect(q.get('prompt')).toBe('login');
+    // An earlier outcome is not carried back.
+    expect(q.get('return_to')).toBe('/fa/onboarding?next=%2Ffa%2Fgarage');
+  });
+});
+
 describe('session gate', () => {
   it('signed in → the page; guest → hosted sign-in; back from a failed sign-in → the log-in state', async () => {
     navigation.reset('/fa/garage');
@@ -295,7 +326,7 @@ describe('session gate', () => {
     a.unmount();
 
     renderApp(<SessionGate>private</SessionGate>, { session: guest }).unmount();
-    await waitFor(() => expect(goTo).toHaveBeenCalledWith('/bff/login?return_to=%2Ffa%2Fgarage&locale=fa'));
+    await waitFor(() => expect(goTo).toHaveBeenCalledWith('/bff/login?return_to=%2Ffa%2Fonboarding%3Fnext%3D%252Ffa%252Fgarage&locale=fa'));
 
     vi.mocked(goTo).mockClear();
     navigation.reset('/fa/garage?signin=cancelled');

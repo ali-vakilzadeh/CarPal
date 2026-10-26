@@ -1,0 +1,96 @@
+/* Hosted sign-in and link pages (P4, W-AUTH-01): step titles, error text, password rules, the 6-box code input
+   (mobile/preview .pv-code), fieldsets of consent boxes and the lock countdown. Tokens only, logical properties. */
+.pwa-auth-title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 800;
+}
+:lang(fa) .pwa-auth-title {
+  font-size: 26px;
+  line-height: 40px;
+}
+.pwa-auth-title:focus {
+  outline: none;
+}
+.pwa-error-text {
+  color: var(--danger);
+  font-weight: 700;
+}
+.pwa-rules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.pwa-rule {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+.pwa-rule.is-ok {
+  color: var(--ink);
+}
+.pwa-rule.is-ok .cp-icon {
+  color: var(--success);
+}
+.pwa-code {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+}
+.pwa-code input {
+  inline-size: var(--tap-min);
+  block-size: calc(var(--tap-min) + var(--space-2));
+  padding: 0;
+  border: 2px solid var(--border-inactive);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--ink);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.pwa-code input:focus {
+  outline: none;
+  border-color: var(--border);
+  background: var(--surface-raised);
+  box-shadow: var(--ring-focus);
+}
+.pwa-code.is-error input {
+  border-color: var(--danger);
+}
+@media (max-width: 359px) {
+  .pwa-code {
+    gap: var(--space-1);
+  }
+  .pwa-code input {
+    inline-size: 40px;
+  }
+}
+.pwa-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pwa-fieldset legend {
+  padding: 0;
+  margin-block-end: var(--space-1);
+}
+.pwa-countdown {
+  margin: 0;
+  font-size: 40px;
+  line-height: 48px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}

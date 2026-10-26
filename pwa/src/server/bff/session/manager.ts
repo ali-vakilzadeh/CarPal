@@ -93,7 +93,9 @@ export class SessionManager {
     await this.#exclusive(id, () => this.store.delete(id));
   }
 
+  /** A persistent cookie up to the absolute expiry, or a browser-session cookie when "Keep me signed in" was off. */
   cookie(r: SessionRecord): string {
+    if (r.persistent === false) return hostCookie(SESSION_COOKIE, r.id, { sameSite: 'Strict' });
     return hostCookie(SESSION_COOKIE, r.id, { sameSite: 'Strict', maxAgeS: (r.absoluteExpiresAt - this.now()) / 1000 });
   }
 

@@ -34,6 +34,10 @@ const TYPE_ICON: Partial<Record<TaxonomyType, IconName>> = {
 export interface PendingSearch {
   text: string;
   node?: { id: string; type: TaxonomyType; name: string };
+  /** A guest's "Your car" (landing hero): sent as brand/model/series filters, never as vehicle_id (BA-16). */
+  vehicle?: { brand_node_id: string; model_node_id?: string; series_node_id?: string };
+  /** A chosen pilot city (region city_key): the chosen_city location of the search (BA-16). */
+  city?: string;
   at: number;
 }
 

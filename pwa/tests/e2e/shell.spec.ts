@@ -50,7 +50,8 @@ test('keyboard: skip link, "/" focuses search, suggestions panel, Esc', async ({
   await page.keyboard.press('/');
   const search = page.getByRole('combobox', { name: 'Search CarPal' });
   await expect(search).toBeFocused();
-  await expect(page.getByRole('link', { name: 'Browse on map' })).toBeVisible();
+  // The header's map link (the landing hero has one of the same name since P5).
+  await expect(page.getByRole('banner').getByRole('link', { name: 'Browse on map' })).toBeVisible();
   await search.fill('brake noise');
   await expect(page.getByRole('option', { name: 'Search for “brake noise”' })).toBeVisible();
   await page.keyboard.press('Escape');
@@ -172,7 +173,8 @@ test('gated demo action: guest sees the context modal, the intent is saved and t
   await expect(dialog).toBeVisible();
   await expectNoAxeViolations(page);
   await dialog.getByRole('button', { name: 'Log in' }).click();
-  await expect.poll(() => loginUrl).toContain('/bff/login?return_to=%2Fen%2Fdev-kit&locale=en');
+  // Back through the onboarding check (P4.T7), with the intent named for the hosted sign-in's context line.
+  await expect.poll(() => loginUrl).toContain('/bff/login?return_to=%2Fen%2Fonboarding%3Fnext%3D%252Fen%252Fdev-kit&locale=en&intent=');
   // The intent is in the pre-session, waiting for the return.
   const session = await page.request.get('/bff/session');
   expect(session.ok()).toBe(true);
@@ -188,7 +190,7 @@ test('signed-in pages send guests to the hosted sign-in with the return URL', as
     await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>sign-in</title>' });
   });
   await page.goto('/fa/garage');
-  await expect.poll(() => loginUrl).toContain('/bff/login?return_to=%2Ffa%2Fgarage&locale=fa');
+  await expect.poll(() => loginUrl).toContain('/bff/login?return_to=%2Ffa%2Fonboarding%3Fnext%3D%252Ffa%252Fgarage&locale=fa');
   await page.waitForURL('**/bff/login**');
   await page.goto('/fa/garage?signin=cancelled');
   await expect(page.getByRole('heading', { name: 'برای دیدن این صفحه وارد شوید' })).toBeVisible();

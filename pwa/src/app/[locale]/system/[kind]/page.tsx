@@ -6,8 +6,9 @@ import { getTranslator } from '@/lib/i18n/dictionary';
 import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { SystemPage, isSystemKind, systemMetaTitle } from '@/components/shell/system-page';
-import { DEFAULT_TIME_ZONE, TIME_ZONE_COOKIE, validTimeZone } from '@/lib/format';
+import { TIME_ZONE_COOKIE, validTimeZone } from '@/lib/format';
 import { isLocale } from '@/lib/i18n/locales';
+import { serverEnv } from '@/server/env';
 import { MAINTENANCE_UNTIL_HEADER, SYSTEM_HEADER } from '@/server/system-status';
 
 type Props = { params: Promise<{ locale: string; kind: string }> };
@@ -29,6 +30,6 @@ export default async function SystemRoute({ params }: Props) {
   const { locale, kind } = await resolve(params);
   const t = getTranslator(locale);
   const until = (await headers()).get(MAINTENANCE_UNTIL_HEADER);
-  const timeZone = validTimeZone((await cookies()).get(TIME_ZONE_COOKIE)?.value) ?? DEFAULT_TIME_ZONE;
+  const timeZone = validTimeZone((await cookies()).get(TIME_ZONE_COOKIE)?.value) ?? serverEnv().CARPAL_PWA_DEFAULT_TIME_ZONE;
   return <SystemPage kind={kind} locale={locale} t={t} until={until} timeZone={timeZone} />;
 }

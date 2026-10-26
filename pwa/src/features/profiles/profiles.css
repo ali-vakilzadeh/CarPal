@@ -1,0 +1,828 @@
+/* Public pages (P5): landing, provider and vendor profiles, part and showcase pages, and the shared media box.
+   Design-system tokens only, logical properties only; unlayered like shell.css (bundle.css is unlayered). Breakpoints:
+   768 px (tablet) and 1200 px (desktop with the right rail), Docs/22 §2.1. Imported by src/app/globals.css. */
+
+/* ---------- Type helpers (tokens.css text styles; Persian keeps its own sizes) ---------- */
+.pwa-text-title {
+  font-family: var(--font-sans);
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+}
+.pwa-text-h2 {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
+}
+.pwa-text-label {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 700;
+}
+:lang(fa) .pwa-text-title {
+  font-family: var(--font-fa);
+  font-size: 24px;
+  line-height: 38px;
+  font-weight: 800;
+}
+:lang(fa) .pwa-text-h2 {
+  font-family: var(--font-fa);
+  font-size: 19px;
+  line-height: 32px;
+}
+:lang(fa) .pwa-text-label {
+  line-height: 24px;
+}
+.pwa-ugc {
+  unicode-bidi: plaintext;
+  text-align: start;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Layout helpers ---------- */
+.pwa-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+.pwa-stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+.pwa-stack-xs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+.pwa-plain-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pwa-badges,
+.pwa-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.pwa-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.pwa-explain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  border: 1px solid var(--divider);
+}
+[data-theme='sun'] .pwa-explain {
+  border: 2px solid var(--border-inactive);
+}
+.pwa-card-grid,
+.pwa-showcase-grid,
+.pwa-part-grid,
+.pwa-gallery-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+}
+.pwa-gallery-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 120px), 1fr));
+  gap: var(--space-2);
+}
+.pwa-card-link {
+  color: var(--ink);
+  text-decoration: none;
+}
+.pwa-card-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* The whole card is the link's target area (the link stays the accessible name). */
+.pwa-org-card,
+.pwa-showcase-card,
+.pwa-part-card {
+  position: relative;
+}
+.pwa-org-card .pwa-card-link::after,
+.pwa-showcase-card .pwa-card-link::after,
+.pwa-part-card .pwa-card-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-md);
+}
+.pwa-org-card .pwa-card-link:focus-visible::after,
+.pwa-showcase-card .pwa-card-link:focus-visible::after,
+.pwa-part-card .pwa-card-link:focus-visible::after {
+  box-shadow: var(--ring-focus);
+}
+.pwa-card-link:focus-visible {
+  box-shadow: none;
+}
+
+/* ---------- Media box (P5.T7): fixed aspect ratio, no layout shift ---------- */
+.pwa-media {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  aspect-ratio: 4 / 3;
+}
+.pwa-media.is-wide {
+  aspect-ratio: 16 / 9;
+}
+.pwa-media.is-square {
+  aspect-ratio: 1;
+}
+.pwa-media img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+.pwa-media-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  text-align: center;
+  color: var(--ink-muted);
+}
+
+/* ---------- Popovers (badge explanations, share and directions) ---------- */
+.pwa-badge-btn {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  min-block-size: var(--tap-min);
+  align-items: center;
+}
+.pwa-popover {
+  margin: auto;
+  inline-size: min(360px, calc(100vw - var(--space-8)));
+  padding: var(--space-4);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  color: var(--ink);
+  box-shadow: var(--shadow-2);
+}
+.pwa-popover:popover-open {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pwa-popover::backdrop {
+  background: var(--scrim);
+}
+[data-theme='sun'] .pwa-popover {
+  border: 2px solid var(--border);
+}
+.pwa-popover-menu .pwa-menu-item {
+  text-decoration: none;
+  color: var(--ink);
+}
+
+/* ---------- Rating ---------- */
+.pwa-rating {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+}
+.pwa-rating-value {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.pwa-star-off {
+  color: var(--divider);
+}
+.pwa-rating-big {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.pwa-rating-number {
+  font-size: 48px;
+  line-height: 52px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.pwa-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.pwa-bar-row {
+  display: grid;
+  grid-template-columns: max-content 1fr max-content;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ---------- Profile page ---------- */
+.pwa-profile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-block: var(--space-4) var(--space-8);
+  min-inline-size: 0;
+}
+.pwa-org-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.pwa-media.pwa-org-cover {
+  aspect-ratio: 16 / 9;
+}
+@media (min-width: 768px) {
+  .pwa-media.pwa-org-cover {
+    aspect-ratio: 3 / 1;
+  }
+}
+.pwa-org-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block-start: calc(var(--space-8) * -1);
+  padding-inline: var(--space-3);
+}
+.pwa-org-logo {
+  flex: none;
+  box-shadow: var(--shadow-1);
+  background: var(--surface);
+}
+.pwa-org-title {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  padding-block-start: var(--space-8);
+}
+.pwa-org-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.pwa-org-response {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--accent);
+  font-weight: 600;
+}
+.pwa-org-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* Below 1200 px the right rail is hidden, so the request card sits in the main column. */
+@media (min-width: 1200px) {
+  .pwa-profile-inline-request {
+    display: none;
+  }
+}
+.pwa-rail-sticky {
+  position: sticky;
+  inset-block-start: calc(var(--pwa-header-height) + var(--space-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.pwa-section-menu {
+  position: sticky;
+  inset-block-start: var(--pwa-header-height);
+  z-index: 5;
+  background: var(--surface);
+  border-block-end: 1px solid var(--divider);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.pwa-section-menu ul {
+  display: flex;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  white-space: nowrap;
+}
+.pwa-section-link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--tap-min);
+  padding-inline: var(--space-3);
+  color: var(--ink-muted);
+  font-weight: 700;
+  text-decoration: none;
+  border-block-end: 3px solid transparent;
+}
+.pwa-section-link.is-current {
+  color: var(--ink);
+  border-block-end-color: var(--accent);
+}
+.pwa-profile-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  scroll-margin-block-start: calc(var(--pwa-header-height) + var(--tap-min) + var(--space-4));
+}
+.pwa-facts {
+  grid-template-columns: minmax(8rem, max-content) 1fr;
+}
+.pwa-cert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  border-block-end: 1px solid var(--divider);
+}
+.pwa-disclosure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--divider);
+}
+.pwa-disclosure summary {
+  min-block-size: var(--tap-min);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* Capability matrix: a table from 768 px, stacked rows below. */
+.pwa-matrix-wrap {
+  overflow-x: auto;
+}
+.pwa-matrix {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+.pwa-matrix th,
+.pwa-matrix td,
+.pwa-table th,
+.pwa-table td,
+.pwa-hours th,
+.pwa-hours td {
+  padding: var(--space-2) var(--space-3);
+  text-align: start;
+  vertical-align: top;
+  border-block-end: 1px solid var(--divider);
+}
+.pwa-matrix thead th,
+.pwa-table thead th {
+  font-size: 15px;
+  color: var(--ink-muted);
+}
+.pwa-matrix-cell {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+@media (max-width: 767px) {
+  .pwa-matrix thead {
+    display: none;
+  }
+  .pwa-matrix tr {
+    display: block;
+    padding-block: var(--space-2);
+    border-block-end: 1px solid var(--divider);
+  }
+  .pwa-matrix th,
+  .pwa-matrix td {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    border: 0;
+    padding-inline: 0;
+  }
+  .pwa-matrix td::before {
+    content: attr(data-label);
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+}
+.pwa-table,
+.pwa-hours {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+.pwa-hours tr.is-today th,
+.pwa-hours tr.is-today td,
+.pwa-table tr.is-mine th,
+.pwa-table tr.is-mine td {
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+.pwa-hours td {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reviews: summary and list side by side from 1200 px. */
+.pwa-reviews-cols {
+  display: grid;
+  gap: var(--space-6);
+}
+@media (min-width: 1200px) {
+  .pwa-reviews-cols {
+    grid-template-columns: minmax(240px, 1fr) 2fr;
+    align-items: start;
+  }
+}
+.pwa-review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-end: var(--space-4);
+  border-block-end: 1px solid var(--divider);
+}
+.pwa-review-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.pwa-reply {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  border-inline-start: 3px solid var(--accent);
+}
+.pwa-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+}
+.pwa-thumbs .pwa-media,
+.pwa-thumb-btn {
+  inline-size: calc(var(--space-12) * 1.5);
+}
+.pwa-thumb-btn {
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+}
+.pwa-thumb-btn[aria-current='true'] {
+  border-color: var(--accent);
+}
+
+/* Location & Hours */
+.pwa-location {
+  display: grid;
+  gap: var(--space-4);
+}
+@media (min-width: 768px) {
+  .pwa-location {
+    grid-template-columns: 1fr 1fr;
+  }
+  .pwa-location > .pwa-map-preview {
+    grid-column: 1 / -1;
+  }
+}
+.pwa-map-preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  block-size: calc(var(--space-12) * 4);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  border: 1px solid var(--divider);
+  overflow: hidden;
+}
+.pwa-map-pin,
+.pwa-map-area {
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--control-md);
+  block-size: var(--control-md);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--shadow-1);
+}
+.pwa-map-area {
+  inline-size: calc(var(--space-12) * 2.5);
+  block-size: calc(var(--space-12) * 2.5);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 2px dashed var(--accent);
+  box-shadow: none;
+}
+.cp-btn.pwa-map-open {
+  position: absolute;
+  inset-block-end: var(--space-3);
+  inset-inline-start: var(--space-3);
+}
+.pwa-map-attr {
+  position: absolute;
+  inset-block-start: var(--space-1);
+  inset-inline-end: var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.pwa-address {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* Request card */
+.pwa-request-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  border: 1px solid var(--divider);
+  box-shadow: var(--shadow-1);
+}
+[data-theme='sun'] .pwa-request-card {
+  border: 2px solid var(--border);
+}
+.pwa-fit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+}
+.pwa-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.cp-chip.pwa-slot {
+  font-variant-numeric: tabular-nums;
+}
+.pwa-request-card .cp-chip.pwa-vehicle-chip {
+  max-inline-size: 100%;
+  align-self: flex-start;
+}
+
+/* Showcases and the before/after slider */
+.pwa-showcase {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.pwa-showcase-card,
+.pwa-part-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.pwa-part-card {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--divider);
+  background: var(--surface-raised);
+}
+.pwa-showcase-author {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--divider);
+}
+.pwa-ba-figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+}
+.pwa-ba {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+.pwa-ba.is-ready {
+  grid-template-columns: 1fr;
+  gap: 0;
+  touch-action: pan-y;
+  cursor: ew-resize;
+  user-select: none;
+}
+.pwa-ba-layer {
+  position: relative;
+}
+.pwa-ba.is-ready .pwa-ba-layer {
+  grid-area: 1 / 1;
+}
+.pwa-ba.is-ready .pwa-ba-layer.is-before {
+  clip-path: inset(0 calc(100% - var(--pwa-ba-pos, 50%)) 0 0);
+}
+[dir='rtl'] .pwa-ba.is-ready .pwa-ba-layer.is-before {
+  clip-path: inset(0 0 0 calc(100% - var(--pwa-ba-pos, 50%)));
+}
+.pwa-ba-tag {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.pwa-ba-tag.is-before {
+  inset-inline-start: var(--space-2);
+}
+.pwa-ba-tag.is-after {
+  inset-inline-end: var(--space-2);
+}
+.pwa-ba-handle {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: var(--pwa-ba-pos, 50%);
+  inline-size: 4px;
+  margin-inline-start: -2px;
+  background: var(--on-accent);
+  box-shadow: var(--shadow-2);
+  pointer-events: none;
+}
+.pwa-ba-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.pwa-ba-range {
+  flex: 1;
+  min-block-size: var(--tap-min);
+  accent-color: var(--accent);
+}
+
+/* Parts and the part page */
+.pwa-parts-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+.pwa-parts-search > :first-child {
+  flex: 1 1 16rem;
+}
+.pwa-price-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.pwa-part {
+  display: grid;
+  gap: var(--space-6);
+  padding-block: var(--space-4);
+}
+@media (min-width: 768px) {
+  .pwa-part {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+.pwa-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pwa-stepper-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.pwa-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* ---------- Landing ---------- */
+.pwa-landing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding-block: var(--space-6) var(--space-8);
+  min-inline-size: 0;
+}
+.pwa-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--accent-soft);
+}
+.pwa-hero-form {
+  display: grid;
+  gap: var(--space-3);
+}
+@media (min-width: 768px) {
+  .pwa-vehicle-picker.pwa-hero-car {
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start;
+  }
+  .pwa-vehicle-picker.pwa-hero-car > legend {
+    grid-column: 1 / -1;
+  }
+}
+.pwa-hero-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: 0;
+}
+.pwa-landing-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.pwa-how-list {
+  display: grid;
+  gap: var(--space-4);
+}
+@media (min-width: 768px) {
+  .pwa-how-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.pwa-how-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.pwa-org-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--divider);
+  background: var(--surface-raised);
+}
+.pwa-org-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+.pwa-org-card-name {
+  overflow-wrap: anywhere;
+}
+.pwa-city-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+.pwa-city-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.pwa-prose {
+  max-inline-size: var(--measure);
+}
+.pwa-prose ul {
+  padding-inline-start: var(--space-5);
+  margin: 0;
+}

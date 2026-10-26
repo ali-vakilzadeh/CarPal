@@ -90,7 +90,20 @@ export function originsOf(...urls: (string | undefined)[]): string[] {
  * Signed-in tools and other private pages (Docs/22 §6): never cached, never indexed. Locale-prefixed app routes, the
  * hosted sign-in (/id) and the link-token pages (/l).
  */
-const PRIVATE_SECTIONS = new Set(['home', 'garage', 'help', 'appointments', 'review', 'settings', 'notifications', 'saved', 'activity']);
+export const PRIVATE_SECTIONS = new Set([
+  'home',
+  'garage',
+  'help',
+  'appointments',
+  'review',
+  'settings',
+  'notifications',
+  'saved',
+  'activity',
+  'onboarding',
+  'login',
+  'signup',
+]);
 
 export function isPrivatePage(pathname: string, locales: readonly string[]): boolean {
   const [first, second] = pathname.split('/').slice(1);

@@ -964,3 +964,64 @@ html {
     scroll-behavior: auto;
   }
 }
+
+/* ---------- Full-screen flows: hosted sign-in, link pages, onboarding (flow-frame.tsx) ---------- */
+.pwa-flow {
+  min-block-size: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+}
+.pwa-flow-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+}
+.pwa-flow-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.pwa-flow-langs {
+  display: flex;
+  gap: var(--space-2);
+}
+.pwa-flow-langs .cp-chip {
+  text-decoration: none;
+}
+.pwa-flow-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4) var(--space-4) var(--space-12);
+}
+.pwa-flow-main:focus {
+  outline: none;
+}
+.pwa-flow-card {
+  inline-size: 100%;
+  max-inline-size: 480px;
+  align-self: flex-start;
+}
+.pwa-flow-card.is-wide {
+  max-inline-size: 720px;
+}
+@media (min-width: 768px) {
+  .pwa-flow-card {
+    padding: var(--space-6);
+    background: var(--surface-raised);
+    border: 1px solid var(--divider);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-1);
+  }
+  .pwa-flow-main {
+    padding-block-start: var(--space-8);
+  }
+}
+[data-theme='sun'] .pwa-flow-card {
+  border-color: var(--border-inactive);
+}

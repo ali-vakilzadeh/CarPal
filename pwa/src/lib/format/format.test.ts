@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { getTranslator } from '@/lib/i18n/dictionary';
 import {
+  DEFAULT_PRICE_DISPLAY,
   createFormatter,
+  parsePriceDisplay,
+  serializePriceDisplay,
+  type PriceDisplay,
   formatCalendarDate,
   formatDate,
   formatDistance,
@@ -70,6 +74,27 @@ describe('money and distance', () => {
     expect(formatMoney(18_500_000, 'irr', 'en', en)).toBe('1,850,000 T');
     expect(formatMoney('12.5', 'EUR', 'en', en)).toBe('12.5 EUR');
     expect(formatMoney('x', 'IRR', 'en', en)).toBe('');
+  });
+
+  it('prices are based in USD; this browser may convert them at its own rate (OQ-11)', () => {
+    expect(formatMoney('12.5', 'USD', 'en', en)).toBe('$12.5');
+    expect(formatMoney(40, 'USD', 'fa', fa)).toBe('۴۰ دلار');
+    const toman: PriceDisplay = { convertUsd: true, usdRate: 105_000, unit: 'toman' };
+    expect(formatMoney(10, 'USD', 'en', en, toman)).toBe('1,050,000 T');
+    expect(formatMoney(10, 'USD', 'fa', fa, { ...toman, unit: 'rial', usdRate: 1_050_000 })).toBe('۱۰٬۵۰۰٬۰۰۰ ریال');
+    // Ticked off, or no rate: dollars stay dollars. IRR amounts follow the chosen unit.
+    expect(formatMoney(10, 'USD', 'en', en, { ...toman, convertUsd: false })).toBe('$10');
+    expect(formatMoney(18_500_000, 'IRR', 'en', en, { convertUsd: false, usdRate: null, unit: 'rial' })).toBe('18,500,000 IRR');
+  });
+
+  it('keeps the price display in a small cookie value and ignores anything malformed', () => {
+    const p: PriceDisplay = { convertUsd: true, usdRate: 105000.5, unit: 'toman' };
+    expect(serializePriceDisplay(p)).toBe('1.toman.105000.5');
+    expect(parsePriceDisplay('1.toman.105000.5')).toEqual(p);
+    expect(parsePriceDisplay('1.rial.')).toEqual({ convertUsd: false, usdRate: null, unit: 'rial' });
+    expect(serializePriceDisplay({ convertUsd: true, usdRate: null, unit: 'rial' })).toBe('0.rial.');
+    for (const bad of [undefined, '', '2.toman.1', '1.euro.5', '1.toman.-5', '1.toman.0', '1.toman.99999999999'])
+      expect(parsePriceDisplay(bad)).toEqual(DEFAULT_PRICE_DISPLAY);
   });
 
   it('says distances as "about x"', () => {

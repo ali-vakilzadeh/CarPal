@@ -4,6 +4,16 @@ import { z } from 'zod';
 
 const url = z.url();
 const optionalUrl = z.preprocess((v) => (v === '' ? undefined : v), url.optional());
+const timeZone = z.string().refine((v) => {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: v });
+    return true;
+  } catch {
+    return false;
+  }
+}, 'must be an IANA time zone, e.g. Asia/Tehran');
+/** A policy version as the contract takes it (Str<1,20>). */
+const policyVersion = z.string().min(1).max(20);
 
 const schema = z
   .object({
@@ -35,6 +45,21 @@ const schema = z
       .enum(['0', '1'])
       .default('0')
       .transform((v) => v === '1'),
+    /**
+     * Time zone for dates until the browser reports its own (cp_tz cookie), OQ-13. The region config has none (DI-29),
+     * so each deployment states its default here.
+     */
+    CARPAL_PWA_DEFAULT_TIME_ZONE: timeZone.default('Asia/Tehran'),
+    /** Versions of the Terms and the Privacy Policy accepted at sign-up and named in consent records (auth.signup, consents.grant). */
+    CARPAL_PWA_TERMS_VERSION: policyVersion.default('2026-10'),
+    CARPAL_PWA_PRIVACY_VERSION: policyVersion.default('2026-10'),
+    /** Business portal sign-up (onboarding step 1 business choices, W-ONB-01); a placeholder until the portal exists. */
+    CARPAL_PWA_PORTAL_SIGNUP_URL: url.default('https://portal.carpal.app/signup'),
+    /**
+     * Dev/E2E only: the registered https redirect URI when the PWA itself runs on http://localhost (DI-24, OQ-10).
+     * Empty = <CARPAL_PWA_ORIGIN>/bff/oauth/callback. Refused in prod.
+     */
+    CARPAL_PWA_OAUTH_REDIRECT_URI: optionalUrl,
   })
   .superRefine((env, ctx) => {
     if (env.CARPAL_PWA_SESSION_STORE === 'redis' && !env.CARPAL_PWA_REDIS_URL) {
@@ -45,6 +70,8 @@ const schema = z
         if (!env[key].startsWith('https://')) ctx.addIssue({ code: 'custom', path: [key], message: 'must be https in prod' });
       }
       if (env.CARPAL_PWA_DEMO) ctx.addIssue({ code: 'custom', path: ['CARPAL_PWA_DEMO'], message: 'must be 0 in prod' });
+      if (env.CARPAL_PWA_OAUTH_REDIRECT_URI)
+        ctx.addIssue({ code: 'custom', path: ['CARPAL_PWA_OAUTH_REDIRECT_URI'], message: 'dev and E2E only; must be empty in prod' });
       if (env.CARPAL_PWA_SESSION_STORE !== 'redis') {
         ctx.addIssue({ code: 'custom', path: ['CARPAL_PWA_SESSION_STORE'], message: 'prod needs the redis session store' });
       }

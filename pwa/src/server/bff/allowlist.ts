@@ -1,7 +1,9 @@
 // The consumer audience of the forwarder (SEC-WEB-5, GD-08 amendment), derived from the generated registry: a route
-// is forwarded when it is on the api host and either (a) has no {org_id} path parameter and admits a USR, PUB or LNK
-// principal, or (b) is a /v1/orgs/{org_id}/fleet/… route that admits DRV (fleet drivers use the PWA, P12). Everything
-// else — {org} business routes, the admin plane, auth-host operations — answers 404 at the BFF.
+// is forwarded when it is on the api host and either (a) is outside the organization scope /v1/orgs/{org_id}/… and
+// admits a USR, PUB or LNK principal — routes that only name an organization as their target (follows, favourites,
+// /v1/public/orgs/{org_id}/… reads) are consumer routes (P5 fix) —, or (b) is a /v1/orgs/{org_id}/fleet/… route that
+// admits DRV (fleet drivers use the PWA, P12). Everything else — {org} business routes, the admin plane, auth-host
+// operations — answers 404 at the BFF.
 import { OPERATIONS, type OperationId, type OperationRoute } from '@carpal/api-contracts';
 
 export interface AllowedRoute {
@@ -21,7 +23,7 @@ const CONSUMER_PRINCIPALS = ['USR', 'PUB', 'LNK'];
 export function isConsumerRoute(route: OperationRoute): boolean {
   if (route.host !== 'api') return false;
   const admits = (tags: string[]) => route.principals.some((alt) => alt.some((t) => tags.includes(t.tag)));
-  if (!route.pathParams.includes('org_id')) return admits(CONSUMER_PRINCIPALS);
+  if (!route.path.startsWith('/v1/orgs/{org_id}')) return admits(CONSUMER_PRINCIPALS);
   return route.path.startsWith('/v1/orgs/{org_id}/fleet/') && admits(['DRV']);
 }
 

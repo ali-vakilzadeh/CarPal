@@ -9,7 +9,10 @@ import type { Translate } from '@/lib/i18n/keys';
 const NUMBER_LOCALE: Record<Locale, string> = { fa: 'fa-IR', en: 'en-US' };
 const DATE_LOCALE: Record<Locale, string> = { fa: 'fa-IR-u-ca-persian-nu-arabext', en: 'en-US-u-ca-gregory' };
 
-/** Pilot region time zone until config.client carries one (it does not today); the browser's zone wins when known. */
+/**
+ * Fallback time zone of the formatters. Pages use the browser's zone (cp_tz cookie) or the deployment's
+ * CARPAL_PWA_DEFAULT_TIME_ZONE (OQ-13); this constant only covers callers that pass none.
+ */
 export const DEFAULT_TIME_ZONE = 'Asia/Tehran';
 /** The browser's IANA time zone, written by the client so the next server render uses it. */
 export const TIME_ZONE_COOKIE = 'cp_tz';
@@ -100,22 +103,67 @@ export function formatRelative(value: string | number | Date, locale: Locale, no
 }
 
 /**
- * How a currency is shown to people. IRR amounts are displayed in toman (1 toman = 10 rials), as everywhere in the
- * pilot designs (mobile/preview "1,850,000 T" / "… تومان"); the region config has no display unit yet (OQ-11).
+ * How prices are shown in this browser (OQ-11). Prices are based in USD; a visitor may enter their own rate and tick
+ * "Convert USD prices with this rate" to see them in toman or rial instead. IRR amounts are shown in the same unit
+ * (toman by default, 1 toman = 10 rials, as in the pilot designs). Kept in the cp_price cookie so the server renders
+ * the same text the browser does.
  */
-export const CURRENCY_DISPLAY: Record<string, { unit: 'toman'; divisor: number }> = { IRR: { unit: 'toman', divisor: 10 } };
+export interface PriceDisplay {
+  convertUsd: boolean;
+  /** How many units (toman or rial) one US dollar is worth; null until the visitor enters one. */
+  usdRate: number | null;
+  unit: 'toman' | 'rial';
+}
 
-/** Money from the API (decimal string + ISO code), in the region's display unit, digits of the UI language. */
-export function formatMoney(amount: string | number, currency: string, locale: Locale, t: Translate): string {
+export const BASE_CURRENCY = 'USD';
+export const PRICE_COOKIE = 'cp_price';
+export const DEFAULT_PRICE_DISPLAY: PriceDisplay = { convertUsd: false, usdRate: null, unit: 'toman' };
+/** Highest rate accepted (units per dollar); keeps the cookie and the arithmetic sane. */
+export const MAX_USD_RATE = 1e9;
+
+/** Cookie value "<0|1>.<toman|rial>.<rate or empty>"; anything malformed gives the defaults. */
+export function parsePriceDisplay(value: string | null | undefined): PriceDisplay {
+  const m = /^([01])\.(toman|rial)\.(\d{1,10}(?:\.\d{1,4})?)?$/.exec(value ?? '');
+  if (!m) return DEFAULT_PRICE_DISPLAY;
+  const rate = m[3] ? Number(m[3]) : null;
+  const usdRate = rate !== null && rate > 0 && rate <= MAX_USD_RATE ? rate : null;
+  return { convertUsd: m[1] === '1' && usdRate !== null, usdRate, unit: m[2] as PriceDisplay['unit'] };
+}
+
+export function serializePriceDisplay(p: PriceDisplay): string {
+  const rate = p.usdRate !== null && p.usdRate > 0 && p.usdRate <= MAX_USD_RATE ? String(Math.round(p.usdRate * 10_000) / 10_000) : '';
+  return `${p.convertUsd && rate ? 1 : 0}.${p.unit}.${rate}`;
+}
+
+const RIALS_PER_TOMAN = 10;
+
+function localUnit(rials: number, unit: PriceDisplay['unit'], locale: Locale, t: Translate): string {
+  const value = unit === 'toman' ? rials / RIALS_PER_TOMAN : rials;
+  const shown = formatNumber(Math.round(value), locale, { maximumFractionDigits: 0 });
+  return t(unit === 'toman' ? 'format.currency.toman' : 'format.currency.rial', { amount: shown });
+}
+
+/** Money from the API (decimal string + ISO code) in this browser's price display, digits of the UI language. */
+export function formatMoney(
+  amount: string | number,
+  currency: string,
+  locale: Locale,
+  t: Translate,
+  prices: PriceDisplay = DEFAULT_PRICE_DISPLAY,
+): string {
   const value = typeof amount === 'number' ? amount : Number(amount);
   if (!Number.isFinite(value)) return '';
-  const display = CURRENCY_DISPLAY[currency.toUpperCase()];
-  if (display) {
-    const shown = formatNumber(Math.round(value / display.divisor), locale, { maximumFractionDigits: 0 });
-    return t('format.currency.toman', { amount: shown });
+  const code = currency.toUpperCase();
+  if (code === 'IRR') return localUnit(value, prices.unit, locale, t);
+  if (code === BASE_CURRENCY) {
+    if (prices.convertUsd && prices.usdRate) {
+      const rials = value * prices.usdRate * (prices.unit === 'toman' ? RIALS_PER_TOMAN : 1);
+      return localUnit(rials, prices.unit, locale, t);
+    }
+    return t('format.currency.usd', { amount: formatNumber(value, locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) });
   }
   const shown = formatNumber(value, locale, { maximumFractionDigits: 2 });
-  return t('format.currency.other', { amount: shown, currency: currency.toUpperCase() });
+  return t('format.currency.other', { amount: shown, currency: code });
 }
 
 /**
@@ -152,6 +200,7 @@ export function createFormatter(
   t: Translate,
   timeZone: string = DEFAULT_TIME_ZONE,
   distanceUnit: 'km' | 'mi' = 'km',
+  prices: PriceDisplay = DEFAULT_PRICE_DISPLAY,
 ): Formatter {
   return {
     locale,
@@ -161,7 +210,7 @@ export function createFormatter(
     date: (value, style) => formatDate(value, locale, style, timeZone),
     calendarDate: (isoDate, style) => formatCalendarDate(isoDate, locale, style),
     relative: (value, now) => formatRelative(value, locale, now),
-    money: (amount, currency) => formatMoney(amount, currency, locale, t),
+    money: (amount, currency) => formatMoney(amount, currency, locale, t, prices),
     distance: (meters, unit = distanceUnit) => formatDistance(meters, locale, t, unit),
   };
 }

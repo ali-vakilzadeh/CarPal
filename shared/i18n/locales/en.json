@@ -122,7 +122,14 @@
     },
     "footer": {
       "label": "Site",
-      "cookies": "Cookie settings"
+      "cookies": "Cookie settings",
+      "ranking": "How ranking works"
+    },
+    "signin": {
+      "expired": "Your sign-in took too long. Please log in again.",
+      "failed": "We couldn’t sign you in. Please try again.",
+      "cancelled": "Sign-in was cancelled.",
+      "stepUp": "Please log in again to confirm it’s you."
     }
   },
   "states": {
@@ -221,7 +228,9 @@
   "format": {
     "currency": {
       "toman": "{{amount}} T",
-      "other": "{{amount}} {{currency}}"
+      "other": "{{amount}} {{currency}}",
+      "usd": "${{amount}}",
+      "rial": "{{amount}} IRR"
     },
     "distance": {
       "km": "about {{value}} km",
@@ -245,5 +254,809 @@
       "error": "The list could not be loaded."
     },
     "label": "{{nickname}} · {{model}}"
+  },
+  "auth": {
+    "metaTitle": "Log in or sign up",
+    "finishing": "Signing you in…",
+    "signin": {
+      "welcome": "Welcome back",
+      "identifier": "Mobile number or email",
+      "identifierHint": "We’ll send you a code. With an email address you can also use your password.",
+      "identifierInvalid": "Enter a mobile number or an email address.",
+      "method": "Sign-in method",
+      "methodCode": "Send me a code",
+      "methodPassword": "Use password",
+      "passwordNeedsEmail": "Passwords work with your email address. With a mobile number we send you a code.",
+      "password": "Password",
+      "passwordMissing": "Enter your password.",
+      "keep": "Keep me signed in on this device",
+      "keepHint": "Turn this off on a shared or public computer.",
+      "continue": "Continue",
+      "passkey": "Sign in with a passkey",
+      "passkeyFailed": "We couldn’t sign you in with this passkey. Try another way.",
+      "forgot": "Forgot password?",
+      "newHere": "New to CarPal?",
+      "signUp": "Sign up",
+      "legal": "By continuing you agree to the Terms and the Privacy Policy.",
+      "invalid": "Email or password is not correct."
+    },
+    "signup": {
+      "title": "Create account",
+      "fullName": "Full name",
+      "fullNameHint": "Not shown publicly. Reviews show a display name you choose.",
+      "email": "Email",
+      "phone": "Mobile number (optional)",
+      "phoneHint": "For sign-in codes by text message.",
+      "password": "Password (optional)",
+      "passwordHint": "At least 12 characters. Leave it empty to sign in with codes instead.",
+      "required": "Required",
+      "terms": "I agree to the Terms",
+      "privacy": "I have read the Privacy Policy",
+      "termsRequired": "Please agree to the Terms to create an account.",
+      "privacyRequired": "Please confirm you have read the Privacy Policy.",
+      "read": "Read",
+      "termsTitle": "Terms",
+      "privacyTitle": "Privacy Policy",
+      "legalPending": "The full text is being reviewed and will be published here. You are agreeing to version {{version}}.",
+      "optional": "Optional — off unless you turn them on",
+      "marketing": "Send me news and offers",
+      "ai": "Let CarPal use my vehicles and history to tailor suggestions",
+      "aiHint": "Tailored suggestions use your vehicles, service history and open issues. Help Me still works if you leave this off.",
+      "create": "Create account",
+      "haveAccount": "Already have an account?",
+      "logIn": "Log in"
+    },
+    "password": {
+      "show": "Show password",
+      "hide": "Hide password",
+      "strength": "Password strength",
+      "weak": "Strength: weak",
+      "fair": "Strength: fair",
+      "good": "Strength: good",
+      "strong": "Strength: strong",
+      "ruleLength": "At least 12 characters",
+      "ruleMix": "Letters and numbers or symbols",
+      "ruleNotContact": "Not your email or phone number",
+      "tooShort": "Use at least 12 characters.",
+      "tooLong": "Use at most 128 characters.",
+      "breached": "This password is too common or has appeared in a data leak. Choose a less common password."
+    },
+    "code": {
+      "titleSignin": "Enter your code",
+      "titleVerify": "Verify your email",
+      "titleVerifyPhone": "Verify your number",
+      "sent": "We sent a 6-digit code to {{destination}}.",
+      "sentIfAccount": "If {{destination}} belongs to a CarPal account, we sent it a 6-digit code.",
+      "change": "Change",
+      "label": "6-digit code",
+      "digit": "Digit {{n, number}} of 6",
+      "verify": "Verify",
+      "wrong": "That code is not right or has expired. Try again, or send a new code.",
+      "resend": "Send a new code",
+      "resendIn": "Send a new code in {{time}}",
+      "resent": "We sent a new code.",
+      "byEmail": "Get the code by email instead",
+      "bySms": "Text the code to my mobile instead",
+      "noCode": "No code? Check the number or address, or create an account.",
+      "linkAlso": "You can also use the link in the email we sent you."
+    },
+    "mfa": {
+      "title": "Two-step sign-in",
+      "text": "Enter the 6-digit code from your authenticator app.",
+      "useRecovery": "Use a recovery code instead",
+      "useCode": "Use the code from my app",
+      "recovery": "Recovery code",
+      "recoveryHint": "One of the codes you saved when you turned on two-step sign-in.",
+      "passkey": "Use my passkey",
+      "wrong": "That code is not right. Try again."
+    },
+    "forgot": {
+      "title": "Reset password",
+      "text": "Enter the email address of your account. We will send you a link to choose a new password.",
+      "email": "Email",
+      "send": "Send link",
+      "sent": "If this email belongs to an account, we sent it a link. The link works once and expires soon.",
+      "back": "Back to log in"
+    },
+    "locked": {
+      "title": "Sign-in is paused",
+      "text": "For your security, sign-in is paused. You can try again when the timer ends.",
+      "ready": "You can try again now.",
+      "reset": "Reset password",
+      "back": "Back to log in"
+    },
+    "expired": {
+      "title": "This sign-in page expired",
+      "text": "Sign-in pages work for 30 minutes. Start again — you will come back to where you were.",
+      "restart": "Start again"
+    },
+    "errors": {
+      "network": "Can’t connect. Check your connection and try again.",
+      "generic": "Something went wrong. Please try again.",
+      "tooMany": "Too many tries. Please wait a few minutes and try again.",
+      "smsCountry": "We can’t send text messages to this country yet. Use your email address.",
+      "email": "Enter a valid email address.",
+      "phone": "Enter a valid mobile number.",
+      "fullName": "Enter your full name (2 to 100 characters).",
+      "check": "Check the highlighted fields."
+    },
+    "link": {
+      "missing": "This link is incomplete. Open it again from the email.",
+      "continue": "Continue to CarPal",
+      "logIn": "Log in",
+      "evTitle": "Verify your email",
+      "evWorking": "Checking your link…",
+      "evDone": "Your email address is verified",
+      "evDoneText": "You can now sign in with this email.",
+      "evUsed": "This link was already used.",
+      "evExpired": "This link has expired. Log in and we will send you a new code.",
+      "evTaken": "This email address is now used by another account.",
+      "prTitle": "Choose a new password",
+      "prNew": "New password",
+      "prConfirm": "Confirm new password",
+      "prMismatch": "The passwords do not match.",
+      "prSave": "Change password",
+      "prDone": "Password changed",
+      "prDoneText": "Other devices have been signed out.",
+      "prExpired": "This reset link has expired or was already used. Log in and choose “Forgot password?” to get a new one."
+    }
+  },
+  "onboarding": {
+    "metaTitle": "Set up CarPal",
+    "checking": "Getting things ready…",
+    "finishLater": "Finish later",
+    "stepOf": "Step {{step, number}} of {{total, number}}",
+    "next": "Next",
+    "skip": "Skip",
+    "saveFailed": "We couldn’t save this. Please try again.",
+    "changed": "Your set-up changed on another device. We loaded the latest step.",
+    "finished": "You’re all set.",
+    "steps": {
+      "role": "How you’ll use CarPal",
+      "vehicle": "Your first car",
+      "problem": "Anything wrong?",
+      "permissions": "Permissions"
+    },
+    "titles": {
+      "role": "How will you mainly use CarPal?",
+      "vehicle": "Add your car",
+      "problem": "Is anything wrong with this car right now?",
+      "permissions": "Permissions"
+    },
+    "role": {
+      "individual": "I own or manage personal vehicles",
+      "individualText": "Find the right expert and keep your car’s history.",
+      "fleet": "I manage a company fleet",
+      "fleetText": "Vehicles, drivers and service for a business.",
+      "provider": "I run a repair or service business",
+      "providerText": "Get matched with owners who need your skills.",
+      "vendor": "I sell car parts",
+      "vendorText": "List parts people can find by car and part number.",
+      "note": "You can join or create a business later with the same account.",
+      "businessTitle": "Business tools open in the business portal",
+      "businessText": "Set up your business there with the same account. Meanwhile you can use CarPal as an individual.",
+      "openPortal": "Open the business portal",
+      "continueIndividual": "Continue as an individual"
+    },
+    "vehicle": {
+      "intro": "Every search and suggestion fits your car once we know it.",
+      "vin": "VIN (optional)",
+      "vinHint": "17 characters. Letters I, O and Q are not used.",
+      "vinInvalid": "This VIN does not look right. Check it, or leave it empty.",
+      "vinLength": "A VIN has 17 characters.",
+      "vinLetters": "VINs never use the letters I, O or Q.",
+      "whereVin": "Where do I find my VIN?",
+      "whereVinText": "On your registration card, at the bottom of the windscreen on the driver’s side, or on the door pillar sticker.",
+      "year": "Year",
+      "chooseYear": "Choose a year",
+      "yearRequired": "Choose the year of the car.",
+      "pickRequired": "Choose the brand and the model.",
+      "mileage": "Mileage (optional)",
+      "mileageInvalid": "Enter the mileage as a whole number.",
+      "km": "km",
+      "nickname": "Nickname (optional)",
+      "nicknamePlaceholder": "e.g. Silver",
+      "save": "Save vehicle",
+      "phone": "Continue on your phone",
+      "phoneText": "Scan this code with your phone’s camera to add the car on your phone, for example by scanning the VIN.",
+      "qrLabel": "QR code that opens this step on your phone",
+      "saved": "{{vehicle}} is in your garage.",
+      "decoding": "Reading your VIN…",
+      "suggestYear": "This VIN suggests {{suggested}}; you entered {{entered}}.",
+      "basis": "Based on the model-year character in your VIN.",
+      "useSuggested": "Use {{year}}",
+      "keepEntered": "Keep {{year}}",
+      "suggestOther": "Your VIN gives more details about this car.",
+      "applyOther": "Add these details",
+      "decodeFailed": "We couldn’t read this VIN. The details you chose are saved.",
+      "duplicateMine": "This vehicle is already in your garage.",
+      "transferTitle": "Did you buy this car?",
+      "transferText": "This VIN is in another CarPal garage. We can ask its owner to move the car to you, with its service history. We never show you who they are.",
+      "transferMessage": "Message to the owner (optional)",
+      "transferSend": "Ask for the car",
+      "transferSent": "Request sent. We’ll tell you when the owner answers; requests expire after 14 days.",
+      "transferPending": "You already asked for this car. We’ll tell you when the owner answers.",
+      "transferNotFound": "No vehicle with this VIN was found any more. Save the car as your own.",
+      "limit": "You have reached the vehicle limit of your plan.",
+      "taxonomyMismatch": "This model does not belong to the brand you chose."
+    },
+    "problem": {
+      "noVehicle": "You can describe it anyway; we’ll ask which car later.",
+      "describe": "Describe what’s happening",
+      "symptoms": "Symptoms",
+      "getHelp": "Get help",
+      "notNow": "Not now",
+      "saved": "We kept your description. Help Me will start from it."
+    },
+    "symptoms": {
+      "light": "Warning light",
+      "noise": "Noise",
+      "brakes": "Brakes",
+      "vibration": "Vibration",
+      "overheating": "Overheating",
+      "start": "Won’t start",
+      "ac": "AC",
+      "suspension": "Suspension / clunk",
+      "leak": "Leak",
+      "smell": "Smell / smoke"
+    },
+    "permissions": {
+      "intro": "Choose what CarPal can use. You can change any of this later in Privacy & Consent.",
+      "location": "Location",
+      "locationText": "To find help near you and to open the map where you are.",
+      "allowLocation": "Allow location",
+      "allowed": "Allowed",
+      "denied": "We’ll ask for a city when you search or open the map.",
+      "unsupported": "This browser can’t share your location. We’ll ask for a city when you search.",
+      "finish": "Finish"
+    }
+  },
+  "settings": {
+    "local": {
+      "title": "On this device",
+      "text": "These settings are kept in this browser only."
+    },
+    "prices": {
+      "title": "Prices",
+      "text": "Prices on CarPal are in US dollars. You can see them in toman or rial at a rate you choose.",
+      "unit": "Show prices in",
+      "toman": "Toman",
+      "rial": "Rial",
+      "rate": "1 US dollar in {{unit}}",
+      "convert": "Convert USD prices with this rate",
+      "rateInvalid": "Enter a rate above 0.",
+      "example": "Example: 10 US dollars → {{price}}",
+      "saved": "Price display saved"
+    },
+    "comingSoon": "More settings arrive soon."
+  },
+  "profiles": {
+    "orgType": {
+      "provider": "Repair shop",
+      "vendor": "Parts seller",
+      "hybrid_provider_vendor": "Repair shop and parts seller",
+      "fleet": "Fleet"
+    },
+    "providerType": {
+      "independent_mechanic": "Independent mechanic",
+      "garage": "Garage",
+      "body_shop": "Body shop",
+      "mobile_mechanic": "Mobile mechanic",
+      "tire_wheel_specialist": "Tyre and wheel specialist",
+      "transmission_specialist": "Transmission specialist",
+      "ev_hybrid_specialist": "EV and hybrid specialist",
+      "detailing_reconditioning": "Detailing and reconditioning",
+      "diagnostics_specialist": "Diagnostics specialist",
+      "fleet_service_center": "Fleet service centre"
+    },
+    "vendorType": {
+      "parts_retailer": "Parts retailer",
+      "wholesaler": "Wholesaler",
+      "used_parts_specialist": "Used parts specialist",
+      "performance_parts": "Performance parts",
+      "oem_supplier": "Original parts supplier",
+      "tire_specialist": "Tyre specialist",
+      "battery_specialist": "Battery specialist",
+      "accessories": "Accessories"
+    },
+    "badge": {
+      "explain": "What does this mean?",
+      "pending": {
+        "label": "Verification pending",
+        "text": "This business has applied for verification. CarPal has not finished checking it yet."
+      },
+      "verified_business": {
+        "label": "Verified Business",
+        "text": "CarPal checked this business’s licence, address and owner identity."
+      },
+      "make_specialist": {
+        "label": "Make specialist",
+        "text": "Earned automatically from completed jobs on cars of this make on CarPal with a high average rating. Not paid for."
+      },
+      "system_expert": {
+        "label": "System expert",
+        "text": "Earned automatically: many completed jobs in this repair area on CarPal with an average rating of 4.5 or more. Not paid for."
+      },
+      "highly_rated": {
+        "label": "Highly rated",
+        "text": "A high average rating from confirmed reviews over the last year."
+      },
+      "fast_responder": {
+        "label": "Fast responder",
+        "text": "Usually answers new requests quickly, measured on CarPal."
+      },
+      "high_response_rate": {
+        "label": "Answers almost every request",
+        "text": "Replies to nearly all appointment requests, measured on CarPal."
+      },
+      "repeat_customer_favorite": {
+        "label": "Repeat customers",
+        "text": "Many customers came back for another confirmed visit."
+      },
+      "fast_appointment_turnaround": {
+        "label": "Quick appointments",
+        "text": "Usually offers an appointment within a few days."
+      },
+      "excellent_communication": {
+        "label": "Excellent communication",
+        "text": "Customers rate their communication very highly in confirmed reviews."
+      },
+      "fleet_friendly": {
+        "label": "Fleet friendly",
+        "text": "Works with company fleets: invoices, approvals and several cars at once."
+      },
+      "ev_ready": {
+        "label": "EV ready",
+        "text": "Has the tools and training to work on electric and hybrid cars."
+      },
+      "scoped": "{{label}} · {{scope}}"
+    },
+    "rating": {
+      "stars": "Rated {{value}} out of 5",
+      "count_one": "{{count, number}} review",
+      "count_other": "{{count, number}} reviews",
+      "none": "No reviews yet"
+    },
+    "priceTier": {
+      "budget": "Budget",
+      "mid_range": "Mid-range",
+      "premium": "Premium"
+    },
+    "response": {
+      "measuredMinutes": "Usually replies within {{count, number}} min",
+      "measuredHours_one": "Usually replies within {{count, number}} hour",
+      "measuredHours_other": "Usually replies within {{count, number}} hours",
+      "within_2h": "Aims to reply within 2 hours",
+      "same_day": "Aims to reply the same day",
+      "within_24h": "Aims to reply within 24 hours",
+      "within_48h": "Aims to reply within 48 hours"
+    },
+    "actions": {
+      "follow": "Follow",
+      "following": "Following",
+      "save": "Save",
+      "saved": "Saved",
+      "share": "Share",
+      "shareTitle": "Share this page",
+      "copyLink": "Copy link",
+      "whatsapp": "WhatsApp",
+      "telegram": "Telegram",
+      "linkCopied": "Link copied",
+      "copyFailed": "Could not copy. Select the address and copy it yourself.",
+      "viewProfile": "View profile"
+    },
+    "toast": {
+      "unfollowed": "You stopped following {{name}}",
+      "saved": "{{name}} saved to favourites",
+      "unsaved": "{{name}} removed from favourites",
+      "failed": "That did not work. Please try again."
+    },
+    "intent": {
+      "save": "Sign in to save {{name}}",
+      "helpful": "Sign in to mark this review helpful",
+      "request": "Sign in to request an appointment with {{name}}",
+      "ask": "Sign in to ask {{name}} about this part"
+    },
+    "sections": {
+      "label": "On this page",
+      "overview": "Overview",
+      "services": "Services & capabilities",
+      "portfolio": "Portfolio",
+      "reviews": "Reviews",
+      "location": "Location & hours",
+      "qna": "Q&A",
+      "parts": "Parts",
+      "fitment": "Fitment coverage"
+    },
+    "overview": {
+      "about": "About",
+      "noDescription": "This business has not written a description yet.",
+      "certifications": "Certifications",
+      "verifiedByCarpal": "Verified by CarPal",
+      "certificationIssuer": "Issued by {{issuer}}",
+      "amenities": "Amenities",
+      "warranty": "Warranty",
+      "noWarranty": "No warranty offered",
+      "returns": "Returns",
+      "languages": "Languages spoken",
+      "years_one": "{{count, number}} year in business",
+      "years_other": "{{count, number}} years in business",
+      "serviceModes": "How they work",
+      "mode": {
+        "in_shop": "At the shop",
+        "mobile": "Comes to you",
+        "pickup_dropoff": "Pickup and drop-off"
+      },
+      "website": "Website",
+      "recentWork": "Recent work",
+      "facts": "Key facts",
+      "experience": "Experience"
+    },
+    "services": {
+      "intro": "Proven by completed jobs and confirmed reviews on CarPal.",
+      "vehicle": "Vehicle",
+      "allModels": "All models",
+      "onlyMyCar": "Only my car",
+      "noneForCar": "No proven work on your car yet. Turn off “Only my car” to see everything.",
+      "none": "No proven capabilities yet. Evidence comes from completed jobs and confirmed reviews.",
+      "evidence_one": "{{count, number}} job or review",
+      "evidence_other": "{{count, number}} jobs or reviews",
+      "level": {
+        "self_declared": "Offered",
+        "low_evidence": "Some evidence",
+        "moderate_evidence": "Experienced",
+        "strong_evidence": "Specialist",
+        "verified_expert": "Expert"
+      },
+      "selfDeclared": "Self-declared (not yet proven)",
+      "selfDeclaredText": "What the business says it offers. CarPal ranks proven work above claims.",
+      "categories": "Services offered",
+      "brands": "Cars they work on",
+      "experience": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced",
+        "specialist": "Specialist"
+      },
+      "matrixLabel": "Capabilities by vehicle and repair area"
+    },
+    "portfolio": {
+      "all": "All",
+      "empty": "No portfolio yet",
+      "emptyText": "Before/after photos of finished jobs appear here once the customer agrees.",
+      "beforeAfter": "Before / after",
+      "photoPending": "Photo being reviewed",
+      "loadMore": "Show more work",
+      "filterLabel": "Filter work by repair area"
+    },
+    "reviews": {
+      "outOf": "out of 5",
+      "distribution": "{{stars}} stars",
+      "distributionLabel": "Rating breakdown",
+      "subRatings": "Ratings by topic",
+      "sub": {
+        "work_quality": "Work quality",
+        "communication": "Communication",
+        "timeliness": "Timeliness",
+        "price_accuracy": "Price accuracy",
+        "cleanliness": "Cleanliness",
+        "part_accuracy": "Part accuracy",
+        "availability_accuracy": "Availability accuracy",
+        "price_fairness": "Price fairness",
+        "service_speed": "Service speed"
+      },
+      "explainTitle": "Every review is confirmed in one of two ways",
+      "explainVisit": "Written after a confirmed appointment. Full weight.",
+      "explainPurchase": "After a stock inquiry marked completed. Full weight.",
+      "explainApproved": "Written without an appointment, then confirmed. Counts for less.",
+      "label": {
+        "verified_visit": "Verified visit",
+        "verified_purchase": "Verified purchase",
+        "approved_by_business_and_carpal": "Approved by the business and CarPal"
+      },
+      "labelText": {
+        "verified_visit": "The reviewer had an appointment with this shop that was confirmed and took place. It was verified automatically; the shop cannot approve or block it. Full weight in the score.",
+        "verified_purchase": "The reviewer had a stock inquiry with this seller that was marked completed. Verified automatically; the seller cannot approve or block it.",
+        "approved_by_business_and_carpal": "Written without an appointment. The business confirmed the reviewer was its customer (the opinion is never judged), and a CarPal reviewer approved it. It counts in the score, but for less than a verified visit."
+      },
+      "disputed": "Disputed by the business",
+      "filters": "Filter reviews",
+      "verifiedOnly": "Verified visit only",
+      "verifiedPurchaseOnly": "Verified purchase only",
+      "recent": "Most recent",
+      "mostHelpful": "Most helpful",
+      "critical": "Critical",
+      "stars_one": "{{count, number}} star",
+      "stars_other": "{{count, number}} stars",
+      "wouldReturn": "Would return",
+      "reply": "Reply from {{name}}",
+      "helpful": "Helpful",
+      "helpfulCount": "Helpful · {{count, number}}",
+      "empty": "No reviews yet",
+      "emptyText": "Reviews appear after a confirmed visit or once the business and CarPal approve them.",
+      "noMatch": "No reviews match these filters.",
+      "loadMore": "Show more reviews",
+      "tags": "Tags"
+    },
+    "location": {
+      "address": "Address",
+      "copyAddress": "Copy address",
+      "addressCopied": "Address copied",
+      "approximate": "Approximate area: {{area}}",
+      "approximateText": "The exact address is shared when your appointment is confirmed.",
+      "directions": "Get directions",
+      "directionsTitle": "Open directions in",
+      "mapPreview": "Map preview: {{place}}",
+      "openMap": "Open the map",
+      "radius": "Comes to you within {{km}} km",
+      "hours": "Opening hours",
+      "today": "today",
+      "closed": "Closed",
+      "openNow": "Open now",
+      "closedNow": "Closed now",
+      "noHours": "Opening hours are not published.",
+      "access": "How to find it",
+      "timeZone": "Times are local to the shop ({{zone}}).",
+      "day": {
+        "0": "Sunday",
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday"
+      },
+      "range": "{{open}}–{{close}}",
+      "noLocation": "No public location yet."
+    },
+    "request": {
+      "title": "Request an appointment",
+      "yourCar": "Your car",
+      "selectCar": "Select your car",
+      "fit": "Fit for your car",
+      "fitLine": "{{vehicle}} · {{system}} — {{level}}",
+      "slots": "Next openings",
+      "slotsLabel": "Choose a time to request",
+      "noSlots": "Next openings not published. You can still send a request.",
+      "request": "Request appointment",
+      "requestAnyway": "Request anyway",
+      "call": "Call",
+      "whatsapp": "WhatsApp",
+      "noPhone": "This business has not published a phone number.",
+      "revealFailed": "The number could not be loaded. Please try again.",
+      "todayHours": "Today: {{hours}}",
+      "todayClosed": "Closed today"
+    },
+    "qna": {
+      "link": "Questions and answers about cars like yours"
+    },
+    "vendor": {
+      "delivery": {
+        "pickup": "Pickup",
+        "local_delivery": "Delivery"
+      },
+      "trade": "Trade accounts for businesses",
+      "tradeNote": "Trade prices for verified businesses",
+      "categories": "Part categories",
+      "brands": "Brands carried",
+      "browse": "Browse parts",
+      "askTitle": "Ask about a part",
+      "askText": "Find the part below, then ask the seller about stock without calling.",
+      "findPart": "Find a part",
+      "catalogQuality": "Catalogue completeness {{score, number}}%"
+    },
+    "parts": {
+      "searchLabel": "Search this seller",
+      "searchPlaceholder": "Part name or number",
+      "search": "Search",
+      "category": "Category",
+      "allCategories": "All categories",
+      "empty": "No parts match this search.",
+      "emptyCatalog": "This seller has not listed parts yet.",
+      "searchForMore": "Search by name or number to see more parts from this seller.",
+      "priceOnRequest": "Price on request",
+      "tradePrice": "Trade price",
+      "photoPending": "Photo being reviewed",
+      "stock": {
+        "in_stock": "In stock",
+        "low_stock": "Few left",
+        "out_of_stock": "Out of stock",
+        "available_on_request": "On request"
+      },
+      "condition": {
+        "new": "New",
+        "used": "Used",
+        "refurbished": "Refurbished",
+        "remanufactured": "Remanufactured"
+      },
+      "origin": {
+        "oem": "Original (OEM)",
+        "aftermarket": "Aftermarket"
+      },
+      "fitsYourCar": {
+        "confirmed": "Fits your car (confirmed)",
+        "likely": "Likely fits your car",
+        "uncertain": "Check fitment"
+      },
+      "results": "Parts from this seller",
+      "loadMore": "Show more parts"
+    },
+    "fitment": {
+      "title": "Fitment coverage",
+      "vehicle": "Vehicle",
+      "coverage": "Coverage",
+      "type": {
+        "brand": "Brand",
+        "model": "Model",
+        "part_category": "Part category"
+      },
+      "confidence": {
+        "confirmed": "Confirmed",
+        "likely": "Likely",
+        "uncertain": "Uncertain"
+      },
+      "years": "{{from}}–{{to}}",
+      "yearsFrom": "from {{from}}",
+      "yearsTo": "until {{to}}",
+      "yourCar": "Your car",
+      "empty": "No fitment published yet.",
+      "fits": "Fits",
+      "engine": "Engine",
+      "uncertainBanner": "The seller has not confirmed this fits your car."
+    },
+    "part": {
+      "numbers": "Part numbers",
+      "oem": "OE number",
+      "aftermarket": "Maker number",
+      "brand": "Brand",
+      "condition": "Condition",
+      "origin": "Type",
+      "warranty": "Warranty",
+      "noWarranty": "No warranty noted",
+      "position": "Position",
+      "positions": {
+        "front": "Front",
+        "rear": "Rear",
+        "left": "Left",
+        "right": "Right",
+        "upper": "Upper",
+        "lower": "Lower"
+      },
+      "photo": "Photo {{n, number}} of {{total, number}}",
+      "showPhoto": "Show photo {{n, number}}",
+      "seller": "Seller",
+      "ask": "Ask about stock",
+      "askBack": "Ask when it's back",
+      "outOfStockText": "This part is out of stock right now. You can still ask the seller when it is back.",
+      "details": "Details"
+    },
+    "inquiry": {
+      "title": "Ask about stock",
+      "quantity": "Quantity",
+      "less": "Less",
+      "more": "More",
+      "message": "Message to the seller",
+      "defaultMessage": "Is this part in stock? Does it fit my car?",
+      "shareVehicle": "Share my car's model, series and year with this seller",
+      "shareVehicleText": "So they can check fitment. Never your VIN or plate.",
+      "send": "Send inquiry",
+      "sent": "Inquiry sent to {{name}}",
+      "sentText": "We'll notify you when they answer.",
+      "duplicate": "You already have an open inquiry about this part.",
+      "verifiedContact": "Verify your email address or phone number first, so the seller can answer you.",
+      "rateLimited": "You have sent many inquiries. Please try again later."
+    },
+    "showcase": {
+      "label": "Showcase",
+      "slider": "Before and after",
+      "sliderHint": "Drag, use the arrow keys or click to compare.",
+      "before": "Before",
+      "after": "After",
+      "position": "Comparison position",
+      "gallery": "Photos",
+      "photoPending": "Photos are being reviewed",
+      "request": "Request similar service",
+      "moreFrom": "More from {{name}}",
+      "jobDate": "Job date",
+      "published": "Published {{date}}",
+      "by": "By {{name}}",
+      "openPage": "Open the full page",
+      "loading": "Loading the showcase"
+    },
+    "meta": {
+      "shopTitle": "{{name}} — {{specialty}} in {{city}} | CarPal",
+      "shopTitleShort": "{{name}} — {{type}} in {{city}} | CarPal",
+      "specialty": "{{brand}} {{system}} specialist",
+      "systemSpecialty": "{{system}} specialist",
+      "shopDescription": "{{name}}: {{type}} in {{city}}. {{rating}} See proven work, confirmed reviews, hours and request an appointment on CarPal.",
+      "sellerTitle": "{{name}} — car parts in {{city}} | CarPal",
+      "sellerDescription": "{{name}}: {{type}} in {{city}}. {{rating}} Search parts, check fitment and ask about stock on CarPal.",
+      "ratingSentence": "Rated {{value}} from {{count, number}} confirmed reviews.",
+      "partTitle": "{{name}} — {{seller}} | CarPal",
+      "partDescription": "{{name}} ({{condition}}) from {{seller}}. {{price}} Check fitment and ask about stock on CarPal.",
+      "showcaseTitle": "{{title}} — {{name}} | CarPal",
+      "showcaseDescription": "Before and after: {{title}} by {{name}} ({{system}}).",
+      "noLocationCity": "your area"
+    }
+  },
+  "landing": {
+    "metaTitle": "CarPal — the right expert for your car",
+    "metaDescription": "Find the right trusted expert for your exact vehicle and problem, read verified reviews and keep your car's history in one place.",
+    "hero": {
+      "headline": "Find the right trusted expert for your exact vehicle and problem — not just the nearest shop.",
+      "yourCar": "Your car",
+      "whatsWrong": "What's wrong / what do you need?",
+      "placeholder": "e.g. clunk over bumps, brake pads",
+      "find": "Find specialists",
+      "helpMe": "Describe a problem with Help Me",
+      "map": "Browse on map",
+      "needText": "Tell us what is wrong or what you need."
+    },
+    "how": {
+      "title": "How it works",
+      "car": "Add your car",
+      "carText": "Brand, model and series, so matches fit your exact car.",
+      "problem": "Describe the problem",
+      "problemText": "In your own words, or pick a service.",
+      "match": "Get matched with proof",
+      "matchText": "Shops ranked by completed jobs and confirmed reviews, with the reasons shown."
+    },
+    "trust": {
+      "title": "Why our badges mean something",
+      "verified": "Verified Business",
+      "verifiedText": "CarPal checked the licence, address and owner identity.",
+      "specialist": "Specialist",
+      "specialistText": "Earned from completed jobs on CarPal, never paid for.",
+      "visit": "Verified visit reviews",
+      "visitText": "Written after a confirmed appointment, so the visit really happened.",
+      "link": "How ranking works"
+    },
+    "popular": {
+      "title": "Popular specialists near you",
+      "near": "Near",
+      "city": "City",
+      "choose": "Choose your city",
+      "chooseText": "Pick a city to see trusted specialists there.",
+      "show": "Show",
+      "emptyTitle": "We're launching in Tehran first",
+      "emptyText": "There are no listed specialists in this city yet. Sign up and we'll tell you when we arrive.",
+      "notify": "Sign up for news",
+      "seeAll": "See all specialists"
+    },
+    "showcases": {
+      "title": "Recent showcases",
+      "photoPending": "Photo being reviewed"
+    },
+    "business": {
+      "title": "Run a repair shop or sell parts?",
+      "text": "List your business, show proof of your work and get requests from drivers who need exactly what you do.",
+      "cta": "List your business"
+    },
+    "ranking": {
+      "metaTitle": "How ranking works | CarPal",
+      "metaDescription": "How CarPal orders shops and parts: proven work for your exact car, confirmed reviews, availability and distance. No paid ranking.",
+      "title": "How ranking works",
+      "intro": "CarPal orders shops and parts by how well they fit your car and your problem, based on evidence. Nobody can pay to rank higher.",
+      "factorsTitle": "What counts for repair shops",
+      "capability": "Proven work on your car",
+      "capabilityText": "Completed jobs and confirmed reviews for your exact brand, model and series in the repair area you need count most. A claim without evidence counts almost nothing.",
+      "trust": "Trust in that repair area",
+      "trustText": "Ratings from confirmed reviews, weighted towards recent ones. Reviews written after a confirmed appointment count fully; reviews approved by the business and CarPal count for less.",
+      "operational": "Availability and response",
+      "operationalText": "How soon they can see you and how quickly they answer requests.",
+      "distance": "Distance",
+      "distanceText": "Straight-line distance from you, your chosen city or the map centre, within the area the shop serves.",
+      "preference": "Your favourites",
+      "preferenceText": "A shop you saved gets a small bonus. It can never jump over much better-proven shops.",
+      "partsTitle": "What counts for parts",
+      "partsText": "How sure the seller is that the part fits your car, whether it is in stock, the seller's rating, distance and how complete the listing is. Price is a filter, not a score.",
+      "rulesTitle": "Our rules",
+      "ruleNoPaid": "No hidden paid ranking. Plans and payments never change the order. Featured places, when they exist, are labelled and never shown on the map.",
+      "ruleEvidence": "Evidence over claims. A shop with verified jobs in a repair area always ranks above one that only says it does that work.",
+      "ruleExplain": "Every result explains itself. You see why a shop is shown: jobs on your car, ratings, availability, distance.",
+      "ruleSame": "The same ranking everywhere: search, Help Me and the map use the same scores.",
+      "badgesTitle": "How badges are earned",
+      "badgesText": "Badges are given automatically when the evidence is there, and removed when it is not — for example when fake reviews are found or a business is suspended."
+    }
   }
 }

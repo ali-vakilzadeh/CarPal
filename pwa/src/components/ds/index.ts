@@ -5,11 +5,13 @@ export { Avatar, AVATAR_SIZES, avatarSize, initials, type AvatarProps, type Avat
 export { Badge, type BadgeProps, type BadgeTone } from './badge';
 export { Banner, SafetyBanner, type BannerProps, type BannerTone, type SafetyBannerProps } from './banner';
 export { Button, buttonClass, type ButtonProps, type ButtonSize, type ButtonVariant } from './button';
+export { Check, type CheckProps } from './check';
 export { Chip, type ChipProps } from './chip';
 export { cx } from './cx';
 export { fmt } from './fmt';
 export { Icon, ICON_NAMES, MIRRORED_ICONS, type CoreIconName, type IconName, type IconProps } from './icon';
 export { IconButton, type IconButtonProps } from './icon-button';
+export { Meter, StepBar, widthClass, type MeterProps, type StepBarProps } from './meter';
 export { PostCard, type PostCardProps } from './post-card';
 export { TabBar, type TabBarItem, type TabBarProps } from './tab-bar';
 export { Tagged, type TaggedProps } from './tagged';

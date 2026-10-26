@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ISSUER, ORIGIN, testBff } from '../test-support';
-import { safeReturnTo } from './flow';
+import { LOGIN_TTL_MS, loginHint, safeReturnTo } from './flow';
 
 describe('safeReturnTo', () => {
   it.each([
@@ -132,11 +132,25 @@ describe('/bff/oauth/callback', () => {
     expect(noSession.headers.get('location')).toBe('/fa?signin=expired');
   });
 
-  it('a step-up that did not reach the asked level is refused and its tokens revoked', async () => {
+  it('a step-up without a new authentication, or below aal3 when aal3 was asked, is refused and its tokens revoked', async () => {
+    const { browser, backend } = await testBff();
+    const stale = await browser.signIn(backend, {
+      returnTo: '/en/settings',
+      stepUp: 'aal2',
+      acr: 'aal2',
+      authTime: Math.floor(Date.now() / 1000) - 3600,
+    });
+    expect(stale.headers.get('location')).toBe('/en/settings?signin=step_up');
+    const low = await browser.signIn(backend, { returnTo: '/en/settings', stepUp: 'aal3', acr: 'aal2' });
+    expect(low.headers.get('location')).toBe('/en/settings?signin=step_up');
+    expect(backend.revoked).toHaveLength(2);
+  });
+
+  it('a fresh aal1 sign-in meets an aal2 step-up (accounts without a second factor, BA-11)', async () => {
     const { browser, backend } = await testBff();
     const res = await browser.signIn(backend, { returnTo: '/en/settings', stepUp: 'aal2', acr: 'aal1' });
-    expect(res.headers.get('location')).toBe('/en/settings?signin=step_up');
-    expect(backend.revoked).toHaveLength(1);
+    expect(res.headers.get('location')).toBe('/en/settings');
+    expect((await (await browser.fetch('/bff/session')).json()).user.acr).toBe('aal1');
   });
 
   it('a step-up replaces the previous sign-in and revokes its refresh token', async () => {
@@ -162,5 +176,82 @@ describe('/bff/logout', () => {
     expect(backend.revoked).toHaveLength(1);
     expect(backend.revoked[0]).toMatch(/^cprt_/);
     expect((await (await browser.fetch('/bff/session')).json()).signed_in).toBe(false);
+  });
+});
+
+describe('P4: hosted sign-in hints, restart and "Keep me signed in"', () => {
+  const sessionOf = (bff: Awaited<ReturnType<typeof testBff>>['bff'], sid: string | undefined) =>
+    bff.sessions.load(new Request(ORIGIN, { headers: { cookie: `__Host-cp_sid=${sid}` } }));
+
+  it('stores screen=signup, the intent and prompt=login; loginHint finds them by state', async () => {
+    const { browser, bff, clock } = await testBff();
+    const csrf = await browser.csrf();
+    const saved = await browser.fetch('/bff/intents', {
+      method: 'POST',
+      headers: { 'x-csrf-token': csrf, 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'follow', target: 'shop-1', return_to: '/en/shop/reza', label: 'Sign in to follow Reza' }),
+    });
+    const { intent_id } = (await saved.json()) as { intent_id: string };
+    const login = await browser.fetch(`/bff/login?return_to=/en/shop/reza&screen=signup&intent=${intent_id}&prompt=login`);
+    const q = new URL(login.headers.get('location')!).searchParams;
+    expect(q.get('prompt')).toBe('login');
+    expect(q.get('acr_values')).toBeNull();
+    const session = await sessionOf(bff, browser.cookies.get('__Host-cp_sid'));
+    expect(loginHint(session, q.get('state')!, clock.now)).toEqual({ screen: 'signup', context: 'Sign in to follow Reza' });
+    expect(loginHint(session, 'another-state', clock.now)).toEqual({ screen: 'signin', context: null });
+    expect(loginHint(null, q.get('state')!, clock.now)).toEqual({ screen: 'signin', context: null });
+  });
+
+  it('ignores malformed intent ids and other prompts', async () => {
+    const { browser } = await testBff();
+    const q = new URL((await browser.fetch('/bff/login?return_to=/en&intent=a%20b&prompt=none')).headers.get('location')!).searchParams;
+    expect(q.get('prompt')).toBeNull();
+  });
+
+  it('restart: an expired sign-in starts again with the same return URL and level; unknown states go home', async () => {
+    const { browser, backend, bff, clock } = await testBff();
+    const first = new URL((await browser.fetch('/bff/login?return_to=/fa/garage&step_up=aal2')).headers.get('location')!);
+    const oldState = first.searchParams.get('state')!;
+    // The sign-in started 31 minutes ago (the clock itself stays, so the fake ID tokens stay valid).
+    await bff.sessions.update(browser.cookies.get('__Host-cp_sid')!, (r) => {
+      for (const l of r.logins) l.createdAt -= LOGIN_TTL_MS + 60_000;
+    });
+    // The callback no longer takes the old state …
+    expect((await browser.fetch(`/bff/oauth/callback?code=x&state=${oldState}`)).headers.get('location')).toBe('/fa?signin=state');
+    // … but the restart still knows where the sign-in was going.
+    const again = new URL((await browser.fetch(`/bff/login/restart?state=${oldState}`)).headers.get('location')!);
+    expect(again.searchParams.get('state')).not.toBe(oldState);
+    expect(again.searchParams.get('acr_values')).toBe('aal2');
+    expect(again.searchParams.get('ui_locales')).toBe('fa');
+    const code = backend.issueCode({ nonce: again.searchParams.get('nonce')!, authTime: Math.floor(clock.now / 1000) });
+    const done = await browser.fetch(
+      `/bff/oauth/callback?${new URLSearchParams({ code, state: again.searchParams.get('state')!, iss: ISSUER })}`,
+    );
+    expect(done.headers.get('location')).toBe('/fa/garage');
+
+    const unknown = new URL((await browser.fetch('/bff/login/restart?state=nope')).headers.get('location')!);
+    expect(unknown.searchParams.get('acr_values')).toBeNull();
+    const code2 = backend.issueCode({ nonce: unknown.searchParams.get('nonce')! });
+    const home = await browser.fetch(
+      `/bff/oauth/callback?${new URLSearchParams({ code: code2, state: unknown.searchParams.get('state')!, iss: ISSUER })}`,
+    );
+    expect(home.headers.get('location')).toBe('/fa');
+  });
+
+  it('"Keep me signed in" on: a persistent cookie; off: a browser-session cookie for at most one idle period', async () => {
+    const kept = await testBff();
+    const on = await kept.browser.signIn(kept.backend);
+    expect(on.headers.getSetCookie()[0]).toMatch(/; Max-Age=604800$/);
+
+    const { browser, backend, bff, clock } = await testBff();
+    browser.cookies.set('cp_keep', '0');
+    const off = await browser.signIn(backend);
+    const [sid, keep] = off.headers.getSetCookie();
+    expect(sid).toMatch(/^__Host-cp_sid=[A-Za-z0-9_-]{43}; Path=\/; Secure; SameSite=Strict; HttpOnly$/);
+    expect(keep).toBe('cp_keep=; Path=/; Max-Age=0; SameSite=Lax');
+    expect(browser.cookies.has('cp_keep')).toBe(false);
+    const record = await sessionOf(bff, browser.cookies.get('__Host-cp_sid'));
+    expect(record?.persistent).toBe(false);
+    expect(record!.absoluteExpiresAt).toBeLessThanOrEqual(clock.now + 12 * 3_600_000);
   });
 });

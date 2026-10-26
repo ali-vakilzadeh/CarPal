@@ -36,7 +36,12 @@ const MAX_INTENT_BYTES = 8 * 1024;
 const MAX_INTENTS = 5;
 const INTENT_TYPE = /^[a-z][a-z0-9_.]{1,59}$/;
 
-/** POST /bff/intents {type, target?, return_to, draft?} → {intent_id} (size-capped, 30 min, at most 5 per session). */
+const MAX_LABEL_CHARS = 160;
+
+/**
+ * POST /bff/intents {type, target?, return_to, draft?, label?} → {intent_id} (size-capped, 30 min, at most 5 per
+ * session). `label` is the plain-text context line the hosted sign-in shows ("Sign in to follow …", P4.T1).
+ */
 export async function saveIntent(
   request: Request,
   sessions: SessionManager,
@@ -46,7 +51,7 @@ export async function saveIntent(
 ): Promise<Response> {
   const raw = await readBody(request, MAX_INTENT_BYTES);
   if (!raw) return problem(413, 'PAYLOAD_TOO_LARGE');
-  let input: { type?: unknown; target?: unknown; return_to?: unknown; draft?: unknown };
+  let input: { type?: unknown; target?: unknown; return_to?: unknown; draft?: unknown; label?: unknown };
   try {
     input = JSON.parse(new TextDecoder().decode(raw)) as typeof input;
   } catch {
@@ -56,6 +61,8 @@ export async function saveIntent(
   if (typeof input.type !== 'string' || !INTENT_TYPE.test(input.type) || !returnTo) return problem(400, 'MALFORMED_REQUEST');
   if (input.target !== undefined && (typeof input.target !== 'string' || input.target.length > 200))
     return problem(400, 'MALFORMED_REQUEST');
+  if (input.label !== undefined && (typeof input.label !== 'string' || input.label.length > MAX_LABEL_CHARS))
+    return problem(400, 'MALFORMED_REQUEST');
   const intent: PendingIntent = {
     id: randomToken(16),
     type: input.type,
@@ -63,6 +70,7 @@ export async function saveIntent(
     createdAt: now,
     ...(typeof input.target === 'string' ? { target: input.target } : {}),
     ...(input.draft !== undefined ? { draft: input.draft } : {}),
+    ...(typeof input.label === 'string' && input.label.trim() ? { label: input.label.trim() } : {}),
   };
   const saved = await sessions.update(session.id, (r) => {
     r.intents = [...r.intents.filter((i) => i.createdAt + INTENT_TTL_MS > now), intent].slice(-MAX_INTENTS);

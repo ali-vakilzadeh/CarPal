@@ -21,6 +21,13 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
     // CARPAL_PWA_DEMO exposes /<locale>/dev-kit (P3 pattern and status checks); never set in prod (env.ts refuses it).
-    env: { NEXT_TELEMETRY_DISABLED: '1', CARPAL_PWA_ORIGIN: `http://localhost:${PORT}`, CARPAL_PWA_DEMO: '1' },
+    // CARPAL_PWA_OAUTH_REDIRECT_URI: the backend registers https redirect URIs only (DI-24); the /id proxy brings the
+    // code back to this http origin, so the browser never needs TLS (OQ-10, pwa/README.md "Sign-in in development").
+    env: {
+      NEXT_TELEMETRY_DISABLED: '1',
+      CARPAL_PWA_ORIGIN: `http://localhost:${PORT}`,
+      CARPAL_PWA_DEMO: '1',
+      CARPAL_PWA_OAUTH_REDIRECT_URI: `https://localhost:${PORT}/bff/oauth/callback`,
+    },
   },
 });

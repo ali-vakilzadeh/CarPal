@@ -2,7 +2,8 @@
 // The BFF session from the browser (P2.T7): who is signed in (never tokens), sign-in / step-up / sign-out, and the
 // pending-intent store of GD-06 (save a gated action before the hosted sign-in, replay it once after).
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createCsrfSource, type CsrfSource } from './browser';
+import { resetSharedCsrfSource, sharedCsrfSource } from './browser';
+import { buildLoginUrl, type LoginUrlOptions } from './login-url';
 
 export interface SessionView {
   signed_in: boolean;
@@ -37,36 +38,37 @@ export function currentPath(): string {
 }
 
 /**
- * /bff/login URL; `stepUp` re-authenticates at aal2/aal3 (prompt=login, BA-11). `screen: 'signup'` asks the hosted
- * sign-in to open on account creation (P3 sends the hint; the BFF and the hosted UI act on it from P4).
+ * /bff/login URL back to `returnTo` (default: this page) through the onboarding check (login-url.ts); `stepUp`
+ * re-authenticates at aal2/aal3 (prompt=login, BA-11); `screen: 'signup'` opens the hosted sign-in on account
+ * creation; `intent` names the saved gated action; `switchAccount` forces an account choice.
  */
-export function loginUrl(o: { returnTo?: string; stepUp?: 'aal2' | 'aal3'; locale?: string; screen?: 'signup' } = {}): string {
-  const p = new URLSearchParams({ return_to: o.returnTo ?? currentPath() });
-  if (o.stepUp) p.set('step_up', o.stepUp);
-  if (o.locale) p.set('locale', o.locale);
-  if (o.screen) p.set('screen', o.screen);
-  return `/bff/login?${p.toString()}`;
+export function loginUrl(o: Partial<LoginUrlOptions> = {}): string {
+  return buildLoginUrl({ ...o, returnTo: o.returnTo ?? currentPath() });
 }
-
-let sharedCsrf: CsrfSource | undefined;
-const csrf = () => (sharedCsrf ??= createCsrfSource());
 
 async function post(path: string, body?: unknown, doFetch: typeof fetch = (i, init) => fetch(i, init)): Promise<Response> {
   return doFetch(path, {
     method: 'POST',
     credentials: 'same-origin',
-    headers: { 'content-type': 'application/json', accept: 'application/json', 'x-csrf-token': await csrf().get() },
+    headers: { 'content-type': 'application/json', accept: 'application/json', 'x-csrf-token': await sharedCsrfSource().get() },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
 }
 
-/** Saves a gated action in the pre-session (≤ 8 KiB, 30 min); returns its id. */
-export async function saveIntent(intent: { type: string; target?: string; returnTo?: string; draft?: unknown }): Promise<string> {
+/** Saves a gated action in the pre-session (≤ 8 KiB, 30 min); returns its id. `label` is the hosted sign-in's context line. */
+export async function saveIntent(intent: {
+  type: string;
+  target?: string;
+  returnTo?: string;
+  draft?: unknown;
+  label?: string;
+}): Promise<string> {
   const res = await post('/bff/intents', {
     type: intent.type,
     target: intent.target,
     return_to: intent.returnTo ?? currentPath(),
     draft: intent.draft,
+    label: intent.label?.slice(0, 160),
   });
   if (!res.ok) throw new Error(`intent: ${res.status}`);
   return ((await res.json()) as { intent_id: string }).intent_id;
@@ -85,7 +87,7 @@ export function useLogout() {
   const queryClient = useQueryClient();
   return async () => {
     await post('/bff/logout');
-    sharedCsrf = undefined;
+    resetSharedCsrfSource();
     await queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
   };
 }

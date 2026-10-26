@@ -42,11 +42,13 @@ export interface FakeBackend {
   api: { handler: Handler };
   /** Overrides for /oauth/token; return undefined to use the default behaviour. */
   token: { handler: Handler };
-  codes: Map<string, { sub: string; nonce: string; acr: string }>;
+  /** Overrides for /oauth/authorize (default: the hosted sign-in with interaction ia-1). */
+  authorize: { handler: Handler };
+  codes: Map<string, { sub: string; nonce: string; acr: string; authTime?: number }>;
   refreshTokens: Set<string>;
   revoked: string[];
   anonymousJkts: (string | undefined)[];
-  issueCode(o: { nonce: string; sub?: string; acr?: string }): string;
+  issueCode(o: { nonce: string; sub?: string; acr?: string; authTime?: number }): string;
   idTokenNonce?: string;
 }
 
@@ -67,13 +69,14 @@ export async function fakeBackend(): Promise<FakeBackend> {
     calls: [],
     api: { handler: () => undefined },
     token: { handler: () => undefined },
+    authorize: { handler: () => undefined },
     codes: new Map(),
     refreshTokens: new Set(),
     revoked: [],
     anonymousJkts: [],
     issueCode(o) {
       const code = `code-${++counter}`;
-      fb.codes.set(code, { sub: o.sub ?? 'user-1', nonce: o.nonce, acr: o.acr ?? 'aal1' });
+      fb.codes.set(code, { sub: o.sub ?? 'user-1', nonce: o.nonce, acr: o.acr ?? 'aal1', ...(o.authTime ? { authTime: o.authTime } : {}) });
       return code;
     },
     fetch: (async (input: string | URL | Request, init?: RequestInit) => {
@@ -110,7 +113,12 @@ export async function fakeBackend(): Promise<FakeBackend> {
               const c = fb.codes.get(f.get('code') ?? '');
               if (!c) return oauthError(400, 'invalid_grant');
               fb.codes.delete(f.get('code')!);
-              const idToken = await new SignJWT({ nonce: fb.idTokenNonce ?? c.nonce, acr: c.acr, auth_time: now, sid: 'sid-1' })
+              const idToken = await new SignJWT({
+                nonce: fb.idTokenNonce ?? c.nonce,
+                acr: c.acr,
+                auth_time: c.authTime ?? now,
+                sid: 'sid-1',
+              })
                 .setProtectedHeader({ alg: 'EdDSA', kid: 'k1' })
                 .setIssuer(ISSUER)
                 .setAudience(f.get('client_id')!)
@@ -166,7 +174,9 @@ export async function fakeBackend(): Promise<FakeBackend> {
             difficulty_bits: 4,
             expires_at: '2099-01-01T00:00:00Z',
           });
-        if (u.pathname === '/oauth/authorize')
+        if (u.pathname === '/oauth/authorize') {
+          const custom = await fb.authorize.handler(rec);
+          if (custom) return custom;
           return new Response(null, {
             status: 302,
             headers: [
@@ -175,6 +185,7 @@ export async function fakeBackend(): Promise<FakeBackend> {
               ['set-cookie', 'tracking=1; Path=/'],
             ],
           });
+        }
         if (u.pathname.startsWith('/v1/auth/')) return Response.json({ next: 'complete' }, { headers: { 'carpal-request-id': 'r-auth' } });
         return problemResponse(404, 'NOT_FOUND');
       }
@@ -228,11 +239,15 @@ export class Browser {
   }
 
   /** /bff/login → (hosted sign-in, faked) → /bff/oauth/callback; returns the callback response. */
-  async signIn(backend: FakeBackend, o: { returnTo?: string; acr?: string; stepUp?: string } = {}): Promise<Response> {
+  async signIn(backend: FakeBackend, o: { returnTo?: string; acr?: string; stepUp?: string; authTime?: number } = {}): Promise<Response> {
     const q = new URLSearchParams({ return_to: o.returnTo ?? '/en/garage', ...(o.stepUp ? { step_up: o.stepUp } : {}) });
     const login = await this.fetch(`/bff/login?${q}`);
     const authorize = new URL(login.headers.get('location')!);
-    const code = backend.issueCode({ nonce: authorize.searchParams.get('nonce')!, ...(o.acr ? { acr: o.acr } : {}) });
+    const code = backend.issueCode({
+      nonce: authorize.searchParams.get('nonce')!,
+      ...(o.acr ? { acr: o.acr } : {}),
+      ...(o.authTime ? { authTime: o.authTime } : {}),
+    });
     const cb = new URLSearchParams({ code, state: authorize.searchParams.get('state')!, iss: ISSUER });
     return this.fetch(`/bff/oauth/callback?${cb}`);
   }

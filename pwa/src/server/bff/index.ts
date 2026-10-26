@@ -1,6 +1,6 @@
 // The consumer BFF (GD-03, Docs/41 G2): one request handler over standard Request/Response for
 //   /api/v1/*                 1:1 forwarder of the consumer operations (forwarder.ts)
-//   /bff/login | /bff/oauth/callback | /bff/logout     OAuth client (oauth/flow.ts)
+//   /bff/login[/restart] | /bff/oauth/callback | /bff/logout     OAuth client (oauth/flow.ts)
 //   /bff/session | /bff/csrf | /bff/intents[/<id>/consume]   session view, CSRF token, pending intents (endpoints.ts)
 //   /id/oauth/* | /id/v1/auth/* | /id/.well-known/*    auth host, same origin (auth-proxy.ts, GD-05)
 // plus the cp-ssr credentials for server rendering. No Next.js imports, so backend/api-gateway can host it (BA-23).
@@ -11,14 +11,16 @@ import { checkCsrf } from './csrf';
 import { consumeIntent, csrfToken, saveIntent, sessionView } from './endpoints';
 import { failure, forward, pickLocale } from './forwarder';
 import { json, problem } from './http';
-import { callback, login, logout, methodNotAllowed } from './oauth/flow';
+import { callback, login, logout, methodNotAllowed, restartLogin } from './oauth/flow';
 import { TokenClient, type ClientAuthentication } from './oauth/token-client';
 import { SessionManager } from './session/manager';
 import type { SessionStore } from './session/store';
 import { SessionTokens, SsrTokens } from './tokens';
 
 export type { BffConfig } from './config';
-export { DEFAULT_LIFETIMES, SESSION_COOKIE, INTERACTION_COOKIE, clientHeader } from './config';
+export { DEFAULT_LIFETIMES, SESSION_COOKIE, INTERACTION_COOKIE, RESUME_COOKIE, KEEP_COOKIE, clientHeader } from './config';
+export { readResumeCookie, resumeUrl, restartUrl, type ResumeInfo } from './auth-proxy';
+export { loginHint } from './oauth/flow';
 export { LiteSessionStore, type SessionStore } from './session/store';
 export { RedisSessionStore, RespClient } from './session/redis';
 export { privateKeyJwt, noClientAuthentication, TokenEndpointError, type ClientAuthentication } from './oauth/token-client';
@@ -73,6 +75,8 @@ export function createBff(o: BffOptions): Bff {
     switch (pathname) {
       case '/bff/login':
         return method === 'GET' ? login(request, flow) : methodNotAllowed('GET');
+      case '/bff/login/restart':
+        return method === 'GET' ? restartLogin(request, flow) : methodNotAllowed('GET');
       case '/bff/oauth/callback':
         return method === 'GET' ? callback(request, flow) : methodNotAllowed('GET');
       case '/bff/session':

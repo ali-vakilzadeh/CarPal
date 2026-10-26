@@ -6,7 +6,7 @@
 import type { ReactNode } from 'react';
 import { cx } from '@/components/ds/cx';
 import { useSession } from '@/lib/api/session';
-import { useT } from '@/lib/i18n/client';
+import { useLocale, useT } from '@/lib/i18n/client';
 import { COOKIE_MODAL, CookieConsent } from './cookie-consent';
 import { BottomTabs, LeftNav } from './navigation';
 import { LanguageSwitch, ThemePicker } from './preferences';
@@ -16,10 +16,14 @@ import { SiteHeader } from './site-header';
 
 function SiteFooter() {
   const t = useT();
+  const locale = useLocale();
   const cookies = useUrlModal(COOKIE_MODAL);
   return (
     <footer className="pwa-footer">
       <nav aria-label={t('shell.footer.label')} className="pwa-footer-nav">
+        <a className="pwa-link" href={`/${locale}/how-ranking-works`}>
+          {t('shell.footer.ranking')}
+        </a>
         <button type="button" className="pwa-link" onClick={() => cookies.open()}>
           {t('shell.footer.cookies')}
         </button>

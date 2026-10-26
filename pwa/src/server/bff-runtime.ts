@@ -19,6 +19,7 @@ export function bffConfig(): BffConfig {
     strict: env.CARPAL_STRICT_AUTH,
     locales: [DEFAULT_LOCALE, ...LOCALES.filter((l) => l !== DEFAULT_LOCALE)],
     ...DEFAULT_LIFETIMES,
+    ...(env.CARPAL_PWA_OAUTH_REDIRECT_URI ? { redirectUri: env.CARPAL_PWA_OAUTH_REDIRECT_URI } : {}),
   };
 }
 

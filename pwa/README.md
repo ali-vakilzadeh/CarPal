@@ -10,7 +10,7 @@ Planned contents (stages P1–P13 in [dev_plan.json](dev_plan.json)):
 - **Driver issue reporting** for fleet drivers without the native app.
 - PWA features: installable, web push, offline-tolerant shell, bundled EN/FA dictionary.
 
-Status: **P2 (consumer BFF)** done on top of P1 (foundation): session, OAuth code flow, `/api/v1` forwarder, typed API client, security headers. See `dev_plan.json` → `stages[P1|P2].report`.
+Status: **P4 (hosted sign-in UI and web onboarding)** done on top of P1–P3 (foundation, consumer BFF, design system and app shell). See `dev_plan.json` → `stages[P1..P4].report`.
 
 ## Quick start
 
@@ -26,14 +26,26 @@ pnpm dev                              # http://localhost:3000 → redirects to /
 `pnpm dev` and `pnpm build` first copy the design-system files to `public/ds/` (gitignored). From P2 on, most pages need the backend: run `pnpm dev` in `backend/` (lite mode, see [backend/README.md](../backend/README.md)) with this environment (shell variables or `backend/.env`; see also `backend/.env.example`):
 
 ```sh
-CARPAL_SIGNIN_URL=https://localhost:3000/id/signin
-CARPAL_OAUTH_REDIRECT_URIS='{"cp-mobile":["https://carpal.app/oauth/callback"],"cp-web-consumer":["https://localhost:3000/bff/oauth/callback"],"cp-web-portal":["https://portal.carpal.app/bff/oauth/callback"],"cp-web-admin":["https://admin.carpal.app/bff/oauth/callback"]}'
+CARPAL_OAUTH_REDIRECT_URIS='{"cp-mobile":["https://carpal.app/oauth/callback"],"cp-web-consumer":["https://localhost:3000/bff/oauth/callback","https://localhost:3100/bff/oauth/callback"],"cp-web-portal":["https://portal.carpal.app/bff/oauth/callback"],"cp-web-admin":["https://admin.carpal.app/bff/oauth/callback"]}'
 CARPAL_WEBAUTHN_RP_ID=localhost
 CARPAL_WEBAUTHN_ORIGINS='["https://localhost:3000"]'
 CARPAL_RATE_LIMIT_SCALE=100        # test runs only: the BFF calls /oauth/token from one IP (DI-25)
 ```
 
-The contract's `Url` type is https-only, so the auth server accepts only an `https://` redirect URI. Guest browsing and the `/api/v1` forwarder work on `http://localhost:3000`; completing a browser sign-in needs the PWA on `https://localhost:3000` (decided in P4, OQ-10). `pnpm test:int` calls the BFF handlers directly with that https origin, so it needs no TLS.
+Leave `CARPAL_SIGNIN_URL` unset: its default (`<issuer>/signin`) is what the PWA's `/id` proxy rewrites to the PWA's own origin, so the hosted sign-in works on :3000 and on the E2E port :3100 alike. An explicit `https://localhost:3000/id/signin` breaks the browser sign-in in `pnpm e2e` (P5).
+
+### Sign-in in development
+
+The contract's `Url` type is https-only, so the auth server accepts only an `https://` redirect URI (DI-24). Local https is not set up (OQ-10: tested on the test server instead). For a browser sign-in on `http://localhost`, the PWA registers the https URL and its `/id` proxy brings the code back to the http callback, so the browser never needs TLS:
+
+```sh
+# pwa/.env.local (dev only; env.ts refuses it in prod)
+CARPAL_PWA_OAUTH_REDIRECT_URI=https://localhost:3000/bff/oauth/callback
+```
+
+`pnpm e2e` does the same on port 3100 (`playwright.config.ts`), which is why the backend env above lists both URIs. `pnpm test:int` calls the BFF handlers directly with the https origin, so it needs neither. One-time codes and email links of the lite backend are in `backend/.data/outbox-mail.jsonl` (`identity.otp_code`, `identity.email_verification`, `identity.password_reset`); the E2E helpers in `tests/e2e/accounts.ts` read them.
+
+Pages of the sign-in flow: `/<locale>/login` and `/<locale>/signup` start it, the hosted sign-in is `/id/signin` (own layout, language from `ui_locales`), email links land on `/l/ev#…` and `/l/pr#…`, and every sign-in returns through `/<locale>/onboarding?next=…` (W-ONB-01; finished accounts go straight on).
 
 Environment variables are listed in [.env.example](.env.example) (copy to `.env.local`); they are validated at startup by `src/server/env.ts`.
 
@@ -61,16 +73,25 @@ pwa/
                            client providers: translations, config.client, session, theme, toasts, consent, auth intent)
   src/app/[locale]/(shell)/  pages inside the app shell (header, navigation, right rail @rail slot):
                            (public)/ guest-readable pages, (app)/ signed-in tools behind the session gate
+  src/app/[locale]/(flow)/onboarding/  W-ONB-01 web onboarding (full screen, no shell); [locale]/login, signup start the sign-in
   src/app/[locale]/system/[kind]/  W-SYS-01 pages reached only through the proxy's status rewrite (410, 503 …)
   src/app/[locale]/{not-found,forbidden,error}.tsx   404 / 403 / error-with-Retry boundaries
   src/app/global-not-found.tsx   server-rendered 404 for unmatched URLs (own document)
   src/proxy.ts             security headers (CSP nonce …), locale redirects, theme cookie, x-carpal-locale header (Next.js 16 "proxy" = middleware)
   src/instrumentation.ts   validates the environment at startup
+  src/app/root-document.tsx  the <html> document shared by the [locale], /id and /l root layouts
+  src/app/id/signin/       W-AUTH-01 hosted sign-in page (root layout src/app/id/layout.tsx)
+  src/app/l/[type]/        link-token pages: /l/ev (email verification), /l/pr (password reset)
   src/app/api/v1/, src/app/bff/, src/app/id/{oauth,v1,.well-known}/   route adapters → the BFF
   src/server/bff/          consumer BFF, framework-free (Request/Response only, GD-03): session store (lite/redis),
                            OAuth client, /api/v1 forwarder + allowlist, CSRF, /id auth-host proxy, token providers
   src/server/bff-runtime.ts  the process-wide BFF built from the environment
   src/server/ssr/api.ts    typed client for server components (cp-ssr token, anonymous fallback)
+  src/server/ssr/public-reads.ts  cached public reads for the SEO pages (60 s, 404/410 as results); profiles.ts, vendors.ts,
+                           page-context.ts = page data, translator + formatter with the browser's time zone and prices
+  src/server/ssr/seo/      page metadata (canonical, hreflang, Open Graph, robots), JSON-LD serializer + schema builders, sitemaps
+  src/app/[locale]/(shell)/(public)/{page,shop,parts-seller,parts,post,how-ranking-works}  W-PUB-01/02/03/08/05 (P5);
+                           their right-rail boxes in (shell)/@rail/…; src/app/robots.ts, sitemap.xml/, sitemaps/[file]/
   src/server/security-headers.ts  CSP (nonce, Trusted Types) and the other page headers, applied by src/proxy.ts
   src/server/config.ts, taxonomy.ts, i18n.ts, session.ts   cached config.client, taxonomy snapshots, CDN-refreshed
                            dictionaries and the session view for server rendering
@@ -78,7 +99,7 @@ pwa/
   src/server/              other server-only code (env, request locale)
   src/lib/api/             typed API client (operation ids, retries, Idempotency-Key, ETags), TanStack Query helpers, useSession
   src/lib/i18n/            i18next runtime (core, bundled dictionary, <I18nProvider>/useT), locales
-  src/lib/format/          numbers/digits, Jalali/Gregorian dates, relative time, money (IRR → toman), distance, <Bidi>
+  src/lib/format/          numbers/digits, Jalali/Gregorian dates, relative time, money (USD base, per-browser conversion), distance, <Bidi>
   src/lib/config/          config.client and taxonomy in the browser (useFlag, useRegion, useTaxonomyNodes)
   src/lib/analytics/       consent cookie, typed CLIENT_EVENTS copy, the events.ingest queue
   src/lib/                 other client-safe helpers (theme, design-system paths, system page kinds)
@@ -86,8 +107,15 @@ pwa/
   src/components/shell/    app shell (header, navigation, rail, footer) and global patterns (toast, URL modal, dialog,
                            auth-intent modal, hover card, infinite list, skeletons, states, error boundary, cookie banner)
   src/components/vehicle/  vehicle picker (brand → model → series)
+  src/components/media/    media boxes (fixed aspect ratio, lazy, placeholder while media are private)
+  src/features/auth/       hosted sign-in steps (sign in, sign up, codes, MFA, passkeys, reset, lock) and link pages
+  src/features/onboarding/ W-ONB-01 stepper (role, first car with VIN suggestions and transfers, problem draft, permissions)
+  src/features/settings/   settings sections built so far (P4: per-browser price display, OQ-11)
+  src/features/profiles/   public profile, part and showcase components and view models (P5)
+  src/features/landing/    landing hero, city choice, showcase teasers (P5)
   src/features/dev-kit/    demo page of the P3 patterns (/<locale>/dev-kit, CARPAL_PWA_DEMO=1 only)
-  tests/e2e/               Playwright specs
+  tests/e2e/               Playwright specs; accounts.ts = outbox reader and user factory; businesses.ts = published
+                           providers/vendors seeded through the API as business users (P5)
   tools/                   generators and checks (contract, design system, i18n, lint plugin, local Node)
 ../shared/api-contracts/   @carpal/api-contracts: generated TypeScript (+ backend-generated openapi.yaml)
 ../shared/i18n/            @carpal/i18n: the EN/FA UI dictionary
@@ -97,7 +125,7 @@ pwa/
 ## Conventions
 
 - **API calls by operation id**, through the generated operation map (`OPERATIONS`, `OperationTypes` in `@carpal/api-contracts`); never hand-written paths or types. Client components: `useApiQuery('vehicles.list', { query })`, `useApiMutation('vehicles.create')` inside `<ApiProvider>`; server components: `ssrApi(locale).api('public.profile_get', { path })`. The client adds `Idempotency-Key`, `If-Match`, CSRF and the SEC-RL-4 retry rules; errors are `ApiProblem` (code, field errors, `retryAfterMs`, `stepUp`, `safety` …).
-- **Browser never holds tokens:** it has only the `__Host-cp_sid` cookie. Sign-in is a navigation to `/bff/login?return_to=…` (`loginUrl()`), step-up adds `step_up=aal2`; a gated action is saved first with `saveIntent()` and replayed with `consumeIntent()` (GD-06).
+- **Browser never holds tokens:** it has only the `__Host-cp_sid` cookie. Sign-in is a navigation to `/bff/login?return_to=…` (`loginUrl()`; it returns through the onboarding check), step-up adds `step_up=aal2`; a gated action is saved first with `saveIntent()` (its `label` is the hosted sign-in's context line) and replayed with `consumeIntent()` (GD-06). Every api-host call waits for the page's first `/bff/csrf`, so one page never creates two pre-sessions.
 - **Design system:** colours, spacing, radii, shadows and fonts only from the semantic tokens. Tailwind is for layout; its default scales are switched off in `src/app/globals.css`, so utilities can only name tokens (`bg-surface`, `p-4` = `--space-4`, `rounded-ds-md`, `shadow-ds-1`, `font-persian`). Components use the design system's own classes (`cp-btn`, `cp-chip` …).
 - **RTL:** logical properties only (`ms-`, `pe-`, `start-`, `text-start` …); lint rejects left/right utilities and styles. Names, plates and numbers inside sentences go in `<bdi>`; user text gets `dir="auto"`.
 - **Copy:** every string lives in `shared/i18n` under its area's namespace; EN/FA wording is taken from `mobile/preview/js/screens-*.js` where a screen mirrors a mobile one.
@@ -108,4 +136,7 @@ pwa/
 - The linked `shared/` packages ship TypeScript sources; Next.js compiles them (`transpilePackages`) and Turbopack reaches them through an additional root (`next.config.ts`), so `backend/` is never watched.
 - A `notFound()` thrown by a page is server-rendered by Next.js 16 as an empty shell with status 404 and drawn on the client by `[locale]/not-found.tsx`; unmatched URLs get the fully server-rendered `global-not-found.tsx`. See the P1 report. `forbidden()` (403) works the same way (`experimental.authInterrupts`). Statuses a page cannot produce (410, 503) come from the proxy: `systemRewrite()` in `src/server/system-status.ts` (P3 report).
 - **Strings in client components:** `useT()` from `@/lib/i18n/client`; the root layout passes the namespaces in `CLIENT_NAMESPACES`, a feature area adds its own with `<I18nNamespaces>`. Server components: `const { t } = await serverI18n(locale)`. Counts use `{{count, number}}` (Persian digits in fa).
-- **Local switches:** `CARPAL_PWA_DEMO=1` enables `/<locale>/dev-kit` (pattern demo, gated Follow, `/dev-kit/status/<kind>`); `CARPAL_PWA_MAINTENANCE=on|<ISO time>` turns on maintenance mode.
+- **Local switches:** `CARPAL_PWA_DEMO=1` enables `/<locale>/dev-kit` (pattern demo, gated Follow, `/dev-kit/status/<kind>`); `CARPAL_PWA_MAINTENANCE=on|<ISO time>` turns on maintenance mode; `CARPAL_PWA_OAUTH_REDIRECT_URI` is the dev sign-in shim above.
+- **Deployment settings (P4):** `CARPAL_PWA_DEFAULT_TIME_ZONE` (dates until the browser reports its zone, OQ-13), `CARPAL_PWA_TERMS_VERSION` / `CARPAL_PWA_PRIVACY_VERSION` (accepted at sign-up, named in consent records; the region config has no field yet, DI-30) and `CARPAL_PWA_PORTAL_SIGNUP_URL` (business choices in onboarding).
+- **Public pages (P5):** server components read through `publicRead()` / `publicList()` (`src/server/ssr/public-reads.ts`), build metadata with `pageMetadata()` and structured data with `<JsonLd>` (the only inline markup besides the theme boot script). Never import a value (constant, helper) from a `'use client'` module into a server component: it arrives as a client reference, not the value — keep shared constants in plain modules. Sitemaps: `/sitemap.xml` (index) and `/sitemaps/<kind>.xml`, built from public reads and cached 6 h.
+- **Prices** are based in USD; each browser may convert them to toman or rial at its own rate (Settings → On this device, `cp_price` cookie, OQ-11). Use `useFormat().money(amount, currency)` so every price follows that choice.

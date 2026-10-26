@@ -55,7 +55,16 @@ export function proxy(request: NextRequest): NextResponse {
   requestHeaders.delete(SYSTEM_HEADER);
   requestHeaders.delete(MAINTENANCE_UNTIL_HEADER);
 
-  if (first === 'id' || first === 'l') return secure(NextResponse.next({ request: { headers: requestHeaders } }), headers, true);
+  if (first === 'id' || first === 'l') {
+    // No locale segment here: the hosted sign-in names its language in ui_locales (P4.T1); otherwise the remembered
+    // choice or Accept-Language. The root layouts of /id and /l read it like the localized pages do.
+    const asked = url.searchParams.get('ui_locales')?.split(' ')[0];
+    const locale = isLocale(asked)
+      ? asked
+      : negotiateLocale(request.headers.get('accept-language'), request.cookies.get(LOCALE_COOKIE)?.value);
+    requestHeaders.set('x-carpal-locale', locale);
+    return secure(NextResponse.next({ request: { headers: requestHeaders } }), headers, true);
+  }
 
   if (!isLocale(first)) {
     const locale = negotiateLocale(request.headers.get('accept-language'), request.cookies.get(LOCALE_COOKIE)?.value);

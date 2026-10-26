@@ -13,7 +13,29 @@ describe('server env', () => {
       CARPAL_STRICT_AUTH: false,
       CARPAL_PWA_SESSION_STORE: 'lite',
       CARPAL_PWA_DEMO: false,
+      CARPAL_PWA_DEFAULT_TIME_ZONE: 'Asia/Tehran',
+      CARPAL_PWA_TERMS_VERSION: '2026-10',
+      CARPAL_PWA_PRIVACY_VERSION: '2026-10',
+      CARPAL_PWA_PORTAL_SIGNUP_URL: 'https://portal.carpal.app/signup',
     });
+  });
+
+  it('validates the P4 values: default time zone (OQ-13), policy versions, dev-only redirect URI', () => {
+    expect(parseServerEnv({ CARPAL_PWA_DEFAULT_TIME_ZONE: 'Europe/Berlin' }).CARPAL_PWA_DEFAULT_TIME_ZONE).toBe('Europe/Berlin');
+    expect(() => parseServerEnv({ CARPAL_PWA_DEFAULT_TIME_ZONE: 'Mars/Olympus' })).toThrow(/CARPAL_PWA_DEFAULT_TIME_ZONE/);
+    expect(() => parseServerEnv({ CARPAL_PWA_TERMS_VERSION: 'x'.repeat(21) })).toThrow(/CARPAL_PWA_TERMS_VERSION/);
+    const uri = 'https://localhost:3100/bff/oauth/callback';
+    expect(parseServerEnv({ CARPAL_PWA_OAUTH_REDIRECT_URI: uri }).CARPAL_PWA_OAUTH_REDIRECT_URI).toBe(uri);
+    expect(() =>
+      parseServerEnv({
+        CARPAL_ENV: 'prod',
+        CARPAL_PWA_ORIGIN: 'https://carpal.app',
+        CARPAL_STORAGE_URL: 'https://media.carpal.app',
+        CARPAL_PWA_SESSION_STORE: 'redis',
+        CARPAL_PWA_REDIS_URL: 'redis://r:6379',
+        CARPAL_PWA_OAUTH_REDIRECT_URI: uri,
+      }),
+    ).toThrow(/CARPAL_PWA_OAUTH_REDIRECT_URI/);
   });
 
   it('reads the demo switch and the maintenance value (P3)', () => {

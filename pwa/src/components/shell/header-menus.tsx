@@ -62,7 +62,8 @@ export function AccountMenu({ user }: { user: NonNullable<SessionView['user']> }
   const locale = useLocale();
   const toast = useToast();
   const logout = useLogout();
-  const loginHref = useLoginHref();
+  // "Switch account" asks for credentials again (prompt=login) instead of reusing the auth host's sign-in (P4).
+  const switchHref = useLoginHref(undefined, { switchAccount: true });
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -116,7 +117,7 @@ export function AccountMenu({ user }: { user: NonNullable<SessionView['user']> }
               </li>
             ))}
             <li>
-              <a href={loginHref} className="pwa-menu-item">
+              <a href={switchHref} className="pwa-menu-item">
                 <Icon name="user" size={20} />
                 <span>{t('shell.menu.switchAccount')}</span>
               </a>

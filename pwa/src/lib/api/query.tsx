@@ -37,10 +37,20 @@ export function createQueryClient(): QueryClient {
   });
 }
 
+/** Dispatched on window when the BFF answered 401 SESSION_ENDED (the shell shows a toast, P4). */
+export const SESSION_ENDED_EVENT = 'carpal:session-ended';
+
 export function ApiProvider({ children, client }: { children: ReactNode; client?: ApiClient }) {
   const [queryClient] = useState(createQueryClient);
   const [api] = useState(
-    () => client ?? createBrowserApiClient({ onSessionEnded: () => void queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY }) }),
+    () =>
+      client ??
+      createBrowserApiClient({
+        onSessionEnded: () => {
+          void queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
+          window.dispatchEvent(new Event(SESSION_ENDED_EVENT));
+        },
+      }),
   );
   return (
     <QueryClientProvider client={queryClient}>
