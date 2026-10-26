@@ -1,5 +1,6 @@
 // Location & Hours (Docs/22 W-PUB-02, C-PROV-01 tab 5; also the vendor's Location): a light static preview first (the
-// interactive map is P6 and loads only on request, keeping the page inside the 2.5 s budget, open point 9), the address
+// interactive map is W-MAP-01, opened centred on this business by "Open the map", P6; keeping the page inside the 2.5 s
+// budget, open point 9), the address
 // with Copy — or the approximate area when the shop chose that —, Get directions, the service radius of mobile
 // mechanics, opening hours in the region's week order with today and "open now" (computed by the server for the
 // caller's time zone, BA-28), and access instructions. Server-rendered; directions and copy are client islands.
@@ -32,7 +33,15 @@ export function locationHours(loc: PublicLocation, locale: Locale, regionKey: st
   return hoursRows(loc.hours, weekOrder(locale, regionKey), today);
 }
 
-export function StaticMapPreview({ loc, locale, t }: { loc: PublicLocation; locale: Locale; t: Translate }) {
+/** The full map centred on a business location (W-MAP-01 entry point; ids only in the URL, GD-14). */
+export function mapHref(locale: Locale, slug?: string | null, locationId?: string | null): string {
+  if (!slug) return `/${locale}/map`;
+  const q = new URLSearchParams({ org: slug });
+  if (locationId) q.set('place', locationId);
+  return `/${locale}/map?${q.toString()}`;
+}
+
+export function StaticMapPreview({ loc, locale, t, slug }: { loc: PublicLocation; locale: Locale; t: Translate; slug?: string | null }) {
   return (
     <div className="pwa-map-preview">
       <span
@@ -42,7 +51,7 @@ export function StaticMapPreview({ loc, locale, t }: { loc: PublicLocation; loca
       >
         <Icon name={loc.visibility === 'exact' ? 'pin' : 'locate'} size={24} />
       </span>
-      <a href={`/${locale}/map`} className={buttonClass({ variant: 'secondary', size: 'sm', className: 'pwa-map-open' })}>
+      <a href={mapHref(locale, slug, loc.id)} className={buttonClass({ variant: 'secondary', size: 'sm', className: 'pwa-map-open' })}>
         <span className="cp-btn-label">{t('profiles.location.openMap')}</span>
       </a>
       <span className="pwa-map-attr">© OpenStreetMap contributors</span>
@@ -75,8 +84,12 @@ export function LocationHours({
   regionKey,
   t,
   f,
+  slug,
+  name,
 }: {
   loc: PublicLocation | null;
+  slug?: string | null;
+  name?: string;
   locale: Locale;
   regionKey: string;
   t: Translate;
@@ -87,7 +100,7 @@ export function LocationHours({
   const exact = loc.visibility === 'exact' && loc.address.address_line_1;
   return (
     <div className="pwa-location">
-      <StaticMapPreview loc={loc} locale={locale} t={t} />
+      <StaticMapPreview loc={loc} locale={locale} t={t} slug={slug} />
       <div className="pwa-stack">
         {exact ? (
           <div className="pwa-address">
@@ -113,7 +126,14 @@ export function LocationHours({
         {loc.service_radius_km ? (
           <p className="pwa-text-body">{t('profiles.location.radius', { km: f.number(loc.service_radius_km) })}</p>
         ) : null}
-        {loc.point ? <DirectionsMenu point={loc.point} /> : null}
+        {loc.point ? (
+          <DirectionsMenu
+            point={loc.point}
+            name={name}
+            approximate={!exact}
+            address={exact ? fullAddress(loc, locale) : addressLine([loc.address.city, loc.address.region], locale)}
+          />
+        ) : null}
         {loc.access_instructions ? (
           <div className="pwa-stack-xs">
             <h3 className="pwa-text-label m-0">{t('profiles.location.access')}</h3>

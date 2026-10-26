@@ -38,6 +38,7 @@ export function LandingHero({ city }: { city: string | null }) {
           }
         : {}),
       ...(city ? { city } : {}),
+      entry: 'home',
     });
     router.push(`/${locale}/search`);
   };

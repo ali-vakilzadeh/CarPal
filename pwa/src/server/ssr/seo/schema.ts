@@ -150,3 +150,24 @@ export function showcaseArticle(item: PublicPortfolioItem, url: string, authorUr
     })),
   };
 }
+
+/** A ranked list of businesses (W-PUB-04 directory pages): position = rank, each item the profile URL. */
+export function itemList(name: string, url: string, items: readonly { name: string; url: string }[]): Json {
+  return {
+    '@context': CONTEXT,
+    '@type': 'ItemList',
+    name,
+    url,
+    numberOfItems: items.length,
+    itemListElement: items.map((it, i) => ({ '@type': 'ListItem', position: i + 1, name: it.name, url: it.url })),
+  };
+}
+
+/** Breadcrumbs (W-PUB-04: city › category › brand). */
+export function breadcrumbs(items: readonly { name: string; url: string }[]): Json {
+  return {
+    '@context': CONTEXT,
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((it, i) => ({ '@type': 'ListItem', position: i + 1, name: it.name, item: it.url })),
+  };
+}

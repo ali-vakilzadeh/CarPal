@@ -113,7 +113,7 @@ export default async function VendorProfilePage({ params }: Props) {
           </div>
         </Section>
         <Section id="location" title={t('profiles.sections.location')}>
-          <LocationHours loc={loc} locale={locale} regionKey={ctx.region.region_key} t={t} f={f} />
+          <LocationHours loc={loc} slug={p.slug} name={p.name} locale={locale} regionKey={ctx.region.region_key} t={t} f={f} />
         </Section>
       </div>
     </I18nNamespaces>

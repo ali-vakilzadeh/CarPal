@@ -10,7 +10,7 @@ Planned contents (stages P1–P13 in [dev_plan.json](dev_plan.json)):
 - **Driver issue reporting** for fleet drivers without the native app.
 - PWA features: installable, web push, offline-tolerant shell, bundled EN/FA dictionary.
 
-Status: **P4 (hosted sign-in UI and web onboarding)** done on top of P1–P3 (foundation, consumer BFF, design system and app shell). See `dev_plan.json` → `stages[P1..P4].report`.
+Status: **P6 (search, map, directions and directory pages)** done on top of P1–P5 (foundation, consumer BFF, design system and app shell, hosted sign-in and onboarding, public SEO pages). See `dev_plan.json` → `stages[P1..P6].report`.
 
 ## Quick start
 
@@ -90,6 +90,8 @@ pwa/
   src/server/ssr/public-reads.ts  cached public reads for the SEO pages (60 s, 404/410 as results); profiles.ts, vendors.ts,
                            page-context.ts = page data, translator + formatter with the browser's time zone and prices
   src/server/ssr/seo/      page metadata (canonical, hreflang, Open Graph, robots), JSON-LD serializer + schema builders, sitemaps
+  src/app/[locale]/(shell)/(public)/{search,search/[session],map}  W-SRCH-01 and W-MAP-01 (P6; no rail: @rail/{search,map});
+  src/app/[locale]/(shell)/(public)/[city]/[facet]/[[...rest]]  W-PUB-04 directory pages (P6; map in @rail/[city]/…)
   src/app/[locale]/(shell)/(public)/{page,shop,parts-seller,parts,post,how-ranking-works}  W-PUB-01/02/03/08/05 (P5);
                            their right-rail boxes in (shell)/@rail/…; src/app/robots.ts, sitemap.xml/, sitemaps/[file]/
   src/server/security-headers.ts  CSP (nonce, Trusted Types) and the other page headers, applied by src/proxy.ts
@@ -113,6 +115,11 @@ pwa/
   src/features/settings/   settings sections built so far (P4: per-browser price display, OQ-11)
   src/features/profiles/   public profile, part and showcase components and view models (P5)
   src/features/landing/    landing hero, city choice, showcase teasers (P5)
+  src/features/search/     search request model and URL rules, browser memory (recent searches, stored requests), result
+                           cards, filter panel, chips, location chip + consent, W-SRCH-01 screen and map pane (P6)
+  src/features/map/        map geometry and places, lazy MapLibre canvas with the built-in style, W-MAP-01, the Directions
+                           menu (S-SHARED-10) (P6)
+  src/features/directory/  W-PUB-04 view model (paths, index rule, intro counts), request buttons, rail map (P6)
   src/features/dev-kit/    demo page of the P3 patterns (/<locale>/dev-kit, CARPAL_PWA_DEMO=1 only)
   tests/e2e/               Playwright specs; accounts.ts = outbox reader and user factory; businesses.ts = published
                            providers/vendors seeded through the API as business users (P5)

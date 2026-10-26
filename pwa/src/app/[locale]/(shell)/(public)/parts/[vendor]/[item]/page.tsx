@@ -158,7 +158,14 @@ export default async function PartPage({ params }: Props) {
         <Section id="seller" title={t('profiles.part.seller')}>
           <div className="pwa-stack-sm">
             <OrgCard org={it.vendor} locale={locale} t={t} f={f} detail={it.location?.city ?? null} />
-            {it.location?.point ? <DirectionsMenu point={it.location.point} /> : null}
+            {it.location?.point ? (
+              <DirectionsMenu
+                point={it.location.point}
+                name={it.vendor.name}
+                approximate={it.location.visibility !== 'exact'}
+                address={it.location.visibility !== 'exact' ? it.location.city : null}
+              />
+            ) : null}
           </div>
         </Section>
       </div>

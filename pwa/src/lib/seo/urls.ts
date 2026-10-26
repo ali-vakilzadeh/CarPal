@@ -51,6 +51,9 @@ export const partPath = (locale: Locale, vendorSlug: string, itemId: string, nam
   `/${locale}/parts/${encodeURIComponent(vendorSlug)}/${encodeURIComponent(idSlug(itemId, name))}`;
 export const showcasePath = (locale: Locale, itemId: string, title: string) =>
   `/${locale}/post/${encodeURIComponent(idSlug(itemId, title))}`;
+/** A public question (W-QA-02, built in P8). */
+export const questionPath = (locale: Locale, q: { id: string; title: string }) =>
+  `/${locale}/questions/${encodeURIComponent(idSlug(q.id, q.title))}`;
 
 /** The public profile of an organization card: the shop page for providers (and hybrids), else the parts-seller page. */
 export function orgPath(locale: Locale, org: Pick<PublicOrgCard, 'slug' | 'roles'>): string | null {

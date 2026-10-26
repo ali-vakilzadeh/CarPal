@@ -11,6 +11,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { LOCALE_COOKIE, LOCALES, isLocale, negotiateLocale } from './lib/i18n/locales';
 import { THEME_COOKIE, isTheme } from './lib/theme';
 import { serverEnv } from './server/env';
+import { mapTileOrigins } from './server/map-config';
 import { createNonce, isPrivatePage, originsOf, pageSecurityHeaders } from './server/security-headers';
 import { MAINTENANCE_UNTIL_HEADER, SYSTEM_HEADER, maintenanceOf, systemRewrite } from './server/system-status';
 import { isSystemKind } from './lib/system';
@@ -26,7 +27,7 @@ function securityHeaders(nonce: string): Record<string, string> {
     https,
     hsts: https && env.CARPAL_ENV === 'prod',
     mediaOrigins: originsOf(env.CARPAL_STORAGE_URL),
-    tileOrigins: originsOf(env.CARPAL_PWA_MAP_STYLE_URL),
+    tileOrigins: mapTileOrigins(env),
   });
 }
 

@@ -1,17 +1,23 @@
-// Sitemaps (P5.T1): /sitemap.xml is an index of /sitemaps/<kind>.xml (pages, shops, parts-sellers, parts, showcases).
+// Sitemaps (P5.T1): /sitemap.xml is an index of /sitemaps/<kind>.xml (pages, shops, parts-sellers, parts, showcases,
+// and from P6 directories).
 // The contract has no "list every public organization" read, so the URLs come from public reads only (DI-37): a
 // search per pilot city (providers, vendors) → shop and parts-seller pages; each provider's portfolio → showcases;
 // each vendor's part categories (public.org_get coverage) → a first page of parts per category and language. Every
 // collection has a call budget (the cp-ssr bucket, DI-26) and is cached for SITEMAP_TTL_MS. Each URL lists its
-// language versions (xhtml:link hreflang) as Google's sitemap guide asks.
+// language versions (xhtml:link hreflang) as Google's sitemap guide asks. Directories (P6.T7, Docs/22 open point 6):
+// city × top-level service-system pages with at least DIRECTORY_MIN_RESULTS providers, cities in region order and
+// categories in taxonomy order, one search (limit 3) per combination within MAX_DIRECTORY_SEARCHES; brand pages are
+// linked from the directory pages but not listed.
 import 'server-only';
 import type { PublicOrgCard, ResultCard } from '@carpal/api-contracts';
+import { DIRECTORY_MIN_RESULTS, directoryPath } from '@/features/directory/model';
 import { LOCALES, DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locales';
 import { partPath, sellerPath, shopPath, showcasePath } from '@/lib/seo/urls';
 import { loadClientConfig } from '@/server/config';
+import { taxonomy } from '@/server/taxonomy';
 import { ssrApi } from '../api';
 
-export const SITEMAP_KINDS = ['pages', 'shops', 'parts-sellers', 'parts', 'showcases'] as const;
+export const SITEMAP_KINDS = ['pages', 'shops', 'parts-sellers', 'parts', 'showcases', 'directories'] as const;
 export type SitemapKind = (typeof SITEMAP_KINDS)[number];
 export const isSitemapKind = (v: string): v is SitemapKind => (SITEMAP_KINDS as readonly string[]).includes(v);
 
@@ -20,6 +26,7 @@ const SEARCH_PAGES_PER_CITY = 3;
 const MAX_PORTFOLIO_READS = 100;
 const MAX_VENDOR_READS = 50;
 const MAX_PART_SEARCHES = 40; // per language
+export const MAX_DIRECTORY_SEARCHES = 80;
 
 /** One page in every language. */
 export interface SitemapEntry {
@@ -161,6 +168,35 @@ async function partEntries(vendors: readonly PublicOrgCard[]): Promise<SitemapEn
   return [...byItem.values()].filter((p): p is Record<Locale, string> => LOCALES.every((l) => p[l])).map((paths) => ({ paths }));
 }
 
+/** City × category directory pages with enough providers to be indexed (W-PUB-04 rule). */
+export async function directoryEntries(budget = MAX_DIRECTORY_SEARCHES): Promise<SitemapEntry[]> {
+  const api = ssrApi(DEFAULT_LOCALE);
+  const { config } = await loadClientConfig(DEFAULT_LOCALE);
+  const systems = (await taxonomy().nodes(DEFAULT_LOCALE, 'service_system')).filter((n) => !n.parent_id);
+  const entries: SitemapEntry[] = [];
+  let left = budget;
+  for (const city of config.region.cities) {
+    for (const system of systems) {
+      if (left-- <= 0) return entries;
+      try {
+        const res = await api.api('search.run', {
+          body: {
+            search_mode: 'providers',
+            entry_point: 'directory_page',
+            location: { mode: 'chosen_city', city_key: city.city_key },
+            filters: { service_system_node_ids: [system.id] },
+            limit: DIRECTORY_MIN_RESULTS,
+          },
+        });
+        if (res.results.length >= DIRECTORY_MIN_RESULTS) entries.push({ paths: both((l) => directoryPath(l, city.city_key, system.slug)) });
+      } catch (err) {
+        console.warn(`sitemap: directory ${city.city_key}/${system.slug} failed`, err);
+      }
+    }
+  }
+  return entries;
+}
+
 /** Builds each kind at most once per SITEMAP_TTL_MS; organizations are collected once for all kinds. */
 export class SitemapSource {
   #orgs: { at: number; value: Promise<Collected> } | null = null;
@@ -190,6 +226,7 @@ export class SitemapSource {
 
   async #build(kind: SitemapKind): Promise<SitemapEntry[]> {
     if (kind === 'pages') return staticEntries();
+    if (kind === 'directories') return directoryEntries();
     const { providers, vendors } = await this.#collected();
     if (kind === 'shops') return providers.map((o) => ({ paths: both((l) => shopPath(l, o.slug!)) }));
     if (kind === 'parts-sellers') return vendors.map((o) => ({ paths: both((l) => sellerPath(l, o.slug!)) }));

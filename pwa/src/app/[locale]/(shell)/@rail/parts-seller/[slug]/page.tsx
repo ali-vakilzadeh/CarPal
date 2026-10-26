@@ -30,8 +30,8 @@ export default async function VendorRail({ params }: { params: Promise<{ locale:
         {loc ? (
           <RailBox title={t('profiles.location.hours')}>
             {hours ? <p className="pwa-text-body">{hours}</p> : null}
-            <StaticMapPreview loc={loc} locale={locale} t={t} />
-            {loc.point ? <DirectionsMenu point={loc.point} block /> : null}
+            <StaticMapPreview loc={loc} locale={locale} t={t} slug={p.slug} />
+            {loc.point ? <DirectionsMenu point={loc.point} name={p.name} approximate={loc.visibility !== 'exact'} block /> : null}
           </RailBox>
         ) : null}
       </RightRail>

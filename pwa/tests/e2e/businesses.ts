@@ -150,9 +150,13 @@ export interface SeededOrg {
 }
 
 /** A published provider in Tehran with hours and an availability rule for every open weekday. */
-export async function seedProvider(request: APIRequestContext, n: Awaited<ReturnType<typeof taxonomy>>): Promise<SeededOrg> {
+export async function seedProvider(
+  request: APIRequestContext,
+  n: Awaited<ReturnType<typeof taxonomy>>,
+  o: { name?: string } = {},
+): Promise<SeededOrg> {
   const api = await businessUser(request);
-  const name = `P5 Suspension ${randomBytes(3).toString('hex')}`;
+  const name = o.name ?? `P5 Suspension ${randomBytes(3).toString('hex')}`;
   const org = await ok(api.call('POST', '/v1/orgs', { name, organization_type: 'provider', contact_email: 'shop@example.com' }), 'org');
   const id = org.id as string;
   const loc = await ok(api.call('POST', `/v1/orgs/${id}/locations`, location(tehranPoint())), 'location');

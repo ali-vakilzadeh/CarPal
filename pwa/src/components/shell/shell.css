@@ -927,6 +927,13 @@ html {
   .pwa-shell.is-guest .pwa-columns {
     grid-template-columns: minmax(0, 1fr) var(--pwa-rail-width);
   }
+  /* Pages that use the full width themselves (search, map: filters | results | map) and set no rail (P6). */
+  .pwa-shell.is-signed-in .pwa-columns:has(.pwa-wide-page):not(:has(> .pwa-rail)) {
+    grid-template-columns: var(--pwa-nav-width) minmax(0, 1fr);
+  }
+  .pwa-shell.is-guest .pwa-columns:has(.pwa-wide-page):not(:has(> .pwa-rail)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .pwa-leftnav {
     padding: var(--space-4);
   }

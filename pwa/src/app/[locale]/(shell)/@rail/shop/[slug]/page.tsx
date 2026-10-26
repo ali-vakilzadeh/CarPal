@@ -31,7 +31,7 @@ export default async function ProviderRail({ params }: { params: Promise<{ local
             heading="h2"
             idSuffix="rail"
           />
-          {loc ? <StaticMapPreview loc={loc} locale={locale} t={ctx.t} /> : null}
+          {loc ? <StaticMapPreview loc={loc} locale={locale} t={ctx.t} slug={p.slug} /> : null}
         </div>
       </RightRail>
     </I18nNamespaces>

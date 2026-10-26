@@ -3,8 +3,9 @@
 // typeahead suggestions from taxonomy.suggest (any supported language, Persian typed in Latin letters matches), a
 // "Search for …" first option, a "Browse on map" link and — signed in — the vehicle context chip. Suggestions share
 // the guest search rate limit (RL search, DI-28), so they are debounced, cached per text and paused after a 429
-// until the server's delay passes. The search itself starts through startSearch() (free text never goes into the
-// URL, GD-14); the search page arrives in P6.
+// until the server's delay passes. With an empty field the panel lists the recent searches of this device (P6.T1).
+// The search itself starts through savePendingSearch() (free text never goes into the URL, GD-14): the search page
+// (P6, src/features/search) runs search.run and moves to /<locale>/search/<session_id>.
 import type { TaxonomySuggestion, TaxonomyType } from '@carpal/api-contracts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -14,6 +15,7 @@ import { Icon, type IconName } from '@/components/ds/icon';
 import { ApiProblem } from '@/lib/api/problem';
 import { useApiClient } from '@/lib/api/query';
 import { useLocale, useT } from '@/lib/i18n/client';
+import { RecentSearches } from '@/features/search/recent';
 
 /** At most 5 (taxonomy.suggest types: Set<TaxonomyType,5>): problems, jobs, parts and cars. */
 export const SUGGEST_TYPES: TaxonomyType[] = ['symptom', 'service_task', 'part_category', 'vehicle_brand', 'vehicle_model'];
@@ -21,6 +23,8 @@ export const SUGGEST_MIN_CHARS = 2;
 export const SUGGEST_DEBOUNCE_MS = 350;
 export const SEARCH_INPUT_ID = 'site-search';
 export const PENDING_SEARCH_KEY = 'cp:pending-search';
+/** Dispatched on window when a new search was handed over (the search page may already be open). */
+export const PENDING_SEARCH_EVENT = 'carpal:pending-search';
 
 const TYPE_ICON: Partial<Record<TaxonomyType, IconName>> = {
   symptom: 'alert',
@@ -38,6 +42,8 @@ export interface PendingSearch {
   vehicle?: { brand_node_id: string; model_node_id?: string; series_node_id?: string };
   /** A chosen pilot city (region city_key): the chosen_city location of the search (BA-16). */
   city?: string;
+  /** Where it started, for the search.started analytics event (the landing hero = home). */
+  entry?: 'home';
   at: number;
 }
 
@@ -48,6 +54,7 @@ export function savePendingSearch(search: Omit<PendingSearch, 'at'>): void {
   } catch {
     /* storage blocked: the search page starts empty */
   }
+  window.dispatchEvent(new Event(PENDING_SEARCH_EVENT));
 }
 
 /** True when focus is in a field, so the '/' shortcut must type a slash instead. */
@@ -223,6 +230,16 @@ export function SearchBox({ vehicleChip, className }: { vehicleChip?: React.Reac
               ))
             : null}
         </ul>
+        {open && !q ? (
+          <RecentSearches
+            compact
+            onPick={(r) => {
+              savePendingSearch({ text: r.text, ...(r.node ? { node: r.node } : {}) });
+              setOpen(false);
+              router.push(`/${locale}/search`);
+            }}
+          />
+        ) : null}
         {open ? (
           <Link href={`/${locale}/map`} className="pwa-search-map">
             <Icon name="map" size={20} />

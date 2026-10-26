@@ -1,0 +1,333 @@
+/* Map (P6): the map component (pins, clusters, controls, legend, attribution), W-MAP-01, the W-SRCH-01 map pane, the
+   directory map and the Directions menu. Pins: shape + icon by kind, never colour alone; dimmed = smaller and
+   outlined. Controls use logical properties and mirror in RTL; the canvas itself is dir=ltr (the map does not
+   mirror). Tokens only; unlayered. MapLibre's own stylesheet is not used: the essentials are below. */
+
+.pwa-map {
+  position: relative;
+  inline-size: 100%;
+  min-block-size: 280px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface-sunken);
+  isolation: isolate;
+}
+.pwa-map-canvas {
+  position: absolute;
+  inset: 0;
+}
+.pwa-map-canvas:focus-visible,
+.pwa-map-canvas canvas:focus-visible {
+  box-shadow: inset var(--ring-focus);
+  outline: none;
+}
+.pwa-map-loading {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline: 0;
+  margin: 0;
+  text-align: center;
+}
+.pwa-map-overlay {
+  position: absolute;
+  z-index: 3;
+  inset-block-start: var(--space-3);
+  inset-inline: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.pwa-map-overlay > * {
+  pointer-events: auto;
+  box-shadow: var(--shadow-2);
+}
+.pwa-map-controls {
+  position: absolute;
+  z-index: 3;
+  inset-block-start: var(--space-3);
+  inset-inline-end: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.pwa-map-controls .cp-iconbtn {
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-1);
+}
+.pwa-map-attribution {
+  position: absolute;
+  z-index: 3;
+  inset-block-end: 0;
+  inset-inline-end: 0;
+  margin: 0;
+  padding: 2px var(--space-2);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 18px;
+  border-start-start-radius: var(--radius-sm);
+}
+
+/* ---------- MapLibre essentials (instead of maplibre-gl.css; the canvas container is dir=ltr, so start = left) ---------- */
+.pwa-map-canvas.maplibregl-map {
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+.pwa-map-canvas .maplibregl-canvas {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+}
+.pwa-map-canvas .maplibregl-canvas-container.maplibregl-interactive {
+  cursor: grab;
+  user-select: none;
+}
+.pwa-map-canvas .maplibregl-canvas-container.maplibregl-interactive:active {
+  cursor: grabbing;
+}
+.pwa-map-canvas .maplibregl-canvas-container.maplibregl-touch-zoom-rotate,
+.pwa-map-canvas .maplibregl-canvas-container.maplibregl-touch-zoom-rotate .maplibregl-canvas {
+  touch-action: pan-x pan-y;
+}
+.pwa-map-canvas .maplibregl-canvas-container.maplibregl-touch-drag-pan,
+.pwa-map-canvas .maplibregl-canvas-container.maplibregl-touch-drag-pan .maplibregl-canvas {
+  touch-action: pinch-zoom;
+}
+.pwa-map-canvas .maplibregl-canvas-container.maplibregl-touch-zoom-rotate.maplibregl-touch-drag-pan,
+.pwa-map-canvas .maplibregl-canvas-container.maplibregl-touch-zoom-rotate.maplibregl-touch-drag-pan .maplibregl-canvas {
+  touch-action: none;
+}
+.pwa-map-canvas .maplibregl-marker {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  will-change: transform;
+}
+
+/* ---------- Pins ---------- */
+.pwa-marker {
+  inline-size: 0;
+  block-size: 0;
+}
+.pwa-pin {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-inline-size: 36px;
+  block-size: 36px;
+  padding: 0 var(--space-1);
+  translate: -50% -50%;
+  border: 2px solid var(--surface-raised);
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  font: inherit;
+}
+.pwa-pin.is-static {
+  translate: none;
+  flex: none;
+}
+.pwa-pin-shape {
+  display: inline-flex;
+  gap: 2px;
+}
+.pwa-pin.is-shop,
+.pwa-pin.is-hybrid {
+  border-radius: var(--radius-pill);
+}
+.pwa-pin.is-seller {
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--surface);
+}
+.pwa-pin.is-hybrid {
+  min-inline-size: 52px;
+}
+.pwa-pin.is-mobile {
+  border-radius: var(--radius-pill);
+  border: 2px dashed var(--accent);
+  background: var(--surface-raised);
+  color: var(--accent);
+}
+.pwa-pin.is-dimmed {
+  min-inline-size: 26px;
+  block-size: 26px;
+  background: var(--surface-raised);
+  color: var(--ink-muted);
+  border: 2px solid var(--ink-muted);
+  box-shadow: none;
+}
+.pwa-pin.is-dimmed .pwa-icon,
+.pwa-pin.is-dimmed svg {
+  inline-size: 14px;
+  block-size: 14px;
+}
+.pwa-pin.is-hovered,
+.pwa-pin.is-selected {
+  z-index: 2;
+  scale: 1.2;
+  border-color: var(--signal);
+}
+.pwa-pin.is-selected {
+  box-shadow: var(--shadow-signal);
+}
+.pwa-pin:focus-visible {
+  box-shadow: var(--ring-focus);
+  outline: none;
+}
+.pwa-pin-rank {
+  position: absolute;
+  inset-block-start: -10px;
+  inset-inline-end: -10px;
+  display: grid;
+  place-items: center;
+  min-inline-size: 20px;
+  block-size: 20px;
+  border-radius: var(--radius-pill);
+  background: var(--signal);
+  color: var(--on-signal);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+.pwa-pin.is-cluster {
+  min-inline-size: 44px;
+  block-size: 44px;
+  border-radius: var(--radius-pill);
+  border: 3px solid var(--accent);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+.pwa-pin-count {
+  font-weight: 700;
+}
+.pwa-legend-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+/* ---------- W-SRCH-01 map pane ---------- */
+.pwa-search-map {
+  position: sticky;
+  inset-block-start: calc(var(--pwa-header-height) + var(--space-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pwa-search-map-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.pwa-map.pwa-search-map-canvas {
+  block-size: calc(100dvh - var(--pwa-header-height) - 160px);
+  min-block-size: 360px;
+}
+
+/* ---------- Directory map (rail) ---------- */
+.pwa-directory-map {
+  block-size: 280px;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+/* ---------- W-MAP-01 ---------- */
+.pwa-map-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+}
+.pwa-map-top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pwa-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+.pwa-map-main {
+  position: relative;
+  order: -1;
+}
+.pwa-map-main .pwa-map {
+  block-size: 60dvh;
+}
+.pwa-map-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+.pwa-map-selected {
+  position: absolute;
+  z-index: 4;
+  inset-inline: var(--space-3);
+  inset-block-end: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-inline-size: 420px;
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-2);
+}
+[data-theme='sun'] .pwa-map-selected {
+  border: 2px solid var(--border);
+}
+@media (min-width: 768px) {
+  .pwa-map-layout {
+    grid-template-columns: 360px minmax(0, 1fr);
+  }
+  .pwa-map-page.is-list-hidden .pwa-map-layout,
+  .pwa-map-page.is-list-only .pwa-map-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pwa-map-main {
+    order: 0;
+  }
+  .pwa-map-main .pwa-map {
+    block-size: calc(100dvh - var(--pwa-header-height) - 200px);
+    min-block-size: 420px;
+  }
+  .pwa-map-list {
+    max-block-size: calc(100dvh - var(--pwa-header-height) - 200px);
+    overflow-y: auto;
+    padding-inline-end: var(--space-1);
+  }
+  .pwa-map-page.is-list-only .pwa-map-list {
+    max-block-size: none;
+  }
+}
+
+/* ---------- Directions menu ---------- */
+.pwa-directions {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+}
+.pwa-directions.is-block {
+  display: flex;
+}
+.pwa-directions.is-block > .cp-btn {
+  flex: 1;
+}
+.pwa-check-line {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  min-block-size: var(--tap-min);
+  cursor: pointer;
+}
+.pwa-check-line input {
+  inline-size: 20px;
+  block-size: 20px;
+  accent-color: var(--accent);
+}
