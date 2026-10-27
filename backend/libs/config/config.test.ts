@@ -24,4 +24,12 @@ describe('loadConfig', () => {
       /CARPAL_API_PORT[\s\S]*CARPAL_CLIENT_MIN_VERSIONS/,
     );
   });
+
+  it('allows the local PWA origins on the storage listener in dev only (PWA DI-08)', () => {
+    expect(loadConfig({ CARPAL_ENV: 'dev', CARPAL_MEDIA_CORS_ORIGINS: undefined }).media.corsOrigins).toContain('http://localhost:3000');
+    const staging = loadConfig({ CARPAL_ENV: 'staging', CARPAL_MASTER_SECRET: 'x'.repeat(40), CARPAL_MEDIA_CORS_ORIGINS: undefined });
+    expect(staging.media.corsOrigins).toEqual([]);
+    expect(loadConfig({ CARPAL_MEDIA_CORS_ORIGINS: '["https://carpal.app"]' }).media.corsOrigins).toEqual(['https://carpal.app']);
+    expect(() => loadConfig({ CARPAL_MEDIA_CORS_ORIGINS: '["https://carpal.app/path"]' })).toThrow(/CARPAL_MEDIA_CORS_ORIGINS/);
+  });
 });

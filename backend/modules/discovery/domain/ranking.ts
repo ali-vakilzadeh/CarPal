@@ -117,6 +117,15 @@ function categoryTrust(p: ProviderFacts): number {
 }
 
 /** Availability fit (54 §5.1 operational: next available slot within the needed window); null without a calendar. */
+/**
+ * The projected next slot looks 30 days ahead (ResultCard.next_available_slot, contract 1.1.0); the
+ * operational fit counts a slot in the first 14 days only, as it did before (scores unchanged, S10).
+ */
+export const RANKING_SLOT_DAYS = 14;
+export function rankingSlot(next: string | null | undefined, now: number): string | null {
+  return next && Date.parse(next) - now <= RANKING_SLOT_DAYS * 86_400_000 ? next : null;
+}
+
 export function availabilityFit(next: string | null | undefined, now: number): number | null {
   if (!next) return null;
   const days = (Date.parse(next) - now) / 86_400_000;
@@ -207,7 +216,8 @@ export function scoreProvider(p: ProviderFacts, distanceKm: number | null, ctx: 
   if (p.verified || p.badges.length)
     reasons.push({ reason_type: 'trust_signal', values: { verified: p.verified, badge: p.badges[0] ?? null } });
   const response = responseFit(p.measured_response_time_minutes, p.response_time_target);
-  const slot = availabilityFit(p.next_available_at, ctx.now ?? Date.now());
+  const nextSlot = rankingSlot(p.next_available_at, ctx.now ?? Date.now());
+  const slot = availabilityFit(nextSlot, ctx.now ?? Date.now());
   const operational = slot === null ? response : (response + slot) / 2;
   if (p.measured_response_time_minutes !== null || p.response_time_target || slot !== null)
     reasons.push({
@@ -215,7 +225,7 @@ export function scoreProvider(p: ProviderFacts, distanceKm: number | null, ctx: 
       values: {
         response_minutes: p.measured_response_time_minutes,
         response_target: p.response_time_target,
-        ...(p.next_available_at ? { next_available_at: p.next_available_at } : {}),
+        ...(nextSlot ? { next_available_at: nextSlot } : {}),
       },
     });
   const dist = distanceFit(distanceKm, ctx.maxDistanceKm);

@@ -30,7 +30,7 @@ describe('config.client', () => {
     expect(res.headers['cache-control']).toBe('public, max-age=300');
     expect(res.headers.vary).toBe('Accept-Language');
     expect(res.headers['content-language']).toBe('fa');
-    expect(res.body).toMatchObject({ contract_version: '1.0.0', min_supported_version: '1.0.0' });
+    expect(res.body).toMatchObject({ contract_version: '1.1.0', min_supported_version: '1.0.0' });
     // The taxonomy module's catalog version (S3; seeded "1.0.0" before the module existed).
     expect(res.body.taxonomy_version).toMatch(/^t[0-9a-z]+-[0-9a-z]+$/);
     expect(res.body.region).toMatchObject({ region_key: 'ir-pilot', default_locale: 'fa', currency: 'IRR', calendar_default: 'jalali' });

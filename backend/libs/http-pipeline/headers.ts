@@ -1,7 +1,8 @@
 // Response and request header rules (40 §1.2-1.4, TR-2, TR-6, TR-8).
-import { ApiError } from '#libs/contract/index.js';
+import { ApiError, loadRegistry } from '#libs/contract/index.js';
 
-export const CONTRACT_VERSION = '1.0.0';
+/** TR-8: the version of the 40 header the registry was generated from (no second copy to keep in step). */
+export const CONTRACT_VERSION = loadRegistry().contractVersion;
 
 /** On every response (40 §1.4 "Security headers", TR-2). No Server / X-Powered-By. */
 export const SECURITY_HEADERS: Readonly<Record<string, string>> = Object.freeze({

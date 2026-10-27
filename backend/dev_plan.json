@@ -2,11 +2,11 @@
   "meta": {
     "title": "CarPal backend — scratch build plan and stage log",
     "created": "2026-10-10",
-    "last_updated": "2026-10-26",
+    "last_updated": "2026-10-27",
     "status": "scratch_build_done",
     "progress": {
       "as_of": "2026-10-26",
-      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list.",
+      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list. S10 is DONE (2026-10-26): contract 1.1.0 served — search.session_get (406/407 operations served), search facets, the soonest sort with next_available_slot, search.page limit and the map.pins changes; the 1.1.0 text was corrected before use (DI-74). Next: the next_iteration list; the PWA continues with P7 and adopts 1.1.0 in P14.",
       "stages": [
         {
           "stage": "S1",
@@ -127,19 +127,23 @@
         {
           "stage": "S10",
           "title": "PWA integration: contract 1.1.0 (search facets, soonest sort, session re-read, map pins)",
-          "status": "not_started",
+          "status": "done",
           "ops_target": 1,
-          "note": "1 new operation (search.session_get) and 4 changed operations of contract 1.1.0; requested by the PWA for its closure stage P14."
+          "note": "1 new operation (search.session_get) and 4 changed operations of contract 1.1.0; requested by the PWA for its closure stage P14.",
+          "completed_at": "2026-10-26",
+          "ops_implemented": 1,
+          "ops_deferred": 0,
+          "tests_after_stage": "1016 passing (89 files)"
         }
       ],
       "operations": {
-        "implemented": 405,
+        "implemented": 406,
         "returning_501": 1,
         "deferred_with_reason": 1,
-        "total": 406,
-        "note": "After S9c (pnpm contract:coverage --strict): 405/406 served — 404 by handlers and media.upload_put by the storage listener (the tool now recognises it); auth.social_start answers 501 by decision (post-MVP, PM-01, listed in tools/contract/coverage.ts DEFERRED_OPERATIONS). Unexplained 501s: 0. Contract 1.1.0 (2026-10-26) adds search.session_get: until S10 regenerates the registry it still lists 406 operations; after S10 the target is 406/407 served (auth.social_start deferred)."
+        "total": 407,
+        "note": "After S10 (pnpm contract:coverage --strict, contract 1.1.0): 406/407 served — 405 by handlers and media.upload_put by the storage listener; auth.social_start answers 501 by decision (PM-01). Unexplained 501s: 0."
       },
-      "next_stage": "S10 (PWA integration, contract 1.1.0), then the next_iteration list",
+      "next_stage": "next_iteration (see the top-level next_iteration list)",
       "before_starting_S9": [
         "Run `pnpm db:reset` once: S8 added the definer admin.moderation_action_affects to Docs/43 (and 42 §5.3). No new npm dependency; optional env CARPAL_DB_PASSWORD_ANALYTICS_READER.",
         "Read S8.report.notes_for_next and recommendations_for_next_stages.S9 (updated after S8): AI records need their PersonalData/retention/moderation registrations; the contract-test generator must know the admin-plane mechanics (staff client, purpose headers, four-eyes 202s, CarPal-Reason on DELETE).",
@@ -599,6 +603,18 @@
       "stage": "S9c",
       "decision": "fleet drivers are narrowed below ORG(ANY) on fleet records reached by id (WP0 narrowing, 40 §0.5): fleet media only when uploaded by them or attached to an assigned vehicle record (changes: own uploads only); fleet AI insights and suggestions never (404).",
       "reason": "User requirement of 2026-10-24: drivers, operators and mechanics see only the equipment linked to them; SEC-AZ-7."
+    },
+    {
+      "id": "GD-39",
+      "stage": "S10",
+      "decision": "Search facets are counted by selecting each option's results from a second retrieval without the facetable filters, with the same selection code as the run (#collect / #select in search-service.ts); the run's own retrieval is unchanged. The facetable document filters are defined once (modules/discovery/domain/facets.ts) and used by search retrieval, facets and map.pins.",
+      "reason": "Contract 1.1.0 promises that a count equals a run with that option and that facets never change results; deriving both from one selection function makes that true by construction (tested option by option)."
+    },
+    {
+      "id": "GD-40",
+      "stage": "S10",
+      "decision": "ProviderDoc.next_available_at looks 30 days ahead (ResultCard.next_available_slot, available_within_days up to 30); the 54 §5.1 operational fit counts it only within 14 days (ranking.rankingSlot), so scores are as before. A passed projected slot is re-read for cards in the caller's transaction and re-projected every 15 minutes (W15 SearchSlotRefreshRule).",
+      "reason": "Contract 1.1.0 defines the card slot as the next 30 days and never in the past, while ranking must not change (54 §5.4)."
     }
   ],
   "conventions": {
@@ -911,7 +927,7 @@
       "id": "DI-46",
       "issue": "40 search.page declares only `q: cursor: Cursor` (required), so the page size cannot be chosen and the first request needs a cursor.",
       "action": "S6: pages after the first hold 20 results; the cursor comes from search.run / search.refine (ctx.cursorFor). Suggest `q: cursor: Cursor, limit?` like other lists.",
-      "status": "resolved in contract 1.1.0 (2026-10-26); implement in S10",
+      "status": "resolved in S10",
       "resolution": "Docs/40 1.1.0: search.page takes q: cursor: Cursor, limit?: Int<1,50>=20, and the new search.session_get reads the first page of a session (pwa DI-46). S10.T2."
     },
     {
@@ -1071,14 +1087,21 @@
       "added": "2026-10-26",
       "issue": "Contract gaps found by the consumer PWA in its stage P6 (pwa/dev_plan.json DI-42..DI-46): (1) SearchResponse had no counts per filter option, so the filter panel could not show counts and the filters-too-narrow state could not name the filter that removed most results; (2) no 'Soonest available' sort; (3) MapPin had no slug or card fields, so a pin could not open its profile or request step without a matching search card; (4) map.pins ignored filters.open_now and available_within_days, so Open now could only be filtered in the browser, and server clusters still counted closed places; (5) the first page of a search session could not be read again, so a reload ran the search again.",
       "action": "Docs/40 raised to contract 1.1.0 on 2026-10-26 (additive under TR-3; Appendix D 'Contract 1.1.0'): SearchRequest.facets / refine facets → SearchResponse.facets (SearchFacets); SearchSort with 'soonest'; MapPin slug, organization_type, verified, review_count, result_id; map.pins judges open_now and available_within_days, MapQuery.only_matching, MapResponse.counts; new operation search.session_get; search.page limit (DI-46). The generator parses it (pnpm contract:generate --check: 407 operations, 459 routes, all types resolved); the generated files are regenerated in S10.T1.",
-      "status": "contract updated; implementation in S10"
+      "status": "resolved in S10"
     },
     {
       "id": "DI-73",
       "added": "2026-10-26",
       "issue": "ResultCard.next_available_slot is always null: SearchService.resultCards writes null, although the provider projection holds next_available_at (S7) and AppointmentRead.nextOpenSlot exists. The projected value is only refreshed by appointment events, so it can lie in the past.",
-      "action": "Contract 1.1.0 defines the field (earliest open slot in the next 30 days, never in the past, null for vendors, parts and providers without online booking). S10.T4 fills it and refreshes passed values; the soonest sort depends on it.",
-      "status": "open (S10)"
+      "action": "Contract 1.1.0 defines the field (earliest open slot in the next 30 days, never in the past, null for vendors, parts and providers without online booking). S10.T4 fills it and refreshes passed values; the soonest sort depends on it. S10: filled from the projection (30 days), re-read when passed, refreshed by SearchSlotRefreshRule.",
+      "status": "resolved in S10"
+    },
+    {
+      "id": "DI-74",
+      "added": "2026-10-26",
+      "issue": "Contract 1.1.0 as written on 2026-10-26 had three problems found while implementing it, and one old backend bug surfaced: (1) FacetKey listed service_system_node_ids and part_category_node_ids, but in search those filters widen the request together with the chips (OR), so a count could not mean 'results with this option'; (2) 'enum facets list every option' cannot hold for languages (open ISO 639-1 codes); (3) facets were not named per target type although most filters only touch one side (provider, vendor, item); (4) SearchFilters.available_within_days: 0 (the PWA's 'Today') was ignored by the backend (falsy check), and the window was 'now + N days' instead of whole local days; (5) ClientConfig.contract_version was the literal '1.0.0', so config.client could not report 1.1.0 (response validation answered 500).",
+      "action": "S10 corrected Docs/40 before any client used 1.1.0 (17 facet keys, per-target lists, the languages rule, available_within_days and open_now defined, ClientConfig.contract_version: Str<5,20>; note under Appendix D 'Contract 1.1.0') and fixed the filter (facets.slotWithinDays). The PWA plan's P14.T2 reads the corrected text.",
+      "status": "resolved in S10"
     }
   ],
   "stages": [
@@ -3091,7 +3114,7 @@
     {
       "id": "S10",
       "title": "PWA integration: contract 1.1.0 (search facets, soonest sort, session re-read, map pins)",
-      "status": "not_started",
+      "status": "done",
       "depends_on": [
         "S9"
       ],
@@ -3127,43 +3150,51 @@
       "tasks": [
         {
           "id": "S10.T1",
-          "status": "not_started",
-          "title": "Contract 1.1.0: pnpm contract:generate (407 operations, 459 routes), pnpm contract:tests with a resolver for search.session_get in apps/testing/contract/resolvers/ (BOLA: another caller's session → 404), pnpm openapi:generate. Every response carries CarPal-Contract: 1.1.0, read from the registry; check the header test. pnpm contract:coverage --strict shows 406/407 served (auth.social_start deferred)."
+          "status": "done",
+          "title": "Contract 1.1.0: pnpm contract:generate (407 operations, 459 routes), pnpm contract:tests with a resolver for search.session_get in apps/testing/contract/resolvers/ (BOLA: another caller's session → 404), pnpm openapi:generate. Every response carries CarPal-Contract: 1.1.0, read from the registry; check the header test. pnpm contract:coverage --strict shows 406/407 served (auth.social_start deferred).",
+          "result": "done: libs/contract/generated, the sweep suites and shared/api-contracts/openapi.yaml regenerated (contract 1.1.0: 407 operations, 459 routes, 365 paths, 364 schemas); resolver for search.session_get (BOLA 404 for another caller and an unknown id); CarPal-Contract and config.client contract_version now read the registry's contractVersion (libs/http-pipeline/headers.ts CONTRACT_VERSION) instead of a hard-coded 1.0.0; contract:coverage --strict 406/407 (auth.social_start deferred), 0 unexplained 501s."
         },
         {
           "id": "S10.T2",
-          "status": "not_started",
-          "title": "search.session_get and search.page limit (pwa DI-46, backend DI-46). GET /v1/search/{session_id}?limit returns the stored first page as a SearchResponse: the chips of the stored intent, the safety block, vehicle_filter_fallback and the facets as computed at run time. Store the SafetyBlock, the fallback flag and the facets with the session, either in the StoredIntent JSON of interpreted_intent or as new MatchSession S fields with a numbered 43 migration and 52 entries; record the choice. Cards come from the stored results through resultCards with current public data; results that are no longer public are skipped as in search.page. Return a fresh next_cursor. Answer 404 for another caller's session (RLS requester_all) and for sessions created more than 24 hours ago. No analytics event and no new MatchSession. search.page honours limit (Int<1,50>, default 20); the cursor keeps carrying the offset."
+          "status": "done",
+          "title": "search.session_get and search.page limit (pwa DI-46, backend DI-46). GET /v1/search/{session_id}?limit returns the stored first page as a SearchResponse: the chips of the stored intent, the safety block, vehicle_filter_fallback and the facets as computed at run time. Store the SafetyBlock, the fallback flag and the facets with the session, either in the StoredIntent JSON of interpreted_intent or as new MatchSession S fields with a numbered 43 migration and 52 entries; record the choice. Cards come from the stored results through resultCards with current public data; results that are no longer public are skipped as in search.page. Return a fresh next_cursor. Answer 404 for another caller's session (RLS requester_all) and for sessions created more than 24 hours ago. No analytics event and no new MatchSession. search.page honours limit (Int<1,50>, default 20); the cursor keeps carrying the offset.",
+          "result": "done: SearchService.sessionPage + SearchSessionGetHandler (GET /v1/search/{session_id}?limit). The stored first page is answered again with chips, safety block, vehicle_filter_fallback and facets kept in the session's StoredIntent (interpreted_intent JSON, no migration); cards through resultCards with current public data; fresh next_cursor; 404 for another caller (RLS) and for sessions created more than 24 h ago (SESSION_READ_MS); read-only transaction, no event, no new session. Sessions stored before S10 answer a block derived from safety_flag/urgency and facets null. search.page honours limit (the pipeline already excludes limit from the cursor binding)."
         },
         {
           "id": "S10.T3",
-          "status": "not_started",
-          "title": "Facets (pwa DI-42). With SearchRequest.facets (refine defaults to the refined session's value), rank() retrieves the base set once without the facetable filters, i.e. the SearchFilters members named in FacetKey. It evaluates each of those filters per candidate in memory, using the same predicates as today's index filters and in-memory filters (open_now, available_within_days, stock_available), and keeps as results the candidates that pass every active filter; they must equal the run without facets. Counts: for each option, the candidates that pass every active filter except the facet's own, plus this option (options of a Set facet combine with OR). Value encoding: booleans 'true'; min_rating '3', '3.5', '4', '4.5' (rating ≥ value); available_within_days '0' and '7'; node facets list the selected nodes plus the 20 nodes with the most results (service systems from the provider docs, part categories from the vendor and item docs). without_filter has one entry per active facetable filter. result_count is counted before the 100-result cap. capped is true when any retrieval returned its size limit (500 providers, 500 vendors, 1000 items). The vehicle filter and its fallback apply to every count as in the run. Facets cover only the keys that apply to the target type: provider facets for provider, vendor and item facets for vendor and inventory_item, both for place. Store the facets with the session (T2). Without facets, retrieval stays as it is today."
+          "status": "done",
+          "title": "Facets (pwa DI-42). With SearchRequest.facets (refine defaults to the refined session's value), rank() retrieves the base set once without the facetable filters, i.e. the SearchFilters members named in FacetKey. It evaluates each of those filters per candidate in memory, using the same predicates as today's index filters and in-memory filters (open_now, available_within_days, stock_available), and keeps as results the candidates that pass every active filter; they must equal the run without facets. Counts: for each option, the candidates that pass every active filter except the facet's own, plus this option (options of a Set facet combine with OR). Value encoding: booleans 'true'; min_rating '3', '3.5', '4', '4.5' (rating ≥ value); available_within_days '0' and '7'; node facets list the selected nodes plus the 20 nodes with the most results (service systems from the provider docs, part categories from the vendor and item docs). without_filter has one entry per active facetable filter. result_count is counted before the 100-result cap. capped is true when any retrieval returned its size limit (500 providers, 500 vendors, 1000 items). The vehicle filter and its fallback apply to every count as in the run. Facets cover only the keys that apply to the target type: provider facets for provider, vendor and item facets for vendor and inventory_item, both for place. Store the facets with the session (T2). Without facets, retrieval stays as it is today.",
+          "result": "done: modules/discovery/domain/facets.ts (pure: facet keys per target, options, the document filters PROVIDER_FILTERS / VENDOR_FILTERS / ITEM_FILTERS shared by retrieval, facets and the map, computeFacets). SearchService.rank was split into #collect (retrieval + scores) and #select (membership of one filter set: index filters via matchesFilter, the text retry, availability, hybrid merge, open now, vehicle fallback). A run uses #collect without facets exactly as before; SearchRequest.facets adds a second #collect without the facetable filters (size 1000) and counts each option with #select, so a count is by construction the result count of a run with that option. Stored with the session."
         },
         {
           "id": "S10.T4",
-          "status": "not_started",
-          "title": "Soonest sort and next_available_slot (pwa DI-43, DI-73). Fill ResultCard.next_available_slot with the provider's earliest open slot in the next 30 days, the same calculation as public.availability (AppointmentRead.nextOpenSlot). Take it from the projection, and never return a passed slot: for the page's providers, re-read a passed value through nextOpenSlot, or return null. Add a W15 scheduled rule (41 §6.3) that re-projects providers whose next_available_at has passed, at least every 15 minutes. SearchSort 'soonest' in run and refine: providers with a slot ascending by slot, ties by score; then providers without a slot, vendors and items in best-match order; inactive providers last (54 §6). The safety-critical urgent-first rule stays limited to best_match, as today; record it if that changes. The sort is stored in StoredIntent.sort, so refine and session_get keep it."
+          "status": "done",
+          "title": "Soonest sort and next_available_slot (pwa DI-43, DI-73). Fill ResultCard.next_available_slot with the provider's earliest open slot in the next 30 days, the same calculation as public.availability (AppointmentRead.nextOpenSlot). Take it from the projection, and never return a passed slot: for the page's providers, re-read a passed value through nextOpenSlot, or return null. Add a W15 scheduled rule (41 §6.3) that re-projects providers whose next_available_at has passed, at least every 15 minutes. SearchSort 'soonest' in run and refine: providers with a slot ascending by slot, ties by score; then providers without a slot, vendors and items in best-match order; inactive providers last (54 §6). The safety-critical urgent-first rule stays limited to best_match, as today; record it if that changes. The sort is stored in StoredIntent.sort, so refine and session_get keep it.",
+          "result": "done: projection horizon 30 days (NEXT_SLOT_DAYS; AppointmentFacts.nextOpenSlot), ranking keeps counting a slot in the first 14 days only (ranking.rankingSlot: scores unchanged); ResultCard.next_available_slot filled from the provider document, re-read through nextOpenSlot in the caller's transaction when the projected slot has passed (the api role may not use the system context; the public calendar reads work for any caller, as public.availability shows); SearchSlotRefreshRule (W15, every 15 min) re-projects providers whose next_available_at has passed (SearchProjections.refreshPassedSlots, 500 per run). SearchSort 'soonest': providers with a slot by slot then best match; the rest in best-match order; inactive last; urgent-first stays best_match only. available_within_days now means 'before the end of the N-th local day' and 0 (today) is a real filter (DI-74)."
         },
         {
           "id": "S10.T5",
-          "status": "not_started",
-          "title": "map.pins (pwa DI-44, DI-45). MapPin gets slug, organization_type, verified and review_count from the projection docs, and result_id from the search_session_id results (the organization's first result). open_now is judged per location and available_within_days per organization in matches_filters; today the map ignores both. MapQuery.only_matching drops non-matching pins before clustering and the 300 cap. MapResponse.counts gives {matching, others} over the locations in the viewport before clustering and the cap; others is 0 with only_matching. Align the map's #filters with the search's provider and vendor filters where they differ (service lineage, max_response_time); record any difference that stays."
+          "status": "done",
+          "title": "map.pins (pwa DI-44, DI-45). MapPin gets slug, organization_type, verified and review_count from the projection docs, and result_id from the search_session_id results (the organization's first result). open_now is judged per location and available_within_days per organization in matches_filters; today the map ignores both. MapQuery.only_matching drops non-matching pins before clustering and the 300 cap. MapResponse.counts gives {matching, others} over the locations in the viewport before clustering and the cap; others is 0 with only_matching. Align the map's #filters with the search's provider and vendor filters where they differ (service lineage, max_response_time); record any difference that stays.",
+          "result": "done: map.pins judges the search's document filters in memory on the viewport hits (one index query per layer instead of two), available_within_days on provider documents, open_now per location; only_matching filters before clustering and the cap; counts {matching, others}; MapPin slug, organization_type (projected on provider and vendor documents, derived from the layers for documents indexed before S10), verified, review_count and result_id. Alignment: the map's provider filters gained max_response_time and the brand filter context gained series."
         },
         {
           "id": "S10.T6",
-          "status": "not_started",
-          "title": "Docs. Docs/52 MatchSession: the stored facets, safety block and fallback if they become fields, and the 24-hour re-read rule. Docs/43 with a numbered migration if a column is added; Docs/41 §6.3 for the new scheduled rule; Docs/54: sort and facets never change scores. Docs/40 is already at 1.1.0 from the 2026-10-26 plan change; if the implementation finds a problem in it, correct it with a trace (doc issue plus the Appendix D table)."
+          "status": "done",
+          "title": "Docs. Docs/52 MatchSession: the stored facets, safety block and fallback if they become fields, and the 24-hour re-read rule. Docs/43 with a numbered migration if a column is added; Docs/41 §6.3 for the new scheduled rule; Docs/54: sort and facets never change scores. Docs/40 is already at 1.1.0 from the 2026-10-26 plan change; if the implementation finds a problem in it, correct it with a trace (doc issue plus the Appendix D table).",
+          "result": "done: Docs/40 corrected with a trace (FacetKey without the node filters, facets per target type, languages rule, available_within_days and open_now defined, ClientConfig.contract_version a version string; Appendix D 'Contract 1.1.0' note, DI-74); Docs/52 MatchSession.interpreted_intent (stored response state, 24-hour read); Docs/41 §6.3 (15-minute slot refresh rule); Docs/54 §5.5 (sorts and facet counts never change scores; 14-day operational fit vs 30-day card slot). No SQL change (no migration)."
         },
         {
           "id": "S10.T7",
-          "status": "not_started",
-          "title": "Tests. Domain unit tests: facet counting and the OR semantics within a facet, min_rating thresholds, without_filter, capped, the soonest order (ties, inactive, no slot), open_now per location for pins. Integration (apps/testing/discovery.int.test.ts): the same request with facets true and false gives identical results, ranks and scores; each facet count equals the result count of the run with that option applied (seeded data); session_get returns the run's first page and facets, creates no MatchSession and emits no search.started, and answers 404 for another caller and after 24 hours (injected clock); search.page limit; soonest with two providers whose availability rules give different first slots; map.pins with open_now and only_matching and one provider closed all week (pins, clusters, counts); slug and result_id on pins. The regenerated sweep, pnpm test:all, contract:check, openapi:check and coverage --strict all green."
+          "status": "done",
+          "title": "Tests. Domain unit tests: facet counting and the OR semantics within a facet, min_rating thresholds, without_filter, capped, the soonest order (ties, inactive, no slot), open_now per location for pins. Integration (apps/testing/discovery.int.test.ts): the same request with facets true and false gives identical results, ranks and scores; each facet count equals the result count of the run with that option applied (seeded data); session_get returns the run's first page and facets, creates no MatchSession and emits no search.started, and answers 404 for another caller and after 24 hours (injected clock); search.page limit; soonest with two providers whose availability rules give different first slots; map.pins with open_now and only_matching and one provider closed all week (pins, clusters, counts); slug and result_id on pins. The regenerated sweep, pnpm test:all, contract:check, openapi:check and coverage --strict all green.",
+          "result": "done: modules/discovery/domain/facets.test.ts (10 unit tests: option counts with the facet's own selection replaced, OR within a Set facet, without_filter, languages, facets per target, 0 days active, shared filters, the Tehran end-of-day window, the 14-day ranking cutoff); apps/testing/search-s10.int.test.ts (6 integration tests: identical ids/ranks/scores with and without facets and every service_modes/price_tiers/languages/open_now/min_rating count equal to a run with that option; the filters-too-narrow impacts; refine keeping and dropping facets; session_get equal to the run except a fresh cursor, no new event or session, page limit, 404 for another caller, 200 at 23 h and 404 at 25 h; soonest order with availability rules, card slot, available_within_days 0/1, a passed projected slot re-read and re-projected by the W15 rule; map open_now highlight vs only_matching with pins, clusters and counts, pin fields and result_id). Updated pinned counts (contract.test.ts 407/459), the contract header and config.client tests (1.1.0)."
         },
         {
           "id": "S10.T8",
-          "status": "not_started",
-          "title": "Close. Write the report with the facet value rules as built, the storage choice and the deviations; update coverage_summary, meta.progress and handoff_notes, and mark DI-46, DI-72 and DI-73 resolved. Append a handoff note to pwa/dev_plan.json handoff_notes saying that backend S10 is done and what differs from the contract text, if anything, so that PWA stage P14 can start."
+          "status": "done",
+          "title": "Close. Write the report with the facet value rules as built, the storage choice and the deviations; update coverage_summary, meta.progress and handoff_notes, and mark DI-46, DI-72 and DI-73 resolved. Append a handoff note to pwa/dev_plan.json handoff_notes saying that backend S10 is done and what differs from the contract text, if anything, so that PWA stage P14 can start.",
+          "result": "done: this report, coverage_summary, meta.progress, handoff_notes (both plans), DI-46/72/73/74."
         }
       ],
       "deliverables": [
@@ -3188,16 +3219,53 @@
         "search sessions shared across callers (sessions stay bound to their requester)"
       ],
       "report": {
-        "started_at": null,
-        "completed_at": null,
-        "summary": null,
-        "ops_implemented": [],
+        "started_at": "2026-10-26",
+        "completed_at": "2026-10-26",
+        "summary": "S10 serves contract 1.1.0 for the consumer PWA (pwa DI-42..DI-46). New operation search.session_get; search.run/refine take facets and sort soonest; search.page takes limit; map.pins takes only_matching and returns counts and richer pins; result cards carry next_available_slot. Design: retrieval and scoring (#collect) are separated from the membership of a filter set (#select); the run path retrieves exactly as before, and facets come from a second retrieval without the facetable filters selected per option with the same code, so results never change with facets and each count means 'a run with this option'. The facetable document filters live once in domain/facets.ts and are used by retrieval, facets and the map. Ranking scores are unchanged (the 30-day slot projection is cut to 14 days inside the operational fit). Implementation corrected the 1.1.0 text before any client used it (DI-74): node filters are not faceted (they widen the request with the chips), facets are named per target type, languages lists the spoken ones; and available_within_days 0 (today) was silently ignored before and now filters. 406/407 operations served.",
+        "ops_implemented": [
+          "search.session_get"
+        ],
+        "ops_changed": [
+          "search.run",
+          "search.page",
+          "search.refine",
+          "map.pins"
+        ],
         "ops_deferred": [],
-        "files_created": [],
-        "files_changed": [],
-        "tests": null,
-        "deviations": [],
-        "notes_for_next": []
+        "files_created": [
+          "backend/modules/discovery/domain/facets.ts",
+          "backend/modules/discovery/domain/facets.test.ts",
+          "backend/apps/testing/search-s10.int.test.ts"
+        ],
+        "files_changed": [
+          "Docs/40.API contract.md (1.1.0 corrections, Appendix D note), Docs/41 §6.3, Docs/52 MatchSession, Docs/54 §5.5",
+          "backend/libs/contract/generated/*, backend/apps/testing/contract/generated/discovery.contract.int.test.ts, shared/api-contracts/openapi.yaml (regenerated)",
+          "backend/modules/discovery/application/search-service.ts (#collect/#select, facets, soonest, sessionPage, next slots, stored response state)",
+          "backend/modules/discovery/application/search-ops.ts (SearchSessionGetHandler, refine facets)",
+          "backend/modules/discovery/application/map-ops.ts (in-memory filters, open_now, availability, only_matching, counts, pin fields)",
+          "backend/modules/discovery/application/indexer.ts (SearchSlotRefreshRule), discovery-api.module.ts, discovery-worker.module.ts",
+          "backend/modules/discovery/infrastructure/projections.ts (organization_type on provider and vendor docs, slug on vendor docs, 30-day slot, refreshPassedSlots)",
+          "backend/modules/discovery/domain/ranking.ts (rankingSlot: 14-day operational fit)",
+          "backend/libs/http-pipeline/headers.ts, backend/libs/platform/platform-ops.ts (contract version from the registry)",
+          "backend/apps/testing/contract/resolvers/discovery.ts, s6-support.ts (profile overrides), pipeline.int.test.ts, platform-ops.int.test.ts, libs/contract/contract.test.ts",
+          "backend/README.md (407 operations, 459 routes)"
+        ],
+        "tests": "1016 passing (89 files) (pnpm test:all, 915 s): S10 added 16 tests — modules/discovery/domain/facets.test.ts (10) and apps/testing/search-s10.int.test.ts (6); the regenerated contract sweep covers search.session_get (schema, BOLA, unknown id). Also green: pnpm lint, typecheck, build, format:check, contract:check, openapi:check, contract:coverage --strict (406/407, 0 unexplained 501s).",
+        "deviations": [
+          "ClientConfig.contract_version widened from the literal '1.0.0' to Str<5,20> (DI-74): the field reports the header's version; the PWA's generated types will see a string.",
+          "Contract 1.1.0 corrected before use (DI-74): service_system_node_ids and part_category_node_ids are not facets (in search they widen the request together with the chips: a count 'with this option' would not narrow); facets are listed per target type; languages lists the selected ones plus the 20 spoken by the most results (Lang is an open ISO code).",
+          "available_within_days: 0 was ignored (a falsy check) although the PWA sends it for 'Today'; now it filters (before the end of today in the location's time zone). N > 14 also changes: the projection now looks 30 days ahead, so providers with a first slot between day 15 and 30 pass larger windows.",
+          "Session response state (safety block, fallback, facets, facets flag) is stored in interpreted_intent (StoredIntent) instead of new MatchSession columns: no migration; Docs/52 says so.",
+          "A passed projected slot is re-read in the caller's transaction (the api role may not use the system context: 'role carpal_api may not use the system context'); ranking still uses the projected value until the W15 rule refreshes it (at most 15 minutes).",
+          "Facets cost a second retrieval (providers/vendors at size 1000) and, for text queries, the text-free retry query; counts are evaluated in memory (about 60 selections over the pool for a provider search).",
+          "map.pins no longer runs a second filtered index query per layer: the same filters are judged on the viewport hits with matchesFilter (the index port's semantics)."
+        ],
+        "notes_for_next": [
+          "Full mode (NI-06): facets are computed in memory from a size-1000 pool; with OpenSearch, the same counts can come from filter aggregations per option (post_filter + filters aggs); keep facets.ts as the definition and test both against each other.",
+          "The operational fit still treats a passed projected slot as 'within a day' until SearchSlotRefreshRule runs (≤ 15 min); a ranking-time check would change scores and was left out on purpose.",
+          "Documents indexed before S10 have no organization_type (map pins derive it from the layers) and vendor documents had no slug: the nightly reconciliation or the lite rebuild on start fills both.",
+          "The PWA (pwa/dev_plan.json P14) can start: CarPal-Contract: 1.1.0 is served."
+        ]
       }
     }
   ],
@@ -3215,7 +3283,7 @@
       "S9": 23,
       "S10": 1
     },
-    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501. After S6 (pnpm contract:coverage): discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71 (the other 7 are admin ops of S8), trust 1/36 (public.org_reviews), appointment 1/31 (public.availability placeholder); 236 implemented, 166 answer 501. After S7 (pnpm contract:coverage): appointment 31/31, trust 28/36 (the other 8 are §23.4 admin operations of S8); 293 implemented, 109 answer 501. After S8 (pnpm contract:coverage): fleet 20/20, admin 16/16, analytics 3/3, organization 71/71, billing 7/7, taxonomy 13/13, trust 36/36, identity 58/61 (3 deferred S3 ops), media 10/11 (media.upload_put is the storage PUT), ai-mcp 4/27 (the admin oversight data ops; 23 §21 ops for S9); 375 implemented, 27 answer 501; admin-api serves 60/60 routes. After S9a: 4 vehicle transfer operations added to the contract (406 operations, 458 routes); 404 implemented, 2 answer 501 (auth.social_start PM-01, media.upload_put storage PUT). After S9b: unchanged 404/406 implemented (auth.social_start answers 501 by decision, media.upload_put is the storage PUT); every HTTP route (457) is swept by the generated contract suites. After S9c (pnpm contract:coverage --strict): 405/406 — media.upload_put counted as served by the storage listener; auth.social_start answers 501 by decision (PM-01); 0 unexplained. S10 (2026-10-26, contract 1.1.0) adds 1 operation (search.session_get): 407 in the registry after S10.T1.",
+    "note": "Targets sum to 402. Ops that exist under two prefixes ({V}, {A}, {RQ}) count once per op id. Refresh real numbers from pnpm contract:coverage at the end of every stage and write them here. After S1: registry generated, no handlers yet (routes are registered in S2). Module totals from the registry: identity 61, organization 71, billing 7, taxonomy 13, vehicle 31, inventory 32, discovery 7, trust 36, appointment 31, media 11, fleet 20, community 25, notification 7, ai-mcp 27, platform 4, analytics 3, admin 16 (admin-plane ops are counted under their owning module). After S2 (pnpm contract:coverage): platform 4/4 implemented, 398 operations answer 501; all 449 HTTP routes are registered on their hosts (api 373, admin-api 60, auth 16; the storage PUT is not an API route). After S3 (pnpm contract:coverage): identity 47/61 (§6: 47 of 50; the other 11 identity ops are §7 member/invitation and admin ops of later stages), billing 4/7, taxonomy 4/13, platform 4/4; 59 implemented, 343 answer 501 (3 of them deferred S3 ops with reasons in S3.report.ops_deferred). After S4 (pnpm contract:coverage): organization 62/71 (all of §7-§9; the other 9 are public.org_get/org_portfolio for S6 and 7 admin ops for S8), media 9/11 (all API ops of §17; media.upload_put is the storage PUT; admin.media_download_url is S8); 130 implemented, 272 answer 501. After S5 (pnpm contract:coverage): vehicle 31/31, inventory 30/32 (the other 2 are the §14.3 public reads of S6); 191 implemented, 211 answer 501. After S6 (pnpm contract:coverage): discovery 7/7, community 25/25, notification 7/7, inventory 32/32, organization 64/71 (the other 7 are admin ops of S8), trust 1/36 (public.org_reviews), appointment 1/31 (public.availability placeholder); 236 implemented, 166 answer 501. After S7 (pnpm contract:coverage): appointment 31/31, trust 28/36 (the other 8 are §23.4 admin operations of S8); 293 implemented, 109 answer 501. After S8 (pnpm contract:coverage): fleet 20/20, admin 16/16, analytics 3/3, organization 71/71, billing 7/7, taxonomy 13/13, trust 36/36, identity 58/61 (3 deferred S3 ops), media 10/11 (media.upload_put is the storage PUT), ai-mcp 4/27 (the admin oversight data ops; 23 §21 ops for S9); 375 implemented, 27 answer 501; admin-api serves 60/60 routes. After S9a: 4 vehicle transfer operations added to the contract (406 operations, 458 routes); 404 implemented, 2 answer 501 (auth.social_start PM-01, media.upload_put storage PUT). After S9b: unchanged 404/406 implemented (auth.social_start answers 501 by decision, media.upload_put is the storage PUT); every HTTP route (457) is swept by the generated contract suites. After S9c (pnpm contract:coverage --strict): 405/406 — media.upload_put counted as served by the storage listener; auth.social_start answers 501 by decision (PM-01); 0 unexplained. S10 (2026-10-26, contract 1.1.0) adds 1 operation (search.session_get): 407 in the registry after S10.T1. After S10 (pnpm contract:coverage --strict): 406/407 served, discovery 8/8, 0 unexplained 501s.",
     "implemented": 405,
     "returning_501": 1,
     "total_routes": 458,
@@ -4113,6 +4181,41 @@
       "stage": "S9c",
       "date": "2026-10-24",
       "deviation": "Link-token refusals (LINK_RECIPIENT_MISMATCH vs LINK_EXPIRED) are distinguishable by the token holder by contract; accepted as RCP-04 (pending product confirmation)."
+    },
+    {
+      "stage": "S10",
+      "date": "2026-10-26",
+      "deviation": "ClientConfig.contract_version widened from the literal '1.0.0' to Str<5,20> (DI-74): the field reports the header's version; the PWA's generated types will see a string."
+    },
+    {
+      "stage": "S10",
+      "date": "2026-10-26",
+      "deviation": "Contract 1.1.0 corrected before use (DI-74): service_system_node_ids and part_category_node_ids are not facets (in search they widen the request together with the chips: a count 'with this option' would not narrow); facets are listed per target type; languages lists the selected ones plus the 20 spoken by the most results (Lang is an open ISO code)."
+    },
+    {
+      "stage": "S10",
+      "date": "2026-10-26",
+      "deviation": "available_within_days: 0 was ignored (a falsy check) although the PWA sends it for 'Today'; now it filters (before the end of today in the location's time zone). N > 14 also changes: the projection now looks 30 days ahead, so providers with a first slot between day 15 and 30 pass larger windows."
+    },
+    {
+      "stage": "S10",
+      "date": "2026-10-26",
+      "deviation": "Session response state (safety block, fallback, facets, facets flag) is stored in interpreted_intent (StoredIntent) instead of new MatchSession columns: no migration; Docs/52 says so."
+    },
+    {
+      "stage": "S10",
+      "date": "2026-10-26",
+      "deviation": "A passed projected slot is re-read in the caller's transaction (the api role may not use the system context: 'role carpal_api may not use the system context'); ranking still uses the projected value until the W15 rule refreshes it (at most 15 minutes)."
+    },
+    {
+      "stage": "S10",
+      "date": "2026-10-26",
+      "deviation": "Facets cost a second retrieval (providers/vendors at size 1000) and, for text queries, the text-free retry query; counts are evaluated in memory (about 60 selections over the pool for a provider search)."
+    },
+    {
+      "stage": "S10",
+      "date": "2026-10-26",
+      "deviation": "map.pins no longer runs a second filtered index query per layer: the same filters are judged on the viewport hits with matchesFilter (the index port's semantics)."
     }
   ],
   "handoff_notes": [
@@ -4195,6 +4298,16 @@
       "date": "2026-10-26",
       "from": "pwa plan",
       "note": "Docs/40 raised to contract 1.1.0 for the consumer PWA's P6 gaps (pwa/dev_plan.json DI-42..DI-46, BA-36; backend DI-72, DI-73, DI-46): search facets, sort soonest with next_available_slot filled, search.session_get, search.page limit, MapPin slug/organization_type/verified/review_count/result_id, and map.pins open_now/available_within_days with only_matching and counts. All changes are additive (TR-3). The generator parses the new document (407 operations, 459 routes), but libs/contract/generated was not regenerated, so contract:check fails until S10.T1. The new stage S10 'PWA integration' implements it, and the PWA's closure stage P14 waits for S10. No backend code changed."
+    },
+    {
+      "date": "2026-10-26",
+      "from": "S10",
+      "note": "S10 done: contract 1.1.0 is served (CarPal-Contract: 1.1.0; 407 operations, 406 served). For the PWA: search.run/refine facets (SearchFacets per target type; node filters are not faceted; languages = selected + 20 most spoken; capped → lower bounds), sort soonest, next_available_slot on cards (30 days, never past), GET /v1/search/{session_id}?limit (24 hours, same body as the run with a fresh cursor), search.page limit, map.pins only_matching + counts + slug/organization_type/verified/review_count/result_id, open_now per location. available_within_days 0 now means today (it was ignored before). Read DI-74 for the contract corrections made during S10."
+    },
+    {
+      "date": "2026-10-27",
+      "from": "PWA P7",
+      "note": "Storage CORS for web clients (PWA DI-08): new env CARPAL_MEDIA_CORS_ORIGINS (JSON array of origins, validated as scheme://host[:port], ≤ 20; dev default http://localhost:3000, https://localhost:3000, http://localhost:3100; staging/prod default none). The lite storage listener (libs/infra/lite/local-storage.ts) answers preflights from those origins (204; Allow-Methods PUT, GET; Allow-Headers content-type, x-amz-checksum-sha256; Max-Age 600; other origins or methods 403) and adds Access-Control-Allow-Origin + Vary: Origin to PUT and GET; no credentials, nothing exposed. GET is included because the PWA previews private PDFs (served as attachments) from a blob. Files: libs/config/config.ts (+ DEV_MEDIA_CORS_ORIGINS, config.media.corsOrigins), libs/infra/index.ts, libs/infra/lite/local-storage.ts, .env.example; tests in libs/infra/infra.test.ts and libs/config/config.test.ts (typecheck, lint, unit 281 green). Follow-up for WP1: the production media host needs the same CORS rules. The PWA also uses from 1.1.0 only the regenerated types so far (P14 adopts the behaviour)."
     }
   ],
   "open_questions": [
@@ -4474,6 +4587,11 @@
       "Keep match scores untouched by the sort and the facets (54 §6, plan and payment never affect ranking); soonest only reorders.",
       "Prefer storing the SafetyBlock, fallback flag and facets inside the session's stored intent if that avoids a migration; it is S data, never returned except by search.session_get.",
       "next_available_slot needs the passed-slot rule even before soonest: P6 cards already show the slot when it is set."
+    ],
+    "S10_done": [
+      "After any Docs/40 change: pnpm contract:generate, pnpm contract:tests (resolver for new operations), pnpm openapi:generate; the contract version in the 40 header drives CarPal-Contract and config.client.",
+      "Change a facetable filter only in modules/discovery/domain/facets.ts; search, facets and the map read it from there.",
+      "Keep apps/testing/search-s10.int.test.ts comparing each facet count to a real run; it is the guard against the two paths drifting apart."
     ]
   },
   "post_mvp_backlog": [

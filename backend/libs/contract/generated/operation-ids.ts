@@ -357,6 +357,7 @@ export const OPERATION_IDS = [
   'search.refine',
   'search.result_event',
   'search.run',
+  'search.session_get',
   'service_records.create',
   'service_records.delete',
   'service_records.evidence_add',

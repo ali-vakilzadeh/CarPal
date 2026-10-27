@@ -57,6 +57,16 @@ export const resolvers: Resolvers = {
       },
     };
   },
+  'search.session_get': async (h) => {
+    const s = await session(h);
+    return {
+      as: s.as,
+      params: { session_id: s.body.session_id as string },
+      // Sessions belong to their requester (RLS requester_all): another caller's read is 404 like an unknown id.
+      bola: { ...(await otherCaller(h)), absent: { params: { session_id: h.newId() } } },
+      check: (res) => expect(res.body.session_id).toBe(s.body.session_id),
+    };
+  },
   'search.refine': async (h) => {
     const s = await session(h);
     return { as: s.as, params: { session_id: s.body.session_id as string }, body: { sort: 'rating' }, bola: await otherCaller(h) };

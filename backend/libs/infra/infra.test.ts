@@ -160,6 +160,60 @@ describe('LocalObjectStorage', () => {
     }
   });
 
+  it('answers CORS for configured web origins only: PUT and GET, no credentials (PWA DI-08)', async () => {
+    const web = 'http://localhost:3000';
+    const storage = new LocalObjectStorage(dir, 'http://127.0.0.1:0', Buffer.alloc(32, 7), Date.now, undefined, [web]);
+    const server = await storage.listen(0, '127.0.0.1');
+    const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+    try {
+      const preflight = (origin: string, method: string) =>
+        fetch(`${base}/o/u/2/b.bin?exp=1&sig=x`, {
+          method: 'OPTIONS',
+          headers: {
+            origin,
+            'access-control-request-method': method,
+            'access-control-request-headers': 'content-type,x-amz-checksum-sha256',
+          },
+        });
+      const ok = await preflight(web, 'PUT');
+      expect(ok.status).toBe(204);
+      expect(ok.headers.get('access-control-allow-origin')).toBe(web);
+      expect(ok.headers.get('access-control-allow-methods')).toBe('PUT, GET');
+      expect(ok.headers.get('access-control-allow-headers')).toBe('content-type, x-amz-checksum-sha256');
+      expect(ok.headers.get('access-control-allow-credentials')).toBeNull();
+      expect(ok.headers.get('access-control-expose-headers')).toBeNull();
+      expect((await preflight('https://evil.example', 'PUT')).status).toBe(403);
+      expect((await preflight(web, 'DELETE')).status).toBe(403);
+
+      const body = Buffer.from('%PDF-1.7 cors');
+      const sha = createHash('sha256').update(body).digest('base64');
+      const put = await storage.presignPut('u/2/b.bin', {
+        contentType: 'application/pdf',
+        contentLength: body.length,
+        sha256: sha,
+        expiresInMs: 600_000,
+      });
+      const res = await fetch(put.url.replace('http://127.0.0.1:0', base), {
+        method: 'PUT',
+        headers: { ...put.headers, origin: web },
+        body,
+      });
+      expect(res.status).toBe(200);
+      expect(res.headers.get('access-control-allow-origin')).toBe(web);
+      expect(res.headers.get('vary')).toBe('Origin');
+      const get = (await storage.presignGet('u/2/b.bin', { expiresInMs: 60_000, disposition: 'attachment' })).replace(
+        'http://127.0.0.1:0',
+        base,
+      );
+      const read = await fetch(get, { headers: { origin: web } });
+      expect(await read.text()).toBe('%PDF-1.7 cors');
+      expect(read.headers.get('access-control-allow-origin')).toBe(web);
+      expect((await fetch(get, { headers: { origin: 'https://evil.example' } })).headers.get('access-control-allow-origin')).toBeNull();
+    } finally {
+      server.close();
+    }
+  });
+
   it('encrypts objects at rest on request and decrypts them on read', async () => {
     const storage = new LocalObjectStorage(dir, 'http://127.0.0.1:0', Buffer.alloc(32, 7));
     const body = Buffer.from('%PDF-1.7 private document');

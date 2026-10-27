@@ -8,12 +8,14 @@ import {
   SearchRefineHandler,
   SearchResultEventHandler,
   SearchRunHandler,
+  SearchSessionGetHandler,
 } from './application/search-ops.js';
 
 @Module({
   providers: [
     SearchRunHandler,
     SearchPageHandler,
+    SearchSessionGetHandler,
     SearchRefineHandler,
     SearchResultEventHandler,
     MapPinsHandler,

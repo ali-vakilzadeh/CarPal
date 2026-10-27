@@ -5,7 +5,13 @@ import { Authorizer } from '#libs/authz/index.js';
 import { ApiError } from '#libs/contract/index.js';
 import { type CarpalConfig } from '#libs/config/index.js';
 import { FlagService } from '#libs/flags/index.js';
-import { Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
+import {
+  CONTRACT_VERSION,
+  Operation,
+  type OperationContext,
+  type OperationHandler,
+  type OperationResult,
+} from '#libs/http-pipeline/index.js';
 import { JobService, toJobView, type JobRow } from '#libs/jobs/index.js';
 import { RegionConfigService } from '#libs/region-config/index.js';
 import { CARPAL_CONFIG } from '#libs/runtime/tokens.js';
@@ -48,7 +54,7 @@ export class ClientConfigHandler implements OperationHandler {
       body: {
         min_supported_version: (ctx.client && this.config.http.clientMinVersions[ctx.client.clientId]) ?? '1.0.0',
         latest_version: this.config.http.clientLatestVersion,
-        contract_version: '1.0.0',
+        contract_version: CONTRACT_VERSION,
         i18n: { version: this.config.http.i18n.version, base_url: this.config.http.i18n.baseUrl },
         taxonomy_version: (await this.taxonomy?.current()) ?? SEEDED_TAXONOMY_VERSION,
         flags,

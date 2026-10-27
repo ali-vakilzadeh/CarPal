@@ -5,6 +5,9 @@
 // URLs expire and carry the Content-Disposition. Objects put with
 // { encrypt: true } are stored AES-256-GCM encrypted (iv | tag | ciphertext)
 // and decrypted when read or served, like SSE-KMS in full mode.
+// Browsers upload with a cross-origin signed PUT (SEC-UP-1) and the PWA reads
+// private PDFs into a blob for its in-place preview, so configured web origins
+// get CORS for PUT and GET (no credentials, nothing exposed; PWA DI-08).
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { mkdirSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
@@ -21,6 +24,8 @@ export class LocalObjectStorage implements ObjectStorage {
     private readonly clock: () => number = Date.now,
     /** AES-256 key for objects put with { encrypt: true }. */
     private readonly encryptionKey: Buffer = createHash('sha256').update(signingKey).update('sse').digest(),
+    /** Web origins allowed to call the listener from a browser (CARPAL_MEDIA_CORS_ORIGINS). */
+    private readonly corsOrigins: readonly string[] = [],
   ) {
     mkdirSync(root, { recursive: true });
   }
@@ -114,15 +119,33 @@ export class LocalObjectStorage implements ObjectStorage {
 
   /** Handles one request to the local storage listener. */
   async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const headers = {
+    const origin = typeof req.headers.origin === 'string' ? req.headers.origin : null;
+    const cors = origin !== null && this.corsOrigins.includes(origin);
+    const headers: Record<string, string> = {
       'x-content-type-options': 'nosniff',
       'content-security-policy': 'sandbox',
       'cross-origin-resource-policy': 'cross-origin',
       'cache-control': 'private, no-store',
+      vary: 'Origin',
+      ...(cors ? { 'access-control-allow-origin': origin } : {}),
     };
     const fail = (status: number): void => {
       res.writeHead(status, headers).end();
     };
+    if (req.method === 'OPTIONS') {
+      // CORS preflight: only for allowed origins and the two signed methods; the signature is checked on the request itself.
+      const method = req.headers['access-control-request-method'];
+      if (!cors || (method !== 'PUT' && method !== 'GET')) return fail(403);
+      res
+        .writeHead(204, {
+          ...headers,
+          'access-control-allow-methods': 'PUT, GET',
+          'access-control-allow-headers': 'content-type, x-amz-checksum-sha256',
+          'access-control-max-age': '600',
+        })
+        .end();
+      return;
+    }
     const url = new URL(req.url ?? '/', 'http://storage.local');
     const key = decodeURIComponent(url.pathname.replace(/^\/o\//, ''));
     if (!url.pathname.startsWith('/o/') || !KEY_PATTERN.test(key) || key.includes('..')) return fail(404);

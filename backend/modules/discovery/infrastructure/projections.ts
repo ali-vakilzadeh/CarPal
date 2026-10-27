@@ -29,11 +29,15 @@ export const INDEX = {
 /** Taxonomy projection version marker (doc id in the taxonomy index). */
 const TAXONOMY_META = '_meta';
 const BATCH = 100;
+/** Horizon of ProviderDoc.next_available_at (40 ResultCard.next_available_slot: the next 30 days). */
+export const NEXT_SLOT_DAYS = 30;
 
 export type ProviderDoc = SearchDocument & {
   organization_id: string;
   name: string;
   slug: string | null;
+  /** 40 OrgType (map pins, contract 1.1.0). */
+  organization_type: string;
   provider_type: string;
   service_modes: string[];
   price_tier: string;
@@ -65,13 +69,19 @@ export type ProviderDoc = SearchDocument & {
   ev_ready: boolean;
   /** 54 §3 trust score (0–100, W3), null until scored. */
   trust_score: number | null;
-  /** Earliest open appointment slot in the next 14 days (ISO), null without a calendar (54 §5.1 operational fit). */
+  /**
+   * Earliest open appointment slot in the next 30 days (ISO), null without a calendar or a free slot
+   * (ResultCard.next_available_slot, SearchFilters.available_within_days; the 54 §5.1 operational fit
+   * counts the first 14 days, ranking.rankingSlot). Re-projected by SearchSlotRefreshRule once it passes.
+   */
   next_available_at: string | null;
 };
 
 export type VendorDoc = SearchDocument & {
   organization_id: string;
   name: string;
+  slug: string | null;
+  organization_type: string;
   vendor_type: string;
   delivery_options: string[];
   trade_customers_supported: boolean;
@@ -159,6 +169,7 @@ export class SearchProjections {
     return {
       organization_id: s.id,
       slug: s.slug,
+      organization_type: s.organization_type,
       name: s.name,
       description: s.description_translations ?? {},
       provider_type: p.provider_type,
@@ -221,6 +232,7 @@ export class SearchProjections {
     return {
       organization_id: s.id,
       slug: s.slug,
+      organization_type: s.organization_type,
       name: s.name,
       description: s.description_translations ?? {},
       vendor_type: v.vendor_type,
@@ -259,7 +271,8 @@ export class SearchProjections {
           const s = sources.get(orgId);
           const rating = (ratings.get(orgId) as { overall: number | null; count: number } | undefined) ?? { overall: null, count: 0 };
           const orgBadges = ((badges.get(orgId) ?? []) as { badge_type: string }[]).map((b) => b.badge_type);
-          const next = s?.provider && this.appointments ? await this.appointments.nextOpenSlot(scope, orgId, new Date()) : null;
+          const next =
+            s?.provider && this.appointments ? await this.appointments.nextOpenSlot(scope, orgId, new Date(), NEXT_SLOT_DAYS) : null;
           if (s?.provider) await this.index.upsert(INDEX.providers, orgId, await this.#providerDoc(s, rating, orgBadges, next));
           else await this.index.remove(INDEX.providers, orgId);
           const itemCategories = s?.vendor ? await this.#reindexVendorItems(scope, s) : await this.#dropVendorItems(orgId);
@@ -438,6 +451,17 @@ export class SearchProjections {
       if (id !== TAXONOMY_META && !keep.has(id)) await this.index.remove(INDEX.taxonomy, id);
     await this.index.upsert(INDEX.taxonomy, TAXONOMY_META, { version, status: 'meta' });
     this.#taxonomyVersion = version;
+  }
+
+  /** Providers whose projected next open slot lies before `now`, projected again (SearchSlotRefreshRule, S10); up to `limit` per call. */
+  async refreshPassedSlots(now: Date, limit = 500): Promise<number> {
+    const { hits } = await this.index.search(INDEX.providers, {
+      filters: [{ field: 'next_available_at', lte: now.toISOString() }],
+      size: limit,
+    });
+    const ids = hits.map((h) => h.id);
+    if (ids.length) await this.reindexOrgs(ids);
+    return ids.length;
   }
 
   /** Nightly reconciliation (and the lite rebuild at start): every public document rebuilt, stale ones removed. */

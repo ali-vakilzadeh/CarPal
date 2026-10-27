@@ -121,6 +121,19 @@ const EnvSchema = z
     CARPAL_LOCATION_CHECK_THRESHOLD_M: z.coerce.number().int().min(1).max(100_000).default(300),
     /** W6 media processor: re-queue assets still pending a scan after this long (lost lite queue entries). */
     CARPAL_MEDIA_RESCAN_AFTER_MS: z.coerce.number().int().min(1_000).max(86_400_000).default(300_000),
+    /** Web origins that may PUT (signed upload) and GET (signed download) on the lite storage listener (PWA DI-08). */
+    CARPAL_MEDIA_CORS_ORIGINS: z
+      .string()
+      .transform((s, ctx) => {
+        try {
+          return JSON.parse(s) as unknown;
+        } catch {
+          ctx.addIssue({ code: 'custom', message: 'must be a JSON array' });
+          return z.NEVER;
+        }
+      })
+      .pipe(z.array(z.url().regex(/^https?:\/\/[^/]+$/, 'must be an origin (scheme://host[:port])')).max(20))
+      .optional(),
 
     // --- Discovery (S6)
     /** W2: rebuild the search projections when the worker starts (the lite index is in memory, so it starts empty). */
@@ -216,11 +229,14 @@ export interface CarpalConfig {
   };
   taxonomyRefreshMs: number;
   geo: { locationCheckThresholdM: number };
-  media: { rescanAfterMs: number };
+  media: { rescanAfterMs: number; corsOrigins: string[] };
   search: { rebuildOnStart: boolean };
   mcp: { mode: 'stub' | 'unavailable'; timeoutMs: number };
   webauthn: { rpId: string; rpName: string; origins: string[] };
 }
+
+/** Development web origins of the consumer PWA (pnpm dev :3000, pnpm e2e :3100) for the storage listener's CORS. */
+export const DEV_MEDIA_CORS_ORIGINS = ['http://localhost:3000', 'https://localhost:3000', 'http://localhost:3100'];
 
 /** Development redirect URIs (claimed HTTPS links for mobile, BFF callbacks for web). */
 export const DEV_REDIRECT_URIS: Record<string, string[]> = {
@@ -315,7 +331,10 @@ export function loadConfig(overrides: Record<string, string | undefined> = {}): 
     },
     taxonomyRefreshMs: e.CARPAL_TAXONOMY_REFRESH_MS,
     geo: { locationCheckThresholdM: e.CARPAL_LOCATION_CHECK_THRESHOLD_M },
-    media: { rescanAfterMs: e.CARPAL_MEDIA_RESCAN_AFTER_MS },
+    media: {
+      rescanAfterMs: e.CARPAL_MEDIA_RESCAN_AFTER_MS,
+      corsOrigins: e.CARPAL_MEDIA_CORS_ORIGINS ?? (e.CARPAL_ENV === 'dev' ? DEV_MEDIA_CORS_ORIGINS : []),
+    },
     search: { rebuildOnStart: e.CARPAL_SEARCH_REBUILD_ON_START },
     mcp: { mode: e.CARPAL_MCP_MODE ?? (e.CARPAL_ENV === 'dev' ? 'stub' : 'unavailable'), timeoutMs: e.CARPAL_MCP_TIMEOUT_MS },
     webauthn: {

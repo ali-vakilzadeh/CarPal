@@ -6,7 +6,10 @@
 // reasons, the vehicle filter with its fallback, and the session with its
 // ranked results stored in one transaction (search.started /
 // search.zero_result analytics events in the outbox). Plan, payment or
-// sponsorship never enter the ranking; no result is sponsored.
+// sponsorship never enter the ranking; no result is sponsored. Contract 1.1.0
+// (S10): facet counts from a second retrieval without the facetable filters,
+// the soonest sort, next_available_slot on cards and search.session_get,
+// which answers the stored first page again.
 import { Injectable, Optional } from '@nestjs/common';
 import { sql } from 'kysely';
 import { ConsentChecker } from '#libs/consent-gate/index.js';
@@ -14,18 +17,28 @@ import { ApiError } from '#libs/contract/index.js';
 import { openNow, validateBBox, type BBox, type GeoPoint, type HoursSpec } from '#libs/geo/index.js';
 import type { OperationContext } from '#libs/http-pipeline/index.js';
 import { searchTokens, type L10n, type Locale } from '#libs/i18n/index.js';
-import type { Infra, SearchFilter, SearchHit } from '#libs/infra/index.js';
+import { matchesFilter, type Infra, type SearchDocument, type SearchFilter, type SearchHit } from '#libs/infra/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import { RegionConfigService } from '#libs/region-config/index.js';
 import { InjectInfra } from '#libs/runtime/index.js';
 import { SafetyCheck, type Urgency } from '#libs/safety-check/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
+import { AppointmentFacts } from '#modules/appointment/interface/appointments.js';
 import { CommunityRead } from '#modules/community/interface/community.js';
 import { InventoryRead } from '#modules/inventory/interface/inventory.js';
 import { PublicOrgCards, type PublicOrgCard } from '#modules/organization/interface/public-profiles.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { VehicleCards } from '#modules/vehicle/interface/vehicles.js';
 import { FleetPartners } from '#modules/fleet/interface/fleet.js';
+import {
+  computeFacets,
+  indexFilters,
+  ITEM_FILTERS,
+  PROVIDER_FILTERS,
+  slotWithinDays,
+  VENDOR_FILTERS,
+  type SearchFacets,
+} from '../domain/facets.js';
 import { interpret, ngrams, type TermNode } from '../domain/intent.js';
 import {
   FITMENT_WEIGHT,
@@ -42,6 +55,7 @@ import {
 import { reasonNodeIds, reasonSummary, targetLabel, templateExplanation } from '../domain/reasons.js';
 import {
   INDEX,
+  NEXT_SLOT_DAYS,
   SearchProjections,
   type InventoryDoc,
   type LocationDoc,
@@ -110,9 +124,13 @@ export interface SearchRequest {
   urgency_level?: Urgency;
   filters?: SearchFilters;
   intent_override?: InterpretedIntent;
-  sort?: 'best_match' | 'distance' | 'rating';
+  sort?: SearchSort;
   limit?: number;
+  /** Contract 1.1.0: SearchResponse.facets. */
+  facets?: boolean;
 }
+export type SearchSort = 'best_match' | 'distance' | 'rating' | 'soonest';
+export type SafetyBlock = ReturnType<typeof safetyBlock>;
 
 export interface RunOptions {
   previousChips?: IntentChip[];
@@ -123,15 +141,28 @@ export interface RunOptions {
   issueId?: string | null;
 }
 
-/** What a session keeps beyond its columns (in interpreted_intent, never returned). */
+/**
+ * What a session keeps beyond its columns (in interpreted_intent, never
+ * returned as such): the request parts search.refine re-runs, and the
+ * response parts search.session_get answers again (S10; sessions stored
+ * before S10 have none of the last four).
+ */
 interface StoredIntent extends InterpretedIntent {
   location: LocationInput;
-  sort: 'best_match' | 'distance' | 'rating';
+  sort: SearchSort;
   residual: string;
+  facetsRequested?: boolean;
+  safety?: SafetyBlock;
+  fallback?: boolean;
+  facets?: SearchFacets | null;
 }
 
 const DEFAULT_RADIUS_KM = 50;
 const STORED_RESULTS = 100;
+/** search.session_get reads a session for 24 hours (40 contract 1.1.0). */
+export const SESSION_READ_MS = 24 * 3_600_000;
+/** Time zone of a provider without locations in its document (pilot region). */
+const DEFAULT_TZ = 'Asia/Tehran';
 const SAFETY_LEVEL = (u: Urgency | null): 'none' | 'warning' | 'urgent' => (u === 'safety_critical' ? 'urgent' : u ? 'warning' : 'none');
 
 export function safetyBlock(r: { safety_flag: boolean; urgency: Urgency | null }) {
@@ -156,6 +187,63 @@ interface Candidate {
   reviews: number;
   inactive: boolean;
   urgentFit: boolean;
+  /** Next open slot (ms) of a provider, null when none or passed (soonest sort). */
+  slot: number | null;
+  /** Open now at one of its locations (SearchFilters.open_now). */
+  open: boolean;
+}
+
+/** A retrieved provider with its score (#collect); whether it is a result is decided per filter set (#select). */
+interface ProviderEntry {
+  doc: ProviderDoc;
+  distanceKm: number | null;
+  scored: Scored;
+  open: boolean;
+}
+interface VendorEntry {
+  doc: VendorDoc;
+  distanceKm: number | null;
+  scored: Scored;
+  items: ItemMatch | undefined;
+  open: boolean;
+}
+interface ItemHit {
+  hit: SearchHit;
+  doc: InventoryDoc;
+  best: string | null;
+  weight: number;
+  /** SearchFilters.min_fitment_confidence (not facetable). */
+  fitOk: boolean;
+}
+interface ItemEntry extends ItemHit {
+  rating: { overall: number | null; count: number } | null;
+  scored: Scored | null;
+  open: boolean;
+}
+/** Hits of the first query (a) and of the retry without text (b). */
+interface Hits<T> {
+  a: T[];
+  b: T[] | null;
+}
+interface Pool {
+  providers: Hits<ProviderEntry> | null;
+  vendors: VendorEntry[];
+  items: Hits<ItemEntry> | null;
+  preferred: Set<string>;
+  vehicle: VehicleContext | null;
+  services: Set<string>;
+  parts: Set<string>;
+  /** A retrieval reached its size limit. */
+  capped: boolean;
+  /** preferred_partners_only without partners: no results. */
+  none: boolean;
+}
+
+/** The hits a filter set keeps: the first query's, or the retry's when the first leaves nothing (as the index queries do). */
+function pick<T extends { doc: SearchDocument }>(a: T[], b: T[] | null, filters: SearchFilter[]): T[] {
+  const keep = (x: T) => filters.every((g) => matchesFilter(x.doc, g));
+  const first = a.filter(keep);
+  return first.length || !b ? first : b.filter(keep);
 }
 
 export interface Resolved {
@@ -186,6 +274,7 @@ export class SearchService {
     @InjectInfra() private readonly infra: Infra,
     @Optional() private readonly community?: CommunityRead,
     @Optional() private readonly partners?: FleetPartners,
+    @Optional() private readonly appointments?: AppointmentFacts,
   ) {}
 
   /** City names of the region config in every locale, analyzed → city_key. */
@@ -380,11 +469,13 @@ export class SearchService {
   }
 
   /**
-   * Service match: the provider offers a requested node or something below it
-   * (its service_node_ids hold offered nodes with their ancestors), or offers a
-   * node above a requested one (a brake-system shop for a brake-pad task).
+   * Provider filters outside the facets. Service match: the provider offers a
+   * requested node or something below it (its service_node_ids hold offered
+   * nodes with their ancestors), or offers a node above a requested one (a
+   * brake-system shop for a brake-pad task). The facetable filters are
+   * facets.ts PROVIDER_FILTERS.
    */
-  #providerFilters(services: Set<string>, lineage: Set<string>, f: SearchFilters | undefined): SearchFilter[] {
+  #providerBase(services: Set<string>, lineage: Set<string>, f: SearchFilters | undefined): SearchFilter[] {
     const out: SearchFilter[] = [];
     if (services.size)
       out.push({
@@ -393,80 +484,77 @@ export class SearchService {
           { field: 'offered_node_ids', in: [...lineage] },
         ],
       });
-    if (!f) return out;
-    if (f.min_rating) out.push({ field: 'overall_rating', gte: Number(f.min_rating) });
-    if (f.verified_only) out.push({ field: 'verified', eq: true });
-    if (f.service_modes?.length) out.push({ field: 'service_modes', in: f.service_modes });
-    if (f.price_tiers?.length) out.push({ field: 'price_tier', in: f.price_tiers });
-    if (f.fleet_friendly) out.push({ field: 'fleet_friendly', eq: true });
-    if (f.ev_capable) out.push({ field: 'ev_ready', eq: true });
-    if (f.warranty_offered) out.push({ field: 'warranty_offered', eq: true });
-    if (f.languages?.length) out.push({ field: 'languages', in: f.languages });
-    if (f.provider_types?.length) out.push({ field: 'provider_type', in: f.provider_types });
-    if (f.badges?.length) out.push({ field: 'badges', in: f.badges });
-    if (f.max_response_time) {
+    if (f?.max_response_time) {
       const order = ['within_2h', 'same_day', 'within_24h', 'within_48h'];
       out.push({ field: 'response_time_target', in: order.slice(0, order.indexOf(f.max_response_time) + 1) });
     }
     return out;
   }
 
-  #vendorFilters(f: SearchFilters | undefined): SearchFilter[] {
-    const out: SearchFilter[] = [];
-    if (!f) return out;
-    if (f.min_rating) out.push({ field: 'overall_rating', gte: Number(f.min_rating) });
-    if (f.verified_only) out.push({ field: 'verified', eq: true });
-    if (f.vendor_types?.length) out.push({ field: 'vendor_type', in: f.vendor_types });
-    if (f.delivery_options?.length) out.push({ field: 'delivery_options', in: f.delivery_options });
-    if (f.trade_pricing) out.push({ field: 'trade_customers_supported', eq: true });
-    return out;
-  }
-
-  /** Items matching the part criteria (public, or trade-only of vendors with an approved trade account of the context organization). */
-  async #items(
+  /**
+   * Index hits of the part criteria (public items, or trade-only items of
+   * vendors with an approved trade account of the context organization) and
+   * the hits of the retry without text, which a run uses when the first query
+   * finds nothing. `b` is fetched only then, or always for a facet pool.
+   */
+  async #itemHits(
     r: Resolved,
     vehicle: VehicleContext | null,
     parts: Set<string>,
     residual: string,
     trade: Set<string>,
     origin: GeoPoint | null,
-  ) {
+    o: { itemFilters: SearchFilter[]; pool: boolean; onCap: (n: number, size: number) => void },
+  ): Promise<{ a: ItemHit[]; b: ItemHit[] | null }> {
     // The vehicle rates fitment here; the "for my car" filter (with its fallback) applies to the ranked results.
     const f = r.req.filters;
     const filters: SearchFilter[] = [
       { any: [{ field: 'visibility', eq: 'public' }, ...(trade.size ? [{ field: 'vendor_organization_id', in: [...trade] }] : [])] },
+      ...(parts.size ? [{ field: 'part_category_node_ids', in: [...parts] }] : []),
+      ...o.itemFilters,
     ];
-    if (parts.size) filters.push({ field: 'part_category_node_ids', in: [...parts] });
-    if (f?.part_conditions?.length) filters.push({ field: 'condition', in: f.part_conditions });
-    if (f?.stock_available) filters.push({ field: 'stock_status', in: ['in_stock', 'low_stock'] });
     const geo = this.#geo(r, origin);
     const text = residual ? { query: residual, fields: { name: 3, normalized_name: 2, sku: 3, part_numbers: 3, brand: 1 } } : undefined;
-    let res = await this.infra.search.search(INDEX.inventory, { filters, ...(text ? { text } : {}), ...(geo ? { geo } : {}), size: 1000 });
-    if (res.hits.length === 0 && text && (parts.size || vehicle))
-      res = await this.infra.search.search(INDEX.inventory, { filters, ...(geo ? { geo } : {}), size: 1000 });
     const minRank = f?.min_fitment_confidence ? FITMENT_WEIGHT[f.min_fitment_confidence]! : 0;
-    return res.hits
-      .map((h) => {
+    const toHits = (hits: SearchHit[]): ItemHit[] =>
+      hits.map((h) => {
         const doc = h.source as InventoryDoc;
         const matching = vehicle ? doc.fitment.filter((x) => fitmentMatches(x, vehicle)) : [];
         const best = matching.reduce<string | null>(
           (a, x) => (!a || (FITMENT_WEIGHT[x.confidence] ?? 0) > (FITMENT_WEIGHT[a] ?? 0) ? x.confidence : a),
           null,
         );
-        return { hit: h, doc, best, weight: best ? (FITMENT_WEIGHT[best] ?? 0) : 0 };
-      })
-      .filter((x) => !vehicle || !f?.min_fitment_confidence || x.weight >= minRank);
+        const weight = best ? (FITMENT_WEIGHT[best] ?? 0) : 0;
+        return { hit: h, doc, best, weight, fitOk: !vehicle || !f?.min_fitment_confidence || weight >= minRank };
+      });
+    const a = (await this.infra.search.search(INDEX.inventory, { filters, ...(text ? { text } : {}), ...(geo ? { geo } : {}), size: 1000 }))
+      .hits;
+    o.onCap(a.length, 1000);
+    const retry = !!text && (parts.size > 0 || !!vehicle);
+    const b =
+      retry && (o.pool || a.length === 0)
+        ? (await this.infra.search.search(INDEX.inventory, { filters, ...(geo ? { geo } : {}), size: 1000 })).hits
+        : null;
+    if (b) o.onCap(b.length, 1000);
+    return { a: toHits(a), b: b ? toHits(b) : null };
   }
 
-  /** Runs retrieval and ranking; returns the ranked candidates and the vehicle-filter fallback flag. */
-  async rank(
+  /**
+   * Retrieval and scoring: everything a filter set can be selected from. A run
+   * (`pool: false`) retrieves with every filter, exactly as before facets; a
+   * facet pool (`pool: true`, SearchRequest.facets) retrieves without the
+   * facetable filters (facets.ts) so #select can count each option. Scores
+   * never depend on the facetable filters.
+   */
+  async #collect(
     scope: TxScope,
     r: Resolved,
     intent: InterpretedIntent,
     residual: string,
     origin: GeoPoint | null,
     userId: string | null,
-  ): Promise<{ candidates: Candidate[]; fallback: boolean; vehicle: VehicleContext | null; services: Set<string>; parts: Set<string> }> {
+    o: { pool: boolean; now: Date },
+  ): Promise<Pool> {
     const req = r.req;
     const f = req.filters;
     const services = await this.#services(intent, f);
@@ -491,72 +579,73 @@ export class SearchService {
     const ctx: MatchContext = { services: lineage, partCategories: parts, vehicle, urgency, maxDistanceKm, favorites, preferred };
     const geo = this.#geo(r, origin);
     const target = intent.target_type;
-    const candidates: Candidate[] = [];
+    const pool: Pool = { providers: null, vendors: [], items: null, preferred, vehicle, services, parts, capped: false, none: false };
     // SearchFilters.preferred_partners_only: the searching fleet's active preferred providers only (none without a fleet context).
-    if (f?.preferred_partners_only && preferred.size === 0) return { candidates, fallback: false, vehicle, services, parts };
+    if (f?.preferred_partners_only && preferred.size === 0) return { ...pool, none: true };
+    const size = o.pool ? 1000 : 500;
+    const onCap = (n: number, max: number) => {
+      if (n >= max) pool.capped = true;
+    };
+    const open = (locations: LocationDoc[] | undefined) =>
+      (locations ?? []).some((l) => openNow(l.hours as HoursSpec | null, l.timezone, o.now) === true);
 
     if (target === 'provider' || target === 'place') {
-      const filters = this.#providerFilters(services, lineage, f);
+      const filters = [...this.#providerBase(services, lineage, f), ...(o.pool ? [] : indexFilters(PROVIDER_FILTERS, f))];
       const text = residual ? { query: residual, fields: { name: 3, description: 1 } } : undefined;
-      let res = await this.infra.search.search(INDEX.providers, { filters, ...(text ? { text } : {}), ...(geo ? { geo } : {}), size: 500 });
-      if (res.hits.length === 0 && text && (services.size || vehicle))
-        res = await this.infra.search.search(INDEX.providers, { filters, ...(geo ? { geo } : {}), size: 500 });
-      const availableBy = f?.available_within_days ? Date.now() + f.available_within_days * 86_400_000 : null;
-      for (const h of res.hits) {
-        const d = h.source as ProviderDoc;
-        if (f?.preferred_partners_only && !preferred.has(d.organization_id)) continue;
-        // SearchFilters.available_within_days (S7): an open slot in the window (providers without a calendar are left out).
-        if (availableBy !== null && (!d.next_available_at || Date.parse(d.next_available_at) > availableBy)) continue;
-        const scored = scoreProvider(d, h.distanceKm, ctx);
-        candidates.push({
-          targetType: 'organization',
-          targetId: d.organization_id,
-          orgId: d.organization_id,
-          scored,
-          distanceKm: h.distanceKm,
-          matchingItems: null,
-          rating: d.overall_rating,
-          reviews: d.review_count,
-          inactive: d.activity_status === 'inactive',
-          urgentFit:
-            scored.reasons.some((x) => x.reason_type === 'urgency_fit' && x.values.fast === true) || d.service_modes.includes('mobile'),
-        });
-      }
+      const a = (await this.infra.search.search(INDEX.providers, { filters, ...(text ? { text } : {}), ...(geo ? { geo } : {}), size }))
+        .hits;
+      onCap(a.length, size);
+      const retry = !!text && (services.size > 0 || !!vehicle);
+      const b =
+        retry && (o.pool || a.length === 0)
+          ? (await this.infra.search.search(INDEX.providers, { filters, ...(geo ? { geo } : {}), size })).hits
+          : null;
+      if (b) onCap(b.length, size);
+      const scored = new Map<string, ProviderEntry>();
+      const entry = (h: SearchHit): ProviderEntry => {
+        let e = scored.get(h.id);
+        if (!e) {
+          const doc = h.source as ProviderDoc;
+          e = { doc, distanceKm: h.distanceKm, scored: scoreProvider(doc, h.distanceKm, ctx), open: open(doc.locations) };
+          scored.set(h.id, e);
+        }
+        return e;
+      };
+      pool.providers = { a: a.map(entry), b: b ? b.map(entry) : null };
     }
     // Preferred partners are providers (52 FleetPreferredPartner preferred_provider): no vendor results under the filter.
     if (!f?.preferred_partners_only && (target === 'vendor' || target === 'place' || target === 'inventory_item')) {
       const partIntent = parts.size > 0 || target === 'inventory_item' || (!!residual && target !== 'place');
-      const items = partIntent || vehicle ? await this.#items(r, vehicle, parts, residual, trade, origin) : [];
+      // Part condition and stock narrow the items of a parts search (facetable there); for sellers they shape the matching items.
+      const itemFilters = target === 'inventory_item' && o.pool ? [] : indexFilters(ITEM_FILTERS, f);
+      const hits =
+        partIntent || vehicle
+          ? await this.#itemHits(r, vehicle, parts, residual, trade, origin, {
+              itemFilters,
+              pool: o.pool && target === 'inventory_item',
+              onCap,
+            })
+          : { a: [], b: null };
       if (target === 'inventory_item') {
         const vendorRatings = new Map<string, { overall: number | null; count: number }>();
-        for (const id of new Set(items.map((i) => i.doc.vendor_organization_id))) {
+        for (const id of new Set([...hits.a, ...(hits.b ?? [])].map((i) => i.doc.vendor_organization_id))) {
           const v = (await this.infra.search.get(INDEX.vendors, id)) as VendorDoc | null;
           if (v) vendorRatings.set(id, { overall: v.overall_rating, count: v.review_count });
         }
-        for (const i of items) {
-          const rating = vendorRatings.get(i.doc.vendor_organization_id);
-          if (!rating) continue;
-          const scored = scoreItem(
-            { ...i.doc, fitmentWeight: i.weight, bestConfidence: i.best },
+        const entry = (i: ItemHit): ItemEntry => {
+          const rating = vendorRatings.get(i.doc.vendor_organization_id) ?? null;
+          return {
+            ...i,
             rating,
-            i.hit.distanceKm,
-            ctx,
-            f?.part_conditions,
-          );
-          candidates.push({
-            targetType: 'inventory_item',
-            targetId: i.doc.inventory_item_id,
-            orgId: i.doc.vendor_organization_id,
-            scored,
-            distanceKm: i.hit.distanceKm,
-            matchingItems: null,
-            rating: rating.overall,
-            reviews: rating.count,
-            inactive: false,
-            urgentFit: false,
-          });
-        }
+            open: open(i.doc.locations),
+            scored: rating
+              ? scoreItem({ ...i.doc, fitmentWeight: i.weight, bestConfidence: i.best }, rating, i.hit.distanceKm, ctx, f?.part_conditions)
+              : null,
+          };
+        };
+        pool.items = { a: hits.a.map(entry), b: hits.b ? hits.b.map(entry) : null };
       } else {
+        const items = pick(hits.a, hits.b, []).filter((i) => i.fitOk);
         const byVendor = new Map<string, ItemMatch>();
         for (const i of items) {
           const m = byVendor.get(i.doc.vendor_organization_id) ?? { count: 0, inStock: 0, fitment: 0, bestConfidence: null };
@@ -568,98 +657,208 @@ export class SearchService {
           }
           byVendor.set(i.doc.vendor_organization_id, m);
         }
-        const vendorFilters = this.#vendorFilters(f);
+        const vendorFilters = o.pool ? [] : indexFilters(VENDOR_FILTERS, f);
         const vendorHits = new Map<string, SearchHit>();
+        const vendors = async (q: { filters: SearchFilter[]; text?: { query: string; fields: Record<string, number> } }) => {
+          const hs = (await this.infra.search.search(INDEX.vendors, { ...q, ...(geo ? { geo } : {}), size })).hits;
+          onCap(hs.length, size);
+          for (const h of hs) vendorHits.set(h.id, h);
+        };
         if (!partIntent) {
           const text = residual ? { query: residual, fields: { name: 3, description: 1 } } : undefined;
-          for (const h of (
-            await this.infra.search.search(INDEX.vendors, {
-              filters: vendorFilters,
-              ...(text ? { text } : {}),
-              ...(geo ? { geo } : {}),
-              size: 500,
-            })
-          ).hits)
-            vendorHits.set(h.id, h);
+          await vendors({ filters: vendorFilters, ...(text ? { text } : {}) });
         } else {
           // Vendors whose catalogue covers the categories, and every vendor with matching items.
-          if (parts.size)
-            for (const h of (
-              await this.infra.search.search(INDEX.vendors, {
-                filters: [...vendorFilters, { field: 'part_category_node_ids', in: [...parts] }],
-                ...(geo ? { geo } : {}),
-                size: 500,
-              })
-            ).hits)
-              vendorHits.set(h.id, h);
-          if (byVendor.size)
-            for (const h of (
-              await this.infra.search.search(INDEX.vendors, {
-                filters: [...vendorFilters, { field: 'organization_id', in: [...byVendor.keys()] }],
-                ...(geo ? { geo } : {}),
-                size: 500,
-              })
-            ).hits)
-              vendorHits.set(h.id, h);
+          if (parts.size) await vendors({ filters: [...vendorFilters, { field: 'part_category_node_ids', in: [...parts] }] });
+          if (byVendor.size) await vendors({ filters: [...vendorFilters, { field: 'organization_id', in: [...byVendor.keys()] }] });
         }
         for (const h of vendorHits.values()) {
           const d = h.source as VendorDoc;
           const items = byVendor.get(d.organization_id);
           if (f?.stock_available && !items?.inStock) continue;
-          const scored = scoreVendor(
-            d,
-            items ?? (partIntent ? { count: 0, inStock: 0, fitment: 0, bestConfidence: null } : undefined),
-            h.distanceKm,
-            ctx,
-          );
-          const existing = candidates.find((c) => c.orgId === d.organization_id);
-          // A hybrid organization is one place: it keeps its better side.
-          if (existing) {
-            if (scored.score > existing.scored.score) existing.scored = scored;
-            existing.matchingItems = items?.count ?? existing.matchingItems;
-            continue;
-          }
-          candidates.push({
-            targetType: 'organization',
-            targetId: d.organization_id,
-            orgId: d.organization_id,
-            scored,
+          pool.vendors.push({
+            doc: d,
             distanceKm: h.distanceKm,
-            matchingItems: items ? items.count : vehicle ? 0 : null,
-            rating: d.overall_rating,
-            reviews: d.review_count,
-            inactive: false,
-            urgentFit: false,
+            items,
+            open: open(d.locations),
+            scored: scoreVendor(
+              d,
+              items ?? (partIntent ? { count: 0, inStock: 0, fitment: 0, bestConfidence: null } : undefined),
+              h.distanceKm,
+              ctx,
+            ),
           });
         }
       }
     }
+    return pool;
+  }
 
-    let kept = candidates;
-    if (f?.open_now) {
-      const now = new Date();
-      const docs = await this.#docs(kept);
-      kept = kept.filter((c) => (docs.get(c.targetId)?.locations ?? []).some((l) => openNow(l.hours as HoursSpec | null, l.timezone, now)));
+  /**
+   * The results of one filter set from a pool: the index filters (the first
+   * query's hits, or the retry's when they leave nothing), availability,
+   * hybrid organizations as one place, open now and the "for my car" filter
+   * with its fallback (54 §5.5). Unsorted.
+   */
+  #select(pool: Pool, req: SearchRequest, f: SearchFilters | undefined, now: Date): { kept: Candidate[]; fallback: boolean } {
+    if (pool.none) return { kept: [], fallback: false };
+    const candidates: Candidate[] = [];
+    const nowMs = now.getTime();
+    if (pool.providers) {
+      for (const e of pick(pool.providers.a, pool.providers.b, indexFilters(PROVIDER_FILTERS, f))) {
+        const d = e.doc;
+        if (f?.preferred_partners_only && !pool.preferred.has(d.organization_id)) continue;
+        // SearchFilters.available_within_days (S7; 0 = today, S10): an open slot in the window (providers without a calendar are left out).
+        if (
+          f?.available_within_days !== undefined &&
+          !slotWithinDays(d.next_available_at, f.available_within_days, d.locations[0]?.timezone ?? DEFAULT_TZ, now)
+        )
+          continue;
+        const slot = d.next_available_at ? Date.parse(d.next_available_at) : null;
+        candidates.push({
+          targetType: 'organization',
+          targetId: d.organization_id,
+          orgId: d.organization_id,
+          scored: e.scored,
+          distanceKm: e.distanceKm,
+          matchingItems: null,
+          rating: d.overall_rating,
+          reviews: d.review_count,
+          inactive: d.activity_status === 'inactive',
+          urgentFit:
+            e.scored.reasons.some((x) => x.reason_type === 'urgency_fit' && x.values.fast === true) || d.service_modes.includes('mobile'),
+          slot: slot !== null && slot >= nowMs ? slot : null,
+          open: e.open,
+        });
+      }
     }
+    if (pool.items)
+      for (const i of pick(pool.items.a, pool.items.b, indexFilters(ITEM_FILTERS, f))) {
+        if (!i.fitOk || !i.rating || !i.scored) continue;
+        candidates.push({
+          targetType: 'inventory_item',
+          targetId: i.doc.inventory_item_id,
+          orgId: i.doc.vendor_organization_id,
+          scored: i.scored,
+          distanceKm: i.hit.distanceKm,
+          matchingItems: null,
+          rating: i.rating.overall,
+          reviews: i.rating.count,
+          inactive: false,
+          urgentFit: false,
+          slot: null,
+          open: i.open,
+        });
+      }
+    const vendorFilters = indexFilters(VENDOR_FILTERS, f);
+    for (const v of pool.vendors) {
+      if (!vendorFilters.every((g) => matchesFilter(v.doc, g))) continue;
+      const existing = candidates.find((c) => c.orgId === v.doc.organization_id);
+      // A hybrid organization is one place: it keeps its better side.
+      if (existing) {
+        if (v.scored.score > existing.scored.score) existing.scored = v.scored;
+        existing.matchingItems = v.items?.count ?? existing.matchingItems;
+        continue;
+      }
+      candidates.push({
+        targetType: 'organization',
+        targetId: v.doc.organization_id,
+        orgId: v.doc.organization_id,
+        scored: v.scored,
+        distanceKm: v.distanceKm,
+        matchingItems: v.items ? v.items.count : pool.vehicle ? 0 : null,
+        rating: v.doc.overall_rating,
+        reviews: v.doc.review_count,
+        inactive: false,
+        urgentFit: false,
+        slot: null,
+        open: v.open,
+      });
+    }
+    let kept = f?.open_now ? candidates.filter((c) => c.open) : candidates;
     // "For my car" (54 §5.5): keep results relevant to the vehicle unless fewer than 3 would remain.
     let fallback = false;
-    if (vehicle && req.vehicle_filter_applied !== false) {
+    if (pool.vehicle && req.vehicle_filter_applied !== false) {
       const relevant = kept.filter((c) => c.scored.relevant_to_vehicle === true);
       if (relevant.length >= 3) kept = relevant;
       else fallback = true;
     }
-    const sort = req.sort ?? 'best_match';
-    const safetyCritical = urgency === 'safety_critical';
+    return { kept, fallback };
+  }
+
+  /** Runs retrieval and ranking; returns the ranked candidates, their number before the session cap and the vehicle-filter fallback flag. */
+  async rank(
+    scope: TxScope,
+    r: Resolved,
+    intent: InterpretedIntent,
+    residual: string,
+    origin: GeoPoint | null,
+    userId: string | null,
+  ): Promise<{
+    candidates: Candidate[];
+    total: number;
+    capped: boolean;
+    fallback: boolean;
+    vehicle: VehicleContext | null;
+    services: Set<string>;
+    parts: Set<string>;
+  }> {
+    const now = new Date();
+    const pool = await this.#collect(scope, r, intent, residual, origin, userId, { pool: false, now });
+    const { kept, fallback } = this.#select(pool, r.req, r.req.filters, now);
+    const sort = r.req.sort ?? 'best_match';
+    const safetyCritical = r.req.urgency_level === 'safety_critical';
+    const bestMatch = (a: Candidate, b: Candidate) =>
+      b.scored.score - a.scored.score || (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity) || (a.targetId < b.targetId ? -1 : 1);
     kept.sort((a, b) => {
       if (a.inactive !== b.inactive) return a.inactive ? 1 : -1; // 54 §6: inactive providers last
       if (sort === 'distance') return (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity) || b.scored.score - a.scored.score;
       if (sort === 'rating') return (b.rating ?? -1) - (a.rating ?? -1) || b.reviews - a.reviews || b.scored.score - a.scored.score;
+      // Soonest (contract 1.1.0): providers with an open slot by slot; the rest after, in best-match order. Scores are unchanged.
+      if (sort === 'soonest') {
+        if ((a.slot === null) !== (b.slot === null)) return a.slot === null ? 1 : -1;
+        return (a.slot ?? 0) - (b.slot ?? 0) || bestMatch(a, b);
+      }
       if (safetyCritical && a.urgentFit !== b.urgentFit) return a.urgentFit ? -1 : 1; // 54 §5.5 urgent providers first
-      return (
-        b.scored.score - a.scored.score || (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity) || (a.targetId < b.targetId ? -1 : 1)
-      );
+      return bestMatch(a, b);
     });
-    return { candidates: kept.slice(0, STORED_RESULTS), fallback, vehicle, services, parts };
+    return {
+      candidates: kept.slice(0, STORED_RESULTS),
+      total: kept.length,
+      capped: pool.capped,
+      fallback,
+      vehicle: pool.vehicle,
+      services: pool.services,
+      parts: pool.parts,
+    };
+  }
+
+  /**
+   * SearchRequest.facets (40 SearchFacets, contract 1.1.0): a second retrieval
+   * without the facetable filters, from which each option's results are
+   * selected exactly as the run selects its own. The run's results are untouched.
+   */
+  async facets(
+    scope: TxScope,
+    r: Resolved,
+    intent: InterpretedIntent,
+    residual: string,
+    origin: GeoPoint | null,
+    userId: string | null,
+    run: { total: number; capped: boolean },
+  ): Promise<SearchFacets> {
+    const now = new Date();
+    const pool = await this.#collect(scope, r, intent, residual, origin, userId, { pool: true, now });
+    const languages = new Set<string>();
+    for (const e of [...(pool.providers?.a ?? []), ...(pool.providers?.b ?? [])]) for (const l of e.doc.languages ?? []) languages.add(l);
+    return computeFacets<SearchFilters>({
+      target: intent.target_type,
+      filters: r.req.filters ?? {},
+      count: (g) => this.#select(pool, r.req, g, now).kept.length,
+      resultCount: run.total,
+      capped: pool.capped || run.capped,
+      languages,
+    });
   }
 
   /** Index documents of candidates (locations and hours for cards and pins). */
@@ -706,8 +905,19 @@ export class SearchService {
         originMode = 'chosen_city';
       }
       const ranked = await this.rank(scope, r, intent, residual, origin, userId);
+      const facets = req.facets ? await this.facets(scope, r, intent, residual, origin, userId, ranked) : null;
       const firstOf = (kind: IntentChip['kind']) => intent.chips.find((c) => c.kind === kind && c.node_id)?.node_id ?? null;
-      const stored: StoredIntent = { ...intent, location: req.location, sort: req.sort ?? 'best_match', residual };
+      const block = safetyBlock({ safety_flag: safety.safety_flag, urgency: safety.urgency });
+      const stored: StoredIntent = {
+        ...intent,
+        location: req.location,
+        sort: req.sort ?? 'best_match',
+        residual,
+        facetsRequested: !!req.facets,
+        safety: block,
+        fallback: ranked.fallback,
+        facets,
+      };
       const session = await scope.db
         .insertInto('discovery.match_sessions')
         .values({
@@ -799,12 +1009,44 @@ export class SearchService {
         query_normalized: session.query_normalized ?? null,
         interpreted_intent: { target_type: intent.target_type, chips: intent.chips },
         interpretation_source: 'rules' as const,
-        safety: safetyBlock({ safety_flag: safety.safety_flag, urgency: safety.urgency }),
+        safety: block,
         results: cards,
         next_cursor: sorted.length > limit ? ctx.cursorFor('search.page', { session_id: session.id }, { o: limit }) : null,
         vehicle_filter_fallback: ranked.fallback,
+        facets,
       };
     }
+  }
+
+  /**
+   * search.session_get: the stored first page of a session of the caller
+   * again, with what the run answered (chips, safety, fallback, facets) and
+   * cards from current public data; no ranking, no analytics event. 404 after
+   * 24 hours. Sessions stored before S10 answer their safety flag as a
+   * warning-level block and no facets.
+   */
+  async sessionPage(ctx: OperationContext, scope: TxScope, id: string, limit: number) {
+    const s = await this.session(scope, id);
+    if (Date.parse(String(s.row.created_at)) < Date.now() - SESSION_READ_MS) throw new ApiError('NOT_FOUND');
+    await this.sessionContext(ctx, scope, s.row.requester_organization_id);
+    const rows = await this.results(scope, s.row.id, 0, limit);
+    const cards = await this.resultCards(
+      scope,
+      { id: s.row.id, origin: s.origin, locale: ctx.locale, vehicle: s.vehicle },
+      rows.slice(0, limit),
+    );
+    const st = s.stored;
+    return {
+      session_id: s.row.id,
+      query_normalized: s.row.query_normalized ?? null,
+      interpreted_intent: { target_type: st.target_type, chips: st.chips },
+      interpretation_source: (s.row.interpretation_source ?? 'rules') as 'rules' | 'rules_plus_ai',
+      safety: st.safety ?? safetyBlock({ safety_flag: !!s.row.safety_flag, urgency: (s.row.urgency_level as Urgency | null) ?? null }),
+      results: cards,
+      next_cursor: rows.length > limit ? ctx.cursorFor('search.page', { session_id: s.row.id }, { o: limit }) : null,
+      vehicle_filter_fallback: st.fallback ?? false,
+      facets: st.facets ?? null,
+    };
   }
 
   /** Stored results → 40 ResultCard (current public cards; results of organizations no longer public are skipped). */
@@ -857,6 +1099,7 @@ export class SearchService {
       s.locale,
     );
     const now = new Date();
+    const slots = await this.#nextSlots(scope, rows, docs, now);
     const out = [];
     for (const r of rows) {
       const org: PublicOrgCard | undefined = cards.get(orgOf.get(r.id)!);
@@ -891,11 +1134,35 @@ export class SearchService {
         },
         relevant_to_vehicle: r.relevant_to_vehicle,
         matching_item_count: r.matching_item_count,
-        next_available_slot: null,
+        next_available_slot: r.target_entity_type === 'organization' ? (slots.get(r.target_entity_id) ?? null) : null,
         open_now: nearest ? openNow(nearest.hours as HoursSpec | null, nearest.timezone, now) : null,
         is_sponsored: false as const,
       });
     }
+    return out;
+  }
+
+  /**
+   * ResultCard.next_available_slot (contract 1.1.0): the provider's projected
+   * earliest open slot in the next 30 days, re-read from the public calendar
+   * in the caller's transaction (as public.availability reads it) when it has
+   * passed; never a past slot.
+   */
+  async #nextSlots(
+    scope: TxScope,
+    rows: readonly { target_entity_type: string; target_entity_id: string }[],
+    docs: Map<string, { locations: LocationDoc[] }>,
+    now: Date,
+  ): Promise<Map<string, string | null>> {
+    const out = new Map<string, string | null>();
+    const stale: string[] = [];
+    for (const r of rows) {
+      if (r.target_entity_type !== 'organization') continue;
+      const next = (docs.get(r.target_entity_id) as Partial<ProviderDoc> | undefined)?.next_available_at ?? null;
+      if (next && Date.parse(next) < now.getTime()) stale.push(r.target_entity_id);
+      else out.set(r.target_entity_id, next);
+    }
+    for (const id of stale) out.set(id, (await this.appointments?.nextOpenSlot(scope, id, now, NEXT_SLOT_DAYS))?.toISOString() ?? null);
     return out;
   }
 
@@ -939,6 +1206,7 @@ export class SearchService {
       ...(row.urgency_level ? { urgency_level: row.urgency_level as Urgency } : {}),
       ...(row.filters ? { filters: (typeof row.filters === 'string' ? JSON.parse(row.filters) : row.filters) as SearchFilters } : {}),
       sort: s.stored.sort,
+      ...(s.stored.facetsRequested ? { facets: true } : {}),
     };
   }
 

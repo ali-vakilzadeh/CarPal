@@ -57,6 +57,8 @@ export async function publishedProvider(
     description?: Record<string, string>;
     responseTarget?: string;
     location?: Json;
+    /** ProviderProfileWrite members over the defaults (service_modes, price_tier, …). */
+    profile?: Json;
   },
 ): Promise<PublishedOrg> {
   const user = await app.fixtures.user();
@@ -81,6 +83,7 @@ export async function publishedProvider(
         contact_channels: [{ type: 'whatsapp', value: '+989121234567', preferred: true }],
         languages_spoken: ['fa', 'en'],
         ...(o.responseTarget ? { response_time_target: o.responseTarget } : {}),
+        ...o.profile,
       },
       { 'idempotency-key': newId() },
     ),

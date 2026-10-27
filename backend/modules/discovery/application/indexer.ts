@@ -129,6 +129,25 @@ export class SearchSweepRule extends ScheduledRule {
 }
 
 /**
+ * Every 15 minutes (41 §6.3, S10): providers whose projected next open slot
+ * has passed are projected again, so the soonest sort and the availability
+ * filter use a current slot (no event marks a slot passing).
+ */
+@Injectable()
+export class SearchSlotRefreshRule extends ScheduledRule {
+  readonly name = 'discovery.search_slot_refresh';
+  readonly everyMs = 15 * 60_000;
+
+  constructor(private readonly projections: SearchProjections) {
+    super();
+  }
+
+  async run(): Promise<number> {
+    return this.projections.refreshPassedSlots(new Date());
+  }
+}
+
+/**
  * Nightly reconciliation (41 §6.3): rebuild everything public, remove the
  * rest. The scheduler runs every rule once when the worker starts, which
  * rebuilds the lite index (in memory, so empty at start); with

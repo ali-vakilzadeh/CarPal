@@ -2877,7 +2877,11 @@
           "pattern": "^[^\\r\\n]*$"
         },
         "contract_version": {
-          "const": "1.0.0"
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 20,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "the version of this document's header (TR-8), e.g. '1.1.0'"
         },
         "i18n": {
           "type": "object",
@@ -4264,6 +4268,53 @@
       ],
       "additionalProperties": false
     },
+    "FacetCount": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "selected": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "value",
+        "count",
+        "selected"
+      ],
+      "additionalProperties": false
+    },
+    "FacetKey": {
+      "type": "string",
+      "enum": [
+        "min_rating",
+        "verified_only",
+        "open_now",
+        "available_within_days",
+        "service_modes",
+        "price_tiers",
+        "provider_types",
+        "vendor_types",
+        "badges",
+        "languages",
+        "warranty_offered",
+        "ev_capable",
+        "fleet_friendly",
+        "stock_available",
+        "part_conditions",
+        "delivery_options",
+        "trade_pricing"
+      ]
+    },
     "Favorite": {
       "type": "object",
       "properties": {
@@ -4503,6 +4554,25 @@
         "in_future",
         "order"
       ]
+    },
+    "FilterImpact": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/FacetKey"
+        },
+        "count_without": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "key",
+        "count_without"
+      ],
+      "additionalProperties": false,
+      "description": "results if only this active filter were removed"
     },
     "Fitment": {
       "type": "object",
@@ -7626,6 +7696,21 @@
           "type": "string",
           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
         },
+        "slug": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "slug opens the public profile (public.org_get)"
+        },
+        "organization_type": {
+          "$ref": "#/$defs/OrgType"
+        },
         "roles": {
           "type": "array",
           "items": {
@@ -7679,6 +7764,9 @@
           "maxLength": 120,
           "pattern": "^[^\\r\\n]*$"
         },
+        "verified": {
+          "type": "boolean"
+        },
         "overall_rating": {
           "anyOf": [
             {
@@ -7689,6 +7777,11 @@
               "type": "null"
             }
           ]
+        },
+        "review_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000
         },
         "badge": {
           "anyOf": [
@@ -7775,26 +7868,43 @@
               "type": "null"
             }
           ]
+        },
+        "result_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
         "pin_id",
         "organization_id",
+        "slug",
+        "organization_type",
         "roles",
         "point",
         "visibility",
         "service_radius_km",
         "name",
+        "verified",
         "overall_rating",
+        "review_count",
         "badge",
         "open_now",
         "matches_filters",
         "relevant_to_vehicle",
         "matching_item_count",
         "rank",
-        "reason_summary"
+        "reason_summary",
+        "result_id"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "the organization's result in search_session_id (search.result_event)"
     },
     "Mapping": {
       "type": "object",
@@ -7952,13 +8062,17 @@
         "as_organization_id": {
           "type": "string",
           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "only_matching": {
+          "type": "boolean"
         }
       },
       "required": [
         "viewport",
         "layers"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "default false: pins that miss the filters come back with"
     },
     "MapResponse": {
       "type": "object",
@@ -7980,6 +8094,27 @@
         "vehicle_filter_fallback": {
           "type": "boolean"
         },
+        "counts": {
+          "type": "object",
+          "properties": {
+            "matching": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "others": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "matching",
+            "others"
+          ],
+          "additionalProperties": false,
+          "description": "locations in the viewport before clustering and the cap; others = 0 with only_matching (\"7 match · 14 others\")"
+        },
         "attribution": {
           "const": "© OpenStreetMap contributors"
         }
@@ -7988,6 +8123,7 @@
         "pins",
         "clusters",
         "vehicle_filter_fallback",
+        "counts",
         "attribution"
       ],
       "additionalProperties": false
@@ -16764,7 +16900,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "start of the provider's earliest open slot in the next 30 days (as public.availability shows it); never in the past; null for vendors, parts and providers without online booking"
         },
         "open_now": {
           "anyOf": [
@@ -17805,6 +17942,64 @@
         "failed"
       ]
     },
+    "SearchFacet": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/FacetKey"
+        },
+        "counts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FacetCount"
+          },
+          "maxItems": 50
+        }
+      },
+      "required": [
+        "key",
+        "counts"
+      ],
+      "additionalProperties": false
+    },
+    "SearchFacets": {
+      "type": "object",
+      "properties": {
+        "result_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000,
+          "description": "results of the current filters before the 100-result session cap"
+        },
+        "capped": {
+          "type": "boolean",
+          "description": "true when retrieval reached its limit: counts are lower bounds"
+        },
+        "facets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SearchFacet"
+          },
+          "maxItems": 17,
+          "description": "facets that apply to the session's target type"
+        },
+        "without_filter": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FilterImpact"
+          },
+          "maxItems": 17
+        }
+      },
+      "required": [
+        "result_count",
+        "capped",
+        "facets",
+        "without_filter"
+      ],
+      "additionalProperties": false,
+      "description": "one per active facet of the target type; the largest names the"
+    },
     "SearchFilters": {
       "type": "object",
       "properties": {
@@ -18027,17 +18222,15 @@
           "description": "chips edited by the user"
         },
         "sort": {
-          "type": "string",
-          "enum": [
-            "best_match",
-            "distance",
-            "rating"
-          ]
+          "$ref": "#/$defs/SearchSort"
         },
         "limit": {
           "type": "integer",
           "minimum": 1,
           "maximum": 50
+        },
+        "facets": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -18045,7 +18238,8 @@
         "entry_point",
         "location"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "default false; true → SearchResponse.facets (§14.1 SearchFacets)"
     },
     "SearchResponse": {
       "type": "object",
@@ -18101,7 +18295,18 @@
           ]
         },
         "vehicle_filter_fallback": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "true when the vehicle filter leaves < 3 results"
+        },
+        "facets": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SearchFacets"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -18112,10 +18317,20 @@
         "safety",
         "results",
         "next_cursor",
-        "vehicle_filter_fallback"
+        "vehicle_filter_fallback",
+        "facets"
       ],
       "additionalProperties": false,
-      "description": "true when the vehicle filter leaves < 3 results"
+      "description": "null unless the request asked for facets"
+    },
+    "SearchSort": {
+      "type": "string",
+      "enum": [
+        "best_match",
+        "distance",
+        "rating",
+        "soonest"
+      ]
     },
     "ServiceCategory": {
       "type": "object",

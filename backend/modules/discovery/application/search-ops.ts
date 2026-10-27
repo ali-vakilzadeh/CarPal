@@ -1,5 +1,5 @@
-// Search operations (40 §14.2): search.run, search.page, search.refine,
-// search.result_event and safety.check. Sessions belong to their requester
+// Search operations (40 §14.2): search.run, search.page, search.session_get,
+// search.refine, search.result_event and safety.check. Sessions belong to their requester
 // (RLS requester_all: user, context organization or anonymous device key);
 // another caller's session is 404.
 import { Injectable } from '@nestjs/common';
@@ -32,7 +32,7 @@ export class SearchPageHandler implements OperationHandler {
 
   async handle(ctx: OperationContext<undefined, { limit?: number }>): Promise<OperationResult> {
     const offset = (ctx.cursor as { o?: number } | undefined)?.o ?? 0;
-    // 40 search.page declares only `cursor` (DI-46): pages after the first hold 20 results.
+    // 40 search.page: cursor plus limit (contract 1.1.0, DI-46); the cursor carries the offset.
     const limit = ctx.query.limit ?? 20;
     const body = await ctx.tx(
       async (scope) => {
@@ -52,12 +52,26 @@ export class SearchPageHandler implements OperationHandler {
   }
 }
 
+@Injectable()
+@Operation('search.session_get')
+export class SearchSessionGetHandler implements OperationHandler {
+  constructor(private readonly search: SearchService) {}
+
+  async handle(ctx: OperationContext<undefined, { limit?: number }>): Promise<OperationResult> {
+    const body = await ctx.tx((scope) => this.search.sessionPage(ctx, scope, ctx.params.session_id!, ctx.query.limit ?? 20), {
+      readOnly: true,
+    });
+    return { body };
+  }
+}
+
 type RefineBody = {
   intent_override?: InterpretedIntent;
   filters?: SearchFilters;
   location?: LocationInput;
   vehicle_filter_applied?: boolean;
   sort?: SearchRequest['sort'];
+  facets?: boolean;
 };
 
 @Injectable()
@@ -82,6 +96,8 @@ export class SearchRefineHandler implements OperationHandler {
       ...(b.location ? { location: b.location } : {}),
       ...(b.vehicle_filter_applied !== undefined ? { vehicle_filter_applied: b.vehicle_filter_applied } : {}),
       ...(b.sort ? { sort: b.sort } : {}),
+      // facets default to the refined session's value (contract 1.1.0).
+      ...(b.facets !== undefined ? { facets: b.facets } : {}),
     };
     return { body: await this.search.run(ctx, next, b.intent_override ? { previousChips: chips } : {}) };
   }

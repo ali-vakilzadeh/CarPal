@@ -79,7 +79,7 @@ describe('headers on every response (40 §1.4, TR-2, TR-8)', () => {
       'referrer-policy': 'no-referrer',
       'cross-origin-resource-policy': 'same-origin',
       'cross-origin-opener-policy': 'same-origin',
-      'carpal-contract': '1.0.0',
+      'carpal-contract': '1.1.0',
       'cache-control': 'no-store',
     });
     expect(res.headers.server).toBeUndefined();

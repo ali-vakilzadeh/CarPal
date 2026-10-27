@@ -56,6 +56,7 @@ export function createInfra(config: CarpalConfig, options: InfraOptions): Infra 
     new KeyRing(config.secrets.master).hmacKey('storage-url'),
     Date.now,
     new KeyRing(config.secrets.master).derive('storage-sse'),
+    config.media.corsOrigins,
   );
   return {
     mode: 'lite',

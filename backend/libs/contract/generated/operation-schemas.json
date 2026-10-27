@@ -7318,6 +7318,12 @@
             "minLength": 1,
             "maxLength": 512,
             "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 20
           }
         },
         "required": [
@@ -7361,6 +7367,29 @@
         "additionalProperties": false
       }
     },
+    "search.session_get": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "session_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SearchResponse"
+      }
+    },
     "search.refine": {
       "query": {
         "type": "object",
@@ -7389,12 +7418,10 @@
             "type": "boolean"
           },
           "sort": {
-            "type": "string",
-            "enum": [
-              "best_match",
-              "distance",
-              "rating"
-            ]
+            "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SearchSort"
+          },
+          "facets": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
