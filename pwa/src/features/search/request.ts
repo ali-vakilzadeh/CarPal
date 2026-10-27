@@ -18,6 +18,7 @@ import type {
   SearchFilters,
   SearchMode,
   SearchRequest,
+  SearchSort,
 } from '@carpal/api-contracts';
 
 /** Mode tabs: Showcases is hidden until a showcase search exists (DI-19); Q&A only with qna.enabled. */
@@ -194,7 +195,7 @@ export type RefineBody = {
   filters?: SearchFilters;
   location?: LocationInput;
   vehicle_filter_applied?: boolean;
-  sort?: Sort;
+  sort?: SearchSort;
 };
 
 /** How to get from one request to the next: search.refine when only refinable fields changed, else search.run. */

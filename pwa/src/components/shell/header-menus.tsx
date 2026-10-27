@@ -95,12 +95,16 @@ export function AccountMenu({ user }: { user: NonNullable<SessionView['user']> }
         ref={button}
         type="button"
         className="cp-iconbtn pwa-avatar-button"
-        aria-label={t('shell.header.accountMenu')}
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
       >
-        <Avatar name={name} size={32} />
+        {/* Named by its hidden text, not aria-label: the visible initials are decorative, and an aria-label that does
+            not contain them fails WCAG 2.5.3 label-in-name (axe label-content-name-mismatch, found in P7). */}
+        <span className="sr-only">{t('shell.header.accountMenu')}</span>
+        <span aria-hidden="true">
+          <Avatar name={name} size={32} />
+        </span>
       </button>
       <div id={panelId} className={cx('pwa-menu-panel', !open && 'is-hidden')}>
         <p className="pwa-menu-heading">

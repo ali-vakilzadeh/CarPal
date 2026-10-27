@@ -48,12 +48,16 @@ describe('geometry', () => {
 const pin = (o: Partial<MapPin>): MapPin => ({
   pin_id: 'l1',
   organization_id: 'o1',
+  slug: 'reza-auto',
+  organization_type: 'provider',
   roles: ['provider'],
   point,
   visibility: 'exact',
   service_radius_km: null,
   name: 'Reza Auto',
+  verified: true,
   overall_rating: '4.8',
+  review_count: 12,
   badge: null,
   open_now: true,
   matches_filters: true,
@@ -61,6 +65,7 @@ const pin = (o: Partial<MapPin>): MapPin => ({
   matching_item_count: null,
   rank: 1,
   reason_summary: { text: 'Specialist in Suspension', locale: 'en' },
+  result_id: null,
   ...o,
 });
 

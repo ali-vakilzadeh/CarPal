@@ -1,23 +1,22 @@
-// W-GAR-01 My Garage — placeholder until P7 (P3 shell destination; GD-13 "not available yet").
+// W-GAR-01 My Garage (mirrors C-GARAGE-01/02/06/08/09): /<locale>/garage opens the browser's active vehicle, or the
+// empty state with "Add your first car" (P7).
 import type { Metadata } from 'next';
-import { ComingSoon } from '@/components/shell/coming-soon';
-import { isLocale, type Locale } from '@/lib/i18n/locales';
-import { serverI18n } from '@/server/i18n';
+import { Suspense } from 'react';
+import { GarageScreen } from '@/features/garage';
+import { garageMetadata, GaragePage, localeOf } from './_shared/garage-page';
 
 type Props = { params: Promise<{ locale: string }> };
 
-async function localeOf(params: Props['params']): Promise<Locale> {
-  const { locale } = await params;
-  return isLocale(locale) ? locale : 'fa';
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { t } = await serverI18n(await localeOf(params));
-  return { title: t('shell.nav.garage'), robots: { index: false } };
+export function generateMetadata({ params }: Props): Promise<Metadata> {
+  return garageMetadata(params);
 }
 
 export default async function Page({ params }: Props) {
-  const locale = await localeOf(params);
-  const { t } = await serverI18n(locale);
-  return <ComingSoon locale={locale} t={t} title="shell.nav.garage" />;
+  return (
+    <GaragePage locale={await localeOf(params)}>
+      <Suspense>
+        <GarageScreen vehicleId={null} tab="overview" />
+      </Suspense>
+    </GaragePage>
+  );
 }

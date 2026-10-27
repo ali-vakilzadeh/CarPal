@@ -2,6 +2,7 @@
 // CARPAL_OAUTH_REDIRECT_URIS listing https://localhost:3000/bff/oauth/callback; CARPAL_RATE_LIMIT_SCALE=100 keeps the
 // auth buckets out of the way, BA-25). The hosted sign-in UI does not exist yet (P4), so the test plays the browser:
 // /bff/login → /id/oauth/authorize (proxied) → /id/v1/auth/* → /id/oauth/authorize again → /bff/oauth/callback.
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -131,7 +132,7 @@ describe('BFF against the live backend', () => {
     expect(res.status).toBe(200);
     const body = await json(res);
     expect(body).toHaveProperty('flags');
-    expect(res.headers.get('carpal-contract')).toBe('1.0.0');
+    expect(res.headers.get('carpal-contract')).toBe('1.1.0');
     expect(browser.cookies.get('__Host-cp_sid')).toBeTruthy();
   });
 
@@ -265,6 +266,166 @@ describe('BFF against the live backend', () => {
     // Backend scopes are not enforced per operation today: cp-ssr can run search (DI-14 resolved for now).
     expect(res.status).toBe(200);
   });
+});
+
+// P7 (garage): the upload pipeline through the BFF and the storage listener's CORS (DI-08), a vehicle document,
+// and an ownership transfer between two users (P7.T8, BA-04).
+const WEB = 'http://localhost:3000'; // a dev origin the storage listener allows by default (backend DEV_MEDIA_CORS_ORIGINS)
+
+type Send = (method: string, path: string, body?: unknown) => Promise<Response>;
+
+async function signedInUser(name: string): Promise<{ browser: RecordingBrowser; send: Send }> {
+  const browser = new RecordingBrowser(bff);
+  const done = await signUpAndIn(browser, `p7-${name}-${uuidv7()}@test.carpal.app`);
+  expect(done.status).toBe(303);
+  const csrf = await browser.csrf();
+  const send: Send = (method, path, body) =>
+    browser.fetch(path, {
+      method,
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      headers: {
+        'content-type': 'application/json',
+        ...(method === 'GET' ? {} : { 'x-csrf-token': csrf, 'idempotency-key': uuidv7() }),
+      },
+    });
+  return { browser, send };
+}
+
+async function firstCar(send: Send): Promise<{ brand: string; model: string }> {
+  const brands = (await json(await send('GET', '/api/v1/taxonomy/nodes?type=vehicle_brand&limit=5'))).items as { id: string }[];
+  for (const b of brands) {
+    const models = (await json(await send('GET', `/api/v1/taxonomy/nodes?type=vehicle_model&parent_id=${b.id}&limit=5`))).items as {
+      id: string;
+    }[];
+    if (models[0]) return { brand: b.id, model: models[0].id };
+  }
+  throw new Error('no vehicle brand with a model in the taxonomy');
+}
+
+/** A VIN outside the check-digit WMIs (W…), fresh per run (one owner per VIN, BA-04). */
+function freshVin(): string {
+  const chars = 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789';
+  let v = 'WBA';
+  for (let i = 0; i < 14; i++) v += chars[Math.floor(Math.random() * chars.length)];
+  return v;
+}
+
+describe('P7 garage against the live backend', () => {
+  it('uploads a PDF through the BFF and a signed PUT the storage listener allows for the web origin, waits for a clean scan and reads it back', async () => {
+    const { send } = await signedInUser('upload');
+    const me = await json(await send('GET', '/api/v1/me'));
+    const bytes = Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n');
+    const sha = createHash('sha256').update(bytes).digest('base64');
+    const init = await send('POST', '/api/v1/media/uploads', {
+      purpose: 'vehicle_document',
+      owner: { type: 'user', id: me.id },
+      mime_type: 'application/pdf',
+      file_size_bytes: bytes.length,
+      checksum_sha256: sha,
+    });
+    expect(init.status).toBe(201);
+    const ticket = (await json(init)) as { upload_id: string; url: string; headers: Record<string, string> };
+
+    // The browser's preflight and PUT (DI-08): allowed for the web origin, nothing extra exposed, no credentials.
+    const preflight = await fetch(ticket.url, {
+      method: 'OPTIONS',
+      headers: {
+        origin: WEB,
+        'access-control-request-method': 'PUT',
+        'access-control-request-headers': 'content-type,x-amz-checksum-sha256',
+      },
+    });
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get('access-control-allow-origin')).toBe(WEB);
+    expect(preflight.headers.get('access-control-allow-credentials')).toBeNull();
+    const put = await fetch(ticket.url, {
+      method: 'PUT',
+      headers: {
+        origin: WEB,
+        'content-type': ticket.headers['Content-Type']!,
+        'x-amz-checksum-sha256': ticket.headers['x-amz-checksum-sha256']!,
+      },
+      body: bytes,
+    });
+    expect(put.status).toBe(200);
+    expect(put.headers.get('access-control-allow-origin')).toBe(WEB);
+
+    const complete = await send('POST', `/api/v1/media/uploads/${ticket.upload_id}/complete`);
+    expect(complete.status).toBe(202);
+    const asset = (await json(complete)) as { id: string; scan_status: string };
+    let scan = asset.scan_status;
+    for (let i = 0; i < 60 && scan !== 'clean'; i++) {
+      await new Promise((r) => setTimeout(r, 500));
+      const got = await send('GET', `/api/v1/media/${asset.id}`);
+      if (got.status === 200) scan = ((await json(got)) as { scan_status: string }).scan_status;
+    }
+    expect(scan).toBe('clean');
+
+    // A document on a car, then the in-place preview path: a signed URL read cross-origin into a blob.
+    const car = await firstCar(send);
+    const created = await send('POST', '/api/v1/me/vehicles', { brand_node_id: car.brand, model_node_id: car.model, year: 2015 });
+    expect(created.status).toBe(201);
+    const vehicleId = (await json(created)).id as string;
+    const doc = await send('POST', `/api/v1/me/vehicles/${vehicleId}/documents`, {
+      document_type: 'insurance',
+      title: 'Third-party insurance',
+      media_asset_id: asset.id,
+      visibility: 'private',
+      expires_at: '2027-03-20',
+    });
+    expect(doc.status).toBe(201);
+    const docs = (await json(await send('GET', `/api/v1/me/vehicles/${vehicleId}/documents`))).items as { media_asset_id: string }[];
+    expect(docs.map((d) => d.media_asset_id)).toContain(asset.id);
+    const signed = await send('POST', `/api/v1/media/${asset.id}/download-url`, { variant: 'original' });
+    expect(signed.status).toBe(200);
+    const file = await fetch(((await json(signed)) as { url: string }).url, { headers: { origin: WEB } });
+    expect(file.status).toBe(200);
+    expect(file.headers.get('access-control-allow-origin')).toBe(WEB);
+    expect(file.headers.get('content-disposition')).toBe('attachment');
+    expect((await file.text()).startsWith('%PDF-')).toBe(true);
+  }, 90_000);
+
+  it('moves a car to its buyer: request with a message, the owner sees it and accepts, the buyer owns it (P7.T8)', async () => {
+    const owner = await signedInUser('owner');
+    const buyer = await signedInUser('buyer');
+    const car = await firstCar(owner.send);
+    const vin = freshVin();
+    const created = await owner.send('POST', '/api/v1/me/vehicles', {
+      brand_node_id: car.brand,
+      model_node_id: car.model,
+      year: 2012,
+      vin,
+      nickname: 'Silver',
+    });
+    expect(created.status).toBe(201);
+
+    // The buyer adds the same VIN: 409 DUPLICATE with vin_transfer_available, then asks for the car.
+    const dup = await buyer.send('POST', '/api/v1/me/vehicles', { brand_node_id: car.brand, model_node_id: car.model, year: 2012, vin });
+    expect(dup.status).toBe(409);
+    expect(await json(dup)).toMatchObject({ code: 'DUPLICATE', vin_transfer_available: true });
+    const asked = await buyer.send('POST', '/api/v1/me/vehicle-transfers', { vin, message: 'Bought it last week.' });
+    expect(asked.status).toBe(201);
+    const outgoing = (await json(asked)) as { id: string; status: string; requester_display: string | null };
+    expect(outgoing).toMatchObject({ status: 'pending', requester_display: null });
+
+    const incoming = (await json(await owner.send('GET', '/api/v1/me/vehicle-transfers?direction=incoming&status=pending'))).items as {
+      id: string;
+      message: string;
+      requester_display: string;
+    }[];
+    expect(incoming.find((t) => t.id === outgoing.id)).toMatchObject({
+      message: 'Bought it last week.',
+      requester_display: 'Sara', // the backend shows the buyer's first name only
+    });
+    const decided = await owner.send('POST', `/api/v1/me/vehicle-transfers/${outgoing.id}/decision`, { decision: 'accept' });
+    expect(decided.status).toBe(200);
+    expect(await json(decided)).toMatchObject({ status: 'accepted' });
+
+    const theirs = (await json(await buyer.send('GET', '/api/v1/me/vehicles'))).items as { vin_last4: string | null; nickname?: string }[];
+    expect(theirs.some((v) => v.vin_last4 === vin.slice(-4) && v.nickname === undefined)).toBe(true);
+    const left = (await json(await owner.send('GET', '/api/v1/me/vehicles'))).items as { vin_last4: string | null }[];
+    expect(left.some((v) => v.vin_last4 === vin.slice(-4))).toBe(false);
+  }, 90_000);
 });
 
 async function signInExisting(browser: RecordingBrowser, email: string): Promise<void> {

@@ -13,7 +13,7 @@ describe('consumer allowlist (SEC-WEB-5, GD-08 amendment)', () => {
     const fleet = allowlist.routes.filter((r) => r.route.path.startsWith('/v1/orgs/'));
     expect(fleet).toHaveLength(18);
     expect(fleet.every((r) => r.route.path.startsWith('/v1/orgs/{org_id}/fleet/'))).toBe(true);
-    expect(allowlist.routes.length - fleet.length).toBe(170);
+    expect(allowlist.routes.length - fleet.length).toBe(171); // + search.session_get (contract 1.1.0)
     expect(allowlist.routes.every((r) => r.route.host === 'api')).toBe(true);
   });
 
@@ -23,6 +23,7 @@ describe('consumer allowlist (SEC-WEB-5, GD-08 amendment)', () => {
     expect(opOf('POST', '/v1/me/vehicles')).toBe('vehicles.create');
     expect(opOf('GET', '/v1/me/vehicles/0193a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b')).toBe('vehicles.get');
     expect(opOf('GET', '/v1/orgs/0193/fleet/vehicles/0194/issues')).toBe('issues.list');
+    expect(opOf('GET', '/v1/search/0193a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b')).toBe('search.session_get');
   });
 
   it('admits consumer routes that name an organization as their target (P5)', () => {

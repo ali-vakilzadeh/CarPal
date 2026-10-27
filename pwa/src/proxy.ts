@@ -12,13 +12,13 @@ import { LOCALE_COOKIE, LOCALES, isLocale, negotiateLocale } from './lib/i18n/lo
 import { THEME_COOKIE, isTheme } from './lib/theme';
 import { serverEnv } from './server/env';
 import { mapTileOrigins } from './server/map-config';
-import { createNonce, isPrivatePage, originsOf, pageSecurityHeaders } from './server/security-headers';
+import { createNonce, framesDocuments, isPrivatePage, originsOf, pageSecurityHeaders } from './server/security-headers';
 import { MAINTENANCE_UNTIL_HEADER, SYSTEM_HEADER, maintenanceOf, systemRewrite } from './server/system-status';
 import { isSystemKind } from './lib/system';
 
 const ONE_YEAR_S = 365 * 24 * 60 * 60;
 
-function securityHeaders(nonce: string): Record<string, string> {
+function securityHeaders(nonce: string, documentFrames = false): Record<string, string> {
   const env = serverEnv();
   const https = env.CARPAL_PWA_ORIGIN.startsWith('https://');
   return pageSecurityHeaders({
@@ -28,6 +28,7 @@ function securityHeaders(nonce: string): Record<string, string> {
     hsts: https && env.CARPAL_ENV === 'prod',
     mediaOrigins: originsOf(env.CARPAL_STORAGE_URL),
     tileOrigins: mapTileOrigins(env),
+    documentFrames,
   });
 }
 
@@ -45,7 +46,7 @@ export function proxy(request: NextRequest): NextResponse {
   const isSecure = url.protocol === 'https:';
   const first = url.pathname.split('/')[1];
   const nonce = createNonce();
-  const headers = securityHeaders(nonce);
+  const headers = securityHeaders(nonce, framesDocuments(url.pathname, LOCALES));
   const privatePage = isPrivatePage(url.pathname, LOCALES);
 
   // The request carries the CSP too: Next.js takes the nonce from it while rendering (Next.js CSP guide).

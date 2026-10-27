@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contentSecurityPolicy, createNonce, isPrivatePage, originsOf, pageSecurityHeaders } from './security-headers';
+import { contentSecurityPolicy, createNonce, framesDocuments, isPrivatePage, originsOf, pageSecurityHeaders } from './security-headers';
 
 const base = { nonce: 'abc', dev: false, https: false, mediaOrigins: ['http://127.0.0.1:8083'], tileOrigins: [] as string[] };
 const directives = (csp: string) => new Map(csp.split('; ').map((d) => [d.split(' ')[0]!, d.split(' ').slice(1).join(' ')]));
@@ -53,5 +53,12 @@ describe('page security headers (GD-15, SEC-WEB-4)', () => {
     for (const p of ['/fa/garage', '/en/settings/security', '/fa/home', '/id/signin', '/l/ri'])
       expect(isPrivatePage(p, ['fa', 'en']), p).toBe(true);
     for (const p of ['/fa', '/en/shop/reza', '/fa/search/abc', '/garage']) expect(isPrivatePage(p, ['fa', 'en']), p).toBe(false);
+  });
+
+  it('frames blob documents only on the garage pages (P7 in-place PDF preview)', () => {
+    expect(directives(contentSecurityPolicy(base)).get('frame-src')).toBe("'none'");
+    expect(directives(contentSecurityPolicy({ ...base, documentFrames: true })).get('frame-src')).toBe('blob:');
+    expect(framesDocuments('/fa/garage/0193/documents', ['fa', 'en'])).toBe(true);
+    for (const p of ['/fa/settings', '/en/shop/garage', '/garage']) expect(framesDocuments(p, ['fa', 'en']), p).toBe(false);
   });
 });

@@ -76,6 +76,7 @@ function response(sessionId: string, o: Partial<SearchResponse> = {}): SearchRes
     results: [card('r1', 'Reza Auto Suspension')],
     next_cursor: null,
     vehicle_filter_fallback: false,
+    facets: null,
     ...o,
   };
 }

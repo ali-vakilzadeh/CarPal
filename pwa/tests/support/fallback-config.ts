@@ -17,7 +17,7 @@ export function fallbackConfigForTests(locale: Locale): ClientConfig {
   return {
     min_supported_version: '0.0.0',
     latest_version: '0.0.0',
-    contract_version: '1.0.0',
+    contract_version: '1.1.0',
     i18n: { version: 'bundled', base_url: '' },
     taxonomy_version: 't1',
     flags: [],

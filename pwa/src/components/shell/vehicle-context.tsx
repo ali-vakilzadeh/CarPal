@@ -22,7 +22,9 @@ export function VehicleChip() {
     <button
       type="button"
       className="cp-chip pwa-vehicle-chip"
-      aria-label={t('shell.vehicle.active', { vehicle: text })}
+      // Named by its visible text ("for Silver · BMW 320i"); the title adds "Active vehicle: …" as the description.
+      // An aria-label without the visible words fails WCAG 2.5.3 label-in-name (axe, found in P7).
+      title={t('shell.vehicle.active', { vehicle: text })}
       aria-haspopup="dialog"
       onClick={() => modal.open()}
     >
@@ -97,7 +99,7 @@ export function GarageBox() {
       </h2>
       {active ? (
         <>
-          <Link href={`/${locale}/garage`} className="pwa-garage-vehicle">
+          <Link href={`/${locale}/garage/${active.id}/overview`} className="pwa-garage-vehicle">
             <Icon name="car" size={20} />
             <bdi>{label}</bdi>
           </Link>
@@ -115,7 +117,7 @@ export function GarageBox() {
       ) : (
         <>
           <p className="pwa-text-caption">{t('shell.garageBox.empty')}</p>
-          <Link href={`/${locale}/garage`} className={buttonClass({ size: 'sm' })}>
+          <Link href={`/${locale}/garage/add`} className={buttonClass({ size: 'sm' })}>
             <Icon name="plus" size={20} />
             <span className="cp-btn-label">{t('shell.garageBox.addVehicle')}</span>
           </Link>

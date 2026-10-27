@@ -10,7 +10,7 @@ Planned contents (stages P1–P13 in [dev_plan.json](dev_plan.json)):
 - **Driver issue reporting** for fleet drivers without the native app.
 - PWA features: installable, web push, offline-tolerant shell, bundled EN/FA dictionary.
 
-Status: **P6 (search, map, directions and directory pages)** done on top of P1–P5 (foundation, consumer BFF, design system and app shell, hosted sign-in and onboarding, public SEO pages). See `dev_plan.json` → `stages[P1..P6].report`.
+Status: **P7 (My Garage: vehicles, service history, documents, issues, reminders, uploads)** done on top of P1–P6 (foundation, consumer BFF, design system and app shell, hosted sign-in and onboarding, public SEO pages, search and map). Contract types are at 1.1.0. See `dev_plan.json` → `stages[P1..P7].report`.
 
 ## Quick start
 
@@ -31,6 +31,8 @@ CARPAL_WEBAUTHN_RP_ID=localhost
 CARPAL_WEBAUTHN_ORIGINS='["https://localhost:3000"]'
 CARPAL_RATE_LIMIT_SCALE=100        # test runs only: the BFF calls /oauth/token from one IP (DI-25)
 ```
+
+Browser uploads (P7) PUT to the backend's storage listener (:8083) and read private PDFs from it for the in-place preview, so it must allow the PWA's origin (CORS, DI-08): `CARPAL_MEDIA_CORS_ORIGINS` defaults in dev to `http://localhost:3000`, `https://localhost:3000` and `http://localhost:3100`; set it for any other origin (staging and prod have no default).
 
 Leave `CARPAL_SIGNIN_URL` unset: its default (`<issuer>/signin`) is what the PWA's `/id` proxy rewrites to the PWA's own origin, so the hosted sign-in works on :3000 and on the E2E port :3100 alike. An explicit `https://localhost:3000/id/signin` breaks the browser sign-in in `pnpm e2e` (P5).
 
@@ -120,6 +122,8 @@ pwa/
   src/features/map/        map geometry and places, lazy MapLibre canvas with the built-in style, W-MAP-01, the Directions
                            menu (S-SHARED-10) (P6)
   src/features/directory/  W-PUB-04 view model (paths, index rule, intro counts), request buttons, rail map (P6)
+  src/features/media/      upload kit (client rules, upload state machine, uploads store, drop zone, private-file preview) (P7)
+  src/features/garage/     W-GAR-01/02/03 view models and screens, plan-limit panel, ownership transfers, AI cards (P7)
   src/features/dev-kit/    demo page of the P3 patterns (/<locale>/dev-kit, CARPAL_PWA_DEMO=1 only)
   tests/e2e/               Playwright specs; accounts.ts = outbox reader and user factory; businesses.ts = published
                            providers/vendors seeded through the API as business users (P5)
@@ -146,4 +150,5 @@ pwa/
 - **Local switches:** `CARPAL_PWA_DEMO=1` enables `/<locale>/dev-kit` (pattern demo, gated Follow, `/dev-kit/status/<kind>`); `CARPAL_PWA_MAINTENANCE=on|<ISO time>` turns on maintenance mode; `CARPAL_PWA_OAUTH_REDIRECT_URI` is the dev sign-in shim above.
 - **Deployment settings (P4):** `CARPAL_PWA_DEFAULT_TIME_ZONE` (dates until the browser reports its zone, OQ-13), `CARPAL_PWA_TERMS_VERSION` / `CARPAL_PWA_PRIVACY_VERSION` (accepted at sign-up, named in consent records; the region config has no field yet, DI-30) and `CARPAL_PWA_PORTAL_SIGNUP_URL` (business choices in onboarding).
 - **Public pages (P5):** server components read through `publicRead()` / `publicList()` (`src/server/ssr/public-reads.ts`), build metadata with `pageMetadata()` and structured data with `<JsonLd>` (the only inline markup besides the theme boot script). Never import a value (constant, helper) from a `'use client'` module into a server component: it arrives as a client reference, not the value — keep shared constants in plain modules. Sitemaps: `/sitemap.xml` (index) and `/sitemaps/<kind>.xml`, built from public reads and cached 6 h.
+- **Garage and uploads (P7):** `src/features/media` is the upload kit — `<UploadZone group purpose>` (drop, paste, pick; client checks per purpose, HEIC → JPEG where the browser can decode it, signed PUT, scan polling), `whenReady(id)` to attach a finished upload, `releaseGroup` / `discardGroup`, and `<DocumentPreview>` / `<DownloadButton>` for private files through signed URLs (the garage pages allow `frame-src blob:` for the PDF preview). Forms use `SelectField` and the calendar-aware `DateField` (Jalali selects in fa, ISO dates out) from `src/components/fields`. Garage routes: `/<locale>/garage[/<vehicle-id>/<overview|history|issues|documents|reminders|edit|print>]`, `/<locale>/garage/add`, `/<locale>/garage/<id>/records/new` and `/records/<record-id>/edit`; drawers and dialogs live in `?modal=`.
 - **Prices** are based in USD; each browser may convert them to toman or rial at its own rate (Settings → On this device, `cp_price` cookie, OQ-11). Use `useFormat().money(amount, currency)` so every price follows that choice.

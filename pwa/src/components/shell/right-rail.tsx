@@ -7,6 +7,7 @@ import { buttonClass } from '@/components/ds/button';
 import { useSession } from '@/lib/api/session';
 import { useFlag } from '@/lib/config/client';
 import { useT } from '@/lib/i18n/client';
+import { AttentionRail } from './attention-box';
 import { useLoginHref } from './use-login-href';
 
 export const MAX_RAIL_BOXES = 3;
@@ -52,8 +53,11 @@ export function FeaturedBox({ children }: { children: ReactNode }) {
   return <RailBox title={t('shell.rail.featured')}>{children}</RailBox>;
 }
 
-/** The rail when a page sets none: Join CarPal for guests; signed-in boxes (Your car, Needs your attention) come with P7-P11. */
+/**
+ * The rail when a page sets none: Join CarPal for guests; for signed-in users "Needs your attention" (P7: ownership
+ * requests for a car in their garage; P9-P11 add more). "Your car" lives in the left navigation's garage box.
+ */
 export function DefaultRail() {
   const session = useSession();
-  return <RightRail>{session.data?.signed_in ? null : <JoinBox />}</RightRail>;
+  return session.data?.signed_in ? <AttentionRail /> : <RightRail>{<JoinBox />}</RightRail>;
 }

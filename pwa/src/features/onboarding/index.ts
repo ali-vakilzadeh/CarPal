@@ -2,3 +2,4 @@
 export { Onboarding, STEPS, isStep, onboardingDone, type OnboardingProps, type StepKey } from './onboarding';
 export { HELP_DRAFT_KEY, readHelpDraft, saveHelpDraft, type HelpDraft } from './account';
 export { cleanVin, vinProblem, VIN_LENGTH } from './vin';
+export { QrCode } from './qr';

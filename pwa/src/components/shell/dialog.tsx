@@ -1,7 +1,8 @@
 'use client';
 // Modal surfaces on the native <dialog> element: showModal() gives the top layer, an inert page behind, a focus
 // trap and Esc; closing returns focus to the opener. variant 'modal' = centred box (640 px max, Docs/22),
-// 'drawer' = full-height panel from the inline-start edge (guest menu on phones), 'sheet' = bottom sheet on phones.
+// 'drawer' = full-height panel from the inline-start edge (guest menu on phones), 'sheet' = bottom sheet on phones,
+// 'panel' = full-height 640 px panel from the inline-end edge (record and issue drawers of the garage, P7).
 // Clicking the scrim closes. The caller owns `open` (often from the URL, see url-modal.tsx).
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { cx } from '@/components/ds/cx';
@@ -14,7 +15,7 @@ export interface DialogProps {
   title: ReactNode;
   children?: ReactNode;
   footer?: ReactNode;
-  variant?: 'modal' | 'drawer' | 'sheet';
+  variant?: 'modal' | 'drawer' | 'sheet' | 'panel';
   /** Hides the visual heading (it stays the accessible name). */
   hideTitle?: boolean;
   className?: string;
@@ -46,7 +47,10 @@ export function Dialog({ open, onClose, title, children, footer, variant = 'moda
       aria-labelledby={titleId}
       data-dialog={name}
       onCancel={(e) => {
-        // Esc: let the owner decide (it updates `open`, which closes the element).
+        // Esc: let the owner decide (it updates `open`, which closes the element). A dialog opened from inside this one
+        // (e.g. the document preview over the record drawer, P7) sends its own cancel, which bubbles here through the
+        // React tree: only the top dialog closes.
+        if (e.target !== e.currentTarget) return;
         e.preventDefault();
         onClose();
       }}

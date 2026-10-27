@@ -11,6 +11,11 @@ export interface CspOptions {
   mediaOrigins: readonly string[];
   /** Vector tiles and the map style (GD-12); empty until a style URL is configured. */
   tileOrigins: readonly string[];
+  /**
+   * frame-src blob: for the in-place PDF preview of private documents (W-GAR-02, P7): documents are served as
+   * attachments (SEC-UP-4), so the garage reads them into a blob and frames that. Only pages that need it.
+   */
+  documentFrames?: boolean;
 }
 
 /**
@@ -35,7 +40,7 @@ export function contentSecurityPolicy(o: CspOptions): string {
     ['connect-src', join("'self'", media, tiles, o.dev ? 'ws:' : '')],
     ['worker-src', "'self'"],
     ['manifest-src', "'self'"],
-    ['frame-src', "'none'"],
+    ['frame-src', o.documentFrames ? 'blob:' : "'none'"],
     ['object-src', "'none'"],
     ['base-uri', "'none'"],
     ['form-action', "'self'"],
@@ -104,6 +109,12 @@ export const PRIVATE_SECTIONS = new Set([
   'login',
   'signup',
 ]);
+
+/** Pages that preview private PDFs in a frame (W-GAR-01/02: /<locale>/garage/…). */
+export function framesDocuments(pathname: string, locales: readonly string[]): boolean {
+  const [first, second] = pathname.split('/').slice(1);
+  return !!first && locales.includes(first) && second === 'garage';
+}
 
 export function isPrivatePage(pathname: string, locales: readonly string[]): boolean {
   const [first, second] = pathname.split('/').slice(1);

@@ -1,0 +1,125 @@
+/* Upload kit and private media (P7.T2): the drop zone, upload rows with progress and reasons, thumbnails, the
+   in-place document preview, and the calendar-aware date field of src/components/fields. Tokens and logical
+   properties only; unlayered like shell.css. Imported by src/app/globals.css. */
+
+.pwa-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.pwa-dropzone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 2px dashed var(--border-inactive);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+.pwa-dropzone.is-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.pwa-dropzone-text {
+  flex: 1 1 12rem;
+  min-inline-size: 0;
+}
+.pwa-dropzone-label {
+  margin: 0;
+  font-weight: 700;
+}
+.pwa-upload-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pwa-upload-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+.pwa-upload-row.is-failed {
+  border-color: var(--danger);
+}
+.pwa-upload-row.is-ready {
+  border-color: var(--success);
+}
+.pwa-upload-thumb,
+.pwa-asset-thumb {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--tap-min);
+  block-size: var(--tap-min);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  overflow: hidden;
+  color: var(--ink-muted);
+}
+.pwa-upload-thumb img,
+.pwa-asset-thumb img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+.pwa-upload-body {
+  flex: 1;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.pwa-upload-name {
+  margin: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pwa-upload-body .pwa-text-caption {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.pwa-upload-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.pwa-preview-dialog.pwa-dialog {
+  max-inline-size: min(960px, calc(100vw - var(--space-8)));
+}
+.pwa-pdf-frame {
+  inline-size: 100%;
+  block-size: 70dvh;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.pwa-image-preview {
+  max-inline-size: 100%;
+  max-block-size: 70dvh;
+  object-fit: contain;
+  align-self: center;
+}
+
+/* Date field: day · month · year selects in the UI calendar. */
+.pwa-date-field {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+}
+.pwa-date-parts {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, 1fr) minmax(7rem, 2fr) minmax(5.5rem, 1.4fr);
+  gap: var(--space-2);
+}
