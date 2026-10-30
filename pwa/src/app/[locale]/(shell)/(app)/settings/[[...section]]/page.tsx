@@ -1,44 +1,43 @@
-// W-SET-01 Settings — P9 builds the account settings; until then the GD-13 "not available yet" state. From P4 the
-// "On this device" section holds the per-browser price display (OQ-11).
+// W-SET-01 Settings (mirrors C-PROF-01..04, 07..09; P9.T2-T4) at /<locale>/settings/<section>, signed in (private).
+// /<locale>/settings opens Profile; an unknown section is a 404.
 import type { Metadata } from 'next';
-import { StateView } from '@/components/shell/states';
-import { PriceDisplaySettings } from '@/features/settings';
-import { typeClass } from '@/lib/design-system';
+import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
+import packageJson from '../../../../../../../package.json';
+import { isSection, SettingsScreen, type Section } from '@/features/settings';
 import { I18nNamespaces } from '@/lib/i18n/client';
 import { isLocale, type Locale } from '@/lib/i18n/locales';
+import { serverEnv } from '@/server/env';
 import { serverI18n } from '@/server/i18n';
 
-type Props = { params: Promise<{ locale: string }> };
+type Props = { params: Promise<{ locale: string; section?: string[] }> };
 
 async function localeOf(params: Props['params']): Promise<Locale> {
   const { locale } = await params;
   return isLocale(locale) ? locale : 'fa';
 }
 
+async function sectionOf(params: Props['params']): Promise<Section> {
+  const { section } = await params;
+  if (!section || section.length === 0) return 'profile';
+  if (section.length > 1 || !isSection(section[0])) notFound();
+  return section[0];
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { t } = await serverI18n(await localeOf(params));
-  return { title: t('shell.nav.settings'), robots: { index: false } };
+  return { title: t('shell.nav.settings'), robots: { index: false, follow: false } };
 }
 
 export default async function Page({ params }: Props) {
-  const locale = await localeOf(params);
+  const [locale, section] = await Promise.all([localeOf(params), sectionOf(params)]);
   const i18n = await serverI18n(locale);
-  const t = i18n.t;
   return (
-    <div className="flex flex-col gap-6 py-6">
-      <h1 className={`${typeClass(locale, 'title')} m-0`}>{t('shell.nav.settings')}</h1>
-      <section className="flex flex-col gap-3" aria-labelledby="settings-local">
-        <div className="flex flex-col gap-1">
-          <h2 id="settings-local" className={`${typeClass(locale, 'headline')} m-0`}>
-            {t('settings.local.title')}
-          </h2>
-          <p className="pwa-text-caption">{t('settings.local.text')}</p>
-        </div>
-        <I18nNamespaces resources={i18n.resources(['settings'])}>
-          <PriceDisplaySettings />
-        </I18nNamespaces>
-      </section>
-      <StateView kind="notAvailable" t={t} title={t('settings.comingSoon')} compact />
-    </div>
+    // auth: the password strength words of the hosted sign-in.
+    <I18nNamespaces resources={i18n.resources(['settings', 'auth'])}>
+      <Suspense>
+        <SettingsScreen section={section} policyVersion={serverEnv().CARPAL_PWA_PRIVACY_VERSION} appVersion={packageJson.version} />
+      </Suspense>
+    </I18nNamespaces>
   );
 }

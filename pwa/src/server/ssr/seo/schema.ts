@@ -1,15 +1,18 @@
 // Structured data builders (P5.T1): Organization (CarPal itself), AutoRepair / AutoPartsStore (LocalBusiness) with an
 // AggregateRating built from the published reviews of both confirmation paths (the same weighted score the profile
-// shows, Docs/22 W-PUB-02), Product/Offer for parts with a public price only, and Article/ImageObject for showcases.
+// shows, Docs/22 W-PUB-02), Product/Offer for parts with a public price only, Article/ImageObject for showcases and
+// QAPage for answered questions (P8).
 // Public fields only: no trade price, no contact data beyond the website (the phone is revealed on click, Docs/22
 // open point 7), no exact point for shops that publish an approximate area.
 import type {
   HoursSpec,
   PartCondition,
   PublicInventoryItem,
+  PublicAnswer,
   PublicLocation,
   PublicOrgProfile,
   PublicPortfolioItem,
+  PublicQuestion,
   StockStatus,
 } from '@carpal/api-contracts';
 import type { JsonLdValue } from './json-ld';
@@ -169,5 +172,39 @@ export function breadcrumbs(items: readonly { name: string; url: string }[]): Js
     '@context': CONTEXT,
     '@type': 'BreadcrumbList',
     itemListElement: items.map((it, i) => ({ '@type': 'ListItem', position: i + 1, name: it.name, item: it.url })),
+  };
+}
+
+/**
+ * QAPage for an answered question (W-PUB-06): the question with its answer count, the accepted answer and up to
+ * five other answers. Only for indexable questions (community isIndexable); author names are the public display names.
+ */
+export function qaPage(q: PublicQuestion, answers: readonly PublicAnswer[], url: string): Json {
+  const answer = (a: PublicAnswer) => ({
+    '@type': 'Answer',
+    text: a.body,
+    dateCreated: a.created_at,
+    upvoteCount: a.helpful_count,
+    url: `${url}#answer-${a.id}`,
+    author: a.organization ? { '@type': 'Organization', name: a.organization.name } : { '@type': 'Person', name: a.author.display_name },
+  });
+  const accepted = answers.find((a) => a.id === q.accepted_answer_id);
+  return {
+    '@context': CONTEXT,
+    '@type': 'QAPage',
+    mainEntity: {
+      '@type': 'Question',
+      name: q.title,
+      text: q.body,
+      inLanguage: q.content_locale,
+      dateCreated: q.created_at,
+      answerCount: q.answer_count,
+      author: { '@type': 'Person', name: q.author.display_name },
+      ...(accepted ? { acceptedAnswer: answer(accepted) } : {}),
+      suggestedAnswer: answers
+        .filter((a) => a.id !== q.accepted_answer_id)
+        .slice(0, 5)
+        .map(answer),
+    },
   };
 }

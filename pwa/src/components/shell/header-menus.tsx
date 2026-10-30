@@ -1,6 +1,6 @@
 'use client';
-// Signed-in header controls (Docs/22 §2.2): the notifications bell with the unread count (max "99+", opens
-// Notifications; the dropdown panel W-NOTIF-01 comes with P9) and the avatar menu (Profile, My activity, Saved,
+// Signed-in header controls (Docs/22 §2.2): the notifications bell with the unread count (max "99+") and its
+// dropdown panel (W-NOTIF-01, features/notifications since P9), and the avatar menu (Profile, My activity, Saved,
 // Settings, Switch account, Log out, plus language and theme). The menu is a disclosure (button + panel of links),
 // closed by Esc, a click outside or choosing an item.
 import Link from 'next/link';
@@ -8,47 +8,15 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Avatar } from '@/components/ds/avatar';
 import { cx } from '@/components/ds/cx';
 import { Icon, type IconName } from '@/components/ds/icon';
-import { useApiQuery } from '@/lib/api/query';
 import { useLogout, type SessionView } from '@/lib/api/session';
-import { useFormat } from '@/lib/format/client';
 import { useLocale, useT } from '@/lib/i18n/client';
 import type { MessageKey } from '@/lib/i18n/keys';
 import { LanguageSwitch, ThemePicker } from './preferences';
 import { useToast } from './toast';
 import { useLoginHref } from './use-login-href';
 
-export const UNREAD_POLL_MS = 60_000;
-
-export function unreadBadge(count: number, number: (n: number) => string): string | undefined {
-  if (count <= 0) return undefined;
-  return count > 99 ? `${number(99)}+` : number(count);
-}
-
-export function NotificationsBell() {
-  const t = useT();
-  const locale = useLocale();
-  const f = useFormat();
-  const unread = useApiQuery(
-    'notifications.unread_count',
-    {},
-    { refetchInterval: UNREAD_POLL_MS, refetchOnWindowFocus: true, staleTime: 30_000 },
-  );
-  const count = unread.data?.count ?? 0;
-  return (
-    <Link
-      href={`/${locale}/notifications`}
-      className={cx('cp-iconbtn', count > 0 && 'pwa-has-badge')}
-      aria-label={count > 0 ? t('shell.header.notificationsUnread', { count }) : t('shell.header.notifications')}
-    >
-      <Icon name="bell" />
-      {count > 0 ? (
-        <span className="pwa-count" aria-hidden="true">
-          {unreadBadge(count, f.number)}
-        </span>
-      ) : null}
-    </Link>
-  );
-}
+// The bell and its dropdown live with the notifications feature (W-NOTIF-01, P9.T1).
+export { NotificationsBell, unreadBadge, UNREAD_POLL_MS } from '@/features/notifications';
 
 const MENU: { key: MessageKey; path: string; icon: IconName }[] = [
   { key: 'shell.menu.profile', path: '/settings/profile', icon: 'user' },

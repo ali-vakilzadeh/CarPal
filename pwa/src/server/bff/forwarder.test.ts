@@ -140,6 +140,21 @@ describe('forwarder (/api/v1)', () => {
     expect((await (await browser.fetch('/bff/session')).json()).signed_in).toBe(false);
   });
 
+  it('refreshes the session display name from me.get and me.update (P9 Profile)', async () => {
+    const { browser, backend } = await testBff();
+    await browser.signIn(backend);
+    backend.api.handler = () => Response.json({ display_name: 'Sara M.', full_name: 'Sara Mohammadi', locale: 'fa' });
+    const csrf = await browser.csrf();
+    const res = await browser.fetch('/api/v1/me', {
+      method: 'PATCH',
+      headers: { 'x-csrf-token': csrf, 'content-type': 'application/json' },
+      body: JSON.stringify({ display_name: 'Sara M.' }),
+    });
+    expect(res.status).toBe(200);
+    expect((await res.json()).display_name).toBe('Sara M.');
+    expect((await (await browser.fetch('/bff/session')).json()).user.display_name).toBe('Sara M.');
+  });
+
   it('passes STEP_UP_REQUIRED through with its challenge, without refreshing', async () => {
     const { browser, backend } = await testBff();
     await browser.signIn(backend);

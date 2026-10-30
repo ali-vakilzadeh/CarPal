@@ -21,7 +21,16 @@ import { serverSession } from '@/server/session';
 import './globals.css';
 
 /** Namespaces client components use everywhere; feature areas add theirs with <I18nNamespaces> or `namespaces`. */
-export const CLIENT_NAMESPACES: readonly Namespace[] = ['common', 'shell', 'states', 'system', 'consent', 'format', 'vehicle'];
+export const CLIENT_NAMESPACES: readonly Namespace[] = [
+  'common',
+  'shell',
+  'states',
+  'system',
+  'consent',
+  'format',
+  'vehicle',
+  'notifications',
+];
 
 export async function RootDocument({
   locale,

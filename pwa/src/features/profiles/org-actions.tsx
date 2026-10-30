@@ -8,6 +8,7 @@ import { useCallback, useId, useState } from 'react';
 import { Button } from '@/components/ds/button';
 import { IconButton } from '@/components/ds/icon-button';
 import { useGatedAction, useIntentHandler } from '@/components/shell/auth-intent';
+import { ReportButton } from '@/components/shell/report';
 import { useToast } from '@/components/shell/toast';
 import { useApiClient } from '@/lib/api/query';
 import { useSession } from '@/lib/api/session';
@@ -220,13 +221,14 @@ export function ShareButton({ path, title }: { path: string; title: string }) {
   );
 }
 
-/** The header actions of a profile: Follow, Save and Share. */
+/** The header actions of a profile: Follow, Save, Share and Report (W-RPT-01, P8). */
 export function OrgActions({ orgId, name, path, save = true }: { orgId: string; name: string; path: string; save?: boolean }) {
   return (
     <div className="pwa-org-actions">
       <FollowButton orgId={orgId} name={name} />
       {save ? <SaveButton orgId={orgId} name={name} /> : null}
       <ShareButton path={path} title={name} />
+      <ReportButton targetType="organization" targetId={orgId} />
     </div>
   );
 }

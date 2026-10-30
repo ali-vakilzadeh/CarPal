@@ -1,0 +1,112 @@
+/* W-NOTIF-01 notifications: the bell's dropdown and the page list (P9.T1). */
+.pwa-notif-panel {
+  inline-size: min(26rem, calc(100vw - var(--space-8)));
+}
+.pwa-notif-panel-head,
+.pwa-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.pwa-notif-panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--divider);
+}
+.pwa-notif-see-all {
+  justify-content: space-between;
+  color: var(--accent);
+}
+.pwa-notif-list {
+  display: flex;
+  flex-direction: column;
+  max-block-size: min(28rem, 60vh);
+  overflow-y: auto;
+}
+.pwa-notifications {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-block: var(--space-6);
+}
+.pwa-notif {
+  position: relative;
+  border-block-end: 1px solid var(--divider);
+}
+.pwa-notif-open {
+  inline-size: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-block-size: var(--tap-min);
+  padding: var(--space-3) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  text-align: start;
+  cursor: pointer;
+}
+.pwa-notif-open.is-static {
+  cursor: default;
+}
+button.pwa-notif-open:hover {
+  background: var(--accent-soft);
+}
+button.pwa-notif-open:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+.pwa-notif-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--control-sm);
+  block-size: var(--control-sm);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+}
+.pwa-notif-icon.is-critical {
+  color: var(--danger);
+  box-shadow: inset 0 0 0 2px var(--danger);
+}
+.pwa-notif-body {
+  flex: 1;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.pwa-notif-title {
+  font-weight: 600;
+  unicode-bidi: plaintext;
+}
+.pwa-notif.is-unread .pwa-notif-title {
+  font-weight: 800;
+}
+.pwa-notif-text {
+  color: var(--ink-muted);
+  unicode-bidi: plaintext;
+  overflow-wrap: anywhere;
+}
+.pwa-notif-text.is-clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pwa-notif-dot {
+  flex: none;
+  inline-size: var(--space-2);
+  block-size: var(--space-2);
+  margin-block-start: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--signal);
+}

@@ -1,6 +1,8 @@
-// W-NET-01 Saved and following — placeholder until P8 (P3 shell destination; GD-13 "not available yet").
+// W-NET-01 Saved & Following (mirrors C-PROF-05; P8.T5) at /<locale>/saved[?tab=following], signed in (private).
 import type { Metadata } from 'next';
-import { ComingSoon } from '@/components/shell/coming-soon';
+import { Suspense } from 'react';
+import { SavedScreen } from '@/features/community';
+import { I18nNamespaces } from '@/lib/i18n/client';
 import { isLocale, type Locale } from '@/lib/i18n/locales';
 import { serverI18n } from '@/server/i18n';
 
@@ -13,11 +15,16 @@ async function localeOf(params: Props['params']): Promise<Locale> {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { t } = await serverI18n(await localeOf(params));
-  return { title: t('shell.nav.saved'), robots: { index: false } };
+  return { title: t('shell.nav.saved'), robots: { index: false, follow: false } };
 }
 
 export default async function Page({ params }: Props) {
-  const locale = await localeOf(params);
-  const { t } = await serverI18n(locale);
-  return <ComingSoon locale={locale} t={t} title="shell.nav.saved" />;
+  const i18n = await serverI18n(await localeOf(params));
+  return (
+    <I18nNamespaces resources={i18n.resources(['community', 'profiles'])}>
+      <Suspense>
+        <SavedScreen />
+      </Suspense>
+    </I18nNamespaces>
+  );
 }

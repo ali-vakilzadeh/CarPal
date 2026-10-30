@@ -1,0 +1,332 @@
+/* Community (P8): home timeline, Q&A hub / question / ask pages, Saved & Following, comments, reactions and the report
+   modal. Design-system tokens and logical properties only; unlayered like the other feature styles (GD-11 P3). */
+
+.pwa-card {
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  padding: var(--space-3);
+}
+[data-theme='sun'] .pwa-card {
+  border: 2px solid var(--border);
+}
+.pwa-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.pwa-user-text {
+  white-space: pre-line;
+  unicode-bidi: plaintext;
+  overflow-wrap: anywhere;
+}
+
+/* Tabs (W-NET-01): the garage tab look as buttons. */
+.pwa-tabs {
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+  border-block-end: 1px solid var(--divider);
+}
+.pwa-tab {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--tap-min);
+  padding-inline: var(--space-3);
+  white-space: nowrap;
+  color: var(--ink-muted);
+  font: inherit;
+  font-weight: 700;
+  background: none;
+  border: 0;
+  border-block-end: 3px solid transparent;
+  cursor: pointer;
+}
+.pwa-tab.is-selected {
+  color: var(--ink);
+  border-block-end-color: var(--accent);
+}
+.pwa-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+/* Reactions */
+.pwa-reactions,
+.pwa-social-bar,
+.pwa-comment-actions,
+.pwa-answer-actions,
+.pwa-question-actions,
+.pwa-saved-actions,
+.pwa-saved-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.pwa-reaction.is-on {
+  color: var(--accent);
+}
+.pwa-reaction-count {
+  margin-inline-start: var(--space-1);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Comments */
+.pwa-comments {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.pwa-comments.is-compact {
+  gap: var(--space-2);
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--divider);
+}
+.pwa-comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.pwa-comment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.pwa-comment-head,
+.pwa-answer-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.pwa-comment-box,
+.pwa-answer-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Question page (W-PUB-06) */
+.pwa-community-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding-block: var(--space-5);
+}
+.pwa-question {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.pwa-question-media {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: var(--space-2);
+}
+.pwa-answer-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.pwa-answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+.pwa-answer.is-accepted {
+  border-color: var(--success);
+  border-inline-start-width: 4px;
+}
+.pwa-answer-org {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+/* Below 1200 px the right rail is hidden, so its Help Me card follows the thread. */
+@media (min-width: 1200px) {
+  .pwa-rail-inline {
+    display: none;
+  }
+}
+
+/* Q&A hub (W-QA-01) */
+.pwa-qa-hub {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-block: var(--space-5);
+}
+.pwa-qa-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.pwa-qa-layout {
+  display: grid;
+  gap: var(--space-4);
+}
+.pwa-qa-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+@media (min-width: 768px) {
+  .pwa-qa-layout {
+    grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* Ask page (W-QA-02) */
+.pwa-ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-block: var(--space-5);
+}
+.pwa-ask-layout {
+  display: grid;
+  gap: var(--space-5);
+}
+.pwa-ask-similar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+@media (min-width: 1200px) {
+  .pwa-ask-layout {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    align-items: start;
+  }
+  .pwa-ask-similar {
+    position: sticky;
+    inset-block-start: var(--space-5);
+  }
+}
+
+/* Home (W-FEED-01) */
+.pwa-home {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding-block: var(--space-5);
+}
+.pwa-helpme-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+.pwa-helpme-bar > .cp-field {
+  flex: 1 1 16rem;
+}
+.pwa-home-ask {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.pwa-attention-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pwa-attention-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-inline-start: 4px solid var(--border-inactive);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+.pwa-attention-card.is-danger {
+  border-inline-start-color: var(--danger);
+}
+.pwa-attention-card.is-signal {
+  border-inline-start-color: var(--signal);
+}
+.pwa-feed-card,
+.pwa-feed-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  position: relative;
+}
+.pwa-feed-block {
+  background: var(--surface-sunken);
+}
+.pwa-feed-block-list {
+  display: grid;
+  gap: var(--space-2);
+}
+@media (min-width: 768px) {
+  .pwa-feed-block-list {
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  }
+}
+.pwa-feed-tip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Saved & Following (W-NET-01) */
+.pwa-saved {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-block: var(--space-5);
+}
+.pwa-saved-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+.pwa-bell {
+  min-inline-size: 12rem;
+}
+
+/* Report modal (W-RPT-01) */
+.pwa-report-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.pwa-radio {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--tap-min);
+  cursor: pointer;
+}
+.pwa-radio input {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  accent-color: var(--accent);
+}

@@ -67,9 +67,20 @@ describe('header and navigation', () => {
     navigation.reset('/fa/garage');
     renderApp(<ShellFrame>page</ShellFrame>, {
       session: signedIn('سارا م.'),
-      handlers: { 'notifications.unread_count': () => ({ count: 4 }), 'vehicles.list': () => ({ items: [], next_cursor: null }) },
+      handlers: {
+        'notifications.unread_count': () => ({ count: 4 }),
+        'notifications.list': () => ({ items: [], next_cursor: null }),
+        'vehicles.list': () => ({ items: [], next_cursor: null }),
+      },
     });
-    expect(await screen.findByRole('link', { name: 'اعلان‌ها، ۴ خوانده‌نشده' })).toHaveAttribute('href', '/fa/notifications');
+    // The bell opens the notifications dropdown (W-NOTIF-01, P9) with "See all" → the page.
+    const bell = await screen.findByRole('button', { name: 'اعلان‌ها، ۴ خوانده‌نشده' });
+    expect(bell).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(bell);
+    expect(bell).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('link', { name: 'دیدن همه اعلان‌ها' })).toHaveAttribute('href', '/fa/notifications');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(bell).toHaveAttribute('aria-expanded', 'false');
     const navs = screen.getAllByRole('navigation', { name: 'اصلی' });
     expect(navs).toHaveLength(2); // left navigation + bottom tab bar (CSS shows one per breakpoint)
     for (const nav of navs) expect(within(nav).getByRole('link', { name: /گاراژ من/ })).toHaveAttribute('aria-current', 'page');
@@ -92,7 +103,7 @@ describe('header and navigation', () => {
       session: signedIn(),
       handlers: { 'notifications.unread_count': () => ({ count: 120 }), 'vehicles.list': () => ({ items: [], next_cursor: null }) },
     });
-    const bell = await screen.findByRole('link', { name: 'Notifications, 120 unread' });
+    const bell = await screen.findByRole('button', { name: 'Notifications, 120 unread' });
     expect(bell).toHaveTextContent('99+');
   });
 });

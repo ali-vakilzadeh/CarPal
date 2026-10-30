@@ -19,20 +19,21 @@ curl http://127.0.0.1:8080/v1/health # {"status":"ok"}
 
 The system Node may stay older (another project pins 20.10); the backend needs Node ≥ 24.7 (`crypto.argon2`) and is developed on the local Node 24 from `.node-version`.
 
-| Command                                               | Does                                                                                      |
-| :---------------------------------------------------- | :---------------------------------------------------------------------------------------- |
-| `pnpm dev`                                            | Lite mode: db:setup, build, then every deployable in one process (shared lite adapters)   |
-| `pnpm start:api` / `:admin-api` / `:auth` / `:worker` | One deployable from `dist/` (full mode; lite adapters are per process)                    |
-| `pnpm build` / `pnpm typecheck`                       | Compile to `dist/` / type-check everything (sources, tools, tests)                        |
-| `pnpm lint`                                           | ESLint + dependency-cruiser module-boundary rules (41 §4.2)                               |
-| `pnpm test` / `pnpm test:int` / `pnpm test:all`       | Vitest: unit (`*.test.ts`), integration (`*.int.test.ts`, needs the DB), both             |
-| `pnpm db:start` / `db:stop` / `db:status`             | Embedded PostgreSQL 16 on `127.0.0.1:54329`, data in `.data/pg`                           |
-| `pnpm db:setup` / `db:reset`                          | Install the baseline (`Docs/43.db_setup.sql`) and pending migrations / drop and reinstall |
-| `pnpm db:codegen [--verify]`                          | Regenerate Kysely table types in `libs/db/generated/` from the installed DB               |
-| `pnpm contract:generate` / `contract:check`           | Regenerate / verify `libs/contract/generated/` and the sweep suites from Docs/40          |
-| `pnpm contract:tests`                                 | Regenerate the contract sweep suites (`apps/testing/contract/generated/`)                 |
-| `pnpm contract:coverage [--strict]`                   | Operations served vs. the 407 of the contract; `--strict` fails on an unexplained 501     |
-| `pnpm openapi:generate` / `openapi:check`             | Write / verify `shared/api-contracts/openapi.yaml` (OpenAPI 3.1) against registry, router |
+| Command                                                 | Does                                                                                      |
+| :------------------------------------------------------ | :---------------------------------------------------------------------------------------- |
+| `pnpm dev`                                              | Lite mode: db:setup, build, then every deployable in one process (shared lite adapters)   |
+| `pnpm start:api` / `:admin-api` / `:auth` / `:worker`   | One deployable from `dist/` (full mode; lite adapters are per process)                    |
+| `pnpm build` / `pnpm typecheck`                         | Compile to `dist/` / type-check everything (sources, tools, tests)                        |
+| `pnpm lint`                                             | ESLint + dependency-cruiser module-boundary rules (41 §4.2)                               |
+| `pnpm test` / `pnpm test:int` / `pnpm test:all`         | Vitest: unit (`*.test.ts`), integration (`*.int.test.ts`, needs the DB), both             |
+| `pnpm db:start` / `db:stop` / `db:status`               | Embedded PostgreSQL 16 on `127.0.0.1:54329`, data in `.data/pg`                           |
+| `pnpm db:setup` / `db:reset`                            | Install the baseline (`Docs/43.db_setup.sql`) and pending migrations / drop and reinstall |
+| `pnpm db:codegen [--verify]`                            | Regenerate Kysely table types in `libs/db/generated/` from the installed DB               |
+| `pnpm dev:flags list` / `set <key\|community>… on\|off` | Dev only (`CARPAL_ENV=dev`): feature flags of the dev environment (PWA DI-18)             |
+| `pnpm contract:generate` / `contract:check`             | Regenerate / verify `libs/contract/generated/` and the sweep suites from Docs/40          |
+| `pnpm contract:tests`                                   | Regenerate the contract sweep suites (`apps/testing/contract/generated/`)                 |
+| `pnpm contract:coverage [--strict]`                     | Operations served vs. the 407 of the contract; `--strict` fails on an unexplained 501     |
+| `pnpm openapi:generate` / `openapi:check`               | Write / verify `shared/api-contracts/openapi.yaml` (OpenAPI 3.1) against registry, router |
 
 ## Local infrastructure ("lite" and "full" mode)
 

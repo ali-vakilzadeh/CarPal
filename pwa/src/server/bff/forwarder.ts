@@ -124,7 +124,28 @@ export async function forward(request: Request, d: ForwarderDeps): Promise<Respo
     const v = upstream.headers.get(name);
     if (v !== null) out.set(name, v);
   }
+  // The session view's display name (header, P2) follows the account: me.get / me.update refresh it (P9 Profile).
+  if (path === ME_PATH && upstream.ok && session.user && (method === 'GET' || method === 'PATCH')) {
+    const text = await upstream.text();
+    await rememberProfile(d.sessions, session.id, text);
+    return new Response(text, { status: upstream.status, headers: out });
+  }
   return new Response(upstream.body, { status: upstream.status, headers: out });
+}
+
+const ME_PATH = '/v1/me';
+
+async function rememberProfile(sessions: ForwarderDeps['sessions'], id: string, text: string): Promise<void> {
+  try {
+    const me = JSON.parse(text) as { display_name?: string | null; full_name?: string; locale?: string };
+    const displayName = me.display_name || me.full_name || '';
+    if (!displayName) return;
+    await sessions.update(id, (r) => {
+      r.profile = { displayName, ...(me.locale ? { locale: me.locale } : {}) };
+    });
+  } catch {
+    // not JSON: leave the stored name
+  }
 }
 
 async function renew(session: SessionRecord, cred: Credential, tokens: SessionTokens): Promise<Credential> {

@@ -110,7 +110,10 @@ test('vendor profile and part page: AutoPartsStore and Product JSON-LD with the 
   expect(partPage.status).toBe(200);
   const productLd = jsonLd(partPage.html).find((x) => x['@type'] === 'Product')!;
   expect(productLd.offers).toMatchObject({ price: '45.00', priceCurrency: 'USD', availability: 'https://schema.org/InStock' });
-  expect(partPage.html).not.toMatch(/30\.00|\$30/); // the trade price (30.00) never reaches the HTML
+  // The trade price (30.00) never reaches the HTML or the RSC payload; "$30" is checked in the markup only, because the
+  // flight payload uses "$<hex>" references ("$30" is reference 0x30, P8).
+  expect(partPage.html).not.toMatch(/30\.00/);
+  expect(partPage.html.replace(/<script[\s\S]*?<\/script>/g, '')).not.toMatch(/\$30/);
   const fa = link(partPage.html, 'alternate', 'fa');
   expect(fa).toMatch(new RegExp(`/fa/parts/${vendor.slug}/${vendor.itemId}-`));
 

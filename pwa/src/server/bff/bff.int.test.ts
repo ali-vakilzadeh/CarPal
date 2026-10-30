@@ -11,6 +11,8 @@ import { DEFAULT_LIFETIMES } from './config';
 import { createBff, type Bff } from './index';
 import { LiteSessionStore } from './session/store';
 import { Browser } from './test-support';
+import { secretOf, totp } from '../../../tests/support/totp';
+import { CONSUMER_TEMPLATE_KEYS } from '@/features/notifications/catalog';
 
 const API = process.env.CARPAL_API_URL ?? 'http://127.0.0.1:8080';
 const AUTH = process.env.CARPAL_AUTH_URL ?? 'http://127.0.0.1:8082';
@@ -443,3 +445,199 @@ async function signInExisting(browser: RecordingBrowser, email: string): Promise
   const done = await browser.fetch(`${back.pathname}${back.search}`);
   expect(done.headers.get('location')).toBe('/en');
 }
+
+// P8 (community): Q&A between two users through the BFF — a question, a clean and a held answer (contact data,
+// BA-17), helpful reactions (idempotent), the server refusing writes on someone else's content (DI-50), accept, the
+// accepted answer that cannot be deleted, comments, a duplicate report, and the Discover feed. Needs the community
+// flags on: `pnpm dev:flags set community on` in backend/ (DI-18, P8.T0).
+describe('P8 community against the live backend', () => {
+  it('asks, answers, reacts, accepts, comments and reports through the BFF', async () => {
+    const asker = await signedInUser('asker');
+    const helper = await signedInUser('helper');
+    const flags = (await json(await asker.send('GET', '/api/v1/config/client'))).flags as { key: string; enabled: boolean }[];
+    const on = (k: string) => flags.find((f) => f.key === k)?.enabled === true;
+    expect(on('qna.enabled') && on('community.comments.enabled'), 'run `pnpm dev:flags set community on` in backend/').toBe(true);
+
+    const systems = (await json(await asker.send('GET', '/api/v1/taxonomy/nodes?type=service_system&limit=5'))).items as { id: string }[];
+    const created = await asker.send('POST', '/api/v1/questions', {
+      category_node_id: systems[0]!.id,
+      title: `Which winter tyres fit an E90 ${uuidv7().slice(-6)}?`,
+      body: 'Mostly city driving in Tehran, some trips north in winter.',
+      content_locale: 'en',
+    });
+    expect(created.status).toBe(201);
+    expect(created.headers.get('etag')).toBe('"v1"');
+    const q = (await json(created)) as { id: string; status: string; author: { display_name: string } };
+    expect(q).toMatchObject({ status: 'open', answer_count: 0 });
+
+    const answered = await helper.send('POST', `/api/v1/questions/${q.id}/answers`, {
+      body: '225/45 R17 front and 255/40 R17 rear with run-flat.',
+      content_locale: 'en',
+    });
+    expect(answered.status).toBe(201);
+    const good = (await json(answered)) as { id: string };
+    const heldRes = await helper.send('POST', `/api/v1/questions/${q.id}/answers`, {
+      body: 'Call me on 0912 345 6789 for a price.',
+      content_locale: 'en',
+    });
+    expect(heldRes.status).toBe(201);
+    const held = (await json(heldRes)) as { id: string };
+
+    // The held answer is visible to its author only.
+    const askerView = (await json(await asker.send('GET', `/api/v1/questions/${q.id}`))) as { answers: { items: { id: string }[] } };
+    expect(askerView.answers.items.map((a) => a.id)).toEqual([good.id]);
+    const helperView = (await json(await helper.send('GET', `/api/v1/questions/${q.id}`))) as { answers: { items: { id: string }[] } };
+    expect(helperView.answers.items.map((a) => a.id).sort()).toEqual([good.id, held.id].sort());
+
+    // Helpful: one per user (put twice = once), removable.
+    const target = { target: { type: 'answer', id: good.id }, reaction_type: 'helpful' };
+    expect(await json(await asker.send('PUT', '/api/v1/reactions', target))).toEqual({ count: 1 });
+    expect(await json(await asker.send('PUT', '/api/v1/reactions', target))).toEqual({ count: 1 });
+    expect(await json(await asker.send('POST', '/api/v1/reactions/remove', target))).toEqual({ count: 0 });
+    expect(await json(await asker.send('PUT', '/api/v1/reactions', target))).toEqual({ count: 1 });
+
+    // The server decides authorship: someone else's answer cannot be deleted, only the asker accepts.
+    expect((await asker.send('DELETE', `/api/v1/answers/${good.id}`)).status).toBe(404);
+    expect((await helper.send('POST', `/api/v1/questions/${q.id}/accept`, { answer_id: good.id })).status).toBe(404);
+    const accepted = await asker.send('POST', `/api/v1/questions/${q.id}/accept`, { answer_id: good.id });
+    expect(accepted.status).toBe(200);
+    expect(await json(accepted)).toMatchObject({ status: 'answered', accepted_answer_id: good.id });
+    const del = await helper.send('DELETE', `/api/v1/answers/${good.id}`);
+    expect(del.status).toBe(409);
+    expect(await json(del)).toMatchObject({ code: 'INVALID_TRANSITION' });
+
+    // Comments on the question; a second report of the same comment is a duplicate.
+    const comment = await helper.send('POST', '/api/v1/comments', {
+      target: { type: 'question', id: q.id },
+      body: 'Same question for my E91.',
+      content_locale: 'en',
+    });
+    expect(comment.status).toBe(201);
+    const c = (await json(comment)) as { id: string; status: string };
+    const listed = (await json(await asker.send('GET', `/api/v1/comments?target_type=question&target_id=${q.id}`))).items as {
+      id: string;
+    }[];
+    expect(listed.map((x) => x.id)).toContain(c.id);
+    const report = { target_type: 'comment', target_id: c.id, reason: 'spam' };
+    expect((await asker.send('POST', '/api/v1/reports', report)).status).toBe(201);
+    const again = await asker.send('POST', '/api/v1/reports', report);
+    expect(again.status).toBe(409);
+    expect(await json(again)).toMatchObject({ code: 'DUPLICATE' });
+
+    // Discover (feed.discover): the pilot city, no vehicle.
+    const feed = await asker.send('POST', '/api/v1/feed/discover', { location: { mode: 'chosen_city', city_key: 'tehran' }, limit: 20 });
+    expect(feed.status).toBe(200);
+    expect(Array.isArray((await json(feed)).items)).toBe(true);
+  }, 120_000);
+});
+
+// P9 (account): profile with ETag and the session's display name, the welcome notification and read marks, the
+// notification matrix (full replace; marketing needs the consent), consents granted and withdrawn with the dependent
+// preference, a data export request (one open per type), sessions, an authenticator app enrolled with a real TOTP
+// code (10 recovery codes), and AAL2 operations asking for a step-up once the account has a second factor (BA-11).
+describe('P9 account against the live backend', () => {
+  it('profile, notifications, preferences, consents, data requests, TOTP and step-up through the BFF', async () => {
+    const user = await signedInUser('p9');
+    const write = async (method: string, path: string, body: unknown, ifMatch: string) =>
+      user.browser.fetch(path, {
+        method,
+        body: JSON.stringify(body),
+        headers: { 'content-type': 'application/json', 'x-csrf-token': await user.browser.csrf(), 'if-match': ifMatch },
+      });
+
+    // Profile: me.update with the ETag of me.get; the BFF session view follows the new display name.
+    const me = await user.send('GET', '/api/v1/me');
+    const patch = await write('PATCH', '/api/v1/me', { display_name: 'Sara M.' }, me.headers.get('etag')!);
+    expect(patch.status, await patch.clone().text()).toBe(200);
+    expect(((await json(await user.browser.fetch('/bff/session'))).user as { display_name: string }).display_name).toBe('Sara M.');
+
+    // Notifications: the welcome arrives in-app (the outbox dispatcher runs in the background).
+    let items: { id: string; template_key: string }[] = [];
+    for (let i = 0; i < 40 && items.length === 0; i++) {
+      items = (await json(await user.send('GET', '/api/v1/me/notifications?limit=10'))).items as typeof items;
+      if (!items.length) await new Promise((r) => setTimeout(r, 250));
+    }
+    expect(items.map((n) => n.template_key)).toContain('system.welcome');
+    for (const n of items) expect(CONSUMER_TEMPLATE_KEYS as readonly string[]).toContain(n.template_key);
+    expect(((await json(await user.send('GET', '/api/v1/me/notifications/unread-count'))).count as number) >= 1).toBe(true);
+    expect((await user.send('POST', '/api/v1/me/notifications/read', { up_to: new Date().toISOString() })).status).toBe(200);
+    expect((await json(await user.send('GET', '/api/v1/me/notifications/unread-count'))).count).toBe(0);
+
+    // Notification matrix: every channel × category; marketing on without the consent is refused.
+    const prefs = (await json(await user.send('GET', '/api/v1/me/notification-preferences'))).items as {
+      channel: string;
+      category: string;
+      enabled: boolean;
+    }[];
+    expect(prefs).toHaveLength(44);
+    const off = prefs.map((p) => (p.channel === 'push' && p.category === 'community' ? { ...p, enabled: false } : p));
+    expect((await user.send('PUT', '/api/v1/me/notification-preferences', { items: off })).status).toBe(200);
+    const marketing = prefs.map((p) => (p.channel === 'email' && p.category === 'marketing' ? { ...p, enabled: true } : p));
+    const refused = await user.send('PUT', '/api/v1/me/notification-preferences', { items: marketing });
+    expect(refused.status).toBe(403);
+    expect(await json(refused)).toMatchObject({ code: 'CONSENT_REQUIRED' });
+
+    // Consents: grant marketing (+ the preference), withdraw it — the preference goes off with it.
+    const granted = await user.send('POST', '/api/v1/me/consents', {
+      consent_type: 'marketing',
+      policy_version: '2026-10',
+      granted_to: { type: 'platform' },
+    });
+    expect(granted.status).toBe(201);
+    const consent = (await json(granted)) as { id: string };
+    const pref = await user.send('GET', '/api/v1/me/preferences');
+    expect((await write('PATCH', '/api/v1/me/preferences', { marketing_opt_in: true }, pref.headers.get('etag')!)).status).toBe(200);
+    expect((await user.send('POST', `/api/v1/me/consents/${consent.id}/withdraw`)).status).toBe(200);
+    expect((await json(await user.send('GET', '/api/v1/me/preferences'))).marketing_opt_in).toBe(false);
+    const active = (await json(await user.send('GET', '/api/v1/me/consents?active=true'))).items as { consent_type: string }[];
+    expect(active.some((c) => c.consent_type === 'marketing')).toBe(false);
+
+    // Data export: AAL2 is met by the fresh sign-in of an account without a second factor (BA-11); one open per type.
+    const dsr = await user.send('POST', '/api/v1/me/data-requests', { request_type: 'export' });
+    expect(dsr.status, await dsr.clone().text()).toBe(201);
+    expect(await json(dsr)).toMatchObject({ request_type: 'export', status: 'received', export_available: false });
+    expect((await user.send('POST', '/api/v1/me/data-requests', { request_type: 'export' })).status).toBe(409);
+    expect(((await json(await user.send('GET', '/api/v1/me/data-requests'))).items as unknown[]).length).toBe(1);
+
+    // Sessions: this sign-in is listed as current; no organization memberships.
+    const sessions = (await json(await user.send('GET', '/api/v1/me/sessions'))).items as { current: boolean; client_id: string }[];
+    expect(sessions.some((s) => s.current && s.client_id === 'cp-web-consumer')).toBe(true);
+    const memberships = (await json(await user.send('GET', '/api/v1/me/memberships'))).items as { organization: unknown }[];
+    expect(memberships.every((m) => m.organization === null)).toBe(true);
+
+    // Authenticator app: enrol, confirm with a real code, 10 recovery codes once.
+    const enrol = await user.send('POST', '/api/v1/me/mfa-methods/totp', { label: 'Phone' });
+    expect(enrol.status, await enrol.clone().text()).toBe(201);
+    const { method, otpauth_uri } = (await json(enrol)) as { method: { id: string; status: string }; otpauth_uri: string };
+    expect(method.status).toBe('pending');
+    const confirm = await user.send('POST', `/api/v1/me/mfa-methods/${method.id}/confirm`, { code: totp(secretOf(otpauth_uri)) });
+    expect(confirm.status, await confirm.clone().text()).toBe(200);
+    expect(((await json(confirm)).recovery_codes as string[]).length).toBe(10);
+    expect((await json(await user.send('GET', '/api/v1/me'))).mfa_enabled).toBe(true);
+
+    // The session that enrolled keeps AAL2 for its fresh-sign-in window (the backend decides "no second factor" per
+    // session at sign-in, DI-56). A new sign-in now needs the code: the hosted sign-in step answers next = mfa, and a
+    // code of the next 30-second window (the confirming one is spent) completes it at aal2.
+    const email = (await json(await user.send('GET', '/api/v1/me'))).email as string;
+    const second = new RecordingBrowser(bff);
+    const login = await second.fetch('/bff/login?return_to=%2Fen');
+    const loc = new URL(login.headers.get('location')!);
+    const authorizePath = `${loc.pathname}${loc.search}`;
+    const interaction = new URL((await second.fetch(authorizePath)).headers.get('location')!).searchParams.get('interaction_id')!;
+    const post = (path: string, body: unknown) =>
+      second.fetch(path, { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } });
+    const first = await json(await post('/id/v1/auth/signin', { interaction_id: interaction, email, password: PASSWORD }));
+    expect(first).toMatchObject({ next: 'mfa' });
+    expect(first.mfa_methods).toContain('totp_mfa');
+    await new Promise((r) => setTimeout(r, 30_000 - (Date.now() % 30_000) + 500));
+    const verified = await post('/id/v1/auth/mfa/verify', {
+      interaction_id: interaction,
+      method: 'totp_mfa',
+      code: totp(secretOf(otpauth_uri)),
+    });
+    expect(await json(verified)).toEqual({ next: 'complete' });
+    const back = new URL((await second.fetch(authorizePath)).headers.get('location')!);
+    expect((await second.fetch(`${back.pathname}${back.search}`)).headers.get('location')).toBe('/en');
+    expect(((await json(await second.fetch('/bff/session'))).user as { acr: string }).acr).toBe('aal2');
+  }, 120_000);
+});

@@ -4,11 +4,13 @@
 // right rail (@rail) holds "Request similar service" and more from this provider; on smaller screens they follow the
 // body. A wrong slug moves permanently to the canonical URL; a removed showcase (e.g. the customer withdrew consent)
 // is the "no longer available" body with 200 + noindex (OQ-14; the backend answers 404 today, DI-37). Article and
-// ImageObject JSON-LD; preview image = the after photo. Comments and reactions come in P8.
+// ImageObject JSON-LD; preview image = the after photo. P8: Great work (like) reactions, comments and Report
+// (ShowcaseSocial).
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
 import type { PublicPortfolioItem } from '@carpal/api-contracts';
 import { SystemPage } from '@/components/shell/system-page';
+import { ShowcaseSocial } from '@/features/community';
 import { RequestSimilarButton, Section, ShowcaseBody, ShowcaseCard, previewImage } from '@/features/profiles';
 import { I18nNamespaces } from '@/lib/i18n/client';
 import { isLocale, type Locale } from '@/lib/i18n/locales';
@@ -68,10 +70,11 @@ export default async function ShowcasePage({ params }: Props) {
   const author = orgPath(locale, item.organization);
   const more = (await firstPortfolio(locale, item.organization.id)).items.filter((x) => x.id !== item.id).slice(0, 4);
   return (
-    <I18nNamespaces resources={ctx.i18n.resources(['profiles'])}>
+    <I18nNamespaces resources={ctx.i18n.resources(['profiles', 'community'])}>
       <JsonLd data={showcaseArticle(item, `${ctx.origin}${path}`, author ? `${ctx.origin}${author}` : null, ctx.siteName, ctx.origin)} />
       <div className="pwa-profile">
         <ShowcaseBody item={item} locale={locale} t={t} f={f} priority />
+        <ShowcaseSocial itemId={item.id} likeCount={item.like_count} />
         <div className="pwa-profile-inline-request">
           <RequestSimilarButton orgId={item.organization.id} name={item.organization.name} />
         </div>

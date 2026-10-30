@@ -1,6 +1,8 @@
-// W-ACT-01 My activity — placeholder until P9 (P3 shell destination; GD-13 "not available yet").
+// W-ME-01 My Activity (mirrors C-PROF-06; P9.T5) at /<locale>/activity[?tab=…], signed in (private).
 import type { Metadata } from 'next';
-import { ComingSoon } from '@/components/shell/coming-soon';
+import { Suspense } from 'react';
+import { ActivityScreen } from '@/features/activity';
+import { I18nNamespaces } from '@/lib/i18n/client';
 import { isLocale, type Locale } from '@/lib/i18n/locales';
 import { serverI18n } from '@/server/i18n';
 
@@ -13,11 +15,16 @@ async function localeOf(params: Props['params']): Promise<Locale> {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { t } = await serverI18n(await localeOf(params));
-  return { title: t('shell.menu.activity'), robots: { index: false } };
+  return { title: t('shell.menu.activity'), robots: { index: false, follow: false } };
 }
 
 export default async function Page({ params }: Props) {
-  const locale = await localeOf(params);
-  const { t } = await serverI18n(locale);
-  return <ComingSoon locale={locale} t={t} title="shell.menu.activity" />;
+  const i18n = await serverI18n(await localeOf(params));
+  return (
+    <I18nNamespaces resources={i18n.resources(['activity', 'settings'])}>
+      <Suspense>
+        <ActivityScreen />
+      </Suspense>
+    </I18nNamespaces>
+  );
 }

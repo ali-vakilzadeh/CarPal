@@ -144,6 +144,40 @@
       "transfers_one": "{{count, number}} ownership request is waiting for your answer.",
       "transfers_other": "{{count, number}} ownership requests are waiting for your answer.",
       "review": "Open My Garage"
+    },
+    "report": {
+      "open": "Report",
+      "title": "Report content",
+      "why": "What’s wrong?",
+      "details": "Details (optional)",
+      "detailsHint": "e.g. My house number is visible",
+      "privacy": "The author is not told who reported it.",
+      "send": "Send report",
+      "sent": "Thanks — our team will review it.",
+      "duplicate": "You already reported this. Our team is on it.",
+      "failed": "Your report wasn’t sent. Please try again.",
+      "slowDown": "Too many reports in a short time. Please try again later.",
+      "intent": "Sign in to send your report",
+      "reason": {
+        "fake": "Fake or not genuine",
+        "abusive": "Abusive or offensive",
+        "hate_speech": "Hate speech",
+        "harassment": "Harassment",
+        "spam": "Spam or advertising",
+        "off_topic": "Off topic",
+        "privacy": "Private information",
+        "unsafe_advice": "Unsafe advice",
+        "misleading": "Misleading",
+        "counterfeit": "Counterfeit part",
+        "inaccurate_fitment": "Wrong fitment",
+        "wrong_location_or_closed": "Wrong location or closed",
+        "impersonation": "Pretends to be someone else",
+        "non_consensual_media": "Photo shared without permission",
+        "consent_issue": "Consent problem",
+        "redaction_issue": "Plate or face not blurred",
+        "hallucination": "AI made something up",
+        "other": "Something else"
+      }
     }
   },
   "states": {
@@ -542,7 +576,353 @@
       "example": "Example: 10 US dollars → {{price}}",
       "saved": "Price display saved"
     },
-    "comingSoon": "More settings arrive soon."
+    "comingSoon": "More settings arrive soon.",
+    "saved": "Saved",
+    "nav": {
+      "label": "Settings sections",
+      "profile": "Profile",
+      "security": "Sign-in & security",
+      "privacy": "Privacy & consent",
+      "ai": "AI preferences",
+      "notifications": "Notifications",
+      "language": "Language & region",
+      "data": "Data & account",
+      "help": "Help"
+    },
+    "errors": {
+      "failed": "That didn't work. Try again.",
+      "changedElsewhere": "This changed elsewhere. We loaded the latest version — check it and save again.",
+      "tooMany": "Too many tries. Wait a moment and try again.",
+      "codeInvalid": "That code isn't right. Check it and try again.",
+      "wrongPassword": "Your current password is not right.",
+      "duplicate": "This is already in use or already requested.",
+      "consentRequired": "This needs your consent first (Privacy & consent).",
+      "offline": "Can't connect right now.",
+      "weakPassword": "Choose a less common password.",
+      "phoneRegion": "We can't send texts to this country yet.",
+      "invalid": "Check the highlighted details."
+    },
+    "stepUp": {
+      "email": "Confirm it's you to change your email",
+      "phone": "Confirm it's you to change your phone number",
+      "password": "Confirm it's you to change your password",
+      "mfa": "Confirm it's you to change two-step sign-in",
+      "sessions": "Confirm it's you to sign out other devices",
+      "export": "Confirm it's you to request your data",
+      "download": "Confirm it's you to download your data",
+      "request": "Confirm it's you to send this request",
+      "delete": "Confirm it's you to delete your account",
+      "leave": "Confirm it's you to leave this organization"
+    },
+    "profile": {
+      "namesTitle": "Your name",
+      "displayName": "Display name (public)",
+      "preview": "Your reviews show: {{name}}",
+      "fullName": "Full name (private)",
+      "fullNameHint": "Only shops you book with see it.",
+      "fullNameRequired": "Enter your name.",
+      "saved": "Profile saved",
+      "contactTitle": "Contact and sign-in",
+      "contactText": "Used to sign in and for messages about your appointments. Never shown publicly.",
+      "email": "Email",
+      "phone": "Mobile number",
+      "noPhone": "Not added",
+      "verified": "Verified",
+      "notVerified": "Not verified",
+      "changeEmail": "Change email",
+      "changePhone": "Change number",
+      "addPhone": "Add mobile number",
+      "newEmail": "New email",
+      "newEmailHint": "We send a link there. The change applies once you open it.",
+      "sendLink": "Send link",
+      "emailSent": "We sent a link to {{email}}. Your email changes once you open it.",
+      "newPhone": "New mobile number",
+      "newPhoneHint": "We send a 6-digit code by SMS.",
+      "sendCode": "Send code",
+      "codeSent": "We sent you a code.",
+      "codeSentTo": "Enter the code we sent to {{phone}}.",
+      "code": "6-digit code",
+      "confirm": "Confirm",
+      "phoneChanged": "Mobile number changed"
+    },
+    "security": {
+      "passwordTitle": "Password",
+      "passwordText": "Changing it signs you out on every other device.",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "newPasswordHint": "At least 12 characters, with letters and numbers or symbols.",
+      "changePassword": "Change password",
+      "passwordChanged": "Password changed. Other devices were signed out.",
+      "confirmedTypeAgain": "Thanks. Enter your passwords again to change it.",
+      "mfaTitle": "Two-step sign-in",
+      "mfaText": "Ask for a second step when you sign in: a code from an authenticator app or a passkey.",
+      "mfaOff": "Two-step sign-in is off.",
+      "mfaOn": "Two-step sign-in is on",
+      "methods": "Your second steps",
+      "kindTotp": "Authenticator app",
+      "kindPasskey": "Passkey",
+      "lastUsed": "last used {{when}}",
+      "added": "added {{when}}",
+      "addTotp": "Add authenticator app",
+      "addPasskey": "Add a passkey",
+      "newCodes": "New recovery codes",
+      "totpDefaultLabel": "Authenticator app",
+      "passkeyDefaultLabel": "Passkey",
+      "scanText": "Scan this code with your authenticator app, then enter the 6-digit code it shows.",
+      "scanNow": "Thanks. Now scan the code with your authenticator app.",
+      "qrLabel": "QR code for your authenticator app",
+      "keyText": "Or enter this key by hand:",
+      "codeFromApp": "Code from the app",
+      "turnOn": "Turn on",
+      "passkeyText": "Your device or password manager keeps the passkey. You sign in with your fingerprint, face or screen lock.",
+      "passkeyName": "Name",
+      "passkeyNameHint": "So you can tell it apart, e.g. \"My laptop\".",
+      "createPasskey": "Create passkey",
+      "confirmedPasskey": "Thanks. Tap Create passkey to continue.",
+      "passkeyAdded": "Passkey added",
+      "remove": "Remove",
+      "removeTitle": "Remove {{name}}?",
+      "removeText": "You will no longer be able to use it to sign in.",
+      "removeLastText": "This is your only second step: two-step sign-in turns off.",
+      "removed": "{{name}} removed",
+      "removedOne": "Removed",
+      "recoveryTitle": "Your recovery codes",
+      "recoveryText": "Each code works once if you lose your second step. Keep them somewhere safe — they are shown only now.",
+      "recoveryDownload": "Download",
+      "recoverySaved": "I've saved them",
+      "sessionsTitle": "Active sessions",
+      "sessionsText": "Devices and browsers signed in to your account.",
+      "colDevice": "Device",
+      "colClient": "App",
+      "colLocation": "Location",
+      "colActive": "Last active",
+      "colActions": "Actions",
+      "current": "This browser",
+      "client": {
+        "web": "CarPal on the web",
+        "app": "CarPal app",
+        "portal": "Business portal",
+        "other": "Other"
+      },
+      "unknownLocation": "Unknown",
+      "signOut": "Sign out",
+      "signOutHere": "Log out here",
+      "signedOutOne": "Signed out {{device}}",
+      "signOutOthers": "Sign out of all other devices",
+      "signedOutOthers": "Signed out of all other devices",
+      "thisKind": "A browser ({{client}})",
+      "noSessions": "No signed-in devices to show."
+    },
+    "privacy": {
+      "generalTitle": "General consents",
+      "generalText": "You can change these at any time; a change applies from now on.",
+      "ai": "AI personalisation",
+      "aiHint": "Use my vehicles and history to tailor suggestions.",
+      "marketing": "News and offers",
+      "marketingHint": "Marketing messages from CarPal.",
+      "reviews": "Review invitations",
+      "reviewsHint": "Ask me to review a shop after a visit. Email links work once and expire 7 days after they are sent.",
+      "location": "Location",
+      "locationHint": "Use my location to find help nearby, only when I ask.",
+      "grantedOn": "Granted {{date}} · policy {{version}}",
+      "withdrawnOn": "Withdrawn {{date}}",
+      "never": "Never granted",
+      "until": "until {{date}}",
+      "grantedToast": "Consent given",
+      "withdrawnToast": "Consent withdrawn",
+      "sharesTitle": "Active shares",
+      "sharesText": "What you agreed to share with a business or show publicly, still in effect.",
+      "noShares": "Nothing is shared right now.",
+      "share": {
+        "service_history_sharing": "Service history shared with a shop",
+        "vehicle_data_sharing": "Vehicle details shared",
+        "vendor_fitment_context": "Vehicle details shared with a parts seller",
+        "photo_publishing": "Photos shown publicly",
+        "showcase_publishing": "Showcase on a shop's profile",
+        "fleet_driver_data_visibility": "Driver data visible to a fleet",
+        "other": "Shared data"
+      },
+      "scope": {
+        "vehicle": "For a vehicle",
+        "appointment": "For an appointment",
+        "media_asset": "For a photo",
+        "portfolio_item": "For a showcase",
+        "stock_inquiry": "For a stock inquiry"
+      },
+      "withdraw": "Withdraw",
+      "withdrawTitle": "Withdraw consent?",
+      "withdrawShowcase": "The post will be removed from the shop's profile now.",
+      "historyTitle": "History of changes",
+      "historyText": "Every consent you gave or withdrew, with its date.",
+      "showHistory": "Show history ({{count, number}})",
+      "noHistory": "No changes yet.",
+      "historyGranted": "Gave: {{what}}",
+      "historyWithdrawn": "Withdrew: {{what}}",
+      "downloadCsv": "Download history (CSV)",
+      "cookiesTitle": "Cookies",
+      "cookiesText": "Change the choices you made on your first visit. Essential cookies are always on.",
+      "cookiesChange": "Change cookie choices"
+    },
+    "ai": {
+      "personaliseTitle": "Personalisation",
+      "personaliseText": "Same as the AI consent in Privacy & consent.",
+      "master": "Use my vehicles and history to personalise",
+      "masterHint": "Help Me and matching can use what CarPal knows about your cars.",
+      "usesTitle": "What it uses",
+      "usesVehicles": "Your vehicles",
+      "usesHistory": "Service history",
+      "usesIssues": "Active issues",
+      "offNote": "Help Me still works when this is off, using only what you type in that session.",
+      "whereTitle": "Where AI helps",
+      "suggestions": "Maintenance suggestions",
+      "suggestionsHint": "Seasonal and mileage-based tips for your cars.",
+      "reasonsNote": "Every match shows why it was suggested."
+    },
+    "notifications": {
+      "matrixTitle": "What you hear about, and where",
+      "matrixText": "Choose a channel for each kind of update.",
+      "colCategory": "Updates",
+      "colFrequency": "Email frequency",
+      "cat": {
+        "appointments": "Appointments",
+        "reviews": "Reviews and replies",
+        "service_reminders": "Reminders",
+        "inquiries": "Stock inquiries",
+        "community": "Community",
+        "ai_suggestions": "Tips and suggestions",
+        "marketing": "Marketing"
+      },
+      "ch": {
+        "in_app": "In-app",
+        "push": "Push (mobile app)",
+        "email": "Email",
+        "webPush": "Web push (this browser)"
+      },
+      "cell": "{{category}}: {{channel}}",
+      "freqLabel": "Email frequency for {{category}}",
+      "freq": {
+        "immediate": "Instant",
+        "daily_digest": "Daily digest",
+        "weekly_digest": "Weekly digest"
+      },
+      "safetyRow": "Safety and security alerts",
+      "safetyHint": "Always delivered.",
+      "webPushLater": "Push in this browser comes soon.",
+      "channelsNote": "Push in this browser comes soon. SMS comes later.",
+      "marketingConsent": "Marketing messages need your consent first:",
+      "quietTitle": "Pause",
+      "criticalOnly": "Only safety and security alerts",
+      "criticalOnlyHint": "Everything else stays in the app, without push or email.",
+      "followedShops": "Updates from shops you follow are set per shop in"
+    },
+    "language": {
+      "languageTitle": "Language",
+      "languageText": "The layout direction changes with the language. Posts and notes keep the language they were written in.",
+      "messages": "Emails and messages come in {{language}}.",
+      "useForMessages": "Use {{language}} for emails and messages",
+      "regionTitle": "Calendar, digits and distance",
+      "calendar": "Calendar",
+      "jalali": "Jalali",
+      "gregorian": "Gregorian",
+      "digits": "Digits",
+      "persianDigits": "Persian (۱۲۳)",
+      "latinDigits": "Latin (123)",
+      "distance": "Distance",
+      "km": "Kilometres",
+      "mi": "Miles",
+      "webNote": "These apply in the CarPal app and in messages. On the web, dates and digits follow the page language.",
+      "navTitle": "Navigation app",
+      "navApp": "Directions opens",
+      "navHint": "The app Directions opens at once. You can also choose it in the Directions menu with \"Remember my choice\".",
+      "askEachTime": "Ask me each time",
+      "navReset": "Reset. Directions will ask each time.",
+      "reset": "Reset",
+      "displayTitle": "Display",
+      "displayText": "Automatic follows your device; Sunlight is for bright outdoor light."
+    },
+    "data": {
+      "exportTitle": "Download my data",
+      "exportText": "A copy of everything CarPal holds about you.",
+      "csvNote": "One CSV file in long format: each row has a section, a record id, a field and its value.",
+      "requestExport": "Request my data",
+      "newExport": "New export",
+      "exportRequested": "Request received. We will tell you when your file is ready.",
+      "requestedOn": "Requested {{date}}",
+      "dueBy": "We prepare it by {{date}}.",
+      "ready": "Ready to download.",
+      "expired": "The file has expired. Request a new export.",
+      "rejected": "Not completed: {{reason}}",
+      "download": "Download",
+      "linkNote": "The file is kept for 7 days; each download link works for 5 minutes.",
+      "correctTitle": "Correct my data",
+      "correctText": "For things you cannot edit yourself.",
+      "correctLabel": "What should be corrected?",
+      "sendRequest": "Send request",
+      "requestReceived": "Request received",
+      "alreadyOpen": "You already have a request in progress.",
+      "historyTitle": "Requests",
+      "colType": "Request",
+      "colRequested": "Requested",
+      "colStatus": "Status",
+      "colDue": "Due or done",
+      "type": {
+        "export": "Data export",
+        "deletion": "Account deletion",
+        "rectification": "Correction",
+        "consent_withdrawal": "Consent withdrawal"
+      },
+      "status": {
+        "received": "Received",
+        "verifying_identity": "Checking identity",
+        "in_progress": "In progress",
+        "completed": "Completed",
+        "rejected": "Rejected"
+      },
+      "orgsTitle": "Organizations",
+      "orgsText": "Businesses and fleets you belong to.",
+      "noOrgs": "You are not part of a business yet.",
+      "invited": "invited",
+      "role": {
+        "owner": "Owner",
+        "manager": "Manager",
+        "driver": "Driver",
+        "member": "Member"
+      },
+      "leave": "Leave",
+      "leaveTitle": "Leave {{name}}?",
+      "leaveText": "You lose access to its tools at once. An owner can invite you again.",
+      "lastOwner": "You are the last owner. Make someone else an owner first.",
+      "left": "You left {{name}}",
+      "leftOne": "You left the organization",
+      "deleteTitle": "Delete account",
+      "deleteText": "Removes your account. Published reviews stay, with an anonymous author.",
+      "deletionOpen": "Your deletion request is in progress.",
+      "deleteConfirmTitle": "Delete your account?",
+      "deletedTitle": "What is deleted",
+      "deleted": {
+        "account": "Your account and profile (your name and contact details are anonymised)",
+        "garage": "Your vehicles, their records, documents and photos",
+        "notifications": "Your notifications",
+        "unpublished": "Reviews that were not published"
+      },
+      "keptTitle": "What stays",
+      "kept": {
+        "reviews": "Published reviews, shown as by a former member",
+        "records": "What the law asks us to keep, anonymised"
+      },
+      "exportFirst": "You may want to download your data first.",
+      "deleteWord": "DELETE",
+      "typeToConfirm": "Type {{word}} to confirm",
+      "deleteConfirm": "Delete my account",
+      "deletionRequested": "Deletion requested. We will confirm by email."
+    },
+    "help": {
+      "topicsTitle": "Common topics",
+      "ranking": "How matching works",
+      "community": "Ask the community",
+      "reportNote": "To report a post, review or business, use Report on its page.",
+      "version": "CarPal web {{version}}"
+    }
   },
   "profiles": {
     "orgType": {
@@ -1916,6 +2296,516 @@
       "vinEnding": "VIN ending",
       "generated": "Made on {{date}}",
       "verifiedNote": "Verified records come from completed appointments on CarPal, were confirmed by the business that did the work, or had their invoice checked. Other records were added by the owner."
+    }
+  },
+  "community": {
+    "qa": {
+      "title": "Community Q&A",
+      "off": "Questions and answers are not available right now",
+      "ask": "Ask a question",
+      "askTitle": "Can’t find your answer?",
+      "askIt": "Ask it",
+      "search": "Search questions",
+      "filters": "Filters",
+      "statusLabel": "Answer status",
+      "statusAll": "All",
+      "statusOpen": "Unanswered",
+      "statusAnswered": "Answered",
+      "myCar": "My car: {{car}}",
+      "carLegend": "Car",
+      "category": "Category",
+      "anyCategory": "Any category",
+      "newestFirst": "Newest questions first.",
+      "listLabel": "Questions",
+      "empty": "No one has asked this yet"
+    },
+    "meta": {
+      "hubTitle": "Car questions and answers | CarPal",
+      "hubDescription": "Questions from car owners, answered by owners and verified shops. Search by car, problem or repair area.",
+      "questionTitle": "{{title}} | CarPal Q&A"
+    },
+    "question": {
+      "status": {
+        "open": "Open",
+        "answered": "Answered",
+        "closed": "Closed"
+      },
+      "askedBy": "Asked by {{name}} · {{date}}",
+      "edit": "Edit question",
+      "close": "Close question",
+      "closeTitle": "Close this question?",
+      "closeText": "No one can answer or comment after this. The question and its answers stay visible.",
+      "closedToast": "Question closed",
+      "closedText": "This question is closed. It no longer takes answers or comments.",
+      "saved": "Question updated",
+      "savedHeld": "Saved. Your changes are being reviewed — usually a few minutes.",
+      "saveFailed": "That didn’t work. Please try again.",
+      "changedElsewhere": "This changed elsewhere — reload to see the latest version. Your text is kept.",
+      "reload": "Reload",
+      "related": "Related questions"
+    },
+    "answer": {
+      "count_one": "{{count, number}} answer",
+      "count_other": "{{count, number}} answers",
+      "none": "No answers yet. Be the first to help.",
+      "accepted": "Accepted answer",
+      "accept": "Accept answer",
+      "acceptedToast": "Answer accepted. Thanks for closing the loop.",
+      "onlyAsker": "Only the person who asked can accept an answer.",
+      "delete": "Delete",
+      "deleted": "Answer deleted",
+      "acceptedNoDelete": "An accepted answer can’t be deleted.",
+      "failed": "That didn’t work. Please try again.",
+      "business": "Business",
+      "verifiedBusiness": "Verified business",
+      "yours": "Your answer",
+      "label": "Share what worked for you",
+      "hint": "Be specific: what you did, on which car, and what it cost if you like.",
+      "post": "Post answer",
+      "sent": "Answer posted",
+      "sentHeld": "Posted. Pending review — usually a few minutes.",
+      "intent": "Sign in to post your answer"
+    },
+    "comments": {
+      "title": "Comments",
+      "empty": "No comments yet.",
+      "more": "Show more comments",
+      "write": "Write a comment",
+      "send": "Send",
+      "sent": "Comment posted",
+      "sentHeld": "Posted. Pending review — usually a few minutes.",
+      "failed": "Your comment wasn’t sent. Please try again.",
+      "loadFailed": "Comments could not be loaded.",
+      "closed": "Comments are closed here.",
+      "off": "Comments are turned off for this post.",
+      "verifyFirst": "Verify your email or phone before commenting.",
+      "verifyLink": "Open settings",
+      "slowDown": "You’re posting quickly. Please wait a moment and try again.",
+      "delete": "Delete",
+      "deleted": "Comment deleted",
+      "deleteFailed": "The comment could not be deleted.",
+      "intent": "Sign in to post your comment"
+    },
+    "compose": {
+      "counter": "{{count, number}} of {{max, number}} characters",
+      "minLength": "Write at least {{count, number}} characters."
+    },
+    "moderation": {
+      "contactWarning": "Posts with links, emails or phone numbers are checked by our team first.",
+      "beingReviewed": "Being reviewed",
+      "beingReviewedMine": "Being reviewed — only you can see this",
+      "hidden": "Hidden by moderation"
+    },
+    "media": {
+      "pending": "Photo is being checked"
+    },
+    "reaction": {
+      "helpful": "Helpful",
+      "greatWork": "Great work",
+      "thanks": "Thanks",
+      "group": "Reactions",
+      "failed": "Your reaction wasn’t saved. Please try again.",
+      "intent": "Sign in to mark this as “{{reaction}}”"
+    },
+    "ask": {
+      "heading": "Ask a question",
+      "vehicle": "Which car is it about?",
+      "vehiclePrivate": "Only the brand and model are shown. Your plate and VIN never are.",
+      "otherCar": "Another car",
+      "carLegend": "Car (optional)",
+      "title": "Your question",
+      "titleHint": "One line, e.g. “Which winter tyres fit an E90 on 17-inch wheels?”",
+      "details": "Details",
+      "detailsHint": "How you drive, what you noticed, what you tried already.",
+      "category": "What is it about?",
+      "categoryPick": "Category",
+      "suggested": "Suggested",
+      "removeSymptom": "Remove {{name}}",
+      "needContext": "Choose your car or a category so the right people see it.",
+      "photos": "Photos (optional)",
+      "photosHint": "Photos are shown after our team checks them. Blur plates and faces before you add them.",
+      "photosSignIn": "Sign in to add photos.",
+      "privacy": "Your question is public. Your phone and full name are never shown.",
+      "privacyNamed": "Shown as {{name}}. Your phone, plate and VIN are never shown.",
+      "safetyTitle": "This sounds like a safety issue",
+      "safetyText": "This sounds urgent — use Help Me to find help now.",
+      "useHelpMe": "Use Help Me",
+      "similar": "Similar questions",
+      "similarHint": "One of these may already answer it.",
+      "similarEmpty": "Similar questions appear here as you type.",
+      "post": "Post question",
+      "waitUploads": "Waiting for photos…",
+      "posted": "Question posted",
+      "postedHeld": "Posted. Pending review — usually a few minutes.",
+      "heldTitle": "Your question is being reviewed",
+      "heldText": "It has a link, email or phone number, so our team checks it before it is published — usually within minutes.",
+      "backToQa": "Back to Q&A",
+      "failed": "Your question wasn’t posted. Please try again.",
+      "invalid": "Some details need a look: a title of 5–160 characters, details of at least 10, and a car or category.",
+      "intent": "Sign in to post your question"
+    },
+    "help": {
+      "title": "Need hands-on help?",
+      "text": "Describe it in Help Me and get matched with the right shop.",
+      "action": "Describe it in Help Me"
+    },
+    "home": {
+      "helpMe": "Something wrong with your car? Describe it…",
+      "helpMeFor": "Something wrong with {{car}}? Describe it…",
+      "helpMePlaceholder": "e.g. a clunk over speed bumps",
+      "helpMeGo": "Help Me",
+      "helpMeLabel": "Help Me",
+      "askTitle": "Ask the community",
+      "askText": "Owners and verified shops answer questions about your car.",
+      "attention": {
+        "addCar": "Add your car for better matches and reminders.",
+        "addCarAction": "Add your car",
+        "overdue": "{{title}} is overdue for {{car}}.",
+        "due": "{{title}} is due for {{car}}.",
+        "openReminders": "Open reminders",
+        "docExpiring": "{{title}} expires on {{date}}.",
+        "docExpired": "{{title}} expired on {{date}}.",
+        "openDocuments": "Open documents"
+      }
+    },
+    "feed": {
+      "discover": "Discover",
+      "nearby": "Near you",
+      "following": "Following",
+      "recommended": "Recommended for your car",
+      "recommendedFor": "Recommended for {{car}}",
+      "maintenance": "Maintenance for your car",
+      "maintenanceFor": "Maintenance for {{car}}",
+      "overdue": "Overdue",
+      "questions": "Popular questions",
+      "empty": "Nothing here yet",
+      "emptyText": "Follow a few local shops to see useful updates.",
+      "thinTitle": "Make your feed more useful",
+      "thinText": "Follow local shops and browse questions from owners of cars like yours.",
+      "findShops": "Find shops near you",
+      "browseQuestions": "Browse questions"
+    },
+    "postType": {
+      "showcase": "Showcase",
+      "availability": "Availability",
+      "seasonal_advice": "Seasonal advice",
+      "special_offer": "Special offer",
+      "educational_tip": "Tip",
+      "job_completion": "Job done",
+      "community_event": "Event"
+    },
+    "saved": {
+      "tabs": "Saved",
+      "favorites": "Favourites",
+      "following": "Following",
+      "bookAgain": "Book again",
+      "remove": "Remove",
+      "unfollow": "Unfollow",
+      "removed": "{{name}} removed from favourites",
+      "unfollowed": "You unfollowed {{name}}",
+      "removedMany_one": "{{count, number}} removed from favourites",
+      "removedMany_other": "{{count, number}} removed from favourites",
+      "unfollowedMany_one": "You unfollowed {{count, number}} account",
+      "unfollowedMany_other": "You unfollowed {{count, number}} accounts",
+      "selectMode": "Select",
+      "select": "Select {{name}}",
+      "removeSelected_one": "Remove {{count, number}}",
+      "removeSelected_other": "Remove {{count, number}}",
+      "unfollowSelected_one": "Unfollow {{count, number}}",
+      "unfollowSelected_other": "Unfollow {{count, number}}",
+      "bell": "Notifications from {{name}}",
+      "bellAll": "All posts",
+      "bellImportant": "Important only",
+      "bellNone": "None",
+      "bellSaved": "Notification setting saved",
+      "failed": "That didn’t work. Please try again.",
+      "emptyFavorites": "No favourites yet",
+      "emptyFollowing": "You don’t follow anyone yet",
+      "emptyText": "Use the heart or Follow on a shop’s page to keep it here."
+    }
+  },
+  "notifications": {
+    "unread": "Unread:",
+    "empty": "You're all caught up.",
+    "emptyTitle": "You're all caught up",
+    "emptyText": "Updates about appointments, reviews and reminders will appear here.",
+    "markAllRead": "Mark all as read",
+    "allRead": "All marked as read",
+    "seeAll": "See all notifications",
+    "settings": "Notification settings",
+    "failed": "That didn't work. Try again.",
+    "tabs": {
+      "label": "Notification types",
+      "all": "All",
+      "appointments": "Appointments",
+      "reviews": "Reviews",
+      "community": "Community",
+      "reminders": "Reminders",
+      "system": "System"
+    },
+    "generic": {
+      "title": "New update",
+      "text": "Open CarPal to see what changed."
+    },
+    "templates": {
+      "system": {
+        "welcome": {
+          "title": "Welcome to CarPal",
+          "text": "Your account is ready. Add your car to get reminders and better matches."
+        },
+        "security_alert": {
+          "title": "Security alert",
+          "text": "We signed out a device after unusual activity ({{kind}}). Review your sessions."
+        }
+      },
+      "appointment": {
+        "confirmed": {
+          "title": "Appointment confirmed",
+          "text": "Your appointment was confirmed."
+        },
+        "alternative_proposed": {
+          "title": "A new time was proposed",
+          "text": "The shop proposed another time for your appointment. Accept it or suggest a new one."
+        },
+        "cancelled": {
+          "title": "Appointment cancelled",
+          "text": "An appointment was cancelled ({{changed_by_side}})."
+        },
+        "status_updated": {
+          "title": "Appointment update",
+          "text": "Your appointment is now: {{new_status}}."
+        },
+        "completed": {
+          "title": "Your service is complete",
+          "text": "Your appointment was completed and added to your vehicle history."
+        },
+        "reminder": {
+          "title": "Appointment reminder",
+          "text": "You have an appointment starting {{confirmed_start_at}}."
+        },
+        "customer_message": {
+          "title": "New message about an appointment",
+          "text": "There is a new note on an appointment."
+        }
+      },
+      "review": {
+        "invitation_in_app": {
+          "title": "Review your recent visit",
+          "text": "Tell others about your recent visit. You can write a review for 7 days."
+        },
+        "status_updated": {
+          "title": "Your review was published",
+          "text": "Thank you for helping other drivers."
+        },
+        "response_published": {
+          "title": "The business replied to your review",
+          "text": "The business published a reply to your review."
+        }
+      },
+      "inquiry": {
+        "answered": {
+          "title": "Update on your stock inquiry",
+          "text": "Your stock inquiry is now: {{new_status}}."
+        }
+      },
+      "vehicle": {
+        "reminder_due": {
+          "title": "Your car needs attention",
+          "text": "A reminder for one of your cars ({{reminder_type}}) is {{status}}."
+        },
+        "transfer_requested": {
+          "title": "Someone asked to take over one of your cars",
+          "text": "A buyer says they bought one of your cars. Accept or reject the request in My Garage."
+        },
+        "transfer_decided": {
+          "title": "Your ownership request was answered",
+          "text": "The owner answered your request: {{status}}."
+        }
+      },
+      "community": {
+        "followed_update": {
+          "title": "A shop you follow posted an update",
+          "text": "New post: {{post_type}}."
+        }
+      },
+      "media": {
+        "upload_refused": {
+          "title": "An upload could not be used",
+          "text": "A file you uploaded ({{purpose}}) failed our safety checks and was not published."
+        }
+      },
+      "moderation": {
+        "action_taken": {
+          "title": "An update from CarPal moderation",
+          "text": "Our moderators took an action ({{action_type}}) on your {{target_type}}. You can appeal it."
+        }
+      },
+      "ai": {
+        "suggestion_ready": {
+          "title": "Your assistant result is ready",
+          "text": "The result you asked for is ready, with {{suggestion_count}} suggestion(s) to review."
+        }
+      }
+    },
+    "values": {
+      "new_status": {
+        "provider_reviewing": "being reviewed by the shop",
+        "alternative_proposed": "a new time proposed",
+        "confirmed": "confirmed",
+        "checked_in": "checked in",
+        "in_progress": "in progress",
+        "awaiting_parts": "waiting for parts",
+        "ready_for_pickup": "ready for pickup",
+        "completed": "completed",
+        "cancelled": "cancelled",
+        "no_show": "marked as missed",
+        "answered": "answered",
+        "reserved": "reserved for you",
+        "unavailable": "not available"
+      },
+      "changed_by_side": {
+        "requester": "by you",
+        "provider": "by the shop",
+        "system": "automatically"
+      },
+      "reminder_type": {
+        "oil": "oil",
+        "brakes": "brakes",
+        "tires": "tyres",
+        "battery": "battery",
+        "inspection": "inspection",
+        "seasonal": "seasonal check",
+        "document_expiry": "document expiry",
+        "custom": "your reminder",
+        "maintenance": "maintenance",
+        "mileage": "mileage"
+      },
+      "status": {
+        "upcoming": "coming up",
+        "due": "due",
+        "overdue": "overdue",
+        "accepted": "accepted",
+        "rejected": "rejected",
+        "cancelled": "cancelled",
+        "expired": "expired"
+      },
+      "post_type": {
+        "showcase": "a showcase",
+        "availability": "availability",
+        "seasonal_advice": "seasonal advice",
+        "special_offer": "a special offer",
+        "educational_tip": "a tip",
+        "job_completion": "a finished job",
+        "community_event": "an event",
+        "update": "an update"
+      },
+      "action_type": {
+        "approve": "approved",
+        "hide": "hidden",
+        "remove": "removed",
+        "restore": "restored",
+        "request_changes": "changes requested",
+        "warn_user": "a warning",
+        "suspend_account": "account suspended",
+        "reactivate_account": "account reactivated"
+      },
+      "target_type": {
+        "review": "review",
+        "review_response": "reply",
+        "post": "post",
+        "comment": "comment",
+        "question": "question",
+        "answer": "answer",
+        "portfolio_item": "showcase",
+        "media_asset": "photo or file",
+        "user": "account",
+        "content": "content"
+      },
+      "purpose": {
+        "avatar": "profile photo",
+        "vehicle_photo": "car photo",
+        "vehicle_document": "car document",
+        "issue_photo": "issue photo",
+        "service_evidence": "service evidence",
+        "review_photo": "review photo",
+        "review_evidence": "review evidence",
+        "post": "post photo",
+        "qna": "question photo",
+        "appointment_photo": "appointment photo",
+        "media": "file"
+      },
+      "kind": {
+        "refresh_token_reuse": "a reused sign-in",
+        "security": "security"
+      }
+    }
+  },
+  "activity": {
+    "tabs": {
+      "label": "Activity types",
+      "reviews": "Reviews",
+      "posts": "Posts",
+      "questions": "Questions & answers",
+      "inquiries": "Inquiries",
+      "reports": "Reports & requests"
+    },
+    "reviews": {
+      "title": "Your reviews come here soon",
+      "text": "Reviews with their status (being checked, waiting for approval, published) arrive with the review pages."
+    },
+    "posts": {
+      "title": "No posts yet",
+      "text": "Repair stories and tips are not open to car owners yet. Ask the community instead."
+    },
+    "questions": {
+      "title": "Your questions live in the community",
+      "text": "We cannot list your questions and answers here yet. Find them in Community Q&A.",
+      "open": "Open Community Q&A"
+    },
+    "inquiries": {
+      "emptyTitle": "No stock inquiries",
+      "emptyText": "Ask a parts seller whether a part is in stock and the answer appears here.",
+      "findParts": "Find parts",
+      "colItem": "Part and seller",
+      "colStatus": "Status",
+      "colUpdated": "Last update",
+      "colActions": "Actions",
+      "open": "Open"
+    },
+    "inquiry": {
+      "title": "Stock inquiry",
+      "back": "Back to My activity",
+      "status": {
+        "sent": "Sent",
+        "answered": "Answered",
+        "reserved": "Reserved",
+        "unavailable": "Unavailable",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "reservedUntil": "Reserved for you until {{date}}",
+      "sentOn": "Sent {{date}}",
+      "quantity_one": "{{count, number}} piece",
+      "quantity_other": "{{count, number}} pieces",
+      "vehicle": "For:",
+      "messages": "Messages",
+      "noMessages": "No messages yet.",
+      "you": "You",
+      "reply": "Write a message",
+      "send": "Send",
+      "closed": "This inquiry is closed.",
+      "pickedUp": "I picked it up",
+      "pickedUpToast": "Marked as picked up",
+      "cancel": "Cancel inquiry",
+      "cancelledToast": "Inquiry cancelled",
+      "canReview": "You can review this seller as a verified purchase."
+    },
+    "reports": {
+      "requestsTitle": "Data requests",
+      "noRequests": "No data requests.",
+      "manage": "Manage in Data & account",
+      "reportsTitle": "Content reports",
+      "reportsText": "Thanks for every report. Our team reviews them; when a decision affects you, you get a notification."
     }
   }
 }

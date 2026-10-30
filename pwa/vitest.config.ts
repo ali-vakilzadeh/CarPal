@@ -29,7 +29,14 @@ export default defineConfig({
       },
       {
         ...shared,
-        test: { name: 'dom', include: ['src/**/*.test.tsx'], environment: 'jsdom', setupFiles: ['tests/setup/dom.ts'] },
+        // jsdom renders of whole screens take well under a second alone but can pass 5 s when every worker is busy (P8).
+        test: {
+          name: 'dom',
+          include: ['src/**/*.test.tsx'],
+          environment: 'jsdom',
+          setupFiles: ['tests/setup/dom.ts'],
+          testTimeout: 15_000,
+        },
       },
       {
         ...shared,

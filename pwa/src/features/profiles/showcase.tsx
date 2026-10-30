@@ -1,7 +1,8 @@
 // Showcase body (Docs/22 W-PUB-05, mirrors C-PROV-02 and C-COMM-02): post type label, context chips (vehicle, repair
 // area), the before/after slider (or the gallery), title, text, dates, tags and the linked provider card with Follow.
 // Shared by the showcase page (server) and the portfolio modal on profiles (client), so it takes t and the formatter
-// as props and holds no hooks. Comments and reactions come with P8; customer consent has no public field (P5 report).
+// as props and holds no hooks. Comments and reactions sit below it on the showcase page (P8, features/community
+// ShowcaseSocial); customer consent has no public field (P5 report).
 import type { PublicPortfolioItem } from '@carpal/api-contracts';
 import { Badge } from '@/components/ds/badge';
 import { MediaImage } from '@/components/media/media-image';
