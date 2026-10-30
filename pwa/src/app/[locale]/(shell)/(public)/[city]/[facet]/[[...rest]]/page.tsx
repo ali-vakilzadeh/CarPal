@@ -209,7 +209,12 @@ export default async function DirectoryPage(props: Props) {
                       f={f}
                       bestMatch
                       actions={
-                        <RequestAction orgId={r.organization.id} locationId={r.location?.location_id ?? null} name={r.organization.name} />
+                        <RequestAction
+                          orgId={r.organization.id}
+                          locationId={r.location?.location_id ?? null}
+                          name={r.organization.name}
+                          slug={r.organization.slug}
+                        />
                       }
                     />
                   </li>

@@ -86,6 +86,54 @@ export function useOpenNotification() {
   };
 }
 
+/** Inline actions (P10, Docs/21 §6): Accept time on a proposed time; Directions on an appointment reminder. */
+function NotificationAction({ n }: { n: Notification }) {
+  const t = useT();
+  const locale = useLocale();
+  const api = useApiClient();
+  const toast = useToast();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const markRead = useMarkRead();
+  const [busy, setBusy] = useState(false);
+  const ref = n.reference;
+  if (!ref || ref.type !== 'appointment') return null;
+  const href = `/${locale}/appointments/${encodeURIComponent(ref.id)}`;
+  if (n.template_key === 'appointment.reminder')
+    return (
+      <Link
+        href={`${href}#where`}
+        className="pwa-link pwa-notif-action"
+        onClick={() => void markRead({ ids: [n.id] }).catch(() => undefined)}
+      >
+        <Icon name="route" size={16} /> {t('notifications.actions.directions')}
+      </Link>
+    );
+  if (n.template_key !== 'appointment.alternative_proposed') return null;
+  const accept = async () => {
+    setBusy(true);
+    try {
+      await api.api('appointments.transition', { path: { appointment_id: ref.id }, body: { to: 'confirmed' } });
+      void markRead({ ids: [n.id] }).catch(() => undefined);
+      void queryClient.invalidateQueries({ queryKey: ['appointments.get'] });
+      void queryClient.invalidateQueries({ queryKey: ['appointments.list'] });
+      toast(t('notifications.actions.accepted'));
+    } catch {
+      toast(t('notifications.actions.acceptFailed'));
+      router.push(href);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="pwa-notif-action">
+      <Button size="sm" variant="primary" icon="check" loading={busy} onClick={() => void accept()}>
+        {t('notifications.actions.acceptTime')}
+      </Button>
+    </div>
+  );
+}
+
 export function NotificationItem({ n, onOpen, compact }: { n: Notification; onOpen: (n: Notification) => void; compact?: boolean }) {
   const t = useT();
   const f = useFormat();
@@ -122,6 +170,7 @@ export function NotificationItem({ n, onOpen, compact }: { n: Notification; onOp
       ) : (
         <div className="pwa-notif-open is-static">{body}</div>
       )}
+      <NotificationAction n={n} />
     </article>
   );
 }

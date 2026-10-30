@@ -340,22 +340,23 @@ export function MapScreen(p: MapScreenProps) {
     setFocus({ key: `${Date.now()}`, center, zoom: loc.mode === 'user_position' ? 14 : region.map.default_zoom });
   };
 
-  useIntentHandler<{ location?: string | null }>('request', (intent) => {
-    if (intent.target) goTo(requestHref(locale, intent.target, intent.draft?.location ?? null));
+  useIntentHandler<{ location?: string | null; slug?: string | null }>('request', (intent) => {
+    if (intent.target)
+      goTo(requestHref(locale, intent.target, intent.draft?.location ?? null, undefined, { slug: intent.draft?.slug, via: 'search' }));
   });
   const request = (place: Place) => {
     const r = place.result;
     gate({
       type: 'request',
       target: place.orgId,
-      draft: { location: place.id },
+      draft: { location: place.id, slug: r?.organization.slug ?? null },
       title: t('profiles.intent.request', { name: place.name }),
       run: () => {
         if (r && view) {
           saveSearchOrigin({ orgId: place.orgId, sessionId: view.response.session_id, resultId: r.result_id });
           resultEvent(view.response.session_id, r.result_id, 'selected');
         }
-        goTo(requestHref(locale, place.orgId, place.id));
+        goTo(requestHref(locale, place.orgId, place.id, undefined, { slug: r?.organization.slug, via: 'search' }));
       },
     });
   };

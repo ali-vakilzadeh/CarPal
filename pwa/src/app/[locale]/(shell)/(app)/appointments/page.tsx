@@ -1,6 +1,9 @@
-// W-APP-01 Appointments — placeholder until P10 (P3 shell destination; GD-13 "not available yet").
+// W-APP-01 Appointments (P10.T4; mirrors C-APP-01..04): /<locale>/appointments?seg=… — the list with segments and
+// "Needs your action"; on wide screens the detail column waits for a choice. Private page behind the session gate.
 import type { Metadata } from 'next';
-import { ComingSoon } from '@/components/shell/coming-soon';
+import { Suspense } from 'react';
+import { AppointmentsScreen } from '@/features/appointments';
+import { I18nNamespaces } from '@/lib/i18n/client';
 import { isLocale, type Locale } from '@/lib/i18n/locales';
 import { serverI18n } from '@/server/i18n';
 
@@ -13,11 +16,16 @@ async function localeOf(params: Props['params']): Promise<Locale> {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { t } = await serverI18n(await localeOf(params));
-  return { title: t('shell.nav.appointments'), robots: { index: false } };
+  return { title: t('shell.nav.appointments'), robots: { index: false, follow: false } };
 }
 
 export default async function Page({ params }: Props) {
-  const locale = await localeOf(params);
-  const { t } = await serverI18n(locale);
-  return <ComingSoon locale={locale} t={t} title="shell.nav.appointments" />;
+  const i18n = await serverI18n(await localeOf(params));
+  return (
+    <I18nNamespaces resources={i18n.resources(['appointments', 'profiles', 'help'])}>
+      <Suspense>
+        <AppointmentsScreen selectedId={null} />
+      </Suspense>
+    </I18nNamespaces>
+  );
 }

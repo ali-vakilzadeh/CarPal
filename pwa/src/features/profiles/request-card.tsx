@@ -3,8 +3,8 @@
 // "Select your car"), "Fit for your car" from the public capabilities, the next open slots of the primary location
 // (public.availability; none when the shop has no availability rules → "Request anyway", BA-19), the primary
 // Request appointment, and Call, which loads the number on click (it is not in the page HTML; open point 7) and
-// counts as a selected search result when the visitor came from one (DI-10). The request step itself is P10 (W-HELP-01
-// /<locale>/help); guests go through the auth-intent modal first and land back here.
+// counts as a selected search result when the visitor came from one (DI-10). The request step is W-HELP-01
+// (/<locale>/help?provider…, P10); guests go through the auth-intent modal first and land back here.
 import type { PublicCapability, Slot } from '@carpal/api-contracts';
 import { useState } from 'react';
 import { Badge } from '@/components/ds/badge';
@@ -24,10 +24,22 @@ import { bestFit, slotDays } from './view-model';
 
 const MAX_SLOTS = 6;
 
-export function requestHref(locale: string, orgId: string, locationId: string | null, slot?: string): string {
+/**
+ * The request step (P10, W-HELP-01 /<locale>/help?…): ids, the shop's slug (the request step reads its public profile by
+ * slug), an ISO slot time and where the request starts (Docs/55 §4.9 request source) — never text (GD-14).
+ */
+export function requestHref(
+  locale: string,
+  orgId: string,
+  locationId: string | null,
+  slot?: string,
+  o: { slug?: string | null; via?: 'profile' | 'search' | 'saved' } = {},
+): string {
   const q = new URLSearchParams({ provider: orgId });
   if (locationId) q.set('location', locationId);
   if (slot) q.set('slot', slot);
+  if (o.slug) q.set('shop', o.slug);
+  if (o.via) q.set('via', o.via);
   return `/${locale}/help?${q.toString()}`;
 }
 
@@ -126,7 +138,7 @@ export function RequestCard({
   const H = heading;
 
   const request = (slot?: string) => {
-    const href = requestHref(locale, orgId, locationId, slot);
+    const href = requestHref(locale, orgId, locationId, slot, { slug, via: 'profile' });
     gate({
       type: 'request',
       target: orgId,
@@ -137,7 +149,7 @@ export function RequestCard({
   };
   useIntentHandler<{ slot?: string }>('request', (intent) => {
     if (intent.target !== orgId) return;
-    goTo(requestHref(locale, orgId, locationId, intent.draft?.slot));
+    goTo(requestHref(locale, orgId, locationId, intent.draft?.slot, { slug, via: 'profile' }));
   });
 
   return (
@@ -213,11 +225,11 @@ export function RequestCard({
 }
 
 /** "Request similar service" (Docs/22 W-PUB-05): the request step with this provider (P10), through sign-in for guests. */
-export function RequestSimilarButton({ orgId, name }: { orgId: string; name: string }) {
+export function RequestSimilarButton({ orgId, name, slug = null }: { orgId: string; name: string; slug?: string | null }) {
   const t = useT();
   const locale = useLocale();
   const gate = useGatedAction();
-  const href = requestHref(locale, orgId, null);
+  const href = requestHref(locale, orgId, null, undefined, { slug, via: 'profile' });
   useIntentHandler('request.similar', (intent) => {
     if (intent.target === orgId) goTo(href);
   });

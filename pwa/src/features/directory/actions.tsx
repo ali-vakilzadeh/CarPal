@@ -10,13 +10,24 @@ import { useLocale, useT } from '@/lib/i18n/client';
 
 export function DirectoryRequestHandler() {
   const locale = useLocale();
-  useIntentHandler<{ location?: string | null }>('request', (intent) => {
-    if (intent.target) goTo(requestHref(locale, intent.target, intent.draft?.location ?? null));
+  useIntentHandler<{ location?: string | null; slug?: string | null }>('request', (intent) => {
+    if (intent.target)
+      goTo(requestHref(locale, intent.target, intent.draft?.location ?? null, undefined, { slug: intent.draft?.slug, via: 'search' }));
   });
   return null;
 }
 
-export function RequestAction({ orgId, locationId, name }: { orgId: string; locationId: string | null; name: string }) {
+export function RequestAction({
+  orgId,
+  locationId,
+  name,
+  slug = null,
+}: {
+  orgId: string;
+  locationId: string | null;
+  name: string;
+  slug?: string | null;
+}) {
   const t = useT();
   const locale = useLocale();
   const gate = useGatedAction();
@@ -28,9 +39,9 @@ export function RequestAction({ orgId, locationId, name }: { orgId: string; loca
         gate({
           type: 'request',
           target: orgId,
-          draft: { location: locationId },
+          draft: { location: locationId, slug },
           title: t('profiles.intent.request', { name }),
-          run: () => goTo(requestHref(locale, orgId, locationId)),
+          run: () => goTo(requestHref(locale, orgId, locationId, undefined, { slug, via: 'search' })),
         })
       }
     >

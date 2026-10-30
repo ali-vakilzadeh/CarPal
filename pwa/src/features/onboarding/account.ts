@@ -11,13 +11,14 @@ export async function applySignupChoices(api: ApiClient): Promise<void> {
   const choices = takeSignupChoices();
   if (!choices) return;
   const policy_version = choices.policyVersion;
+  // Platform-wide consents carry no grantee: the backend checks them without one (identity.has_consent, DI-59).
   const prefs: { marketing_opt_in?: boolean; ai_personalization_enabled?: boolean } = {};
   if (choices.marketing) {
-    await api.api('consents.grant', { body: { consent_type: 'marketing', policy_version, granted_to: { type: 'platform' } } });
+    await api.api('consents.grant', { body: { consent_type: 'marketing', policy_version } });
     prefs.marketing_opt_in = true;
   }
   if (choices.aiPersonalization) {
-    await api.api('consents.grant', { body: { consent_type: 'ai_personalization', policy_version, granted_to: { type: 'platform' } } });
+    await api.api('consents.grant', { body: { consent_type: 'ai_personalization', policy_version } });
     prefs.ai_personalization_enabled = true;
   }
   // ETAG: the read caches the preference ETag for the update.

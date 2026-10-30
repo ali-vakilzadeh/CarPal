@@ -149,17 +149,27 @@ export interface SeededOrg {
   slug: string;
 }
 
-/** A published provider in Tehran with hours and an availability rule for every open weekday. */
+export interface SeededProvider extends SeededOrg {
+  locationId: string;
+  /** The business user's API (P10: confirms and completes appointments). */
+  api: BusinessApi;
+}
+
+/**
+ * A published provider in Tehran with hours and (unless rules: false) an availability rule for every open weekday; at a
+ * given point when asked (P10 places the shop where the E2E browser is). A shop without rules publishes no slots but
+ * can still confirm requests at any time (BA-19).
+ */
 export async function seedProvider(
   request: APIRequestContext,
   n: Awaited<ReturnType<typeof taxonomy>>,
-  o: { name?: string } = {},
-): Promise<SeededOrg> {
+  o: { name?: string; point?: { lat: number; lng: number }; rules?: boolean } = {},
+): Promise<SeededProvider> {
   const api = await businessUser(request);
   const name = o.name ?? `P5 Suspension ${randomBytes(3).toString('hex')}`;
   const org = await ok(api.call('POST', '/v1/orgs', { name, organization_type: 'provider', contact_email: 'shop@example.com' }), 'org');
   const id = org.id as string;
-  const loc = await ok(api.call('POST', `/v1/orgs/${id}/locations`, location(tehranPoint())), 'location');
+  const loc = await ok(api.call('POST', `/v1/orgs/${id}/locations`, location(o.point ?? tehranPoint())), 'location');
   const prv = `/v1/orgs/${id}/provider`;
   await ok(
     api.call('PUT', `${prv}/profile`, {
@@ -180,7 +190,7 @@ export async function seedProvider(
     'category',
   );
   await ok(api.call('POST', `${prv}/coverage`, { items: [{ brand_node_id: n.brand, coverage_level: 'specialist' }] }), 'coverage');
-  for (const d of week)
+  for (const d of o.rules === false ? [] : week)
     await ok(
       api.call('POST', `${prv}/availability-rules`, {
         location_id: loc.id,
@@ -194,7 +204,7 @@ export async function seedProvider(
     );
   await ok(api.call('POST', `${prv}/publish`), 'publish');
   const published = await ok(api.call('GET', `/v1/orgs/${id}`), 'org get');
-  return { id, name, slug: published.slug as string };
+  return { id, name, slug: published.slug as string, locationId: loc.id as string, api };
 }
 
 /** A published vendor in Tehran with one public part in stock (fitment confirmed for the brand) and its category. */

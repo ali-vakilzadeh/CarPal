@@ -21,9 +21,22 @@ export interface DialogProps {
   className?: string;
   /** Extra data-testid-like hook for tests and the URL modal name. */
   name?: string;
+  /** Read-only content that may scroll (e.g. the pre-visit report): the body takes keyboard focus to scroll. */
+  scrollableBody?: boolean;
 }
 
-export function Dialog({ open, onClose, title, children, footer, variant = 'modal', hideTitle, className, name }: DialogProps) {
+export function Dialog({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  variant = 'modal',
+  hideTitle,
+  className,
+  name,
+  scrollableBody,
+}: DialogProps) {
   const t = useT();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -66,7 +79,9 @@ export function Dialog({ open, onClose, title, children, footer, variant = 'moda
             </h2>
             <IconButton icon="close" label={t('common.actions.close')} onClick={onClose} />
           </div>
-          <div className="pwa-dialog-body">{children}</div>
+          <div className="pwa-dialog-body" tabIndex={scrollableBody ? 0 : undefined}>
+            {children}
+          </div>
           {footer ? <div className="pwa-dialog-foot">{footer}</div> : null}
         </div>
       ) : null}

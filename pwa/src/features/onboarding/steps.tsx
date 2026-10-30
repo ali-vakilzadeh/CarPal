@@ -183,7 +183,7 @@ export function PermissionsStep({ saving, onNext, onSkip, policyVersion }: StepP
         setLocation('allowed');
         api
           .api('consents.grant', {
-            body: { consent_type: 'location_usage', policy_version: policyVersion, granted_to: { type: 'platform' } },
+            body: { consent_type: 'location_usage', policy_version: policyVersion }, // no grantee (DI-59)
           })
           .catch((err: unknown) => console.warn('location consent not saved', err));
       },

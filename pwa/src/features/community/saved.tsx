@@ -117,7 +117,10 @@ function OrgRow({
       <OrgCard org={org} locale={locale} t={t} f={f} headingLevel={2} />
       <div className="pwa-saved-actions">
         {tab === 'favorites' && org.roles.includes('provider') ? (
-          <Link href={requestHref(locale, org.id, null)} className={buttonClass({ variant: 'secondary', size: 'sm' })}>
+          <Link
+            href={requestHref(locale, org.id, null, undefined, { slug: org.slug, via: 'saved' })}
+            className={buttonClass({ variant: 'secondary', size: 'sm' })}
+          >
             <span className="cp-btn-label">{t('community.saved.bookAgain')}</span>
           </Link>
         ) : null}

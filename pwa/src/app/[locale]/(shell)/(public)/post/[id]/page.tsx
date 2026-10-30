@@ -76,7 +76,7 @@ export default async function ShowcasePage({ params }: Props) {
         <ShowcaseBody item={item} locale={locale} t={t} f={f} priority />
         <ShowcaseSocial itemId={item.id} likeCount={item.like_count} />
         <div className="pwa-profile-inline-request">
-          <RequestSimilarButton orgId={item.organization.id} name={item.organization.name} />
+          <RequestSimilarButton orgId={item.organization.id} name={item.organization.name} slug={item.organization.slug} />
         </div>
         {more.length ? (
           <Section

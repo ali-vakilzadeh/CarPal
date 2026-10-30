@@ -279,7 +279,7 @@ describe('privacy & consent', () => {
     fireEvent.click(await screen.findByRole('switch', { name: 'News and offers' }));
     await waitFor(() => expect(api.calls.some((c) => c.opId === 'me.preferences_update')).toBe(true));
     expect(api.calls.find((c) => c.opId === 'consents.grant')?.args).toEqual({
-      body: { consent_type: 'marketing', policy_version: '2026-10', granted_to: { type: 'platform' } },
+      body: { consent_type: 'marketing', policy_version: '2026-10' },
     });
     expect(api.calls.find((c) => c.opId === 'me.preferences_update')?.args).toEqual({ body: { marketing_opt_in: true } });
     expect(screen.getByRole('switch', { name: 'News and offers' })).toBeChecked();

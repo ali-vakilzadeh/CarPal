@@ -32,7 +32,8 @@ export function useLocationConsent(policyVersion: string) {
   const granted = (list.data?.items.length ?? 0) > 0;
   const grant = async () => {
     await api.api('consents.grant', {
-      body: { consent_type: 'location_usage', policy_version: policyVersion, granted_to: { type: 'platform' } },
+      // No grantee: search.run checks the consent without one, which matches only grantee-less records (DI-59).
+      body: { consent_type: 'location_usage', policy_version: policyVersion },
     });
     await queryClient.invalidateQueries({ queryKey: apiQueryKey('consents.list', CONSENT_QUERY) });
   };

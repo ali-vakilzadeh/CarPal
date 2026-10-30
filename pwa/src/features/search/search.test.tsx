@@ -215,7 +215,6 @@ describe('search results (/search/<session>)', () => {
     expect(calls.find((c) => c.opId === 'consents.grant')!.args.body).toEqual({
       consent_type: 'location_usage',
       policy_version: '2026-10',
-      granted_to: { type: 'platform' },
     });
     expect(calls.find((c) => c.opId === 'search.refine')!.args.body).toEqual({
       location: { mode: 'user_position', point: { lat: 35.71235, lng: 51.39877 }, accuracy_m: 42 },

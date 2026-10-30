@@ -1,0 +1,321 @@
+/* W-HELP-01 Help Me (P10): the full-width flow frame, the step indicator, the main column (640 px) beside the sticky
+   "Your case so far" rail (from 1024 px), the urgency levels and the recommendation and request blocks. Unlayered like
+   the design system's bundle.css (GD-11 P3 amendment); tokens only. */
+
+.pwa-flow-card.is-full {
+  max-inline-size: 1040px;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.pwa-help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.pwa-help-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+}
+.pwa-help-main {
+  min-inline-size: 0;
+  max-inline-size: 640px;
+}
+.pwa-help-rail {
+  min-inline-size: 0;
+}
+@media (width >= 1024px) {
+  .pwa-help-grid {
+    grid-template-columns: minmax(0, 640px) minmax(0, 340px);
+    justify-content: space-between;
+    align-items: start;
+  }
+  .pwa-help-rail {
+    position: sticky;
+    inset-block-start: var(--space-4);
+  }
+}
+
+/* ---------- step indicator ---------- */
+.pwa-help-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+.pwa-help-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink-muted);
+  font-size: 15px;
+  font-weight: 600;
+}
+.pwa-help-steps li.is-now {
+  color: var(--ink);
+  font-weight: 800;
+}
+.pwa-help-steps li.is-done {
+  color: var(--ink);
+}
+.pwa-help-step-n {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 28px;
+  block-size: 28px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-inactive);
+  background: var(--surface-raised);
+  font-variant-numeric: tabular-nums;
+}
+.pwa-help-steps li.is-now .pwa-help-step-n {
+  background: var(--signal);
+  color: var(--on-signal);
+  border-color: var(--border);
+}
+.pwa-help-steps li.is-done .pwa-help-step-n {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+@media (width < 768px) {
+  .pwa-help-steps li:not(.is-now) .pwa-help-step-label {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* ---------- case rail ---------- */
+.pwa-help-case {
+  padding: var(--space-4);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+[data-theme='sun'] .pwa-help-case {
+  border-color: var(--border-inactive);
+}
+.pwa-help-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+}
+.pwa-help-facts dt {
+  color: var(--ink-muted);
+  font-size: 15px;
+}
+.pwa-help-facts dd {
+  margin: 0;
+  min-inline-size: 0;
+}
+.pwa-help-answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-block-end: var(--space-2);
+  border-block-end: 1px solid var(--divider);
+}
+.pwa-help-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ---------- describe ---------- */
+.pwa-help-vehicles {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pwa-help-continue {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  min-block-size: var(--tap-min);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: inherit;
+  text-decoration: none;
+}
+.pwa-help-continue > .pwa-stack-xs {
+  flex: 1;
+  min-inline-size: 0;
+}
+.pwa-help-continue:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+/* ---------- questions ---------- */
+.pwa-help-question {
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--divider);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-1);
+}
+
+/* ---------- safety levels (colour + icon + word, never colour alone) ---------- */
+.pwa-help-level {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--divider);
+  background: var(--surface-raised);
+}
+.pwa-help-level.is-critical {
+  border: 2px solid var(--danger);
+  border-inline-start-width: 6px;
+}
+.pwa-help-level.is-urgent {
+  border-inline-start: 6px solid var(--signal);
+}
+.pwa-help-level.is-soon {
+  background: var(--signal-soft);
+}
+.pwa-help-level.is-ok {
+  border-color: var(--success);
+}
+.pwa-help-level-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.pwa-help-level-icon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 48px;
+  block-size: 48px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--danger);
+  color: var(--danger);
+}
+.pwa-help-level.is-critical h1 {
+  color: var(--danger);
+}
+.pwa-help-list {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* ---------- recommendations ---------- */
+.pwa-help-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.pwa-help-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.pwa-help-quote {
+  padding-inline-start: var(--space-3);
+  border-inline-start: 3px solid var(--divider);
+}
+.pwa-help-rec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pwa-help-why {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+.pwa-help-map {
+  block-size: 320px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.pwa-compare {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+.pwa-compare th,
+.pwa-compare td {
+  padding: var(--space-2) var(--space-3);
+  border-block-end: 1px solid var(--divider);
+  text-align: start;
+  vertical-align: top;
+}
+.pwa-compare thead th {
+  font-weight: 800;
+}
+.pwa-compare tbody th {
+  color: var(--ink-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------- request ---------- */
+.pwa-help-shop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.pwa-help-shop > .pwa-stack-xs {
+  flex: 1;
+  min-inline-size: 0;
+}
+.pwa-help-shop-icon {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 48px;
+  block-size: 48px;
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pwa-help-send {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ---------- done ---------- */
+.pwa-help-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+  padding-block: var(--space-4);
+}
+.pwa-help-done-mark {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 64px;
+  block-size: 64px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--success);
+  color: var(--success);
+  font-size: 32px;
+  font-weight: 800;
+}

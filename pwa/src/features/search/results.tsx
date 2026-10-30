@@ -42,10 +42,10 @@ export function ResultList({
   const { track } = useAnalytics();
   const resultEvent = useResultEvent();
 
-  useIntentHandler<{ location?: string | null; result?: string }>('request', (intent) => {
+  useIntentHandler<{ location?: string | null; result?: string; slug?: string | null }>('request', (intent) => {
     if (!intent.target) return;
     if (intent.draft?.result) resultEvent(sessionId, intent.draft.result, 'selected');
-    goTo(requestHref(locale, intent.target, intent.draft?.location ?? null));
+    goTo(requestHref(locale, intent.target, intent.draft?.location ?? null, undefined, { slug: intent.draft?.slug, via: 'search' }));
   });
 
   const opened = (e: MouseEvent<HTMLElement>) => {
@@ -62,11 +62,14 @@ export function ResultList({
   };
 
   const request = (r: ResultCard) => {
-    const href = requestHref(locale, r.organization.id, r.location?.location_id ?? null);
+    const href = requestHref(locale, r.organization.id, r.location?.location_id ?? null, undefined, {
+      slug: r.organization.slug,
+      via: 'search',
+    });
     gate({
       type: 'request',
       target: r.organization.id,
-      draft: { location: r.location?.location_id ?? null, result: r.result_id },
+      draft: { location: r.location?.location_id ?? null, result: r.result_id, slug: r.organization.slug },
       title: t('profiles.intent.request', { name: r.organization.name }),
       run: () => {
         saveSearchOrigin({ orgId: r.organization.id, sessionId, resultId: r.result_id });

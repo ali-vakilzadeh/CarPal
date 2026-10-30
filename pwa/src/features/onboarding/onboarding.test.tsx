@@ -188,7 +188,7 @@ describe('the stepper (P4.T6)', () => {
 
     // Sign-up choices became a consent and a preference (DI-30); the account time zone follows the browser (OQ-13).
     expect(api.calls.find((c) => c.opId === 'consents.grant')!.args).toEqual({
-      body: { consent_type: 'marketing', policy_version: '2026-10', granted_to: { type: 'platform' } },
+      body: { consent_type: 'marketing', policy_version: '2026-10' },
     });
     expect(api.calls.find((c) => c.opId === 'me.preferences_update')!.args).toEqual({ body: { marketing_opt_in: true } });
     expect(api.calls.find((c) => c.opId === 'me.update')!.args).toEqual({

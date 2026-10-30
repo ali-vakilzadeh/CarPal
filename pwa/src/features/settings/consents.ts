@@ -49,7 +49,8 @@ export function useConsentActions(policyVersion: string) {
   return {
     async grant(type: GeneralConsent): Promise<ConsentRecord> {
       const record = await api.api('consents.grant', {
-        body: { consent_type: type, policy_version: policyVersion, granted_to: { type: 'platform' } },
+        // No grantee: the backend checks platform-wide consents without one (identity.has_consent, DI-59).
+        body: { consent_type: type, policy_version: policyVersion },
       });
       replace([record]);
       const pref = DEPENDENT_PREF[type];

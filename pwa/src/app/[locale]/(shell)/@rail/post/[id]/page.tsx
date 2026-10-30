@@ -23,7 +23,7 @@ export default async function ShowcaseRail({ params }: { params: Promise<{ local
       <RightRail>
         <RailBox title={item.organization.name}>
           <OrgCard org={item.organization} locale={locale} t={ctx.t} f={ctx.f} headingLevel={3} />
-          <RequestSimilarButton orgId={item.organization.id} name={item.organization.name} />
+          <RequestSimilarButton orgId={item.organization.id} name={item.organization.name} slug={item.organization.slug} />
         </RailBox>
         {more.length ? (
           <RailBox title={ctx.t('profiles.showcase.moreFrom', { name: item.organization.name })}>

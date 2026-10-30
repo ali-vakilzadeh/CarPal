@@ -1,6 +1,7 @@
 // Frame of the full-screen flows without the app shell — the hosted sign-in (W-AUTH-01), link-token pages and the
 // web onboarding (W-ONB-01): the word mark, optional language links and an end slot (e.g. "Finish later") in a thin
-// header, and the content in a centred card (480 px for forms, 720 px for the onboarding stepper, Docs/22).
+// header, and the content in a centred card (480 px for forms, 720 px for the onboarding stepper, Docs/22), or the
+// full width without a card for Help Me (W-HELP-01: the step and the case rail, P10).
 import type { ReactNode } from 'react';
 import { cx } from '@/components/ds/cx';
 import type { Translate } from '@/lib/i18n/keys';
@@ -14,10 +15,12 @@ export interface FlowFrameProps {
   languages?: { locale: Locale; href: string; current: boolean }[];
   end?: ReactNode;
   wide?: boolean;
+  /** No card: the page lays out its own columns (Help Me). */
+  full?: boolean;
   children: ReactNode;
 }
 
-export function FlowFrame({ t, home, languages, end, wide, children }: FlowFrameProps) {
+export function FlowFrame({ t, home, languages, end, wide, full, children }: FlowFrameProps) {
   return (
     <div className="pwa-flow">
       <header className="pwa-flow-head">
@@ -47,7 +50,7 @@ export function FlowFrame({ t, home, languages, end, wide, children }: FlowFrame
         </div>
       </header>
       <main id="main" tabIndex={-1} className="pwa-flow-main">
-        <div className={cx('pwa-flow-card', wide && 'is-wide')}>{children}</div>
+        <div className={cx('pwa-flow-card', wide && 'is-wide', full && 'is-full')}>{children}</div>
       </main>
     </div>
   );

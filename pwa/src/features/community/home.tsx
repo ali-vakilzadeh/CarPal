@@ -19,6 +19,7 @@ import { MediaImage } from '@/components/media/media-image';
 import { useActiveVehicle, useVehicleLabel } from '@/components/shell/active-vehicle';
 import { InfiniteList } from '@/components/shell/infinite-list';
 import { StateView } from '@/components/shell/states';
+import { visitSoon } from '@/features/appointments';
 import { saveHelpDraft } from '@/features/onboarding';
 import { FollowButton, OrgCard } from '@/features/profiles';
 import { useApiInfiniteQuery, useApiQuery } from '@/lib/api/query';
@@ -75,7 +76,26 @@ function useAttention(): AttentionCard[] {
     enabled: !!active,
     staleTime: 60_000,
   });
+  // Appointments waiting for the user (P10.T6): a time the shop proposed, a visit in the next 24 hours.
+  const requested = useApiQuery('appointments.list', { query: { group: 'requested', limit: 20 } }, { staleTime: 60_000 });
+  const upcoming = useApiQuery('appointments.list', { query: { group: 'upcoming', limit: 20 } }, { staleTime: 60_000 });
   const cards: AttentionCard[] = [];
+  for (const a of (requested.data?.items ?? []).filter((x) => x.status === 'alternative_proposed' && x.proposed_start_at).slice(0, 2))
+    cards.push({
+      key: `proposed:${a.id}`,
+      text: t('community.home.attention.proposed', { name: a.provider.name, time: f.date(a.proposed_start_at!, 'dateTime') }),
+      action: t('community.home.attention.reply'),
+      href: `/${locale}/appointments/${encodeURIComponent(a.id)}`,
+      tone: 'signal',
+    });
+  for (const a of (upcoming.data?.items ?? []).filter((x) => visitSoon(x)).slice(0, 1))
+    cards.push({
+      key: `visit:${a.id}`,
+      text: t('community.home.attention.visit', { name: a.provider.name, time: f.date(a.confirmed_start_at!, 'dateTime') }),
+      action: t('community.home.attention.openVisit'),
+      href: `/${locale}/appointments/${encodeURIComponent(a.id)}`,
+      tone: 'neutral',
+    });
   const garage = active ? `/${locale}/garage/${active.id}` : `/${locale}/garage`;
   if (!isLoading && vehicles.length === 0)
     cards.push({

@@ -3,3 +3,4 @@ export { PriceDisplaySettings, parseRate, writePriceCookie } from './price-displ
 export { SettingsScreen, type SettingsScreenProps } from './settings-screen';
 export { isSection, SECTIONS, type Section } from './model';
 export { DsrStatus, DSR_STATUS, DSR_TYPE } from './data-section';
+export { downloadText } from './parts';
