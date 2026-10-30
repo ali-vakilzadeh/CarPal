@@ -1,19 +1,32 @@
 // Link-token landing pages (GD-14, SEC-LT-2): /l/ev#<token> email verification and /l/pr#<token> password reset
 // (P4.T3/T5), /l/ci#<token> appointment check-in (P10.T5; works for guests too, DI-23). The token is in the fragment
-// and is read in the browser. Review (ri) and consent (cn) links arrive with P11; until then they are 404.
+// and is read in the browser. /l/ri#<token> opens an emailed review invitation and /l/cn#<token> a showcase consent
+// request (P11.T2/T4).
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { FlowFrame } from '@/components/shell/flow-frame';
 import { CheckInLinkPage } from '@/features/appointments';
 import { EmailVerifyPage, PasswordResetPage } from '@/features/auth';
+import { ConsentLinkPage, InviteLinkPage } from '@/features/reviews';
 import { I18nNamespaces } from '@/lib/i18n/client';
+import { serverEnv } from '@/server/env';
 import { serverI18n } from '@/server/i18n';
 import { requestLocale } from '@/server/request-locale';
 
 type Props = { params: Promise<{ type: string }> };
 
-const PAGES = { ev: EmailVerifyPage, pr: PasswordResetPage, ci: CheckInLinkPage } as const;
-const TITLES = { ev: 'auth.link.evTitle', pr: 'auth.link.prTitle', ci: 'appointments.checkIn.title' } as const;
+function ConsentPage() {
+  return <ConsentLinkPage policyVersion={serverEnv().CARPAL_PWA_PRIVACY_VERSION} />;
+}
+
+const PAGES = { ev: EmailVerifyPage, pr: PasswordResetPage, ci: CheckInLinkPage, ri: InviteLinkPage, cn: ConsentPage } as const;
+const TITLES = {
+  ev: 'auth.link.evTitle',
+  pr: 'auth.link.prTitle',
+  ci: 'appointments.checkIn.title',
+  ri: 'reviews.invite.title',
+  cn: 'reviews.consent.title',
+} as const;
 
 function isType(v: string): v is keyof typeof PAGES {
   return v in PAGES;
@@ -33,7 +46,7 @@ export default async function LinkPage({ params }: Props) {
   const i18n = await serverI18n(locale);
   const Page = PAGES[type];
   return (
-    <I18nNamespaces resources={i18n.resources(['appointments'])}>
+    <I18nNamespaces resources={i18n.resources(['appointments', 'reviews', 'media'])}>
       <FlowFrame t={i18n.t} home={`/${locale}`}>
         <Page />
       </FlowFrame>

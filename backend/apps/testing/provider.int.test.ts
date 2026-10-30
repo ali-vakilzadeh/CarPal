@@ -528,6 +528,9 @@ describe('portfolio: consent request → grant → publish → withdrawal', () =
       scope: { type: 'portfolio_item', id: item.body.id },
       requested_by: { id: org.id },
     });
+    // The exact photos are shown to the customer (W-REV-02), as private signed URLs of the still unpublished item.
+    expect(view.body.preview_media_urls).toHaveLength(1);
+    expect(String((view.body.preview_media_urls as string[])[0])).toMatch(/^https?:\/\//);
     const grant = await app.request<Json>({
       method: 'POST',
       path: '/v1/consent-requests/respond',

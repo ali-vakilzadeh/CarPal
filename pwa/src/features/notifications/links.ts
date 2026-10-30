@@ -1,7 +1,7 @@
 // Notification destinations (P9.T1, Docs/22 W-NOTIF-01 "same table as Doc 21 §6, with web routes") and the tabs of
 // the notifications page. A destination comes from the notification's reference (type + id) and, where the reference
 // does not say enough, its template key. Destinations whose screen comes with a later stage already use their final
-// URL (appointments P10, reviews P11), and those pages show "not available yet" until then. Maintenance reminders
+// URL (appointments P10, reviews P11). Maintenance reminders
 // name only the reminder, so the garage tab is found by reading the user's cars (resolveReminderVehicle).
 import type { Notification, NotificationCategory } from '@carpal/api-contracts';
 import type { ApiClient } from '@/lib/api/client';
@@ -29,9 +29,11 @@ export function notificationDestination(n: Pick<Notification, 'template_key' | '
     case 'appointment':
       return href(`/appointments/${enc(ref.id)}`);
     case 'review_request':
-    case 'review':
-      // Review invitation, waiting for approval, published, reply → My Activity Reviews (P11 completes it).
+      // An in-app review invitation → My Activity Reviews, where open invitations lead to the review page (P11).
       return href('/activity?tab=reviews');
+    case 'review':
+      // Status changes and the shop's reply → that review in My Activity Reviews (P11.T5).
+      return href(`/activity?tab=reviews&review=${enc(ref.id)}`);
     case 'stock_inquiry':
       return href(`/activity/inquiries/${enc(ref.id)}`);
     case 'maintenance_reminder':

@@ -20,6 +20,7 @@ import { StateView, stateFromProblem } from '@/components/shell/states';
 import { useToast } from '@/components/shell/toast';
 import { saveHelpDraft } from '@/features/onboarding';
 import { CallButton, DirectionsMenu, StaticMapPreview, addressLine } from '@/features/profiles';
+import { reviewHref } from '@/features/reviews';
 import { ApiProblem } from '@/lib/api/problem';
 import { apiQueryKey, useApiClient, useApiQuery } from '@/lib/api/query';
 import { goTo } from '@/lib/browser-nav';
@@ -335,8 +336,16 @@ export function AppointmentDetail({ appointmentId, backHref }: { appointmentId: 
                 <span className="cp-btn-label">{t('appointments.action.record')}</span>
               </Link>
             ) : null}
+            {a.can_review && a.provider.slug ? (
+              <Link
+                href={reviewHref(locale, a.provider.slug, { appointment: a.id })}
+                className={buttonClass({ size: 'sm', variant: 'primary' })}
+                data-testid="leave-review"
+              >
+                <span className="cp-btn-label">{t('reviews.form.leave')}</span>
+              </Link>
+            ) : null}
           </div>
-          {a.can_review ? <p className="pwa-banner-text">{t('appointments.action.canReview')}</p> : null}
         </Banner>
       ) : null}
       {a.status === 'cancelled' || a.status === 'no_show' ? (

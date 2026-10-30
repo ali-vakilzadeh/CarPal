@@ -121,7 +121,9 @@ describe('deep links (Docs/21 §6 with web routes)', () => {
     );
     expect(href({ template_key: 'appointment.reminder', reference: { type: 'appointment', id } })).toBe(`/fa/appointments/${id}`);
     expect(href({ template_key: 'review.invitation_in_app', reference: { type: 'review_request', id } })).toBe('/fa/activity?tab=reviews');
-    expect(href({ template_key: 'review.response_published', reference: { type: 'review', id } })).toBe('/fa/activity?tab=reviews');
+    expect(href({ template_key: 'review.response_published', reference: { type: 'review', id } })).toBe(
+      `/fa/activity?tab=reviews&review=${id}`,
+    );
     expect(href({ template_key: 'inquiry.answered', reference: { type: 'stock_inquiry', id } })).toBe(`/fa/activity/inquiries/${id}`);
     expect(href({ template_key: 'vehicle.transfer_requested', reference: { type: 'vehicle_transfer', id } })).toBe('/fa/garage');
     expect(href({ template_key: 'vehicle.transfer_decided', reference: { type: 'vehicle_transfer', id } })).toBe('/fa/garage');

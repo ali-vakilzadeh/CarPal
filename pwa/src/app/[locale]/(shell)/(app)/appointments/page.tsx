@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const i18n = await serverI18n(await localeOf(params));
   return (
-    <I18nNamespaces resources={i18n.resources(['appointments', 'profiles', 'help'])}>
+    <I18nNamespaces resources={i18n.resources(['appointments', 'profiles', 'help', 'reviews'])}>
       <Suspense>
         <AppointmentsScreen selectedId={null} />
       </Suspense>

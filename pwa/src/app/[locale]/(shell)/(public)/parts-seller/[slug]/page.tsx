@@ -23,6 +23,8 @@ import {
   primaryLocation,
   type SectionLink,
 } from '@/features/profiles';
+// Deep import: the public page needs only the button, not the review screens of the barrel.
+import { WriteReviewButton } from '@/features/reviews/write-button';
 import { I18nNamespaces } from '@/lib/i18n/client';
 import { isLocale, type Locale } from '@/lib/i18n/locales';
 import { sellerPath } from '@/lib/seo/urls';
@@ -107,6 +109,9 @@ export default async function VendorProfilePage({ params }: Props) {
           {p.vendor ? <FitmentCoverage vendor={p.vendor} t={t} /> : <p className="pwa-text-body">{t('profiles.fitment.empty')}</p>}
         </Section>
         <Section id="reviews" title={t('profiles.sections.reviews')}>
+          <div className="pwa-reviews-write">
+            <WriteReviewButton orgId={p.id} slug={vendorSlug} name={p.name} as="vendor" />
+          </div>
           <div className="pwa-reviews-cols">
             <RatingSummaryView summary={p.rating_summary} vendor />
             <ReviewList orgId={p.id} orgName={p.name} initial={reviews} vendor />

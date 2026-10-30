@@ -28,7 +28,7 @@ export default async function Page({ params }: Props) {
   if (!UUID.test(id)) notFound();
   const i18n = await serverI18n(locale);
   return (
-    <I18nNamespaces resources={i18n.resources(['appointments', 'profiles', 'help'])}>
+    <I18nNamespaces resources={i18n.resources(['appointments', 'profiles', 'help', 'reviews'])}>
       <Suspense>
         <AppointmentsScreen selectedId={id.toLowerCase()} />
       </Suspense>

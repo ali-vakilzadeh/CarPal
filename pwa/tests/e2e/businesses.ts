@@ -14,6 +14,9 @@ const b64 = (bytes: Buffer) => bytes.toString('base64url');
 type Json = Record<string, unknown>;
 
 export interface BusinessApi {
+  /** The account's sign-in (P11: a customer created this way also signs in through the browser). */
+  email: string;
+  password: string;
   call: (
     method: string,
     path: string,
@@ -23,8 +26,8 @@ export interface BusinessApi {
 }
 
 /** A verified user with a password and an API access token (through the hosted sign-in endpoints). */
-export async function businessUser(request: APIRequestContext): Promise<BusinessApi> {
-  const email = newEmail('p5');
+export async function businessUser(request: APIRequestContext, prefix = 'p5'): Promise<BusinessApi> {
+  const email = newEmail(prefix);
   const password = `winter tyres ${randomBytes(4).toString('hex')}`;
   const verifier = b64(randomBytes(32));
   const redirect = `https://localhost:${PORT}/bff/oauth/callback`;
@@ -71,6 +74,8 @@ export async function businessUser(request: APIRequestContext): Promise<Business
   const { access_token, token_type } = (await token.json()) as { access_token: string; token_type: string };
 
   return {
+    email,
+    password,
     async call(method, path, body, headers = {}) {
       const res = await request.fetch(`${API}${path}`, {
         method,

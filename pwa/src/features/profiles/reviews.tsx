@@ -4,7 +4,7 @@
 // its confirmation label (Verified visit, or Verified purchase for sellers / Approved by the business and CarPal),
 // "Disputed by the business", the context line, tags, the business reply and Helpful (sign-in required, reactions.put).
 // No unverified section exists. The first page is server-rendered (initial); filters and paging go through the BFF.
-// Author names are text, not links (no member page, DI-03). Writing a review is P11.
+// Author names are text, not links (no member page, DI-03). "Write a review" is features/reviews WriteReviewButton (P11).
 import type { PublicOrgProfile, PublicReview } from '@carpal/api-contracts';
 import { useEffect, useState } from 'react';
 import { Avatar } from '@/components/ds/avatar';
@@ -136,7 +136,7 @@ export function ReviewCard({ review: r, orgName, vendor }: { review: PublicRevie
         {r.disputed_by_business ? <Badge icon="alert">{t('profiles.reviews.disputed')}</Badge> : null}
         {context.length ? <span className="pwa-text-caption">{context.join(' · ')}</span> : null}
       </div>
-      <p className="pwa-rating" aria-label={t('profiles.rating.stars', { value: f.number(r.overall_rating) })}>
+      <p className="pwa-rating" role="img" aria-label={t('profiles.rating.stars', { value: f.number(r.overall_rating) })}>
         {Array.from({ length: 5 }, (_, i) => (
           <Icon key={i} name="star" size={16} filled={i < r.overall_rating} className={i < r.overall_rating ? 'cp-star' : 'pwa-star-off'} />
         ))}

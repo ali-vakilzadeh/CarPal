@@ -419,7 +419,7 @@ describe('my activity', () => {
   } as unknown as StockInquiry;
 
   it('lists inquiries with status and opens the thread', async () => {
-    navigation.reset('/en/activity');
+    navigation.reset('/en/activity?tab=inquiries');
     renderApp(<ActivityScreen />, {
       locale: 'en',
       session: signedIn(),

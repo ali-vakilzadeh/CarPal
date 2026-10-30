@@ -13,6 +13,7 @@ import { consumeFailure, LinkTokens } from '#libs/link-tokens/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { AiReferences } from '#modules/ai-mcp/interface/ai.js';
+import { MediaService } from '#modules/media/interface/media.js';
 import { OrgCards, toOrgSummary } from '#modules/organization/interface/org-cards.js';
 import { toConsentRecord } from '../api/projections.js';
 import { ConsentScopes } from '../interface/identity.js';
@@ -223,6 +224,7 @@ export class ConsentRequestViewHandler implements OperationHandler {
   constructor(
     private readonly links: LinkTokens,
     private readonly orgCards: OrgCards,
+    private readonly media: MediaService,
   ) {}
 
   async handle(ctx: OperationContext<{ token: string }>): Promise<OperationResult> {
@@ -240,14 +242,28 @@ export class ConsentRequestViewHandler implements OperationHandler {
           requested_by: toOrgSummary(org),
           scope: { type: req.scope_entity_type, id: req.scope_entity_id },
           purpose_i18n_key: req.purpose_i18n_key,
-          // Preview media come from the media module (S4); none until then.
-          preview_media_urls: [],
+          preview_media_urls: await this.#previewUrls(scope, req.scope_entity_type, req.scope_entity_id),
           expires_at: new Date(req.expires_at).toISOString(),
         };
       },
       { readOnly: true },
     );
     return { body };
+  }
+
+  /**
+   * The exact photos the subject is asked about (W-REV-02, C-REV-03): the clean, active images attached to the
+   * portfolio item, as private 5-minute URLs. The caller was checked as the request's subject above, which is the
+   * relationship sharedAttachmentViews needs (the item itself stays private until it is published).
+   */
+  async #previewUrls(scope: TxScope, type: string | null, id: string | null): Promise<string[]> {
+    if (type !== 'portfolio_item' || !id) return [];
+    const views = (await this.media.sharedAttachmentViews(scope, 'portfolio_item', [id])).get(id) ?? [];
+    return views
+      .filter((v) => v.media_type === 'image')
+      .map((v) => v.url ?? v.thumbnail_url)
+      .filter((u): u is string => !!u)
+      .slice(0, 10);
   }
 }
 

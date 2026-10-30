@@ -3,7 +3,7 @@
 // master–detail. The list has the segments Upcoming · Requested · Past · Cancelled (appointments.list group, in the
 // URL) and, above them, "Needs your action": proposed times to answer, drafts not sent and visits to check in to.
 // The detail is AppointmentDetail. From 1024 px both columns show; below, the detail replaces the list and has a
-// way back.
+// way back. Completed visits that can still be reviewed have "Leave review" (P11).
 import type { Appointment } from '@carpal/api-contracts';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -12,6 +12,7 @@ import { cx } from '@/components/ds/cx';
 import { Icon } from '@/components/ds/icon';
 import { InfiniteList } from '@/components/shell/infinite-list';
 import { StateView } from '@/components/shell/states';
+import { reviewHref } from '@/features/reviews';
 import { useApiInfiniteQuery, useApiQuery } from '@/lib/api/query';
 import { useFormat } from '@/lib/format/client';
 import { useLocale, useT } from '@/lib/i18n/client';
@@ -61,6 +62,23 @@ function AppointmentCard({ a, href, selected, need }: { a: Appointment; href: st
   );
 }
 
+/** "Leave review" under a completed visit the user can still review (C-APP-01 Past; P11). */
+function LeaveReview({ a }: { a: Appointment }) {
+  const t = useT();
+  const locale = useLocale();
+  if (!a.can_review || !a.provider.slug) return null;
+  return (
+    <Link
+      href={reviewHref(locale, a.provider.slug, { appointment: a.id })}
+      className={buttonClass({ size: 'sm', variant: 'ghost', className: 'pwa-appt-review' })}
+    >
+      <Icon name="star" size={16} />
+      <span className="cp-btn-label">{t('reviews.form.leave')}</span>
+      <span className="sr-only"> {a.provider.name}</span>
+    </Link>
+  );
+}
+
 function NeedsAction({ selectedId, hrefOf }: { selectedId: string | null; hrefOf: (a: Appointment) => string }) {
   const t = useT();
   const requested = useApiQuery('appointments.list', { query: { group: 'requested', limit: 50 } }, { staleTime: 30_000 });
@@ -94,7 +112,12 @@ function SegmentList({ seg, selectedId, hrefOf }: { seg: Segment; selectedId: st
     <InfiniteList
       items={items}
       getKey={(a) => a.id}
-      renderItem={(a) => <AppointmentCard a={a} href={hrefOf(a)} selected={a.id === selectedId} />}
+      renderItem={(a) => (
+        <>
+          <AppointmentCard a={a} href={hrefOf(a)} selected={a.id === selectedId} />
+          <LeaveReview a={a} />
+        </>
+      )}
       status={list.status}
       error={list.error}
       hasNextPage={list.hasNextPage}

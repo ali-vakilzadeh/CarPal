@@ -7,7 +7,7 @@ import type { InquiryMessage, StockInquiry } from '@carpal/api-contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
-import { Button } from '@/components/ds/button';
+import { Button, buttonClass } from '@/components/ds/button';
 import { TextField } from '@/components/ds/text-field';
 import { SkeletonCard } from '@/components/shell/skeleton';
 import { StateView, stateFromProblem } from '@/components/shell/states';
@@ -15,6 +15,7 @@ import { useToast } from '@/components/shell/toast';
 import { apiQueryKey, useApiClient, useApiQuery } from '@/lib/api/query';
 import { ApiProblem } from '@/lib/api/problem';
 import { useFormat } from '@/lib/format/client';
+import { reviewHref } from '@/features/reviews';
 import { useLocale, useT } from '@/lib/i18n/client';
 import { InquiryStatusBadge } from './activity';
 import { inquiryActions } from './model';
@@ -187,7 +188,17 @@ export function InquiryDetail({ inquiryId }: { inquiryId: string }) {
           ) : null}
         </div>
       ) : null}
-      {i.can_review ? <p className="pwa-text-caption m-0">{t('activity.inquiry.canReview')}</p> : null}
+      {i.can_review && i.vendor.slug ? (
+        <div>
+          <Link
+            href={reviewHref(locale, i.vendor.slug, { as: 'vendor', inquiry: i.id })}
+            className={buttonClass({ variant: 'primary', size: 'sm' })}
+            data-testid="review-seller"
+          >
+            <span className="cp-btn-label">{t('reviews.form.reviewSeller')}</span>
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }

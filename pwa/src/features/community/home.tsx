@@ -21,6 +21,7 @@ import { InfiniteList } from '@/components/shell/infinite-list';
 import { StateView } from '@/components/shell/states';
 import { visitSoon } from '@/features/appointments';
 import { saveHelpDraft } from '@/features/onboarding';
+import { invitationHref } from '@/features/reviews';
 import { FollowButton, OrgCard } from '@/features/profiles';
 import { useApiInfiniteQuery, useApiQuery } from '@/lib/api/query';
 import { useFlag } from '@/lib/config/client';
@@ -79,6 +80,8 @@ function useAttention(): AttentionCard[] {
   // Appointments waiting for the user (P10.T6): a time the shop proposed, a visit in the next 24 hours.
   const requested = useApiQuery('appointments.list', { query: { group: 'requested', limit: 20 } }, { staleTime: 60_000 });
   const upcoming = useApiQuery('appointments.list', { query: { group: 'upcoming', limit: 20 } }, { staleTime: 60_000 });
+  // Open review invitations (P11.T5): "How was your visit to Reza Auto Suspension?" → the review page.
+  const invitations = useApiQuery('review_invitations.mine_list', { query: { limit: 10 } }, { staleTime: 60_000 });
   const cards: AttentionCard[] = [];
   for (const a of (requested.data?.items ?? []).filter((x) => x.status === 'alternative_proposed' && x.proposed_start_at).slice(0, 2))
     cards.push({
@@ -96,6 +99,17 @@ function useAttention(): AttentionCard[] {
       href: `/${locale}/appointments/${encodeURIComponent(a.id)}`,
       tone: 'neutral',
     });
+  for (const i of (invitations.data?.items ?? []).slice(0, 1)) {
+    const href = invitationHref(locale, i);
+    if (href)
+      cards.push({
+        key: `review:${i.id}`,
+        text: t('community.home.attention.review', { name: i.subject.name }),
+        action: t('community.home.attention.reviewAction'),
+        href,
+        tone: 'neutral',
+      });
+  }
   const garage = active ? `/${locale}/garage/${active.id}` : `/${locale}/garage`;
   if (!isLoading && vehicles.length === 0)
     cards.push({

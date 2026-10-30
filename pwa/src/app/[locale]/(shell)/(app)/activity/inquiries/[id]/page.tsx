@@ -26,7 +26,7 @@ export default async function Page({ params }: Props) {
   if (!UUID.test(id)) notFound();
   const i18n = await serverI18n(locale);
   return (
-    <I18nNamespaces resources={i18n.resources(['activity', 'settings'])}>
+    <I18nNamespaces resources={i18n.resources(['activity', 'settings', 'reviews'])}>
       <InquiryDetail inquiryId={id.toLowerCase()} />
     </I18nNamespaces>
   );

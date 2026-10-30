@@ -1,0 +1,221 @@
+/* Reviews (P11): W-REV-01/03 review page, star inputs, /l/ri and /l/cn link pages, My Activity reviews. */
+.pwa-review-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-block: var(--space-6);
+}
+.pwa-review-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.pwa-review-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .pwa-review-cols {
+    grid-template-columns: minmax(0, 640px) minmax(0, 340px);
+  }
+  .pwa-review-aside {
+    position: sticky;
+    inset-block-start: var(--space-6);
+  }
+}
+.pwa-review-context {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+.pwa-review-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+}
+.pwa-review-tips {
+  margin: 0;
+  padding-inline-start: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.pwa-review-finding {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-end: var(--space-2);
+  border-block-end: 1px solid var(--divider);
+}
+.pwa-review-match {
+  font-weight: 700;
+  unicode-bidi: plaintext;
+  overflow-wrap: anywhere;
+}
+.pwa-review-sub {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+}
+.pwa-review-return {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.pwa-review-submit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  position: sticky;
+  inset-block-end: 0;
+  padding-block: var(--space-3);
+  background: var(--surface);
+}
+.pwa-review-shown {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+/* Stars: native radios with star faces; one tab stop per group, arrow keys move the choice. */
+.pwa-stars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+.pwa-stars.is-sm {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+.pwa-stars-legend {
+  float: inline-start;
+  font-weight: 600;
+}
+.pwa-stars-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.pwa-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--tap-min);
+  min-block-size: var(--tap-min);
+  border-radius: var(--radius-sm);
+  color: var(--divider);
+  cursor: pointer;
+}
+.pwa-star.is-on {
+  color: var(--signal);
+}
+.pwa-star:has(input:focus-visible) {
+  box-shadow: var(--ring-focus);
+}
+.pwa-stars.is-error .pwa-star {
+  color: var(--danger);
+}
+.pwa-stars.is-error .pwa-star.is-on {
+  color: var(--signal);
+}
+.pwa-stars-clear {
+  margin-inline-start: var(--space-2);
+  min-block-size: var(--tap-min);
+}
+
+/* C-REV-02 confirmation. */
+.pwa-review-done {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  max-inline-size: 40rem;
+}
+.pwa-success-icon {
+  color: var(--success);
+}
+.pwa-review-steps {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pwa-review-steps li {
+  display: flex;
+  flex-direction: column;
+}
+
+/* /l/ri and /l/cn. */
+.pwa-review-invite-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.pwa-consent-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: var(--space-2);
+}
+.pwa-consent-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* My Activity → Reviews. */
+.pwa-my-review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+}
+.pwa-my-review.is-highlighted {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-1);
+}
+.pwa-my-review-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.pwa-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* "Write a review" above the profile's reviews (P11.T6). */
+.pwa-reviews-write {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-end: var(--space-3);
+}

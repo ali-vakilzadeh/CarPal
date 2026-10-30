@@ -25,6 +25,8 @@ import {
   topCapability,
   type SectionLink,
 } from '@/features/profiles';
+// Deep import: the public page needs only the button, not the review screens of the barrel.
+import { WriteReviewButton } from '@/features/reviews/write-button';
 import { I18nNamespaces } from '@/lib/i18n/client';
 import { isLocale, type Locale } from '@/lib/i18n/locales';
 import { shopPath } from '@/lib/seo/urls';
@@ -145,6 +147,9 @@ export default async function ProviderProfilePage({ params }: Props) {
           />
         </Section>
         <Section id="reviews" title={t('profiles.sections.reviews')}>
+          <div className="pwa-reviews-write">
+            <WriteReviewButton orgId={p.id} slug={p.slug ?? slug} name={p.name} as="provider" />
+          </div>
           <div className="pwa-reviews-cols">
             <RatingSummaryView summary={p.rating_summary} />
             <ReviewList orgId={p.id} orgName={p.name} initial={reviews} />

@@ -5,3 +5,4 @@ export { takeSignupChoices, type SignupChoices } from './storage';
 export { maskDestination, normalizePhone, parseIdentifier, type Identifier } from './identifier';
 export { checkPassword, passwordError, PASSWORD_MAX, PASSWORD_MIN } from './password';
 export { passkeysSupported, passkeyCancelled } from './passkey';
+export { CodeInput, type CodeInputProps } from './fields';

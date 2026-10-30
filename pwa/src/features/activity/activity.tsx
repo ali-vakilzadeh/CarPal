@@ -4,7 +4,8 @@
 // (a table from 768 px, stacked rows below): stock inquiries (inquiries.list → the thread at
 // /<locale>/activity/inquiries/<id>) and data requests (dsr.list). There is no read of one's own questions, answers,
 // comments or content reports (DI-50) and no consumer post operation (DI-02): those tabs say so and link to where the
-// content lives. Reviews arrive with P11.
+// content lives. Reviews (P11.T5) are features/reviews ActivityReviews: invitations and the caller's reviews with
+// their statuses; ?review=<id> highlights one (the review notifications open it).
 import type { StockInquiry } from '@carpal/api-contracts';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -12,6 +13,7 @@ import { Badge } from '@/components/ds/badge';
 import { Button, buttonClass } from '@/components/ds/button';
 import { SkeletonList } from '@/components/shell/skeleton';
 import { StateView, stateFromProblem } from '@/components/shell/states';
+import { ActivityReviews } from '@/features/reviews';
 import { DsrStatus, DSR_TYPE } from '@/features/settings';
 import { useApiInfiniteQuery, useApiQuery } from '@/lib/api/query';
 import { useFormat } from '@/lib/format/client';
@@ -174,11 +176,9 @@ function Requests() {
   );
 }
 
-function Placeholder({ tab }: { tab: 'reviews' | 'posts' | 'questions' }) {
+function Placeholder({ tab }: { tab: 'posts' | 'questions' }) {
   const t = useT();
   const locale = useLocale();
-  if (tab === 'reviews')
-    return <StateView kind="notAvailable" t={t} compact title={t('activity.reviews.title')} text={t('activity.reviews.text')} />;
   if (tab === 'posts') return <StateView kind="empty" t={t} compact title={t('activity.posts.title')} text={t('activity.posts.text')} />;
   return (
     <StateView
@@ -202,7 +202,7 @@ export function ActivityScreen() {
   const pathname = usePathname();
   const search = useSearchParams();
   const param = search.get('tab');
-  const tab: ActivityTab = isActivityTab(param) ? param : 'inquiries';
+  const tab: ActivityTab = isActivityTab(param) ? param : 'reviews';
   return (
     <div className="pwa-activity">
       <h1 className="pwa-text-title m-0">{t('shell.menu.activity')}</h1>
@@ -225,7 +225,8 @@ export function ActivityScreen() {
       <div id="activity-panel" role="tabpanel" aria-labelledby={`activity-tab-${tab}`} className="pwa-stack">
         {tab === 'inquiries' ? <Inquiries /> : null}
         {tab === 'reports' ? <Requests /> : null}
-        {tab === 'reviews' || tab === 'posts' || tab === 'questions' ? <Placeholder tab={tab} /> : null}
+        {tab === 'reviews' ? <ActivityReviews highlight={search.get('review')} /> : null}
+        {tab === 'posts' || tab === 'questions' ? <Placeholder tab={tab} /> : null}
       </div>
     </div>
   );
