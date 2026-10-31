@@ -55,6 +55,19 @@ const schema = z
     CARPAL_PWA_PRIVACY_VERSION: policyVersion.default('2026-10'),
     /** Business portal sign-up (onboarding step 1 business choices, W-ONB-01); a placeholder until the portal exists. */
     CARPAL_PWA_PORTAL_SIGNUP_URL: url.default('https://portal.carpal.app/signup'),
+    /** The business portal: notifications of a business (organization_context_id) open here (DI-16, P12.T3). */
+    CARPAL_PWA_PORTAL_URL: url.default('https://portal.carpal.app'),
+    /**
+     * Public VAPID key (base64url, an uncompressed P-256 point) of the push service that sends the backend's web
+     * pushes (P12.T3). Empty = web push is not offered. The private key belongs to the sender, never to the PWA.
+     */
+    CARPAL_PWA_VAPID_PUBLIC_KEY: z.preprocess(
+      (v) => (v === '' ? undefined : v),
+      z
+        .string()
+        .regex(/^[A-Za-z0-9_-]{80,100}$/, 'must be a base64url P-256 public key')
+        .optional(),
+    ),
     /**
      * Dev/E2E only: the registered https redirect URI when the PWA itself runs on http://localhost (DI-24, OQ-10).
      * Empty = <CARPAL_PWA_ORIGIN>/bff/oauth/callback. Refused in prod.

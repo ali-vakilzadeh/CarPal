@@ -29,6 +29,8 @@ export interface UploadZoneProps {
   /** Take pasted files (only one zone per page should). */
   paste?: boolean;
   className?: string;
+  /** Files owned by an organization the user belongs to (a fleet driver's issue photos, P12) instead of the user. */
+  organizationId?: string;
 }
 
 const PHASE_TEXT: Record<Exclude<UploadPhase, 'failed'>, MessageKey> = {
@@ -71,11 +73,11 @@ const FINAL: ReadonlySet<UploadFailure> = new Set([
   'quarantined',
 ]);
 
-export function UploadZone({ group, purpose, label, hint, multiple = true, paste = true, className }: UploadZoneProps) {
+export function UploadZone({ group, purpose, label, hint, multiple = true, paste = true, className, organizationId }: UploadZoneProps) {
   const t = useT();
   const api = useApiClient();
   const session = useSession();
-  const ownerId = session.data?.user?.id ?? null;
+  const ownerId = organizationId ?? session.data?.user?.id ?? null;
   const items = useUploads(group);
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
@@ -85,7 +87,7 @@ export function UploadZone({ group, purpose, label, hint, multiple = true, paste
     if (!files || !ownerId) return;
     const list = [...files];
     if (list.length === 0) return;
-    startUploads(multiple ? list : list.slice(0, 1), { group, purpose, ownerId, api });
+    startUploads(multiple ? list : list.slice(0, 1), { group, purpose, ownerId, ownerType: organizationId ? 'organization' : 'user', api });
   };
 
   useEffect(() => {

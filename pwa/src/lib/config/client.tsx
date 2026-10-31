@@ -12,7 +12,16 @@ export interface PublicConfig {
   i18nVersion: string;
   /** live = fresh from the API; stale = served from cache while refreshing; fallback = region file, flags off. */
   source: 'live' | 'stale' | 'fallback';
+  /** PWA settings of this deployment (P12): the web push key (null = no web push) and the business portal. */
+  pwa?: PwaConfig;
 }
+
+export interface PwaConfig {
+  vapidPublicKey: string | null;
+  portalUrl: string;
+}
+
+const DEFAULT_PWA: PwaConfig = { vapidPublicKey: null, portalUrl: 'https://portal.carpal.app' };
 
 const ConfigContext = createContext<PublicConfig | null>(null);
 
@@ -36,4 +45,8 @@ export function useRegion(): RegionConfig {
 
 export function useTaxonomyVersion(): string {
   return useConfig().taxonomyVersion;
+}
+
+export function usePwaConfig(): PwaConfig {
+  return useConfig().pwa ?? DEFAULT_PWA;
 }

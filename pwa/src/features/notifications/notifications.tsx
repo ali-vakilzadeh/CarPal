@@ -5,11 +5,12 @@
 // unread dot; opening one marks it read and goes to its destination (links.ts, the Docs/21 §6 table with web routes).
 // The unread count polls every minute, never sooner than CarPal-Poll-After-Ms (SEC-RL-3), backs off after failures
 // and pauses while the tab is hidden (TanStack does not run intervals in background tabs; focus refetches).
+// P12: the page offers web push while this browser has none, and ?open=<id> (a web push click) opens that item.
 import type { Notification } from '@carpal/api-contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ds/button';
 import { cx } from '@/components/ds/cx';
 import { Icon } from '@/components/ds/icon';
@@ -17,6 +18,7 @@ import { InfiniteList } from '@/components/shell/infinite-list';
 import { SkeletonList } from '@/components/shell/skeleton';
 import { StateView, stateFromProblem } from '@/components/shell/states';
 import { useToast } from '@/components/shell/toast';
+import { PushOffBanner } from '@/features/pwa';
 import { useApiClient, useApiInfiniteQuery, useApiQuery } from '@/lib/api/query';
 import { useFormat } from '@/lib/format/client';
 import { useLocale, useT } from '@/lib/i18n/client';
@@ -309,8 +311,20 @@ export function NotificationsScreen() {
   const count = useUnreadCount();
   const open = useOpenNotification();
   const markRead = useMarkRead();
-  const all = list.data?.pages.flatMap((p) => p.items) ?? [];
+  const all = useMemo(() => list.data?.pages.flatMap((p) => p.items) ?? [], [list.data]);
   const items = q.clientFilter ? all.filter((n) => q.clientFilter!.includes(n.category)) : all;
+
+  // A web push click opens /notifications?open=<id> (the push carries the id only, DI-66): go on to its destination
+  // once the notification is in the list; one that is not (a business notification, DI-16) leaves the list open.
+  const openId = search.get('open');
+  const opened = useRef<string | null>(null);
+  useEffect(() => {
+    if (!openId || opened.current === openId || list.status !== 'success') return;
+    opened.current = openId;
+    const n = all.find((x) => x.id === openId);
+    if (n) void open(n);
+    else router.replace(pathname, { scroll: false });
+  }, [openId, list.status, all, open, router, pathname]);
 
   return (
     <div className="pwa-notifications">
@@ -335,6 +349,7 @@ export function NotificationsScreen() {
           </Link>
         </div>
       </div>
+      <PushOffBanner />
       <div className="pwa-tabs" role="tablist" aria-label={t('notifications.tabs.label')}>
         {NOTIFICATION_TABS.map((x) => (
           <button

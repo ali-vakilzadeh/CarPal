@@ -22,6 +22,7 @@ interface Entry extends UploadItem {
   controller: AbortController;
   api: ApiClient;
   ownerId: string;
+  ownerType?: 'user' | 'organization';
   original: File;
   settled: Promise<UploadState>;
 }
@@ -61,7 +62,7 @@ export function setBrowserDeps(deps: Omit<UploadDeps, 'api'>) {
 
 function launch(e: Entry): Promise<UploadState> {
   return runUpload(
-    { file: e.original, purpose: e.purpose, ownerId: e.ownerId, signal: e.controller.signal },
+    { file: e.original, purpose: e.purpose, ownerId: e.ownerId, ownerType: e.ownerType, signal: e.controller.signal },
     { ...browserDeps, api: e.api },
     (s) => {
       const cur = entries.get(e.id);
@@ -74,7 +75,7 @@ function launch(e: Entry): Promise<UploadState> {
 
 export function startUploads(
   files: Iterable<File>,
-  o: { group: string; purpose: UploadPurpose; ownerId: string; api: ApiClient },
+  o: { group: string; purpose: UploadPurpose; ownerId: string; ownerType?: 'user' | 'organization'; api: ApiClient },
 ): string[] {
   const ids: string[] = [];
   for (const file of files) {
@@ -90,6 +91,7 @@ export function startUploads(
       controller: new AbortController(),
       api: o.api,
       ownerId: o.ownerId,
+      ownerType: o.ownerType,
       original: file,
       settled: Promise.resolve(initialState(file)),
     };

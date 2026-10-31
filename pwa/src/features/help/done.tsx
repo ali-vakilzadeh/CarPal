@@ -2,7 +2,7 @@
 // W-HELP-01 Done (P10.T3; Docs/55 C-HELP-08): the request was sent — reference, shop, car, issue, the preferred times,
 // what happens next (the shop's usual response time), the public address or area until the shop confirms (the exact
 // address comes with confirmation, 52 §12) with Directions, Track request, Back to home, Add another issue and Cancel
-// request. The web push offer for appointment updates belongs here once P12 brings the service worker (PushOffer).
+// request. P12: the web push offer for appointment updates (Docs/22 W-NOTIF-01: after the first appointment request).
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -14,15 +14,11 @@ import { StateView, stateFromProblem } from '@/components/shell/states';
 import { useToast } from '@/components/shell/toast';
 import { reference, subjectOf, vehicleText } from '@/features/appointments';
 import { DirectionsMenu, addressLine } from '@/features/profiles';
+import { PushOffer } from '@/features/pwa';
 import { apiQueryKey, useApiClient, useApiQuery } from '@/lib/api/query';
 import { useFormat } from '@/lib/format/client';
 import { useLocale, useT } from '@/lib/i18n/client';
 import type { WizardContext } from './wizard';
-
-/** P12 adds the web push offer for appointment updates here (OQ-07); nothing until then. */
-function PushOffer() {
-  return null;
-}
 
 export function DoneStep({ ctx }: { ctx: WizardContext }) {
   const t = useT();

@@ -23,8 +23,11 @@ export interface CspOptions {
  * (P3): Next.js 16.4.3's Turbopack runtime loads lazy chunks with a plain script.src assignment and React creates
  * <script> elements through innerHTML, so the boot script (src/lib/theme.ts BOOT_SCRIPT) installs a narrow default
  * policy — same-origin /_next/static/ script URLs, and HTML that cannot create markup.
+ *
+ * 'carpal-sw' (P12): the PWA runtime registers the service worker through a policy that admits exactly '/sw.js'
+ * (features/pwa/runtime.tsx), so the default policy stays limited to Next.js's chunks.
  */
-export const TRUSTED_TYPES_POLICIES = ['nextjs', 'nextjs#bundler', 'default'] as const;
+export const TRUSTED_TYPES_POLICIES = ['nextjs', 'nextjs#bundler', 'default', 'carpal-sw'] as const;
 
 export function contentSecurityPolicy(o: CspOptions): string {
   const media = o.mediaOrigins.join(' ');
@@ -108,6 +111,7 @@ export const PRIVATE_SECTIONS = new Set([
   'onboarding',
   'login',
   'signup',
+  'drive',
 ]);
 
 /** Pages that preview private PDFs in a frame (W-GAR-01/02: /<locale>/garage/…). */

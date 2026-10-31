@@ -65,8 +65,10 @@ export interface UploadDeps {
 export interface UploadRequest {
   file: File;
   purpose: UploadPurpose;
-  /** The uploading user (UploadInit.owner). */
+  /** The uploading user (UploadInit.owner), or the organization the file belongs to (ownerType). */
   ownerId: string;
+  /** 'organization' for files of an organization the user is a member of, e.g. a fleet driver's issue photos (P12). */
+  ownerType?: 'user' | 'organization';
   signal?: AbortSignal;
 }
 
@@ -164,7 +166,7 @@ export async function runUpload(req: UploadRequest, deps: UploadDeps, emit: (s: 
     ticket = await deps.api.api('media.upload_init', {
       body: {
         purpose: req.purpose,
-        owner: { type: 'user', id: req.ownerId },
+        owner: { type: req.ownerType ?? 'user', id: req.ownerId },
         mime_type: mime!,
         file_size_bytes: file.size,
         checksum_sha256: checksum,

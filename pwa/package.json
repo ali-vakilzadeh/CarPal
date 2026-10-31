@@ -24,10 +24,13 @@
     "contract:check": "tsx tools/contract/generate.ts --check",
     "ds:sync": "node tools/sync-design-system.mjs",
     "ds:check": "node tools/sync-design-system.mjs --check",
+    "sw:build": "node tools/build-sw.mjs",
+    "sw:check": "node tools/build-sw.mjs --check",
+    "icons:build": "node tools/make-icons.mjs",
     "i18n:check": "tsx tools/i18n-check.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm contract:check && pnpm i18n:check && pnpm ds:check"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm contract:check && pnpm i18n:check && pnpm ds:check && pnpm sw:check"
   },
   "dependencies": {
     "@carpal/api-contracts": "link:../shared/api-contracts",
@@ -59,6 +62,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
+    "esbuild": "0.28.2",
     "eslint": "10.13.0",
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "^17.13.0",
