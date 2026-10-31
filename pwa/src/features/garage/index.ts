@@ -7,3 +7,4 @@ export { RecordFormScreen } from './record-form';
 export { PrintView } from './print-view';
 export { OwnershipRequests, TransferAsk } from './transfers';
 export { PlanLimitDialog } from './plan-limit';
+export { useModelName, useVehicleTitle } from './names';

@@ -5,6 +5,7 @@
 import type { Resources } from '@/lib/i18n/keys';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
+import { PwaRuntime } from '@/features/pwa';
 import { AnalyticsProvider } from '@/lib/analytics/client';
 import type { Consent } from '@/lib/analytics/consent';
 import type { ApiClient } from '@/lib/api/client';
@@ -22,12 +23,14 @@ import { ThemeProvider } from './theme-controller';
 import { ToastProvider } from './toast';
 
 /** The server's view of the session goes into the cache before anything reads it. Without a session cookie the
- * server could not tell (cross-site arrival), so the seed is marked stale and the browser asks /bff/session. */
+ * server could not tell (cross-site arrival), so the seed is marked stale and the browser asks /bff/session. A page
+ * the service worker controls may be a stored copy (P12), so its seed is checked the same way. */
 function SessionSeed({ initial, confirmed, children }: { initial: SessionView; confirmed: boolean; children: ReactNode }) {
   const queryClient = useQueryClient();
   useState(() => {
+    const maybeStored = typeof navigator !== 'undefined' && !!navigator.serviceWorker?.controller;
     if (queryClient.getQueryData(SESSION_QUERY_KEY) === undefined)
-      queryClient.setQueryData(SESSION_QUERY_KEY, initial, { updatedAt: confirmed ? Date.now() : 0 });
+      queryClient.setQueryData(SESSION_QUERY_KEY, initial, { updatedAt: confirmed && !maybeStored ? Date.now() : 0 });
     return null;
   });
   return <>{children}</>;
@@ -79,6 +82,7 @@ export function AppProviders(p: AppProvidersProps) {
                     <IntentProvider>{p.children}</IntentProvider>
                   </AnalyticsProvider>
                   <SessionNotices />
+                  <PwaRuntime />
                 </ToastProvider>
               </ThemeProvider>
             </ConfigProvider>

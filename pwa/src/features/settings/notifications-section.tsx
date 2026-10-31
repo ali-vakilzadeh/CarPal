@@ -4,8 +4,9 @@
 // Web push (this browser), Email with instant / daily / weekly digest), and the locked row "Safety and security alerts
 // are always delivered" (critical notifications reach the app regardless, Docs/40 §20.2). notification_prefs.put
 // replaces the whole list, so every change sends all rows; marketing needs the marketing consent (403
-// CONSENT_REQUIRED → Privacy & consent). "Web push (this browser)" is this browser's subscription, wired in P12; SMS
-// comes later. "Only safety and security alerts" is the account's critical_alerts_only. The bells of followed shops
+// CONSENT_REQUIRED → Privacy & consent). "Web push (this browser)" (P12.T3) shows whether this browser receives the
+// category: the contract has one push channel for the mobile app and browsers (DI-66), so a category reaches this
+// browser when its Push switch is on and the "Web push on this browser" card below has subscribed it; SMS comes later. "Only safety and security alerts" is the account's critical_alerts_only. The bells of followed shops
 // live on Saved & Following.
 import type { NotificationCategory, NotificationChannel, NotificationPreference } from '@carpal/api-contracts';
 import { useQueryClient } from '@tanstack/react-query';
@@ -15,6 +16,7 @@ import { apiQueryKey, useApiClient, useApiQuery } from '@/lib/api/query';
 import { ApiProblem } from '@/lib/api/problem';
 import { useLocale, useT } from '@/lib/i18n/client';
 import type { MessageKey } from '@/lib/i18n/keys';
+import { PushOutcome, usePush } from '@/features/pwa';
 import { useSetPreference } from './consents';
 import { MATRIX_CATEGORIES, MATRIX_CHANNELS, prefKey, prefMap, withPreference, type Frequency } from './model';
 import { Card, ErrorLine, ReadState, SwitchRow } from './parts';
@@ -45,6 +47,8 @@ export function NotificationsSection() {
   const prefs = useApiQuery('notification_prefs.get', undefined, { staleTime: 60_000 });
   const account = useApiQuery('me.preferences_get', undefined, { staleTime: 60_000 });
   const setPreference = useSetPreference();
+  const push = usePush();
+  const webPush = push.status === 'on';
   const [error, setError] = useState<unknown>(null);
   const [saving, setSaving] = useState(false);
 
@@ -135,8 +139,12 @@ export function NotificationsSection() {
                       </td>
                     ))}
                     <td>
-                      <span aria-hidden="true">—</span>
-                      <span className="sr-only">{t('settings.notifications.webPushLater')}</span>
+                      <input
+                        type="checkbox"
+                        checked={webPush && (get('push', cat)?.enabled ?? false)}
+                        disabled
+                        aria-label={t('settings.notifications.webPushCell', { category: t(CATEGORY[cat]) })}
+                      />
                     </td>
                     <td>
                       <select
@@ -168,6 +176,23 @@ export function NotificationsSection() {
           <ErrorLine error={error} />
         )}
         <p className="pwa-text-caption m-0">{t('settings.notifications.channelsNote')}</p>
+      </Card>
+      <Card title={t('pwa.push.settingsTitle')} text={t('pwa.push.settingsText')}>
+        <div data-testid="web-push-card" className="pwa-stack-sm">
+          {push.status === 'unsupported' ? (
+            <p className="m-0">{t('pwa.push.unsupported')}</p>
+          ) : push.status === 'denied' ? (
+            <p className="m-0">{t('pwa.push.denied')}</p>
+          ) : (
+            <SwitchRow
+              label={t('pwa.push.thisBrowser')}
+              checked={webPush}
+              disabled={push.busy}
+              onChange={(on) => void (on ? push.turnOn() : push.turnOff())}
+            />
+          )}
+          <PushOutcome outcome={push.outcome} busy={push.busy} onFresh={() => void push.turnOn(true)} />
+        </div>
       </Card>
       <Card title={t('settings.notifications.quietTitle')}>
         {account.data ? (

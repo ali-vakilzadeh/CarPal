@@ -10,7 +10,7 @@ Planned contents (stages P1–P13 in [dev_plan.json](dev_plan.json)):
 - **Driver issue reporting** for fleet drivers without the native app.
 - PWA features: installable, web push, offline-tolerant shell, bundled EN/FA dictionary.
 
-Status: **P7 (My Garage: vehicles, service history, documents, issues, reminders, uploads)** done on top of P1–P6 (foundation, consumer BFF, design system and app shell, hosted sign-in and onboarding, public SEO pages, search and map). Contract types are at 1.1.0. See `dev_plan.json` → `stages[P1..P7].report`.
+Status: **P12 (PWA capabilities: install, offline, web push; fleet driver reporting)** done on top of P1–P10 (P11, reviews, is not started yet). Contract types are at 1.1.0. See `dev_plan.json` → `stages[…].report`.
 
 ## Quick start
 
@@ -64,6 +64,8 @@ Environment variables are listed in [.env.example](.env.example) (copy to `.env.
 | `pnpm e2e`                                  | builds, then runs Playwright (Chromium only) with axe on every visited page; `pnpm e2e:install` downloads Chromium once                        |
 | `pnpm contract:generate` / `contract:check` | writes / checks `shared/api-contracts/generated/` from `backend/libs/contract/generated/`                                                      |
 | `pnpm ds:sync` / `ds:check`                 | copies / checks `Docs/carpal-design-system/` → `shared/design-system/web/`                                                                     |
+| `pnpm sw:build` / `sw:check`                | bundles / checks the service worker (`src/sw/` → the committed `src/sw/generated/bundle.ts`, served at `/sw.js`; part of `pnpm check`)         |
+| `pnpm icons:build`                          | draws the app icons from the type-set logo with Playwright's Chromium into `public/icons/` (committed; `CARPAL_E2E_CHROMIUM` names a binary)   |
 | `pnpm i18n:check`                           | every key in both `shared/i18n/locales/en.json` and `fa.json`, no empty values, same `{{placeholders}}`                                        |
 | `pnpm format` / `format:check`              | Prettier (same style as `backend/`)                                                                                                            |
 
@@ -124,6 +126,14 @@ pwa/
   src/features/directory/  W-PUB-04 view model (paths, index rule, intro counts), request buttons, rail map (P6)
   src/features/media/      upload kit (client rules, upload state machine, uploads store, drop zone, private-file preview) (P7)
   src/features/garage/     W-GAR-01/02/03 view models and screens, plan-limit panel, ownership transfers, AI cards (P7)
+  src/features/pwa/        PWA runtime (worker registration, update bar, user-scoped caches, sign-out steps, offline bar), install
+                           prompt, web push (offer, settings switch, push-off line), offline page, manifest (P12)
+  src/features/fleet-driver/  DRV-WEB driver views: assigned vehicles, issue report with photos/odometer/offline queue, /l/mi (P12)
+  src/sw/                  the service worker (hand-written): routes.ts caching rules, push.ts, protocol.ts shared with pages,
+                           generated/bundle.ts (pnpm sw:build); served by src/app/sw.js/route.ts
+  src/app/manifests/[file]/  /manifests/<locale>.webmanifest; src/app/[locale]/offline = W-SYS-01 offline page
+  src/app/[locale]/(shell)/(app)/drive/  /<locale>/drive[/<org>/<vehicle>[/report]] (P12)
+  public/icons/            app icons (pnpm icons:build)
   src/features/dev-kit/    demo page of the P3 patterns (/<locale>/dev-kit, CARPAL_PWA_DEMO=1 only)
   tests/e2e/               Playwright specs; accounts.ts = outbox reader and user factory; businesses.ts = published
                            providers/vendors seeded through the API as business users (P5)
@@ -147,6 +157,7 @@ pwa/
 - The linked `shared/` packages ship TypeScript sources; Next.js compiles them (`transpilePackages`) and Turbopack reaches them through an additional root (`next.config.ts`), so `backend/` is never watched.
 - A `notFound()` thrown by a page is server-rendered by Next.js 16 as an empty shell with status 404 and drawn on the client by `[locale]/not-found.tsx`; unmatched URLs get the fully server-rendered `global-not-found.tsx`. See the P1 report. `forbidden()` (403) works the same way (`experimental.authInterrupts`). Statuses a page cannot produce (410, 503) come from the proxy: `systemRewrite()` in `src/server/system-status.ts` (P3 report).
 - **Strings in client components:** `useT()` from `@/lib/i18n/client`; the root layout passes the namespaces in `CLIENT_NAMESPACES`, a feature area adds its own with `<I18nNamespaces>`. Server components: `const { t } = await serverI18n(locale)`. Counts use `{{count, number}}` (Persian digits in fa).
+- **PWA (P12):** the service worker registers only in production builds (`pnpm build && pnpm start`, and `pnpm e2e`), never under `next dev`. It caches build files, the cookie-free offline pages and public pages, and — per signed-in user, wiped at logout or when another user signs in — the garage, appointments and driver pages and their API reads; no other BFF response is ever stored. Change anything in `src/sw/` → run `pnpm sw:build`. Web push needs `CARPAL_PWA_VAPID_PUBLIC_KEY` (the sender's public key); without it no push control is shown. E2E: `CARPAL_E2E_CHROMIUM=/path/to/chrome pnpm e2e` runs with a preinstalled Chromium.
 - **Local switches:** `CARPAL_PWA_DEMO=1` enables `/<locale>/dev-kit` (pattern demo, gated Follow, `/dev-kit/status/<kind>`); `CARPAL_PWA_MAINTENANCE=on|<ISO time>` turns on maintenance mode; `CARPAL_PWA_OAUTH_REDIRECT_URI` is the dev sign-in shim above.
 - **Deployment settings (P4):** `CARPAL_PWA_DEFAULT_TIME_ZONE` (dates until the browser reports its zone, OQ-13), `CARPAL_PWA_TERMS_VERSION` / `CARPAL_PWA_PRIVACY_VERSION` (accepted at sign-up, named in consent records; the region config has no field yet, DI-30) and `CARPAL_PWA_PORTAL_SIGNUP_URL` (business choices in onboarding).
 - **Public pages (P5):** server components read through `publicRead()` / `publicList()` (`src/server/ssr/public-reads.ts`), build metadata with `pageMetadata()` and structured data with `<JsonLd>` (the only inline markup besides the theme boot script). Never import a value (constant, helper) from a `'use client'` module into a server component: it arrives as a client reference, not the value — keep shared constants in plain modules. Sitemaps: `/sitemap.xml` (index) and `/sitemaps/<kind>.xml`, built from public reads and cached 6 h.

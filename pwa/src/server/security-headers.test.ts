@@ -15,7 +15,7 @@ describe('page security headers (GD-15, SEC-WEB-4)', () => {
     expect(d.get('object-src')).toBe("'none'");
     expect(d.get('base-uri')).toBe("'none'");
     expect(d.get('require-trusted-types-for')).toBe("'script'");
-    expect(d.get('trusted-types')).toBe('nextjs nextjs#bundler default');
+    expect(d.get('trusted-types')).toBe('nextjs nextjs#bundler default carpal-sw');
     expect(d.has('upgrade-insecure-requests')).toBe(false);
     expect(contentSecurityPolicy(base)).not.toContain('unsafe-inline');
     expect(contentSecurityPolicy(base)).not.toContain('unsafe-eval');

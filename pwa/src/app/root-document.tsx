@@ -30,6 +30,7 @@ export const CLIENT_NAMESPACES: readonly Namespace[] = [
   'format',
   'vehicle',
   'notifications',
+  'pwa',
 ];
 
 export async function RootDocument({
@@ -54,6 +55,7 @@ export async function RootDocument({
     taxonomyVersion: loaded.config.taxonomy_version,
     i18nVersion: loaded.config.i18n.version,
     source: loaded.source,
+    pwa: { vapidPublicKey: serverEnv().CARPAL_PWA_VAPID_PUBLIC_KEY ?? null, portalUrl: serverEnv().CARPAL_PWA_PORTAL_URL },
   };
   preload(DS_FONT_BY_LOCALE[locale], { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
 

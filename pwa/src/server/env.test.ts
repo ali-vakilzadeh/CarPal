@@ -17,7 +17,15 @@ describe('server env', () => {
       CARPAL_PWA_TERMS_VERSION: '2026-10',
       CARPAL_PWA_PRIVACY_VERSION: '2026-10',
       CARPAL_PWA_PORTAL_SIGNUP_URL: 'https://portal.carpal.app/signup',
+      CARPAL_PWA_PORTAL_URL: 'https://portal.carpal.app',
     });
+  });
+
+  it('validates the P12 web push key: empty = no web push, otherwise a base64url P-256 key', () => {
+    expect(parseServerEnv({ CARPAL_PWA_VAPID_PUBLIC_KEY: '' }).CARPAL_PWA_VAPID_PUBLIC_KEY).toBeUndefined();
+    const key = `B${'A'.repeat(86)}`;
+    expect(parseServerEnv({ CARPAL_PWA_VAPID_PUBLIC_KEY: key }).CARPAL_PWA_VAPID_PUBLIC_KEY).toBe(key);
+    expect(() => parseServerEnv({ CARPAL_PWA_VAPID_PUBLIC_KEY: 'not a key' })).toThrow(/CARPAL_PWA_VAPID_PUBLIC_KEY/);
   });
 
   it('validates the P4 values: default time zone (OQ-13), policy versions, dev-only redirect URI', () => {

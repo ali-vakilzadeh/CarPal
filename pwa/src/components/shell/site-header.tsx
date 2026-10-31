@@ -2,9 +2,11 @@
 // Global header (Docs/22 §2.2): logo, search box with the '/' shortcut, Help Me, and — guest — language switch with
 // Log in / Sign up, or — signed in — the notifications bell and the avatar menu (language lives there). On phones
 // the search box moves to a second row; guests get a menu button, signed-in users the bottom tab bar instead.
+// Signed in, "Install CarPal" appears from the second visit while the browser offers installation (P12.T1).
 import Link from 'next/link';
 import { buttonClass } from '@/components/ds/button';
 import { Icon } from '@/components/ds/icon';
+import { InstallButton } from '@/features/pwa';
 import { useSession } from '@/lib/api/session';
 import { useLocale, useT } from '@/lib/i18n/client';
 import { AccountMenu, NotificationsBell } from './header-menus';
@@ -41,6 +43,7 @@ export function SiteHeader() {
           </Link>
           {user ? (
             <>
+              <InstallButton />
               <NotificationsBell />
               <AccountMenu user={user} />
             </>

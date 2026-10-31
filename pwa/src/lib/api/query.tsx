@@ -31,7 +31,9 @@ export function apiQueryKey<Id extends OperationId>(opId: Id, args?: CallArgs<Id
 export function createQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
-      queries: { retry: false, staleTime: 30_000, refetchOnWindowFocus: false },
+      // offlineFirst (P12): reads are sent even when the browser reports no network, so the service worker can
+      // answer from its offline snapshots (the default 'online' mode would pause them forever).
+      queries: { retry: false, staleTime: 30_000, refetchOnWindowFocus: false, networkMode: 'offlineFirst' },
       mutations: { retry: false },
     },
   });

@@ -5,7 +5,7 @@
 // organizations get the vendor_basic plan automatically. Every run uses fresh names at a fresh point in Tehran.
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { expect, type APIRequestContext } from '@playwright/test';
-import { API, AUTH, mailedLinkToken, newEmail, now } from './accounts';
+import { API, AUTH, mailedLinkToken, newEmail, now, readMail } from './accounts';
 
 const CLIENT = 'cp-web-consumer/0.1.0 (web 1.0)';
 const PORT = Number(process.env.CARPAL_E2E_PORT ?? 3100);
@@ -278,4 +278,67 @@ export async function seedVendor(
   await ok(api.call('POST', `${vnd}/publish`), 'publish');
   const published = await ok(api.call('GET', `/v1/orgs/${id}`), 'org get');
   return { id, name, slug: published.slug as string, itemId: item.id as string, itemName };
+}
+
+export interface SeededFleet {
+  orgId: string;
+  name: string;
+  vehicleId: string;
+  /** The owner's API (fleet_owner: assigns vehicles, reads the driver's reports). */
+  owner: BusinessApi;
+  /** The single-use `mi` invitation token mailed to the driver. */
+  inviteToken: string;
+  /** Assigns the vehicle to the member with this email once they accepted the invitation. */
+  assignTo: (email: string) => Promise<void>;
+}
+
+/**
+ * P12.T5: a fleet created through the API (never SQL): a fleet owner, the organization, one fleet vehicle and an
+ * invitation of `driverEmail` as fleet_driver (the `mi` link mailed to them). The driver accepts in the browser
+ * (/l/mi), then assignTo() gives them the vehicle (fleet.assignment_set, the owner holds FC).
+ */
+export async function seedFleet(request: APIRequestContext, driverEmail: string): Promise<SeededFleet> {
+  const owner = await businessUser(request);
+  const n = await taxonomy(request);
+  const tag = randomBytes(3).toString('hex');
+  const name = `Fleet ${tag}`;
+  const org = await ok(
+    owner.call('POST', '/v1/orgs', { name, organization_type: 'fleet', contact_email: `fleet-${tag}@example.com` }),
+    'org.create (fleet)',
+  );
+  const orgId = org.id as string;
+  const flt = `/v1/orgs/${orgId}/fleet`;
+  const vehicle = await ok(
+    owner.call('POST', `${flt}/vehicles`, {
+      brand_node_id: n.brand,
+      model_node_id: n.model,
+      year: 2019,
+      nickname: `Van ${tag}`,
+      license_plate: `12 B ${tag.slice(0, 3)}`,
+      mileage_km: 81000,
+    }),
+    'vehicles.create (fleet)',
+  );
+  const since = now();
+  await ok(owner.call('POST', `/v1/orgs/${orgId}/members/invitations`, { email: driverEmail, role: 'fleet_driver' }), 'org.member_invite');
+  const mail = await readMail(driverEmail, 'organization.member_invitation', since);
+  const inviteToken = mail.variables.link!.split('#')[1]!;
+  return {
+    orgId,
+    name,
+    vehicleId: vehicle.id as string,
+    owner,
+    inviteToken,
+    async assignTo(email) {
+      const members = await ok(owner.call('GET', `/v1/orgs/${orgId}/members?role=fleet_driver`), 'org.members_list');
+      const member = (members.items as { email: string; user_id: string | null; status: string }[]).find(
+        (x) => x.email.toLowerCase() === email.toLowerCase() && x.status === 'active',
+      );
+      expect(member?.user_id, 'the driver accepted the invitation').toBeTruthy();
+      await ok(
+        owner.call('PUT', `${flt}/vehicles/${vehicle.id as string}/assignment`, { driver_user_id: member!.user_id }),
+        'fleet.assignment_set',
+      );
+    },
+  };
 }

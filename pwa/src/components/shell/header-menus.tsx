@@ -2,13 +2,16 @@
 // Signed-in header controls (Docs/22 §2.2): the notifications bell with the unread count (max "99+") and its
 // dropdown panel (W-NOTIF-01, features/notifications since P9), and the avatar menu (Profile, My activity, Saved,
 // Settings, Switch account, Log out, plus language and theme). The menu is a disclosure (button + panel of links),
-// closed by Esc, a click outside or choosing an item.
+// closed by Esc, a click outside or choosing an item. P12: fleet drivers get "My fleet vehicles" (DRV-WEB), asked once
+// the menu opens; Switch account first revokes this browser's push token (BA-18).
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Avatar } from '@/components/ds/avatar';
 import { cx } from '@/components/ds/cx';
 import { Icon, type IconName } from '@/components/ds/icon';
-import { useLogout, type SessionView } from '@/lib/api/session';
+import { useIsDriver } from '@/features/fleet-driver';
+import { runLogoutSteps, useLogout, type SessionView } from '@/lib/api/session';
+import { goTo } from '@/lib/browser-nav';
 import { useLocale, useT } from '@/lib/i18n/client';
 import type { MessageKey } from '@/lib/i18n/keys';
 import { LanguageSwitch, ThemePicker } from './preferences';
@@ -33,6 +36,8 @@ export function AccountMenu({ user }: { user: NonNullable<SessionView['user']> }
   // "Switch account" asks for credentials again (prompt=login) instead of reusing the auth host's sign-in (P4).
   const switchHref = useLoginHref(undefined, { switchAccount: true });
   const [open, setOpen] = useState(false);
+  const [opened, setOpened] = useState(false);
+  const isDriver = useIsDriver(opened);
   const panelId = useId();
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -65,7 +70,10 @@ export function AccountMenu({ user }: { user: NonNullable<SessionView['user']> }
         className="cp-iconbtn pwa-avatar-button"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((v) => !v);
+          setOpened(true);
+        }}
       >
         {/* Named by its hidden text, not aria-label: the visible initials are decorative, and an aria-label that does
             not contain them fails WCAG 2.5.3 label-in-name (axe label-content-name-mismatch, found in P7). */}
@@ -88,8 +96,23 @@ export function AccountMenu({ user }: { user: NonNullable<SessionView['user']> }
                 </Link>
               </li>
             ))}
+            {isDriver ? (
+              <li>
+                <Link href={`/${locale}/drive`} className="pwa-menu-item" onClick={() => setOpen(false)}>
+                  <Icon name="truck" size={20} />
+                  <span>{t('shell.menu.drive')}</span>
+                </Link>
+              </li>
+            ) : null}
             <li>
-              <a href={switchHref} className="pwa-menu-item">
+              <a
+                href={switchHref}
+                className="pwa-menu-item"
+                onClick={(e) => {
+                  e.preventDefault();
+                  void runLogoutSteps('before').finally(() => goTo(switchHref));
+                }}
+              >
                 <Icon name="user" size={20} />
                 <span>{t('shell.menu.switchAccount')}</span>
               </a>

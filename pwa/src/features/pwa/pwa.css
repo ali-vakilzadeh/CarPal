@@ -1,0 +1,95 @@
+/* PWA capabilities (P12): offline and update bars, the header's install button, the web push offer and the offline
+   page (W-SYS-01). Design-system tokens and logical properties only. */
+
+.pwa-offline-bar,
+.pwa-update-bar {
+  position: fixed;
+  z-index: 45;
+  inset-inline: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-block-size: var(--tap-min);
+  padding: var(--space-2) var(--space-4);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.pwa-offline-bar {
+  inset-block-start: 0;
+  background: var(--surface-sunken);
+  color: var(--ink);
+  border-block-end: 1px solid var(--divider);
+}
+.pwa-update-bar {
+  inset-block-end: 0;
+  background: var(--ink);
+  color: var(--surface);
+  box-shadow: var(--shadow-2);
+}
+
+.pwa-install {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+@media (width < 768px) {
+  .pwa-install-button .cp-btn-label {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+.pwa-push-offer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.pwa-push-offer-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pwa-offline-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-inline-size: var(--measure);
+  margin-inline: auto;
+  padding: var(--space-8) var(--space-4);
+}
+.pwa-offline-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.pwa-offline-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pwa-offline-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-block-size: var(--tap-min);
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--ink);
+  text-decoration: none;
+}
+.pwa-offline-item:focus-visible {
+  box-shadow: var(--ring-focus);
+}

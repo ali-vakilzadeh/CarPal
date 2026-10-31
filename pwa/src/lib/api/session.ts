@@ -82,12 +82,32 @@ export async function consumeIntent<Draft = unknown>(id: string): Promise<Pendin
   return (await res.json()) as PendingIntent<Draft>;
 }
 
+type LogoutStep = () => Promise<void>;
+const logoutSteps = { before: new Set<LogoutStep>(), after: new Set<LogoutStep>() };
+
+/**
+ * Work that belongs to signing out (P12): `before` runs while the session still exists (revoke this browser's push
+ * token, BA-18), `after` once it is gone (remove the private offline copies). Returns the unregister function.
+ * Each step gets 5 s and its failure never blocks the sign-out.
+ */
+export function addLogoutStep(when: 'before' | 'after', step: LogoutStep): () => void {
+  logoutSteps[when].add(step);
+  return () => logoutSteps[when].delete(step);
+}
+
+export async function runLogoutSteps(when: 'before' | 'after'): Promise<void> {
+  const timeout = new Promise<void>((resolve) => setTimeout(resolve, 5_000));
+  await Promise.all([...logoutSteps[when]].map((step) => Promise.race([step().catch(() => undefined), timeout])));
+}
+
 /** Signs out (revokes the refresh token in the BFF) and refreshes the session view. */
 export function useLogout() {
   const queryClient = useQueryClient();
   return async () => {
+    await runLogoutSteps('before');
     await post('/bff/logout');
     resetSharedCsrfSource();
+    await runLogoutSteps('after');
     await queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
   };
 }

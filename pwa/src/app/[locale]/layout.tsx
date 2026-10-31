@@ -5,6 +5,7 @@
 import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { THEME_COLORS } from '@/features/pwa';
 import { LOCALES, isLocale } from '@/lib/i18n/locales';
 import { serverEnv } from '@/server/env';
 import { serverI18n } from '@/server/i18n';
@@ -18,15 +19,27 @@ export function generateStaticParams(): { locale: string }[] {
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
-  const { t } = await serverI18n(isLocale(locale) ? locale : 'fa');
+  const lang = isLocale(locale) ? locale : 'fa';
+  const { t } = await serverI18n(lang);
   return {
     metadataBase: new URL(serverEnv().CARPAL_PWA_ORIGIN),
     title: { default: t('common.appName'), template: `%s · ${t('common.appName')}` },
     applicationName: t('common.appName'),
+    // P12.T1: the web app manifest of the page language, the home-screen icon of iOS.
+    manifest: `/manifests/${lang}.webmanifest`,
+    icons: { icon: [{ url: '/icon.svg', type: 'image/svg+xml' }], apple: '/icons/apple-touch-icon.png' },
+    appleWebApp: { capable: true, title: t('common.appName'), statusBarStyle: 'default' },
   };
 }
 
-export const viewport: Viewport = { width: 'device-width', initialScale: 1 };
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: THEME_COLORS.light },
+    { media: '(prefers-color-scheme: dark)', color: THEME_COLORS.dark },
+  ],
+};
 
 export default async function LocaleLayout({ children, params }: { children: ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;
