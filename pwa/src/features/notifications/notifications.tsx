@@ -314,7 +314,7 @@ export function NotificationsScreen() {
   const all = useMemo(() => list.data?.pages.flatMap((p) => p.items) ?? [], [list.data]);
   const items = q.clientFilter ? all.filter((n) => q.clientFilter!.includes(n.category)) : all;
 
-  // A web push click opens /notifications?open=<id> (the push carries the id only, DI-66): go on to its destination
+  // A web push click opens /notifications?open=<id> (the push carries the id only, DI-71): go on to its destination
   // once the notification is in the list; one that is not (a business notification, DI-16) leaves the list open.
   const openId = search.get('open');
   const opened = useRef<string | null>(null);

@@ -1,7 +1,7 @@
 // Web push in the worker (P12.T3): what a push message carries and where a click goes. Pure, tested in node.
 // The backend's push sender (backend libs/infra PushSender) sends { title, body, data: { notification_id,
 // template_key } } with the text rendered in the recipient's locale (BA-18: secret-bearing messages never travel as
-// notifications). The payload has no reference or organization context (DI-66): a click opens the notifications
+// notifications). The payload has no reference or organization context (DI-71): a click opens the notifications
 // page, which finds the notification by id and goes on to its destination (features/notifications). A payload that
 // names an organization_context_id (business notification, DI-16) opens the business portal instead.
 

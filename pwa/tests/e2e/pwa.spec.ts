@@ -268,7 +268,7 @@ test('web push: subscribe with a mocked push service, show a pushed notification
   await expect
     .poll(() => page.evaluate(async () => (await (await navigator.serviceWorker.ready).getNotifications()).map((n) => n.title)))
     .toContain('Reza Auto confirmed your appointment');
-  // The worker opens it on the notifications page by its id (DI-66).
+  // The worker opens it on the notifications page by its id (DI-71).
   expect(
     await page.evaluate(async () =>
       (await (await navigator.serviceWorker.ready).getNotifications()).map((n) => (n.data as { target: string }).target),

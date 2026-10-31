@@ -4,7 +4,7 @@
 // and an account switch — revokes it (push_tokens.revoke, BA-18). A token the backend already knows for another
 // account answers 409 DUPLICATE: the user may then start a new subscription for this account (the old endpoint is
 // unsubscribed, so the other account stops receiving pushes here). Categories follow the account's Push column of
-// the notification matrix: the contract has one push channel for app and browser (DI-66).
+// the notification matrix: the contract has one push channel for app and browser (DI-71).
 import type { ApiClient } from '@/lib/api/client';
 import { ApiProblem } from '@/lib/api/problem';
 

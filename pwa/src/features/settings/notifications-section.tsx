@@ -5,7 +5,7 @@
 // are always delivered" (critical notifications reach the app regardless, Docs/40 §20.2). notification_prefs.put
 // replaces the whole list, so every change sends all rows; marketing needs the marketing consent (403
 // CONSENT_REQUIRED → Privacy & consent). "Web push (this browser)" (P12.T3) shows whether this browser receives the
-// category: the contract has one push channel for the mobile app and browsers (DI-66), so a category reaches this
+// category: the contract has one push channel for the mobile app and browsers (DI-71), so a category reaches this
 // browser when its Push switch is on and the "Web push on this browser" card below has subscribed it; SMS comes later. "Only safety and security alerts" is the account's critical_alerts_only. The bells of followed shops
 // live on Saved & Following.
 import type { NotificationCategory, NotificationChannel, NotificationPreference } from '@carpal/api-contracts';
