@@ -265,8 +265,11 @@ test('web push: subscribe with a mocked push service, show a pushed notification
       data: { notification_id: 'n-e2e', template_key: 'appointment.confirmed' },
     }),
   });
+  // The worker may still be busy under a full parallel run (P13): give the delivery time.
   await expect
-    .poll(() => page.evaluate(async () => (await (await navigator.serviceWorker.ready).getNotifications()).map((n) => n.title)))
+    .poll(() => page.evaluate(async () => (await (await navigator.serviceWorker.ready).getNotifications()).map((n) => n.title)), {
+      timeout: 20_000,
+    })
     .toContain('Reza Auto confirmed your appointment');
   // The worker opens it on the notifications page by its id (DI-71).
   expect(

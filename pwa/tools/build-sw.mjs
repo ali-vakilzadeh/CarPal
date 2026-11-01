@@ -38,7 +38,8 @@ export async function bundleWorker() {
 const check = process.argv.includes('--check');
 const text = await bundleWorker();
 if (check) {
-  const current = existsSync(target) ? readFileSync(target, 'utf8') : '';
+  // A Windows checkout with core.autocrlf turns the committed LF file into CRLF; compare the content (P13).
+  const current = existsSync(target) ? readFileSync(target, 'utf8').replace(/\r\n/g, '\n') : '';
   if (current !== text) {
     console.error('src/sw/generated/bundle.ts is out of date: run `pnpm sw:build`.');
     process.exit(1);

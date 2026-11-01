@@ -3,15 +3,26 @@
 // Accept all, Reject non-essential and Choose at equal prominence (same button style and size, accept and reject
 // side by side). Choose opens the purposes: Essential (always on) and Usage statistics. The footer's "Cookie
 // settings" reopens the choices as a URL modal (?modal=cookies). The choice is a first-party cookie read by the
-// analytics queue.
+// analytics queue. Both the banner and the modal link the Privacy Policy's cookie section (P13.T7, OQ-15).
 import { useId, useState } from 'react';
 import { Button } from '@/components/ds/button';
 import { useAnalytics } from '@/lib/analytics/client';
-import { useT } from '@/lib/i18n/client';
+import { useLocale, useT } from '@/lib/i18n/client';
 import { useToast } from './toast';
 import { UrlModal, useUrlModal } from './url-modal';
 
 export const COOKIE_MODAL = 'cookies';
+
+/** The Privacy Policy section on cookies (Docs/Privacy Policy.md "10.4 Cookies and similar technologies"). */
+function PolicyLink() {
+  const t = useT();
+  const locale = useLocale();
+  return (
+    <a className="pwa-link" href={`/${locale}/privacy#section-10-4`}>
+      {t('consent.policy')}
+    </a>
+  );
+}
 
 function Purposes({ analytics, onAnalytics }: { analytics: boolean; onAnalytics: (v: boolean) => void }) {
   const t = useT();
@@ -57,7 +68,9 @@ function CookieSettings({ onDecide }: { onDecide: (analytics: boolean) => void }
   const [analytics, setAnalytics] = useState(consent?.analytics ?? false);
   return (
     <>
-      <p className="pwa-text-body">{t('consent.text')}</p>
+      <p className="pwa-text-body">
+        {t('consent.text')} <PolicyLink />
+      </p>
       <Purposes analytics={analytics} onAnalytics={setAnalytics} />
       <div className="pwa-consent-actions">
         <Button onClick={() => onDecide(true)}>{t('consent.acceptAll')}</Button>
@@ -93,7 +106,9 @@ export function CookieConsent() {
             <h2 id="pwa-consent-title" className="pwa-consent-title">
               {t('consent.title')}
             </h2>
-            <p className="pwa-text-caption">{t('consent.text')}</p>
+            <p className="pwa-text-caption">
+              {t('consent.text')} <PolicyLink />
+            </p>
             {choosing ? <Purposes analytics={analytics} onAnalytics={setAnalytics} /> : null}
             <div className="pwa-consent-actions">
               <Button onClick={() => decide(true)}>{t('consent.acceptAll')}</Button>

@@ -1,6 +1,7 @@
 // Server-only environment (P1.T7). Validated once at startup (src/instrumentation.ts) and on first use.
 import 'server-only';
 import { z } from 'zod';
+import { LEGAL_VERSIONS } from '@/features/legal/documents';
 
 const url = z.url();
 const optionalUrl = z.preprocess((v) => (v === '' ? undefined : v), url.optional());
@@ -50,9 +51,19 @@ const schema = z
      * so each deployment states its default here.
      */
     CARPAL_PWA_DEFAULT_TIME_ZONE: timeZone.default('Asia/Tehran'),
-    /** Versions of the Terms and the Privacy Policy accepted at sign-up and named in consent records (auth.signup, consents.grant). */
-    CARPAL_PWA_TERMS_VERSION: policyVersion.default('2026-10'),
-    CARPAL_PWA_PRIVACY_VERSION: policyVersion.default('2026-10'),
+    /**
+     * Versions of the Terms and the Privacy Policy accepted at sign-up and named in consent records (auth.signup,
+     * consents.grant). Default: the "Version" line of the published texts (Docs/User Agreement.md and Docs/Privacy
+     * Policy.md, P13.T7), so the recorded version names the text the visitor could read; set them only together with
+     * a text change.
+     */
+    CARPAL_PWA_TERMS_VERSION: policyVersion.default(LEGAL_VERSIONS.terms),
+    CARPAL_PWA_PRIVACY_VERSION: policyVersion.default(LEGAL_VERSIONS.privacy),
+    /**
+     * "Contact support" (OQ-18, P13.T8): an email address for the MVP. The carpal.app domain is not secured yet, so
+     * each deployment states the address it can receive mail at.
+     */
+    CARPAL_PWA_SUPPORT_EMAIL: z.email().default('support@carpal.app'),
     /** Business portal sign-up (onboarding step 1 business choices, W-ONB-01); a placeholder until the portal exists. */
     CARPAL_PWA_PORTAL_SIGNUP_URL: url.default('https://portal.carpal.app/signup'),
     /** The business portal: notifications of a business (organization_context_id) open here (DI-16, P12.T3). */

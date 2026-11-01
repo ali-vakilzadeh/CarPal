@@ -1,6 +1,6 @@
 // P10.T4-T6 (DOM): W-APP-01 — accepting the shop's proposed time, cancelling with a reason, "Needs your action" in the
 // list; /l/ci — the check-in link sends the fragment's token only on "I've arrived" and explains the time window; the
-// notification's inline Accept time.
+// notification's inline Accept time. P13.T9: Report a problem (a mediation request about the appointment).
 import type { Appointment, Notification } from '@carpal/api-contracts';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -270,5 +270,124 @@ describe('notification actions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Accept time' }));
     await waitFor(() => expect(calls.some((c) => c.opId === 'notifications.mark_read')).toBe(true));
     expect(calls[0]).toMatchObject({ opId: 'appointments.transition', args: { body: { to: 'confirmed' } } });
+  });
+});
+
+describe('report a problem (P13.T9, DI-65)', () => {
+  const dispute = (o: Record<string, unknown> = {}) => ({
+    id: 'd1',
+    created_at: '2026-11-01T09:00:00Z',
+    updated_at: '2026-11-01T09:00:00Z',
+    version: 1,
+    target: { type: 'appointment', id: ID },
+    dispute_type: 'mediation_request',
+    reason: 'x',
+    status: 'open',
+    resolution: null,
+    resolved_at: null,
+    ...o,
+  });
+
+  it('sends a mediation request about the appointment with the chosen reason, then shows it with Withdraw', async () => {
+    let items: unknown[] = [];
+    const {
+      api: { calls },
+    } = renderApp(<AppointmentDetail appointmentId={ID} />, {
+      locale: 'en',
+      session: signedIn(),
+      handlers: {
+        ...reads(appt({ status: 'completed', allowed_transitions: [] })),
+        'disputes.mine_list': () => ({ items, next_cursor: null }),
+        'disputes.create': () => {
+          items = [dispute()];
+          return items[0];
+        },
+      },
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Report a problem' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Report a problem with this appointment' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send report' }));
+    expect(await within(dialog).findByText('Choose what went wrong.')).toBeTruthy();
+    expect(within(dialog).getByText('Write at least 10 characters.')).toBeTruthy();
+    expect(calls.some((c) => c.opId === 'disputes.create')).toBe(false);
+
+    fireEvent.change(within(dialog).getByLabelText('What went wrong?'), { target: { value: 'price' } });
+    fireEvent.change(within(dialog).getByLabelText('What happened'), { target: { value: 'Charged twice the estimate' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send report' }));
+    await waitFor(() => expect(calls.find((c) => c.opId === 'disputes.create')).toBeTruthy());
+    expect(calls.find((c) => c.opId === 'disputes.create')!.args).toEqual({
+      body: {
+        target: { type: 'appointment', id: ID },
+        dispute_type: 'mediation_request',
+        reason: 'The price differed from what was agreed: Charged twice the estimate',
+      },
+    });
+    expect(await screen.findByText(/You reported a problem on .* waiting for a mediator/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Withdraw report' })).toBeTruthy();
+  });
+
+  it('explains an open report on a second try and offers nothing for drafts', async () => {
+    renderApp(<AppointmentDetail appointmentId={ID} />, {
+      locale: 'en',
+      session: signedIn(),
+      handlers: {
+        ...reads(appt({ status: 'confirmed' })),
+        'disputes.mine_list': () => ({ items: [dispute({ status: 'withdrawn' })], next_cursor: null }),
+        'disputes.create': () => {
+          throw new ApiProblem(409, { code: 'DUPLICATE' });
+        },
+      },
+    });
+    expect(await screen.findByText(/You withdrew your report of/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Report a problem' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('What went wrong?'), { target: { value: 'noShow' } });
+    fireEvent.change(within(dialog).getByLabelText('What happened'), { target: { value: 'Nobody was at the shop' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send report' }));
+    expect(await within(dialog).findByText('You already have an open report about this appointment.')).toBeTruthy();
+  });
+
+  it('is not offered on a draft', async () => {
+    renderApp(<AppointmentDetail appointmentId={ID} />, {
+      locale: 'en',
+      session: signedIn(),
+      handlers: {
+        ...reads(appt({ status: 'draft', allowed_transitions: ['requested'] })),
+        'disputes.mine_list': () => ({ items: [], next_cursor: null }),
+      },
+    });
+    expect((await screen.findAllByText('Reza Auto Suspension')).length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('appointment-problem')).toBeNull();
+  });
+});
+
+describe('enum values from a newer server (P13.T5, TR-3)', () => {
+  it('shows an unknown status as "Unknown" in the detail and the list instead of failing', async () => {
+    const odd = appt({ status: 'teleported' as never, allowed_transitions: [], hologram: { depth: 3 } } as never);
+    renderApp(<AppointmentDetail appointmentId={ID} />, {
+      locale: 'en',
+      session: signedIn(),
+      handlers: { ...reads(odd), 'disputes.mine_list': () => ({ items: [], next_cursor: null }) },
+    });
+    expect((await screen.findAllByText('Unknown')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Reza Auto Suspension').length).toBeGreaterThan(0);
+  });
+
+  it('keeps an unknown status in the list with the open requests', async () => {
+    navigation.reset('/en/appointments?seg=requested');
+    renderApp(<AppointmentsScreen selectedId={null} />, {
+      locale: 'en',
+      session: signedIn(),
+      handlers: {
+        'appointments.list': (args) => ({
+          items:
+            (args.query as { group: string }).group === 'requested'
+              ? [appt({ status: 'teleported' as never, allowed_transitions: [] })]
+              : [],
+          next_cursor: null,
+        }),
+      },
+    });
+    expect((await screen.findAllByText('Unknown')).length).toBeGreaterThan(0);
   });
 });

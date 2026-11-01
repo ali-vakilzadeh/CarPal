@@ -15,7 +15,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { API, AUTH, backendUp, createUser, now, readMail } from './accounts';
-import { seedProvider, taxonomy, tehranPoint, type SeededProvider } from './businesses';
+import { seedProvider, taxonomy, type SeededProvider } from './businesses';
+import { quietPoint, rareCar, retire } from './flows';
 import { decideCookies, expectNoAxeViolations, gotoReady } from './support';
 
 test.describe.configure({ mode: 'serial' });
@@ -25,7 +26,7 @@ const BACKEND = join(import.meta.dirname, '..', '..', '..', 'backend');
 const MCP_UNAVAILABLE = process.env.CARPAL_E2E_MCP_UNAVAILABLE === '1';
 const SSR = 'cp-ssr/0.1.0 (web 1.0)';
 /** The shop and the browser's position: a fresh point in Tehran per run, so earlier runs' shops are farther away. */
-const POINT = tehranPoint();
+const POINT = quietPoint();
 
 const DICT = (locale: 'fa' | 'en') =>
   JSON.parse(readFileSync(join(import.meta.dirname, '..', '..', '..', 'shared', 'i18n', 'locales', `${locale}.json`), 'utf8')) as Record<
@@ -57,25 +58,6 @@ async function ssrToken(request: APIRequestContext): Promise<string> {
   return `${token_type} ${access_token}`;
 }
 
-/**
- * A brand with a model other than the one the P5/P6 shops cover (taxonomy() takes the first): Sara's car, which only
- * this run's shop covers as a specialist, so it ranks first near her among the many E2E shops of earlier runs.
- */
-async function otherBrand(request: APIRequestContext): Promise<{ brand: string; model: string }> {
-  const auth = await ssrToken(request);
-  const list = async (type: string, parent?: string) => {
-    const res = await request.get(`${API}/v1/taxonomy/nodes?type=${type}&limit=50${parent ? `&parent_id=${parent}` : ''}`, {
-      headers: { authorization: auth, 'carpal-client': SSR, 'accept-language': 'en' },
-    });
-    return ((await res.json()) as { items: { id: string }[] }).items;
-  };
-  for (const b of (await list('vehicle_brand')).slice(1).reverse()) {
-    const models = await list('vehicle_model', b.id);
-    if (models.length) return { brand: b.id, model: models[0]!.id };
-  }
-  throw new Error('no second brand with a model');
-}
-
 /** Polls search.run until the shop is found by its name (the lite index sweeps every minute). */
 async function waitIndexed(request: APIRequestContext, orgId: string, text: string) {
   const auth = await ssrToken(request);
@@ -99,7 +81,7 @@ test.beforeAll(async ({ playwright }) => {
   const request = (seedRequest = await playwright.request.newContext());
   up = await backendUp(request);
   if (!up) return;
-  n = { ...(await taxonomy(request)), ...(await otherBrand(request)) };
+  n = { ...(await taxonomy(request)), ...(await rareCar(request)) };
   const res = await request.get(`${API}/v1/taxonomy/nodes?type=service_system&limit=50`, {
     headers: { authorization: await ssrToken(request), 'carpal-client': SSR, 'accept-language': 'en' },
   });
@@ -110,6 +92,7 @@ test.beforeAll(async ({ playwright }) => {
 });
 
 test.afterAll(async () => {
+  await retire(shop);
   await seedRequest?.dispose();
 });
 
@@ -270,7 +253,9 @@ test('Sara Ch. 6-8 in FA: describe the clunk, see Reza Auto Suspension, request,
   await expectNoAxeViolations(page);
 });
 
-test('AI off: the triage answers 503 with the safety block, the category path still sends a request without triage', async ({
+// @global-flag: switches ai.triage.enabled off for the whole backend, so it runs in the "global-flags" project after every
+// other test (playwright.config.ts); suites that expect the AI stub would otherwise see AI off (P13).
+test('AI off: the triage answers 503 with the safety block, the category path still sends a request without triage @global-flag', async ({
   page,
   request,
 }) => {

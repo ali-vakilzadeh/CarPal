@@ -131,7 +131,7 @@ function RecordBody({
             {t('garage.record.addedByYou')}
           </Badge>
         )}
-        <span className="pwa-text-caption">{t(VERIFICATION_TEXT[r.verification_status])}</span>
+        <span className="pwa-text-caption">{t(VERIFICATION_TEXT[r.verification_status] ?? 'common.unknownValue')}</span>
       </div>
       {r.status === 'disputed' ? <Banner tone="warn" text={t('garage.record.disputed')} /> : null}
       <dl className="pwa-spec-list">

@@ -3,7 +3,7 @@ import type { Appointment, UrgencyLevel } from '@carpal/api-contracts';
 import { Badge } from '@/components/ds/badge';
 import type { UrgencyLevel as UiLevel } from '@/components/ds/urgency';
 import type { Translate } from '@/lib/i18n/keys';
-import { STATUS_STYLE } from './model';
+import { STATUS_STYLE, UNKNOWN_STATUS_STYLE } from './model';
 
 /** The design-system urgency of a contract level. */
 export function uiLevelOf(level: UrgencyLevel): UiLevel {
@@ -25,7 +25,7 @@ export function AppointmentStatusBadge({
   a: Pick<Appointment, 'status' | 'cancelled_by' | 'cancellation_reason'>;
   t: Translate;
 }) {
-  const s = STATUS_STYLE[a.status];
+  const s = STATUS_STYLE[a.status] ?? UNKNOWN_STATUS_STYLE;
   return (
     <Badge tone={s.tone} icon={s.icon}>
       {statusLabel(a, t)}

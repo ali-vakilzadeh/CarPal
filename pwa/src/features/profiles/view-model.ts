@@ -138,11 +138,12 @@ export function capabilityMatrix(caps: readonly PublicCapability[], allModels: s
     const vehicle = vehicleLabel(c) ?? allModels;
     const row = rows.get(vehicle) ?? { vehicle, brand: c.brand?.text ?? null, cells: {} };
     const prev = row.cells[system];
-    if (!prev || LEVEL_RANK[c.confidence_level] > LEVEL_RANK[prev.level])
+    if (!prev || (LEVEL_RANK[c.confidence_level] ?? 0) > (LEVEL_RANK[prev.level] ?? 0))
       row.cells[system] = { level: c.confidence_level, evidence: c.evidence_count };
-    else if (LEVEL_RANK[c.confidence_level] === LEVEL_RANK[prev.level]) prev.evidence = Math.max(prev.evidence, c.evidence_count);
+    else if ((LEVEL_RANK[c.confidence_level] ?? 0) === (LEVEL_RANK[prev.level] ?? 0))
+      prev.evidence = Math.max(prev.evidence, c.evidence_count);
     rows.set(vehicle, row);
-    systemScore.set(system, (systemScore.get(system) ?? 0) + c.evidence_count + LEVEL_RANK[c.confidence_level] * 1000);
+    systemScore.set(system, (systemScore.get(system) ?? 0) + c.evidence_count + (LEVEL_RANK[c.confidence_level] ?? 0) * 1000);
   }
   const systems = [...systemScore.entries()].sort((a, b) => b[1] - a[1]).map(([s]) => s);
   const sorted = [...rows.values()].sort((a, b) => {
@@ -179,7 +180,7 @@ export function bestFit(caps: readonly PublicCapability[], car: VehicleNames): P
   return (
     [...capabilitiesForVehicle(caps, car)].sort(
       (a, b) =>
-        LEVEL_RANK[b.confidence_level] - LEVEL_RANK[a.confidence_level] ||
+        (LEVEL_RANK[b.confidence_level] ?? 0) - (LEVEL_RANK[a.confidence_level] ?? 0) ||
         b.evidence_count - a.evidence_count ||
         specificity(b) - specificity(a),
     )[0] ?? null
@@ -189,8 +190,9 @@ export function bestFit(caps: readonly PublicCapability[], car: VehicleNames): P
 /** The strongest public capability overall (page title "BMW suspension specialist"). */
 export function topCapability(caps: readonly PublicCapability[]): PublicCapability | null {
   return (
-    [...caps].sort((a, b) => LEVEL_RANK[b.confidence_level] - LEVEL_RANK[a.confidence_level] || b.evidence_count - a.evidence_count)[0] ??
-    null
+    [...caps].sort(
+      (a, b) => (LEVEL_RANK[b.confidence_level] ?? 0) - (LEVEL_RANK[a.confidence_level] ?? 0) || b.evidence_count - a.evidence_count,
+    )[0] ?? null
   );
 }
 

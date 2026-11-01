@@ -30,7 +30,7 @@ const RANK: Record<UrgencyLevel, number> = { low: 0, medium: 1, high: 2, safety_
 /** The urgency a report is sent with: the driver's choice, raised by "feels unsafe" and an accepted suggestion. */
 export function reportUrgency(chosen: UrgencyLevel, unsafe: boolean, suggested: UrgencyLevel | null = null): UrgencyLevel {
   let u = chosen;
-  if (suggested && RANK[suggested] > RANK[u]) u = suggested;
+  if (suggested && (RANK[suggested] ?? -1) > (RANK[u] ?? -1)) u = suggested;
   return unsafe ? 'safety_critical' : u;
 }
 

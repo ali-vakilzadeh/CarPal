@@ -18,6 +18,7 @@ import { Icon } from '@/components/ds/icon';
 import { TextField } from '@/components/ds/text-field';
 import { Dialog } from '@/components/shell/dialog';
 import { StateView } from '@/components/shell/states';
+import { SupportLink } from '@/components/shell/support';
 import type { ApiClient } from '@/lib/api/client';
 import { useApiClient } from '@/lib/api/query';
 import { useRegion } from '@/lib/config/client';
@@ -25,6 +26,7 @@ import { goTo } from '@/lib/browser-nav';
 import { isolate } from '@/lib/format/bidi';
 import { useBrowserValue } from '@/lib/browser-value';
 import { useFormat } from '@/lib/format/client';
+import { LegalDialogBody } from '@/features/legal';
 import { useLocale, useT } from '@/lib/i18n/client';
 import type { MessageKey } from '@/lib/i18n/keys';
 import { CodeInput, PasswordField } from './fields';
@@ -210,6 +212,7 @@ function SigninStep({
   onIdentifier: (v: string) => void;
 }) {
   const t = useT();
+  const locale = useLocale();
   const [method, setMethod] = useState<SigninMethod>(() => lastMethod() ?? 'code');
   const [password, setPassword] = useState('');
   const [keep, setKeep] = useState(true);
@@ -338,7 +341,16 @@ function SigninStep({
           </button>
         </p>
       </div>
-      <p className="pwa-text-caption">{t('auth.signin.legal')}</p>
+      <p className="pwa-text-caption">
+        {t('auth.signin.legal')}{' '}
+        <a className="pwa-link" href={`/${locale}/terms`} target="_blank" rel="noopener">
+          {t('auth.signup.termsTitle')}
+        </a>
+        {' · '}
+        <a className="pwa-link" href={`/${locale}/privacy`} target="_blank" rel="noopener">
+          {t('auth.signup.privacyTitle')}
+        </a>
+      </p>
     </form>
   );
 }
@@ -505,8 +517,9 @@ function SignupStep({ flow, termsVersion, privacyVersion }: { flow: Flow; termsV
         open={legal !== null}
         onClose={() => setLegal(null)}
         title={legal === 'privacy' ? t('auth.signup.privacyTitle') : t('auth.signup.termsTitle')}
+        scrollableBody
       >
-        <p className="pwa-text-body">{t('auth.signup.legalPending', { version: legal === 'privacy' ? privacyVersion : termsVersion })}</p>
+        {legal ? <LegalDialogBody kind={legal} version={legal === 'privacy' ? privacyVersion : termsVersion} /> : null}
       </Dialog>
     </form>
   );
@@ -818,6 +831,9 @@ function Locked({ flow, until }: { flow: Flow; until: number }) {
       <Button variant="ghost" block onClick={() => flow.go({ name: 'forgot', email: '' })}>
         {t('auth.locked.reset')}
       </Button>
+      <SupportLink className={buttonClass({ variant: 'ghost', block: true })} subject={t('auth.locked.supportSubject')}>
+        <span className="cp-btn-label">{t('shell.support.contact')}</span>
+      </SupportLink>
     </div>
   );
 }

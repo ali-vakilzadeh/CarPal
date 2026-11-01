@@ -100,7 +100,7 @@ export function OrgBadges({
             label={b.scope ? t('profiles.badge.scoped', { label: base, scope: b.scope }) : base}
             text={t(`profiles.badge.${b.type}.text` as MessageKey)}
             tone="neutral"
-            icon={BADGE_ICON[b.type]}
+            icon={BADGE_ICON[b.type] ?? 'shield'}
             closeLabel={close}
           />
         );

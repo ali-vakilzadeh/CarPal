@@ -4,7 +4,16 @@
 export * from './model';
 export { HomeScreen, daysUntil, expiringDocuments } from './home';
 export { QaHub, QuestionCard } from './qa-hub';
-export { parseQaFilters, qaFilterQuery, qaSearchBody, type QaFilters } from './qa-filters';
+export {
+  parseQaFilters,
+  qaFilterQuery,
+  qaSearchBody,
+  qaTopicIndexable,
+  qaTopicOf,
+  QA_TOPIC_MIN_ANSWERED,
+  type QaFilters,
+  type QaTopic,
+} from './qa-filters';
 export { AskForm, questionBody, hasContext } from './ask-form';
 export { QuestionThread, type QuestionData } from './question-thread';
 export { SavedScreen } from './saved';

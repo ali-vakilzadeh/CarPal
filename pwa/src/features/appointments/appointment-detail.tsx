@@ -2,7 +2,8 @@
 // W-APP-01 appointment detail (Docs/22 W-APP-01, Docs/21 C-APP-02..04; P10.T4): the status and what happens next, the
 // action card (accept the shop's proposed time, suggest another, decline; send or discard a draft; I've arrived and
 // Running late; the completed visit's service record), the status timeline, when and where with the map preview,
-// Directions and Add to calendar, the vehicle and issue with the pre-visit report drawer, and the notes thread.
+// Directions and Add to calendar, the vehicle and issue with the pre-visit report drawer, the notes thread and (P13)
+// Report a problem (a mediation request, report-problem.tsx).
 // Live status: the appointment, its history and notes are read again every 30 s while it is open and the tab is
 // visible (TanStack pauses in background tabs; the client paces by CarPal-Poll-After-Ms). 404 = not found (SEC-AZ-2).
 import type { Appointment, AppointmentNote } from '@carpal/api-contracts';
@@ -31,6 +32,7 @@ import { CalendarMenu } from './calendar-menu';
 import { ChangeDialog, type ChangeMode } from './change-dialog';
 import { actionsOf, calendarEvent, checkInLater, checkInOpensAt, pollInterval, reference, timeline, visitTime } from './model';
 import { PreVisitDrawer } from './pre-visit';
+import { ReportProblem } from './report-problem';
 import { AppointmentStatusBadge, statusLabel, uiLevelOf } from './status';
 
 const MAX_NOTE = 3000;
@@ -511,6 +513,8 @@ export function AppointmentDetail({ appointmentId, backHref }: { appointmentId: 
         providerName={a.provider.name}
         onSent={() => void notes.refetch()}
       />
+
+      <ReportProblem appointment={a} />
 
       {can.cancel && a.status !== 'draft' && a.status !== 'alternative_proposed' ? (
         <div>

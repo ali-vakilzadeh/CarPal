@@ -4,7 +4,8 @@
 // everyone else, category, Unanswered / Answered — kept in the URL as ids (?status&cat&brand&model), and the question
 // list (title, car and category, answer count, accepted check, date, excerpt), newest first: questions.search has no
 // sort (DI-50). Empty → "No one has asked this yet" + Ask it (the text goes to the ask page). The server renders the
-// first page for the URL's filters (indexable); the browser takes over from there.
+// first page for the URL's filters (indexable); the browser takes over from there. P13.T10: a view about one topic
+// (category, or brand and model) comes with the topic's name from the server, and the heading names it.
 import type { PublicQuestion } from '@carpal/api-contracts';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -65,9 +66,12 @@ export function QuestionCard({ q, headingLevel = 2 }: { q: PublicQuestion; headi
 export function QaHub({
   initial,
   initialFilters,
+  topicName = null,
 }: {
   initial: { items: PublicQuestion[]; next_cursor: string | null } | null;
   initialFilters: QaFilters;
+  /** The topic of a one-topic view (server, P13.T10); the heading names it while the filters are unchanged. */
+  topicName?: string | null;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -124,10 +128,11 @@ export function QaHub({
 
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
   const askHref = `/${locale}/questions/ask`;
+  const topic = topicName && qaFilterQuery(filters) === qaFilterQuery(initialFilters) ? topicName : null;
   return (
     <div className="pwa-qa-hub">
       <header className="pwa-qa-head">
-        <h1 className="pwa-text-title m-0">{t('community.qa.title')}</h1>
+        <h1 className="pwa-text-title m-0">{topic ? t('community.qa.topicTitle', { topic }) : t('community.qa.title')}</h1>
         <Link href={askHref} className={buttonClass({ variant: 'primary' })}>
           <span className="cp-btn-label">{t('community.qa.ask')}</span>
         </Link>

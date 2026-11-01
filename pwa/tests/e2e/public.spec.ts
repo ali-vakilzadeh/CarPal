@@ -214,6 +214,8 @@ async function lcp(page: Page): Promise<number> {
 
 test('provider page LCP stays within 2.5 s on a throttled connection (slow 4G, 4× CPU)', async ({ page, context }) => {
   test.setTimeout(90_000);
+  // Timings need the CPU to themselves (P13): measured alone by `pnpm e2e:perf`, which also runs this file's budget pages.
+  test.skip(test.info().config.workers > 1, 'performance runs alone: `pnpm e2e:perf`');
   const path = `/en/shop/${provider.slug}`;
   await page.goto(path); // warm the server's read cache, as a visitor after the first one would see it
   const cdp = await context.newCDPSession(page);

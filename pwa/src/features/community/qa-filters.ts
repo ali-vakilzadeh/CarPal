@@ -52,3 +52,25 @@ export function qaSearchBody(f: QaFilters, text: string, car: { brandId: string;
     limit: QA_PAGE,
   };
 }
+
+// ---------------------------------------------------------------- topic views (P13.T10)
+
+/**
+ * A hub view about one topic: one category, or one brand (optionally one of its models), without a status filter.
+ * Such views are server-rendered with their own title and canonical URL and indexed when their first page holds at
+ * least QA_TOPIC_MIN_ANSWERED answered questions (the thin-content rule of the directory pages, Docs/22 open point 6);
+ * every other filtered view stays noindex.
+ */
+export type QaTopic = { kind: 'category'; id: string } | { kind: 'brand'; id: string; modelId?: string };
+export const QA_TOPIC_MIN_ANSWERED = 3;
+
+export function qaTopicOf(f: QaFilters): QaTopic | null {
+  if (f.status) return null;
+  if (f.categoryId && !f.brandId) return { kind: 'category', id: f.categoryId };
+  if (f.brandId && !f.categoryId) return { kind: 'brand', id: f.brandId, ...(f.modelId ? { modelId: f.modelId } : {}) };
+  return null;
+}
+
+export function qaTopicIndexable(items: readonly { status: string }[]): boolean {
+  return items.filter((q) => q.status === 'answered').length >= QA_TOPIC_MIN_ANSWERED;
+}

@@ -30,8 +30,9 @@ const SEGMENT_OF: Record<AppointmentStatus, Segment> = {
   cancelled: 'cancelled',
 };
 
+/** An unknown status from a newer server (TR-3) stays in view with the open requests. */
 export function segmentOf(status: AppointmentStatus): Segment {
-  return SEGMENT_OF[status];
+  return SEGMENT_OF[status] ?? 'requested';
 }
 
 export const TERMINAL: readonly AppointmentStatus[] = ['completed', 'cancelled', 'no_show'];
@@ -54,6 +55,8 @@ export const STATUS_STYLE: Record<AppointmentStatus, { tone: BadgeTone; icon: Ic
   cancelled: { tone: 'neutral', icon: 'close' },
   no_show: { tone: 'danger', icon: 'alert' },
 };
+/** A status this build does not know (TR-3): a neutral badge with the "Unknown" label. */
+export const UNKNOWN_STATUS_STYLE: { tone: BadgeTone; icon: IconName } = { tone: 'neutral', icon: 'info' };
 
 /** 40 appointments.check_in: from 2 hours before to 2 hours after the confirmed start. */
 export const CHECK_IN_WINDOW_MS = 2 * 3_600_000;

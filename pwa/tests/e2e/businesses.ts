@@ -5,7 +5,7 @@
 // organizations get the vendor_basic plan automatically. Every run uses fresh names at a fresh point in Tehran.
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { expect, type APIRequestContext } from '@playwright/test';
-import { API, AUTH, mailedLinkToken, newEmail, now, readMail } from './accounts';
+import { API, AUTH, mailedLinkToken, newEmail, now, powHeaders, readMail } from './accounts';
 
 const CLIENT = 'cp-web-consumer/0.1.0 (web 1.0)';
 const PORT = Number(process.env.CARPAL_E2E_PORT ?? 3100);
@@ -45,24 +45,31 @@ export async function businessUser(request: APIRequestContext, prefix = 'p5'): P
   expect(start.status(), await start.text()).toBe(302);
   const interaction = new URL(start.headers().location!).searchParams.get('interaction_id')!;
   const cookie = start.headers()['set-cookie']!.split(';')[0]!;
-  const post = (path: string, data: unknown) =>
-    request.post(`${AUTH}${path}`, { data, headers: { cookie, 'carpal-client': CLIENT, 'idempotency-key': randomUUID() } });
+  const post = async (path: string, data: unknown, pow?: 'signup' | 'signin') =>
+    request.post(`${AUTH}${path}`, {
+      data,
+      headers: { cookie, 'carpal-client': CLIENT, 'idempotency-key': randomUUID(), ...(pow ? await powHeaders(request, pow) : {}) },
+    });
 
   const since = now();
-  const signup = await post('/v1/auth/signup', {
-    interaction_id: interaction,
-    full_name: 'Reza Example',
-    email,
-    password,
-    locale: 'en',
-    terms_version: '2026-10',
-    privacy_policy_version: '2026-10',
-  });
+  const signup = await post(
+    '/v1/auth/signup',
+    {
+      interaction_id: interaction,
+      full_name: 'Reza Example',
+      email,
+      password,
+      locale: 'en',
+      terms_version: '1.0',
+      privacy_policy_version: '1.0',
+    },
+    'signup',
+  );
   expect(signup.status(), await signup.text()).toBe(202);
   expect(
     (await post('/v1/auth/email/verify', { token: await mailedLinkToken(email, 'identity.email_verification', since) })).status(),
   ).toBe(200);
-  const signin = await post('/v1/auth/signin', { interaction_id: interaction, email, password });
+  const signin = await post('/v1/auth/signin', { interaction_id: interaction, email, password }, 'signin');
   expect(signin.status(), await signin.text()).toBe(200);
   const back = await request.get(`${AUTH}/oauth/authorize?${q}`, { maxRedirects: 0, headers: { cookie, 'carpal-client': CLIENT } });
   const code = new URL(back.headers().location!).searchParams.get('code')!;

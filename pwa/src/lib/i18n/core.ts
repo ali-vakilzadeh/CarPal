@@ -30,14 +30,28 @@ export function addResources(instance: I18n, locale: Locale, resources: Resource
   }
 }
 
-/** A typed translate function over "<namespace>.<path>" keys. */
+/** The label of an enum value this build does not know (TR-3, P13.T5). */
+export const UNKNOWN_VALUE_KEY = 'common.unknownValue';
+
+/**
+ * A typed translate function over "<namespace>.<path>" keys. A missing key answers the key itself (visible in
+ * development and tests), except a missing value in a group of value labels — `appointments.status.<status>` where
+ * `appointments.status` is an object — which is an enum value from a newer server and reads "Unknown" (Appendix C).
+ */
 export function translator(instance: I18n): Translate {
   const t = instance.t.bind(instance) as unknown as (key: string, options: Record<string, unknown>) => string;
-  return (key: MessageKey, vars?: MessageVars) => {
+  const translate = (key: MessageKey, vars?: MessageVars): string => {
     const dot = key.indexOf('.');
     const ns = key.slice(0, dot) as Namespace;
     const path = key.slice(dot + 1);
-    if (!instance.exists(path, { ns, ...(typeof vars?.count === 'number' ? { count: vars.count } : {}) })) return key;
+    if (!instance.exists(path, { ns, ...(typeof vars?.count === 'number' ? { count: vars.count } : {}) })) {
+      const last = path.lastIndexOf('.');
+      const group = last > 0 ? instance.getResource(instance.language, ns, path.slice(0, last)) : undefined;
+      if (key !== UNKNOWN_VALUE_KEY && /^[a-z][a-z0-9_]*$/.test(path.slice(last + 1)) && group && typeof group === 'object')
+        return translate(UNKNOWN_VALUE_KEY as MessageKey);
+      return key;
+    }
     return t(path, { ns, ...vars });
   };
+  return translate;
 }

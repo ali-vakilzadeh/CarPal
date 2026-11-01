@@ -1,12 +1,13 @@
 'use client';
 // The app shell frame (Docs/22 §2): header; then the left navigation (signed in, ≥ 768 px), the main column and the
-// right rail (≥ 1200 px); the footer; the bottom tab bar (signed in, < 768 px); the vehicle selector, the cookie
+// right rail (≥ 1200 px); the footer (P13: Privacy, Terms and Contact support); the bottom tab bar (signed in, < 768 px); the vehicle selector, the cookie
 // banner and the report modal (W-RPT-01, P8). Guest vs signed-in follows the BFF session (server-seeded, confirmed by
 // the browser — a cross-site arrival carries no SameSite=Strict cookie, so the server may render the guest variant
 // first, P2 notes).
 import type { ReactNode } from 'react';
 import { cx } from '@/components/ds/cx';
 import { useSession } from '@/lib/api/session';
+import { usePwaConfig } from '@/lib/config/client';
 import { useLocale, useT } from '@/lib/i18n/client';
 import { COOKIE_MODAL, CookieConsent } from './cookie-consent';
 import { BottomTabs, LeftNav } from './navigation';
@@ -20,11 +21,21 @@ function SiteFooter() {
   const t = useT();
   const locale = useLocale();
   const cookies = useUrlModal(COOKIE_MODAL);
+  const { supportEmail } = usePwaConfig();
   return (
     <footer className="pwa-footer">
       <nav aria-label={t('shell.footer.label')} className="pwa-footer-nav">
         <a className="pwa-link" href={`/${locale}/how-ranking-works`}>
           {t('shell.footer.ranking')}
+        </a>
+        <a className="pwa-link" href={`/${locale}/privacy`}>
+          {t('shell.legal.privacy')}
+        </a>
+        <a className="pwa-link" href={`/${locale}/terms`}>
+          {t('shell.legal.terms')}
+        </a>
+        <a className="pwa-link" href={`mailto:${supportEmail}`}>
+          {t('shell.support.contact')}
         </a>
         <button type="button" className="pwa-link" onClick={() => cookies.open()}>
           {t('shell.footer.cookies')}

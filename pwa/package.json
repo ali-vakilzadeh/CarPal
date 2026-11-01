@@ -20,17 +20,20 @@
     "test:watch": "vitest --project unit --project dom",
     "e2e": "pnpm build && playwright test",
     "e2e:install": "playwright install chromium",
+    "e2e:perf": "pnpm build && playwright test tests/e2e/performance.spec.ts --workers=1",
     "contract:generate": "tsx tools/contract/generate.ts",
     "contract:check": "tsx tools/contract/generate.ts --check",
     "ds:sync": "node tools/sync-design-system.mjs",
     "ds:check": "node tools/sync-design-system.mjs --check",
     "sw:build": "node tools/build-sw.mjs",
     "sw:check": "node tools/build-sw.mjs --check",
+    "legal:sync": "node tools/sync-legal.mjs",
+    "legal:check": "node tools/sync-legal.mjs --check",
     "icons:build": "node tools/make-icons.mjs",
     "i18n:check": "tsx tools/i18n-check.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm contract:check && pnpm i18n:check && pnpm ds:check && pnpm sw:check"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm contract:check && pnpm i18n:check && pnpm ds:check && pnpm sw:check && pnpm legal:check"
   },
   "dependencies": {
     "@carpal/api-contracts": "link:../shared/api-contracts",

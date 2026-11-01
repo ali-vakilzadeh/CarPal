@@ -14,11 +14,18 @@ describe('server env', () => {
       CARPAL_PWA_SESSION_STORE: 'lite',
       CARPAL_PWA_DEMO: false,
       CARPAL_PWA_DEFAULT_TIME_ZONE: 'Asia/Tehran',
-      CARPAL_PWA_TERMS_VERSION: '2026-10',
-      CARPAL_PWA_PRIVACY_VERSION: '2026-10',
+      // P13.T7: the "Version" lines of the published texts (Docs/User Agreement.md, Docs/Privacy Policy.md).
+      CARPAL_PWA_TERMS_VERSION: '1.0',
+      CARPAL_PWA_PRIVACY_VERSION: '1.0',
+      CARPAL_PWA_SUPPORT_EMAIL: 'support@carpal.app',
       CARPAL_PWA_PORTAL_SIGNUP_URL: 'https://portal.carpal.app/signup',
       CARPAL_PWA_PORTAL_URL: 'https://portal.carpal.app',
     });
+  });
+
+  it('takes the support address of the deployment (OQ-18) and refuses one that is not an email address', () => {
+    expect(parseServerEnv({ CARPAL_PWA_SUPPORT_EMAIL: 'help@carpal.example' }).CARPAL_PWA_SUPPORT_EMAIL).toBe('help@carpal.example');
+    expect(() => parseServerEnv({ CARPAL_PWA_SUPPORT_EMAIL: 'support' })).toThrow(/CARPAL_PWA_SUPPORT_EMAIL/);
   });
 
   it('validates the P12 web push key: empty = no web push, otherwise a base64url P-256 key', () => {

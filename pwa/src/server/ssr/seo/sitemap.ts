@@ -7,17 +7,20 @@
 // language versions (xhtml:link hreflang) as Google's sitemap guide asks. Directories (P6.T7, Docs/22 open point 6):
 // city × top-level service-system pages with at least DIRECTORY_MIN_RESULTS providers, cities in region order and
 // categories in taxonomy order, one search (limit 3) per combination within MAX_DIRECTORY_SEARCHES; brand pages are
-// linked from the directory pages but not listed.
+// linked from the directory pages but not listed. Questions (P13.T10): the hub, every answered question (the only
+// indexable ones, OQ-20) within MAX_QUESTION_PAGES pages of questions.search, and the one-topic hub views (category,
+// then brand) whose first page passes qaTopicIndexable, one search each within MAX_TOPIC_SEARCHES.
 import 'server-only';
 import type { PublicOrgCard, ResultCard } from '@carpal/api-contracts';
+import { qaFilterQuery, qaSearchBody, qaTopicIndexable, type QaFilters } from '@/features/community/qa-filters';
 import { DIRECTORY_MIN_RESULTS, directoryPath } from '@/features/directory/model';
 import { LOCALES, DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locales';
-import { partPath, sellerPath, shopPath, showcasePath } from '@/lib/seo/urls';
+import { partPath, questionPath, sellerPath, shopPath, showcasePath } from '@/lib/seo/urls';
 import { loadClientConfig } from '@/server/config';
 import { taxonomy } from '@/server/taxonomy';
 import { ssrApi } from '../api';
 
-export const SITEMAP_KINDS = ['pages', 'shops', 'parts-sellers', 'parts', 'showcases', 'directories'] as const;
+export const SITEMAP_KINDS = ['pages', 'shops', 'parts-sellers', 'parts', 'showcases', 'directories', 'questions'] as const;
 export type SitemapKind = (typeof SITEMAP_KINDS)[number];
 export const isSitemapKind = (v: string): v is SitemapKind => (SITEMAP_KINDS as readonly string[]).includes(v);
 
@@ -27,6 +30,8 @@ const MAX_PORTFOLIO_READS = 100;
 const MAX_VENDOR_READS = 50;
 const MAX_PART_SEARCHES = 40; // per language
 export const MAX_DIRECTORY_SEARCHES = 80;
+export const MAX_QUESTION_PAGES = 10; // × 50 answered questions
+export const MAX_TOPIC_SEARCHES = 40;
 
 /** One page in every language. */
 export interface SitemapEntry {
@@ -75,7 +80,12 @@ const both = (path: (l: Locale) => string): Record<Locale, string> =>
 
 /** The static public pages. */
 export function staticEntries(): SitemapEntry[] {
-  return [{ paths: both((l) => `/${l}`) }, { paths: both((l) => `/${l}/how-ranking-works`) }];
+  return [
+    { paths: both((l) => `/${l}`) },
+    { paths: both((l) => `/${l}/how-ranking-works`) },
+    { paths: both((l) => `/${l}/privacy`) },
+    { paths: both((l) => `/${l}/terms`) },
+  ];
 }
 
 interface Collected {
@@ -197,6 +207,42 @@ export async function directoryEntries(budget = MAX_DIRECTORY_SEARCHES): Promise
   return entries;
 }
 
+/** The Q&A hub, answered questions and the indexable one-topic views (P13.T10). */
+export async function questionEntries(pages = MAX_QUESTION_PAGES, topicBudget = MAX_TOPIC_SEARCHES): Promise<SitemapEntry[]> {
+  const api = ssrApi(DEFAULT_LOCALE);
+  const entries: SitemapEntry[] = [{ paths: both((l) => `/${l}/questions`) }];
+  let cursor: string | null | undefined;
+  for (let page = 0; page < pages && cursor !== null; page++) {
+    try {
+      const res = await api.api('questions.search', { body: { status: 'answered', limit: 50, ...(cursor ? { cursor } : {}) } });
+      for (const q of res.items)
+        if (q.status === 'answered') entries.push({ paths: both((l) => questionPath(l, q)), lastModified: q.created_at });
+      cursor = res.next_cursor;
+    } catch (err) {
+      console.warn('sitemap: questions search failed', err);
+      return entries; // Q&A off (qna.enabled) or the bucket is spent: no topic views either
+    }
+  }
+  const [systems, brands] = await Promise.all([
+    taxonomy().nodes(DEFAULT_LOCALE, 'service_system'),
+    taxonomy().nodes(DEFAULT_LOCALE, 'vehicle_brand'),
+  ]);
+  const topics: QaFilters[] = [
+    ...systems.filter((n) => !n.parent_id).map((n) => ({ categoryId: n.id })),
+    ...brands.map((n) => ({ brandId: n.id })),
+  ];
+  for (const filters of topics.slice(0, topicBudget)) {
+    try {
+      // The same request as the page's first page, so the sitemap and the page's robots rule agree.
+      const res = await api.api('questions.search', { body: qaSearchBody(filters, '', null) });
+      if (qaTopicIndexable(res.items)) entries.push({ paths: both((l) => `/${l}/questions?${qaFilterQuery(filters)}`) });
+    } catch (err) {
+      console.warn('sitemap: questions topic search failed', err);
+    }
+  }
+  return entries;
+}
+
 /** Builds each kind at most once per SITEMAP_TTL_MS; organizations are collected once for all kinds. */
 export class SitemapSource {
   #orgs: { at: number; value: Promise<Collected> } | null = null;
@@ -227,6 +273,7 @@ export class SitemapSource {
   async #build(kind: SitemapKind): Promise<SitemapEntry[]> {
     if (kind === 'pages') return staticEntries();
     if (kind === 'directories') return directoryEntries();
+    if (kind === 'questions') return questionEntries();
     const { providers, vendors } = await this.#collected();
     if (kind === 'shops') return providers.map((o) => ({ paths: both((l) => shopPath(l, o.slug!)) }));
     if (kind === 'parts-sellers') return vendors.map((o) => ({ paths: both((l) => sellerPath(l, o.slug!)) }));

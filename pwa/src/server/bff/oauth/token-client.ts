@@ -199,8 +199,9 @@ export class TokenClient {
         })) as unknown as TokenResponse;
       } catch (err) {
         if (!(err instanceof TokenEndpointError)) throw err;
-        // Strict mode: a fresh DPoP nonce is required at /oauth/token (SEC-AU-6); the error carried it.
-        if (err.error === 'use_dpop_nonce' && nonceRetry) return attempt(pow, false);
+        // Strict mode: a fresh DPoP nonce is required at /oauth/token (SEC-AU-6); the error carried it. The server
+        // checked (and spent) the single-use proof of work before the nonce, so the retry needs a new one (P13.T11).
+        if (err.error === 'use_dpop_nonce' && nonceRetry) return attempt(pow && o.att ? await this.pow(clientId, o.att) : pow, false);
         // ATT without attestation: solve the server's proof of work once (DI-22).
         if (err.error === 'ATTESTATION_REQUIRED' && o.att && !pow) return attempt(await this.pow(clientId, o.att), nonceRetry);
         throw err;

@@ -12,16 +12,18 @@ export interface PublicConfig {
   i18nVersion: string;
   /** live = fresh from the API; stale = served from cache while refreshing; fallback = region file, flags off. */
   source: 'live' | 'stale' | 'fallback';
-  /** PWA settings of this deployment (P12): the web push key (null = no web push) and the business portal. */
+  /** PWA settings of this deployment (P12): the web push key (null = no web push), the business portal and (P13) the support address. */
   pwa?: PwaConfig;
 }
 
 export interface PwaConfig {
   vapidPublicKey: string | null;
   portalUrl: string;
+  /** "Contact support" (OQ-18): an email address for the MVP. */
+  supportEmail: string;
 }
 
-const DEFAULT_PWA: PwaConfig = { vapidPublicKey: null, portalUrl: 'https://portal.carpal.app' };
+const DEFAULT_PWA: PwaConfig = { vapidPublicKey: null, portalUrl: 'https://portal.carpal.app', supportEmail: 'support@carpal.app' };
 
 const ConfigContext = createContext<PublicConfig | null>(null);
 

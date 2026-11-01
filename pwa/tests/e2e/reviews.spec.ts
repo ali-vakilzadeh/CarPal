@@ -10,6 +10,7 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { API, AUTH, backendUp, now, readMail } from './accounts';
 import { businessUser, seedProvider, taxonomy, type BusinessApi, type SeededProvider } from './businesses';
+import { retire } from './flows';
 import { decideCookies, expectNoAxeViolations, gotoReady } from './support';
 
 test.describe.configure({ mode: 'serial' });
@@ -83,6 +84,7 @@ test.beforeAll(async ({ playwright }) => {
 });
 
 test.afterAll(async () => {
+  await retire(shop);
   await seedRequest?.dispose();
 });
 

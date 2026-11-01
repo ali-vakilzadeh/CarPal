@@ -87,6 +87,22 @@ describe('token requests', () => {
     expect(strict.backend.calls.filter((c) => c.url.endsWith('/oauth/challenge'))).toHaveLength(1);
   });
 
+  it('a DPoP nonce retry of an ATT grant solves a fresh proof of work: the first one was spent (P13.T11)', async () => {
+    const { tc, backend } = await client({ powUpFront: true });
+    let first = true;
+    backend.token.handler = () => {
+      if (!first) return undefined;
+      first = false;
+      return oauthError(400, 'use_dpop_nonce', { 'dpop-nonce': 'server-nonce-2' });
+    };
+    await tc.anonymous('cp-web-consumer', await generateDpopKey());
+    const pows = backend.calls.filter((c) => c.url.endsWith('/oauth/token')).map((c) => c.headers.get('carpal-pow'));
+    expect(pows).toHaveLength(2);
+    expect(backend.calls.filter((c) => c.url.endsWith('/oauth/challenge'))).toHaveLength(2);
+    expect(pows[0]).toBeTruthy();
+    expect(pows[1]).toBeTruthy();
+  });
+
   it('private_key_jwt adds an RFC 7523 assertion for the token endpoint (strict-mode seam, P2.T10)', async () => {
     const { privateKey, publicKey } = await generateKeyPair('EdDSA', { crv: 'Ed25519', extractable: true });
     const key = { ...(await exportJWK(privateKey)), kid: 'bff-1' } as JWK & { kid: string };
@@ -143,5 +159,14 @@ describe('DPoP and PoW primitives', () => {
     const nonce = await solvePow({ prefix: 'abcdefghijklmnop', difficulty_bits: 10 });
     const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`abcdefghijklmnop${nonce}`)));
     expect(leadingZeroBits(hash)).toBeGreaterThanOrEqual(10);
+  });
+
+  it('solves challenges with synchronous hashing in batches, fast enough for a request (P13.T11)', async () => {
+    // 16 bits ≈ 65 k hashes (the backend's default 18 bits is 4× that, ≈ 0.3 s alone); generous under parallel load.
+    const started = performance.now();
+    const nonce = await solvePow({ prefix: 'strict-mode-prefix', difficulty_bits: 16 });
+    const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`strict-mode-prefix${nonce}`)));
+    expect(leadingZeroBits(hash)).toBeGreaterThanOrEqual(16);
+    expect(performance.now() - started).toBeLessThan(4_000);
   });
 });

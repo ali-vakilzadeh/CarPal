@@ -57,6 +57,36 @@ export async function mailedLinkToken(email: string, template: 'identity.email_v
 
 const b64 = (bytes: Buffer) => bytes.toString('base64url');
 
+/** CARPAL_E2E_STRICT=1: the backend runs with CARPAL_STRICT_AUTH=1, so ATT calls need a proof of work (P13.T11, DI-22). */
+export const STRICT = process.env.CARPAL_E2E_STRICT === '1';
+
+function leadingZeroBits(hash: Buffer): number {
+  let bits = 0;
+  for (const byte of hash) {
+    if (byte === 0) {
+      bits += 8;
+      continue;
+    }
+    return bits + Math.clz32(byte) - 24;
+  }
+  return bits;
+}
+
+/** The CarPal-PoW header for an ATT call in strict mode (auth.pow_challenge, solved here); {} otherwise. */
+export async function powHeaders(
+  request: APIRequestContext,
+  purpose: 'signup' | 'signin' | 'review' | 'invitation' | 'anonymous',
+): Promise<Record<string, string>> {
+  if (!STRICT) return {};
+  const res = await request.post(`${AUTH}/oauth/challenge`, { data: { purpose }, headers: { 'carpal-client': CLIENT } });
+  expect(res.status(), await res.text()).toBe(200);
+  const c = (await res.json()) as { challenge_id: string; prefix: string; difficulty_bits: number };
+  for (let i = 0; ; i++) {
+    if (leadingZeroBits(createHash('sha256').update(`${c.prefix}${i}`).digest()) >= c.difficulty_bits)
+      return { 'carpal-pow': `${c.challenge_id}.${i}` };
+  }
+}
+
 /** A verified account with a password, created directly on the auth host (lite mode needs no attestation). */
 export async function createUser(
   request: APIRequestContext,
@@ -80,19 +110,33 @@ export async function createUser(
   const toSignin = await request.get(authorize.toString(), { maxRedirects: 0, headers: { 'carpal-client': CLIENT } });
   expect(toSignin.status(), await toSignin.text()).toBe(302);
   const interaction = new URL(toSignin.headers().location!).searchParams.get('interaction_id')!;
-  const post = (path: string, data: unknown) =>
-    request.post(`${AUTH}${path}`, { data, headers: { 'carpal-client': CLIENT, 'idempotency-key': randomUUID() } });
+  // The interaction cookie (strict mode requires it on every /v1/auth/* call).
+  const cookie = toSignin.headers()['set-cookie']?.split(';')[0] ?? '';
+  const post = async (path: string, data: unknown, pow?: 'signup' | 'signin') =>
+    request.post(`${AUTH}${path}`, {
+      data,
+      headers: {
+        ...(cookie ? { cookie } : {}),
+        'carpal-client': CLIENT,
+        'idempotency-key': randomUUID(),
+        ...(pow ? await powHeaders(request, pow) : {}),
+      },
+    });
 
   const since = now();
-  const signup = await post('/v1/auth/signup', {
-    interaction_id: interaction,
-    full_name: o.fullName ?? 'Sara Example',
-    email,
-    password,
-    locale: o.locale ?? 'en',
-    terms_version: '2026-10',
-    privacy_policy_version: '2026-10',
-  });
+  const signup = await post(
+    '/v1/auth/signup',
+    {
+      interaction_id: interaction,
+      full_name: o.fullName ?? 'Sara Example',
+      email,
+      password,
+      locale: o.locale ?? 'en',
+      terms_version: '1.0',
+      privacy_policy_version: '1.0',
+    },
+    'signup',
+  );
   expect(signup.status(), await signup.text()).toBe(202);
   const verify = await post('/v1/auth/email/verify', { token: await mailedLinkToken(email, 'identity.email_verification', since) });
   expect(verify.status(), await verify.text()).toBe(200);
