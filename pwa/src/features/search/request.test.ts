@@ -1,8 +1,8 @@
 // P6.T8: the search URL rules (GD-14: enumerated filters only, never text or coordinates), guest requests (BA-16),
-// refine vs run, chip editing, the filter counts and Reset.
-import type { InterpretedIntent, ResultCard, SearchRequest } from '@carpal/api-contracts';
+// refine vs run, chip editing, Reset; P14: the soonest sort, facets on W-SRCH-01 requests only.
+import type { InterpretedIntent, SearchRequest } from '@carpal/api-contracts';
 import { describe, expect, it } from 'vitest';
-import { optionCount, resetFilters, activeFilters } from './filters';
+import { resetFilters, activeFilters } from './filters';
 import {
   EMPTY_URL_STATE,
   buildRequest,
@@ -60,11 +60,17 @@ describe('search URL state', () => {
   it('drops anything not enumerated: free text, unknown keys, bad ids, unknown cities, out-of-range numbers', () => {
     const s = parseUrlState(
       new URLSearchParams(
-        'q=brakes&text=x&lat=35.7&mode=showcases&sort=soonest&km=900&rating=5&brand=not-an-id&city=paris&price=cheap&avail=99',
+        'q=brakes&text=x&lat=35.7&mode=showcases&sort=nearest&km=900&rating=5&brand=not-an-id&city=paris&price=cheap&avail=99',
       ),
       ['tehran'],
     );
     expect(s).toEqual(EMPTY_URL_STATE);
+  });
+
+  it('takes the soonest sort (contract 1.1.0, DI-43)', () => {
+    const s = parseUrlState(new URLSearchParams('sort=soonest'));
+    expect(s.sort).toBe('soonest');
+    expect(urlStateQuery(s)).toBe('?sort=soonest');
   });
 
   it('never puts text, coordinates or a map area into the page URL', () => {
@@ -103,6 +109,19 @@ describe('search requests', () => {
       location: { mode: 'user_position' },
     });
     expect(buildRequest(ctx, { ...EMPTY_URL_STATE, city: 'karaj' }, signed).location).toEqual({ mode: 'chosen_city', city_key: 'karaj' });
+  });
+
+  it('asks for facets only when the caller says so (W-SRCH-01), and refines keep or set them', () => {
+    const o = { signedIn: true, fallbackCity: 'tehran' };
+    expect(buildRequest(ctx, EMPTY_URL_STATE, o)).not.toHaveProperty('facets');
+    const withFacets = buildRequest(ctx, EMPTY_URL_STATE, { ...o, facets: true });
+    expect(withFacets.facets).toBe(true);
+    expect(changeOf(withFacets, buildRequest(ctx, { ...EMPTY_URL_STATE, sort: 'soonest' }, { ...o, facets: true }))).toEqual({
+      kind: 'refine',
+      body: { sort: 'soonest' },
+    });
+    expect(refined(withFacets, { facets: false }).facets).toBe(false);
+    expect(refined(withFacets, { sort: 'rating' }).facets).toBe(true);
   });
 
   it('refines when only refinable fields changed and runs again for a new mode, text or car', () => {
@@ -162,34 +181,11 @@ describe('chips', () => {
   });
 });
 
-describe('widening and filter counts', () => {
+describe('widening and Reset', () => {
   it('widens step by step', () => {
     expect(widerDistance(10)).toBe(25);
     expect(widerDistance(undefined)).toBe(100);
     expect(widerDistance(200)).toBeNull();
-  });
-
-  const card = (o: Partial<ResultCard> & { verified?: boolean; rating?: string | null }): ResultCard =>
-    ({
-      result_id: 'r',
-      rank: 1,
-      target: { type: 'organization', id: 'o' },
-      organization: { id: 'o', verified: o.verified ?? false, overall_rating: o.rating ?? null, price_tier: 'budget' },
-      item: null,
-      location: null,
-      reasons: [],
-      open_now: o.open_now ?? null,
-      next_available_slot: o.next_available_slot ?? null,
-    }) as unknown as ResultCard;
-
-  it('counts options only over a complete list', () => {
-    const results = [card({ open_now: true, verified: true, rating: '4.6' }), card({ open_now: false, rating: '3.2' })];
-    expect(optionCount(results, true, 'open_now')).toBe(1);
-    expect(optionCount(results, true, 'min_rating', '4.0')).toBe(1);
-    expect(optionCount(results, true, 'verified_only')).toBe(1);
-    expect(optionCount(results, true, 'price_tiers', 'budget')).toBe(2);
-    expect(optionCount(results, false, 'open_now')).toBeNull();
-    expect(optionCount(results, true, 'warranty_offered')).toBeNull();
   });
 
   it('Reset keeps the car and the category', () => {

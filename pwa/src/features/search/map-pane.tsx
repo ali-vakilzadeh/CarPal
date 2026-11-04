@@ -52,7 +52,7 @@ export function SearchMapPane({
   const [layers, setLayers] = useState({ shops: true, sellers: true });
   const [moved, setMoved] = useState<MapMove | null>(null);
   const places = useMemo(() => placesFromResults(results), [results]);
-  const shown = useMemo(() => visiblePlaces(places, { ...layers, openNow: false, hideOthers: false }), [places, layers]);
+  const shown = useMemo(() => visiblePlaces(places, { ...layers, hideOthers: false }), [places, layers]);
   const bbox = useMemo(() => boundsOf(places.map((p) => p.point)), [places]);
   const searched = useMemo<{ center: Point; zoom: number; bbox: BBox } | null>(
     () => (bbox ? { center: { lat: (bbox.north + bbox.south) / 2, lng: (bbox.east + bbox.west) / 2 }, zoom: 12, bbox } : null),

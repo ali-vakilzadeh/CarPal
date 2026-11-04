@@ -25,6 +25,7 @@ function fa(key: string): string {
 const BACKEND = join(import.meta.dirname, '..', '..', '..', 'backend');
 
 test.beforeAll(async ({ request, baseURL }) => {
+  test.setTimeout(150_000); // the poll below waits up to 120 s for the PWA's config cache (P14: the 30 s default cut it short)
   if (!(await backendUp(request))) return;
   // pnpm is on PATH in `pnpm e2e` (project-local Node); the CLI refuses anything but CARPAL_ENV=dev.
   execFileSync('pnpm', ['-s', 'dev:flags', 'set', 'community', 'on'], { cwd: BACKEND, stdio: 'pipe', shell: process.platform === 'win32' });

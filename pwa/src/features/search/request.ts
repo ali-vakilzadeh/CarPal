@@ -5,8 +5,9 @@
 //   - Guests never send vehicle_id or user_position (401, BA-16): their car goes as brand/model/series filters and
 //     their location is a chosen city or a map area.
 //   - Changes the session can take (chips, filters, location, vehicle filter, sort) go through search.refine; a new
-//     mode, text or vehicle runs search.run again. A session that can no longer be read re-runs the stored request
-//     (DI-17, GD-09 amendment 4).
+//     mode, text or vehicle runs search.run again. A reload reads the session again (search.session_get, P14.T5); a
+//     session that can no longer be read re-runs the stored request (DI-17, GD-09 amendment 4).
+//   - W-SRCH-01 asks for facet counts (facets: true, P14.T2); the map, the directory pages and Help Me do not.
 // Pure functions.
 import type {
   EntryPoint,
@@ -24,7 +25,8 @@ import type {
 /** Mode tabs: Showcases is hidden until a showcase search exists (DI-19); Q&A only with qna.enabled. */
 export const MODE_TABS = ['all', 'providers', 'parts', 'vendors', 'qna'] as const satisfies readonly SearchMode[];
 export type ModeTab = (typeof MODE_TABS)[number];
-export const SORTS = ['best_match', 'distance', 'rating'] as const;
+/** Sort options (Docs/21 C-SEARCH-01); 'soonest' orders providers by their next open slot (contract 1.1.0, DI-43). */
+export const SORTS = ['best_match', 'distance', 'rating', 'soonest'] as const satisfies readonly SearchSort[];
 export type Sort = (typeof SORTS)[number];
 
 export const PAGE_SIZE = 20;
@@ -166,7 +168,11 @@ export interface SearchContext {
 }
 
 /** The request for search.run from the context and the URL state. Guests: no vehicle_id, no user_position. */
-export function buildRequest(ctx: SearchContext, s: UrlState, o: { signedIn: boolean; fallbackCity: string }): SearchRequest {
+export function buildRequest(
+  ctx: SearchContext,
+  s: UrlState,
+  o: { signedIn: boolean; fallbackCity: string; facets?: boolean },
+): SearchRequest {
   let location: LocationInput = ctx.location;
   if (s.city) location = { mode: 'chosen_city', city_key: s.city };
   if (location.mode === 'user_position' && !o.signedIn) location = { mode: 'chosen_city', city_key: o.fallbackCity };
@@ -185,6 +191,7 @@ export function buildRequest(ctx: SearchContext, s: UrlState, o: { signedIn: boo
     // A guest's brand filter is the vehicle context too (backend: vehicle = vehicle_id ?? the brand filters).
     ...(vehicleId || filters.brand_node_id ? { vehicle_filter_applied: s.vehicleFilter } : {}),
     ...(ctx.intentOverride ? { intent_override: ctx.intentOverride } : {}),
+    ...(o.facets ? { facets: true } : {}),
   };
   return req;
 }
@@ -196,6 +203,8 @@ export type RefineBody = {
   location?: LocationInput;
   vehicle_filter_applied?: boolean;
   sort?: SearchSort;
+  /** Omitted = the value of the refined session (the backend keeps it). */
+  facets?: boolean;
 };
 
 /** How to get from one request to the next: search.refine when only refinable fields changed, else search.run. */
@@ -229,6 +238,7 @@ export function refined(prev: SearchRequest, body: RefineBody): SearchRequest {
     ...(body.location ? { location: body.location } : {}),
     ...(body.vehicle_filter_applied !== undefined ? { vehicle_filter_applied: body.vehicle_filter_applied } : {}),
     ...(body.sort ? { sort: body.sort } : {}),
+    ...(body.facets !== undefined ? { facets: body.facets } : {}),
   };
 }
 

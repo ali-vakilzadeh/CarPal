@@ -1,25 +1,26 @@
 'use client';
 // The filter panel (Docs/22 W-SRCH-01 "Left: filter panel", Docs/90 S-SHARED-03): instant apply (every change updates
-// the URL and refines the search), option counts when the result list is complete (filters.ts, DI-42), Reset (the car
-// and the category stay). The availability filter says that providers without online booking drop out (BA-16).
+// the URL and refines the search), the server's option counts (SearchFacets, facets.ts, P14.T2: "12", "12+" when
+// capped, no number for options the response leaves out), Reset (the car and the category stay). The availability
+// filter says that providers without online booking drop out (BA-16).
 // Used as the always-visible column from 1200 px and inside the Filters drawer below that; on the map the same panel
 // highlights instead of filtering (Docs/22 W-MAP-01 "Advanced search").
-import type { ResultCard, SearchFilters } from '@carpal/api-contracts';
+import type { SearchFacets, SearchFilters } from '@carpal/api-contracts';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ds/button';
 import { useFormat } from '@/lib/format/client';
 import { useT } from '@/lib/i18n/client';
 import type { MessageKey } from '@/lib/i18n/keys';
-import { filtersFor, optionCount, resetFilters, type FilterKey } from './filters';
+import { facetCount } from './facets';
+import { filtersFor, resetFilters, type FilterKey } from './filters';
 import { AVAILABILITY_DAYS, DELIVERY, DISTANCES_KM, PART_CONDITIONS, PRICE_TIERS, RATINGS, compactFilters, type ModeTab } from './request';
 
 export interface FilterPanelProps {
   mode: ModeTab;
   filters: SearchFilters;
   onChange: (f: SearchFilters) => void;
-  results?: readonly ResultCard[];
-  /** All results are loaded (counts can be shown). */
-  complete?: boolean;
+  /** The session's facet counts (W-SRCH-01 only; null = no numbers). */
+  facets?: SearchFacets | null;
   /** "For my car" (shown when a car is chosen). */
   vehicle?: { label: string; on: boolean; onToggle: (on: boolean) => void } | null;
   idPrefix: string;
@@ -27,15 +28,16 @@ export interface FilterPanelProps {
   highlight?: boolean;
 }
 
-export function FilterPanel({ mode, filters, onChange, results = [], complete = false, vehicle, idPrefix, highlight }: FilterPanelProps) {
+export function FilterPanel({ mode, filters, onChange, facets = null, vehicle, idPrefix, highlight }: FilterPanelProps) {
   const t = useT();
   const f = useFormat();
   const keys = filtersFor(mode);
   const has = (k: FilterKey) => keys.includes(k);
   const set = (patch: Partial<SearchFilters>) => onChange(compactFilters({ ...filters, ...patch }));
   const count = (k: FilterKey, v: unknown = true) => {
-    const n = optionCount(results, complete, k, v);
-    return n === null ? null : f.number(n);
+    const n = facetCount(facets, k, v);
+    if (!n) return null;
+    return n.capped ? t('search.filters.countCapped', { count: f.number(n.count) }) : f.number(n.count);
   };
   const toggleIn = <T extends string>(list: readonly T[] | undefined, v: T): T[] => {
     const cur = list ?? [];
@@ -144,6 +146,7 @@ export function FilterPanel({ mode, filters, onChange, results = [], complete = 
           checked={!!filters.service_modes?.includes('mobile')}
           onChange={(v) => set({ service_modes: v ? ['mobile'] : undefined })}
           label={t('search.filters.comesToMe')}
+          count={count('service_modes', 'mobile')}
         />
       ) : null}
       {has('warranty_offered') ? (
@@ -152,6 +155,7 @@ export function FilterPanel({ mode, filters, onChange, results = [], complete = 
           checked={!!filters.warranty_offered}
           onChange={(v) => set({ warranty_offered: v })}
           label={t('search.filters.warranty')}
+          count={count('warranty_offered')}
         />
       ) : null}
       {has('ev_capable') ? (
@@ -160,6 +164,7 @@ export function FilterPanel({ mode, filters, onChange, results = [], complete = 
           checked={!!filters.ev_capable}
           onChange={(v) => set({ ev_capable: v })}
           label={t('search.filters.ev')}
+          count={count('ev_capable')}
         />
       ) : null}
       {has('fleet_friendly') ? (
@@ -168,6 +173,7 @@ export function FilterPanel({ mode, filters, onChange, results = [], complete = 
           checked={!!filters.fleet_friendly}
           onChange={(v) => set({ fleet_friendly: v })}
           label={t('search.filters.fleet')}
+          count={count('fleet_friendly')}
         />
       ) : null}
       {has('stock_available') ? (
@@ -202,6 +208,7 @@ export function FilterPanel({ mode, filters, onChange, results = [], complete = 
               checked={!!filters.delivery_options?.includes(d)}
               onChange={() => set({ delivery_options: toggleIn(filters.delivery_options, d) })}
               label={t(`search.filters.deliveryOption.${d}`)}
+              count={count('delivery_options', d)}
             />
           ))}
         </Group>

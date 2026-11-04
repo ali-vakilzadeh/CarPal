@@ -27,6 +27,7 @@ import { isLocale, type Locale } from '@/lib/i18n/locales';
 import type { Translate } from '@/lib/i18n/keys';
 import { orgPath, questionPath } from '@/lib/seo/urls';
 import { brandSeries, directoryLinks, directoryResults, relatedQuestions, resolveDirectory } from '@/server/ssr/directory';
+import { serverEnv } from '@/server/env';
 import { pageContext } from '@/server/ssr/page-context';
 import { JsonLd } from '@/server/ssr/seo/json-ld';
 import { pageMetadata } from '@/server/ssr/seo/metadata';
@@ -208,6 +209,7 @@ export default async function DirectoryPage(props: Props) {
                       t={t}
                       f={f}
                       bestMatch
+                      slotTimeZone={serverEnv().CARPAL_PWA_DEFAULT_TIME_ZONE}
                       actions={
                         <RequestAction
                           orgId={r.organization.id}

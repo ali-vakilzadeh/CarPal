@@ -12,6 +12,7 @@ import { Button, buttonClass } from '@/components/ds/button';
 import { useGatedAction, useIntentHandler } from '@/components/shell/auth-intent';
 import { requestHref, saveSearchOrigin } from '@/features/profiles';
 import { useAnalytics } from '@/lib/analytics/client';
+import { usePwaConfig } from '@/lib/config/client';
 import { goTo } from '@/lib/browser-nav';
 import { useFormat } from '@/lib/format/client';
 import { useLocale, useT } from '@/lib/i18n/client';
@@ -41,6 +42,7 @@ export function ResultList({
   const gate = useGatedAction();
   const { track } = useAnalytics();
   const resultEvent = useResultEvent();
+  const { regionTimeZone } = usePwaConfig();
 
   useIntentHandler<{ location?: string | null; result?: string; slug?: string | null }>('request', (intent) => {
     if (!intent.target) return;
@@ -99,6 +101,7 @@ export function ResultList({
               t={t}
               f={f}
               bestMatch={bestMatch}
+              slotTimeZone={regionTimeZone}
               highlighted={!!highlightedId && r.location?.location_id === highlightedId}
               actions={
                 provider ? (

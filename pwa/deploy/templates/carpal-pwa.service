@@ -1,0 +1,49 @@
+# CarPal consumer PWA (Next.js production server with the consumer BFF and the hosted sign-in UI).
+# Listens on 127.0.0.1:@PWA_PORT@ only; nginx serves https://@WEB_HOST@. Installed by pwa-setup.sh.
+[Unit]
+Description=CarPal consumer PWA (next start)
+Documentation=file://@PWA_APP_DIR@/deploy/deploy.md
+After=network-online.target redis-server.service carpal-backend.service
+Wants=network-online.target redis-server.service
+
+[Service]
+Type=simple
+User=@PWA_SERVICE_USER@
+Group=@PWA_SERVICE_GROUP@
+WorkingDirectory=@PWA_APP_DIR@
+EnvironmentFile=@PWA_ENV_FILE@
+Environment=NODE_ENV=production
+Environment=NEXT_TELEMETRY_DISABLED=1
+Environment=NODE_OPTIONS=--max-old-space-size=1024
+ExecStart=@NODE_BIN@/node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port @PWA_PORT@
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+LimitNOFILE=65536
+UMask=0027
+
+# Hardening: read-only system and code; Next.js writes only its build folder (.next: cache and regenerated pages).
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ReadWritePaths=@PWA_APP_DIR@/.next
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

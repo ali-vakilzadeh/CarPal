@@ -32,7 +32,7 @@ import { AssetThumb } from '@/features/media';
 import { RatingLine } from '@/features/profiles';
 import { distanceText, LocationChip, ResultCardView, storeSearch, useResultEvent } from '@/features/search';
 import { ApiProblem } from '@/lib/api/problem';
-import { useFlag, useRegion } from '@/lib/config/client';
+import { useFlag, usePwaConfig, useRegion } from '@/lib/config/client';
 import { useTaxonomyNodes } from '@/lib/config/taxonomy';
 import { useFormat } from '@/lib/format/client';
 import { useLocale, useT } from '@/lib/i18n/client';
@@ -116,6 +116,7 @@ export function RecommendationsStep({
 }) {
   const t = useT();
   const f = useFormat();
+  const slotZone = usePwaConfig().regionTimeZone;
   const locale = useLocale();
   const router = useRouter();
   const toast = useToast();
@@ -361,7 +362,7 @@ export function RecommendationsStep({
           <ol className="pwa-plain-list pwa-stack">
             {top.map((r) => (
               <li key={r.result_id} className="pwa-help-rec">
-                <ResultCardView r={r} locale={locale} t={t} f={f} bestMatch={!critical} actions={actions(r)} />
+                <ResultCardView r={r} locale={locale} t={t} f={f} bestMatch={!critical} slotTimeZone={slotZone} actions={actions(r)} />
                 <div className="pwa-help-why">
                   <h3 className="pwa-text-caption m-0">{t('help.recommendations.why')}</h3>
                   <ul className="pwa-plain-list pwa-stack-xs">
@@ -385,7 +386,7 @@ export function RecommendationsStep({
               <ul className="pwa-plain-list pwa-stack-sm">
                 {more.map((r) => (
                   <li key={r.result_id}>
-                    <ResultCardView r={r} locale={locale} t={t} f={f} actions={actions(r)} />
+                    <ResultCardView r={r} locale={locale} t={t} f={f} slotTimeZone={slotZone} actions={actions(r)} />
                   </li>
                 ))}
               </ul>

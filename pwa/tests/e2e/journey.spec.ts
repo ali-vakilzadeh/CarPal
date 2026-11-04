@@ -230,7 +230,9 @@ test('Sara, Chapters 1-11 in FA', async ({ page, request }) => {
     await gotoReady(page, '/en/garage');
     await expect(page.getByText('نقره‌ای').first()).toBeVisible();
     await page.getByRole('contentinfo').getByRole('link', { name: 'فارسی' }).click();
-    await page.waitForURL(/\/fa\/garage$/);
+    // Wide screens open the first car (client-side move to /garage/<id>/overview); the footer link names the page the
+    // browser is on by then (P14: the exact /fa/garage wait raced that move).
+    await page.waitForURL(/\/fa\/garage(\/[0-9a-f-]+\/overview)?$/);
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   });
 

@@ -4,10 +4,14 @@
 // sellers, Open now, Advanced search (highlight, not filter, with "7 match · 14 others" and Hide others). Left: the
 // places in the current view as result cards (rank order; "Sorted by closeness to the map centre" after Search this
 // area). Centre: the map. Selected pin: a card with Request appointment or Ask about part, Directions and View.
-// Data: the list is a search session for the area (search.run / search.refine with a map_center location; opened from
-// W-SRCH-01 it starts with that session) and the pins are map.pins for the same viewport and session (ranks, reason
-// summaries, highlight and vehicle relevance; ≤ 300 pins + clusters). map.pins runs when the area is searched, not on
-// every pan (RL map). States: location unknown (the chosen city), no results, the vehicle filter leaving fewer than 3
+// Data (P14.T4, contract 1.1.0): the places are map.pins for the searched viewport and session (≤ 300 pins + clusters;
+// each pin opens its profile and request step on its own and carries its rank, first reason and result_id), enriched
+// with the cards of the area's search session (search.run / search.refine with a map_center location; opened from
+// W-SRCH-01 it starts with that session). The area search stays: it gives the cards (distance, all reasons, next
+// slot, explanation), the "Understood as" chips and the safety banner, and the cards of places inside a cluster.
+// Open now and the filters of the W-SRCH-01 session are real filters: they go into the area search and into map.pins
+// with only_matching, so pins and cluster counts show matching places only; Advanced search highlights (only_matching
+// false) and shows MapResponse.counts. map.pins runs when the area is searched, not on every pan (RL map). States: location unknown (the chosen city), no results, the vehicle filter leaving fewer than 3
 // places (Show all nearby), map failed (the list only), offline. Keys: L shows/hides the list; the map's own keys pan
 // and zoom; Tab walks the list and the pins.
 import type { IntentChip, LocationInput, MapQuery, SearchFilters, SearchRequest } from '@carpal/api-contracts';
@@ -36,7 +40,9 @@ import {
   ResultCardView,
   SafetyNotice,
   UnderstoodAs,
+  activeFilterCount,
   buildRequest,
+  compactFilters,
   readStoredSearch,
   refined,
   resultHref,
@@ -52,6 +58,7 @@ import {
 import { useAnalytics } from '@/lib/analytics/client';
 import { ApiProblem } from '@/lib/api/problem';
 import { useApiQuery } from '@/lib/api/query';
+import { usePwaConfig } from '@/lib/config/client';
 import { useSession } from '@/lib/api/session';
 import { goTo } from '@/lib/browser-nav';
 import { useFlag, useRegion } from '@/lib/config/client';
@@ -62,16 +69,7 @@ import { sellerPath } from '@/lib/seo/urls';
 import { DirectionsMenu } from './directions';
 import { apiViewport, bboxAround, boundsOf, distanceM, movedEnough, type BBox, type Point } from './geo';
 import { MapCanvas, type MapMove } from './map-canvas';
-import {
-  clustersFrom,
-  highlightCounts,
-  listOrder,
-  mergePlaces,
-  placesFromPins,
-  placesFromResults,
-  visiblePlaces,
-  type Place,
-} from './places';
+import { clustersFrom, listOrder, mergePlaces, placeHref, placesFromPins, placesFromResults, visiblePlaces, type Place } from './places';
 
 type Area = { center: Point; zoom: number; bbox: BBox };
 
@@ -94,6 +92,13 @@ export interface MapScreenProps {
 const LIST_ONLY_SPAN_DEG = 0.3;
 /** Result cards per searched area (the list; search.run allows 50). */
 const AREA_LIMIT = 50;
+/** Filters that never make a pin miss (the car is relevance, not a filter; the viewport is the area). */
+const NOT_NARROWING = ['brand_node_id', 'model_node_id', 'series_node_id', 'year', 'distance_km'] as const;
+
+/** The area search's filters with Open now switched on or off. */
+function withOpenNow(f: SearchFilters, on: boolean): SearchFilters {
+  return compactFilters({ ...f, open_now: on || undefined });
+}
 
 function subscribeOnline(fn: () => void) {
   window.addEventListener('online', fn);
@@ -141,7 +146,7 @@ export function MapScreen(p: MapScreenProps) {
   const [mapFailed, setMapFailed] = useState(false);
   const [listOpen, setListOpen] = useState(true);
   const [layers, setLayers] = useState({ shops: true, sellers: true });
-  const [openNow, setOpenNow] = useState(false);
+  const [openNow, setOpenNow] = useState(() => view?.request.filters?.open_now === true);
   const [advanced, setAdvanced] = useState<SearchFilters>({});
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hideOthers, setHideOthers] = useState(false);
@@ -168,16 +173,20 @@ export function MapScreen(p: MapScreenProps) {
 
   // ------------------------------------------------------------ the list search for an area
   const searchArea = useCallback(
-    async (a: Area, o: { text?: string; intent?: SearchRequest['intent_override'] | null; vehicleFilterOn?: boolean } = {}) => {
+    async (
+      a: Area,
+      o: { text?: string; intent?: SearchRequest['intent_override'] | null; vehicleFilterOn?: boolean; openNow?: boolean } = {},
+    ) => {
       const viewport = apiViewport(a.center, a.zoom, a.bbox, maxDeg).viewport;
       const loc: LocationInput = { mode: 'map_center', viewport };
       setBusy(true);
       setFailure(null);
       try {
-        const filters = { ...(view?.request.filters ?? {}), ...carFilters };
+        const filters = withOpenNow({ ...(view?.request.filters ?? {}), ...carFilters }, o.openNow ?? openNow);
         const textChanged = o.text !== undefined && o.text !== (view?.request.query_text ?? '');
         if (view && !textChanged && (view.request.vehicle_id ?? null) === vehicleId) {
-          const body: RefineBody = { location: loc, filters };
+          // The map asks for no facets (P14.T2), also when it refines a W-SRCH-01 session.
+          const body: RefineBody = { location: loc, filters, facets: false };
           if (o.intent) body.intent_override = o.intent;
           if (o.vehicleFilterOn !== undefined) body.vehicle_filter_applied = o.vehicleFilterOn;
           const r = await actions.refine(view.response.session_id, view.request, body);
@@ -214,7 +223,7 @@ export function MapScreen(p: MapScreenProps) {
         setBusy(false);
       }
     },
-    [maxDeg, view, carFilters, vehicleId, vehicleFilter, actions, opts],
+    [maxDeg, view, carFilters, openNow, vehicleId, vehicleFilter, actions, opts],
   );
 
   // A session from "Open full map" that the cache lost (reload): run its stored text for the first area.
@@ -265,6 +274,13 @@ export function MapScreen(p: MapScreenProps) {
 
   // ------------------------------------------------------------ pins for the searched area
   const layerList = [...(layers.shops ? (['providers'] as const) : []), ...(layers.sellers ? (['vendors'] as const) : [])];
+  // The area search's filters (Open now, the W-SRCH-01 session's filters, the car) narrow the pins on the server;
+  // Advanced search adds its filters as a highlight. Narrowing and Hide others leave the other pins out (only_matching),
+  // so the clusters count matching places only.
+  const narrowFilters = view ? (view.request.filters ?? {}) : withOpenNow(carFilters, openNow);
+  const narrowing = activeFilterCount(narrowFilters, NOT_NARROWING) > 0;
+  const onlyMatching = narrowing || hideOthers;
+  const pinFilters = compactFilters({ ...narrowFilters, ...advanced });
   const pinQuery: MapQuery | null = area
     ? {
         viewport: apiViewport(area.center, area.zoom, area.bbox, maxDeg).viewport,
@@ -272,7 +288,8 @@ export function MapScreen(p: MapScreenProps) {
         ...(view ? { search_session_id: view.response.session_id } : {}),
         ...(vehicleId ? { vehicle_id: vehicleId } : {}),
         ...(hasVehicle ? { vehicle_filter_applied: vehicleFilter } : {}),
-        ...(Object.keys({ ...advanced, ...carFilters }).length ? { filters: { ...advanced, ...carFilters } } : {}),
+        ...(Object.keys(pinFilters).length ? { filters: pinFilters } : {}),
+        ...(onlyMatching ? { only_matching: true } : {}),
       }
     : null;
   const pins = useApiQuery('map.pins', pinQuery ? { body: pinQuery } : undefined, {
@@ -286,13 +303,14 @@ export function MapScreen(p: MapScreenProps) {
   const pinPlaces = useMemo(() => (pins.data && mapOn ? placesFromPins(pins.data.pins, results) : null), [pins.data, mapOn, results]);
   const places = pinPlaces ?? resultPlaces;
   const listed = useMemo(() => mergePlaces(resultPlaces, pinPlaces ?? []), [resultPlaces, pinPlaces]);
-  const shown = useMemo(() => visiblePlaces(places, { ...layers, openNow, hideOthers }), [places, layers, openNow, hideOthers]);
+  const shown = useMemo(() => visiblePlaces(places, { ...layers, hideOthers }), [places, layers, hideOthers]);
   const ordered = useMemo(
-    () => listOrder(visiblePlaces(listed, { ...layers, openNow, hideOthers }), area?.center ?? p.center, byDistance),
-    [listed, layers, openNow, hideOthers, area, p.center, byDistance],
+    () => listOrder(visiblePlaces(listed, { ...layers, hideOthers }), area?.center ?? p.center, byDistance),
+    [listed, layers, hideOthers, area, p.center, byDistance],
   );
   const clusters = useMemo(() => (pins.data && mapOn ? clustersFrom(pins.data.clusters) : []), [pins.data, mapOn]);
-  const counts = highlightCounts(listed);
+  // MapResponse.counts: every location in the viewport, before clustering and the pin cap ("7 match · 14 others").
+  const counts = pins.data?.counts ?? { matching: 0, others: 0 };
   const advancedOn = Object.keys(advanced).length > 0;
   const relevantCount = listed.filter((x) => x.relevant === true).length;
   const fallback = hasVehicle && vehicleFilter && (pins.data?.vehicle_filter_fallback ?? view?.response.vehicle_filter_fallback ?? false);
@@ -345,20 +363,25 @@ export function MapScreen(p: MapScreenProps) {
       goTo(requestHref(locale, intent.target, intent.draft?.location ?? null, undefined, { slug: intent.draft?.slug, via: 'search' }));
   });
   const request = (place: Place) => {
-    const r = place.result;
     gate({
       type: 'request',
       target: place.orgId,
-      draft: { location: place.id, slug: r?.organization.slug ?? null },
+      draft: { location: place.id, slug: place.slug },
       title: t('profiles.intent.request', { name: place.name }),
       run: () => {
-        if (r && view) {
-          saveSearchOrigin({ orgId: place.orgId, sessionId: view.response.session_id, resultId: r.result_id });
-          resultEvent(view.response.session_id, r.result_id, 'selected');
+        if (place.resultId && view) {
+          saveSearchOrigin({ orgId: place.orgId, sessionId: view.response.session_id, resultId: place.resultId });
+          resultEvent(view.response.session_id, place.resultId, 'selected');
         }
-        goTo(requestHref(locale, place.orgId, place.id, undefined, { slug: r?.organization.slug, via: 'search' }));
+        goTo(requestHref(locale, place.orgId, place.id, undefined, { slug: place.slug, via: 'search' }));
       },
     });
+  };
+  // View: search.result_event 'viewed' with the pin's result in the session (DI-10), and the search origin.
+  const viewed = (place: Place) => {
+    if (!place.resultId || !view) return;
+    saveSearchOrigin({ orgId: place.orgId, sessionId: view.response.session_id, resultId: place.resultId });
+    resultEvent(view.response.session_id, place.resultId, 'viewed');
   };
 
   const offerArea = !!moved?.byUser && !!area && movedEnough(area, moved);
@@ -399,7 +422,15 @@ export function MapScreen(p: MapScreenProps) {
           <Chip selected={layers.sellers} onClick={() => setLayers((l) => ({ ...l, sellers: !l.sellers }))}>
             {t('search.map.sellers')}
           </Chip>
-          <Chip selected={openNow} icon="clock" onClick={() => setOpenNow((v) => !v)}>
+          <Chip
+            selected={openNow}
+            icon="clock"
+            onClick={() => {
+              const on = !openNow;
+              setOpenNow(on);
+              if (area) void searchArea(area, { openNow: on });
+            }}
+          >
             {t('search.filters.openNow')}
           </Chip>
           <Chip selected={advancedOn} icon="sliders" toggle={false} onClick={() => setAdvancedOpen(true)}>
@@ -435,13 +466,16 @@ export function MapScreen(p: MapScreenProps) {
         ) : null}
         {advancedOn ? (
           <div className="pwa-inline-actions" role="status">
-            <span className="pwa-text-caption">
-              {t('search.map.highlightCount', { matching: f.number(counts.matching), others: f.number(counts.others) })}
+            <span className="pwa-text-caption" data-map-counts>
+              {onlyMatching
+                ? t('search.map.matchCount', { count: counts.matching })
+                : t('search.map.highlightCount', { matching: f.number(counts.matching), others: f.number(counts.others) })}
             </span>
             <label className="pwa-filter-row">
-              <input type="checkbox" checked={hideOthers} onChange={(e) => setHideOthers(e.target.checked)} />
+              <input type="checkbox" checked={onlyMatching} disabled={narrowing} onChange={(e) => setHideOthers(e.target.checked)} />
               <span>{t('search.map.hideOthers')}</span>
             </label>
+            {narrowing && openNow ? <span className="pwa-text-caption">{t('search.map.openNowHides')}</span> : null}
           </div>
         ) : null}
       </header>
@@ -510,6 +544,7 @@ export function MapScreen(p: MapScreenProps) {
                     highlighted={x.id === selectedId || x.id === hoveredId}
                     center={area?.center ?? p.center}
                     onRequest={() => request(x)}
+                    onView={() => viewed(x)}
                   />
                 </li>
               ))}
@@ -549,6 +584,7 @@ export function MapScreen(p: MapScreenProps) {
                 center={area?.center ?? p.center}
                 onClose={() => setSelectedId(null)}
                 onRequest={() => request(selected)}
+                onView={() => viewed(selected)}
               />
             ) : null}
           </div>
@@ -585,18 +621,22 @@ function PlaceCard({
   highlighted,
   center,
   onRequest,
+  onView,
 }: {
   place: Place;
   highlighted: boolean;
   center: Point;
   onRequest: () => void;
+  onView: () => void;
 }) {
   const t = useT();
   const f = useFormat();
   const locale = useLocale();
+  const { regionTimeZone } = usePwaConfig();
   if (place.result)
     return (
       <div className={cx('pwa-place', place.dimmed && 'is-dimmed')}>
+        {place.dimmed ? <p className="pwa-text-caption m-0">{t('search.map.dimmedCard')}</p> : null}
         <ResultCardView
           r={place.result}
           locale={locale}
@@ -604,7 +644,8 @@ function PlaceCard({
           f={f}
           highlighted={highlighted}
           bestMatch
-          actions={<PlaceActions place={place} onRequest={onRequest} />}
+          slotTimeZone={regionTimeZone}
+          actions={<PlaceActions place={place} onRequest={onRequest} onView={onView} />}
         />
       </div>
     );
@@ -617,8 +658,13 @@ function PlaceCard({
         <span className="pwa-text-caption">
           {t(`search.map.kind.${place.kind}` as MessageKey)} · {f.distance(distanceM(center, place.point))}
         </span>
-        {place.rating ? <RatingLine value={place.rating} count={1} t={t} f={f} /> : null}
+        {place.rating ? <RatingLine value={place.rating} count={place.reviewCount} t={t} f={f} /> : null}
         <span className="pwa-badges">
+          {place.verified ? (
+            <Badge tone="accent" icon="shield">
+              {t('profiles.badge.verified_business.label')}
+            </Badge>
+          ) : null}
           {place.openNow ? (
             <Badge tone="success" icon="clock">
               {t('profiles.location.openNow')}
@@ -631,20 +677,23 @@ function PlaceCard({
             {place.reason}
           </p>
         ) : null}
+        {place.dimmed ? <p className="pwa-text-caption m-0">{t('search.map.dimmedCard')}</p> : null}
         <div className="pwa-result-actions">
-          <PlaceActions place={place} onRequest={onRequest} />
+          <PlaceActions place={place} onRequest={onRequest} onView={onView} />
         </div>
       </div>
     </article>
   );
 }
 
-function PlaceActions({ place, onRequest }: { place: Place; onRequest: () => void }) {
+function PlaceActions({ place, onRequest, onView }: { place: Place; onRequest: () => void; onView: () => void }) {
   const t = useT();
   const locale = useLocale();
   const r = place.result;
-  const slug = r?.organization.slug ?? null;
+  const slug = place.slug;
   const shop = place.kind !== 'seller';
+  // The card's page (a part's page for a part result), else the pin's own profile (contract 1.1.0, DI-44).
+  const href = (r ? resultHref(r, locale) : null) ?? placeHref(place, locale);
   return (
     <>
       {shop ? (
@@ -657,8 +706,14 @@ function PlaceActions({ place, onRequest }: { place: Place; onRequest: () => voi
         </a>
       ) : null}
       <DirectionsMenu point={place.point} name={place.name} approximate={place.approximate} address={r?.location?.city ?? null} size="sm" />
-      {r && resultHref(r, locale) ? (
-        <a href={resultHref(r, locale)!} className={buttonClass({ size: 'sm', variant: 'ghost' })}>
+      {href ? (
+        <a
+          href={href}
+          className={buttonClass({ size: 'sm', variant: 'ghost' })}
+          data-place-view={place.id}
+          onClick={onView}
+          onAuxClick={onView}
+        >
           <span className="cp-btn-label">{t('search.map.view')}</span>
         </a>
       ) : null}
@@ -666,7 +721,19 @@ function PlaceActions({ place, onRequest }: { place: Place; onRequest: () => voi
   );
 }
 
-function SelectedPlace({ place, center, onClose, onRequest }: { place: Place; center: Point; onClose: () => void; onRequest: () => void }) {
+function SelectedPlace({
+  place,
+  center,
+  onClose,
+  onRequest,
+  onView,
+}: {
+  place: Place;
+  center: Point;
+  onClose: () => void;
+  onRequest: () => void;
+  onView: () => void;
+}) {
   const t = useT();
   const f = useFormat();
   return (
@@ -681,10 +748,17 @@ function SelectedPlace({ place, center, onClose, onRequest }: { place: Place; ce
         {t(`search.map.kind.${place.kind}` as MessageKey)} · {f.distance(distanceM(center, place.point))}
         {place.openNow ? ` · ${t('profiles.location.openNow')}` : ''}
       </span>
-      {place.result ? (
-        <RatingLine value={place.result.organization.overall_rating} count={place.result.organization.review_count} t={t} f={f} />
-      ) : null}
-      {place.badge ? <Badge>{t(`profiles.badge.${place.badge}.label` as MessageKey)}</Badge> : null}
+      <RatingLine value={place.rating} count={place.reviewCount} t={t} f={f} />
+      <span className="pwa-badges">
+        {place.verified ? (
+          <Badge tone="accent" icon="shield">
+            {t('profiles.badge.verified_business.label')}
+          </Badge>
+        ) : null}
+        {place.badge && place.badge !== 'verified_business' ? (
+          <Badge>{t(`profiles.badge.${place.badge}.label` as MessageKey)}</Badge>
+        ) : null}
+      </span>
       {place.reason ? (
         <p className="pwa-result-reason m-0" dir="auto">
           {place.reason}
@@ -692,7 +766,7 @@ function SelectedPlace({ place, center, onClose, onRequest }: { place: Place; ce
       ) : null}
       {place.approximate ? <p className="pwa-text-caption m-0">{t('profiles.location.approximateText')}</p> : null}
       <div className="pwa-result-actions">
-        <PlaceActions place={place} onRequest={onRequest} />
+        <PlaceActions place={place} onRequest={onRequest} onView={onView} />
       </div>
     </section>
   );

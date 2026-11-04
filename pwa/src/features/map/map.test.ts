@@ -1,12 +1,13 @@
 // P6.T3/T5/T8: map geometry (the region's bbox limit, "about" distances, radius circles), places from pins and
-// results (kinds, ranks 1-3, highlight, layer/open-now/hide-others filters, list order), the style choice and the
+// results (kinds, ranks 1-3, highlight, layer/hide-others filters, list order; P14: profile, request and result id
+// from the pin alone, Open now on the server), the style choice and the
 // Directions links per app template (destination only), device links and the remembered app.
 import type { MapPin, ResultCard } from '@carpal/api-contracts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fallbackConfig } from '@/server/config';
 import { devicePlatform, directionsApps, directionsUrl, navCookieString, readNavCookie, rememberedApp } from './directions-links';
 import { apiViewport, circleRing, distanceM, limitBBox, movedEnough } from './geo';
-import { kindOf, listOrder, mergePlaces, placesFromPins, placesFromResults, rankLabel, visiblePlaces } from './places';
+import { kindOf, listOrder, mergePlaces, placeHref, placesFromPins, placesFromResults, rankLabel, visiblePlaces } from './places';
 import { fallbackStyle, loadStyle, usableStyleUrl } from './style';
 
 const region = fallbackConfig('en').region;
@@ -83,18 +84,48 @@ describe('places', () => {
     expect(rankLabel(1, false)).toBeNull();
   });
 
-  it('joins pins with result cards, dims non-matching pins and filters by layer, open now and Hide others', () => {
+  it('joins pins with result cards, dims non-matching pins and filters by layer and Hide others', () => {
     const result = { result_id: 'r1', organization: { id: 'o2', roles: ['vendor'], top_badges: [] } } as unknown as ResultCard;
     const places = placesFromPins(
       [pin({}), pin({ pin_id: 'l2', organization_id: 'o2', roles: ['vendor'], matches_filters: false, open_now: false, rank: null })],
       [result],
     );
     expect(places[1]).toMatchObject({ kind: 'seller', dimmed: true, result });
-    const all = { shops: true, sellers: true, openNow: false, hideOthers: false };
+    const all = { shops: true, sellers: true, hideOthers: false };
     expect(visiblePlaces(places, all)).toHaveLength(2);
     expect(visiblePlaces(places, { ...all, sellers: false }).map((p) => p.id)).toEqual(['l1']);
-    expect(visiblePlaces(places, { ...all, openNow: true }).map((p) => p.id)).toEqual(['l1']);
     expect(visiblePlaces(places, { ...all, hideOthers: true }).map((p) => p.id)).toEqual(['l1']);
+    // Open now is a server filter (map.pins only_matching, DI-45): a closed pin is never hidden on the client.
+    expect(places[1]!.openNow).toBe(false);
+  });
+
+  it('opens the profile and the request step from a pin alone (contract 1.1.0, DI-44)', () => {
+    const [shop, seller, hybrid, unpublished] = placesFromPins([
+      pin({ result_id: 'r9' }),
+      pin({ pin_id: 'l2', organization_id: 'o2', slug: 'parsa-parts', organization_type: 'vendor', roles: ['vendor'] }),
+      pin({
+        pin_id: 'l3',
+        organization_id: 'o3',
+        slug: 'both',
+        organization_type: 'hybrid_provider_vendor',
+        roles: ['provider', 'vendor'],
+      }),
+      pin({ pin_id: 'l4', organization_id: 'o4', slug: null }),
+    ]);
+    expect(placeHref(shop!, 'fa')).toBe('/fa/shop/reza-auto');
+    expect(placeHref(seller!, 'en')).toBe('/en/parts-seller/parsa-parts');
+    expect(placeHref(hybrid!, 'en')).toBe('/en/shop/both');
+    expect(placeHref(unpublished!, 'en')).toBeNull();
+    expect(shop).toMatchObject({ orgId: 'o1', id: 'l1', verified: true, reviewCount: 12, resultId: 'r9', result: null });
+  });
+
+  it('takes the result id from the pin, else from the card of the same organization', () => {
+    const card = {
+      result_id: 'r-card',
+      organization: { id: 'o1', slug: 'reza-auto', roles: ['provider'], top_badges: [] },
+    } as unknown as ResultCard;
+    expect(placesFromPins([pin({ result_id: null })], [card])[0]!.resultId).toBe('r-card');
+    expect(placesFromPins([pin({ result_id: 'r-pin' })], [card])[0]!.resultId).toBe('r-pin');
   });
 
   it('lists every result of the area, also those inside clusters, and orders by rank or by closeness to the centre', () => {

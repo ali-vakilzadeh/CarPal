@@ -1,8 +1,12 @@
 'use client';
-// Search data (P6.T2): search.run / search.refine / search.page through the typed client, with the session's
-// response kept in the query cache and its request in sessionStorage (storage.ts) so Back, reload and an expired
-// session all work: a session that cannot be read any more (404, 400 CURSOR_MISMATCH — e.g. a guest whose
-// pre-session was renewed, DI-17) is replaced by running the stored request again (GD-09 amendment 4).
+// Search data (P6.T2, P14.T5): search.run / search.refine / search.page / search.session_get through the typed client,
+// with the session's response kept in the query cache and its request in sessionStorage (storage.ts):
+//   - a session not in the cache (reload, Back after the tab was discarded, a new tab) is read again with
+//     search.session_get — same URL, same session, no new ranking and no search.started (DI-46);
+//   - only a 404 (older than 24 hours, or another caller's after sign-in/sign-out — sessions are caller-bound, so a
+//     shared link lands here too) runs the stored request again, or for a shared link the one its URL enumerates,
+//     and the page replaces its URL (GD-09 amendment 4); search.page answering 404 or 400 CURSOR_MISMATCH does the
+//     same (DI-17).
 import type { EntryPoint, ResultCard, SafetyBlock, SearchRequest, SearchResponse } from '@carpal/api-contracts';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
@@ -10,7 +14,7 @@ import { useAnalytics } from '@/lib/analytics/client';
 import type { ENTRY_POINTS } from '@/lib/analytics/events';
 import { ApiProblem } from '@/lib/api/problem';
 import { useApiClient } from '@/lib/api/query';
-import { refined, type RefineBody } from './request';
+import { PAGE_SIZE, refined, type RefineBody } from './request';
 import { readStoredSearch, storeSearch } from './storage';
 
 export interface SearchView {
@@ -86,16 +90,25 @@ export function useSearchActions() {
   return { run, refine };
 }
 
+/** The request behind a session read again: the stored one, else (a new tab) the URL's with the session's own text. */
+export function rereadRequest(response: SearchResponse, stored: SearchRequest | null, fromUrl: SearchRequest | null): SearchRequest | null {
+  if (stored) return stored;
+  if (!fromUrl) return null;
+  const text = response.query_normalized ?? '';
+  return { ...fromUrl, ...(text ? { query_text: text } : {}), intent_override: response.interpreted_intent };
+}
+
 /**
- * The search of a page URL: from the cache, else by running the request stored for that session (or, for a shared
- * link without one, the request the caller builds from the URL). The result may carry a new session id — the page
- * then replaces its URL.
+ * The search of a page URL: from the cache, else search.session_get for the same session; when that answers 404, by
+ * running the request stored for that session (or, for a shared link without one, the request the caller builds from
+ * the URL). Only that fallback carries a new session id — the page then replaces its URL.
  */
 export function useSearchView(
   sessionId: string | null,
   recover: (stored: SearchRequest | null) => SearchRequest | null,
   o: { ready: boolean; fallbackCity: string },
 ) {
+  const api = useApiClient();
   const { run } = useSearchActions();
   return useQuery<SearchView, ApiProblem>({
     queryKey: sessionKey(sessionId ?? ''),
@@ -104,7 +117,18 @@ export function useSearchView(
     gcTime: 30 * 60_000,
     retry: false,
     queryFn: async () => {
-      const request = recover(readStoredSearch(sessionId!)?.request ?? null);
+      const stored = readStoredSearch(sessionId!)?.request ?? null;
+      try {
+        const response = await api.api('search.session_get', { path: { session_id: sessionId! }, query: { limit: PAGE_SIZE } });
+        const request = rereadRequest(response, stored, stored ? null : recover(null));
+        if (request) {
+          if (!stored) storeSearch(response.session_id, request);
+          return { response, request };
+        }
+      } catch (err) {
+        if (!(err instanceof ApiProblem) || err.status !== 404) throw err;
+      }
+      const request = recover(stored);
       if (!request) throw new ApiProblem(404, { code: 'NOT_FOUND', title: 'search session not found' });
       try {
         return { response: await run(request), request };
@@ -118,7 +142,7 @@ export function useSearchView(
   });
 }
 
-/** Every loaded result of a session: the first page from the response, then search.page (20 per page, cursor only). */
+/** Every loaded result of a session: the first page from the response, then search.page (cursor and limit 20). */
 export function useSearchPages(view: SearchView | undefined, onGone: () => void) {
   const api = useApiClient();
   const id = view?.response.session_id ?? '';
@@ -133,7 +157,7 @@ export function useSearchPages(view: SearchView | undefined, onGone: () => void)
     queryFn: async ({ pageParam }) => {
       if (pageParam === null) return { items: view!.response.results, next_cursor: view!.response.next_cursor };
       try {
-        return await api.api('search.page', { path: { session_id: id }, query: { cursor: pageParam as string } });
+        return await api.api('search.page', { path: { session_id: id }, query: { cursor: pageParam as string, limit: PAGE_SIZE } });
       } catch (err) {
         if (sessionGone(err)) onGone();
         throw err;

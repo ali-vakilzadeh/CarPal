@@ -21,9 +21,19 @@ export interface PwaConfig {
   portalUrl: string;
   /** "Contact support" (OQ-18): an email address for the MVP. */
   supportEmail: string;
+  /**
+   * The pilot region's time zone (CARPAL_PWA_DEFAULT_TIME_ZONE, OQ-13): shop times such as a result card's next open
+   * slot are shown in it, because ResultCard carries no location time zone (P14.T3).
+   */
+  regionTimeZone: string;
 }
 
-const DEFAULT_PWA: PwaConfig = { vapidPublicKey: null, portalUrl: 'https://portal.carpal.app', supportEmail: 'support@carpal.app' };
+const DEFAULT_PWA: PwaConfig = {
+  vapidPublicKey: null,
+  portalUrl: 'https://portal.carpal.app',
+  supportEmail: 'support@carpal.app',
+  regionTimeZone: 'Asia/Tehran',
+};
 
 const ConfigContext = createContext<PublicConfig | null>(null);
 

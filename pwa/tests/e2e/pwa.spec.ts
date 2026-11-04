@@ -86,6 +86,7 @@ test.beforeEach(async ({ request, context, baseURL }) => {
 });
 
 test('the app is installable and an unsaved page offline shows the offline page', async ({ baseURL }) => {
+  test.setTimeout(90_000); // a second (persistent) Chromium and the worker install under parallel workers (P3 precedent; P14)
   // Installability needs a normal (not incognito) profile: a persistent context of the same Chromium.
   const dir = mkdtempSync(join(tmpdir(), 'cp-pwa-'));
   const context = await chromium.launchPersistentContext(dir, {
@@ -158,6 +159,18 @@ test('offline garage for the signed-in user only; nothing private remains after 
     .toEqual([]);
   // Offline again: the garage is gone; the offline page has nothing saved.
   await context.setOffline(true);
+  // The worker may have restarted after the logout message, and the offline emulation reaches a new worker target a
+  // moment later: wait until a request through the worker fails (P14: its network fetch of /en/garage still succeeded).
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        fetch('/bff/csrf', { cache: 'no-store' }).then(
+          () => 'online',
+          () => 'offline',
+        ),
+      ),
+    )
+    .toBe('offline');
   await page.goto('/en/garage');
   await expect(page.getByRole('heading', { level: 1, name: "You're offline" })).toBeVisible();
   await expect(page.getByText(nickname)).toHaveCount(0);

@@ -139,7 +139,7 @@ systemctl enable "$SERVICE_NAME" >/dev/null
 ok "installed and enabled (started by 4-start.sh after the first build)"
 
 # ---------------------------------------------------------------------------- nginx
-step "nginx site for $API_HOST, $AUTH_HOST, $MEDIA_HOST"
+step "nginx site for $API_HOST, $AUTH_HOST, $MEDIA_HOST, $WEB_HOST, $DOMAIN"
 install -m 644 "$DEPLOY_DIR/templates/nginx-carpal-proxy.conf" /etc/nginx/snippets/carpal-proxy.conf
 site=/etc/nginx/sites-available/carpal
 if [[ -f "$site" ]] && grep -q "ssl_certificate" "$site"; then
@@ -196,5 +196,5 @@ Next (deploy.md "First deployment"):
   2. Upload the repository with WinSCP to $STAGING_DIR (binary mode, without node_modules, dist, .data, .tools).
   3. bash $STAGING_DIR/backend/deploy/1-sync.sh && bash $BACKEND_DIR/deploy/2-build.sh \\
        && bash $BACKEND_DIR/deploy/3-permissions.sh && bash $BACKEND_DIR/deploy/4-start.sh
-  4. certbot --nginx -d $API_HOST -d $AUTH_HOST -d $MEDIA_HOST --email $LETSENCRYPT_EMAIL --agree-tos --redirect
+  4. certbot --nginx -d $API_HOST -d $AUTH_HOST -d $MEDIA_HOST -d $WEB_HOST -d $DOMAIN --email $LETSENCRYPT_EMAIL --agree-tos --redirect
 EOF

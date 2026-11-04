@@ -78,23 +78,40 @@ export async function businessUser(request: APIRequestContext, prefix = 'p5'): P
     headers: { 'carpal-client': CLIENT },
   });
   expect(token.status(), await token.text()).toBe(200);
-  const { access_token, token_type } = (await token.json()) as { access_token: string; token_type: string };
+  let tokens = (await token.json()) as { access_token: string; token_type: string; refresh_token?: string };
+
+  // Access tokens of cp-web-consumer live 300 s; a suite that uses its shop later (the full pnpm e2e runs for ~17 min)
+  // refreshes once on a 401 (P14: Flow 6 of a late key-flows worker answered 401 with a token from beforeAll).
+  const refresh = async (): Promise<boolean> => {
+    if (!tokens.refresh_token) return false;
+    const r = await request.post(`${AUTH}/oauth/token`, {
+      form: { grant_type: 'refresh_token', client_id: 'cp-web-consumer', refresh_token: tokens.refresh_token },
+      headers: { 'carpal-client': CLIENT },
+    });
+    if (r.status() !== 200) return false;
+    tokens = { ...tokens, ...((await r.json()) as typeof tokens) };
+    return true;
+  };
 
   return {
     email,
     password,
     async call(method, path, body, headers = {}) {
-      const res = await request.fetch(`${API}${path}`, {
-        method,
-        headers: {
-          authorization: `${token_type} ${access_token}`,
-          'carpal-client': CLIENT,
-          'accept-language': 'en',
-          'idempotency-key': randomUUID(),
-          ...headers,
-        },
-        ...(body === undefined ? {} : { data: body }),
-      });
+      const idempotencyKey = randomUUID();
+      const send = () =>
+        request.fetch(`${API}${path}`, {
+          method,
+          headers: {
+            authorization: `${tokens.token_type} ${tokens.access_token}`,
+            'carpal-client': CLIENT,
+            'accept-language': 'en',
+            'idempotency-key': idempotencyKey,
+            ...headers,
+          },
+          ...(body === undefined ? {} : { data: body }),
+        });
+      let res = await send();
+      if (res.status() === 401 && (await refresh())) res = await send();
       const text = await res.text();
       return { status: res.status(), body: text ? (JSON.parse(text) as Json) : {}, etag: res.headers().etag ?? null };
     },
@@ -141,7 +158,16 @@ export function tehranPoint(): { lat: number; lng: number } {
 
 const week = [6, 0, 1, 2, 3, 4].map((d) => ({ day_of_week: d, open: '08:00', close: d === 4 ? '14:00' : '18:00' }));
 
-function location(point: { lat: number; lng: number }): Json {
+/** Opening hours of one weekday (0 = Sunday … 6 = Saturday, local time at the shop). */
+export interface DayHours {
+  day_of_week: number;
+  open: string;
+  close: string;
+}
+/** Open every day around the clock (P14: Open now and the soonest slot). */
+export const ALWAYS_OPEN: DayHours[] = [0, 1, 2, 3, 4, 5, 6].map((d) => ({ day_of_week: d, open: '00:00', close: '23:59' }));
+
+function location(point: { lat: number; lng: number }, hours: readonly DayHours[] = week): Json {
   return {
     name: 'Main workshop',
     address_line_1: '14 Sattarkhan Street',
@@ -151,7 +177,7 @@ function location(point: { lat: number; lng: number }): Json {
     public_address_visibility: 'exact',
     timezone: 'Asia/Tehran',
     is_primary: true,
-    hours: { weekly: week },
+    hours: { weekly: hours },
   };
 }
 
@@ -170,26 +196,38 @@ export interface SeededProvider extends SeededOrg {
 /**
  * A published provider in Tehran with hours and (unless rules: false) an availability rule for every open weekday; at a
  * given point when asked (P10 places the shop where the E2E browser is). A shop without rules publishes no slots but
- * can still confirm requests at any time (BA-19).
+ * can still confirm requests at any time (BA-19). P14: other opening hours (hours: [] = closed all week), rules on
+ * chosen days only, and no warranty (the warranty_offered facet).
  */
 export async function seedProvider(
   request: APIRequestContext,
   n: Awaited<ReturnType<typeof taxonomy>>,
-  o: { name?: string; point?: { lat: number; lng: number }; rules?: boolean } = {},
+  o: {
+    name?: string;
+    point?: { lat: number; lng: number };
+    rules?: boolean;
+    hours?: readonly DayHours[];
+    ruleDays?: readonly DayHours[];
+    warranty?: boolean;
+  } = {},
 ): Promise<SeededProvider> {
   const api = await businessUser(request);
   const name = o.name ?? `P5 Suspension ${randomBytes(3).toString('hex')}`;
   const org = await ok(api.call('POST', '/v1/orgs', { name, organization_type: 'provider', contact_email: 'shop@example.com' }), 'org');
   const id = org.id as string;
-  const loc = await ok(api.call('POST', `/v1/orgs/${id}/locations`, location(o.point ?? tehranPoint())), 'location');
+  const loc = await ok(api.call('POST', `/v1/orgs/${id}/locations`, location(o.point ?? tehranPoint(), o.hours)), 'location');
   const prv = `/v1/orgs/${id}/provider`;
   await ok(
     api.call('PUT', `${prv}/profile`, {
       provider_type: 'garage',
       service_modes: ['in_shop'],
       price_tier: 'mid_range',
-      warranty_offered: true,
-      warranty_policy_translations: { en: '6 months on parts and labour', fa: '۶ ماه روی قطعه و دستمزد' },
+      ...(o.warranty === false
+        ? { warranty_offered: false }
+        : {
+            warranty_offered: true,
+            warranty_policy_translations: { en: '6 months on parts and labour', fa: '۶ ماه روی قطعه و دستمزد' },
+          }),
       description_translations: { en: 'Suspension and steering for European cars.', fa: 'جلوبندی و فرمان خودروهای اروپایی.' },
       contact_channels: [{ type: 'phone', value: '+982166001122', preferred: true }],
       languages_spoken: ['fa', 'en'],
@@ -202,7 +240,7 @@ export async function seedProvider(
     'category',
   );
   await ok(api.call('POST', `${prv}/coverage`, { items: [{ brand_node_id: n.brand, coverage_level: 'specialist' }] }), 'coverage');
-  for (const d of o.rules === false ? [] : week)
+  for (const d of o.rules === false ? [] : (o.ruleDays ?? o.hours ?? week))
     await ok(
       api.call('POST', `${prv}/availability-rules`, {
         location_id: loc.id,

@@ -1,6 +1,6 @@
 // A search result card (Docs/21 C-SEARCH-01 zone 4, Docs/22 W-SRCH-01 / W-PUB-04; 54 §5 match reasons). Provider:
 // name, about how far, rating and count, badges, the first match reason (all reasons and the explanation one tap
-// away), next available slot, price indicator, open now, portfolio thumbnail. Parts seller: the same header plus the
+// away), next available slot (in the shop's time zone: "Today 14:30", P14.T3), price indicator, open now, portfolio thumbnail. Parts seller: the same header plus the
 // matching parts for the car ("3 parts fit your car"). Part (inventory_item): the part card elements and its seller.
 // Never sponsored (is_sponsored is always false); public data only. Server-renderable: the search page adds its
 // client actions through `actions` and listens for opens on the card link (data-result-*), so a plain click, a
@@ -12,7 +12,8 @@ import { cx } from '@/components/ds/cx';
 import { Icon } from '@/components/ds/icon';
 import { MediaImage } from '@/components/media/media-image';
 import { PriceText, RatingLine, fitmentTone, stockTone } from '@/features/profiles';
-import type { Formatter } from '@/lib/format';
+import { formatDate, type Formatter } from '@/lib/format';
+import { addDaysIso, todayIso } from '@/lib/format/jalali';
 import { Bidi } from '@/lib/format/bidi';
 import type { Locale } from '@/lib/i18n/locales';
 import type { MessageKey, Translate } from '@/lib/i18n/keys';
@@ -23,6 +24,21 @@ export function resultHref(r: ResultCard, locale: Locale): string | null {
   if (r.target.type === 'inventory_item' && r.item && r.organization.slug)
     return partPath(locale, r.organization.slug, r.item.id, r.item.name.text);
   return orgPath(locale, r.organization);
+}
+
+/**
+ * The next open slot as the shop's clock shows it: "Today 14:30", "Tomorrow 09:00", else "5 Nov, 10:30" (Jalali and
+ * 24 h in fa, through the P3 formatters).
+ */
+export function slotText(iso: string, f: Formatter, t: Translate, timeZone: string = f.timeZone, now: number = Date.now()): string {
+  const at = Date.parse(iso);
+  if (Number.isNaN(at)) return '';
+  const time = formatDate(at, f.locale, 'time', timeZone);
+  const day = todayIso(timeZone, at);
+  const today = todayIso(timeZone, now);
+  if (day === today) return t('search.result.slotToday', { time });
+  if (day === addDaysIso(today, 1)) return t('search.result.slotTomorrow', { time });
+  return t('search.result.slotOn', { date: formatDate(at, f.locale, 'dateShort', timeZone), time });
 }
 
 /** "about 2.4 km" from the card's distance (km, one decimal, straight line). */
@@ -40,6 +56,7 @@ export function ResultCardView({
   headingLevel = 3,
   highlighted,
   bestMatch,
+  slotTimeZone,
 }: {
   r: ResultCard;
   locale: Locale;
@@ -51,6 +68,8 @@ export function ResultCardView({
   highlighted?: boolean;
   /** Shows the rank number (best-match order). */
   bestMatch?: boolean;
+  /** The shop's time zone for the next slot (the pilot region's, PwaConfig.regionTimeZone); default the formatter's. */
+  slotTimeZone?: string;
 }) {
   const o = r.organization;
   const href = resultHref(r, locale);
@@ -139,7 +158,7 @@ export function ResultCardView({
         {r.relevant_to_vehicle === false ? <span className="pwa-text-caption">{t('search.result.noVehicleEvidence')}</span> : null}
         {r.next_available_slot ? (
           <span className="pwa-text-caption">
-            <Icon name="calendar" size={16} /> {t('search.result.nextSlot', { when: f.date(r.next_available_slot, 'dateTime') })}
+            <Icon name="calendar" size={16} /> {t('search.result.nextSlot', { when: slotText(r.next_available_slot, f, t, slotTimeZone) })}
           </span>
         ) : null}
         <details className="pwa-disclosure pwa-result-why">

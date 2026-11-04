@@ -59,6 +59,7 @@ export async function RootDocument({
       vapidPublicKey: serverEnv().CARPAL_PWA_VAPID_PUBLIC_KEY ?? null,
       portalUrl: serverEnv().CARPAL_PWA_PORTAL_URL,
       supportEmail: serverEnv().CARPAL_PWA_SUPPORT_EMAIL,
+      regionTimeZone: serverEnv().CARPAL_PWA_DEFAULT_TIME_ZONE,
     },
   };
   preload(DS_FONT_BY_LOCALE[locale], { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });

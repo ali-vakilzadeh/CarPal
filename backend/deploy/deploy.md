@@ -99,7 +99,7 @@ All paths come from `deploy.conf`, so change them there (see `deploy.conf.exampl
 | OS        | **Ubuntu 24.04 LTS** (x86-64 or arm64)                                             | PostgreSQL 16 and pgvector come from the Ubuntu archive. Other releases need the PGDG repository.                            |
 | CPU / RAM | 2 vCPU, **4 GB RAM** (or 2 GB plus 2 GB swap)                                      | `tsc` and the unit tests need memory during `2-build.sh`. Runtime needs much less.                                           |
 | Disk      | 40 GB SSD                                                                          | Code with `node_modules` and the pnpm store is under 1 GB. Plan for uploads, the database and `KEEP_BACKUPS` copies of both. |
-| DNS       | A/AAAA records for `api.`, `id.`, `media.` (and later `admin-api.`) of your domain | Needed before `certbot`.                                                                                                     |
+| DNS       | A/AAAA records for `api.`, `id.`, `media.`, `www.` and the bare domain (and later `admin-api.`) | Needed before `certbot`.                                                                                        |
 | Access    | SSH as root (or sudo), WinSCP with SFTP                                            |                                                                                                                              |
 | Outbound  | HTTPS to `nodejs.org`, `registry.npmjs.org`, the Ubuntu mirrors, Let's Encrypt     | For setup and `pnpm install`.                                                                                                |
 
@@ -146,7 +146,7 @@ All scripts are in `backend/deploy/`. Run them as root with `bash <script>`. The
 
 ### 1. DNS
 
-Point `api.<domain>`, `id.<domain>` and `media.<domain>` at the server. `admin-api.<domain>` is optional (see [Admin plane](#admin-plane)).
+Point `api.<domain>`, `id.<domain>`, `media.<domain>`, `www.<domain>` (the consumer PWA) and the bare `<domain>` (redirects to `www.`) at the server. `admin-api.<domain>` is optional (see [Admin plane](#admin-plane)).
 
 ### 2. Upload the repository and prepare the server
 
@@ -169,7 +169,8 @@ nano /carpal/config/backend.env
 Check these values:
 
 - `CARPAL_ISSUER`, `CARPAL_API_AUDIENCE`, `CARPAL_MEDIA_BASE_URL`: the public `https://` names. Tokens carry the issuer and audience, so changing them later signs everybody out.
-- `CARPAL_OAUTH_REDIRECT_URIS`, `CARPAL_WEBAUTHN_RP_ID`, `CARPAL_WEBAUTHN_ORIGINS`: the exact app and web origins of your clients.
+- `CARPAL_OAUTH_REDIRECT_URIS`, `CARPAL_WEBAUTHN_RP_ID`, `CARPAL_WEBAUTHN_ORIGINS`: the exact app and web origins of your clients. The consumer PWA is `https://www.<domain>` (`WEB_HOST`).
+- `CARPAL_LINK_BASE_URL`, `CARPAL_MEDIA_CORS_ORIGINS`: emailed links open `<PWA origin>/l/…`, and the PWA's browsers upload to the media host. Both name the PWA origin.
 - `CARPAL_SIGNIN_URL`: the hosted sign-in UI (a frontend). The default is `<issuer>/signin`.
 - `CARPAL_MCP_MODE`: `unavailable` (AI answers 503, everything else works) or `stub` (deterministic demo results).
 
@@ -198,7 +199,7 @@ On the first run, `2-build.sh` installs the database baseline: the cluster roles
 ### 6. TLS
 
 ```bash
-certbot --nginx -d api.<domain> -d id.<domain> -d media.<domain> --email <you> --agree-tos --redirect
+certbot --nginx -d api.<domain> -d id.<domain> -d media.<domain> -d www.<domain> -d <domain> --email <you> --agree-tos --redirect
 ```
 
 certbot adds the TLS server blocks to `/etc/nginx/sites-available/carpal` and installs a renewal timer (`systemctl list-timers | grep certbot`). After that, `server-setup.sh` leaves the site file alone. If you change the template later, apply the change by hand.

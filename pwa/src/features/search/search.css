@@ -236,8 +236,12 @@
   align-items: center;
   margin-block-start: var(--space-1);
 }
-.pwa-place.is-dimmed {
-  opacity: 0.7;
+/* Not matching the advanced-search highlight: told by a dashed outline and a caption, never by lower contrast (P14:
+   opacity failed axe color-contrast on the card text). */
+.pwa-result.pwa-place.is-dimmed,
+.pwa-place.is-dimmed > .pwa-result {
+  border-style: dashed;
+  border-color: var(--ink-muted);
 }
 
 /* ---------- Recent searches ---------- */

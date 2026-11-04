@@ -51,6 +51,8 @@ const EnvSchema = z
     CARPAL_ADMIN_API_AUDIENCE: z.url().default('https://admin-api.carpal.app'),
     /** Base URL of signed media URLs. Lite: the local storage listener. */
     CARPAL_MEDIA_BASE_URL: z.url().optional(),
+    /** Base of the link-token URLs in emails (<base>/<type>#<token>, SEC-LT-2): the consumer PWA's /l pages. */
+    CARPAL_LINK_BASE_URL: z.url().default('https://carpal.app/l'),
     CARPAL_I18N_BASE_URL: z.url().default('https://cdn.carpal.app/i18n'),
     CARPAL_I18N_VERSION: z.string().min(1).max(40).default('dev'),
     /** Minimum supported app version per client_id (40 §1.3), e.g. {"cp-mobile":"1.2.0"}. */
@@ -198,6 +200,7 @@ export interface CarpalConfig {
     audiences: { api: string; 'admin-api': string };
     signinUrl: string;
     mediaBaseUrl: string;
+    linkBaseUrl: string;
     i18n: { baseUrl: string; version: string };
     clientMinVersions: Record<string, string>;
     clientLatestVersion: string;
@@ -282,6 +285,7 @@ export function loadConfig(overrides: Record<string, string | undefined> = {}): 
       signinUrl: e.CARPAL_SIGNIN_URL ?? `${e.CARPAL_ISSUER}/signin`,
       audiences: { api: e.CARPAL_API_AUDIENCE, 'admin-api': e.CARPAL_ADMIN_API_AUDIENCE },
       mediaBaseUrl: e.CARPAL_MEDIA_BASE_URL ?? `http://127.0.0.1:${e.CARPAL_STORAGE_PORT}`,
+      linkBaseUrl: e.CARPAL_LINK_BASE_URL.replace(/\/$/, ''),
       i18n: { baseUrl: e.CARPAL_I18N_BASE_URL, version: e.CARPAL_I18N_VERSION },
       clientMinVersions: e.CARPAL_CLIENT_MIN_VERSIONS,
       clientLatestVersion: e.CARPAL_CLIENT_LATEST_VERSION,

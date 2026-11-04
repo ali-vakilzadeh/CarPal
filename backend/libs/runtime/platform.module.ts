@@ -157,7 +157,7 @@ export class PlatformModule {
       { provide: IdempotencyStore, useFactory: () => new IdempotencyStore(infra.kv) },
       { provide: ContractValidator, useFactory: () => new ContractValidator() },
       { provide: RegionConfigService, useFactory: () => new RegionConfigService(regionConfigDir, config.region) },
-      { provide: LinkTokens, useFactory: (c: CryptoServices) => new LinkTokens(c.hmac), inject: [CryptoServices] },
+      { provide: LinkTokens, useFactory: (c: CryptoServices) => new LinkTokens(c.hmac, config.http.linkBaseUrl), inject: [CryptoServices] },
       { provide: JobService, useFactory: () => new JobService(infra.jobs) },
       { provide: JobRunner, useFactory: (tx: TxRunner) => new JobRunner(tx, infra.jobs, logger), inject: [TxRunner] },
       { provide: MapLinkResolver, useFactory: () => new MapLinkResolver() },

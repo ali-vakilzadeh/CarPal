@@ -1,13 +1,16 @@
 // P6.T8 (DOM): the search hand-over (pending search → search.run → /<locale>/search/<session_id>, BA-16 guest
 // request), chip editing and filter URL sync through search.refine, the safety banner with the results still visible,
 // the location consent before the browser position (P6.T6), and the header's recent searches. No search text or
-// coordinates ever reach a page URL (acceptance criterion 2).
+// coordinates ever reach a page URL (acceptance criterion 2). P14: a reload reads the session again
+// (search.session_get, no search.run) and only a 404 runs the stored request; facet counts in the filter panel and
+// the filters-too-narrow hint; the soonest sort.
 import type { ResultCard, SearchResponse } from '@carpal/api-contracts';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { navigation, router } from '../../../tests/support/next-navigation';
 import { renderApp, signedIn, type Handlers } from '../../../tests/support/render-app';
 import { PENDING_SEARCH_KEY, SearchBox } from '@/components/shell/search-box';
+import { ApiProblem } from '@/lib/api/problem';
 import { SearchScreen } from './search-page';
 import { RECENT_KEY, storeSearch } from './storage';
 
@@ -114,6 +117,7 @@ describe('search hand-over (/search)', () => {
       query_text: 'clunk over bumps',
       filters: { brand_node_id: BRAND },
       vehicle_filter_applied: true,
+      facets: true,
     });
     expect(sessionStorage.getItem(PENDING_SEARCH_KEY)).toBeNull();
     expect(JSON.parse(localStorage.getItem(RECENT_KEY)!)[0].text).toBe('clunk over bumps');
@@ -141,19 +145,75 @@ describe('search results (/search/<session>)', () => {
     return renderApp(<SearchScreen sessionId={S1} {...screenProps} />, {
       locale: 'en',
       ...(o.session ? { session: o.session } : {}),
-      handlers: { 'search.run': () => response(S1), ...noVehicles, ...handlers },
+      handlers: { 'search.session_get': () => response(S1), ...noVehicles, ...handlers },
     });
   }
 
-  it('re-runs the stored request of the session and shows "Understood as" chips and ranked results with reasons', async () => {
+  it('a reload reads the same session again (search.session_get) and shows "Understood as" chips and ranked results', async () => {
     const {
       api: { calls },
     } = start();
     expect(await screen.findByRole('link', { name: 'Reza Auto Suspension' })).toHaveAttribute('href', '/en/shop/shop-r1');
-    expect(calls.find((c) => c.opId === 'search.run')!.args.body).toMatchObject({ query_text: 'clunk over bumps' });
+    expect(calls.find((c) => c.opId === 'search.session_get')!.args).toMatchObject({ path: { session_id: S1 }, query: { limit: 20 } });
+    expect(calls.some((c) => c.opId === 'search.run')).toBe(false);
     expect(screen.getByRole('group', { name: 'Understood as' })).toHaveTextContent('Suspension');
     expect(screen.getAllByText('Specialist in Suspension · 27 verified jobs')[0]).toBeInTheDocument();
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('a session that cannot be read any more (404) runs the stored request and replaces the URL', async () => {
+    const {
+      api: { calls },
+    } = start({
+      'search.session_get': () => {
+        throw new ApiProblem(404, { code: 'NOT_FOUND' });
+      },
+      'search.run': () => response(S2),
+    });
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith(`/en/search/${S2}?city=tehran`));
+    expect(calls.find((c) => c.opId === 'search.run')!.args.body).toMatchObject({ query_text: 'clunk over bumps' });
+  });
+
+  it('shows the server facet counts and names the filter that removed most results', async () => {
+    navigation.reset(`/en/search/${S1}?city=tehran&verified=1&open=1`);
+    renderApp(<SearchScreen sessionId={S1} {...screenProps} />, {
+      locale: 'en',
+      handlers: {
+        ...noVehicles,
+        'search.session_get': () =>
+          response(S1, {
+            facets: {
+              result_count: 1,
+              capped: false,
+              facets: [
+                { key: 'verified_only', counts: [{ value: 'true', count: 1, selected: true }] },
+                { key: 'open_now', counts: [{ value: 'true', count: 1, selected: true }] },
+                { key: 'min_rating', counts: [{ value: '4', count: 9, selected: false }] },
+              ],
+              without_filter: [
+                { key: 'open_now', count_without: 3 },
+                { key: 'verified_only', count_without: 12 },
+              ],
+            },
+          }),
+      },
+    });
+    expect(await screen.findByRole('heading', { name: /^1 result/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Remove Verified businesses only: 12 results' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Filters/ }));
+    expect(screen.getByRole('checkbox', { name: /^Verified businesses only/ }).closest('label')).toHaveTextContent('(1)');
+    expect(screen.getByRole('radio', { name: /^4\.0\+/ }).closest('label')).toHaveTextContent('(9)');
+    expect(screen.getByRole('radio', { name: /^3\.5\+/ }).closest('label')).not.toHaveTextContent('(');
+  });
+
+  it('offers Soonest available and says that shops without online booking come after the others', async () => {
+    const {
+      api: { calls },
+    } = start({ 'search.refine': () => response(S2) });
+    const sort = await screen.findByRole('combobox', { name: 'Sort by' });
+    fireEvent.change(sort, { target: { value: 'soonest' } });
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/en/search/${S2}?sort=soonest&city=tehran`, { scroll: false }));
+    expect(calls.find((c) => c.opId === 'search.refine')!.args.body).toEqual({ sort: 'soonest', facets: true });
   });
 
   it('removing a chip refines the session with the edited chips and pushes the new session URL', async () => {
@@ -166,6 +226,7 @@ describe('search results (/search/<session>)', () => {
     expect(refine.args.path).toEqual({ session_id: S1 });
     expect(refine.args.body).toEqual({
       intent_override: { target_type: 'provider', chips: [expect.objectContaining({ kind: 'target_type' })] },
+      facets: true,
     });
   });
 
@@ -176,14 +237,14 @@ describe('search results (/search/<session>)', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Filters/ }));
     fireEvent.click(screen.getByRole('checkbox', { name: /^Open now/ }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/en/search/${S2}?city=tehran&open=1`, { scroll: false }));
-    expect(calls.find((c) => c.opId === 'search.refine')!.args.body).toEqual({ filters: { open_now: true } });
+    expect(calls.find((c) => c.opId === 'search.refine')!.args.body).toEqual({ filters: { open_now: true }, facets: true });
     act(() => router.back());
     expect(navigation.search).toBe('city=tehran');
   });
 
   it('shows the red safety banner above the results, which stay visible', async () => {
     start({
-      'search.run': () =>
+      'search.session_get': () =>
         response(S1, { safety: { flag: true, level: 'urgent', message_i18n_key: 'safety.brakes', urgent_help_available: true } }),
     });
     const banner = await screen.findByRole('alert');
@@ -218,6 +279,7 @@ describe('search results (/search/<session>)', () => {
     });
     expect(calls.find((c) => c.opId === 'search.refine')!.args.body).toEqual({
       location: { mode: 'user_position', point: { lat: 35.71235, lng: 51.39877 }, accuracy_m: 42 },
+      facets: true,
     });
   });
 

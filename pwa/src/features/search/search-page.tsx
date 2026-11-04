@@ -6,8 +6,10 @@
 //                                 the session's. Without a pending search it is the search entry (field, recent searches,
 //                                 Browse on map).
 //   /<locale>/search/<session>  — the results: query field, car chip, location chip, mode tabs, "Understood as" chips,
-//                                 sort; the safety banner; the filter panel (column from 1200 px, drawer below); the
-//                                 result cards with reasons, 20 per page (search.page); the map pane from 1200 px.
+//                                 sort (incl. Soonest available, P14.T3); the safety banner; the filter panel with the
+//                                 server's facet counts (column from 1200 px, drawer below, P14.T2); the result count
+//                                 of the session; the result cards with reasons, 20 per page (search.page); the map
+//                                 pane from 1200 px. A reload reads the same session again (search.session_get, P14.T5).
 // Every change refines the session (or runs a new one for a new mode, text or car) and pushes a new URL, so Back goes
 // to the previous results. Free text, coordinates and map areas never enter a URL (TR-7).
 import type { IntentChip, LocationInput, SearchFilters, SearchRequest } from '@carpal/api-contracts';
@@ -54,7 +56,8 @@ import {
 } from './request';
 import { ResultList } from './results';
 import { GuestCarChip, ModeTabs, QueryField, SortSelect, useGuestCarLabel } from './search-bar';
-import { EmptyResults, SafetyNotice, VehicleFallback, VehicleMissing } from './search-states';
+import { resultTotal } from './facets';
+import { EmptyResults, NarrowHint, SafetyNotice, VehicleFallback, VehicleMissing } from './search-states';
 import { RecentSearches } from './recent';
 import { addRecent } from './storage';
 import { asGuest, useSafetyFallback, useSearchActions, useSearchPages, useSearchView, type SearchView } from './use-search';
@@ -133,7 +136,8 @@ export function SearchScreen({ sessionId, privacyVersion, styleUrl, defaultCity 
   }, [paramString, cities, qnaOn]);
   // A server-seeded session that the browser has not confirmed yet (dataUpdatedAt 0) may be the wrong one (P2 notes).
   const ready = session.isFetched && session.dataUpdatedAt > 0 && (!signedIn || !vehiclesLoading);
-  const opts = useMemo(() => ({ signedIn, fallbackCity: defaultCity }), [signedIn, defaultCity]);
+  // W-SRCH-01 asks for facet counts (P14.T2); refines keep the session's value.
+  const opts = useMemo(() => ({ signedIn, fallbackCity: defaultCity, facets: true }), [signedIn, defaultCity]);
 
   // ------------------------------------------------------------ /search: run the hand-over
   const pendingRaw = useSyncExternalStore(
@@ -242,7 +246,7 @@ function SearchResults({
 }: {
   view: SearchView;
   url: UrlState;
-  opts: { signedIn: boolean; fallbackCity: string };
+  opts: { signedIn: boolean; fallbackCity: string; facets: boolean };
   privacyVersion: string;
   styleUrl: string | null;
   activeVehicleId: string | null;
@@ -281,6 +285,8 @@ function SearchResults({
       if (next.url && 'city' in next.url && next.url.city) ctx.location = { mode: 'chosen_city', city_key: next.url.city };
       const req = buildRequest(ctx, nextUrl, opts);
       const change = changeOf(request, req);
+      // A session without facets (the map's, or one stored before P14) asks for them with its first refine.
+      if (change.kind === 'refine' && !request.facets) change.body.facets = true;
       setBusy(true);
       try {
         const r =
@@ -340,7 +346,8 @@ function SearchResults({
       }
     : null;
   const results = pages.results;
-  const complete = !pages.hasMore;
+  const facets = response.facets;
+  const total = resultTotal(facets);
   const bestMatch = url.sort === 'best_match';
   const helpHref = `/${locale}/help`;
   const setFilters = (filters: SearchFilters) => void apply({ url: { filters } });
@@ -362,15 +369,7 @@ function SearchResults({
   const showMap = wide && !mapHidden && url.mode !== 'qna';
 
   const panel = (id: string) => (
-    <FilterPanel
-      idPrefix={id}
-      mode={url.mode}
-      filters={url.filters}
-      onChange={setFilters}
-      results={results}
-      complete={complete}
-      vehicle={vehicleToggle}
-    />
+    <FilterPanel idPrefix={id} mode={url.mode} filters={url.filters} onChange={setFilters} facets={facets} vehicle={vehicleToggle} />
   );
 
   return (
@@ -423,7 +422,9 @@ function SearchResults({
             <h2 id="results-title" className="pwa-text-label m-0" aria-live="polite">
               {url.mode === 'qna'
                 ? t('search.mode.qna')
-                : t(pages.hasMore ? 'search.results.countMore' : 'search.results.count', { count: results.length })}
+                : total
+                  ? t(total.capped ? 'search.results.countMore' : 'search.results.count', { count: total.count })
+                  : t(pages.hasMore ? 'search.results.countMore' : 'search.results.count', { count: results.length })}
               {chipsText && url.mode !== 'qna' ? <span className="pwa-text-caption"> · {chipsText}</span> : null}
             </h2>
             {url.mode !== 'qna' ? (
@@ -462,8 +463,17 @@ function SearchResults({
                 <p className="pwa-text-caption">{t('search.vehicle.lessSpecific')}</p>
               ) : null}
               {request.location.mode === 'map_center' ? <p className="pwa-text-caption">{t('search.map.searchedArea')}</p> : null}
+              {url.sort === 'soonest' ? <p className="pwa-text-caption">{t('search.sort.soonestNote')}</p> : null}
+              {results.length > 0 ? <NarrowHint filters={url.filters} facets={facets} onFilters={setFilters} /> : null}
               {results.length === 0 ? (
-                <EmptyResults mode={url.mode} filters={url.filters} what={chipsText} onFilters={setFilters} helpHref={helpHref} />
+                <EmptyResults
+                  mode={url.mode}
+                  filters={url.filters}
+                  facets={facets}
+                  what={chipsText}
+                  onFilters={setFilters}
+                  helpHref={helpHref}
+                />
               ) : (
                 <ResultList
                   results={results}

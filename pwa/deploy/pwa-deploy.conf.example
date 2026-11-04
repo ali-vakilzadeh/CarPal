@@ -1,0 +1,57 @@
+# CarPal consumer PWA deployment settings (defaults; sourced by every script in pwa/deploy/).
+#
+# Order of reading: this file, then /carpal/config/deploy.conf (shared with the backend: DOMAIN, STAGING_DIR, ...),
+# then /carpal/config/pwa-deploy.conf (PWA-only overrides, optional). Put only the values you change in the server
+# copies. Plain bash: KEY=value, no spaces around "=".
+
+# --- Public names (normally set once in /carpal/config/deploy.conf) ----------------------
+DOMAIN=example.com
+LETSENCRYPT_EMAIL=admin@example.com
+# The PWA is served at WEB_HOST (default www.<DOMAIN>); the bare <DOMAIN> redirects there. The browser-facing API,
+# auth and media hosts default to api.<DOMAIN>, id.<DOMAIN>, media.<DOMAIN> (the backend's names).
+# WEB_HOST=www.example.com
+
+# --- Folders -------------------------------------------------------------------------
+CARPAL_ROOT=/carpal
+STAGING_DIR=/home/root/staging            # where WinSCP uploads the repository (the same folder the backend uses)
+CONFIG_DIR=/carpal/config                 # pwa.env lives here (secrets never inside the code folder)
+PWA_ROOT=/carpal/pwa                      # PWA_ROOT/src holds pwa/ and shared/ (a copy of the repository subset)
+BACKUP_DIR=/carpal/backups                # previous PWA releases (one folder per update)
+LOG_DIR=/carpal/logs                      # logs of the deploy scripts (the service logs to journald)
+
+# Repository folders copied from staging (everything else in staging is ignored by the PWA scripts).
+PWA_SYNC_DIRS="pwa shared"
+
+# --- Service -------------------------------------------------------------------------
+PWA_SERVICE_NAME=carpal-pwa
+PWA_SERVICE_USER=carpal-web
+PWA_SERVICE_GROUP=carpal-web
+PWA_PORT=3000                             # next start listens on 127.0.0.1:PWA_PORT (nginx proxies www.<DOMAIN> here)
+PWA_HEALTH_TIMEOUT_S=120
+
+# --- Backend this PWA talks to (server side; the browser never sees these) ---------------
+BACKEND_API_URL=http://127.0.0.1:8080
+BACKEND_AUTH_URL=http://127.0.0.1:8082
+BACKEND_HEALTH_URL=http://127.0.0.1:8080/v1/health
+REQUIRE_BACKEND=1                         # 1 = an update stops when the backend is down or serves an older contract
+
+# --- Redis (BFF session store; required by CARPAL_ENV=prod) -------------------------------
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_MAXMEMORY=256mb
+
+# --- Node.js (the version comes from backend/.node-version when the staging copy has it) ---
+NODE_VERSION_FALLBACK=24.21.0
+NODE_INSTALL_ROOT=/opt
+
+# --- pwa-update.sh -------------------------------------------------------------------
+RUN_TYPECHECK=1                           # pnpm typecheck (next typegen + tsc)
+RUN_UNIT_TESTS=1                          # pnpm test (unit + DOM; never the E2E or integration suites)
+RUN_LINT=0                                # pnpm lint (slow; run it before uploading)
+BUILD_MEMORY_MB=3072                      # Node heap for next build / tsc / vitest on small servers
+KEEP_BACKUPS=5                            # previous releases kept (oldest removed first)
+AUTO_ROLLBACK=1                           # 1 = a release that fails its health check is replaced by the previous one
+
+# --- pwa-setup.sh --------------------------------------------------------------------
+RUN_CERTBOT=0                             # 1 = request the TLS certificate for WEB_HOST and DOMAIN (DNS must point here)
+FIRST_DEPLOY=1                            # 1 = pwa-setup.sh ends by running pwa-update.sh (the first release)
