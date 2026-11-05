@@ -6,8 +6,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, type APIRequestContext } from '@playwright/test';
 
-export const API = process.env.CARPAL_API_URL ?? 'http://127.0.0.1:8080';
-export const AUTH = process.env.CARPAL_AUTH_URL ?? 'http://127.0.0.1:8082';
+// Strict mode: the helpers go through tests/e2e/strict-proxy.mjs, which signs their calls; the PWA never does.
+export const API = process.env.CARPAL_E2E_API_URL ?? process.env.CARPAL_API_URL ?? 'http://127.0.0.1:8080';
+export const AUTH = process.env.CARPAL_E2E_AUTH_URL ?? process.env.CARPAL_AUTH_URL ?? 'http://127.0.0.1:8082';
 const OUTBOX = join(import.meta.dirname, '..', '..', '..', 'backend', '.data', 'outbox-mail.jsonl');
 const CLIENT = 'cp-web-consumer/0.1.0 (web 1.0)';
 const PORT = Number(process.env.CARPAL_E2E_PORT ?? 3100);

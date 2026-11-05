@@ -16,7 +16,7 @@ import { useRegion } from '@/lib/config/client';
 import { useLocale, useT } from '@/lib/i18n/client';
 import { useSetPreference } from './consents';
 import { Card, ErrorLine, ReadState } from './parts';
-import { PriceDisplaySettings } from './price-display';
+import { PriceInfo } from './price-info';
 
 function Choice<V extends string>({
   label,
@@ -208,11 +208,7 @@ export function LanguageSection() {
       <Card title={t('settings.language.displayTitle')} text={t('settings.language.displayText')}>
         <ThemePicker />
       </Card>
-      <div className="pwa-stack-sm">
-        <h3 className="pwa-onb-card-title">{t('settings.local.title')}</h3>
-        <p className="pwa-text-caption m-0">{t('settings.local.text')}</p>
-        <PriceDisplaySettings />
-      </div>
+      <PriceInfo />
     </div>
   );
 }

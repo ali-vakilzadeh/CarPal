@@ -5,7 +5,8 @@
 // Delete account (what is deleted and what stays anonymous, then a typed confirmation; a deletion request), the
 // request history, and organization memberships with Leave. Requests, downloads and leaving are AAL2: they go through
 // the step-up and are repeated after it. Staff carry requests out on the admin plane (backend GD-29), so a new request
-// shows as received until then. Deactivation has no operation and is not offered (DI-55).
+// shows as received until then. Deactivate account (contract 1.2.0) ends every session; a later sign-in offers
+// reactivation. Unlike deletion it needs no staff.
 import type { DataSubjectRequest, Membership } from '@carpal/api-contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -17,10 +18,11 @@ import { Dialog } from '@/components/shell/dialog';
 import { useStepUp } from '@/components/shell/step-up';
 import { useToast } from '@/components/shell/toast';
 import { useApiClient, useApiQuery } from '@/lib/api/query';
+import { useLogout } from '@/lib/api/session';
 import { ApiProblem } from '@/lib/api/problem';
 import { goTo } from '@/lib/browser-nav';
 import { useFormat } from '@/lib/format/client';
-import { useT } from '@/lib/i18n/client';
+import { useLocale, useT } from '@/lib/i18n/client';
 import type { MessageKey } from '@/lib/i18n/keys';
 import { deletionConfirmed, isOpen, latestRequest } from './model';
 import { Card, ErrorLine, ReadState } from './parts';
@@ -288,6 +290,83 @@ function DeletionCard({ requests }: { requests: readonly DataSubjectRequest[] })
   );
 }
 
+type DeactivateDraft = { reason?: string };
+
+function DeactivateCard() {
+  const t = useT();
+  const locale = useLocale();
+  const api = useApiClient();
+  const stepUp = useStepUp();
+  const logout = useLogout();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const leave = async () => {
+    // Every session already ended on the server: this clears the browser's.
+    await logout({ thenGo: `/${locale}` }).catch(() => goTo(`/${locale}`));
+  };
+  const confirm = async () => {
+    setBusy(true);
+    setError(null);
+    const draft: DeactivateDraft = reason.trim() ? { reason: reason.trim() } : {};
+    try {
+      const r = await stepUp<unknown, DeactivateDraft>({
+        type: 'settings.deactivate',
+        draft,
+        label: t('settings.stepUp.deactivate'),
+        run: () => api.api('me.deactivate', { body: draft }),
+      });
+      if (r.steppingUp) return;
+      await leave();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+  useIntentHandler<DeactivateDraft>('settings.deactivate', async (intent) => {
+    await api.api('me.deactivate', { body: intent.draft ?? {} });
+    await leave();
+  });
+  return (
+    <Card title={t('settings.data.deactivateTitle')} text={t('settings.data.deactivateText')}>
+      <div className="pwa-inline-buttons">
+        <Button variant="secondary" onClick={() => setOpen(true)}>
+          {t('settings.data.deactivateAction')}
+        </Button>
+      </div>
+      <Dialog
+        name="deactivate-account"
+        open={open}
+        title={t('settings.data.deactivateConfirmTitle')}
+        onClose={() => setOpen(false)}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              {t('common.actions.cancel')}
+            </Button>
+            <Button variant="primary" loading={busy} onClick={() => void confirm()}>
+              {t('settings.data.deactivateAction')}
+            </Button>
+          </>
+        }
+      >
+        <div className="pwa-stack-sm">
+          <p className="m-0">{t('settings.data.deactivateConfirmText')}</p>
+          <TextField
+            label={t('settings.data.deactivateReason')}
+            value={reason}
+            maxLength={500}
+            onChange={(e) => setReason(e.target.value)}
+          />
+          <ErrorLine error={error} />
+        </div>
+      </Dialog>
+    </Card>
+  );
+}
+
 function RequestsCard({ requests }: { requests: readonly DataSubjectRequest[] }) {
   const t = useT();
   const f = useFormat();
@@ -459,6 +538,7 @@ export function DataSection() {
       <CorrectionCard requests={items} />
       <RequestsCard requests={items} />
       <MembershipsCard />
+      <DeactivateCard />
       <DeletionCard requests={items} />
     </div>
   );

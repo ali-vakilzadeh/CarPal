@@ -4,7 +4,7 @@
 // server-side session, ID token). Used by the auth-host handlers.
 import { Injectable } from '@nestjs/common';
 import { sql } from 'kysely';
-import { decodeJwt } from 'jose';
+import { createLocalJWKSet, decodeJwt, jwtVerify, type JSONWebKeySet, type JWTPayload } from 'jose';
 import { CLIENTS, SessionStore, TokenService, verifyDpopProof, type Acr, type ClientId } from '#libs/auth/index.js';
 import type { CarpalConfig } from '#libs/config/index.js';
 import { ApiError } from '#libs/contract/index.js';
@@ -18,9 +18,13 @@ import { activeSecondFactors, platformRoles, type UserRow } from '../infrastruct
 import { AuthState, type Interaction } from '../infrastructure/auth-state.js';
 
 export const INTERACTION_COOKIE = '__Host-cp_ia';
+const JWT_BEARER = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
+/** private_key_jwt: the longest accepted assertion lifetime, and the clock skew around it. */
+const CLIENT_ASSERTION_MAX_S = 300;
+const CLIENT_ASSERTION_SKEW_S = 30;
 
 export type AuthNext = {
-  next: 'verify_email' | 'verify_phone' | 'mfa' | 'complete' | 'consent';
+  next: 'verify_email' | 'verify_phone' | 'mfa' | 'complete' | 'consent' | 'reactivate';
   mfa_methods?: ('totp_mfa' | 'webauthn')[];
 };
 
@@ -107,6 +111,17 @@ export class AuthServer {
     return { next: 'complete' };
   }
 
+  /**
+   * A correct first factor on an account its owner deactivated (me.deactivate): the sign-in waits for auth.reactivate.
+   * Staff suspensions and staff deactivations never get here (SEC-AU-11). `passkey` keeps the proven credential's strength.
+   */
+  async offerReactivation(i: Interaction, userId: string, amr: string, passkey?: { deviceBound: boolean }): Promise<AuthNext> {
+    i.userId = userId;
+    i.reactivate = { amr, ...(passkey ? { passkeyDeviceBound: passkey.deviceBound } : {}) };
+    await this.state.saveInteraction(i);
+    return { next: 'reactivate' };
+  }
+
   /** A second factor proven: aal2, or aal3 for a device-bound WebAuthn credential (SEC-AU-10). */
   async afterSecondFactor(i: Interaction, amr: string, acr: 'aal2' | 'aal3' = 'aal2'): Promise<AuthNext> {
     i.mfaPending = false;
@@ -118,11 +133,50 @@ export class AuthServer {
     return { next: 'complete' };
   }
 
+  // ---------------------------------------------------------- client authentication (RFC 7523) at /oauth/token
+
+  /**
+   * Strict mode: a confidential client proves itself with a private_key_jwt assertion (GD-06 amendment 2026-11-04):
+   * jwt-bearer type, iss = sub = client_id, aud = the token endpoint or the issuer, exp at most 5 minutes ahead, jti
+   * single use, EdDSA or ES256 by a key of CARPAL_OAUTH_CLIENT_JWKS. Every failure is the same 401 invalid_client.
+   * Lite mode has no client authentication (GD-06). Public clients have none in either mode.
+   */
+  async authenticateClient(form: Record<string, string>, clientId: ClientId): Promise<void> {
+    if (!this.config.strictAuth || CLIENTS[clientId].kind !== 'confidential') return;
+    const refused = (reason: string): ProtocolError => {
+      this.logger.warn({ security_event: 'client_assertion_refused', client_id: clientId, reason }, 'client assertion refused');
+      return new ProtocolError(401, 'invalid_client');
+    };
+    const assertion = form.client_assertion;
+    if (form.client_assertion_type !== JWT_BEARER || !assertion) throw refused('missing');
+    const jwks = this.config.auth.clientJwks[clientId];
+    if (!jwks) throw refused('no registered key');
+    const issuer = this.config.http.issuer;
+    let claims: JWTPayload;
+    try {
+      ({ payload: claims } = await jwtVerify(assertion, createLocalJWKSet(jwks as unknown as JSONWebKeySet), {
+        algorithms: ['EdDSA', 'ES256'],
+        issuer: clientId,
+        subject: clientId,
+        audience: [`${issuer}/oauth/token`, issuer],
+        clockTolerance: CLIENT_ASSERTION_SKEW_S,
+        requiredClaims: ['iss', 'sub', 'aud', 'exp', 'jti'],
+      }));
+    } catch (err) {
+      throw refused((err as Error).message);
+    }
+    if (claims.exp! - Math.floor(Date.now() / 1000) > CLIENT_ASSERTION_MAX_S + CLIENT_ASSERTION_SKEW_S) throw refused('lifetime');
+    if (typeof claims.jti !== 'string' || claims.jti.length > 128) throw refused('jti');
+    const ttlMs = (CLIENT_ASSERTION_MAX_S + 2 * CLIENT_ASSERTION_SKEW_S) * 1000;
+    if (!(await this.infra.kv.set(`auth:client-assertion:${clientId}:${claims.jti}`, '1', { ttlMs, mode: 'NX' })))
+      throw refused('replayed');
+  }
+
   // ---------------------------------------------------------- DPoP (RFC 9449) at /oauth/token
 
   /**
    * Verifies the DPoP proof of a token request and returns its key thumbprint
-   * (the new token's cnf.jkt). Strict mode: cp-mobile must send a proof, and
+   * (the new token's cnf.jkt). Strict mode: DPoP-bound clients must send a proof, and
    * every proof must carry a fresh server nonce (400 use_dpop_nonce with a
    * DPoP-Nonce header otherwise, SEC-AU-6). Lite mode accepts requests
    * without a proof and issues Bearer-style tokens (GD-06).

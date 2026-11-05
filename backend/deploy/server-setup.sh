@@ -109,13 +109,23 @@ if [[ ! -f "$CONFIG_DIR/db-admin.env" ]]; then
   render "$DEPLOY_DIR/templates/db-admin.env.template" "$CONFIG_DIR/db-admin.env" PW_SUPERUSER
   ok "generated db-admin.env"
 fi
+# Key pairs of the BFF clients: public halves in backend.env, private halves in pwa.env (pwa-setup.sh reads this file).
+CLIENT_KEYS="$CONFIG_DIR/oauth-client-keys.json"
+if [[ ! -f "$CLIENT_KEYS" ]]; then
+  (umask 077 && "$NODE_BIN/node" "$DEPLOY_DIR/gen-client-keys.mjs" >"$CLIENT_KEYS")
+  ok "generated oauth-client-keys.json"
+fi
+chown root:root "$CLIENT_KEYS" && chmod 600 "$CLIENT_KEYS"
+CLIENT_PUBLIC_JWKS="$("$NODE_BIN/node" "$DEPLOY_DIR/gen-client-keys.mjs" --public "$CLIENT_KEYS")"
 if [[ ! -f "$CONFIG_DIR/backend.env" ]]; then
   MASTER_SECRET="$(gen 32)"
   PW_MIGRATOR="$(gen)" PW_AUTH="$(gen)" PW_API="$(gen)" PW_ADMIN_API="$(gen)" PW_WORKER="$(gen)" PW_AI="$(gen)"
   PW_READONLY="$(gen)" PW_ANALYTICS_WRITER="$(gen)" PW_ANALYTICS_READER="$(gen)"
   render "$DEPLOY_DIR/templates/backend.env.template" "$CONFIG_DIR/backend.env" MASTER_SECRET PW_MIGRATOR PW_AUTH PW_API \
-    PW_ADMIN_API PW_WORKER PW_AI PW_READONLY PW_ANALYTICS_WRITER PW_ANALYTICS_READER
+    PW_ADMIN_API PW_WORKER PW_AI PW_READONLY PW_ANALYTICS_WRITER PW_ANALYTICS_READER CLIENT_PUBLIC_JWKS
   ok "generated backend.env (review it: deploy.md step 3)"
+elif ! grep -q '^CARPAL_OAUTH_CLIENT_JWKS=' "$CONFIG_DIR/backend.env"; then
+  warn "backend.env has no CARPAL_OAUTH_CLIENT_JWKS: add CARPAL_OAUTH_CLIENT_JWKS='$CLIENT_PUBLIC_JWKS' before setting CARPAL_STRICT_AUTH=1"
 fi
 chown root:root "$CONFIG_DIR/db-admin.env" && chmod 600 "$CONFIG_DIR/db-admin.env"
 chown root:"$SERVICE_GROUP" "$CONFIG_DIR/backend.env" && chmod 640 "$CONFIG_DIR/backend.env"

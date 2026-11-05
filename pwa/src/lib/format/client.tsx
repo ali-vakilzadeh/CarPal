@@ -25,7 +25,7 @@ export function useFormat(): Formatter {
   return useMemo(() => createFormatter(locale, t, timeZone, distanceUnit, prices), [locale, t, timeZone, distanceUnit, prices]);
 }
 
-/** This browser's price display (the settings page shows and changes it). */
+/** The region's price display (the settings page shows the rate). */
 export function usePriceDisplay(): PriceDisplay {
   return useContext(FormatContext).prices ?? DEFAULT_PRICE_DISPLAY;
 }

@@ -9,16 +9,17 @@
 // retention cover the AI records.
 import type { INestApplicationContext } from '@nestjs/common';
 import { sql } from 'kysely';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { FlagService, type FlagContext } from '#libs/flags/index.js';
 import { SafetyLexicon } from '#libs/safety-check/index.js';
 import { TxRunner } from '#libs/tenancy/index.js';
 import { RetentionHandlers } from '#modules/admin/interface/admin.js';
 import { SkillHeatmapBuilder } from '#modules/ai-mcp/ai-mcp.module.js';
+import { McpGateway } from '#modules/ai-mcp/application/gateway.js';
 import { PersonalDataRegistry } from '#modules/identity/interface/identity.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { taxonomyNodes, type Json, type Nodes } from './s4-support.js';
-import { client, newId } from './s5-support.js';
+import { client, grantConsent, newId } from './s5-support.js';
 import { flush, publishedProvider, publishedVendor, uniquePoint, type PublishedOrg } from './s6-support.js';
 import { customer, requestBody } from './s7-support.js';
 import { query } from './s8-support.js';
@@ -93,6 +94,28 @@ afterAll(async () => {
 });
 
 describe('Help Me triage (40 §21.2)', () => {
+  it('uses the session text only until the owner turns on personalised Help Me (52 UserPreference)', async () => {
+    const gateway = app.app.get(McpGateway, { strict: false });
+    const invoke = vi.spyOn(gateway, 'invoke');
+    const cu = await customer(app, n);
+    const start = () => cu.c.post('/v1/me/triage-sessions', { vehicle_id: cu.vehicleId, text: 'A noise from the brakes.', locale: 'en' });
+    expect((await start()).status).toBe(201);
+    const off = invoke.mock.calls.at(-1)![0];
+    expect(off.resources).not.toContain('res:vehicle.summary');
+    expect(off.contextEntity).toBeUndefined();
+
+    await grantConsent(cu.c, 'ai_personalization', null, null);
+    const prefs = await cu.c.get('/v1/me/preferences');
+    const on = await cu.c.patch('/v1/me/preferences', { ai_help_me_personalised: true }, prefs.body.version);
+    expect(on.status, on.text).toBe(200);
+    const res = await start();
+    expect(res.status, res.text).toBe(201);
+    const personal = invoke.mock.calls.at(-1)![0];
+    expect(personal.resources).toContain('res:vehicle.summary');
+    expect(personal.contextEntity).toEqual({ type: 'vehicle', id: cu.vehicleId });
+    invoke.mockRestore();
+  });
+
   it('runs start → reply → get → complete into an issue, a match session and a draft with the AI summary', async () => {
     const cu = await customer(app, n);
     const start = await cu.c.post('/v1/me/triage-sessions', {

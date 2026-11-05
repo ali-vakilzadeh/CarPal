@@ -10,7 +10,7 @@ const profile = (o: Json = {}) => ({
   approval_workflow_enabled: false,
   cost_approval_threshold_amount: '500',
   preferred_provider_mode: 'preferred',
-  reporting_currency: 'IRR',
+  reporting_currency: 'USD',
   ...o,
 });
 const today = () => new Date().toISOString().slice(0, 10);
@@ -54,7 +54,7 @@ async function approval(h: Harness): Promise<{ owner: Actor; manager: Actor; a: 
     await owner.c.post(`${flt(owner)}/approvals`, {
       approval_type: 'cost_estimate',
       vehicle_id: v,
-      cost_estimate: { amount: '800', currency: 'IRR' },
+      cost_estimate: { amount: '800', currency: 'USD' },
     }),
     'approval',
   );
@@ -153,7 +153,7 @@ export const resolvers: Resolvers = {
     const v = await h.vehicle(coordinator);
     return {
       as: coordinator,
-      body: { approval_type: 'cost_estimate', vehicle_id: v, cost_estimate: { amount: '800', currency: 'IRR' } },
+      body: { approval_type: 'cost_estimate', vehicle_id: v, cost_estimate: { amount: '800', currency: 'USD' } },
       bodyRefs: true,
     };
   },

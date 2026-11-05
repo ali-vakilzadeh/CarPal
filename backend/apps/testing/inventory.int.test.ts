@@ -38,7 +38,7 @@ const item = (o: Json = {}) => ({
   condition: 'new',
   part_category_node_id: n.partCategory,
   price_public: '450000',
-  currency: 'IRR',
+  currency: 'USD',
   price_on_request: false,
   stock_status: 'in_stock',
   visibility: 'public',
@@ -297,7 +297,7 @@ describe('trade accounts and trade prices (S5 acceptance)', () => {
 
     const anon = await cards({ actorType: 'anonymous' });
     expect([...anon.keys()]).toEqual([pub.id]);
-    expect(anon.get(pub.id)!.price).toEqual({ amount: '100.00', currency: 'IRR' });
+    expect(anon.get(pub.id)!.price).toEqual({ amount: '100.00', currency: 'USD' });
     expect(JSON.stringify([...anon.values()])).not.toContain('80.00');
 
     const s = client(app, shop.token);
@@ -325,8 +325,8 @@ describe('trade accounts and trade prices (S5 acceptance)', () => {
     expect(decided.body).toMatchObject({ status: 'approved' });
     expect(await audits(app, request.body.id)).toEqual(['inventory.trade_account_approved']);
     const trade = await cards(shopCtx);
-    expect(trade.get(pub.id)!.price).toEqual({ amount: '80.00', currency: 'IRR' });
-    expect(trade.get(tradeOnly.id)!.price).toEqual({ amount: '150.00', currency: 'IRR' });
+    expect(trade.get(pub.id)!.price).toEqual({ amount: '80.00', currency: 'USD' });
+    expect(trade.get(tradeOnly.id)!.price).toEqual({ amount: '150.00', currency: 'USD' });
     const detail = await asContext(shopCtx, (read, scope) => read.publicItem(scope, tradeOnly.id, { locale: 'en' }));
     expect(detail).toMatchObject({ is_trade_price: true, vendor_organization_id: v.org.id });
     // Another organization and anonymous callers still see neither.
@@ -528,9 +528,9 @@ describe('CSV import (S5 acceptance) and bulk updates (W7)', () => {
     const s2 = sku();
     const csv = [
       'SKU,Name,Category,Price,Currency,Origin,Condition,Stock,OEM',
-      `${s1},Oil filter,${n.partCategory},120000,IRR,oem,new,in_stock,90915-YZZE1|90915-10003`,
-      `${s2},"=HYPERLINK(""http://evil.example"",""click"")",${n.partCategory},99000,irr,aftermarket,used,low_stock,`,
-      `"=cmd|' /C calc'!A0",,${n.partCategory},abc,IRR,oem,new,in_stock,`,
+      `${s1},Oil filter,${n.partCategory},120000,USD,oem,new,in_stock,90915-YZZE1|90915-10003`,
+      `${s2},"=HYPERLINK(""http://evil.example"",""click"")",${n.partCategory},99000,usd,aftermarket,used,low_stock,`,
+      `"=cmd|' /C calc'!A0",,${n.partCategory},abc,USD,oem,new,in_stock,`,
       `${existing.sku},,,,,,,out_of_stock,`,
     ].join('\r\n');
     const file = await media.upload(v.token, {
@@ -590,7 +590,7 @@ describe('CSV import (S5 acceptance) and bulk updates (W7)', () => {
     const items = (await v.c.post(`${v.vnd}/inventory/search`, { text: s2 })).body.items;
     expect(items[0]).toMatchObject({
       name_translations: { en: '=HYPERLINK("http://evil.example","click")' },
-      currency: 'IRR',
+      currency: 'USD',
       condition: 'used',
       import_batch_id: batchId,
       status: 'draft',

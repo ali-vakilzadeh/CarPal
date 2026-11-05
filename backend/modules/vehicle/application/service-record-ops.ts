@@ -13,6 +13,7 @@ import { ConsentChecker, requireConsent } from '#libs/consent-gate/index.js';
 import { ApiError, type FieldError } from '#libs/contract/index.js';
 import { ACK, created, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
+import { RegionConfigService } from '#libs/region-config/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { AppointmentFacts } from '#modules/appointment/interface/appointments.js';
 import { InventoryRead } from '#modules/inventory/interface/inventory.js';
@@ -272,11 +273,13 @@ export class ServiceRecordsCreateHandler implements OperationHandler {
   constructor(
     private readonly rules: ServiceRecordRules,
     private readonly views: ServiceRecordViews,
+    private readonly region: RegionConfigService,
   ) {}
 
   async handle(ctx: OperationContext<ServiceRecordWrite>): Promise<OperationResult> {
     const a = vehicleAccess(ctx);
     const b = ctx.body;
+    this.region.requireBaseCurrency(b.cost?.currency, '/cost/currency');
     const body = await ctx.tx(async (scope) => {
       const v = await loadVehicle(scope, a, ctx.params.vehicle_id!);
       await this.rules.check(scope, b, { fleet: a.fleet, vehicleId: v.id, written: b });
@@ -326,11 +329,13 @@ export class ServiceRecordsUpdateHandler implements OperationHandler {
   constructor(
     private readonly rules: ServiceRecordRules,
     private readonly views: ServiceRecordViews,
+    private readonly region: RegionConfigService,
   ) {}
 
   async handle(ctx: OperationContext<Partial<Omit<ServiceRecordWrite, 'source_type'>>>): Promise<OperationResult> {
     const a = vehicleAccess(ctx);
     const b = ctx.body;
+    this.region.requireBaseCurrency(b.cost?.currency, '/cost/currency');
     const body = await ctx.tx(async (scope) => {
       const v = await loadVehicle(scope, a, ctx.params.vehicle_id!);
       const r = await loadRecord(scope, v, ctx.params.record_id!, true);

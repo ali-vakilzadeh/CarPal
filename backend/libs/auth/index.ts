@@ -28,7 +28,8 @@ const D = 24 * H;
 /**
  * Registered OAuth clients (40 §2.2): access-token lifetime, refresh-token
  * idle (sliding) and absolute lifetimes (= session lifetime), client kind and
- * token binding. Redirect URIs are configuration (CARPAL_OAUTH_REDIRECT_URIS).
+ * token binding. Redirect URIs are configuration (CARPAL_OAUTH_REDIRECT_URIS). The BFF clients are DPoP-bound
+ * (GD-06 amendment 2026-11-04); cp-web-portal and cp-web-admin follow when their BFFs exist (NI-08).
  */
 export const CLIENTS = {
   'cp-mobile': { accessTtlS: 300, refreshIdleMs: 30 * D, sessionAbsoluteMs: 90 * D, kind: 'public', binding: 'dpop', audience: 'api' },
@@ -37,7 +38,7 @@ export const CLIENTS = {
     refreshIdleMs: 12 * H,
     sessionAbsoluteMs: 7 * D,
     kind: 'confidential',
-    binding: 'mtls',
+    binding: 'dpop',
     audience: 'api',
   },
   'cp-web-portal': {
@@ -56,7 +57,7 @@ export const CLIENTS = {
     binding: 'mtls',
     audience: 'admin-api',
   },
-  'cp-ssr': { accessTtlS: 300, refreshIdleMs: 0, sessionAbsoluteMs: 0, kind: 'confidential', binding: 'mtls', audience: 'api' },
+  'cp-ssr': { accessTtlS: 300, refreshIdleMs: 0, sessionAbsoluteMs: 0, kind: 'confidential', binding: 'dpop', audience: 'api' },
 } as const;
 export type ClientId = keyof typeof CLIENTS;
 export const isClientId = (v: unknown): v is ClientId => typeof v === 'string' && Object.hasOwn(CLIENTS, v);

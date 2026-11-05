@@ -99,13 +99,14 @@ export function normalizedName(names: Record<string, string>): string | null {
 }
 
 /** Conditionals of 40 InventoryItemWrite on the merged item (C: lines, 52 name 3–160 per locale). */
-export function itemFieldErrors(m: Partial<InventoryItemWrite>): FieldError[] {
+export function itemFieldErrors(m: Partial<InventoryItemWrite>, baseCurrency: string): FieldError[] {
   const errors: FieldError[] = [];
   for (const [locale, v] of Object.entries(m.name_translations ?? {}))
     if ([...v].length < 3) errors.push({ pointer: `/name_translations/${locale}`, code: 'too_short', limit: '3' });
   if (!m.price_on_request && (m.price_public === undefined || m.price_public === null))
     errors.push({ pointer: '/price_public', code: 'conditional_required' });
   if ((m.price_public || m.price_trade) && !m.currency) errors.push({ pointer: '/currency', code: 'conditional_required' });
+  if (m.currency && m.currency !== baseCurrency) errors.push({ pointer: '/currency', code: 'enum' });
   return errors;
 }
 

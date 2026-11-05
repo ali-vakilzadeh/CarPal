@@ -3,8 +3,7 @@ import { getTranslator } from '@/lib/i18n/dictionary';
 import {
   DEFAULT_PRICE_DISPLAY,
   createFormatter,
-  parsePriceDisplay,
-  serializePriceDisplay,
+  priceDisplayOf,
   type PriceDisplay,
   formatCalendarDate,
   formatDate,
@@ -76,25 +75,25 @@ describe('money and distance', () => {
     expect(formatMoney('x', 'IRR', 'en', en)).toBe('');
   });
 
-  it('prices are based in USD; this browser may convert them at its own rate (OQ-11)', () => {
+  it('shows USD amounts in the region currency at the admin rate (OQ-11 update 2026-11-04, backend GD-41)', () => {
     expect(formatMoney('12.5', 'USD', 'en', en)).toBe('$12.5');
     expect(formatMoney(40, 'USD', 'fa', fa)).toBe('۴۰ دلار');
-    const toman: PriceDisplay = { convertUsd: true, usdRate: 105_000, unit: 'toman' };
-    expect(formatMoney(10, 'USD', 'en', en, toman)).toBe('1,050,000 T');
-    expect(formatMoney(10, 'USD', 'fa', fa, { ...toman, unit: 'rial', usdRate: 1_050_000 })).toBe('۱۰٬۵۰۰٬۰۰۰ ریال');
-    // Ticked off, or no rate: dollars stay dollars. IRR amounts follow the chosen unit.
-    expect(formatMoney(10, 'USD', 'en', en, { ...toman, convertUsd: false })).toBe('$10');
-    expect(formatMoney(18_500_000, 'IRR', 'en', en, { convertUsd: false, usdRate: null, unit: 'rial' })).toBe('18,500,000 IRR');
+    const irr: PriceDisplay = { currency: 'IRR', perUsd: 1_050_000 };
+    expect(formatMoney(10, 'USD', 'en', en, irr)).toBe('1,050,000 T');
+    expect(formatMoney(10, 'USD', 'fa', fa, irr)).toBe('۱٬۰۵۰٬۰۰۰ تومان');
+    // Amounts stored in rials before the base currency moved to USD stay readable.
+    expect(formatMoney(18_500_000, 'IRR', 'en', en, irr)).toBe('1,850,000 T');
   });
 
-  it('keeps the price display in a small cookie value and ignores anything malformed', () => {
-    const p: PriceDisplay = { convertUsd: true, usdRate: 105000.5, unit: 'toman' };
-    expect(serializePriceDisplay(p)).toBe('1.toman.105000.5');
-    expect(parsePriceDisplay('1.toman.105000.5')).toEqual(p);
-    expect(parsePriceDisplay('1.rial.')).toEqual({ convertUsd: false, usdRate: null, unit: 'rial' });
-    expect(serializePriceDisplay({ convertUsd: true, usdRate: null, unit: 'rial' })).toBe('0.rial.');
-    for (const bad of [undefined, '', '2.toman.1', '1.euro.5', '1.toman.-5', '1.toman.0', '1.toman.99999999999'])
-      expect(parsePriceDisplay(bad)).toEqual(DEFAULT_PRICE_DISPLAY);
+  it('takes the price display from config.client and falls back to USD without a rate', () => {
+    const region = { currency: 'USD', display_currencies: ['IRR', 'USD'] };
+    expect(priceDisplayOf({ ...region, exchange_rates: [{ currency: 'IRR', per_usd: '1050000.0000' }] })).toEqual({
+      currency: 'IRR',
+      perUsd: 1_050_000,
+    });
+    expect(priceDisplayOf({ ...region, exchange_rates: [] })).toEqual(DEFAULT_PRICE_DISPLAY);
+    expect(priceDisplayOf({ ...region, exchange_rates: [{ currency: 'IRR', per_usd: '0' }] })).toEqual(DEFAULT_PRICE_DISPLAY);
+    expect(priceDisplayOf({ currency: 'USD' })).toEqual(DEFAULT_PRICE_DISPLAY);
   });
 
   it('says distances as "about x"', () => {

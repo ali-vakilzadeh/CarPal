@@ -2,11 +2,11 @@
   "meta": {
     "title": "CarPal backend — scratch build plan and stage log",
     "created": "2026-10-10",
-    "last_updated": "2026-11-04",
+    "last_updated": "2026-11-05",
     "status": "scratch_build_done",
     "progress": {
       "as_of": "2026-11-04",
-      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list. S10 is DONE (2026-10-26): contract 1.1.0 served — search.session_get (406/407 operations served), search facets, the soonest sort with next_available_slot, search.page limit and the map.pins changes; the 1.1.0 text was corrected before use (DI-74). Next: the next_iteration list; the PWA continues with P7 and adopts 1.1.0 in P14. 2026-11-04: plan aligned with the closed PWA scratch build (pwa/dev_plan.json P1-P14, meta.status scratch_build_done). Rule GD-43: where the two plans disagree, the newer PWA decision wins and the backend follows. The PWA's pilot blockers that need the backend are now stage S11 'Pilot readiness: PWA integration 2' (strict auth for the BFF clients by DPoP + private_key_jwt, contract 1.2.0 for the profile and settings fields of PWA DI-55, USD prices with an admin-set exchange rate, the carpals.ir production setup). Backend-owned PWA follow-ups that do not block the pilot are NI-19..NI-22. Next: S11, then the next_iteration list.",
+      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list. S10 is DONE (2026-10-26): contract 1.1.0 served — search.session_get (406/407 operations served), search facets, the soonest sort with next_available_slot, search.page limit and the map.pins changes; the 1.1.0 text was corrected before use (DI-74). Next: the next_iteration list; the PWA continues with P7 and adopts 1.1.0 in P14. 2026-11-04: plan aligned with the closed PWA scratch build (pwa/dev_plan.json P1-P14, meta.status scratch_build_done). Rule GD-43: where the two plans disagree, the newer PWA decision wins and the backend follows. The PWA's pilot blockers that need the backend are now stage S11 'Pilot readiness: PWA integration 2' (strict auth for the BFF clients by DPoP + private_key_jwt, contract 1.2.0 for the profile and settings fields of PWA DI-55, USD prices with an admin-set exchange rate, the carpals.ir production setup). Backend-owned PWA follow-ups that do not block the pilot are NI-19..NI-22. Next: S11, then the next_iteration list. S11 is DONE in code (2026-11-05): strict auth for the BFF clients (DPoP-bound tokens + private_key_jwt, CARPAL_OAUTH_CLIENT_JWKS, no mTLS), contract 1.2.0 (411 operations, 410 served; me.deactivate, auth.reactivate, admin.exchange_rates_list, admin.exchange_rate_update, the profile and settings fields of PWA DI-55), USD as the base currency with an admin rate served by config.client, the carpals.ir deploy kit with strict mode on by default. The first server deployment (S11.T4 c) is still to be done by the user: see S11.report.open_after_stage. Next: the deployment, then the next_iteration list.",
       "stages": [
         {
           "stage": "S1",
@@ -143,13 +143,13 @@
         }
       ],
       "operations": {
-        "implemented": 406,
+        "implemented": 410,
         "returning_501": 1,
         "deferred_with_reason": 1,
-        "total": 407,
-        "note": "After S10 (pnpm contract:coverage --strict, contract 1.1.0): 406/407 served — 405 by handlers and media.upload_put by the storage listener; auth.social_start answers 501 by decision (PM-01). Unexplained 501s: 0."
+        "total": 411,
+        "note": "After S11 (contract 1.2.0): 410/411 served, 0 unexplained 501s. After S10 (pnpm contract:coverage --strict, contract 1.1.0): 406/407 served — 405 by handlers and media.upload_put by the storage listener; auth.social_start answers 501 by decision (PM-01). Unexplained 501s: 0."
       },
-      "next_stage": "S11 (then the next_iteration list)",
+      "next_stage": "First deployment on carpals.ir (S11.report.open_after_stage), then the next_iteration list",
       "before_starting_S9": [
         "Run `pnpm db:reset` once: S8 added the definer admin.moderation_action_affects to Docs/43 (and 42 §5.3). No new npm dependency; optional env CARPAL_DB_PASSWORD_ANALYTICS_READER.",
         "Read S8.report.notes_for_next and recommendations_for_next_stages.S9 (updated after S8): AI records need their PersonalData/retention/moderation registrations; the contract-test generator must know the admin-plane mechanics (staff client, purpose headers, four-eyes 202s, CarPal-Reason on DELETE).",
@@ -337,7 +337,7 @@
           "change": "Auth server implemented: authorization code + PKCE S256 through a cookie-bound hosted sign-in interaction (__Host-cp_ia), refresh-token rotation where a token family = one server-side session (reuse revokes the session and mails a security alert), client credentials (cp-ssr, public.read), the anonymous grant (15 min, public.read search), ID tokens (EdDSA, nonce), revocation. DPoP proofs are verified at /oauth/token and bind tokens (cnf.jkt, token_type DPoP); strict mode requires a proof from cp-mobile and a server nonce (400 use_dpop_nonce + DPoP-Nonce). The ATT verifier accepts proof-of-work solutions of auth.pow_challenge (single use); platform attestation tokens are refused. Still not implemented (logged deviations): WebAuthn (passkeys, staff aal3 sign-in), Google/Apple sign-in, App Attest / Play Integrity verification, private_key_jwt / mTLS client authentication for the BFF clients, DPoP-Nonce on the API hosts, risk-based sign-in (SEC-AU-12)."
         },
         {
-          "stage": "S11 (planned)",
+          "stage": "S11",
           "date": "2026-11-04",
           "change": "User decision for the BFF clients (PWA NI-P13-01, follow-up answer the same day): cp-web-consumer and cp-ssr get DPoP-bound tokens (cnf.jkt; CLIENTS binding 'dpop') instead of mTLS-bound ones, and authenticate at /oauth/token with private_key_jwt (RFC 7523) against a registered public key per client. No mTLS at the edge and no client-certificate thumbprint header. The PWA already holds a per-session DPoP key, sends proofs for bound tokens, retries use_dpop_nonce and has a privateKeyJwt() signer. cp-web-portal and cp-web-admin follow the same model when their BFFs are built (NI-08). Lite mode is unchanged (no client authentication). The rest of NI-01 (App Attest / Play Integrity, DPoP-Nonce on the API hosts, SEC-AU-12, breached-password corpus) is unchanged. Work: S11.T1.",
           "reason": "Pilot blocker: in strict mode every signed-in PWA call answers 401 \"token is not sender-constrained\" (PWA P13 report.strict_mode). private_key_jwt is kept because DPoP alone does not authenticate the client: without it anyone could obtain cp-ssr client-credentials tokens."
@@ -636,13 +636,13 @@
     },
     {
       "id": "GD-41",
-      "stage": "S11 (planned)",
+      "stage": "S11",
       "decision": "Money is stored in USD. The pilot region's base currency becomes USD (shared/region-config/ir-pilot.json currency USD); every price and cost written through the API (inventory prices, cost estimates, service-record costs, fleet reporting currency) is in the region currency. A system admin sets the USD → IRR rate (staff operation, audited); config.client serves the base currency, the display currencies and the current rate with its update time, and the clients show amounts in the local currency (IRR in this phase; more display currencies in the next phase). Ranking, filters and stored amounts never use the converted value. Work: S11.T3.",
       "reason": "User decision 2026-11-04, replacing the PWA's per-browser rate input (PWA OQ-11 answer of 2026-10-25, cp_price cookie): one rate for everybody, set by an admin."
     },
     {
       "id": "GD-42",
-      "stage": "S11 (planned)",
+      "stage": "S11",
       "decision": "Production domain carpals.ir. Hosts come from DOMAIN in deploy.conf: api., id., media. (backend), www. (the consumer PWA, which is its own BFF and serves the hosted sign-in UI under /id, PWA OQ-03), the bare domain redirects to www.; admin-api. stays unpublished. backend.env: CARPAL_OAUTH_REDIRECT_URIS cp-web-consumer = https://www.<DOMAIN>/bff/oauth/callback, CARPAL_WEBAUTHN_RP_ID = <DOMAIN>, CARPAL_WEBAUTHN_ORIGINS and CARPAL_MEDIA_CORS_ORIGINS contain https://www.<DOMAIN>, CARPAL_LINK_BASE_URL = https://www.<DOMAIN>/l, CARPAL_SIGNIN_URL unset. Support mailbox support@carpals.ir. The carpal.app development defaults in code are renamed in the next iteration together with the PWA (NI-22 = PWA NI-P14-08), so the verified test runs stay valid.",
       "reason": "User decisions 2026-11-04 (PWA NI-P13-12, OQ-18); the deploy kits (backend/deploy, pwa/deploy) already take every host from DOMAIN."
     },
@@ -1144,21 +1144,24 @@
       "added": "2026-11-04",
       "issue": "Docs/40 §2.2 client table and auth.token say the BFF clients authenticate with private_key_jwt over mTLS and receive mTLS-bound tokens (cp-web-consumer, cp-ssr, cp-web-portal, cp-web-admin); the 2026-11-04 decision binds BFF tokens with DPoP instead (GD-06 amendment).",
       "action": "S11.T1 updates Docs/40 §2.2 (binding column: DPoP-bound), auth.token (BFFs: private_key_jwt + DPoP proof with server nonce) and SEC-WEB-1/-2 wording; no schema change.",
-      "status": "open"
+      "status": "resolved",
+      "resolved_in": "S11 (contract 1.2.0, 2026-11-05)"
     },
     {
       "id": "DI-76",
       "added": "2026-11-04",
       "issue": "Docs/40 RegionConfig has a single currency and no rate; Docs/52 has no exchange-rate entity. GD-41 needs a stored USD base, an admin-set USD → IRR rate and display currencies for the clients.",
       "action": "S11.T3: Docs/52 ExchangeRate entity, Docs/43 table + migration, Docs/40 RegionConfig.display_currencies / exchange_rates and two admin operations (contract 1.2.0).",
-      "status": "open"
+      "status": "resolved",
+      "resolved_in": "S11 (contract 1.2.0, 2026-11-05)"
     },
     {
       "id": "DI-77",
       "added": "2026-11-04",
       "issue": "Docs/21 C-PROF-01..09 elements without a contract field or operation (= PWA DI-55): profile photo and country, Deactivate account, the review-invitation channel, the per-feature AI switches, quiet hours, the SMS column of the notification matrix, business names of active shares.",
       "action": "S11.T2: contract 1.2.0 adds them (pilot blocker, user 2026-10-31 and 2026-11-04). Help articles stay out (static content); Contact support is the support email (PWA OQ-18); Report a problem on appointments uses disputes (PWA DI-65).",
-      "status": "open"
+      "status": "resolved",
+      "resolved_in": "S11 (contract 1.2.0, 2026-11-05)"
     }
   ],
   "stages": [
@@ -3328,7 +3331,8 @@
     {
       "id": "S11",
       "title": "Pilot readiness: PWA integration 2 (strict auth for BFF clients, contract 1.2.0 profile/settings, USD + exchange rate, carpals.ir)",
-      "status": "not_started",
+      "status": "partial",
+      "partial_reason": "All code tasks are done; S11.T4 c, the first deployment on the server, is for the user (no server access from here).",
       "depends_on": [
         "S10"
       ],
@@ -3370,7 +3374,7 @@
       "tasks": [
         {
           "id": "S11.T1",
-          "status": "not_started",
+          "status": "done",
           "priority": "pilot_blocker",
           "refs": [
             "GD-06",
@@ -3383,7 +3387,7 @@
         },
         {
           "id": "S11.T2",
-          "status": "not_started",
+          "status": "done",
           "priority": "pilot_blocker",
           "refs": [
             "DI-77",
@@ -3396,7 +3400,7 @@
         },
         {
           "id": "S11.T3",
-          "status": "not_started",
+          "status": "done",
           "priority": "pilot_blocker",
           "refs": [
             "GD-41",
@@ -3408,7 +3412,7 @@
         },
         {
           "id": "S11.T4",
-          "status": "not_started",
+          "status": "partial",
           "priority": "pilot_blocker",
           "refs": [
             "GD-42",
@@ -3419,7 +3423,7 @@
         },
         {
           "id": "S11.T5",
-          "status": "not_started",
+          "status": "done",
           "refs": [
             "GD-43"
           ],
@@ -3449,17 +3453,83 @@
         "Legal texts (PWA NI-P13-12, legal/product)"
       ],
       "report": {
-        "started_at": null,
-        "completed_at": null,
-        "summary": null,
-        "ops_implemented": null,
-        "ops_changed": null,
-        "ops_deferred": null,
-        "files_created": [],
-        "files_changed": [],
-        "tests": null,
-        "deviations": [],
-        "notes_for_next": []
+        "started_at": "2026-11-05",
+        "completed_at": "2026-11-05",
+        "summary": "T1: CLIENTS binding dpop for cp-web-consumer and cp-ssr; AuthServer.authenticateClient checks private_key_jwt (jwt-bearer, iss = sub = client_id, aud = token endpoint or issuer, exp at most 5 min, jti single use, EdDSA or ES256) against CARPAL_OAUTH_CLIENT_JWKS, which strict mode requires for both clients and which refuses private key material; client credentials now take a DPoP proof. T2: contract 1.2.0 with Me.avatar_url, Me.country, MeUpdate.avatar_media_id and country, me.deactivate, reactivation at sign-in (password, one-time code, passkey), review_invitation_channel, four AI switches, quiet hours, the SMS rules and ConsentRecord.granted_to_organization. T3: region currency USD, display_currencies, exchange_rates in config.client through a cached ExchangeRates service, admin.exchange_rates_list and admin.exchange_rate_update with a second approver above 20 %, exchange_rate.changed, and the base currency enforced on inventory prices, cost estimates, final costs, service-record costs and fleet reporting currency. T4: the deploy kit makes the client key pairs (deploy/gen-client-keys.mjs) and renders every host of DOMAIN=carpals.ir; the rendered backend.env and pwa.env pass the real startup validators. T5: Docs/40 Appendix D, openapi.yaml, contract:coverage --strict (410 of 411 served, 0 unexplained).",
+        "ops_implemented": [
+          "me.deactivate",
+          "auth.reactivate",
+          "admin.exchange_rates_list",
+          "admin.exchange_rate_update"
+        ],
+        "ops_changed": [
+          "auth.token",
+          "auth.discovery",
+          "auth.signin_password",
+          "auth.otp_start",
+          "auth.otp_verify",
+          "auth.mfa_verify",
+          "me.get",
+          "me.update",
+          "me.preferences_get",
+          "me.preferences_update",
+          "consents.list",
+          "consents.grant",
+          "consents.withdraw",
+          "notification_prefs.put",
+          "config.client",
+          "review_invitations.send",
+          "triage.start",
+          "triage.reply",
+          "inventory.create",
+          "inventory.update",
+          "service_records.create",
+          "service_records.update",
+          "provider.appointments_update",
+          "provider.appointments_transition",
+          "fleet.profile_put",
+          "fleet.approval_create"
+        ],
+        "ops_deferred": [
+          "auth.social_start (PM-01)"
+        ],
+        "files_created": [
+          "database/migrations/0100_s11_pilot_readiness.sql",
+          "database/migrations/0101_s11_review_invitation_channel.sql",
+          "backend/libs/region-config/exchange-rates.ts",
+          "backend/deploy/gen-client-keys.mjs",
+          "backend/apps/testing/s11.int.test.ts"
+        ],
+        "files_changed": [
+          "Docs/40, 42, 43, 52",
+          "shared/region-config/ir-pilot.json",
+          "shared/api-contracts/openapi.yaml",
+          "backend/libs/auth, config, region-config, platform, runtime, testing",
+          "backend/modules/identity, admin, notification, trust, ai-mcp, inventory, appointment, fleet, vehicle",
+          "backend/deploy (server-setup.sh, deploy.md, backend.env.template)"
+        ],
+        "tests": "pnpm typecheck, lint (501 modules, no dependency violations), format:check, contract:check, openapi:check and contract:coverage --strict green. pnpm exec vitest run: 1051 passed in 91 files (unit and integration) on a freshly installed database (baseline + both migrations), including the contract sweep and the new apps/testing/s11.int.test.ts (assertion refusals, replay, code flow with a nonce retry, refresh key binding, signed-in calls, deactivate and reactivate, photo, preferences, SMS, exchange rates), the quiet-hours hold in notification.int.test.ts and personalised Help Me in ai.int.test.ts. notification.int.test.ts failed once while the E2E suite was loading the machine and passed in every run after that. Joint run with the PWA: Strict mode (CARPAL_STRICT_AUTH=1 on both sides, signed in, 2026-11-05): first full pnpm e2e run 86 passed, 9 failed, 5 did not run, 5 skipped; after updating tests for the new behaviour and one journey race, those 9 and the 5 journey steps passed when re-run on their own, so no single uninterrupted all-green strict run exists yet. Lite: pnpm test:int 13 passed; full run 97 passed, 1 failed (journey Ch. 3 stayed on onboarding after a re-login, cause not found, passed alone every time), 1 did not run, 6 skipped.",
+        "deviations": [
+          "auth.reactivate is a fourth new operation (411, not 410): the plan's AuthNext step 'reactivate' needs a confirmation that also works after a one-time code or a passkey, where the credential cannot be sent again.",
+          "auth.token: the DPoP check moved before the code is consumed. Strict mode answered use_dpop_nonce after spending the code, so the client's normal nonce retry looked like a replay and revoked the session (also a latent cp-mobile bug).",
+          "self_deactivated_at on UserAccount separates the owner's own deactivation from a staff one: only the former is offered reactivation. Any staff status change clears it.",
+          "review_invitations.send: a known customer's channel preference wins over the business's choice; the default in_app means an email is sent only after the customer chooses email. A definer function identity.review_invitation_channel gives the business that one value.",
+          "ai_help_me_personalised off removes res:vehicle.summary and the vehicle context from triage. ai_personalised_matching and ai_writing_help are stored and exposed but nothing reads them yet: discovery has no personal ranking signal and there is no AI writing feature. ai_show_reasons is honoured by the client.",
+          "Public author avatars stay null (Author.avatar_url): only Me.avatar_url is served; showing them needs the moderation step.",
+          "SMS categories are appointments, service_reminders and fleet (the plan left the choice open).",
+          "Deploy templates default to CARPAL_STRICT_AUTH=1 on both sides, with CARPAL_ENV=staging."
+        ],
+        "notes_for_next": [
+          "Local development databases: run pnpm db:setup (idempotent migrations). tools/db/baseline.int.test.ts 'records the baseline hash' fails on a database installed before S11 until pnpm db:reset, which deletes local data; a fresh install passes.",
+          "CARPAL_OAUTH_CLIENT_JWKS is required whenever CARPAL_STRICT_AUTH=1."
+        ],
+        "open_after_stage": [
+          "S11.T4 c: the first deployment on the server was not run from here (no server access).",
+          "No real mail or SMS sender exists: libs/infra/full is a skeleton and lite writes to outbox files (NI-07), so only invited testers whose codes are forwarded by hand can sign up.",
+          "The seeded USD to IRR rate is a placeholder and the admin console does not exist: deploy.md 'Exchange rate' documents the one-time SQL.",
+          "shared/region-config/ir-pilot.json still points at cdn.carpal.app, a domain owned by someone else (NI-22).",
+          "The provider, vendor and admin web apps do not exist (frontend/ folders are empty, NI-08): shops cannot onboard, and staff cannot moderate, approve Path 2 reviews or carry out data requests, without direct API or database work."
+        ]
       }
     }
   ],
@@ -4410,6 +4480,46 @@
       "stage": "S10",
       "date": "2026-10-26",
       "deviation": "map.pins no longer runs a second filtered index query per layer: the same filters are judged on the viewport hits with matchesFilter (the index port's semantics)."
+    },
+    {
+      "stage": "S11",
+      "date": "2026-11-05",
+      "deviation": "auth.reactivate is a fourth new operation (411, not 410): the plan's AuthNext step 'reactivate' needs a confirmation that also works after a one-time code or a passkey, where the credential cannot be sent again."
+    },
+    {
+      "stage": "S11",
+      "date": "2026-11-05",
+      "deviation": "auth.token: the DPoP check moved before the code is consumed. Strict mode answered use_dpop_nonce after spending the code, so the client's normal nonce retry looked like a replay and revoked the session (also a latent cp-mobile bug)."
+    },
+    {
+      "stage": "S11",
+      "date": "2026-11-05",
+      "deviation": "self_deactivated_at on UserAccount separates the owner's own deactivation from a staff one: only the former is offered reactivation. Any staff status change clears it."
+    },
+    {
+      "stage": "S11",
+      "date": "2026-11-05",
+      "deviation": "review_invitations.send: a known customer's channel preference wins over the business's choice; the default in_app means an email is sent only after the customer chooses email. A definer function identity.review_invitation_channel gives the business that one value."
+    },
+    {
+      "stage": "S11",
+      "date": "2026-11-05",
+      "deviation": "ai_help_me_personalised off removes res:vehicle.summary and the vehicle context from triage. ai_personalised_matching and ai_writing_help are stored and exposed but nothing reads them yet: discovery has no personal ranking signal and there is no AI writing feature. ai_show_reasons is honoured by the client."
+    },
+    {
+      "stage": "S11",
+      "date": "2026-11-05",
+      "deviation": "Public author avatars stay null (Author.avatar_url): only Me.avatar_url is served; showing them needs the moderation step."
+    },
+    {
+      "stage": "S11",
+      "date": "2026-11-05",
+      "deviation": "SMS categories are appointments, service_reminders and fleet (the plan left the choice open)."
+    },
+    {
+      "stage": "S11",
+      "date": "2026-11-05",
+      "deviation": "Deploy templates default to CARPAL_STRICT_AUTH=1 on both sides, with CARPAL_ENV=staging."
     }
   ],
   "handoff_notes": [
@@ -4522,6 +4632,11 @@
       "date": "2026-11-04",
       "from": "plan alignment with the closed PWA scratch build",
       "note": "The PWA scratch build is closed (pwa/dev_plan.json P14, 2026-11-04). Its pilot blockers that need the backend became stage S11: T1 strict auth for cp-web-consumer and cp-ssr by DPoP-bound tokens + private_key_jwt (PWA NI-P13-01; follow-up answer 2026-11-04 keeps private_key_jwt because DPoP alone does not authenticate the client), T2 contract 1.2.0 for the profile and settings fields (PWA DI-55 / NI-P13-08), T3 USD prices with an admin-set USD → IRR rate served by config.client (GD-41, new user decision replacing the PWA's per-browser rate), T4 the carpals.ir production setup and first deployment (GD-42, PWA NI-P14-06). New GD-43: the newer PWA decision wins when the plans disagree; the consumer BFF stays in the PWA. Backend-owned PWA follow-ups that do not block the pilot: NI-19 (web edge), NI-20 (contract gaps), NI-21 (E2E dev tooling), NI-22 (domain defaults); NI-01, NI-07, NI-08 and NI-14 got notes. The PWA adopts S11 in its NI-P14-09."
+    },
+    {
+      "date": "2026-11-05",
+      "from": "S11",
+      "note": "S11 is done in code. For the PWA: contract 1.2.0 is served; strict mode needs CARPAL_OAUTH_CLIENT_JWKS here and CARPAL_PWA_CLIENT_PRIVATE_JWKS there (gen-client-keys.mjs); auth.reactivate is the confirmation of AuthNext reactivate; config.client carries base currency, display_currencies and exchange_rates. Adopted the same day (PWA stage P15). Joint run: Strict mode (CARPAL_STRICT_AUTH=1 on both sides, signed in, 2026-11-05): first full pnpm e2e run 86 passed, 9 failed, 5 did not run, 5 skipped; after updating tests for the new behaviour and one journey race, those 9 and the 5 journey steps passed when re-run on their own, so no single uninterrupted all-green strict run exists yet. Lite: pnpm test:int 13 passed; full run 97 passed, 1 failed (journey Ch. 3 stayed on onboarding after a re-login, cause not found, passed alone every time), 1 did not run, 6 skipped."
     }
   ],
   "open_questions": [
@@ -4857,7 +4972,8 @@
           "DI-13"
         ],
         "status": "not_started",
-        "note_2026_11_04": "The BFF part (confidential client authentication for cp-web-consumer and cp-ssr) is now S11.T1 and a pilot blocker: DPoP-bound tokens + private_key_jwt, no mTLS at the edge (GD-06 amendment 2026-11-04, PWA NI-P13-01). The other work items stay here."
+        "note_2026_11_04": "The BFF part (confidential client authentication for cp-web-consumer and cp-ssr) is now S11.T1 and a pilot blocker: DPoP-bound tokens + private_key_jwt, no mTLS at the edge (GD-06 amendment 2026-11-04, PWA NI-P13-01). The other work items stay here.",
+      "note_2026_11_05": "S11.T1 done: the BFF part of this item is closed."
       },
       {
         "id": "NI-02",

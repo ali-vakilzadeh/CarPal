@@ -17,6 +17,7 @@ import { goTo } from '@/lib/browser-nav';
 import { useFormat } from '@/lib/format/client';
 import { useLocale, useT } from '@/lib/i18n/client';
 import { sellerPath } from '@/lib/seo/urls';
+import { useShowReasons } from '@/lib/api/preferences';
 import { ResultCardView, resultHref } from './result-card';
 import { useResultEvent } from './use-search';
 
@@ -36,6 +37,7 @@ export function ResultList({
   onHover?: (locationId: string | null) => void;
   label: string;
 }) {
+  const showReasons = useShowReasons();
   const t = useT();
   const f = useFormat();
   const locale = useLocale();
@@ -96,6 +98,7 @@ export function ResultList({
             onFocus={() => onHover?.(r.location?.location_id ?? null)}
           >
             <ResultCardView
+              showReasons={showReasons}
               r={r}
               locale={locale}
               t={t}

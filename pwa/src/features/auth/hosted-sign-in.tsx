@@ -77,6 +77,7 @@ type Step =
   | { name: 'signup' }
   | { name: 'code'; target: CodeTarget; sentAt: number; resends: number }
   | { name: 'mfa'; methods: ('totp_mfa' | 'webauthn')[] }
+  | { name: 'reactivate'; from: 'signin' | 'signup' }
   | { name: 'forgot'; email: string }
   | { name: 'forgotSent' }
   | { name: 'locked'; until: number }
@@ -146,6 +147,7 @@ export function HostedSignIn(props: HostedSignInProps) {
     async next(n, who) {
       if (n.next === 'complete' || n.next === 'consent') return finish();
       if (n.next === 'mfa') return setStep({ name: 'mfa', methods: n.mfa_methods?.length ? n.mfa_methods : ['totp_mfa'] });
+      if (n.next === 'reactivate') return setStep({ name: 'reactivate', from: who.from });
       const channel = n.next === 'verify_phone' && who.phone ? 'sms' : 'email';
       const destination = channel === 'sms' ? who.phone : who.email;
       if (!destination) return setStep(formStep(who.from));
@@ -160,6 +162,7 @@ export function HostedSignIn(props: HostedSignInProps) {
       {step.name === 'signup' ? <SignupStep flow={flow} termsVersion={props.termsVersion} privacyVersion={props.privacyVersion} /> : null}
       {step.name === 'code' ? <CodeStep key={`${step.target.destination}-${step.sentAt}`} flow={flow} step={step} /> : null}
       {step.name === 'mfa' ? <MfaStep flow={flow} methods={step.methods} /> : null}
+      {step.name === 'reactivate' ? <ReactivateStep flow={flow} from={step.from} /> : null}
       {step.name === 'forgot' ? <ForgotStep flow={flow} initialEmail={step.email} /> : null}
       {step.name === 'forgotSent' ? <ForgotSent flow={flow} /> : null}
       {step.name === 'locked' ? <Locked flow={flow} until={step.until} /> : null}
@@ -863,6 +866,39 @@ function Finishing() {
         <Icon name="check" size={40} />
       </span>
       <p className="pwa-state-title">{t('auth.finishing')}</p>
+    </div>
+  );
+}
+
+/** An account its owner deactivated: after a correct sign-in, coming back is one confirmation (auth.reactivate). */
+function ReactivateStep({ flow, from }: { flow: Flow; from: 'signin' | 'signup' }) {
+  const t = useT();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<MessageKey | null>(null);
+  const reactivate = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const n = await flow.api.api('auth.reactivate', { body: { interaction_id: flow.interactionId } });
+      await flow.next(n, { from });
+    } catch (err) {
+      const outcome = flow.fail(err);
+      if (outcome.kind === 'message' || outcome.kind === 'fields') setError(outcome.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex flex-col gap-4" data-testid="reactivate-step">
+      <StepTitle>{t('auth.reactivate.title')}</StepTitle>
+      <p className="m-0">{t('auth.reactivate.text')}</p>
+      {error ? <Banner tone="danger" icon="alert" text={t(error)} /> : null}
+      <Button variant="primary" loading={busy} onClick={() => void reactivate()}>
+        {t('auth.reactivate.action')}
+      </Button>
+      <Button variant="ghost" disabled={busy} onClick={() => flow.go({ name: 'signin' })}>
+        {t('auth.reactivate.notNow')}
+      </Button>
     </div>
   );
 }

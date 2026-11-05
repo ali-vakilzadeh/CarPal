@@ -12,11 +12,11 @@ describe('generated contract', () => {
     }
   });
 
-  it('declares 407 operations and 459 routes (S10: search.session_get, contract 1.1.0)', () => {
+  it('declares 411 operations and 463 routes (S11: me.deactivate, auth.reactivate, exchange rates, contract 1.2.0)', () => {
     const r = loadRegistry();
-    expect(r.operationCount).toBe(407);
-    expect(OPERATION_IDS).toHaveLength(407);
-    expect(r.routeCount).toBe(459);
+    expect(r.operationCount).toBe(411);
+    expect(OPERATION_IDS).toHaveLength(411);
+    expect(r.routeCount).toBe(463);
     for (const op of r.operations) {
       expect(op.routes.length, op.opId).toBeGreaterThan(0);
       for (const route of op.routes) {

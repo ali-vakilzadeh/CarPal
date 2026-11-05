@@ -7,6 +7,7 @@ import type { OperationContext } from '#libs/http-pipeline/index.js';
 import { isTimezone } from '#libs/i18n/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { SubscriptionReader } from '#modules/billing/interface/billing.js';
+import { MediaService } from '#modules/media/interface/media.js';
 import { OrgCards } from '#modules/organization/interface/org-cards.js';
 import { toMe, toMembership } from '../api/projections.js';
 import { getPreferences, getUser, type MembershipRow } from '../infrastructure/accounts.js';
@@ -44,6 +45,7 @@ export class MeReader {
   constructor(
     private readonly orgCards: OrgCards,
     private readonly subscriptions: SubscriptionReader,
+    private readonly media: MediaService,
   ) {}
 
   async membershipViews(scope: TxScope, rows: MembershipRow[]) {
@@ -67,6 +69,13 @@ export class MeReader {
       .orderBy('id')
       .limit(50)
       .execute();
-    return toMe(user, pref, await this.membershipViews(scope, memberships), await this.subscriptions.summaryForUser(scope, userId));
+    const avatar = user.avatar_media_id ? (await this.media.assetUrls(scope, [user.avatar_media_id])).get(user.avatar_media_id) : undefined;
+    return toMe(
+      user,
+      pref,
+      await this.membershipViews(scope, memberships),
+      await this.subscriptions.summaryForUser(scope, userId),
+      avatar ?? null,
+    );
   }
 }

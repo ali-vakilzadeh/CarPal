@@ -103,47 +103,37 @@ export function formatRelative(value: string | number | Date, locale: Locale, no
 }
 
 /**
- * How prices are shown in this browser (OQ-11). Prices are based in USD; a visitor may enter their own rate and tick
- * "Convert USD prices with this rate" to see them in toman or rial instead. IRR amounts are shown in the same unit
- * (toman by default, 1 toman = 10 rials, as in the pilot designs). Kept in the cp_price cookie so the server renders
- * the same text the browser does.
+ * How prices are shown (OQ-11 update 2026-11-04, backend GD-41): amounts are stored in USD and a system admin sets the
+ * rate, so everybody sees the same price. The first display currency of the region is shown; IRR in toman (1 toman =
+ * 10 rials, as in the pilot designs). Without a rate (backend unreachable) amounts stay in USD.
  */
 export interface PriceDisplay {
-  convertUsd: boolean;
-  /** How many units (toman or rial) one US dollar is worth; null until the visitor enters one. */
-  usdRate: number | null;
-  unit: 'toman' | 'rial';
+  currency: string;
+  /** Units of `currency` per US dollar; null shows USD. */
+  perUsd: number | null;
 }
 
 export const BASE_CURRENCY = 'USD';
-export const PRICE_COOKIE = 'cp_price';
-export const DEFAULT_PRICE_DISPLAY: PriceDisplay = { convertUsd: false, usdRate: null, unit: 'toman' };
-/** Highest rate accepted (units per dollar); keeps the cookie and the arithmetic sane. */
-export const MAX_USD_RATE = 1e9;
+export const DEFAULT_PRICE_DISPLAY: PriceDisplay = { currency: BASE_CURRENCY, perUsd: null };
 
-/** Cookie value "<0|1>.<toman|rial>.<rate or empty>"; anything malformed gives the defaults. */
-export function parsePriceDisplay(value: string | null | undefined): PriceDisplay {
-  const m = /^([01])\.(toman|rial)\.(\d{1,10}(?:\.\d{1,4})?)?$/.exec(value ?? '');
-  if (!m) return DEFAULT_PRICE_DISPLAY;
-  const rate = m[3] ? Number(m[3]) : null;
-  const usdRate = rate !== null && rate > 0 && rate <= MAX_USD_RATE ? rate : null;
-  return { convertUsd: m[1] === '1' && usdRate !== null, usdRate, unit: m[2] as PriceDisplay['unit'] };
-}
-
-export function serializePriceDisplay(p: PriceDisplay): string {
-  const rate = p.usdRate !== null && p.usdRate > 0 && p.usdRate <= MAX_USD_RATE ? String(Math.round(p.usdRate * 10_000) / 10_000) : '';
-  return `${p.convertUsd && rate ? 1 : 0}.${p.unit}.${rate}`;
+/** The price display of a region config (config.client): its first display currency at the admin-set rate. */
+export function priceDisplayOf(region: {
+  currency: string;
+  display_currencies?: readonly string[];
+  exchange_rates?: readonly { currency: string; per_usd: string }[];
+}): PriceDisplay {
+  const currency = region.display_currencies?.[0] ?? region.currency;
+  const perUsd = Number(region.exchange_rates?.find((r) => r.currency === currency)?.per_usd);
+  return Number.isFinite(perUsd) && perUsd > 0 ? { currency, perUsd } : DEFAULT_PRICE_DISPLAY;
 }
 
 const RIALS_PER_TOMAN = 10;
 
-function localUnit(rials: number, unit: PriceDisplay['unit'], locale: Locale, t: Translate): string {
-  const value = unit === 'toman' ? rials / RIALS_PER_TOMAN : rials;
-  const shown = formatNumber(Math.round(value), locale, { maximumFractionDigits: 0 });
-  return t(unit === 'toman' ? 'format.currency.toman' : 'format.currency.rial', { amount: shown });
+function inToman(rials: number, locale: Locale, t: Translate): string {
+  return t('format.currency.toman', { amount: formatNumber(Math.round(rials / RIALS_PER_TOMAN), locale, { maximumFractionDigits: 0 }) });
 }
 
-/** Money from the API (decimal string + ISO code) in this browser's price display, digits of the UI language. */
+/** Money from the API (decimal string + ISO code) in the region's price display, digits of the UI language. */
 export function formatMoney(
   amount: string | number,
   currency: string,
@@ -154,12 +144,9 @@ export function formatMoney(
   const value = typeof amount === 'number' ? amount : Number(amount);
   if (!Number.isFinite(value)) return '';
   const code = currency.toUpperCase();
-  if (code === 'IRR') return localUnit(value, prices.unit, locale, t);
+  if (code === 'IRR') return inToman(value, locale, t);
   if (code === BASE_CURRENCY) {
-    if (prices.convertUsd && prices.usdRate) {
-      const rials = value * prices.usdRate * (prices.unit === 'toman' ? RIALS_PER_TOMAN : 1);
-      return localUnit(rials, prices.unit, locale, t);
-    }
+    if (prices.currency === 'IRR' && prices.perUsd) return inToman(value * prices.perUsd, locale, t);
     return t('format.currency.usd', { amount: formatNumber(value, locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) });
   }
   const shown = formatNumber(value, locale, { maximumFractionDigits: 2 });

@@ -109,7 +109,7 @@ export const item = (n: Nodes, o: Json = {}) => ({
   condition: 'new',
   part_category_node_id: n.partCategory,
   price_public: '450000',
-  currency: 'IRR',
+  currency: 'USD',
   price_on_request: false,
   stock_status: 'in_stock',
   visibility: 'public',

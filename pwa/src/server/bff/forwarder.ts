@@ -11,7 +11,7 @@ import { dpopProof } from './oauth/dpop';
 import { TokenEndpointError } from './oauth/token-client';
 import type { SessionManager } from './session/manager';
 import type { SessionRecord } from './session/types';
-import { SessionEndedError, type Credential, type SessionTokens } from './tokens';
+import { SessionEndedError, userCredential, type Credential, type SessionTokens } from './tokens';
 
 /** Request headers the browser may send on to the API; everything else (cookies, Origin, Sec-*, UA …) is dropped. */
 const FORWARD_REQUEST = ['accept', 'content-type', 'idempotency-key', 'if-match', 'carpal-request-id', 'carpal-pow'] as const;
@@ -150,8 +150,7 @@ async function rememberProfile(sessions: ForwarderDeps['sessions'], id: string, 
 
 async function renew(session: SessionRecord, cred: Credential, tokens: SessionTokens): Promise<Credential> {
   if (cred.kind === 'user') {
-    const user = await tokens.refresh(session.id, true);
-    return { kind: 'user', accessToken: user.accessToken, scheme: 'Bearer' };
+    return userCredential(session, await tokens.refresh(session.id, true));
   }
   const anon = await tokens.anonymous(session.id);
   return { kind: 'anonymous', accessToken: anon.token.accessToken, scheme: 'DPoP', dpopKey: anon.key };

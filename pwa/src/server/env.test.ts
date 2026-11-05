@@ -64,8 +64,22 @@ describe('server env', () => {
   });
 
   it('reads the strict-mode switch as a boolean', () => {
-    expect(parseServerEnv({ CARPAL_STRICT_AUTH: '1' }).CARPAL_STRICT_AUTH).toBe(true);
+    const key = { kty: 'EC', crv: 'P-256', kid: 'k1', d: 'secret' };
+    const keys = JSON.stringify({ 'cp-web-consumer': key, 'cp-ssr': key });
+    expect(parseServerEnv({ CARPAL_STRICT_AUTH: '1', CARPAL_PWA_CLIENT_PRIVATE_JWKS: keys }).CARPAL_STRICT_AUTH).toBe(true);
     expect(() => parseServerEnv({ CARPAL_STRICT_AUTH: 'yes' })).toThrow(/CARPAL_STRICT_AUTH/);
+  });
+
+  it('strict mode needs the private key of both clients (backend GD-06 amendment 2026-11-04)', () => {
+    expect(() => parseServerEnv({ CARPAL_STRICT_AUTH: '1' })).toThrow(/needs the private key of cp-web-consumer/);
+    const one = JSON.stringify({ 'cp-web-consumer': { kty: 'EC', kid: 'k1', d: 'secret' } });
+    expect(() => parseServerEnv({ CARPAL_STRICT_AUTH: '1', CARPAL_PWA_CLIENT_PRIVATE_JWKS: one })).toThrow(
+      /needs the private key of cp-ssr/,
+    );
+    // A public key cannot sign.
+    const noPrivate = JSON.stringify({ 'cp-ssr': { kty: 'EC', kid: 'k1' } });
+    expect(() => parseServerEnv({ CARPAL_PWA_CLIENT_PRIVATE_JWKS: noPrivate })).toThrow(/CARPAL_PWA_CLIENT_PRIVATE_JWKS/);
+    expect(() => parseServerEnv({ CARPAL_PWA_CLIENT_PRIVATE_JWKS: 'not json' })).toThrow(/CARPAL_PWA_CLIENT_PRIVATE_JWKS/);
   });
 
   it('lists every invalid variable', () => {

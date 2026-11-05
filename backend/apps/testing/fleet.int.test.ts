@@ -65,7 +65,7 @@ const profile = (o: Json = {}) => ({
   approval_workflow_enabled: true,
   cost_approval_threshold_amount: '500',
   preferred_provider_mode: 'preferred',
-  reporting_currency: 'IRR',
+  reporting_currency: 'USD',
   ...o,
 });
 
@@ -188,7 +188,7 @@ describe('approvals (MVP Module K)', () => {
     const own = await f.owner.post(`${f.flt}/approvals`, {
       approval_type: 'cost_estimate',
       vehicle_id: v,
-      cost_estimate: { amount: '800', currency: 'IRR' },
+      cost_estimate: { amount: '800', currency: 'USD' },
     });
     expect(own.status, own.text).toBe(201);
     const self = await f.owner.post(`${f.flt}/approvals/${own.body.id}/decision`, { decision: 'approved' });
@@ -240,21 +240,21 @@ describe('approvals (MVP Module K)', () => {
     // The approval is used up; owners and managers book without one.
     expect((await f.coordinator.post(`${f.flt}/appointments`, body({ fleet_approval_id: ap.body.id }))).status).toBe(422);
     expect((await f.manager.post(`${f.flt}/appointments`, body())).status).toBe(201);
-    // The provider estimates above the fleet threshold (500 IRR): a cost approval opens for the fleet.
+    // The provider estimates above the fleet threshold (500 USD): a cost approval opens for the fleet.
     const prov = await p.c.get(`/v1/orgs/${p.id}/provider/appointments/${appt.body.id}`);
     const est = await app.request<Json>({
       method: 'PATCH',
       path: `/v1/orgs/${p.id}/provider/appointments/${appt.body.id}`,
       token: p.token,
       headers: { 'if-match': `"v${prov.body.version}"` },
-      body: { cost_estimate: { amount: '900', currency: 'IRR' } },
+      body: { cost_estimate: { amount: '900', currency: 'USD' } },
     });
     expect(est.status, est.text).toBe(200);
     await flush(app, media.worker);
     const costs = await f.manager.get(`${f.flt}/approvals?approval_type=cost_estimate`);
     expect(costs.body.items.find((x: Json) => x.related_appointment_id === appt.body.id)).toMatchObject({
       status: 'pending',
-      cost_estimate: { amount: '900', currency: 'IRR' },
+      cost_estimate: { amount: '900', currency: 'USD' },
     });
   });
 });
@@ -344,7 +344,7 @@ describe('partners, reports, exports and imports', () => {
       const r = await f.coordinator.post(`${f.flt}/vehicles/${v}/service-records`, {
         service_date: today,
         service_system_node_id: n.system,
-        cost: { amount, currency: 'IRR' },
+        cost: { amount, currency: 'USD' },
         source_type: 'user_manual',
         visibility: 'fleet',
       });
@@ -353,7 +353,7 @@ describe('partners, reports, exports and imports', () => {
     const from = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
     const costs = await f.manager.get(`${f.flt}/reports/costs?from=${from}&to=${today}`);
     expect(costs.status, costs.text).toBe(200);
-    expect(costs.body).toMatchObject({ report_type: 'costs', group_by: 'vehicle', currency: 'IRR' });
+    expect(costs.body).toMatchObject({ report_type: 'costs', group_by: 'vehicle', currency: 'USD' });
     expect(costs.body.rows.map((r: Json) => [r.key, r.value, r.count])).toEqual([
       [v1, '200', 2],
       [v2, '50', 1],
@@ -364,7 +364,7 @@ describe('partners, reports, exports and imports', () => {
     expect((await f.manager.get(`${f.flt}/reports/costs?from=2024-01-01&to=${today}`)).status).toBe(422);
     const dash = await f.manager.get(`${f.flt}/dashboard`);
     expect(dash.status, dash.text).toBe(200);
-    expect(dash.body).toMatchObject({ total_vehicles: 2, month_spend: { amount: '250', currency: 'IRR' } });
+    expect(dash.body).toMatchObject({ total_vehicles: 2, month_spend: { amount: '250', currency: 'USD' } });
     expect(dash.body.most_repaired_vehicles[0]).toMatchObject({ vehicle_id: v1, repairs: 2 });
     // Export: queued → W8 → completed → a 5-minute download URL.
     const job = await f.manager.post(`${f.flt}/exports`, { export_type: 'cost_report', format: 'csv', filters: { from, to: today } });

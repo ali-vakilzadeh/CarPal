@@ -3,18 +3,19 @@
 // effect on the next read of shared data (the consent gate is never cached)
 // and emits consent.withdrawn for modules holding consent-gated copies.
 import { Injectable, Optional } from '@nestjs/common';
-import { sql } from 'kysely';
+import { sql, type Selectable } from 'kysely';
 import { OrganizationDirectory } from '#libs/authz/index.js';
 import { writeAudit } from '#libs/audit/index.js';
 import { ApiError } from '#libs/contract/index.js';
 import type { ConsentType } from '#libs/contract/generated/enums.js';
+import type { DB } from '#libs/db/index.js';
 import { Operation, created, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { consumeFailure, LinkTokens } from '#libs/link-tokens/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { AiReferences } from '#modules/ai-mcp/interface/ai.js';
 import { MediaService } from '#modules/media/interface/media.js';
-import { OrgCards, toOrgSummary } from '#modules/organization/interface/org-cards.js';
+import { OrgCards, toOrgSummary, type OrgCard } from '#modules/organization/interface/org-cards.js';
 import { toConsentRecord } from '../api/projections.js';
 import { ConsentScopes } from '../interface/identity.js';
 import { caller } from './common.js';
@@ -31,10 +32,12 @@ type ConsentGrant = {
 };
 
 type Position = { id?: string } | undefined;
+type ConsentRow = Selectable<DB['identity.consent_records']>;
 
 async function listConsents(
   ctx: OperationContext<undefined, { consent_type?: string; active?: boolean; limit: number }>,
   subject: { type: 'user' | 'organization'; id: string },
+  views: ConsentViews,
 ) {
   const after = (ctx.cursor as Position)?.id;
   const rows = await ctx.tx(
@@ -64,8 +67,31 @@ async function listConsents(
     { readOnly: true },
   );
   const page = rows.slice(0, ctx.query.limit);
-  return ctx.page(page.map(toConsentRecord), rows.length > ctx.query.limit ? { id: page.at(-1)!.id } : null);
+  return ctx.page(await views.many(ctx, page), rows.length > ctx.query.limit ? { id: page.at(-1)!.id } : null);
 }
+
+/** 40 ConsentRecord with the grantee's business (active shares show its name, PWA DI-55). */
+@Injectable()
+export class ConsentViews {
+  constructor(private readonly orgCards: OrgCards) {}
+
+  async many(ctx: OperationContext, rows: ConsentRow[]) {
+    const ids = rows.filter((r) => r.granted_to_type === 'organization' && r.granted_to_id).map((r) => r.granted_to_id!);
+    const cards = ids.length ? await ctx.tx((scope) => this.orgCards.cards(scope, ids), { readOnly: true }) : new Map<string, OrgCard>();
+    return rows.map((r) => toConsentRecord(r, cards));
+  }
+
+  async one(ctx: OperationContext, row: ConsentRow) {
+    return (await this.many(ctx, [row]))[0]!;
+  }
+}
+
+/** What a withdrawn consent turns off (52 UserPreference: these need the active consent). */
+const PREFERENCES_OF_CONSENT: Partial<Record<string, Record<string, boolean | string>>> = {
+  ai_personalization: { ai_personalization_enabled: false, ai_help_me_personalised: false, ai_personalised_matching: false },
+  marketing: { marketing_opt_in: false },
+  review_invitations: { review_invitation_channel: 'in_app' },
+};
 
 @Injectable()
 export class ConsentWriter {
@@ -137,14 +163,8 @@ export class ConsentWriter {
       .returningAll()
       .executeTakeFirstOrThrow();
     if (subject.type === 'user') {
-      const pref =
-        c.consent_type === 'ai_personalization' ? 'ai_personalization_enabled' : c.consent_type === 'marketing' ? 'marketing_opt_in' : null;
-      if (pref)
-        await scope.db
-          .updateTable('identity.user_preferences')
-          .set({ [pref]: false })
-          .where('user_id', '=', subject.id)
-          .execute();
+      const off = PREFERENCES_OF_CONSENT[c.consent_type];
+      if (off) await scope.db.updateTable('identity.user_preferences').set(off).where('user_id', '=', subject.id).execute();
     }
     await publishEvent(scope, {
       type: 'consent.withdrawn',
@@ -168,16 +188,21 @@ export class ConsentWriter {
 @Injectable()
 @Operation('consents.list')
 export class ConsentsListHandler implements OperationHandler {
+  constructor(private readonly views: ConsentViews) {}
+
   async handle(ctx: OperationContext<undefined, { consent_type?: string; active?: boolean; limit: number }>): Promise<OperationResult> {
     const { userId } = caller(ctx);
-    return { body: await listConsents(ctx, { type: 'user', id: userId }) };
+    return { body: await listConsents(ctx, { type: 'user', id: userId }, this.views) };
   }
 }
 
 @Injectable()
 @Operation('consents.grant')
 export class ConsentsGrantHandler implements OperationHandler {
-  constructor(private readonly writer: ConsentWriter) {}
+  constructor(
+    private readonly writer: ConsentWriter,
+    private readonly views: ConsentViews,
+  ) {}
 
   async handle(ctx: OperationContext<ConsentGrant>): Promise<OperationResult> {
     const { userId } = caller(ctx);
@@ -187,19 +212,22 @@ export class ConsentsGrantHandler implements OperationHandler {
       await writeAudit(scope, { action: 'consent.granted', entityType: 'consent_record', entityId: r.id, next: r.consent_type });
       return r;
     });
-    return created(toConsentRecord(row), `/v1/me/consents/${row.id}`);
+    return created(await this.views.one(ctx, row), `/v1/me/consents/${row.id}`);
   }
 }
 
 @Injectable()
 @Operation('consents.withdraw')
 export class ConsentsWithdrawHandler implements OperationHandler {
-  constructor(private readonly writer: ConsentWriter) {}
+  constructor(
+    private readonly writer: ConsentWriter,
+    private readonly views: ConsentViews,
+  ) {}
 
   async handle(ctx: OperationContext): Promise<OperationResult> {
     const { userId } = caller(ctx);
     const row = await ctx.tx((scope) => this.writer.withdraw(scope, { type: 'user', id: userId }, ctx.params.consent_id!));
-    return { body: toConsentRecord(row) };
+    return { body: await this.views.one(ctx, row) };
   }
 }
 
@@ -270,7 +298,10 @@ export class ConsentRequestViewHandler implements OperationHandler {
 @Injectable()
 @Operation('consents.request_respond')
 export class ConsentRequestRespondHandler implements OperationHandler {
-  constructor(private readonly links: LinkTokens) {}
+  constructor(
+    private readonly links: LinkTokens,
+    private readonly views: ConsentViews,
+  ) {}
 
   async handle(ctx: OperationContext<{ token: string; decision: 'grant' | 'decline'; policy_version: string }>): Promise<OperationResult> {
     const { userId } = caller(ctx);
@@ -321,22 +352,27 @@ export class ConsentRequestRespondHandler implements OperationHandler {
       });
       return record;
     });
-    return { body: { consent: consent ? toConsentRecord(consent) : null } };
+    return { body: { consent: consent ? await this.views.one(ctx, consent) : null } };
   }
 }
 
 @Injectable()
 @Operation('org.consents_list')
 export class OrgConsentsListHandler implements OperationHandler {
+  constructor(private readonly views: ConsentViews) {}
+
   async handle(ctx: OperationContext<undefined, { consent_type?: string; limit: number }>): Promise<OperationResult> {
-    return { body: await listConsents(ctx, { type: 'organization', id: ctx.access.org!.id }) };
+    return { body: await listConsents(ctx, { type: 'organization', id: ctx.access.org!.id }, this.views) };
   }
 }
 
 @Injectable()
 @Operation('org.consents_grant')
 export class OrgConsentsGrantHandler implements OperationHandler {
-  constructor(private readonly writer: ConsentWriter) {}
+  constructor(
+    private readonly writer: ConsentWriter,
+    private readonly views: ConsentViews,
+  ) {}
 
   async handle(ctx: OperationContext<ConsentGrant>): Promise<OperationResult> {
     const { userId } = caller(ctx);
@@ -347,19 +383,22 @@ export class OrgConsentsGrantHandler implements OperationHandler {
       await writeAudit(scope, { action: 'consent.granted', entityType: 'consent_record', entityId: r.id, next: r.consent_type });
       return r;
     });
-    return created(toConsentRecord(row), `/v1/orgs/${orgId}/consents/${row.id}`);
+    return created(await this.views.one(ctx, row), `/v1/orgs/${orgId}/consents/${row.id}`);
   }
 }
 
 @Injectable()
 @Operation('org.consents_withdraw')
 export class OrgConsentsWithdrawHandler implements OperationHandler {
-  constructor(private readonly writer: ConsentWriter) {}
+  constructor(
+    private readonly writer: ConsentWriter,
+    private readonly views: ConsentViews,
+  ) {}
 
   async handle(ctx: OperationContext): Promise<OperationResult> {
     const row = await ctx.tx((scope) =>
       this.writer.withdraw(scope, { type: 'organization', id: ctx.access.org!.id }, ctx.params.consent_id!),
     );
-    return { body: toConsentRecord(row) };
+    return { body: await this.views.one(ctx, row) };
   }
 }

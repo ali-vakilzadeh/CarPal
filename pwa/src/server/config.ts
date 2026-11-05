@@ -34,6 +34,9 @@ export function fallbackConfig(locale: Locale, file: RegionFile = region): Clien
     default_locale: file.default_locale as RegionConfig['default_locale'],
     locales: file.locales as RegionConfig['locales'],
     currency: file.currency,
+    display_currencies: file.display_currencies,
+    // Rates are admin data: without the backend amounts show in the base currency.
+    exchange_rates: [],
     calendar_default: file.calendar_default as RegionConfig['calendar_default'],
     distance_unit_default: file.distance_unit_default as RegionConfig['distance_unit_default'],
     map: file.map,
@@ -50,7 +53,7 @@ export function fallbackConfig(locale: Locale, file: RegionFile = region): Clien
   return {
     min_supported_version: '0.0.0',
     latest_version: '0.0.0',
-    contract_version: '1.1.0',
+    contract_version: '1.2.0',
     i18n: { version: 'bundled', base_url: '' },
     taxonomy_version: '',
     flags: [],

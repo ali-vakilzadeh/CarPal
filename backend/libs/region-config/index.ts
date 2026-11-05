@@ -5,9 +5,10 @@
 // every resolved form is validated against the contract schema at load time.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createContractAjv, loadSchemas } from '#libs/contract/index.js';
+import { ApiError, createContractAjv, loadSchemas } from '#libs/contract/index.js';
 import { l10n, type L10n, type Locale } from '#libs/i18n/index.js';
 import type { MapLinkHost } from '#libs/geo/index.js';
+import type { ExchangeRateView } from './exchange-rates.js';
 
 type Labeled<T> = Omit<T, 'label'> & { label: Record<string, string> };
 
@@ -28,7 +29,12 @@ export interface RegionConfig {
   region_key: string;
   default_locale: Locale;
   locales: Locale[];
+  /** Base currency: every stored price and cost is in it (GD-41). */
   currency: string;
+  /** What clients may show amounts in; the default is the first. */
+  display_currencies: string[];
+  /** Admin-set, filled by config.client from ExchangeRates; display only. */
+  exchange_rates: ExchangeRateView[];
   calendar_default: 'gregorian' | 'jalali';
   distance_unit_default: 'km' | 'mi';
   map: {
@@ -45,7 +51,7 @@ export interface RegionConfig {
   sms_country_codes: string[];
 }
 
-type RegionFile = Omit<RegionConfig, 'cities' | 'navigation_apps'> & {
+type RegionFile = Omit<RegionConfig, 'cities' | 'navigation_apps' | 'exchange_rates'> & {
   cities: Labeled<CityConfig>[];
   navigation_apps: Labeled<NavigationApp>[];
 };
@@ -74,6 +80,7 @@ export class RegionConfigService {
     const label = (m: Record<string, string>): L10n => l10n(m, locale) ?? { text: '', locale };
     return {
       ...f,
+      exchange_rates: [],
       cities: f.cities.map((c) => ({ ...c, label: label(c.label) })),
       navigation_apps: f.navigation_apps.map((a) => ({ ...a, label: label(a.label) })),
     };
@@ -92,6 +99,15 @@ export class RegionConfigService {
     return this.#resolved.get(locale) ?? this.#resolved.get('en') ?? this.#resolved.get(this.#file.default_locale)!;
   }
 
+  /** GD-41: 422 unless a written price or cost is in the base currency. An absent currency passes. */
+  requireBaseCurrency(currency: string | null | undefined, pointer: string): void {
+    if (currency != null && currency !== this.#file.currency) throw ApiError.validation([{ pointer, code: 'enum' }]);
+  }
+
+  get baseCurrency(): string {
+    return this.#file.currency;
+  }
+
   get mapLinkHosts(): MapLinkHost[] {
     return this.#file.map_link_hosts;
   }
@@ -105,3 +121,5 @@ export class RegionConfigService {
     return this.#file.sms_country_codes.some((cc) => e164.startsWith(cc));
   }
 }
+
+export { ExchangeRates, type ExchangeRateView } from './exchange-rates.js';

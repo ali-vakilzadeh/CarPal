@@ -48,6 +48,9 @@ const ALLOWED_SCOPES = new Set(['openid', 'offline_access', 'profile', 'email'])
 const deviceLabel = (ctx: OperationContext): string =>
   ctx.client ? `${ctx.client.clientId} (${ctx.client.os} ${ctx.client.osVersion})` : 'unknown device';
 
+/** Only an account its owner deactivated may come back through a sign-in; staff decisions stay generic (SEC-AU-11). */
+const selfDeactivated = (u: UserRow): boolean => u.status === 'deactivated' && u.self_deactivated_at !== null;
+
 /** First verification of a contact activates the account and emits user.registered (40 §6.2). */
 async function markContactVerified(scope: TxScope, user: UserRow, contact: 'email' | 'phone'): Promise<void> {
   const column = contact === 'email' ? 'email_verified_at' : 'phone_verified_at';
@@ -93,9 +96,9 @@ export class DiscoveryHandler implements OperationHandler {
         code_challenge_methods_supported: ['S256'],
         subject_types_supported: ['public'],
         id_token_signing_alg_values_supported: ['EdDSA'],
-        token_endpoint_auth_methods_supported: ['none', 'private_key_jwt', 'tls_client_auth'],
+        token_endpoint_auth_methods_supported: ['none', 'private_key_jwt'],
+        token_endpoint_auth_signing_alg_values_supported: ['EdDSA', 'ES256'],
         dpop_signing_alg_values_supported: ['ES256'],
-        tls_client_certificate_bound_access_tokens: true,
         authorization_response_iss_parameter_supported: true,
         scopes_supported: [...ALLOWED_SCOPES],
         acr_values_supported: ['aal1', 'aal2', 'aal3'],
@@ -222,6 +225,7 @@ export class TokenHandler implements OperationHandler {
     if (!isClientId(clientId)) throw new ProtocolError(401, 'invalid_client');
     // CarPal-Client must name the same client (40 §1.3).
     if (ctx.client && ctx.client.clientId !== clientId) throw new ProtocolError(401, 'invalid_client');
+    await this.auth.authenticateClient(f, clientId);
     const att = {
       ...(typeof ctx.headers['carpal-attestation'] === 'string' ? { attestation: ctx.headers['carpal-attestation'] } : {}),
       ...(typeof ctx.headers['carpal-pow'] === 'string' ? { pow: ctx.headers['carpal-pow'] } : {}),
@@ -258,7 +262,7 @@ export class TokenHandler implements OperationHandler {
         break;
       }
       case 'client_credentials':
-        body = await this.#clientCredentials(f, clientId);
+        body = await this.#clientCredentials(ctx, f, clientId);
         break;
       case 'urn:carpal:params:oauth:grant-type:anonymous':
         // ATT(anonymous grant), SEC-AU-14
@@ -273,6 +277,8 @@ export class TokenHandler implements OperationHandler {
 
   async #code(ctx: OperationContext, f: Record<string, string>, clientId: ClientId) {
     if (!f.code || !f.redirect_uri || !f.code_verifier) throw new ProtocolError(400, 'invalid_request');
+    // Before the code is spent: a use_dpop_nonce answer is retried with the same code.
+    const jkt = await this.auth.dpop(ctx, clientId);
     const used = await this.auth.state.consumeCode(f.code);
     if (!used) throw new ProtocolError(400, 'invalid_grant');
     if ('replayed' in used) {
@@ -283,7 +289,6 @@ export class TokenHandler implements OperationHandler {
     const g = used.grant;
     if (g.clientId !== clientId || g.redirectUri !== f.redirect_uri || !pkceMatches(f.code_verifier, g.codeChallenge))
       throw new ProtocolError(400, 'invalid_grant');
-    const jkt = await this.auth.dpop(ctx, clientId);
     const { tokens, sid } = await ctx.tx(async (scope) => {
       const user = await getUser(scope, g.userId);
       if (!user || user.status !== 'active') throw new ProtocolError(400, 'invalid_grant');
@@ -303,10 +308,11 @@ export class TokenHandler implements OperationHandler {
     return tokens;
   }
 
-  async #clientCredentials(f: Record<string, string>, clientId: ClientId) {
-    // Only the SEO renderer, scope public.read (40 §2.2). Its client authentication (private_key_jwt over mTLS) is a strict-mode item.
+  async #clientCredentials(ctx: OperationContext, f: Record<string, string>, clientId: ClientId) {
+    // Only the SEO renderer, scope public.read (40 §2.2).
     if (clientId !== 'cp-ssr') throw new ProtocolError(400, 'unauthorized_client');
     if (f.scope && f.scope !== 'public.read') throw new ProtocolError(400, 'invalid_scope');
+    const jkt = await this.auth.dpop(ctx, clientId);
     const access = await this.auth.tokensService().issue({
       subject: clientId,
       clientId,
@@ -314,8 +320,14 @@ export class TokenHandler implements OperationHandler {
       acr: 'anonymous',
       scope: 'public.read',
       ttlSeconds: CLIENTS[clientId].accessTtlS,
+      ...(jkt ? { cnf: { jkt } } : {}),
     });
-    return { access_token: access, token_type: 'Bearer' as const, expires_in: CLIENTS[clientId].accessTtlS, scope: 'public.read' };
+    return {
+      access_token: access,
+      token_type: jkt ? ('DPoP' as const) : ('Bearer' as const),
+      expires_in: CLIENTS[clientId].accessTtlS,
+      scope: 'public.read',
+    };
   }
 
   async #anonymous(ctx: OperationContext, clientId: ClientId) {
@@ -480,7 +492,7 @@ export class SigninPasswordHandler implements OperationHandler {
         this.#dummyHash ??= this.crypto.passwords.hash(randomBytes(16).toString('hex'));
         const ok = await this.crypto.passwords.verify(ctx.body.password, method?.credential_reference ?? (await this.#dummyHash));
         // Every failure is the same 401 (SEC-AU-11), including suspended accounts.
-        if (!user || !method || !ok || (user.status !== 'active' && user.status !== 'pending_verification'))
+        if (!user || !method || !ok || (user.status !== 'active' && user.status !== 'pending_verification' && !selfDeactivated(user)))
           throw new ApiError('INVALID_CREDENTIALS');
         if (this.crypto.passwords.needsRehash(method.credential_reference!))
           await scope.db
@@ -494,6 +506,7 @@ export class SigninPasswordHandler implements OperationHandler {
           .where('id', '=', method.id)
           .execute();
         if (user.status === 'pending_verification') return { next: 'verify_email' } satisfies AuthNext;
+        if (selfDeactivated(user)) return this.auth.offerReactivation(i, user.id, 'pwd');
         return this.auth.afterFirstFactor(scope, i, user, 'pwd');
       }),
     );
@@ -528,7 +541,8 @@ export class OtpStartHandler implements OperationHandler {
       });
       const verified = user && (isPhone ? user.phone_verified_at : user.email_verified_at);
       // signin: an active account with this verified contact; verify: an account whose contact is not verified yet.
-      const live = !!user && (b.purpose === 'signin' ? !!verified && user.status === 'active' : !verified && user.status !== 'suspended');
+      const signsIn = !!user && (user.status === 'active' || selfDeactivated(user));
+      const live = !!user && (b.purpose === 'signin' ? !!verified && signsIn : !verified && user.status !== 'suspended');
       const code = newOtpCode();
       i.otp = {
         channel: b.channel,
@@ -573,6 +587,7 @@ export class OtpVerifyHandler implements OperationHandler {
       if (!user || user.status === 'suspended') throw new ApiError('CODE_INVALID');
       if (otp.purpose === 'verify') await markContactVerified(scope, user, isPhone ? 'phone' : 'email');
       const fresh = (await getUser(scope, user.id))!;
+      if (selfDeactivated(fresh)) return this.auth.offerReactivation(i, fresh.id, 'otp');
       return this.auth.afterFirstFactor(scope, i, fresh, 'otp');
     });
     return { body: next };
@@ -644,6 +659,7 @@ export class MfaVerifyHandler implements OperationHandler {
       if (passkeySignin) {
         const user = await getUser(scope, v.userId);
         if (!user || user.status === 'suspended' || user.status === 'deleted') return null;
+        if (user.status === 'deactivated') return selfDeactivated(user) ? { ...v, reactivate: true } : null;
       }
       return v;
     });
@@ -656,11 +672,48 @@ export class MfaVerifyHandler implements OperationHandler {
       else await this.auth.state.saveInteraction(i);
       throw new ApiError('INVALID_CREDENTIALS');
     }
+    if (passkeySignin && 'reactivate' in result)
+      return { body: await this.auth.offerReactivation(i, result.userId, 'hwk', { deviceBound: result.deviceBound }) };
     if (passkeySignin) return { body: await completePasskeySignin(this.auth.state, i, result.userId, result.deviceBound) };
     delete i.webauthn;
     if (b.method === 'webauthn')
       return { body: await this.auth.afterSecondFactor(i, result.deviceBound ? 'hwk' : 'swk', result.deviceBound ? 'aal3' : 'aal2') };
     return { body: await this.auth.afterSecondFactor(i, b.method === 'totp_mfa' ? 'otp' : 'rc') };
+  }
+}
+
+/** auth.reactivate: the owner of a deactivated account confirms coming back; the sign-in continues where it stopped. */
+@Injectable()
+@Operation('auth.reactivate')
+export class ReactivateHandler implements OperationHandler {
+  constructor(private readonly auth: AuthServer) {}
+
+  async handle(ctx: OperationContext<{ interaction_id: string }>): Promise<OperationResult> {
+    const i = await this.auth.interaction(ctx, ctx.body.interaction_id);
+    const pending = i.reactivate;
+    const userId = i.userId;
+    if (!pending || !userId) throw new ApiError('INVALID_CREDENTIALS');
+    await ctx.rateLimit('auth.signin', 'account', userId);
+    const next = await ctx.tx(async (scope) => {
+      const user = await getUser(scope, userId, true);
+      if (!user || !selfDeactivated(user)) throw new ApiError('INVALID_CREDENTIALS');
+      await scope.db
+        .updateTable('identity.user_accounts')
+        .set({ status: 'active', self_deactivated_at: null })
+        .where('id', '=', user.id)
+        .execute();
+      await writeAudit(scope, { action: 'user.reactivated', entityType: 'user_account', entityId: user.id });
+      await publishEvent(scope, {
+        type: 'user.reactivated',
+        aggregateType: 'user_account',
+        aggregateId: user.id,
+        payload: { user_id: user.id },
+      });
+      delete i.reactivate;
+      if (pending.passkeyDeviceBound !== undefined) return completePasskeySignin(this.auth.state, i, user.id, pending.passkeyDeviceBound);
+      return this.auth.afterFirstFactor(scope, i, (await getUser(scope, user.id))!, pending.amr);
+    });
+    return { body: next };
   }
 }
 

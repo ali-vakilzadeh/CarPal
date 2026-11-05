@@ -32,6 +32,7 @@ const consent = (n: number, o: Partial<ConsentRecord> = {}): ConsentRecord => ({
   scope_entity_id: null,
   granted_to_type: 'platform',
   granted_to_id: null,
+  granted_to_organization: null,
   policy_version: '2026-10',
   granted: true,
   granted_at: '2026-09-23T10:00:00Z',
@@ -90,6 +91,7 @@ describe('consents', () => {
           scope_entity_id: ID(50),
           granted_to_type: 'organization',
           granted_to_id: ID(60),
+          granted_to_organization: null,
         }),
       ],
       now,
@@ -111,6 +113,7 @@ describe('consents', () => {
         scope_entity_id: ID(50),
         granted_to_type: 'organization',
         granted_to_id: ID(60),
+        granted_to_organization: null,
         granted_at: '2026-10-03T00:00:00Z',
       }),
     ];

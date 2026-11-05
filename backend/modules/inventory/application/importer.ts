@@ -13,6 +13,7 @@ import { EntitlementChecker, requireEntitlement } from '#libs/entitlements/index
 import { ContractValidator, normalizeString } from '#libs/http-pipeline/index.js';
 import type { JobContext, JobOutcome } from '#libs/jobs/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
+import { RegionConfigService } from '#libs/region-config/index.js';
 import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { OrgLocations } from '#modules/organization/interface/vendor-catalog.js';
@@ -53,6 +54,7 @@ export class InventoryImporter {
     private readonly locations: OrgLocations,
     private readonly entitlements: EntitlementChecker,
     private readonly quality: CatalogQuality,
+    private readonly region: RegionConfigService,
   ) {}
 
   async run(ctx: JobContext): Promise<JobOutcome> {
@@ -205,7 +207,7 @@ export class InventoryImporter {
       throw err;
     }
     const b = (existing ? { ...item, sku: existing.sku } : item) as unknown as InventoryItemWrite;
-    const fieldErrors = itemFieldErrors(existing ? { ...itemAsWrite(existing), ...b } : b);
+    const fieldErrors = itemFieldErrors(existing ? { ...itemAsWrite(existing), ...b } : b, this.region.baseCurrency);
     if (fieldErrors.length) return { kind: 'error', problems: fieldErrors };
     if (b.part_category_node_id) await this.taxonomy.require(b.part_category_node_id, ['part_category'], '/part_category_node_id');
     if (b.location_id && !(await this.locations.isActive(scope, orgId, b.location_id)))

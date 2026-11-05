@@ -23,6 +23,7 @@ import type { TxScope } from '#libs/tenancy/index.js';
 import { AppointmentDrafts } from '#modules/appointment/interface/appointments.js';
 import { TriageMatching } from '#modules/discovery/interface/match-results.js';
 import { FleetDrivers } from '#modules/fleet/interface/fleet.js';
+import { UserChoices } from '#modules/identity/interface/identity.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { VehicleCards, VehicleService } from '#modules/vehicle/interface/vehicles.js';
@@ -104,6 +105,7 @@ export class TriageService {
     private readonly gateway: McpGateway,
     private readonly safety: SafetyCheck,
     private readonly taxonomy: TaxonomyResolver,
+    private readonly choices: UserChoices,
   ) {}
 
   /** Rule-based safety over every user turn (SEC-BF-8). */
@@ -118,6 +120,8 @@ export class TriageService {
     o: { vehicleId: string; locale: Locale; userTexts: string[]; safety: TriageSafety },
   ): Promise<{ text: string; payload: TriagePayload }> {
     if (!(await ctx.flagEnabled(TRIAGE_FLAG))) throw unavailable(null, o.safety);
+    // ai_help_me_personalised off: Help Me works on the session's text only, without the vehicle's data (52 UserPreference).
+    const personalised = await ctx.tx((scope) => this.choices.helpMePersonalised(scope, userId), { readOnly: true });
     try {
       const r = await this.gateway.invoke({
         tool: TOOLS.triageClassify,
@@ -128,9 +132,9 @@ export class TriageService {
         requestId: ctx.requestId,
         flag: TRIAGE_FLAG,
         context: { user_turns: o.userTexts.length },
-        resources: ['res:vehicle.summary', 'res:taxonomy.symptoms', 'res:taxonomy.service_systems'],
+        resources: [...(personalised ? ['res:vehicle.summary'] : []), 'res:taxonomy.symptoms', 'res:taxonomy.service_systems'],
         userText: o.userTexts,
-        contextEntity: { type: 'vehicle', id: o.vehicleId },
+        ...(personalised ? { contextEntity: { type: 'vehicle' as const, id: o.vehicleId } } : {}),
       });
       return { text: r.output.summary, payload: r.output.payload as unknown as TriagePayload };
     } catch (err) {

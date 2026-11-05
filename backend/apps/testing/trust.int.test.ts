@@ -382,6 +382,15 @@ describe('invitations', () => {
     expect(noConsent.status).toBe(403);
     expect(noConsent.body).toMatchObject({ code: 'CONSENT_REQUIRED', consent_type: 'review_invitations' });
     await grantConsent(cu.c, 'review_invitations', null, null);
+    // The customer's channel decides (52 UserPreference.review_invitation_channel): in_app by default, so no email yet.
+    const quiet = await p.c.post(`/v1/orgs/${p.id}/review-invitations`, { appointment_id: a, channel: 'email' });
+    expect(quiet.status).toBe(201);
+    expect(quiet.body.channel).toBe('in_app');
+    expect(app.mail(cu.user.email, 'review.invitation')).toHaveLength(0);
+    await p.c.post(`/v1/orgs/${p.id}/review-invitations/${quiet.body.id}/cancel`);
+    const prefs = await cu.c.get('/v1/me/preferences');
+    const chosen = await cu.c.patch('/v1/me/preferences', { review_invitation_channel: 'email' }, prefs.body.version);
+    expect(chosen.status, chosen.text).toBe(200);
     const ok = await p.c.post(`/v1/orgs/${p.id}/review-invitations`, { appointment_id: a, channel: 'email' });
     expect(ok.status).toBe(201);
     expect((await outbox(app, ok.body.id)).map((e) => e.type)).toEqual(['review.invitation.sent']);

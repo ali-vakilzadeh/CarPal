@@ -10,7 +10,7 @@ import { ThemeBootScript } from '@/components/shell/theme-boot-script';
 import { CONSENT_COOKIE, parseConsent } from '@/lib/analytics/consent';
 import type { PublicConfig } from '@/lib/config/client';
 import { DS_FONT_BY_LOCALE, DS_STYLESHEETS } from '@/lib/design-system';
-import { PRICE_COOKIE, TIME_ZONE_COOKIE, parsePriceDisplay, validTimeZone } from '@/lib/format';
+import { TIME_ZONE_COOKIE, validTimeZone } from '@/lib/format';
 import type { Namespace } from '@/lib/i18n/keys';
 import { directionOf, type Locale } from '@/lib/i18n/locales';
 import { DEFAULT_THEME, THEME_COOKIE, themeChoiceOf } from '@/lib/theme';
@@ -81,7 +81,6 @@ export async function RootDocument({
           resources={i18n.resources([...CLIENT_NAMESPACES, ...namespaces])}
           config={config}
           timeZone={timeZone}
-          prices={parsePriceDisplay(cookieStore.get(PRICE_COOKIE)?.value)}
           themeChoice={themeChoice}
           theme={theme}
           consent={parseConsent(cookieStore.get(CONSENT_COOKIE)?.value)}

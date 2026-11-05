@@ -227,6 +227,7 @@ describe('privacy & consent', () => {
       scope_entity_id: null,
       granted_to_type: 'platform',
       granted_to_id: null,
+      granted_to_organization: null,
       policy_version: '2026-10',
       granted: true,
       granted_at: '2026-09-23T10:00:00Z',
@@ -322,6 +323,143 @@ describe('notification preferences', () => {
     expect(await screen.findByText(/Marketing messages need your consent first/)).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Marketing: In-app' })).not.toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Safety and security alerts: In-app' })).toBeDisabled();
+  });
+});
+
+describe('contract 1.2.0 settings (DI-55)', () => {
+  const account = {
+    version: 3,
+    ai_suggestions_enabled: true,
+    ai_help_me_personalised: false,
+    ai_personalised_matching: false,
+    ai_writing_help: true,
+    ai_show_reasons: true,
+    critical_alerts_only: false,
+    review_invitation_channel: 'in_app',
+    quiet_hours: null,
+  };
+
+  it('offers SMS for appointments and reminders only, and only with a verified phone', async () => {
+    navigation.reset('/en/settings/notifications');
+    renderApp(<SettingsScreen section="notifications" policyVersion="2026-10" appVersion="0.1.0" />, {
+      locale: 'en',
+      session: signedIn(),
+      handlers: {
+        'notification_prefs.get': () => ({ items: [] }),
+        'me.preferences_get': () => account,
+        'me.get': () => ({ phone_verified_at: null }),
+      },
+    });
+    const sms = await screen.findByRole('checkbox', { name: 'Appointments: SMS' });
+    expect(sms).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'Reminders: SMS' })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Marketing: SMS' })).toBeNull();
+    expect(await screen.findByText('Add and verify a phone number in Profile to use SMS.')).toBeInTheDocument();
+  });
+
+  it('saves quiet hours and refuses an empty window', async () => {
+    navigation.reset('/en/settings/notifications');
+    const update = vi.fn((a: Record<string, unknown>) => ({ ...account, ...(a.body as object) }));
+    renderApp(<SettingsScreen section="notifications" policyVersion="2026-10" appVersion="0.1.0" />, {
+      locale: 'en',
+      session: signedIn(),
+      handlers: {
+        'notification_prefs.get': () => ({ items: [] }),
+        'me.preferences_get': () => account,
+        'me.preferences_update': update,
+        'me.get': () => ({ phone_verified_at: null }),
+      },
+    });
+    const form = await screen.findByTestId('quiet-hours');
+    fireEvent.change(within(form).getByLabelText('To'), { target: { value: '22:00' } });
+    expect(await screen.findByText('Choose two different times.')).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Use quiet hours' })).toBeDisabled();
+    fireEvent.change(within(form).getByLabelText('To'), { target: { value: '07:30' } });
+    fireEvent.click(screen.getByRole('switch', { name: 'Use quiet hours' }));
+    await waitFor(() => expect(update).toHaveBeenCalledOnce());
+    expect(update.mock.calls[0]![0].body).toEqual({ quiet_hours: { start: '22:00', end: '07:30' } });
+  });
+
+  it('keeps the personalised AI switches off until the consent is on; the others save directly', async () => {
+    navigation.reset('/en/settings/ai');
+    const update = vi.fn((a: Record<string, unknown>) => ({ ...account, ...(a.body as object) }));
+    renderApp(<SettingsScreen section="ai" policyVersion="2026-10" appVersion="0.1.0" />, {
+      locale: 'en',
+      session: signedIn(),
+      handlers: {
+        'consents.list': () => ({ items: [], next_cursor: null }),
+        'me.preferences_get': () => account,
+        'me.preferences_update': update,
+      },
+    });
+    expect(await screen.findByRole('switch', { name: 'Personalised Help Me' })).toBeDisabled();
+    expect(screen.getByRole('switch', { name: 'Personalised matching' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('switch', { name: "Show why I'm seeing a recommendation" }));
+    await waitFor(() => expect(update).toHaveBeenCalledOnce());
+    expect(update.mock.calls[0]![0].body).toEqual({ ai_show_reasons: false });
+  });
+
+  it('names the business of an active share', async () => {
+    navigation.reset('/en/settings/privacy');
+    const share = {
+      id: ID(40),
+      created_at: '2026-09-23T10:00:00Z',
+      updated_at: '2026-09-23T10:00:00Z',
+      version: 1,
+      subject_type: 'user',
+      subject_id: ID(99),
+      consent_type: 'service_history_sharing',
+      scope_entity_type: 'appointment',
+      scope_entity_id: ID(41),
+      granted_to_type: 'organization',
+      granted_to_id: ID(42),
+      granted_to_organization: {
+        id: ID(42),
+        name: 'Tehran Auto Care',
+        organization_type: 'provider',
+        slug: null,
+        logo_url: null,
+        status: 'active',
+        verification_status: 'verified',
+      },
+      policy_version: '2026-10',
+      granted: true,
+      granted_at: '2026-09-23T10:00:00Z',
+      withdrawn_at: null,
+      expires_at: null,
+      source: 'ui',
+    };
+    renderApp(<SettingsScreen section="privacy" policyVersion="2026-10" appVersion="0.1.0" />, {
+      locale: 'en',
+      session: signedIn(),
+      handlers: { 'consents.list': () => ({ items: [share], next_cursor: null }), 'me.preferences_get': () => account },
+    });
+    expect(await screen.findByTestId('share-business')).toHaveTextContent('Tehran Auto Care');
+    // Email invitations need the consent, which this account has not given.
+    expect(await screen.findByLabelText('Review invitations reach me by')).toBeDisabled();
+  });
+
+  it('Deactivate asks first, runs me.deactivate and leaves', async () => {
+    navigation.reset('/en/settings/data');
+    window.history.replaceState(null, '', '/en/settings/data');
+    const deactivate = vi.fn(() => ({ ok: true }));
+    renderApp(<SettingsScreen section="data" policyVersion="2026-10" appVersion="0.1.0" />, {
+      locale: 'en',
+      session: signedIn(),
+      handlers: {
+        'dsr.list': () => ({ items: [], next_cursor: null }),
+        'me.memberships_list': () => ({ items: [], next_cursor: null }),
+        'me.deactivate': deactivate,
+      },
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Deactivate my account' }));
+    const dialog = screen.getByRole('dialog', { name: 'Deactivate your account?' });
+    expect(deactivate).not.toHaveBeenCalled();
+    fireEvent.change(within(dialog).getByLabelText('Why are you leaving? (optional)'), { target: { value: 'A break' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Deactivate my account' }));
+    await waitFor(() => expect(goTo).toHaveBeenCalledWith('/en'));
+    expect(deactivate).toHaveBeenCalledOnce();
+    expect((deactivate.mock.calls as unknown as [{ body: unknown }][])[0]![0].body).toEqual({ reason: 'A break' });
   });
 });
 

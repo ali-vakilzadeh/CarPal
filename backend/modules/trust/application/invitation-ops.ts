@@ -23,7 +23,7 @@ import { InjectInfra } from '#libs/runtime/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { MembershipDirectory } from '#libs/authz/index.js';
 import { AppointmentFacts } from '#modules/appointment/interface/appointments.js';
-import { AccountFacts, authorDisplayName, UserCards } from '#modules/identity/interface/identity.js';
+import { AccountFacts, authorDisplayName, UserCards, UserChoices } from '#modules/identity/interface/identity.js';
 import { InventoryRead } from '#modules/inventory/interface/inventory.js';
 import { Messenger } from '#modules/notification/interface/messenger.js';
 import { OrganizationExtensions } from '#modules/organization/interface/extensions.js';
@@ -196,6 +196,7 @@ type InvitationSend = {
 @Operation('review_invitations.send')
 export class ReviewInvitationsSendHandler implements OperationHandler {
   constructor(
+    private readonly choices: UserChoices,
     private readonly invitations: Invitations,
     private readonly views: InvitationViews,
     private readonly appointments: AppointmentFacts,
@@ -243,13 +244,16 @@ export class ReviewInvitationsSendHandler implements OperationHandler {
         throw new ApiError('REVIEW_NOT_ALLOWED', { detail: 'self_review_pattern' });
       if (invitedUserId && invitedUserId === m.userId) throw new ApiError('REVIEW_NOT_ALLOWED', { detail: 'self_review_pattern' });
       // CNS(review_invitations: email): channels other than in-app need the customer's consent (52 ReviewRequest).
-      if (b.channel === 'email' && invitedUserId) {
+      let channel = b.channel;
+      if (invitedUserId) {
         const granted = await this.consents.isGranted(scope, {
           consentType: 'review_invitations',
           subject: { type: 'user', id: invitedUserId },
         });
-        if (!granted)
+        if (b.channel === 'email' && !granted)
           throw new ApiError('CONSENT_REQUIRED', { detail: 'review_invitations', extensions: { consent_type: 'review_invitations' } });
+        // The customer's choice (52 UserPreference.review_invitation_channel) decides how a known customer hears of it.
+        channel = granted ? await this.choices.reviewInvitationChannel(scope, invitedUserId) : 'in_app';
       }
       if (b.channel === 'in_app' && !invitedUserId) throw ApiError.validation([{ pointer: '/channel', code: 'enum' }]);
       const row = await this.invitations.create(scope, {
@@ -263,7 +267,7 @@ export class ReviewInvitationsSendHandler implements OperationHandler {
         invitedUserId,
         invitedContact: invitedUserId ? null : (b.invited_contact ?? null),
         invitedBy: m.userId,
-        channel: b.channel,
+        channel,
         businessConfirmation: !!b.provider_job_log_id,
       });
       return (await this.views.many(scope, [row], ctx.locale))[0]!;

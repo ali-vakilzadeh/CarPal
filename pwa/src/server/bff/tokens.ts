@@ -25,6 +25,13 @@ export class SessionEndedError extends Error {
   }
 }
 
+/** The signed-in user's credential: bound tokens carry the session's DPoP key on every API call (backend GD-06). */
+export function userCredential(r: SessionRecord, user: UserTokens): Credential {
+  return user.bound && r.dpopKey
+    ? { kind: 'user', accessToken: user.accessToken, scheme: 'DPoP', dpopKey: r.dpopKey }
+    : { kind: 'user', accessToken: user.accessToken, scheme: 'Bearer' };
+}
+
 export class SessionTokens {
   readonly #inflight = new Map<string, Promise<unknown>>();
 
@@ -39,7 +46,7 @@ export class SessionTokens {
   async credential(r: SessionRecord): Promise<Credential> {
     if (r.user) {
       const user = r.user.accessExpiresAt - REFRESH_SKEW_MS > this.now() ? r.user : await this.refresh(r.id);
-      return { kind: 'user', accessToken: user.accessToken, scheme: 'Bearer' };
+      return userCredential(r, user);
     }
     const anon =
       r.anonymous && r.anonymous.expiresAt - REFRESH_SKEW_MS > this.now() && r.dpopKey
@@ -59,7 +66,7 @@ export class SessionTokens {
       if (!force && r.user.accessExpiresAt - REFRESH_SKEW_MS > this.now()) return r.user;
       let t: TokenResponse;
       try {
-        t = await this.client.refresh(this.config.clientId, r.user.refreshToken);
+        t = await this.client.refresh(this.config.clientId, r.user.refreshToken, r.user.bound ? r.dpopKey : undefined);
       } catch (err) {
         if (err instanceof TokenEndpointError && err.invalidGrant) {
           await this.endUser(id);
@@ -123,7 +130,8 @@ export class SessionTokens {
 
 /** Server-rendering credentials: cp-ssr (public.read), or a server-held anonymous token when cp-ssr is refused (DI-14). */
 export class SsrTokens {
-  #ssr: { token: string; until: number } | undefined;
+  #ssr: { credential: Credential; until: number } | undefined;
+  #ssrKey: JWK | undefined;
   #anon: { token: string; until: number } | undefined;
   #key: JWK | undefined;
   #inflight: Promise<Credential> | undefined;
@@ -136,14 +144,17 @@ export class SsrTokens {
   ) {}
 
   async ssr(force = false): Promise<Credential> {
-    if (!force && this.#ssr && this.#ssr.until > this.now()) return { kind: 'ssr', accessToken: this.#ssr.token, scheme: 'Bearer' };
-    this.#inflight ??= this.client
-      .clientCredentials(this.config.ssrClientId)
-      .then((t) => {
-        this.#ssr = { token: t.access_token, until: this.now() + t.expires_in * 1000 - REFRESH_SKEW_MS };
-        return { kind: 'ssr', accessToken: t.access_token, scheme: 'Bearer' } as Credential;
-      })
-      .finally(() => (this.#inflight = undefined));
+    if (!force && this.#ssr && this.#ssr.until > this.now()) return this.#ssr.credential;
+    this.#inflight ??= (async () => {
+      this.#ssrKey ??= await generateDpopKey();
+      const t = await this.client.clientCredentials(this.config.ssrClientId, 'public.read', this.#ssrKey);
+      const credential: Credential =
+        t.token_type === 'DPoP'
+          ? { kind: 'ssr', accessToken: t.access_token, scheme: 'DPoP', dpopKey: this.#ssrKey }
+          : { kind: 'ssr', accessToken: t.access_token, scheme: 'Bearer' };
+      this.#ssr = { credential, until: this.now() + t.expires_in * 1000 - REFRESH_SKEW_MS };
+      return credential;
+    })().finally(() => (this.#inflight = undefined));
     return this.#inflight;
   }
 

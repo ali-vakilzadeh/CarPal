@@ -197,6 +197,23 @@ export const resolvers: Resolvers = {
       check: (res) => expect(res.body).toEqual({ next: 'complete' }),
     };
   },
+  'auth.reactivate': async (h) => {
+    const as = await h.user();
+    await h.fx.withPassword(as.user, PASSWORD);
+    ok(await as.c.post('/v1/me/deactivate', {}), 'deactivate');
+    const ia = await interaction(h);
+    const offered = ok(
+      await authPost(h, '/v1/auth/signin', ia.cookie, { interaction_id: ia.id, email: as.user.email, password: PASSWORD }),
+      'signin',
+    );
+    expect(offered).toEqual({ next: 'reactivate' });
+    return {
+      as: none,
+      headers: { cookie: ia.cookie },
+      body: { interaction_id: ia.id },
+      check: (res) => expect(res.body).toEqual({ next: 'complete' }),
+    };
+  },
   'auth.social_start': async (h) => {
     const ia = await interaction(h);
     // Deferred post-MVP (OQ-06, PM-01): the route answers 501 NOT_IMPLEMENTED before input validation (GD-05).
@@ -260,6 +277,7 @@ export const resolvers: Resolvers = {
     await h.fx.withPassword(as.user, 'the current passphrase');
     return { as, body: { current_password: 'the current passphrase', new_password: 'a new long passphrase' } };
   },
+  'me.deactivate': async (h) => ({ as: await h.user(), body: { reason: 'Taking a break' } }),
   'me.preferences_get': async (h) => ({ as: await h.user() }),
   'me.preferences_update': async (h) => {
     const as = await h.user();

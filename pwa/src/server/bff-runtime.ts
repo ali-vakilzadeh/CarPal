@@ -2,9 +2,20 @@
 // on globalThis so every route bundle and dev hot reloads share one session store.
 import 'server-only';
 import packageJson from '../../package.json';
-import { createBff, DEFAULT_LIFETIMES, LiteSessionStore, RedisSessionStore, RespClient, type Bff, type BffConfig } from './bff';
+import {
+  createBff,
+  DEFAULT_LIFETIMES,
+  LiteSessionStore,
+  noClientAuthentication,
+  privateKeyJwt,
+  RedisSessionStore,
+  RespClient,
+  type Bff,
+  type BffConfig,
+  type ClientAuthentication,
+} from './bff';
 import { LOCALES, DEFAULT_LOCALE } from '@/lib/i18n/locales';
-import { serverEnv } from './env';
+import { serverEnv, type ServerEnv } from './env';
 
 export function bffConfig(): BffConfig {
   const env = serverEnv();
@@ -23,6 +34,16 @@ export function bffConfig(): BffConfig {
   };
 }
 
+/** Strict mode: every client of this BFF signs its /oauth/token calls with its own key (backend GD-06 amendment 2026-11-04). */
+function clientAuthentication(env: ServerEnv): ((clientId: string) => ClientAuthentication) | undefined {
+  const keys = env.CARPAL_PWA_CLIENT_PRIVATE_JWKS;
+  if (!env.CARPAL_STRICT_AUTH || !keys) return undefined;
+  return (clientId) => {
+    const key = keys[clientId];
+    return key ? privateKeyJwt(key, key.crv === 'Ed25519' ? 'EdDSA' : 'ES256') : noClientAuthentication;
+  };
+}
+
 const holder = globalThis as typeof globalThis & { __carpalBff?: Bff };
 
 export function bff(): Bff {
@@ -30,7 +51,8 @@ export function bff(): Bff {
     const env = serverEnv();
     const store =
       env.CARPAL_PWA_SESSION_STORE === 'redis' ? new RedisSessionStore(new RespClient(env.CARPAL_PWA_REDIS_URL!)) : new LiteSessionStore();
-    holder.__carpalBff = createBff({ config: bffConfig(), store });
+    const clientAuth = clientAuthentication(env);
+    holder.__carpalBff = createBff({ config: bffConfig(), store, ...(clientAuth ? { clientAuth } : {}) });
   }
   return holder.__carpalBff;
 }

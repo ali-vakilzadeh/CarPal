@@ -56,6 +56,7 @@ export function ResultCardView({
   headingLevel = 3,
   highlighted,
   bestMatch,
+  showReasons = true,
   slotTimeZone,
 }: {
   r: ResultCard;
@@ -68,6 +69,8 @@ export function ResultCardView({
   highlighted?: boolean;
   /** Shows the rank number (best-match order). */
   bestMatch?: boolean;
+  /** The account's "Show why I'm seeing a recommendation" (useShowReasons); server-rendered pages keep the default. */
+  showReasons?: boolean;
   /** The shop's time zone for the next slot (the pilot region's, PwaConfig.regionTimeZone); default the formatter's. */
   slotTimeZone?: string;
 }) {
@@ -150,7 +153,7 @@ export function ResultCardView({
             <Icon name="part" size={16} /> {t('search.result.partsFit', { count: r.matching_item_count })}
           </span>
         ) : null}
-        {reason ? (
+        {reason && showReasons ? (
           <p className="pwa-result-reason m-0" dir="auto">
             <Icon name="check" size={16} /> {reason.summary.text}
           </p>
@@ -161,7 +164,7 @@ export function ResultCardView({
             <Icon name="calendar" size={16} /> {t('search.result.nextSlot', { when: slotText(r.next_available_slot, f, t, slotTimeZone) })}
           </span>
         ) : null}
-        <details className="pwa-disclosure pwa-result-why">
+        <details className="pwa-disclosure pwa-result-why" hidden={!showReasons}>
           <summary>{t('search.result.why')}</summary>
           <ul id={reasonsId} className="pwa-plain-list pwa-stack-xs">
             {r.reasons.map((x, i) => (

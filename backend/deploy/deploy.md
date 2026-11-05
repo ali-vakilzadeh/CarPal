@@ -44,7 +44,7 @@ api.<domain>  id.<domain>  media.<domain>        (admin-api.<domain>: not publis
 
 - **One process.** The backend has four deployables (api, admin-api, auth, worker) plus a storage listener. In lite mode they share in-process adapters: key-value store, event bus, job queue and search index (GD-04). So they must run in **one** process, the same entry point `pnpm dev` uses. The full-mode adapters (Redis, NATS, OpenSearch, S3, SMTP, SMS, push) are still skeletons, so separate services are not possible yet.
 - **External PostgreSQL.** The database is the Ubuntu PostgreSQL 16 service (`CARPAL_DB_MODE=external`), with its data directory under `/carpal/db`. The embedded PostgreSQL used on developer machines is not used here. `pnpm db:setup` installs `Docs/43.db_setup.sql` on the first run and applies pending migrations after that. This path was tested against a PostgreSQL 16 server during S9c.
-- **Environment `staging`.** It has real secrets, and responses are not re-validated against the contract. `prod` requires strict authentication (`CARPAL_STRICT_AUTH=1`), which needs the BFFs and app attestation. They don't exist yet (see [Configuration](#environment-choice)).
+- **Environment `staging`, strict authentication on.** It has real secrets, and responses are not re-validated against the contract. `CARPAL_STRICT_AUTH=1`: the consumer PWA's tokens are DPoP-bound and it authenticates with `private_key_jwt`. `prod` waits for the rest of NI-01 (see [Configuration](#environment-choice)).
 - **Code, data and secrets are separate.** Code lives in `/carpal/backend/src`, data in `/carpal/data`, `/carpal/upload` and `/carpal/db`, and secrets in `/carpal/config`. An update replaces the code and never touches the data.
 
 ## Server layout
@@ -94,14 +94,14 @@ All paths come from `deploy.conf`, so change them there (see `deploy.conf.exampl
 
 ## Server requirements
 
-|           | Minimum                                                                            | Notes                                                                                                                        |
-| :-------- | :--------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
-| OS        | **Ubuntu 24.04 LTS** (x86-64 or arm64)                                             | PostgreSQL 16 and pgvector come from the Ubuntu archive. Other releases need the PGDG repository.                            |
-| CPU / RAM | 2 vCPU, **4 GB RAM** (or 2 GB plus 2 GB swap)                                      | `tsc` and the unit tests need memory during `2-build.sh`. Runtime needs much less.                                           |
-| Disk      | 40 GB SSD                                                                          | Code with `node_modules` and the pnpm store is under 1 GB. Plan for uploads, the database and `KEEP_BACKUPS` copies of both. |
-| DNS       | A/AAAA records for `api.`, `id.`, `media.`, `www.` and the bare domain (and later `admin-api.`) | Needed before `certbot`.                                                                                        |
-| Access    | SSH as root (or sudo), WinSCP with SFTP                                            |                                                                                                                              |
-| Outbound  | HTTPS to `nodejs.org`, `registry.npmjs.org`, the Ubuntu mirrors, Let's Encrypt     | For setup and `pnpm install`.                                                                                                |
+|           | Minimum                                                                                         | Notes                                                                                                                        |
+| :-------- | :---------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
+| OS        | **Ubuntu 24.04 LTS** (x86-64 or arm64)                                                          | PostgreSQL 16 and pgvector come from the Ubuntu archive. Other releases need the PGDG repository.                            |
+| CPU / RAM | 2 vCPU, **4 GB RAM** (or 2 GB plus 2 GB swap)                                                   | `tsc` and the unit tests need memory during `2-build.sh`. Runtime needs much less.                                           |
+| Disk      | 40 GB SSD                                                                                       | Code with `node_modules` and the pnpm store is under 1 GB. Plan for uploads, the database and `KEEP_BACKUPS` copies of both. |
+| DNS       | A/AAAA records for `api.`, `id.`, `media.`, `www.` and the bare domain (and later `admin-api.`) | Needed before `certbot`.                                                                                                     |
+| Access    | SSH as root (or sudo), WinSCP with SFTP                                                         |                                                                                                                              |
+| Outbound  | HTTPS to `nodejs.org`, `registry.npmjs.org`, the Ubuntu mirrors, Let's Encrypt                  | For setup and `pnpm install`.                                                                                                |
 
 Add swap on a small server:
 
@@ -253,11 +253,11 @@ How long an update takes:
 
 ### Environment choice
 
-| `CARPAL_ENV` | Use                     | What changes                                                                                                                                                                                                                 |
-| :----------- | :---------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dev`        | Developer machines only | Public development master secret; responses validated against the contract; AI stub.                                                                                                                                         |
-| `staging`    | **This server, today**  | Real secrets required; AI defaults to `unavailable`; strict authentication off. The service logs deviation GD-06 at startup.                                                                                                 |
-| `prod`       | Later                   | Requires `CARPAL_STRICT_AUTH=1`. That enforces DPoP binding, mTLS-bound BFF tokens and app attestation. The BFFs (NI-08) and attestation verification (NI-01) don't exist yet, so clients cannot sign in under `prod` today. |
+| `CARPAL_ENV` | Use                     | What changes                                                                                                                                                      |
+| :----------- | :---------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dev`        | Developer machines only | Public development master secret; responses validated against the contract; AI stub.                                                                              |
+| `staging`    | **This server, today**  | Real secrets required; AI defaults to `unavailable`; strict authentication on (`CARPAL_STRICT_AUTH=1`, the PWA must match).                                       |
+| `prod`       | Later                   | Waits for the rest of NI-01 (App Attest / Play Integrity, DPoP-Nonce on the API hosts, risk-based sign-in, breached passwords) and for real mail and SMS (NI-07). |
 
 ### Files
 
@@ -265,7 +265,34 @@ How long an update takes:
 - `/carpal/config/db-admin.env`: the PostgreSQL superuser login. Only `2-build.sh` uses it (for `pnpm db:setup` and `db:status`). The running service never sees it.
 - `/carpal/config/deploy.conf`: the folders, host names, build switches and backup retention of these scripts. Defaults are in `deploy.conf.example`.
 
+- `/carpal/config/oauth-client-keys.json`: the key pairs of `cp-web-consumer` and `cp-ssr`, root only. `server-setup.sh` makes it once. The public halves are in `backend.env` (`CARPAL_OAUTH_CLIENT_JWKS`), the private halves in `pwa.env` (`CARPAL_PWA_CLIENT_PRIVATE_JWKS`). Back it up with `backend.env`.
+
 After changing `backend.env`, restart: `bash /carpal/backend/src/backend/deploy/4-start.sh`.
+
+### Client keys
+
+To replace the keys, from the staging copy as root:
+
+```bash
+cd /carpal/config
+node /home/root/staging/backend/deploy/gen-client-keys.mjs >oauth-client-keys.json && chmod 600 oauth-client-keys.json
+node /home/root/staging/backend/deploy/gen-client-keys.mjs --public oauth-client-keys.json    # CARPAL_OAUTH_CLIENT_JWKS in backend.env, in single quotes
+node /home/root/staging/backend/deploy/gen-client-keys.mjs --private oauth-client-keys.json   # CARPAL_PWA_CLIENT_PRIVATE_JWKS in pwa.env, in single quotes
+```
+
+Then restart the backend and run `pwa-update.sh`. Token requests fail between the two restarts.
+
+### Exchange rate
+
+Prices are stored in USD. `admin.exchange_rate_update` sets the USD → IRR rate that every client shows (GD-41), and the seed is a **placeholder (1,000,000 IRR per USD)**. Until the admin console exists ([Admin plane](#admin-plane)) staff cannot reach that operation, so the server operator sets the rate once in SQL, as root:
+
+```bash
+set -a; . /carpal/config/db-admin.env; set +a
+PGPASSWORD="$CARPAL_DB_SUPERUSER_PASSWORD" psql -h 127.0.0.1 -U postgres carpal \
+  -c "UPDATE admin.exchange_rates SET per_usd = 1050000, reason = 'Initial rate, ticket 1' WHERE currency = 'IRR'"
+```
+
+Clients see it within five minutes. This skips the audit entry and the second approver of the staff operation, so keep it for the bootstrap.
 
 ### Admin plane
 
@@ -347,7 +374,7 @@ These come from lite mode and the current state of the code. They are not caused
 1. **No outgoing mail, SMS or push.** The lite adapters write every message to `/carpal/data/outbox-*.jsonl`. Sign-up verification, one-time codes, password resets and invitations only reach a user if you forward them by hand. Real providers are NI-07.
 2. **Restarts sign everybody out.** Sessions, rate-limit windows, idempotency records and queued jobs are in memory. A restart (every deployment) drops them. Events are safe: the outbox lives in PostgreSQL and is relayed after the restart. Media processing is re-queued by its sweep. Other background jobs that were waiting in the queue may have to be requested again. The search index is rebuilt from the database at startup (`CARPAL_SEARCH_REBUILD_ON_START`). Redis, NATS and OpenSearch adapters (full mode) are NI-06.
 3. **Client IP behind nginx.** The backend reads the client address from the TCP socket only, so behind nginx every client looks like `127.0.0.1`. The per-IP windows of 40 §2.8 would then be shared by all users: 30 sign-ins per 15 minutes and 20 OTPs per hour for the whole platform. As a stopgap, `backend.env` raises only those three IP windows (`CARPAL_RATE_LIMITS`), and nginx enforces per-client limits with the contract's values (`templates/nginx-carpal.conf`). The proper fix is code: trust `X-Forwarded-For` from a configured proxy address in `libs/http-pipeline/pipeline.ts`. Until then, the backend's IP-prefix signals (abuse escalation, audit `ip_prefix`) record `127.0.0.0`.
-4. **`prod` is not reachable yet** ([Environment choice](#environment-choice)). Strict authentication, BFFs and app attestation are NI-01 and NI-08.
+4. **`prod` is not reachable yet** ([Environment choice](#environment-choice)). App attestation and the rest of NI-01, and the portal and admin BFFs (NI-08).
 5. **The admin plane has no browser path** until the admin BFF exists ([Admin plane](#admin-plane)).
 6. **AI is off** (`CARPAL_MCP_MODE=unavailable`) until the real MCP gateway exists (NI-09). `stub` is fine for demos.
 7. **Media domain.** 40 SEC-UP wants media on a separate registrable domain (`media.carpal-usercontent.app`). `media.<domain>` works, but then user uploads are served from the same registrable domain as the apps, which weakens the origin isolation SEC-UP asks for.

@@ -211,7 +211,7 @@ describe('search projections and search.run (S6 acceptance)', () => {
     expect(hit).toMatchObject({
       target: { type: 'inventory_item' },
       organization: { id: v.id, roles: ['vendor'] },
-      item: { id: v.itemId, fitment_confidence_for_vehicle: 'confirmed', price: { amount: '450000.00', currency: 'IRR' } },
+      item: { id: v.itemId, fitment_confidence_for_vehicle: 'confirmed', price: { amount: '450000.00', currency: 'USD' } },
       relevant_to_vehicle: true,
     });
     const vendors = await search(token, { search_mode: 'vendors', vehicle_id: vehicle.id, location: area(point), query_text: 'brake pad' });

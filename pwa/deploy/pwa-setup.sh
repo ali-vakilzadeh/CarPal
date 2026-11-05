@@ -81,7 +81,10 @@ ok "Redis answers (local only, maxmemory $REDIS_MAXMEMORY, volatile-lru)"
 # --------------------------------------------------------------------------- pwa.env
 step "Service environment $PWA_ENV_FILE"
 if [[ ! -f "$PWA_ENV_FILE" ]]; then
-  render "$DEPLOY_DIR/templates/pwa.env.template" "$PWA_ENV_FILE" REDIS_PASSWORD
+  CLIENT_KEYS="$CONFIG_DIR/oauth-client-keys.json"
+  [[ -f "$CLIENT_KEYS" ]] || die "$CLIENT_KEYS is missing: run the backend's server-setup.sh first (it makes the client key pairs)"
+  CLIENT_PRIVATE_JWKS="$(tr -d '\n' <"$CLIENT_KEYS")"
+  render "$DEPLOY_DIR/templates/pwa.env.template" "$PWA_ENV_FILE" REDIS_PASSWORD CLIENT_PRIVATE_JWKS
   ok "generated pwa.env (review it: deploy.md step 4)"
 else
   url="$(env_value CARPAL_PWA_REDIS_URL)"
@@ -151,6 +154,8 @@ if [[ -f "$BACKEND_ENV" ]]; then
     warn "CARPAL_API_AUDIENCE differs: backend.env $(bget CARPAL_API_AUDIENCE), pwa.env $(env_value CARPAL_API_AUDIENCE)"
   [[ "$(bget CARPAL_STRICT_AUTH)" == "$(env_value CARPAL_STRICT_AUTH)" ]] ||
     warn "CARPAL_STRICT_AUTH differs: backend.env $(bget CARPAL_STRICT_AUTH), pwa.env $(env_value CARPAL_STRICT_AUTH)"
+  [[ "$(env_value CARPAL_STRICT_AUTH)" != "1" || -n "$(bget CARPAL_OAUTH_CLIENT_JWKS)" ]] ||
+    warn "backend.env has no CARPAL_OAUTH_CLIENT_JWKS: strict mode refuses the PWA's token requests"
   [[ -z "$(bget CARPAL_SIGNIN_URL)" ]] || warn "backend.env sets CARPAL_SIGNIN_URL: leave it unset (the PWA's /id proxy serves <issuer>/signin)"
   ok "checked $BACKEND_ENV"
 else

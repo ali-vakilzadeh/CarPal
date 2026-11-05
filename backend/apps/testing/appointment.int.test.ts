@@ -124,7 +124,7 @@ describe('the trust loop (S7 acceptance)', () => {
     expect((await p.c.post(provider(p, `/${a.id}/transitions`), { to: 'in_progress' })).status).toBe(200);
     const done = await p.c.post(provider(p, `/${a.id}/transitions`), {
       to: 'completed',
-      final_cost: { amount: '1200000', currency: 'IRR' },
+      final_cost: { amount: '1200000', currency: 'USD' },
       service_record: { service_system_node_id: n.system, description: 'Replaced front pads', mileage_km: 81000 },
     });
     expect(done.status).toBe(200);

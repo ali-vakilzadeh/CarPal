@@ -18,7 +18,7 @@ import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
 import { CommunityRead } from '#modules/community/interface/community.js';
 import { Recipients, type RecipientContact } from '#modules/identity/interface/identity.js';
 import { OrgCards } from '#modules/organization/interface/org-cards.js';
-import { channelsFor, type Preference } from '../domain/preferences.js';
+import { channelsFor, quietUntil, type Preference } from '../domain/preferences.js';
 import { route, type Audience, type Intent } from '../domain/routing.js';
 import { render } from '../domain/templates.js';
 
@@ -109,7 +109,9 @@ export class NotificationDispatcher {
         criticalAlertsOnly: c.criticalAlertsOnly,
         allowed: intent.channels,
       });
-      for (const d of decisions) await this.#delivery(scope, n.id, d.channel, d.outcome, c, tokens, business);
+      // Quiet hours hold push and SMS; in-app and critical notifications never wait (52 UserPreference).
+      const heldUntil = intent.priority === 'critical' ? null : quietUntil(new Date(), c.timezone, c.quietHours);
+      for (const d of decisions) await this.#delivery(scope, n.id, d.channel, d.outcome, c, tokens, business, heldUntil);
     }
     return out;
   }
@@ -122,8 +124,9 @@ export class NotificationDispatcher {
     c: RecipientContact,
     tokens: { id: string; user_id: string; platform: string }[],
     business: boolean,
+    heldUntil: Date | null,
   ): Promise<void> {
-    const insert = (values: { status: string; suppressed_reason?: string; push_device_token_id?: string }) =>
+    const insert = (values: { status: string; suppressed_reason?: string; push_device_token_id?: string; not_before?: Date }) =>
       scope.db
         .insertInto('notification.notification_deliveries')
         .values({ notification_id: notificationId, channel, ...values })
@@ -134,7 +137,7 @@ export class NotificationDispatcher {
       for (const t of own)
         await insert(
           outcome === 'send'
-            ? { status: 'queued', push_device_token_id: t.id }
+            ? { status: 'queued', push_device_token_id: t.id, ...(heldUntil ? { not_before: heldUntil } : {}) }
             : { status: 'suppressed', suppressed_reason: 'preference', push_device_token_id: t.id },
         );
       return;
@@ -143,7 +146,7 @@ export class NotificationDispatcher {
     if (outcome === 'suppressed') await insert({ status: 'suppressed', suppressed_reason: 'preference' });
     else if (!destination) await insert({ status: 'suppressed', suppressed_reason: 'no_destination' });
     else if (outcome === 'digest') await insert({ status: 'suppressed', suppressed_reason: 'digest' });
-    else await insert({ status: 'queued' });
+    else await insert({ status: 'queued', ...(heldUntil && channel === 'sms' ? { not_before: heldUntil } : {}) });
   }
 
   /**
@@ -173,7 +176,8 @@ export class NotificationDispatcher {
           't.status as token_status',
         ])
         .where('d.deleted_at', 'is', null)
-        .where('d.attempt_count', '<', MAX_ATTEMPTS);
+        .where('d.attempt_count', '<', MAX_ATTEMPTS)
+        .where((eb) => eb.or([eb('d.not_before', 'is', null), eb('d.not_before', '<=', sql<Date>`now()`)]));
       q = notificationIds
         ? q.where('d.notification_id', 'in', [...notificationIds]).where('d.status', '=', 'queued')
         : q.where('d.status', 'in', ['queued', 'failed']).where('d.updated_at', '<', sql<Date>`now() - interval '1 minute'`);
@@ -193,6 +197,8 @@ export class NotificationDispatcher {
       const c = contacts.get(r.recipient_user_id);
       let error: string | null = null;
       try {
+        // A delivery held by quiet hours can outlive the account's active state.
+        if (c?.status !== 'active') throw new Error('recipient not active');
         if (r.channel === 'email') {
           if (!c?.email) throw new Error('no destination');
           await this.infra.mailer.send({

@@ -13,6 +13,7 @@ import { EntitlementChecker, requireEntitlement } from '#libs/entitlements/index
 import { ACK, created, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { acceptedJob, JobService } from '#libs/jobs/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
+import { RegionConfigService } from '#libs/region-config/index.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { toInventoryItem, type ItemRow } from '../api/projections.js';
 import {
@@ -221,12 +222,13 @@ export class InventoryCreateHandler implements OperationHandler {
     private readonly refs: ItemReferences,
     private readonly quality: CatalogQuality,
     private readonly views: ItemViews,
+    private readonly region: RegionConfigService,
   ) {}
 
   async handle(ctx: OperationContext<InventoryItemWrite>): Promise<OperationResult> {
     const m = vendorMember(ctx);
     const b = ctx.body;
-    failIf(itemFieldErrors(b));
+    failIf(itemFieldErrors(b, this.region.baseCurrency));
     const status = b.status ?? 'draft';
     const body = await ctx.tx(async (scope) => {
       await this.refs.check(scope, m.orgId, b);
@@ -284,6 +286,7 @@ export class InventoryUpdateHandler implements OperationHandler {
     private readonly refs: ItemReferences,
     private readonly quality: CatalogQuality,
     private readonly views: ItemViews,
+    private readonly region: RegionConfigService,
   ) {}
 
   async handle(ctx: OperationContext<Partial<InventoryItemWrite>>): Promise<OperationResult> {
@@ -292,7 +295,7 @@ export class InventoryUpdateHandler implements OperationHandler {
     const body = await ctx.tx(async (scope) => {
       const i = await loadItem(scope, m, ctx.params.item_id!, true);
       checkVersion(i.version, ctx.ifMatch);
-      failIf(itemFieldErrors({ ...itemAsWrite(i), ...b }));
+      failIf(itemFieldErrors({ ...itemAsWrite(i), ...b }, this.region.baseCurrency));
       await this.refs.check(scope, m.orgId, b);
       // ENT(max_inventory_items: if activating).
       if (activating(i.status, b.status))

@@ -138,6 +138,7 @@ export const identityPersonalData: PersonalDataHandler = {
   async export(scope: TxScope, userId: string): Promise<PersonalDataSection[]> {
     const u = await scope.db.selectFrom('identity.user_accounts').selectAll().where('id', '=', userId).executeTakeFirst();
     if (!u) return [];
+    const pref = await scope.db.selectFrom('identity.user_preferences').selectAll().where('user_id', '=', userId).executeTakeFirst();
     const [memberships, consents, requests] = await Promise.all([
       scope.db
         .selectFrom('identity.role_memberships')
@@ -169,13 +170,37 @@ export const identityPersonalData: PersonalDataHandler = {
               phone: u.phone,
               locale: u.locale,
               timezone: u.timezone,
+              country: u.country,
+              avatar_media_id: u.avatar_media_id,
               status: u.status,
+              self_deactivated_at: value(u.self_deactivated_at),
               created_at: u.created_at.toISOString(),
               terms_version: u.terms_version,
               privacy_policy_version: u.privacy_policy_version,
             },
           },
         ],
+      },
+      {
+        section: 'preferences',
+        records: pref
+          ? [
+              {
+                id: pref.id,
+                fields: {
+                  preferred_currency: pref.preferred_currency,
+                  ai_personalization_enabled: pref.ai_personalization_enabled,
+                  ai_help_me_personalised: pref.ai_help_me_personalised,
+                  ai_personalised_matching: pref.ai_personalised_matching,
+                  ai_writing_help: pref.ai_writing_help,
+                  ai_show_reasons: pref.ai_show_reasons,
+                  review_invitation_channel: pref.review_invitation_channel,
+                  quiet_hours_start: pref.quiet_hours_start,
+                  quiet_hours_end: pref.quiet_hours_end,
+                },
+              },
+            ]
+          : [],
       },
       {
         section: 'memberships',
@@ -231,10 +256,16 @@ export const identityPersonalData: PersonalDataHandler = {
         scope.db,
       ),
     );
+    await del(
+      sql`UPDATE identity.user_preferences SET quiet_hours_start = NULL, quiet_hours_end = NULL WHERE user_id = ${userId}::uuid`.execute(
+        scope.db,
+      ),
+    );
     // The account row stays for references (reviews, appointments) but carries no personal data.
     await del(
       sql`UPDATE identity.user_accounts
              SET full_name = 'Deleted user', display_name = NULL, phone = NULL, phone_verified_at = NULL,
+                 country = NULL, avatar_media_id = NULL, self_deactivated_at = NULL,
                  email = ${`deleted-${userId}@deleted.carpal.invalid`}, preferred_contact_channel = NULL,
                  status = 'deleted', mfa_enabled = false, anonymized_at = coalesce(anonymized_at, now()),
                  deleted_at = coalesce(deleted_at, now()), deletion_reason = 'data subject request'

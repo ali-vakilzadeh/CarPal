@@ -167,6 +167,53 @@ describe('preferences (40 §20.2)', () => {
   });
 });
 
+describe('quiet hours (52 UserPreference)', () => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const hhmm = (at: Date) => `${pad(at.getUTCHours())}:${pad(at.getUTCMinutes())}`;
+  const deliveries = (notificationIds: string[]) =>
+    app.fixtures.worker.run({ actorType: 'system' }, ({ db }) =>
+      db
+        .selectFrom('notification.notification_deliveries')
+        .select(['id', 'channel', 'status', 'not_before'])
+        .where('notification_id', 'in', notificationIds)
+        .execute(),
+    );
+
+  it('holds push until the window ends, sends email now, and lets the sweep deliver it after', async () => {
+    const u = await newUser();
+    const token = await u.c.post('/v1/me/push-tokens', { platform: 'android', token: `fcm-${newId()}-device` });
+    expect(token.status).toBe(201);
+    const prefs = await u.c.get('/v1/me/preferences');
+    const now = Date.now();
+    const quiet = { start: hhmm(new Date(now - 3_600_000)), end: hhmm(new Date(now + 3_600_000)) };
+    const set = await u.c.patch('/v1/me/preferences', { quiet_hours: quiet }, prefs.body.version);
+    expect(set.status, set.text).toBe(200);
+
+    await emit('vehicle.reminder.due', 'maintenance_reminder', newId(), reminder(u.user.id));
+    const list = await u.c.get('/v1/me/notifications');
+    expect(list.body.items).toHaveLength(1);
+    const ids = list.body.items.map((n: Json) => n.id as string);
+    const held = (await deliveries(ids)).find((d) => d.channel === 'push')!;
+    expect(held.status).toBe('queued');
+    expect(held.not_before!.getTime()).toBeGreaterThan(now);
+    expect(app.mail(u.user.email, 'vehicle.reminder_due')).toHaveLength(1);
+
+    const dispatcher = worker.get(NotificationDispatcher, { strict: false });
+    await dispatcher.deliver(ids);
+    expect((await deliveries(ids)).find((d) => d.channel === 'push')!.status).toBe('queued');
+
+    await app.fixtures.worker.run({ actorType: 'system' }, ({ db }) =>
+      db
+        .updateTable('notification.notification_deliveries')
+        .set({ not_before: new Date(now - 1000) })
+        .where('id', '=', held.id)
+        .execute(),
+    );
+    await dispatcher.deliver(ids);
+    expect((await deliveries(ids)).find((d) => d.channel === 'push')!.status).toBe('sent');
+  });
+});
+
 describe('push tokens (40 §20.2)', () => {
   it("registers once per device (encrypted), refreshes, and revokes only the caller's own token", async () => {
     const u = await newUser();

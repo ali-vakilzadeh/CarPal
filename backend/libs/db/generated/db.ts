@@ -82,6 +82,20 @@ export interface AdminDataRetentionPolicies {
   version: Generated<number>;
 }
 
+export interface AdminExchangeRates {
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  currency: string;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  id: Generated<string>;
+  per_usd: Numeric;
+  reason: string | null;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  version: Generated<number>;
+}
+
 export interface AdminFeatureFlags {
   created_at: Generated<Timestamp>;
   created_by: Generated<string | null>;
@@ -1157,6 +1171,8 @@ export interface IdentityRoleMemberships {
 
 export interface IdentityUserAccounts {
   anonymized_at: Timestamp | null;
+  avatar_media_id: string | null;
+  country: string | null;
   created_at: Generated<Timestamp>;
   created_by: Generated<string | null>;
   deleted_at: Timestamp | null;
@@ -1173,6 +1189,7 @@ export interface IdentityUserAccounts {
   phone_verified_at: Timestamp | null;
   preferred_contact_channel: string | null;
   privacy_policy_version: string;
+  self_deactivated_at: Timestamp | null;
   status: Generated<string>;
   terms_accepted_at: Generated<Timestamp>;
   terms_version: string;
@@ -1184,8 +1201,12 @@ export interface IdentityUserAccounts {
 }
 
 export interface IdentityUserPreferences {
+  ai_help_me_personalised: Generated<boolean>;
+  ai_personalised_matching: Generated<boolean>;
   ai_personalization_enabled: Generated<boolean>;
+  ai_show_reasons: Generated<boolean>;
   ai_suggestions_enabled: Generated<boolean>;
+  ai_writing_help: Generated<boolean>;
   calendar_system: Generated<string>;
   created_at: Generated<Timestamp>;
   created_by: Generated<string | null>;
@@ -1200,6 +1221,9 @@ export interface IdentityUserPreferences {
   navigation_app_key: string | null;
   preferred_currency: string | null;
   profile_visibility: Generated<string>;
+  quiet_hours_end: string | null;
+  quiet_hours_start: string | null;
+  review_invitation_channel: Generated<string>;
   show_vehicles_on_profile: Generated<boolean>;
   updated_at: Generated<Timestamp>;
   updated_by: string | null;
@@ -1433,6 +1457,7 @@ export interface NotificationNotificationDeliveries {
   delivered_at: Timestamp | null;
   id: Generated<string>;
   last_error: string | null;
+  not_before: Timestamp | null;
   notification_id: string;
   provider_message_id: string | null;
   push_device_token_id: string | null;
@@ -2308,6 +2333,7 @@ export interface DB {
   "admin.assist_sessions": AdminAssistSessions;
   "admin.content_reports": AdminContentReports;
   "admin.data_retention_policies": AdminDataRetentionPolicies;
+  "admin.exchange_rates": AdminExchangeRates;
   "admin.feature_flags": AdminFeatureFlags;
   "admin.moderation_actions": AdminModerationActions;
   "admin.moderation_cases": AdminModerationCases;

@@ -224,7 +224,7 @@ export const resolvers: Resolvers = {
         provider_organization_id: provider.org!.id,
         service_task_node_id: h.n.task,
         parts_used: [{ name: 'Control arm', quantity: 2 }],
-        cost: { amount: '1250000', currency: 'IRR' },
+        cost: { amount: '1250000', currency: 'USD' },
         mileage_km: 81_000,
       }),
     };

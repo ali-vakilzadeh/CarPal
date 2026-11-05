@@ -4,23 +4,26 @@
 // verification link and changes only once it is opened (me.email_change, AAL2); a new phone gets a code
 // (me.phone_change_start, AAL2 → me.phone_change_verify). Both AAL2 starts go through the step-up and are repeated
 // after it (the draft holds the new address or number, never a code). The contact card is the target of
-// "Verify your contact details" links (#contact, e.g. from comments: 403 VERIFIED_CONTACT_REQUIRED).
+// "Verify your contact details" links (#contact, e.g. from comments: 403 VERIFIED_CONTACT_REQUIRED). The photo card
+// (contract 1.2.0) uploads with purpose avatar and attaches a clean image with me.update; country is the account's.
 import type { Me } from '@carpal/api-contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Badge } from '@/components/ds/badge';
 import { Button } from '@/components/ds/button';
 import { TextField } from '@/components/ds/text-field';
+import { SelectField } from '@/components/fields/select-field';
 import { useIntentHandler } from '@/components/shell/auth-intent';
 import { useStepUp } from '@/components/shell/step-up';
 import { useToast } from '@/components/shell/toast';
 import { maskDestination, normalizePhone } from '@/features/auth';
+import { removeUpload, UploadZone, useUploads } from '@/features/media';
 import { apiQueryKey, useApiClient, useApiQuery } from '@/lib/api/query';
 import { SESSION_QUERY_KEY } from '@/lib/api/session';
 import { useRegion } from '@/lib/config/client';
 import { toLatinDigits } from '@/lib/format';
-import { useT } from '@/lib/i18n/client';
-import { publicName } from './model';
+import { useLocale, useT } from '@/lib/i18n/client';
+import { countryOptions, publicName } from './model';
 import { Card, ErrorLine, ReadState } from './parts';
 
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@.]{2,}$/;
@@ -30,7 +33,9 @@ export function ProfileSection() {
   if (!me.data) return <ReadState status={me.status} error={me.error} refetch={me.refetch} />;
   return (
     <div className="pwa-stack">
+      <PhotoCard me={me.data} />
       <NamesCard me={me.data} />
+      <CountryCard me={me.data} />
       <ContactCard me={me.data} />
     </div>
   );
@@ -44,6 +49,90 @@ function useMeRefresh() {
     // The header shows the display name from the BFF session (refreshed from me.get / me.update, P9).
     void queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
   };
+}
+
+const AVATAR_GROUP = 'settings:avatar';
+
+function PhotoCard({ me }: { me: Me }) {
+  const t = useT();
+  const api = useApiClient();
+  const toast = useToast();
+  const refresh = useMeRefresh();
+  const uploads = useUploads(AVATAR_GROUP);
+  const ready = uploads.find((u) => u.state.phase === 'ready');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+
+  const save = async (avatar: string | null) => {
+    setBusy(true);
+    setError(null);
+    try {
+      refresh(await api.api('me.update', { body: { avatar_media_id: avatar } }));
+      for (const u of uploads) removeUpload(u.id, { keep: true });
+      toast(t('settings.profile.photoSaved'));
+    } catch (err) {
+      setError(err);
+      refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card title={t('settings.profile.photoTitle')} text={t('settings.profile.photoText')}>
+      {me.avatar_url ? (
+        // eslint-disable-next-line @next/next/no-img-element -- a signed media URL, not a build asset
+        <img src={me.avatar_url} alt={t('settings.profile.photoAlt')} className="pwa-settings-avatar" width={96} height={96} />
+      ) : null}
+      <UploadZone group={AVATAR_GROUP} purpose="avatar" label={t('settings.profile.photoPick')} multiple={false} />
+      <ErrorLine error={error} />
+      <div className="pwa-inline-buttons">
+        <Button
+          variant="primary"
+          loading={busy}
+          disabled={!ready?.state.asset}
+          onClick={() => ready?.state.asset && void save(ready.state.asset.id)}
+        >
+          {t('settings.profile.photoUse')}
+        </Button>
+        {me.avatar_url ? (
+          <Button variant="ghost" disabled={busy} onClick={() => void save(null)}>
+            {t('settings.profile.photoRemove')}
+          </Button>
+        ) : null}
+      </div>
+    </Card>
+  );
+}
+
+function CountryCard({ me }: { me: Me }) {
+  const t = useT();
+  const locale = useLocale();
+  const api = useApiClient();
+  const toast = useToast();
+  const refresh = useMeRefresh();
+  const [error, setError] = useState<unknown>(null);
+  const change = async (country: string) => {
+    setError(null);
+    try {
+      refresh(await api.api('me.update', { body: { country: country || null } }));
+      toast(t('settings.profile.saved'));
+    } catch (err) {
+      setError(err);
+      refresh();
+    }
+  };
+  return (
+    <Card title={t('settings.profile.countryTitle')}>
+      <SelectField
+        label={t('settings.profile.country')}
+        value={me.country ?? ''}
+        onChange={(c) => void change(c)}
+        options={[{ value: '', label: t('settings.profile.countryNone') }, ...countryOptions(locale)]}
+      />
+      <ErrorLine error={error} />
+    </Card>
+  );
 }
 
 function NamesCard({ me }: { me: Me }) {

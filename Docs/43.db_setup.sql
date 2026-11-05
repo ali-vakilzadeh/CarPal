@@ -633,7 +633,10 @@ CREATE TABLE identity.user_accounts (
   phone                     core.phone,
   locale                    core.locale NOT NULL DEFAULT 'en',
   timezone                  core.tz NOT NULL DEFAULT 'UTC',
+  country                   core.country,
+  avatar_media_id           uuid,
   status                    core.user_status NOT NULL DEFAULT 'pending_verification',
+  self_deactivated_at       timestamptz,
   email_verified_at         timestamptz,
   phone_verified_at         timestamptz,
   mfa_enabled               boolean NOT NULL DEFAULT false,
@@ -744,7 +747,17 @@ CREATE TABLE identity.user_preferences (
   ai_personalization_enabled boolean NOT NULL DEFAULT false,
   ai_suggestions_enabled     boolean NOT NULL DEFAULT true,
   critical_alerts_only       boolean NOT NULL DEFAULT false,
-  marketing_opt_in           boolean NOT NULL DEFAULT false
+  marketing_opt_in           boolean NOT NULL DEFAULT false,
+  ai_help_me_personalised    boolean NOT NULL DEFAULT false,
+  ai_personalised_matching   boolean NOT NULL DEFAULT false,
+  ai_writing_help            boolean NOT NULL DEFAULT true,
+  ai_show_reasons            boolean NOT NULL DEFAULT true,
+  review_invitation_channel  text NOT NULL DEFAULT 'in_app' CHECK (review_invitation_channel IN ('in_app','email')),
+  quiet_hours_start          text CHECK (quiet_hours_start ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'),
+  quiet_hours_end            text CHECK (quiet_hours_end ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'),
+  CONSTRAINT user_preferences_quiet_hours CHECK (
+    (quiet_hours_start IS NULL AND quiet_hours_end IS NULL)
+    OR (quiet_hours_start IS NOT NULL AND quiet_hours_end IS NOT NULL AND quiet_hours_start <> quiet_hours_end))
 );
 COMMENT ON TABLE identity.user_preferences IS '52 UserPreference — one per user, created with the account';
 
@@ -3684,6 +3697,7 @@ CREATE TABLE notification.notification_deliveries (
   last_error           text CHECK (char_length(last_error) <= 500),
   sent_at              timestamptz,
   delivered_at         timestamptz,
+  not_before           timestamptz,
   CHECK (channel <> 'push' OR push_device_token_id IS NOT NULL),
   CHECK (status <> 'suppressed' OR suppressed_reason IS NOT NULL)
 );
@@ -3788,6 +3802,17 @@ CREATE TABLE admin.feature_flags (
   UNIQUE (key, environment)
 );
 COMMENT ON TABLE admin.feature_flags IS '52 FeatureFlag — cached in Redis; ai.automation.kill_switch overrides every ai_feature flag';
+
+CREATE TABLE admin.exchange_rates (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  currency core.currency NOT NULL UNIQUE,
+  per_usd  numeric(14,4) NOT NULL CHECK (per_usd > 0),
+  reason   text CHECK (char_length(reason) <= 500)
+);
+COMMENT ON TABLE admin.exchange_rates IS '52 ExchangeRate — amount of a display currency per US dollar, set by a platform admin; display only';
 
 CREATE TABLE admin.pending_admin_changes (
   id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
@@ -4612,6 +4637,7 @@ CREATE POLICY reporter_read ON admin.content_reports FOR SELECT USING (reporter_
 CREATE POLICY reporter_insert ON admin.content_reports FOR INSERT
   WITH CHECK (reporter_user_id = core.me() AND status = 'open' AND moderation_case_id IS NULL);
 CREATE POLICY read_all ON admin.feature_flags FOR SELECT USING (true);
+CREATE POLICY read_all ON admin.exchange_rates FOR SELECT USING (true);
 
 -- analytics ------------------------------------------------------------------------
 CREATE POLICY write_any ON analytics.audit_logs FOR INSERT WITH CHECK (true);
@@ -4776,6 +4802,15 @@ AS $$
    WHERE a.id = p_action_id
 $$;
 COMMENT ON FUNCTION admin.moderation_action_affects IS 'Parties a moderation action affected (appeals), no other fields';
+
+CREATE FUNCTION identity.review_invitation_channel(p_user_id uuid)
+RETURNS text
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+  SELECT p.review_invitation_channel FROM identity.user_preferences p WHERE p.user_id = p_user_id AND p.deleted_at IS NULL
+$$;
+COMMENT ON FUNCTION identity.review_invitation_channel IS 'The one preference an inviting business needs (52 ReviewRequest); RLS keeps the rest private';
 
 -- ------------------------------------------------------------- 21.3 grants
 REVOKE ALL ON ALL TABLES IN SCHEMA core, identity, organization, billing, taxonomy, vehicle, inventory, discovery,
@@ -4980,6 +5015,10 @@ SELECT core.system_actor_id(), 'user', u.id, p.id, 'active', 'manual', core.syst
 -- ------------------------------------------------- 22.3 feature flags (52 §17)
 -- AI feature flags are on in dev and off elsewhere until Stage 5; Should-have
 -- community features start off; featured placements are off in the MVP.
+-- PLACEHOLDER rate: a platform admin must set the real USD → IRR rate before go-live (admin.exchange_rate_update).
+INSERT INTO admin.exchange_rates (currency, per_usd, reason)
+VALUES ('IRR', 1000000.0000, 'Placeholder seed: set the real rate before go-live');
+
 INSERT INTO admin.feature_flags (created_by, key, description, flag_type, enabled, environment)
 SELECT core.system_actor_id(), f.key, f.description, f.flag_type,
        CASE WHEN f.flag_type = 'ai_feature' THEN (:'env' = 'dev') ELSE f.enabled END, :'env'

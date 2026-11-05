@@ -18,6 +18,8 @@ export interface Preference {
 
 export const CHANNELS = ENUMS.NotificationChannel as readonly Channel[];
 export const CATEGORIES = ENUMS.NotificationCategory as readonly Category[];
+/** SMS costs money per message and stays for what cannot wait (40 notification_prefs.put). */
+export const SMS_CATEGORIES: readonly Category[] = ['appointments', 'service_reminders', 'fleet'];
 
 /** Defaults (proposed, WP14): in-app everything but marketing; email and push for operational categories; SMS off. */
 export function defaultPreference(channel: Channel, category: Category): Preference {
@@ -62,9 +64,27 @@ export function channelsFor(o: {
       continue;
     }
     const p = o.preferences.find((x) => x.channel === channel && x.category === o.category) ?? defaultPreference(channel, o.category);
-    if (!p.enabled || o.criticalAlertsOnly) out.push({ channel, outcome: 'suppressed' });
+    if (!p.enabled || o.criticalAlertsOnly || (channel === 'sms' && !SMS_CATEGORIES.includes(o.category)))
+      out.push({ channel, outcome: 'suppressed' });
     else if (channel === 'email' && p.frequency !== 'immediate') out.push({ channel, outcome: 'digest' });
     else out.push({ channel, outcome: 'send' });
   }
   return out;
+}
+
+const minutes = (hhmm: string): number => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+
+/**
+ * When a delivery held by quiet hours may go out: the end of the window on the user's clock, or null outside it. The
+ * window may cross midnight (22:00-07:00).
+ */
+export function quietUntil(now: Date, timeZone: string, quiet: { start: string; end: string } | null): Date | null {
+  if (!quiet) return null;
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now);
+  const part = (type: string): number => Number(parts.find((x) => x.type === type)?.value);
+  const current = part('hour') * 60 + part('minute');
+  const start = minutes(quiet.start);
+  const end = minutes(quiet.end);
+  const inside = start < end ? current >= start && current < end : current >= start || current < end;
+  return inside ? new Date(now.getTime() + ((end - current + 1440) % 1440) * 60_000) : null;
 }

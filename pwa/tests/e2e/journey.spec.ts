@@ -171,11 +171,11 @@ test('Sara, Chapters 1-11 in FA', async ({ page, request }) => {
     await expectNoAxeViolations(page);
 
     await gotoReady(page, '/fa/garage');
-    await page
-      .getByRole('link', { name: /نقره‌ای/ })
-      .first()
-      .click();
-    await page.waitForURL(/\/fa\/garage\/[0-9a-f-]{36}\/overview$/);
+    // The garage opens on the newest car, so wait for this car's page, not any overview.
+    const silver = page.getByRole('link', { name: /نقره‌ای/ }).first();
+    const silverId = /[0-9a-f-]{36}/.exec((await silver.getAttribute('href'))!)![0];
+    await silver.click();
+    await page.waitForURL(new RegExp(`/fa/garage/${silverId}/overview$`));
     silverUrl = page.url().replace(/\/overview$/, '');
     await page.getByRole('link', { name: fa('garage.quick.addRecord') }).click();
     await page.waitForURL(/\/records\/new$/);
@@ -187,7 +187,7 @@ test('Sara, Chapters 1-11 in FA', async ({ page, request }) => {
     await page.getByRole('combobox', { name: 'تاریخ سال' }).selectOption('1404');
     await page.getByRole('combobox', { name: 'تاریخ ماه' }).selectOption('2');
     await page.getByRole('combobox', { name: 'تاریخ روز' }).selectOption('15');
-    await page.getByLabel(fa('garage.form.cost'), { exact: true }).fill('4500000');
+    await page.getByLabel(fa('garage.form.costUsd'), { exact: true }).fill('4500000');
     await page.getByRole('button', { name: fa('common.actions.save') }).click();
     await page.waitForURL(/\/history$/);
     await expect(page.getByTestId('history-table').getByText(fa('garage.record.addedByYou'))).toBeVisible();

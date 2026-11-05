@@ -27,6 +27,12 @@ export function toPreference(p: PreferenceRow) {
     show_vehicles_on_profile: p.show_vehicles_on_profile,
     ai_personalization_enabled: p.ai_personalization_enabled,
     ai_suggestions_enabled: p.ai_suggestions_enabled,
+    ai_help_me_personalised: p.ai_help_me_personalised,
+    ai_personalised_matching: p.ai_personalised_matching,
+    ai_writing_help: p.ai_writing_help,
+    ai_show_reasons: p.ai_show_reasons,
+    review_invitation_channel: p.review_invitation_channel as 'in_app' | 'email',
+    quiet_hours: p.quiet_hours_start && p.quiet_hours_end ? { start: p.quiet_hours_start, end: p.quiet_hours_end } : null,
     critical_alerts_only: p.critical_alerts_only,
     marketing_opt_in: p.marketing_opt_in,
   };
@@ -45,7 +51,13 @@ export function toMembership(m: MembershipRow, orgs: Map<string, OrgCard>) {
 }
 
 /** 40 Me. */
-export function toMe(u: UserRow, pref: PreferenceRow, memberships: ReturnType<typeof toMembership>[], subscription: SubscriptionSummary) {
+export function toMe(
+  u: UserRow,
+  pref: PreferenceRow,
+  memberships: ReturnType<typeof toMembership>[],
+  subscription: SubscriptionSummary,
+  avatarUrl: string | null,
+) {
   return {
     ...meta(u),
     full_name: u.full_name,
@@ -54,6 +66,8 @@ export function toMe(u: UserRow, pref: PreferenceRow, memberships: ReturnType<ty
     phone: u.phone,
     locale: u.locale,
     timezone: u.timezone,
+    country: u.country,
+    avatar_url: avatarUrl,
     status: u.status,
     email_verified_at: isoOrNull(u.email_verified_at),
     phone_verified_at: isoOrNull(u.phone_verified_at),
@@ -92,8 +106,9 @@ export function toMfaMethod(m: MethodRow) {
   };
 }
 
-/** 40 ConsentRecord. */
-export function toConsentRecord(c: ConsentRow) {
+/** 40 ConsentRecord; `orgs` names the businesses of organization grantees. */
+export function toConsentRecord(c: ConsentRow, orgs: Map<string, OrgCard>) {
+  const grantee = c.granted_to_type === 'organization' && c.granted_to_id ? orgs.get(c.granted_to_id) : undefined;
   return {
     ...meta(c),
     subject_type: c.subject_type as 'user' | 'organization',
@@ -103,6 +118,7 @@ export function toConsentRecord(c: ConsentRow) {
     scope_entity_id: c.scope_entity_id,
     granted_to_type: c.granted_to_type as 'organization' | 'platform' | 'mcp_client' | null,
     granted_to_id: c.granted_to_id,
+    granted_to_organization: grantee ? toOrgSummary(grantee) : null,
     policy_version: c.policy_version,
     granted: c.granted,
     granted_at: isoOrNull(c.granted_at),

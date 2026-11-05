@@ -157,6 +157,34 @@ describe('sign in (S-AUTH-02)', () => {
     expect(localStorage.getItem('cp:signin-method')).toBe('password');
   });
 
+  it('a self-deactivated account: a correct sign-in offers reactivation, then the sign-in finishes (contract 1.2.0)', async () => {
+    const handlers: Handlers = {
+      'auth.signin_password': () => ({ next: 'reactivate' }),
+      'auth.reactivate': () => ({ next: 'complete' }),
+    };
+    const { api } = renderApp(<HostedSignIn {...props()} />, { locale: 'en', handlers });
+    type('Mobile number or email', 'sara@test.carpal.app');
+    fireEvent.click(screen.getByRole('button', { name: 'Use password' }));
+    type('Password', 'correct horse battery');
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByRole('heading', { name: 'Your account is deactivated' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Reactivate my account' }));
+    await waitFor(() => expect(goTo).toHaveBeenCalledWith(RESUME));
+    expect(api.calls.at(-1)).toEqual({ opId: 'auth.reactivate', args: { body: { interaction_id: 'ia-1' } } });
+  });
+
+  it('"Not now" leaves a deactivated account as it is', async () => {
+    const handlers: Handlers = { 'auth.signin_password': () => ({ next: 'reactivate' }) };
+    const { api } = renderApp(<HostedSignIn {...props()} />, { locale: 'en', handlers });
+    type('Mobile number or email', 'sara@test.carpal.app');
+    fireEvent.click(screen.getByRole('button', { name: 'Use password' }));
+    type('Password', 'correct horse battery');
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Not now' }));
+    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(api.calls.some((c) => c.opId === 'auth.reactivate')).toBe(false);
+  });
+
   it('phone: a code by text in E.164, enumeration-safe wording; passwords need the email', async () => {
     const handlers: Handlers = { 'auth.otp_start': () => ({}), 'auth.otp_verify': () => ({ next: 'complete' }) };
     const { api } = renderApp(<HostedSignIn {...props()} />, { locale: 'en', handlers });

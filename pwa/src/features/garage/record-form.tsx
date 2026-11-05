@@ -48,7 +48,6 @@ interface Draft {
   providerId: string;
   shopName: string;
   amount: string;
-  currency: string;
   warranty: string;
   parts: PartRow[];
 }
@@ -62,7 +61,6 @@ const EMPTY: Draft = {
   providerId: '',
   shopName: '',
   amount: '',
-  currency: '',
   warranty: '',
   parts: [],
 };
@@ -79,7 +77,6 @@ function fromRecord(r: ServiceRecord): Draft {
     providerId: r.provider_organization_id ?? '',
     shopName: '',
     amount: r.cost?.amount ?? '',
-    currency: r.cost?.currency ?? '',
     warranty: r.warranty_note ?? '',
     parts: (r.parts_used ?? []).map((p) => ({ name: p.name, part_number: p.part_number ?? '', quantity: String(p.quantity) })),
   };
@@ -132,7 +129,6 @@ function RecordForm({
   const group = `record:${v.id}:${record?.id ?? 'new'}`;
   const uploads = useUploads(group);
   const today = todayIso(f.timeZone);
-  const defaultCurrency = region.currency || 'IRR';
 
   const [d, setD] = useState<Draft>(() => {
     if (record) return fromRecord(record);
@@ -221,7 +217,8 @@ function RecordForm({
       ...(d.taskId ? { service_task_node_id: d.taskId } : {}),
       ...(description ? { description } : {}),
       ...(parts.length ? { parts_used: parts } : {}),
-      ...(amount ? { cost: { amount, currency: d.currency || defaultCurrency } } : {}),
+      // Costs are stored in the base currency (backend GD-41).
+      ...(amount ? { cost: { amount, currency: region.currency } } : {}),
       ...(d.warranty.trim() ? { warranty_note: d.warranty.trim().slice(0, 500) } : {}),
       ...(km !== null ? { mileage_km: km } : {}),
       ...(d.providerId ? { provider_organization_id: d.providerId } : {}),
@@ -414,20 +411,12 @@ function RecordForm({
           </div>
           <div className="pwa-form-grid">
             <TextField
-              label={t('garage.form.cost')}
+              label={t('garage.form.costUsd')}
               value={d.amount}
               onChange={(e) => set('amount', e.target.value)}
               inputMode="decimal"
+              hint={Number(d.amount) > 0 ? t('garage.form.costShown', { price: f.money(d.amount, region.currency) }) : undefined}
               error={errors.amount ? t(errors.amount) : undefined}
-            />
-            <SelectField
-              label={t('garage.form.currency')}
-              value={d.currency || defaultCurrency}
-              onChange={(c) => set('currency', c)}
-              options={[
-                { value: 'IRR', label: t('garage.form.currencyIrr') },
-                { value: 'USD', label: t('garage.form.currencyUsd') },
-              ]}
             />
           </div>
           <PartsRows parts={d.parts} onChange={(parts) => set('parts', parts)} error={errors.parts ? t(errors.parts) : undefined} />

@@ -119,7 +119,8 @@ test('vendor profile and part page: AutoPartsStore and Product JSON-LD with the 
 
   await gotoReady(page, canonical);
   await expect(page.getByRole('heading', { level: 1, name: vendor.itemName })).toBeVisible();
-  await expect(page.getByText('$45')).toBeVisible();
+  // The public price is 45 USD (see the JSON-LD above), shown in toman at the admin rate (backend GD-41).
+  await expect(page.getByText(/^[\d,]+ T$/).first()).toBeVisible();
   await page.getByRole('button', { name: 'Ask about stock' }).click();
   await expect(page.getByRole('dialog', { name: `Sign in to ask ${vendor.name} about this part` })).toBeVisible();
   await page.keyboard.press('Escape');

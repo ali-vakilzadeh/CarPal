@@ -15,6 +15,7 @@ import { EntitlementChecker, requireEntitlement } from '#libs/entitlements/index
 import { created, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import type { Locale } from '#libs/i18n/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
+import { RegionConfigService } from '#libs/region-config/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { AppointmentFacts } from '#modules/appointment/interface/appointments.js';
 import { authorDisplayName, OrgMemberships, UserCards } from '#modules/identity/interface/identity.js';
@@ -113,11 +114,13 @@ export class FleetProfilePutHandler implements OperationHandler {
   constructor(
     private readonly entitlements: EntitlementChecker,
     private readonly lifecycle: OrgLifecycle,
+    private readonly region: RegionConfigService,
   ) {}
 
   async handle(ctx: OperationContext<ProfileWrite>): Promise<OperationResult> {
     const m = fleetMember(ctx);
     const b = ctx.body;
+    this.region.requireBaseCurrency(b.reporting_currency, '/reporting_currency');
     const body = await ctx.tx(async (scope) => {
       const p = await loadProfile(scope, m.orgId, true);
       // ETAG(if exists): an existing profile needs If-Match; the first save creates it.
@@ -651,11 +654,13 @@ export class FleetApprovalCreateHandler implements OperationHandler {
     private readonly appointments: AppointmentFacts,
     private readonly orgs: OrgCards,
     private readonly views: ApprovalViews,
+    private readonly region: RegionConfigService,
   ) {}
 
   async handle(ctx: OperationContext<ApprovalCreate>): Promise<OperationResult> {
     const m = fleetMember(ctx);
     const b = ctx.body;
+    this.region.requireBaseCurrency(b.cost_estimate?.currency, '/cost_estimate/currency');
     const errors: FieldError[] = [];
     if (b.approval_type === 'provider_selection' && !b.selected_provider_organization_id)
       errors.push({ pointer: '/selected_provider_organization_id', code: 'conditional_required' });

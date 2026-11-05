@@ -4,7 +4,7 @@
 //                      (FourEyesExecutors, PurposeQueues, ModerationTargets,
 //                      RetentionHandlers), FourEyes, ModerationLog, the
 //                      purpose verifier of the authorizer (SEC-ADM-5) and the
-//                      flag cache listener (feature_flag.changed).
+//                      flag and rate cache listener (feature_flag.changed, exchange_rate.changed).
 //   AdminApiModule     §23 moderation, flags, retention, assist sessions and
 //                      four-eyes operations on the admin-api host.
 //   AdminPublicModule  reports.create on the api host.
@@ -25,6 +25,7 @@ import { PurposeVerifier } from '#libs/authz/index.js';
 import { ApiError } from '#libs/contract/index.js';
 import { uuidv7 } from '#libs/crypto/index.js';
 import { FlagService } from '#libs/flags/index.js';
+import { ExchangeRates } from '#libs/region-config/index.js';
 import type { Infra } from '#libs/infra/index.js';
 import type { Logger } from '#libs/observability/index.js';
 import { HOST, InjectInfra, InjectLogger } from '#libs/runtime/index.js';
@@ -49,6 +50,9 @@ import {
   AssistSessionStartHandler,
   FlagsListHandler,
   FlagUpdateHandler,
+  applyExchangeRateChange,
+  ExchangeRatesListHandler,
+  ExchangeRateUpdateHandler,
 } from './application/platform-ops.js';
 import { RetentionListHandler, RetentionUpdateHandler } from './application/platform-ops.js';
 import { DbFourEyes, DbModerationIntake, DbModerationLog, QueuePurposeVerifier } from './infrastructure/admin-services.js';
@@ -72,6 +76,7 @@ export class AdminRegistrations implements OnModuleInit {
     private readonly executors: FourEyesExecutors,
     private readonly retention: RetentionHandlers,
     private readonly flags: FlagService,
+    private readonly rates: ExchangeRates,
     @Optional() private readonly gauges?: MetricGauges,
   ) {}
 
@@ -118,6 +123,17 @@ export class AdminRegistrations implements OnModuleInit {
       const p = change.payload as { enabled?: boolean; targeting?: Record<string, unknown> | null; reason: string };
       await applyFlagChange(scope, this.flags, row, p, change.requestedBy);
     });
+    this.executors.register('admin.exchange_rate_update', async (scope, change) => {
+      const row = await scope.db
+        .selectFrom('admin.exchange_rates')
+        .selectAll()
+        .where('id', '=', change.targetId)
+        .where('deleted_at', 'is', null)
+        .forUpdate()
+        .executeTakeFirst();
+      if (!row) throw new ApiError('NOT_FOUND', { detail: 'exchange rate gone' });
+      await applyExchangeRateChange(scope, this.rates, row, change.payload as { per_usd: string; reason: string }, change.requestedBy);
+    });
     this.executors.register('admin.retention_update', async (scope, change) =>
       applyRetentionChange(scope, change.targetId, change.payload as Parameters<typeof applyRetentionChange>[2]),
     );
@@ -132,6 +148,7 @@ export class FlagCacheListener implements OnApplicationBootstrap, OnApplicationS
 
   constructor(
     private readonly flags: FlagService,
+    private readonly rates: ExchangeRates,
     @InjectInfra() private readonly infra: Infra,
     @InjectLogger() private readonly logger: Logger,
     @Inject(HOST) private readonly host: string,
@@ -141,8 +158,11 @@ export class FlagCacheListener implements OnApplicationBootstrap, OnApplicationS
     try {
       this.#unsubscribe = this.infra.bus.subscribe({
         consumer: `flags.cache.${this.host}.${uuidv7()}`,
-        subjects: ['feature_flag.changed'],
-        handler: async () => this.flags.invalidate(),
+        subjects: ['feature_flag.changed', 'exchange_rate.changed'],
+        handler: async () => {
+          this.flags.invalidate();
+          this.rates.invalidate();
+        },
       });
     } catch (err) {
       this.logger.warn({ err }, 'flag cache: no event subscription (cache refreshes by time only)');
@@ -198,6 +218,8 @@ export class AdminModule {}
     CaseCloseHandler,
     FlagsListHandler,
     FlagUpdateHandler,
+    ExchangeRatesListHandler,
+    ExchangeRateUpdateHandler,
     RetentionListHandler,
     RetentionUpdateHandler,
     AssistSessionStartHandler,

@@ -18,7 +18,7 @@ import {
   type OperationHandler,
   type OperationResult,
 } from '#libs/http-pipeline/index.js';
-import { mergedPreferences, type Preference } from '../domain/preferences.js';
+import { mergedPreferences, SMS_CATEGORIES, type Preference } from '../domain/preferences.js';
 import { pushTokenAad } from './dispatcher.js';
 
 registerConstraintErrors({ push_device_tokens_token_hash_key: { code: 'DUPLICATE', pointer: '/token', fieldCode: 'not_unique' } });
@@ -169,6 +169,8 @@ export class NotificationPrefsPutHandler implements OperationHandler {
       seen.add(key);
       // Digests are an email feature (52 NotificationPreference.frequency).
       if (p.channel !== 'email' && p.frequency !== 'immediate') errors.push({ pointer: `/items/${i}/frequency`, code: 'enum' });
+      if (p.channel === 'sms' && p.enabled && !SMS_CATEGORIES.includes(p.category))
+        errors.push({ pointer: `/items/${i}/enabled`, code: 'enum' });
     });
     if (errors.length) throw ApiError.validation(errors);
     const body = await ctx.tx(async (scope) => {

@@ -9,7 +9,7 @@
 // axe on every visited page.
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { API, AUTH, backendUp, now, readMail } from './accounts';
-import { businessUser, seedProvider, taxonomy, type BusinessApi, type SeededProvider } from './businesses';
+import { businessUser, inviteByEmail, seedProvider, taxonomy, type BusinessApi, type SeededProvider } from './businesses';
 import { retire } from './flows';
 import { decideCookies, expectNoAxeViolations, gotoReady } from './support';
 
@@ -56,6 +56,7 @@ test.beforeAll(async ({ playwright }) => {
   sara = await businessUser(request, 'p11');
   const car = await ok(sara.call('POST', '/v1/me/vehicles', { brand_node_id: n.brand, model_node_id: n.model, year: 2012 }), 'vehicle');
   await ok(sara.call('POST', '/v1/me/consents', { consent_type: 'review_invitations', policy_version: '2026-10' }), 'consent');
+  await inviteByEmail(sara);
   const from = new Date(Date.now() + 26 * 3_600_000);
   const appt = await ok(
     sara.call('POST', '/v1/me/appointments', {

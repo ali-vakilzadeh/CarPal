@@ -16,6 +16,8 @@ export interface UserTokens {
   acr: Acr;
   authTime: number;
   scope: string;
+  /** The tokens are DPoP-bound to the record's dpopKey (backend GD-06 amendment 2026-11-04). */
+  bound?: boolean;
 }
 
 export interface AnonymousToken {
@@ -61,7 +63,7 @@ export interface SessionRecord {
   persistent?: boolean;
   csrf: string;
   locale?: string;
-  /** ES256 key pair (private JWK) that binds this pre-session's anonymous tokens (DI-17). */
+  /** ES256 key pair (private JWK) that binds this record's tokens: a guest's anonymous ones (DI-17), a user's after sign-in. */
   dpopKey?: JWK;
   anonymous?: AnonymousToken;
   user?: UserTokens;

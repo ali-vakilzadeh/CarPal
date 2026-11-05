@@ -34,6 +34,7 @@ import { distanceText, LocationChip, ResultCardView, storeSearch, useResultEvent
 import { ApiProblem } from '@/lib/api/problem';
 import { useFlag, usePwaConfig, useRegion } from '@/lib/config/client';
 import { useTaxonomyNodes } from '@/lib/config/taxonomy';
+import { useShowReasons } from '@/lib/api/preferences';
 import { useFormat } from '@/lib/format/client';
 import { useLocale, useT } from '@/lib/i18n/client';
 import type { MessageKey } from '@/lib/i18n/keys';
@@ -116,6 +117,7 @@ export function RecommendationsStep({
 }) {
   const t = useT();
   const f = useFormat();
+  const showReasons = useShowReasons();
   const slotZone = usePwaConfig().regionTimeZone;
   const locale = useLocale();
   const router = useRouter();
@@ -362,8 +364,17 @@ export function RecommendationsStep({
           <ol className="pwa-plain-list pwa-stack">
             {top.map((r) => (
               <li key={r.result_id} className="pwa-help-rec">
-                <ResultCardView r={r} locale={locale} t={t} f={f} bestMatch={!critical} slotTimeZone={slotZone} actions={actions(r)} />
-                <div className="pwa-help-why">
+                <ResultCardView
+                  r={r}
+                  locale={locale}
+                  t={t}
+                  f={f}
+                  bestMatch={!critical}
+                  slotTimeZone={slotZone}
+                  showReasons={showReasons}
+                  actions={actions(r)}
+                />
+                <div className="pwa-help-why" hidden={!showReasons}>
                   <h3 className="pwa-text-caption m-0">{t('help.recommendations.why')}</h3>
                   <ul className="pwa-plain-list pwa-stack-xs">
                     {r.reasons.map((x, i) => (
@@ -386,7 +397,15 @@ export function RecommendationsStep({
               <ul className="pwa-plain-list pwa-stack-sm">
                 {more.map((r) => (
                   <li key={r.result_id}>
-                    <ResultCardView r={r} locale={locale} t={t} f={f} slotTimeZone={slotZone} actions={actions(r)} />
+                    <ResultCardView
+                      r={r}
+                      locale={locale}
+                      t={t}
+                      f={f}
+                      slotTimeZone={slotZone}
+                      showReasons={showReasons}
+                      actions={actions(r)}
+                    />
                   </li>
                 ))}
               </ul>

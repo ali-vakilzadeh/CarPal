@@ -12,10 +12,11 @@ import { ApiError } from '#libs/contract/index.js';
 import { FlagService, KILL_SWITCH } from '#libs/flags/index.js';
 import { created, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
+import { ExchangeRates } from '#libs/region-config/index.js';
 import { InjectConfig } from '#libs/runtime/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { OrgCards } from '#modules/organization/interface/org-cards.js';
-import { toFlag, toRetention, type FlagRow } from '../api/projections.js';
+import { toExchangeRate, toFlag, toRetention, type ExchangeRateRow, type FlagRow } from '../api/projections.js';
 import { FourEyes, ModerationLog, StaffNames, staffOf } from '../interface/admin.js';
 import { afterId, pageOf } from './common.js';
 
@@ -142,6 +143,120 @@ export class FlagUpdateHandler implements OperationHandler {
       }
       const updated = await applyFlagChange(scope, this.flags, row, b, s.userId);
       return { body: toFlag(updated, await this.names.name(scope, s.userId, ctx.locale)) };
+    });
+  }
+}
+
+type RatePatch = { per_usd: string; reason: string };
+
+/** 4EYES(change over 20 %): a mistyped rate would misprice every amount shown to everybody. */
+export function rateNeedsSecondApprover(current: string, next: string): boolean {
+  return Math.abs(Number(next) - Number(current)) / Number(current) > 0.2;
+}
+
+/** Applies a rate change (directly, or as the approved four-eyes change). */
+export async function applyExchangeRateChange(
+  scope: TxScope,
+  rates: ExchangeRates,
+  row: ExchangeRateRow,
+  patch: RatePatch,
+  staffId: string,
+): Promise<ExchangeRateRow> {
+  const updated = await scope.db
+    .updateTable('admin.exchange_rates')
+    .set({ per_usd: patch.per_usd, reason: patch.reason, updated_by: staffId })
+    .where('id', '=', row.id)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+  await writeAudit(scope, {
+    action: 'admin.exchange_rate_updated',
+    entityType: 'exchange_rate',
+    entityId: row.id,
+    reason: patch.reason,
+    previous: JSON.stringify({ currency: row.currency, per_usd: row.per_usd }),
+    next: JSON.stringify({ currency: updated.currency, per_usd: updated.per_usd }),
+  });
+  await publishEvent(scope, {
+    type: 'exchange_rate.changed',
+    aggregateType: 'exchange_rate',
+    aggregateId: row.id,
+    payload: { currency: row.currency, per_usd: String(updated.per_usd) },
+  });
+  scope.afterCommit(() => rates.invalidate());
+  return updated;
+}
+
+@Injectable()
+@Operation('admin.exchange_rates_list')
+export class ExchangeRatesListHandler implements OperationHandler {
+  constructor(private readonly names: StaffNames) {}
+
+  async handle(ctx: OperationContext) {
+    staffOf(ctx);
+    const body = await ctx.tx(
+      async (scope) => {
+        const rows = await scope.db
+          .selectFrom('admin.exchange_rates')
+          .selectAll()
+          .where('deleted_at', 'is', null)
+          .orderBy('currency')
+          .limit(10)
+          .execute();
+        const names = await this.names.names(
+          scope,
+          rows.map((r) => r.updated_by ?? r.created_by),
+          ctx.locale,
+        );
+        return { items: rows.map((r) => toExchangeRate(r, names.get((r.updated_by ?? r.created_by)!) ?? 'CarPal')) };
+      },
+      { readOnly: true },
+    );
+    return { body };
+  }
+}
+
+@Injectable()
+@Operation('admin.exchange_rate_update')
+export class ExchangeRateUpdateHandler implements OperationHandler {
+  constructor(
+    private readonly rates: ExchangeRates,
+    private readonly fourEyes: FourEyes,
+    private readonly names: StaffNames,
+  ) {}
+
+  async handle(ctx: OperationContext<RatePatch>): Promise<OperationResult> {
+    const s = staffOf(ctx);
+    const b = ctx.body;
+    if (!(Number(b.per_usd) > 0)) throw ApiError.validation([{ pointer: '/per_usd', code: 'out_of_range' }]);
+    return ctx.tx(async (scope) => {
+      const row = await scope.db
+        .selectFrom('admin.exchange_rates')
+        .selectAll()
+        .where('currency', '=', ctx.params.currency!)
+        .where('deleted_at', 'is', null)
+        .forUpdate()
+        .executeTakeFirst();
+      if (!row) throw new ApiError('NOT_FOUND');
+      if (ctx.ifMatch !== row.version) throw new ApiError('VERSION_MISMATCH');
+      if (rateNeedsSecondApprover(String(row.per_usd), b.per_usd)) {
+        const pending = await this.fourEyes.request(
+          scope,
+          s.userId,
+          {
+            opId: 'admin.exchange_rate_update',
+            targetType: 'exchange_rate',
+            targetId: row.id,
+            payload: { currency: row.currency, ...b },
+            summary: `Set ${row.currency} per USD to ${b.per_usd}`,
+            reason: b.reason,
+            requiredRole: 'platform_admin',
+          },
+          ctx.locale,
+        );
+        return { status: 202, body: pending };
+      }
+      const updated = await applyExchangeRateChange(scope, this.rates, row, b, s.userId);
+      return { body: toExchangeRate(updated, await this.names.name(scope, s.userId, ctx.locale)) };
     });
   }
 }

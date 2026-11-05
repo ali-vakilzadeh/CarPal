@@ -45,7 +45,7 @@ export class TokenEndpointError extends Error {
   }
 }
 
-/** How the BFF authenticates to /oauth/token (none in lite; private_key_jwt over mTLS in strict mode, NI-01). */
+/** How the BFF authenticates to /oauth/token (none in lite; private_key_jwt in strict mode, backend GD-06 amendment 2026-11-04). */
 export interface ClientAuthentication {
   readonly method: 'none' | 'private_key_jwt';
   apply(form: URLSearchParams, o: { clientId: string; tokenEndpoint: string }): Promise<void>;
@@ -58,7 +58,7 @@ export const noClientAuthentication: ClientAuthentication = {
   },
 };
 
-/** RFC 7523 client assertion (60 s, single jti) signed with the client's private key. mTLS is a transport concern. */
+/** RFC 7523 client assertion (60 s, single jti) signed with the client's private key. It authenticates the client; DPoP binds the tokens. */
 export function privateKeyJwt(key: JWK & { kid: string }, alg: 'EdDSA' | 'ES256' = 'EdDSA'): ClientAuthentication {
   return {
     method: 'private_key_jwt',
@@ -146,13 +146,18 @@ export class TokenClient {
     return this.#jwks.value;
   }
 
-  authorizationCode(clientId: string, o: { code: string; redirectUri: string; verifier: string }): Promise<TokenResponse> {
-    return this.#token(clientId, {
-      grant_type: 'authorization_code',
-      code: o.code,
-      redirect_uri: o.redirectUri,
-      code_verifier: o.verifier,
-    });
+  /** The tokens are bound to `dpopKey`: the session's refreshes and API calls use the same key (backend GD-06). */
+  authorizationCode(clientId: string, o: { code: string; redirectUri: string; verifier: string; dpopKey?: JWK }): Promise<TokenResponse> {
+    return this.#token(
+      clientId,
+      {
+        grant_type: 'authorization_code',
+        code: o.code,
+        redirect_uri: o.redirectUri,
+        code_verifier: o.verifier,
+      },
+      { dpopKey: o.dpopKey },
+    );
   }
 
   refresh(clientId: string, refreshToken: string, dpopKey?: JWK): Promise<TokenResponse> {
@@ -164,8 +169,8 @@ export class TokenClient {
     return this.#token(clientId, { grant_type: ANONYMOUS_GRANT }, { dpopKey, att: 'anonymous' });
   }
 
-  clientCredentials(clientId: string, scope = 'public.read'): Promise<TokenResponse> {
-    return this.#token(clientId, { grant_type: 'client_credentials', scope });
+  clientCredentials(clientId: string, scope = 'public.read', dpopKey?: JWK): Promise<TokenResponse> {
+    return this.#token(clientId, { grant_type: 'client_credentials', scope }, { dpopKey });
   }
 
   /** RFC 7009: always 200 from the server; network failures are reported to the caller. */

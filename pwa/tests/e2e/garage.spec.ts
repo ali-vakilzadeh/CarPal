@@ -136,7 +136,7 @@ test('Sara Ch. 4 in FA: add the car, update the mileage, add a record with an in
   await page.getByRole('combobox', { name: 'تاریخ سال' }).selectOption('1405');
   await page.getByRole('combobox', { name: 'تاریخ ماه' }).selectOption('7');
   await page.getByRole('combobox', { name: 'تاریخ روز' }).selectOption('10');
-  await page.getByLabel(fa('garage.form.cost'), { exact: true }).fill('4500000');
+  await page.getByLabel(fa('garage.form.costUsd'), { exact: true }).fill('4500000');
   await page.locator('input[type="file"]').setInputFiles([
     { name: 'invoice.pdf', mimeType: 'application/pdf', buffer: PDF },
     { name: 'pads.png', mimeType: 'image/png', buffer: png() },

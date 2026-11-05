@@ -6,19 +6,31 @@
 // replaces the whole list, so every change sends all rows; marketing needs the marketing consent (403
 // CONSENT_REQUIRED → Privacy & consent). "Web push (this browser)" (P12.T3) shows whether this browser receives the
 // category: the contract has one push channel for the mobile app and browsers (DI-71), so a category reaches this
-// browser when its Push switch is on and the "Web push on this browser" card below has subscribed it; SMS comes later. "Only safety and security alerts" is the account's critical_alerts_only. The bells of followed shops
-// live on Saved & Following.
+// browser when its Push switch is on and the "Web push on this browser" card below has subscribed it. SMS (contract
+// 1.2.0) exists for appointments and reminders and needs a verified phone. Quiet hours hold push and SMS until the window
+// ends. "Only safety and security alerts" is the account's critical_alerts_only. The bells of followed shops live on
+// Saved & Following.
 import type { NotificationCategory, NotificationChannel, NotificationPreference } from '@carpal/api-contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
+import { Button } from '@/components/ds/button';
 import { apiQueryKey, useApiClient, useApiQuery } from '@/lib/api/query';
 import { ApiProblem } from '@/lib/api/problem';
 import { useLocale, useT } from '@/lib/i18n/client';
 import type { MessageKey } from '@/lib/i18n/keys';
 import { PushOutcome, usePush } from '@/features/pwa';
 import { useSetPreference } from './consents';
-import { MATRIX_CATEGORIES, MATRIX_CHANNELS, prefKey, prefMap, withPreference, type Frequency } from './model';
+import {
+  MATRIX_CATEGORIES,
+  MATRIX_CHANNELS,
+  prefKey,
+  prefMap,
+  quietHoursValid,
+  SMS_CATEGORIES,
+  withPreference,
+  type Frequency,
+} from './model';
 import { Card, ErrorLine, ReadState, SwitchRow } from './parts';
 
 const CATEGORY: Record<(typeof MATRIX_CATEGORIES)[number], MessageKey> = {
@@ -46,6 +58,8 @@ export function NotificationsSection() {
   const queryClient = useQueryClient();
   const prefs = useApiQuery('notification_prefs.get', undefined, { staleTime: 60_000 });
   const account = useApiQuery('me.preferences_get', undefined, { staleTime: 60_000 });
+  const me = useApiQuery('me.get', undefined, { staleTime: 60_000 });
+  const smsReady = !!me.data?.phone_verified_at;
   const setPreference = useSetPreference();
   const push = usePush();
   const webPush = push.status === 'on';
@@ -98,6 +112,7 @@ export function NotificationsSection() {
                   </th>
                 ))}
                 <th scope="col">{t('settings.notifications.ch.webPush')}</th>
+                <th scope="col">{t('settings.notifications.ch.sms')}</th>
                 <th scope="col">{t('settings.notifications.colFrequency')}</th>
               </tr>
             </thead>
@@ -120,6 +135,7 @@ export function NotificationsSection() {
                     />
                   </td>
                 ))}
+                <td>—</td>
                 <td>—</td>
                 <td>{t('settings.notifications.freq.immediate')}</td>
               </tr>
@@ -145,6 +161,22 @@ export function NotificationsSection() {
                         disabled
                         aria-label={t('settings.notifications.webPushCell', { category: t(CATEGORY[cat]) })}
                       />
+                    </td>
+                    <td>
+                      {SMS_CATEGORIES.includes(cat) ? (
+                        <input
+                          type="checkbox"
+                          checked={get('sms', cat)?.enabled ?? false}
+                          disabled={!smsReady}
+                          aria-label={t('settings.notifications.cell', {
+                            category: t(CATEGORY[cat]),
+                            channel: t('settings.notifications.ch.sms'),
+                          })}
+                          onChange={(e) => void change({ channel: 'sms', category: cat, enabled: e.target.checked })}
+                        />
+                      ) : (
+                        '—'
+                      )}
                     </td>
                     <td>
                       <select
@@ -175,7 +207,9 @@ export function NotificationsSection() {
         ) : (
           <ErrorLine error={error} />
         )}
-        <p className="pwa-text-caption m-0">{t('settings.notifications.channelsNote')}</p>
+        <p className="pwa-text-caption m-0">
+          {t(smsReady ? 'settings.notifications.channelsNote' : 'settings.notifications.smsNeedsPhone')}
+        </p>
       </Card>
       <Card title={t('pwa.push.settingsTitle')} text={t('pwa.push.settingsText')}>
         <div data-testid="web-push-card" className="pwa-stack-sm">
@@ -194,6 +228,7 @@ export function NotificationsSection() {
           <PushOutcome outcome={push.outcome} busy={push.busy} onFresh={() => void push.turnOn(true)} />
         </div>
       </Card>
+      <QuietHoursCard />
       <Card title={t('settings.notifications.quietTitle')}>
         {account.data ? (
           <SwitchRow
@@ -213,5 +248,63 @@ export function NotificationsSection() {
         </p>
       </Card>
     </div>
+  );
+}
+
+/** Quiet hours (contract 1.2.0): push and SMS wait until the window ends on the account's clock; safety alerts never wait. */
+function QuietHoursCard() {
+  const t = useT();
+  const account = useApiQuery('me.preferences_get', undefined, { staleTime: 60_000 });
+  const setPreference = useSetPreference();
+  const saved = account.data?.quiet_hours ?? null;
+  const [start, setStart] = useState(saved?.start ?? '22:00');
+  const [end, setEnd] = useState(saved?.end ?? '07:00');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const valid = quietHoursValid(start, end);
+
+  const save = async (quiet_hours: { start: string; end: string } | null) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await setPreference({ quiet_hours });
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (valid) void save({ start, end });
+  };
+
+  if (!account.data) return <ReadState status={account.status} error={account.error} refetch={account.refetch} />;
+  return (
+    <Card title={t('settings.notifications.quietHoursTitle')} text={t('settings.notifications.quietHoursText')}>
+      <SwitchRow
+        label={t('settings.notifications.quietHours')}
+        checked={saved !== null}
+        disabled={busy || !valid}
+        onChange={(on) => void save(on ? { start, end } : null)}
+      />
+      <form className="pwa-inline-buttons" onSubmit={submit} noValidate data-testid="quiet-hours">
+        <label className="pwa-stack-xs">
+          <span className="pwa-text-label">{t('settings.notifications.quietFrom')}</span>
+          <input type="time" className="pwa-matrix-select" value={start} onChange={(e) => setStart(e.target.value)} />
+        </label>
+        <label className="pwa-stack-xs">
+          <span className="pwa-text-label">{t('settings.notifications.quietTo')}</span>
+          <input type="time" className="pwa-matrix-select" value={end} onChange={(e) => setEnd(e.target.value)} />
+        </label>
+        {saved ? (
+          <Button type="submit" size="sm" loading={busy} disabled={!valid}>
+            {t('common.actions.save')}
+          </Button>
+        ) : null}
+      </form>
+      {!valid ? <p className="pwa-error-text m-0">{t('settings.notifications.quietInvalid')}</p> : null}
+      <ErrorLine error={error} />
+    </Card>
   );
 }

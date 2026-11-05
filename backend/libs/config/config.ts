@@ -25,6 +25,9 @@ const jsonRecord = <T extends z.ZodType>(value: T) =>
     })
     .pipe(z.record(z.string(), value));
 
+/** Confidential clients that exist today; strict mode cannot start without their public keys (S11.T1). */
+const STRICT_CLIENTS = ['cp-web-consumer', 'cp-ssr'] as const;
+
 const loginRolePassword = (role: string) => z.string().min(1).default(`${role}_dev`);
 
 const EnvSchema = z
@@ -111,6 +114,12 @@ const EnvSchema = z
     CARPAL_SIGNIN_URL: z.url().optional(),
     /** Exact redirect_uri allowlist per client_id (SEC-AU-1), JSON {"cp-mobile":["https://carpal.app/oauth/callback"]}. */
     CARPAL_OAUTH_REDIRECT_URIS: jsonRecord(z.array(z.url()).max(20)).optional(),
+    /**
+     * Public keys of the confidential clients for private_key_jwt (RFC 7523) at /oauth/token: JSON
+     * {"cp-web-consumer":{"keys":[<public JWK>]},"cp-ssr":{"keys":[…]}} (GD-06 amendment 2026-11-04). Strict mode needs
+     * both; private keys stay with the client (pwa.env) and are refused here.
+     */
+    CARPAL_OAUTH_CLIENT_JWKS: jsonRecord(z.object({ keys: z.array(z.record(z.string(), z.unknown())).min(1).max(10) })).optional(),
     /** SEC-AU-11 fixed minimum latency of sign-up, sign-in, OTP and reset start (plus 0-50 ms jitter). */
     CARPAL_AUTH_MIN_LATENCY_MS: z.coerce.number().int().min(0).max(5_000).default(400),
     /** Leading zero bits of auth.pow_challenge (SEC-BF-7); raised per risk later. */
@@ -174,6 +183,18 @@ const EnvSchema = z
     if (env.CARPAL_ENV === 'prod' && !env.CARPAL_STRICT_AUTH) {
       ctx.addIssue({ code: 'custom', path: ['CARPAL_STRICT_AUTH'], message: 'must be 1 in prod (GD-06)' });
     }
+    const jwks = env.CARPAL_OAUTH_CLIENT_JWKS ?? {};
+    if (env.CARPAL_STRICT_AUTH)
+      for (const client of STRICT_CLIENTS)
+        if (!jwks[client])
+          ctx.addIssue({ code: 'custom', path: ['CARPAL_OAUTH_CLIENT_JWKS'], message: `needs the public key of ${client} in strict mode` });
+    for (const [client, set] of Object.entries(jwks))
+      if (set.keys.some((k) => 'd' in k))
+        ctx.addIssue({
+          code: 'custom',
+          path: ['CARPAL_OAUTH_CLIENT_JWKS'],
+          message: `${client}: private key material, register public keys only`,
+        });
   });
 
 export type RawEnv = z.infer<typeof EnvSchema>;
@@ -227,6 +248,7 @@ export interface CarpalConfig {
   };
   auth: {
     redirectUris: Record<string, string[]>;
+    clientJwks: Record<string, { keys: Record<string, unknown>[] }>;
     minLatencyMs: number;
     powDifficultyBits: number;
   };
@@ -330,6 +352,7 @@ export function loadConfig(overrides: Record<string, string | undefined> = {}): 
     },
     auth: {
       redirectUris: e.CARPAL_OAUTH_REDIRECT_URIS ?? DEV_REDIRECT_URIS,
+      clientJwks: e.CARPAL_OAUTH_CLIENT_JWKS ?? {},
       minLatencyMs: e.CARPAL_AUTH_MIN_LATENCY_MS,
       powDifficultyBits: e.CARPAL_POW_DIFFICULTY_BITS,
     },

@@ -14,7 +14,7 @@ const item = (h: Harness, o: Json = {}) => ({
   condition: 'new',
   part_category_node_id: h.n.partCategory,
   price_public: '450000',
-  currency: 'IRR',
+  currency: 'USD',
   price_on_request: false,
   stock_status: 'in_stock',
   visibility: 'public',
@@ -40,8 +40,8 @@ async function importBatch(h: Harness): Promise<{ v: Actor; batchId: string }> {
   const v = await vendor(h, { plan: 'vendor_pro' });
   const csv = [
     'SKU,Name,Category,Price,Currency',
-    `SW-${h.newId().slice(-10)},Oil filter,${h.n.partCategory},120000,IRR`,
-    `,Missing SKU,${h.n.partCategory},abc,IRR`,
+    `SW-${h.newId().slice(-10)},Oil filter,${h.n.partCategory},120000,USD`,
+    `,Missing SKU,${h.n.partCategory},abc,USD`,
   ].join('\r\n');
   const file = await h.upload(v, 'inventory_import_csv', { mime: 'text/csv', bytes: Buffer.from(csv) });
   const job = ok(await v.c.post(`${inv(v)}/imports`, importBody(file.id as string)), 'import');
@@ -229,7 +229,7 @@ export const resolvers: Resolvers = {
     const v = await vendor(h, { plan: 'vendor_pro' });
     const file = await h.upload(v, 'inventory_import_csv', {
       mime: 'text/csv',
-      bytes: Buffer.from(`SKU,Name,Category,Price,Currency\r\nSW-${h.newId().slice(-10)},Oil filter,${h.n.partCategory},120000,IRR\r\n`),
+      bytes: Buffer.from(`SKU,Name,Category,Price,Currency\r\nSW-${h.newId().slice(-10)},Oil filter,${h.n.partCategory},120000,USD\r\n`),
     });
     // SEC-AZ-4: another vendor on the same plan cannot import this vendor's file.
     return { as: v, body: importBody(file.id as string), bola: { attackers: [await vendor(h, { plan: 'vendor_pro' })] } };

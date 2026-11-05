@@ -104,6 +104,13 @@ export const resolvers: Resolvers = {
     )!;
     return { as, params: { key: 'featured.enabled' }, version: flag.version as number, body: { enabled: false, reason: REASON } };
   },
+  'admin.exchange_rates_list': async (h) => ({ as: await h.staff('platform_admin') }),
+  'admin.exchange_rate_update': async (h) => {
+    const as = await h.staff('platform_admin');
+    const rate = (ok(await as.c.get('/v1/admin/exchange-rates'), 'rates').items as Json[]).find((r) => r.currency === 'IRR')!;
+    // The same rate again: an immediate change that leaves the shared database as it was.
+    return { as, params: { currency: 'IRR' }, version: rate.version as number, body: { per_usd: rate.per_usd, reason: REASON } };
+  },
   'admin.retention_list': async (h) => ({ as: await h.staff('platform_admin') }),
   'admin.retention_update': async (h) => {
     const as = await h.staff('platform_admin');

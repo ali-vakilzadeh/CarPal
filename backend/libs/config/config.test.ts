@@ -16,12 +16,28 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ CARPAL_ENV: 'prod', CARPAL_MASTER_SECRET: 'x'.repeat(40), CARPAL_STRICT_AUTH: '0' })).toThrow(
       /CARPAL_STRICT_AUTH/,
     );
-    expect(loadConfig({ CARPAL_ENV: 'prod', CARPAL_MASTER_SECRET: 'x'.repeat(40), CARPAL_STRICT_AUTH: '1' }).strictAuth).toBe(true);
+    const keys = JSON.stringify({ 'cp-web-consumer': { keys: [{ kty: 'EC' }] }, 'cp-ssr': { keys: [{ kty: 'EC' }] } });
+    expect(
+      loadConfig({ CARPAL_ENV: 'prod', CARPAL_MASTER_SECRET: 'x'.repeat(40), CARPAL_STRICT_AUTH: '1', CARPAL_OAUTH_CLIENT_JWKS: keys })
+        .strictAuth,
+    ).toBe(true);
   });
 
   it('lists every invalid variable', () => {
     expect(() => loadConfig({ CARPAL_API_PORT: 'abc', CARPAL_CLIENT_MIN_VERSIONS: '{"cp-mobile":"1.x"}' })).toThrow(
       /CARPAL_API_PORT[\s\S]*CARPAL_CLIENT_MIN_VERSIONS/,
+    );
+  });
+
+  it('strict mode needs the public keys of the BFF clients and refuses private keys (GD-06 amendment 2026-11-04)', () => {
+    expect(() => loadConfig({ CARPAL_STRICT_AUTH: '1', CARPAL_OAUTH_CLIENT_JWKS: undefined })).toThrow(
+      /CARPAL_OAUTH_CLIENT_JWKS: needs the public key of cp-web-consumer/,
+    );
+    expect(() =>
+      loadConfig({ CARPAL_STRICT_AUTH: '1', CARPAL_OAUTH_CLIENT_JWKS: JSON.stringify({ 'cp-web-consumer': { keys: [{ kty: 'EC' }] } }) }),
+    ).toThrow(/needs the public key of cp-ssr/);
+    expect(() => loadConfig({ CARPAL_OAUTH_CLIENT_JWKS: JSON.stringify({ 'cp-ssr': { keys: [{ kty: 'EC', d: 'secret' }] } }) })).toThrow(
+      /private key material/,
     );
   });
 

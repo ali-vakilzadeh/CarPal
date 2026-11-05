@@ -11,6 +11,7 @@ import { ApiError, type FieldError } from '#libs/contract/index.js';
 import { created, Operation, ACK, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { localParts, zonedToUtc, addDays } from '#libs/geo/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
+import { RegionConfigService } from '#libs/region-config/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { OrgMemberships, UserCards, authorDisplayName } from '#modules/identity/interface/identity.js';
 import { ProviderBooking } from '#modules/organization/interface/booking.js';
@@ -107,11 +108,13 @@ export class ProviderAppointmentsUpdateHandler implements OperationHandler {
   constructor(
     private readonly locations: OrgLocations,
     private readonly views: AppointmentViews,
+    private readonly region: RegionConfigService,
   ) {}
 
   async handle(ctx: OperationContext<ProviderUpdate>): Promise<OperationResult> {
     const m = providerMember(ctx);
     const b = ctx.body;
+    this.region.requireBaseCurrency(b.cost_estimate?.currency, '/cost_estimate/currency');
     const body = await ctx.tx(async (scope) => {
       const a = await loadAsProvider(scope, m.orgId, ctx.params.appointment_id!, true);
       if (ctx.ifMatch !== a.version) throw new ApiError('VERSION_MISMATCH');
@@ -189,6 +192,7 @@ type ProviderTransition = {
 @Operation('provider.appointments_transition')
 export class ProviderAppointmentsTransitionHandler implements OperationHandler {
   constructor(
+    private readonly region: RegionConfigService,
     private readonly confirmation: Confirmation,
     private readonly records: VehicleService,
     private readonly taxonomy: TaxonomyResolver,
@@ -198,6 +202,7 @@ export class ProviderAppointmentsTransitionHandler implements OperationHandler {
   async handle(ctx: OperationContext<ProviderTransition>): Promise<OperationResult> {
     const m = providerMember(ctx);
     const b = ctx.body;
+    this.region.requireBaseCurrency(b.final_cost?.currency, '/final_cost/currency');
     const now = Date.now();
     const errors: FieldError[] = [];
     if (b.to === 'confirmed') {

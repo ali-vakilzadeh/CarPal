@@ -6,13 +6,16 @@ import { Injectable } from '@nestjs/common';
 import { sql } from 'kysely';
 import { SessionStore } from '#libs/auth/index.js';
 import { writeAudit } from '#libs/audit/index.js';
+import { Authorizer } from '#libs/authz/index.js';
 import { ConsentChecker } from '#libs/consent-gate/index.js';
 import { ApiError, type FieldError } from '#libs/contract/index.js';
 import type { ConsentType } from '#libs/contract/generated/enums.js';
 import { CryptoServices } from '#libs/crypto/index.js';
 import { ACK, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { LinkTokens } from '#libs/link-tokens/index.js';
+import { publishEvent } from '#libs/outbox/index.js';
 import { RegionConfigService } from '#libs/region-config/index.js';
+import { MediaService } from '#modules/media/interface/media.js';
 import { toPreference } from '../api/projections.js';
 import { constantTimeEqual, isBreachedPassword, newOtpCode } from '../domain/credentials.js';
 import { getPreferences, getUser, methods, normalizeEmail, revokeVerificationTokens } from '../infrastructure/accounts.js';
@@ -36,13 +39,18 @@ type MeUpdate = {
   display_name?: string | null;
   locale?: string;
   timezone?: string;
+  country?: string | null;
+  avatar_media_id?: string | null;
   preferred_contact_channel?: string | null;
 };
 
 @Injectable()
 @Operation('me.update')
 export class MeUpdateHandler implements OperationHandler {
-  constructor(private readonly reader: MeReader) {}
+  constructor(
+    private readonly reader: MeReader,
+    private readonly media: MediaService,
+  ) {}
 
   async handle(ctx: OperationContext<MeUpdate>): Promise<OperationResult> {
     const { userId } = caller(ctx);
@@ -52,8 +60,14 @@ export class MeUpdateHandler implements OperationHandler {
       const user = await getUser(scope, userId, true);
       if (!user) throw new ApiError('NOT_FOUND');
       if (user.version !== ctx.ifMatch) throw new ApiError('VERSION_MISMATCH');
+      if (b.avatar_media_id)
+        await this.media.requireReady(scope, [b.avatar_media_id], {
+          owner: { type: 'user', id: userId },
+          purposes: ['avatar'],
+          pointer: '/avatar_media_id',
+        });
       const patch = Object.fromEntries(
-        (['full_name', 'display_name', 'locale', 'timezone', 'preferred_contact_channel'] as const)
+        (['full_name', 'display_name', 'locale', 'timezone', 'country', 'avatar_media_id', 'preferred_contact_channel'] as const)
           .filter((k) => b[k] !== undefined)
           .map((k) => [k, b[k]]),
       );
@@ -61,6 +75,48 @@ export class MeUpdateHandler implements OperationHandler {
       return this.reader.me(scope, userId);
     });
     return { body };
+  }
+}
+
+/** me.deactivate: the owner steps away; every session ends and a later correct sign-in offers reactivation. */
+@Injectable()
+@Operation('me.deactivate')
+export class MeDeactivateHandler implements OperationHandler {
+  constructor(
+    private readonly sessions: SessionStore,
+    private readonly authorizer: Authorizer,
+  ) {}
+
+  async handle(ctx: OperationContext<{ reason?: string }>): Promise<OperationResult> {
+    const { userId } = caller(ctx);
+    await ctx.tx(async (scope) => {
+      const user = await getUser(scope, userId, true);
+      if (!user) throw new ApiError('NOT_FOUND');
+      await scope.db
+        .updateTable('identity.user_accounts')
+        .set({ status: 'deactivated', self_deactivated_at: sql`now()` })
+        .where('id', '=', userId)
+        .execute();
+      await writeAudit(scope, {
+        action: 'user.deactivated',
+        entityType: 'user_account',
+        entityId: userId,
+        previous: user.status,
+        next: 'deactivated',
+        ...(ctx.body.reason ? { reason: ctx.body.reason } : {}),
+      });
+      await publishEvent(scope, {
+        type: 'user.deactivated',
+        aggregateType: 'user_account',
+        aggregateId: userId,
+        payload: { user_id: userId },
+      });
+      scope.afterCommit(async () => {
+        await this.sessions.revokeAll(userId);
+        await this.authorizer.invalidateUser(userId);
+      });
+    });
+    return { body: ACK };
   }
 }
 
@@ -231,13 +287,26 @@ type PreferenceUpdate = Partial<{
   show_vehicles_on_profile: boolean;
   ai_personalization_enabled: boolean;
   ai_suggestions_enabled: boolean;
+  ai_help_me_personalised: boolean;
+  ai_personalised_matching: boolean;
+  ai_writing_help: boolean;
+  ai_show_reasons: boolean;
+  review_invitation_channel: 'in_app' | 'email';
+  quiet_hours: { start: string; end: string } | null;
   critical_alerts_only: boolean;
   marketing_opt_in: boolean;
 }>;
 
+const HH_MM = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+
 /** Preferences that may be true only with an active consent (52 UserPreference). */
-const CONSENT_GATED: [keyof PreferenceUpdate, ConsentType][] = [
+const CONSENT_GATED: [
+  'ai_personalization_enabled' | 'ai_help_me_personalised' | 'ai_personalised_matching' | 'marketing_opt_in',
+  ConsentType,
+][] = [
   ['ai_personalization_enabled', 'ai_personalization'],
+  ['ai_help_me_personalised', 'ai_personalization'],
+  ['ai_personalised_matching', 'ai_personalization'],
   ['marketing_opt_in', 'marketing'],
 ];
 
@@ -256,8 +325,13 @@ export class MePreferencesUpdateHandler implements OperationHandler {
     const region = this.region.forLocale(ctx.locale);
     if (b.navigation_app_key != null && !region.navigation_apps.some((a) => a.key === b.navigation_app_key))
       errors.push({ pointer: '/navigation_app_key', code: 'enum' });
-    if (b.preferred_currency != null && b.preferred_currency !== region.currency)
+    if (b.preferred_currency != null && !region.display_currencies.includes(b.preferred_currency))
       errors.push({ pointer: '/preferred_currency', code: 'enum' });
+    if (b.quiet_hours) {
+      for (const k of ['start', 'end'] as const)
+        if (!HH_MM.test(b.quiet_hours[k])) errors.push({ pointer: `/quiet_hours/${k}`, code: 'pattern' });
+      if (b.quiet_hours.start === b.quiet_hours.end) errors.push({ pointer: '/quiet_hours/end', code: 'order' });
+    }
     if (errors.length) throw ApiError.validation(errors);
     const row = await ctx.tx(async (scope) => {
       const pref = await scope.db
@@ -290,7 +364,13 @@ export class MePreferencesUpdateHandler implements OperationHandler {
           if (!granted) throw new ApiError('CONSENT_REQUIRED', { detail: `consent ${consentType}` });
         }
       }
-      const patch = Object.fromEntries(Object.entries(b).filter(([, v]) => v !== undefined));
+      if (b.review_invitation_channel === 'email' && pref.review_invitation_channel !== 'email') {
+        const granted = await this.consents.isGranted(scope, { consentType: 'review_invitations', subject: { type: 'user', id: userId } });
+        if (!granted) throw new ApiError('CONSENT_REQUIRED', { detail: 'consent review_invitations' });
+      }
+      const { quiet_hours: quiet, ...plain } = b;
+      const patch: Record<string, unknown> = Object.fromEntries(Object.entries(plain).filter(([, v]) => v !== undefined));
+      if (quiet !== undefined) Object.assign(patch, { quiet_hours_start: quiet?.start ?? null, quiet_hours_end: quiet?.end ?? null });
       if (Object.keys(patch).length === 0) return pref;
       return scope.db
         .updateTable('identity.user_preferences')

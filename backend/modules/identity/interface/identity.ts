@@ -202,6 +202,10 @@ export interface RecipientContact {
   phone: string | null;
   /** 52 UserPreference.critical_alerts_only: only critical notifications leave the app. */
   criticalAlertsOnly: boolean;
+  /** 52 UserAccount.timezone: the clock of quietHours. */
+  timezone: string;
+  /** 52 UserPreference quiet hours ('HH:MM'): push and SMS wait until the window ends. */
+  quietHours: { start: string; end: string } | null;
 }
 
 /**
@@ -220,6 +224,14 @@ export abstract class Recipients {
  * suspend_account / reactivate_account). Suspension and deactivation revoke
  * every session after commit; roles are re-read at once (SEC-AU-3).
  */
+/** Account preferences other modules must honour (52 UserPreference). */
+export abstract class UserChoices {
+  /** ai_help_me_personalised of the caller (own record, RLS): off means Help Me works on the session's text only. */
+  abstract helpMePersonalised(scope: TxScope, userId: string): Promise<boolean>;
+  /** review_invitation_channel of any user: the inviting business has no read of the account, so this goes through the definer. */
+  abstract reviewInvitationChannel(scope: TxScope, userId: string): Promise<'in_app' | 'email'>;
+}
+
 export abstract class AccountAdmin {
   /** Sets the account status in the caller's (staff) transaction; 404 NOT_FOUND for unknown or deleted accounts. */
   abstract setStatus(

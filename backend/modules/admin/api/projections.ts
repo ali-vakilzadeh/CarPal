@@ -102,3 +102,16 @@ export function toRetention(row: RetentionRow) {
     status: row.status,
   };
 }
+
+export type ExchangeRateRow = Selectable<DB['admin.exchange_rates']>;
+
+/** 40 ExchangeRate. */
+export function toExchangeRate(r: ExchangeRateRow, updatedBy: string) {
+  return {
+    currency: r.currency,
+    per_usd: String(r.per_usd),
+    updated_at: iso(r.updated_at),
+    updated_by_display: updatedBy,
+    version: r.version,
+  };
+}

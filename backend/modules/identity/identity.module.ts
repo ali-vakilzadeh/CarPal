@@ -35,7 +35,7 @@ import { AuthState } from './infrastructure/auth-state.js';
 import { DbAccountFacts, DbConsentChecker, DbConsentGrants, DbUserCards } from './infrastructure/directory.js';
 import { DbMembershipDirectory } from './infrastructure/membership-directory.js';
 import { IdentityMessages } from './infrastructure/messages.js';
-import { DbRecipients } from './infrastructure/recipients.js';
+import { DbRecipients, DbUserChoices } from './infrastructure/recipients.js';
 import { DbConsentRequests, DbOrgMemberships, requestedOfUser } from './infrastructure/org-memberships.js';
 import {
   AccountAdmin,
@@ -46,6 +46,7 @@ import {
   OrgMemberships,
   PersonalDataRegistry,
   Recipients,
+  UserChoices,
   UserCards,
 } from './interface/identity.js';
 
@@ -178,6 +179,7 @@ export class IdentityAdminRegistrations implements OnModuleInit {
     { provide: ConsentRequests, useClass: DbConsentRequests },
     { provide: ConsentGrants, useClass: DbConsentGrants },
     { provide: Recipients, useClass: DbRecipients },
+    { provide: UserChoices, useClass: DbUserChoices },
     {
       provide: AuthState,
       useFactory: (infra: Infra, c: CryptoServices) => new AuthState(infra.kv, c.hmac),
@@ -203,6 +205,7 @@ export class IdentityAdminRegistrations implements OnModuleInit {
     ConsentRequests,
     ConsentGrants,
     Recipients,
+    UserChoices,
     AuthState,
     AttestationVerifierPort,
     IdentityMessages,

@@ -161,7 +161,9 @@ export class DbAccountAdmin extends AccountAdmin {
     if (u.status === 'deleted') throw new ApiError('NOT_FOUND');
     if (status === 'active' && !u.email_verified_at && !u.phone_verified_at)
       throw new ApiError('INVALID_TRANSITION', { detail: 'no verified contact' });
-    if (u.status !== status) await scope.db.updateTable('identity.user_accounts').set({ status }).where('id', '=', u.id).execute();
+    // A staff decision replaces the owner's own deactivation: the account no longer comes back through a sign-in.
+    if (u.status !== status || u.self_deactivated_at)
+      await scope.db.updateTable('identity.user_accounts').set({ status, self_deactivated_at: null }).where('id', '=', u.id).execute();
     await writeAudit(scope, {
       action: 'user.status_changed',
       entityType: 'user',

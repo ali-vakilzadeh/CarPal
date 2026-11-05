@@ -450,6 +450,30 @@
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/AuthNext"
       }
     },
+    "auth.reactivate": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "type": "object",
+        "properties": {
+          "interaction_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          }
+        },
+        "required": [
+          "interaction_id"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/AuthNext"
+      }
+    },
     "auth.social_start": {
       "query": {
         "type": "object",
@@ -698,6 +722,29 @@
           "current_password",
           "new_password"
         ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/Ack"
+      }
+    },
+    "me.deactivate": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
         "additionalProperties": false
       },
       "response": {
@@ -15022,6 +15069,71 @@
       },
       "response": {
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/FeatureFlag"
+      },
+      "alternateResponses": {
+        "202": {
+          "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PendingChange"
+        }
+      }
+    },
+    "admin.exchange_rates_list": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/ExchangeRate"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "admin.exchange_rate_update": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        }
+      },
+      "input": {
+        "type": "object",
+        "properties": {
+          "per_usd": {
+            "type": "string",
+            "pattern": "^\\d{1,14}(\\.\\d{1,4})?$"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "per_usd",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/ExchangeRate"
       },
       "alternateResponses": {
         "202": {

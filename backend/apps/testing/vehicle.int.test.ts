@@ -362,7 +362,7 @@ describe('service history (owner and provider paths)', () => {
       service_system_node_id: n.system,
       service_task_node_id: n.task,
       parts_used: [{ name: 'Control arm', quantity: 2 }],
-      cost: { amount: '1250000', currency: 'IRR' },
+      cost: { amount: '1250000', currency: 'USD' },
       cost_breakdown: { labor: '250000', parts: '1000000' },
       mileage_km: 81_000,
       resolves_issue_id: issue.id,
@@ -374,7 +374,7 @@ describe('service history (owner and provider paths)', () => {
       verification_status: 'self_reported',
       created_by_type: 'user',
       provider: { id: provider.org.id, organization_type: 'provider' },
-      cost: { amount: '1250000.00', currency: 'IRR' },
+      cost: { amount: '1250000.00', currency: 'USD' },
       parts_used: [{ name: 'Control arm', quantity: 2 }],
       evidence: [],
     });

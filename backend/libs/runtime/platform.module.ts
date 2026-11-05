@@ -30,7 +30,7 @@ import { JobRunner, JobService } from '#libs/jobs/index.js';
 import { LinkTokens } from '#libs/link-tokens/index.js';
 import { createLogger, type Logger } from '#libs/observability/index.js';
 import { LoadShedder, RateLimiter } from '#libs/rate-limit/index.js';
-import { RegionConfigService } from '#libs/region-config/index.js';
+import { ExchangeRates, RegionConfigService } from '#libs/region-config/index.js';
 import { TxRunner } from '#libs/tenancy/index.js';
 import { CARPAL_CONFIG, HOST, INFRA, LOGGER, type RuntimeHost } from './tokens.js';
 
@@ -141,6 +141,11 @@ export class PlatformModule {
       {
         provide: FlagService,
         useFactory: (tx: TxRunner) => new FlagService(tx, config.env, config.pipeline.flagRefreshMs, logger),
+        inject: [TxRunner],
+      },
+      {
+        provide: ExchangeRates,
+        useFactory: (tx: TxRunner) => new ExchangeRates(tx, config.pipeline.flagRefreshMs),
         inject: [TxRunner],
       },
       {

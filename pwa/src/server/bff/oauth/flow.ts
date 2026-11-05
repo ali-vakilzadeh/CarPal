@@ -9,6 +9,8 @@ import { createPkce, randomToken, timingSafeEqual } from '../crypto';
 import { json, parseCookies, problem, redirect } from '../http';
 import type { SessionManager } from '../session/manager';
 import type { Acr, PendingLogin, SessionRecord } from '../session/types';
+import type { JWK } from 'jose';
+import { dpopProof, generateDpopKey } from './dpop';
 import type { TokenClient, TokenResponse } from './token-client';
 
 export interface FlowDeps {
@@ -191,12 +193,19 @@ export async function callback(request: Request, d: FlowDeps): Promise<Response>
 
   let tokens: TokenResponse;
   let claims: Record<string, unknown>;
+  // A key of its own per sign-in: a guest's anonymous key is not carried over to the account.
+  const dpopKey = await generateDpopKey();
   try {
     const { issuer } = await d.client.discovery();
     // RFC 9207: the authorization response names its issuer (mix-up defence).
     const iss = q.get('iss');
     if (iss !== null && iss !== issuer) return back(pending.returnTo, 'issuer', d.config.origin);
-    tokens = await d.client.authorizationCode(d.config.clientId, { code, redirectUri: redirectUri(d.config), verifier: pending.verifier });
+    tokens = await d.client.authorizationCode(d.config.clientId, {
+      code,
+      redirectUri: redirectUri(d.config),
+      verifier: pending.verifier,
+      dpopKey,
+    });
     if (!tokens.id_token || !tokens.refresh_token) throw new Error('token response without id_token or refresh_token');
     claims = await d.client.verifyIdToken(tokens.id_token, { clientId: d.config.clientId, nonce: pending.nonce });
   } catch {
@@ -217,7 +226,8 @@ export async function callback(request: Request, d: FlowDeps): Promise<Response>
 
   // A previous sign-in of this browser (re-login, step-up) leaves no orphan session on the auth server.
   if (session.user) await d.client.revoke(d.config.clientId, session.user.refreshToken, 'refresh_token').catch(() => undefined);
-  const profile = await loadProfile(tokens.access_token, d);
+  const bound = tokens.token_type === 'DPoP';
+  const profile = await loadProfile(tokens.access_token, bound ? dpopKey : undefined, d);
   // "Keep me signed in" off (hosted sign-in, P4.T2): a browser-session cookie that also ends after one idle period.
   const keep = parseCookies(request.headers.get('cookie')).get(KEEP_COOKIE) !== '0';
   const next = await d.sessions.rotate(session, (r) => {
@@ -230,7 +240,9 @@ export async function callback(request: Request, d: FlowDeps): Promise<Response>
       acr,
       authTime,
       scope: tokens.scope,
+      bound,
     };
+    r.dpopKey = dpopKey;
     if (profile) r.profile = profile;
     r.locale = localeOf(pending.returnTo, d.config) ?? profile?.locale ?? session.locale ?? d.config.locales[0]!;
     r.intents = session.intents.filter((i) => i.createdAt + INTENT_TTL_MS > d.now());
@@ -264,11 +276,12 @@ export function loginHint(
 export const INTENT_TTL_MS = 30 * 60_000;
 
 /** me.get right after sign-in, for the display name and account locale in /bff/session (best effort). */
-async function loadProfile(accessToken: string, d: FlowDeps): Promise<SessionRecord['profile'] | undefined> {
+async function loadProfile(accessToken: string, dpopKey: JWK | undefined, d: FlowDeps): Promise<SessionRecord['profile'] | undefined> {
   try {
     const res = await d.fetch(`${d.config.apiUrl}/v1/me`, {
       headers: {
-        authorization: `Bearer ${accessToken}`,
+        authorization: `${dpopKey ? 'DPoP' : 'Bearer'} ${accessToken}`,
+        ...(dpopKey ? { dpop: await dpopProof(dpopKey, { method: 'GET', url: `${d.config.apiAudience}/v1/me`, accessToken }) } : {}),
         'carpal-client': clientHeader(d.config.clientId, d.config.clientVersion),
         accept: 'application/json',
       },

@@ -387,3 +387,10 @@ export async function seedFleet(request: APIRequestContext, driverEmail: string)
     },
   };
 }
+
+/** The customer chooses email for review invitations; the consent must be granted first (contract 1.2.0). */
+export async function inviteByEmail(user: BusinessApi): Promise<void> {
+  const prefs = await user.call('GET', '/v1/me/preferences');
+  const res = await user.call('PATCH', '/v1/me/preferences', { review_invitation_channel: 'email' }, { 'if-match': prefs.etag! });
+  expect(res.status, JSON.stringify(res.body)).toBe(200);
+}

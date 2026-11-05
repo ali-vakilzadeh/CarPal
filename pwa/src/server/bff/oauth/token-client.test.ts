@@ -103,6 +103,27 @@ describe('token requests', () => {
     expect(pows[1]).toBeTruthy();
   });
 
+  it('binds the code grant and client credentials with a DPoP proof when given a key (backend GD-06)', async () => {
+    const seen: (string | null)[] = [];
+    const key = await generateDpopKey();
+    const tc = new TokenClient({
+      authUrl: 'http://auth.test',
+      clientHeader: header,
+      fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (String(input).endsWith('/.well-known/openid-configuration'))
+          return new Response(
+            JSON.stringify({ issuer: ISSUER, token_endpoint: `${ISSUER}/oauth/token`, revocation_endpoint: `${ISSUER}/oauth/revoke` }),
+          );
+        seen.push(new Headers(init?.headers).get('dpop'));
+        return new Response(JSON.stringify({ access_token: 'a', token_type: 'DPoP', expires_in: 300, scope: 'public.read' }));
+      }) as typeof fetch,
+    });
+    await tc.authorizationCode('cp-web-consumer', { code: 'c', redirectUri: 'https://x.test/cb', verifier: 'v', dpopKey: key });
+    await tc.clientCredentials('cp-ssr', 'public.read', key);
+    expect(seen).toHaveLength(2);
+    for (const proof of seen) expect(decodeJwt(proof!)).toMatchObject({ htm: 'POST', htu: `${ISSUER}/oauth/token` });
+  });
+
   it('private_key_jwt adds an RFC 7523 assertion for the token endpoint (strict-mode seam, P2.T10)', async () => {
     const { privateKey, publicKey } = await generateKeyPair('EdDSA', { crv: 'Ed25519', extractable: true });
     const key = { ...(await exportJWK(privateKey)), kid: 'bff-1' } as JWK & { kid: string };

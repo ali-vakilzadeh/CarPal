@@ -14,7 +14,7 @@
 import { randomBytes } from 'node:crypto';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { API, AUTH, backendUp, createUser, now, readMail } from './accounts';
-import { businessUser, seedProvider, taxonomy, type SeededProvider } from './businesses';
+import { businessUser, inviteByEmail, seedProvider, taxonomy, type SeededProvider } from './businesses';
 import {
   bff,
   hostedSignIn,
@@ -274,6 +274,7 @@ for (const L of LOCALES) {
     expect(vehicle.status, JSON.stringify(vehicle.body)).toBe(201);
     const consent = await sara.call('POST', '/v1/me/consents', { consent_type: 'review_invitations', policy_version: '1.0' });
     expect(consent.status, JSON.stringify(consent.body)).toBeLessThan(300);
+    await inviteByEmail(sara);
     const from = new Date(Date.now() + 26 * 3_600_000);
     const appt = await sara.call('POST', '/v1/me/appointments', {
       provider_organization_id: shop.id,

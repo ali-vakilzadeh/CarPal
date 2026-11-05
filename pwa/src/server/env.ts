@@ -13,6 +13,20 @@ const timeZone = z.string().refine((v) => {
     return false;
   }
 }, 'must be an IANA time zone, e.g. Asia/Tehran');
+/** The BFF's private keys for private_key_jwt, by client_id; the public halves are the backend's CARPAL_OAUTH_CLIENT_JWKS. */
+const clientKeys = z.preprocess(
+  (v) => {
+    if (typeof v !== 'string' || v === '') return undefined;
+    try {
+      return JSON.parse(v) as unknown;
+    } catch {
+      return v;
+    }
+  },
+  z.record(z.string(), z.looseObject({ kty: z.string(), kid: z.string().min(1), d: z.string().min(1) })).optional(),
+);
+/** Clients this PWA signs in as in strict mode. */
+const STRICT_CLIENTS = ['cp-web-consumer', 'cp-ssr'] as const;
 /** A policy version as the contract takes it (Str<1,20>). */
 const policyVersion = z.string().min(1).max(20);
 
@@ -29,11 +43,16 @@ const schema = z
     CARPAL_STORAGE_URL: url.default('http://127.0.0.1:8083'),
     /** Audience URL of the API host (backend CARPAL_API_AUDIENCE): the htu of DPoP proofs on API calls (GD-07). */
     CARPAL_API_AUDIENCE: url.default('https://api.carpal.app'),
-    /** Mirrors the backend's CARPAL_STRICT_AUTH: PoW before ATT grants instead of after a refusal (DI-22). */
+    /** Mirrors the backend's CARPAL_STRICT_AUTH: client assertions at /oauth/token, and PoW before ATT grants (DI-22). */
     CARPAL_STRICT_AUTH: z
       .enum(['0', '1'])
       .default('0')
       .transform((v) => v === '1'),
+    /**
+     * Private JWKs for private_key_jwt: JSON {"cp-web-consumer":{…},"cp-ssr":{…}}, each with kid. Strict mode needs both.
+     * Secret: lives only in pwa.env. `node pwa/deploy/gen-client-keys.mjs` makes the pair.
+     */
+    CARPAL_PWA_CLIENT_PRIVATE_JWKS: clientKeys,
     /** Overrides config.client region.map.style_url (GD-12). */
     CARPAL_PWA_MAP_STYLE_URL: optionalUrl,
     /** BFF session store (GD-08): lite = in-memory (one process), redis = shared. */
@@ -89,6 +108,14 @@ const schema = z
     if (env.CARPAL_PWA_SESSION_STORE === 'redis' && !env.CARPAL_PWA_REDIS_URL) {
       ctx.addIssue({ code: 'custom', path: ['CARPAL_PWA_REDIS_URL'], message: 'required when CARPAL_PWA_SESSION_STORE=redis' });
     }
+    if (env.CARPAL_STRICT_AUTH)
+      for (const client of STRICT_CLIENTS)
+        if (!env.CARPAL_PWA_CLIENT_PRIVATE_JWKS?.[client])
+          ctx.addIssue({
+            code: 'custom',
+            path: ['CARPAL_PWA_CLIENT_PRIVATE_JWKS'],
+            message: `needs the private key of ${client} in strict mode`,
+          });
     if (env.CARPAL_ENV === 'prod') {
       for (const key of ['CARPAL_PWA_ORIGIN', 'CARPAL_STORAGE_URL'] as const) {
         if (!env[key].startsWith('https://')) ctx.addIssue({ code: 'custom', path: [key], message: 'must be https in prod' });

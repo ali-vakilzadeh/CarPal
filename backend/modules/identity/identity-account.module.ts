@@ -3,6 +3,7 @@
 // OrganizationModule (global) in the same application.
 import { Module } from '@nestjs/common';
 import {
+  MeDeactivateHandler,
   MeEmailChangeHandler,
   MeGetHandler,
   MePasswordChangeHandler,
@@ -19,6 +20,7 @@ import {
   ConsentsGrantHandler,
   ConsentsListHandler,
   ConsentsWithdrawHandler,
+  ConsentViews,
   ConsentWriter,
   OrgConsentsGrantHandler,
   OrgConsentsListHandler,
@@ -52,6 +54,8 @@ import { WebAuthnService } from './application/webauthn.js';
 @Module({
   providers: [
     MeReader,
+    MeDeactivateHandler,
+    ConsentViews,
     ConsentWriter,
     DsrViews,
     MeGetHandler,

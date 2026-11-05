@@ -295,8 +295,7 @@
     "currency": {
       "toman": "{{amount}} T",
       "other": "{{amount}} {{currency}}",
-      "usd": "${{amount}}",
-      "rial": "{{amount}} IRR"
+      "usd": "${{amount}}"
     },
     "distance": {
       "km": "about {{value}} km",
@@ -468,6 +467,12 @@
       "prDone": "Password changed",
       "prDoneText": "Other devices have been signed out.",
       "prExpired": "This reset link has expired or was already used. Log in and choose “Forgot password?” to get a new one."
+    },
+    "reactivate": {
+      "title": "Your account is deactivated",
+      "text": "You deactivated this account. Reactivate it to sign in and pick up where you left off.",
+      "action": "Reactivate my account",
+      "notNow": "Not now"
     }
   },
   "onboarding": {
@@ -581,21 +586,11 @@
     }
   },
   "settings": {
-    "local": {
-      "title": "On this device",
-      "text": "These settings are kept in this browser only."
-    },
     "prices": {
       "title": "Prices",
-      "text": "Prices on CarPal are in US dollars. You can see them in toman or rial at a rate you choose.",
-      "unit": "Show prices in",
-      "toman": "Toman",
-      "rial": "Rial",
-      "rate": "1 US dollar in {{unit}}",
-      "convert": "Convert USD prices with this rate",
-      "rateInvalid": "Enter a rate above 0.",
-      "example": "Example: 10 US dollars → {{price}}",
-      "saved": "Price display saved"
+      "text": "CarPal keeps prices in US dollars and shows them in your local currency at one rate for everybody.",
+      "rate": "1 US dollar = {{price}} (updated {{date}})",
+      "noRate": "Prices are shown in US dollars for now."
     },
     "comingSoon": "More settings arrive soon.",
     "saved": "Saved",
@@ -633,7 +628,8 @@
       "download": "Confirm it's you to download your data",
       "request": "Confirm it's you to send this request",
       "delete": "Confirm it's you to delete your account",
-      "leave": "Confirm it's you to leave this organization"
+      "leave": "Confirm it's you to leave this organization",
+      "deactivate": "Confirm it is you to deactivate your account"
     },
     "profile": {
       "namesTitle": "Your name",
@@ -664,7 +660,17 @@
       "codeSentTo": "Enter the code we sent to {{phone}}.",
       "code": "6-digit code",
       "confirm": "Confirm",
-      "phoneChanged": "Mobile number changed"
+      "phoneChanged": "Mobile number changed",
+      "photoTitle": "Profile photo",
+      "photoText": "A clear photo of you, or anything you like. Others see it once it has been checked.",
+      "photoPick": "Choose a photo",
+      "photoUse": "Use this photo",
+      "photoRemove": "Remove photo",
+      "photoAlt": "Your profile photo",
+      "photoSaved": "Profile photo updated",
+      "countryTitle": "Country",
+      "country": "Country you live in",
+      "countryNone": "Not set"
     },
     "security": {
       "passwordTitle": "Password",
@@ -782,7 +788,12 @@
       "downloadCsv": "Download history (CSV)",
       "cookiesTitle": "Cookies",
       "cookiesText": "Change the choices you made on your first visit. Essential cookies are always on.",
-      "cookiesChange": "Change cookie choices"
+      "cookiesChange": "Change cookie choices",
+      "reviewChannel": "Review invitations reach me by",
+      "reviewChannelHint": "How shops you visited can ask for your review.",
+      "reviewChannelNeedsConsent": "Email needs the review invitations consent above.",
+      "reviewChannelInApp": "In the app",
+      "reviewChannelEmail": "Email"
     },
     "ai": {
       "personaliseTitle": "Personalisation",
@@ -797,7 +808,15 @@
       "whereTitle": "Where AI helps",
       "suggestions": "Maintenance suggestions",
       "suggestionsHint": "Seasonal and mileage-based tips for your cars.",
-      "reasonsNote": "Every match shows why it was suggested."
+      "helpMe": "Personalised Help Me",
+      "helpMeHint": "Help Me can use your car and its history. Off: only what you type in that session.",
+      "matching": "Personalised matching",
+      "matchingHint": "Matching can use what CarPal knows about your cars.",
+      "needsConsent": "Turn on personalisation above first.",
+      "writing": "Writing help",
+      "writingHint": "Suggestions while you write reviews and posts.",
+      "showWhy": "Show why I'm seeing a recommendation",
+      "showWhyHint": "Match reasons on search results and in Help Me."
     },
     "notifications": {
       "matrixTitle": "What you hear about, and where",
@@ -817,7 +836,8 @@
         "in_app": "In-app",
         "push": "Push (mobile app)",
         "email": "Email",
-        "webPush": "Web push (this browser)"
+        "webPush": "Web push (this browser)",
+        "sms": "SMS"
       },
       "cell": "{{category}}: {{channel}}",
       "freqLabel": "Email frequency for {{category}}",
@@ -829,12 +849,19 @@
       "safetyRow": "Safety and security alerts",
       "safetyHint": "Always delivered.",
       "webPushCell": "{{category}} in this browser",
-      "channelsNote": "Push in this browser comes soon. SMS comes later.",
+      "channelsNote": "SMS is for appointments and reminders, to your verified phone.",
       "marketingConsent": "Marketing messages need your consent first:",
       "quietTitle": "Pause",
       "criticalOnly": "Only safety and security alerts",
       "criticalOnlyHint": "Everything else stays in the app, without push or email.",
-      "followedShops": "Updates from shops you follow are set per shop in"
+      "followedShops": "Updates from shops you follow are set per shop in",
+      "smsNeedsPhone": "Add and verify a phone number in Profile to use SMS.",
+      "quietHoursTitle": "Quiet hours",
+      "quietHoursText": "Push and SMS wait until the end of these hours. Safety and security alerts never wait.",
+      "quietHours": "Use quiet hours",
+      "quietFrom": "From",
+      "quietTo": "To",
+      "quietInvalid": "Choose two different times."
     },
     "language": {
       "languageTitle": "Language",
@@ -935,7 +962,13 @@
       "deleteWord": "DELETE",
       "typeToConfirm": "Type {{word}} to confirm",
       "deleteConfirm": "Delete my account",
-      "deletionRequested": "Deletion requested. We will confirm by email."
+      "deletionRequested": "Deletion requested. We will confirm by email.",
+      "deactivateTitle": "Deactivate account",
+      "deactivateText": "Take a break: you are signed out everywhere and get no notifications. Your public posts stay. Sign in again any time to come back.",
+      "deactivateAction": "Deactivate my account",
+      "deactivateConfirmTitle": "Deactivate your account?",
+      "deactivateConfirmText": "You will be signed out on every device. This does not delete your data.",
+      "deactivateReason": "Why are you leaving? (optional)"
     },
     "help": {
       "topicsTitle": "Common topics",
@@ -2005,10 +2038,6 @@
       "shopName": "Shop name (not on CarPal)",
       "shopNameHint": "Not on CarPal? Just type the name.",
       "shopLine": "Shop: {{name}}",
-      "cost": "Cost (optional)",
-      "currency": "Currency",
-      "currencyIrr": "Rial (IRR)",
-      "currencyUsd": "US dollar (USD)",
       "parts": "Parts used",
       "partName": "Part",
       "partNumber": "Part number",
@@ -2094,7 +2123,9 @@
         "parts": "Parts",
         "tax": "Tax",
         "other": "Other"
-      }
+      },
+      "costUsd": "Cost in US dollars",
+      "costShown": "Shown as {{price}}"
     },
     "documents": {
       "upload": "Upload document",

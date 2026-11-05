@@ -4,20 +4,23 @@
 // (scoped consents: history shared with a shop for an appointment, a showcase, vehicle details for a stock inquiry)
 // with Withdraw — a showcase asks first, because the post leaves the shop's profile at once; the history of changes
 // (collapsed) and its CSV download (built here from consents.list); and Cookies, which reopens the first-visit choices.
+// With the review invitations consent on, the channel of a shop's invitation is chosen here (contract 1.2.0).
 // Every change takes effect immediately (consents.ts).
 import type { ConsentRecord } from '@carpal/api-contracts';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { Button, buttonClass } from '@/components/ds/button';
+import { SelectField } from '@/components/fields/select-field';
 import { COOKIE_MODAL } from '@/components/shell/cookie-consent';
 import { Dialog } from '@/components/shell/dialog';
 import { useToast } from '@/components/shell/toast';
 import { modalHref } from '@/components/shell/url-modal';
+import { useApiQuery } from '@/lib/api/query';
 import { useFormat } from '@/lib/format/client';
 import { useT } from '@/lib/i18n/client';
 import type { MessageKey } from '@/lib/i18n/keys';
-import { useConsentActions, useConsents } from './consents';
+import { useConsentActions, useConsents, useSetPreference } from './consents';
 import { activeShares, consentCsv, consentHistory, consentRows, type ConsentRow, type GeneralConsent } from './model';
 import { Card, downloadText, ErrorLine, ReadState, SwitchRow } from './parts';
 
@@ -142,6 +145,11 @@ function Shares({ records, policyVersion }: { records: readonly ConsentRecord[];
             <li key={c.id} className="pwa-settings-item" data-testid="share">
               <div className="pwa-stack-xs">
                 <span className="pwa-text-label">{t(SHARE_TEXT[c.consent_type] ?? 'settings.privacy.share.other')}</span>
+                {c.granted_to_organization ? (
+                  <span className="pwa-text-body" dir="auto" data-testid="share-business">
+                    {c.granted_to_organization.name}
+                  </span>
+                ) : null}
                 <span className="pwa-text-caption">
                   {c.scope_entity_type ? `${t(SCOPE_TEXT[c.scope_entity_type])} · ` : ''}
                   {c.granted_at ? t('settings.privacy.grantedOn', { date: f.date(c.granted_at), version: c.policy_version }) : null}
@@ -244,6 +252,39 @@ function Cookies() {
   );
 }
 
+/** How a shop's review invitation reaches the user (contract 1.2.0); email needs the consent above. */
+function InvitationChannel({ consented }: { consented: boolean }) {
+  const t = useT();
+  const prefs = useApiQuery('me.preferences_get', undefined, { staleTime: 60_000 });
+  const setPreference = useSetPreference();
+  const [error, setError] = useState<unknown>(null);
+  const change = async (review_invitation_channel: 'in_app' | 'email') => {
+    setError(null);
+    try {
+      await setPreference({ review_invitation_channel });
+    } catch (err) {
+      setError(err);
+    }
+  };
+  if (!prefs.data) return null;
+  return (
+    <div className="pwa-stack-xs" data-testid="review-channel">
+      <SelectField
+        label={t('settings.privacy.reviewChannel')}
+        hint={t(consented ? 'settings.privacy.reviewChannelHint' : 'settings.privacy.reviewChannelNeedsConsent')}
+        value={prefs.data.review_invitation_channel}
+        disabled={!consented}
+        onChange={(v) => void change(v as 'in_app' | 'email')}
+        options={[
+          { value: 'in_app', label: t('settings.privacy.reviewChannelInApp') },
+          { value: 'email', label: t('settings.privacy.reviewChannelEmail') },
+        ]}
+      />
+      <ErrorLine error={error} />
+    </div>
+  );
+}
+
 export function PrivacySection({ policyVersion }: { policyVersion: string }) {
   const t = useT();
   const consents = useConsents();
@@ -252,7 +293,12 @@ export function PrivacySection({ policyVersion }: { policyVersion: string }) {
     <div className="pwa-stack">
       <Card title={t('settings.privacy.generalTitle')} text={t('settings.privacy.generalText')}>
         {consents.data ? (
-          consentRows(records).map((row) => <ConsentSwitch key={row.type} row={row} policyVersion={policyVersion} />)
+          <>
+            {consentRows(records).map((row) => (
+              <ConsentSwitch key={row.type} row={row} policyVersion={policyVersion} />
+            ))}
+            <InvitationChannel consented={consentRows(records).some((r) => r.type === 'review_invitations' && r.active.length > 0)} />
+          </>
         ) : (
           <ReadState status={consents.status} error={consents.error} refetch={consents.refetch} />
         )}

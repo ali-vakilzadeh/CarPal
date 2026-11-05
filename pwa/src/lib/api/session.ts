@@ -1,6 +1,7 @@
 'use client';
 // The BFF session from the browser (P2.T7): who is signed in (never tokens), sign-in / step-up / sign-out, and the
 // pending-intent store of GD-06 (save a gated action before the hosted sign-in, replay it once after).
+import { goTo } from '@/lib/browser-nav';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { resetSharedCsrfSource, sharedCsrfSource } from './browser';
 import { buildLoginUrl, type LoginUrlOptions } from './login-url';
@@ -100,14 +101,18 @@ export async function runLogoutSteps(when: 'before' | 'after'): Promise<void> {
   await Promise.all([...logoutSteps[when]].map((step) => Promise.race([step().catch(() => undefined), timeout])));
 }
 
-/** Signs out (revokes the refresh token in the BFF) and refreshes the session view. */
+/**
+ * Signs out (revokes the refresh token in the BFF) and refreshes the session view. With `thenGo` the page is left
+ * instead: refreshing the view first would send a signed-in-only page to the sign-in screen.
+ */
 export function useLogout() {
   const queryClient = useQueryClient();
-  return async () => {
+  return async (o: { thenGo?: string } = {}) => {
     await runLogoutSteps('before');
     await post('/bff/logout');
     resetSharedCsrfSource();
     await runLogoutSteps('after');
-    await queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
+    if (o.thenGo) goTo(o.thenGo);
+    else await queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
   };
 }
