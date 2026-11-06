@@ -199,6 +199,8 @@ swap_mb=$(($(awk '/SwapTotal/ {print $2}' /proc/meminfo) / 1024))
 ((mem_mb + swap_mb >= 4000)) || warn "RAM + swap is ${mem_mb}+${swap_mb} MB: the build needs about 4 GB (add swap, deploy.md 'Server')"
 
 finish
+bare_arg=""
+if [[ "$BARE_DOMAIN_HERE" == "1" ]]; then bare_arg=" -d $DOMAIN"; fi
 cat <<EOF
 
 Next (deploy.md "First deployment"):
@@ -206,5 +208,5 @@ Next (deploy.md "First deployment"):
   2. Upload the repository with WinSCP to $STAGING_DIR (binary mode, without node_modules, dist, .data, .tools).
   3. bash $STAGING_DIR/backend/deploy/1-sync.sh && bash $BACKEND_DIR/deploy/2-build.sh \\
        && bash $BACKEND_DIR/deploy/3-permissions.sh && bash $BACKEND_DIR/deploy/4-start.sh
-  4. certbot --nginx -d $API_HOST -d $AUTH_HOST -d $MEDIA_HOST -d $WEB_HOST -d $DOMAIN --email $LETSENCRYPT_EMAIL --agree-tos --redirect
+  4. certbot --nginx -d $API_HOST -d $AUTH_HOST -d $MEDIA_HOST -d $WEB_HOST$bare_arg --email $LETSENCRYPT_EMAIL --agree-tos --redirect
 EOF

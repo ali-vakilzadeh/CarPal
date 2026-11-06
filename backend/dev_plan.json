@@ -649,6 +649,14 @@
         {
           "stage": "2026-11-06",
           "change": "User decisions: the consumer PWA is pwa.<DOMAIN>, not www.<DOMAIN> (WEB_HOST default in both kits; every www value above now reads pwa); www.<DOMAIN> is the static landing site (landing/); the business portal is web.<DOMAIN>, not portal.<DOMAIN> (new PORTAL_HOST); fleet.<DOMAIN> follows in the next stage. carpals.ir is a temporary MVP domain and the project stays CarPal, so hosts stay in settings. api.<DOMAIN> is the backend's public address for clients outside the server; the PWA's BFF stays on 127.0.0.1 because it runs on the same server, and CARPAL_API_AUDIENCE is https://api.<DOMAIN> either way. Open: neither kit deploys the landing site yet (an nginx block for www.<DOMAIN>), so the bare domain redirects to the PWA until it does, then it should redirect to www.<DOMAIN>."
+        },
+        {
+          "stage": "2026-11-06 (landing)",
+          "change": "The landing site has its own kit (landing/deploy) and the bare domain now redirects to www.<DOMAIN> (LANDING_HOST in both kits). Plan: Docs/02 §1.4 and WP22. fleet.<DOMAIN> and admin.<DOMAIN> are later; the web app may serve web., fleet. and admin. and reduce its pages by host, with access still decided by role and admin. signing in as cp-web-admin. fleet. needs cp-web-portal redirect URI and WebAuthn origin entries when it ships. Exposure of admin.<DOMAIN> is open (Docs/02 §15, SEC-ADM-1)."
+        },
+        {
+          "stage": "2026-11-06 (markets)",
+          "change": "User decisions, replacing the notes above where they differ. carpals.ir is not temporary: it stays live for the Iran market (test and growth); every other market gets its own domain, a completely separate legal structure and its own QR codes. fleet.<DOMAIN> shows the coming-soon page until the web UI exists, then redirects to it with an option such as ?fleet that limits it to fleet pages, so fleet. needs no redirect URI or WebAuthn origin of its own. The admin pages are not publicised and their access strategy stays open until the web UI design is finished. Hosting as seen on 2026-11-06: the landing site, www. and the bare domain are on cPanel with a wildcard DNS record, so the app hosts need their own records and BARE_DOMAIN_HERE=0 keeps the bare domain out of certbot on the app server."
         }
       ]
     },

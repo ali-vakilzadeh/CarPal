@@ -21,7 +21,7 @@ Browser ──https──▶ nginx :443 ── pwa.<DOMAIN> ──▶ next start
    │                 │                              ├──▶ backend API  127.0.0.1:8080 (carpal-backend)
    │                 │                              ├──▶ backend auth 127.0.0.1:8082
    │                 │                              └──▶ Redis        127.0.0.1:6379 (BFF sessions)
-   │                 └── <DOMAIN> ──▶ 301 to https://pwa.<DOMAIN>
+   │                 └── <DOMAIN> ──▶ 301 to https://www.<DOMAIN> (the landing site, landing/deploy)
    └──https──▶ media.<DOMAIN> (signed uploads and downloads, straight from the browser to the backend's storage)
 ```
 
@@ -39,11 +39,11 @@ Production hosts (`DOMAIN=carpals.ir`):
 | `id.carpals.ir`    | the authorization server            | the same; browsers use the PWA's `/id` pages         |
 | `media.carpals.ir` | signed uploads and downloads        | browsers                                             |
 | `web.carpals.ir`   | the business portal (not built yet) | the PWA only links to it; no nginx block yet         |
-| `carpals.ir`       | a 301 to `https://pwa.carpals.ir`   | browsers                                             |
-| `www.carpals.ir`   | the landing site (`landing/`)       | not deployed by these kits yet                       |
-| `fleet.carpals.ir` | the fleet portal (next stage)       | nothing yet                                          |
+| `carpals.ir`       | a 301 to `https://www.carpals.ir`   | browsers                                             |
+| `www.carpals.ir`   | the landing site (`landing/`)       | browsers and QR codes                                |
+| `fleet.carpals.ir` | the web app's fleet view (later)    | redirects to `web.` then; coming-soon page until     |
 
-`www.<DOMAIN>` belongs to the landing site, and neither kit serves it yet. Don't point its DNS at this server until an nginx block exists: nginx would answer with its default site, or with the first TLS block it finds. Until then, `<DOMAIN>` redirects to the PWA so that it doesn't dead-end.
+`www.<DOMAIN>` and `<DOMAIN>` are the landing site, which runs on cPanel hosting (`landing/deploy/deploy.md`), so leave their DNS alone. That host also has a wildcard DNS record, which catches every name without its own record. So `pwa.`, `api.`, `id.` and `media.<DOMAIN>` each need their own A/AAAA record pointing at this server, or certbot fails.
 
 **A PWA on its own server** would use the public addresses instead: set `BACKEND_API_URL=https://api.<DOMAIN>`, `BACKEND_AUTH_URL=https://id.<DOMAIN>` and `BACKEND_HEALTH_URL=https://api.<DOMAIN>/v1/health` in `pwa-deploy.conf`, set `CARPAL_API_URL` and `CARPAL_AUTH_URL` to the same values in `pwa.env`, and raise nginx's `carpal_api` limit, because every BFF call then arrives from one address. This layout has not been tested.
 
@@ -75,7 +75,7 @@ Production hosts (`DOMAIN=carpals.ir`):
   | `CARPAL_OAUTH_CLIENT_JWKS`   | the public keys of `cp-web-consumer` and `cp-ssr` (`server-setup.sh` sets it)  |
   | `CARPAL_SIGNIN_URL`          | **unset** (the default `<issuer>/signin` is what the PWA's `/id` proxy serves) |
 
-**DNS** (A/AAAA records to the server): `pwa.<DOMAIN>` and `<DOMAIN>` for the PWA, and the backend's `api.`, `id.` and `media.<DOMAIN>`. In production: `pwa.carpals.ir`, `carpals.ir`, `api.carpals.ir`, `id.carpals.ir` and `media.carpals.ir`.
+**DNS** (A/AAAA records to the server): `pwa.<DOMAIN>` for the PWA, and the backend's `api.`, `id.` and `media.<DOMAIN>`. In production: `pwa.carpals.ir`, `api.carpals.ir`, `id.carpals.ir` and `media.carpals.ir`. Leave `www.` and the bare domain on the landing site's host.
 
 **Your PC**: WinSCP (SFTP to the server as root, or as a sudo user who owns the staging folder) and a copy of the repository.
 
@@ -159,9 +159,9 @@ Main settings of `pwa-deploy.conf.example`:
 
 Order: backend first, then the PWA.
 
-1. **DNS.** Point `pwa.<DOMAIN>`, `<DOMAIN>`, `api.`, `id.` and `media.<DOMAIN>` at the server. Wait until `dig +short pwa.<DOMAIN>` shows the server's address.
+1. **DNS.** Add A/AAAA records for `pwa.<DOMAIN>`, `api.`, `id.` and `media.<DOMAIN>` pointing at the server. Leave `www.` and `<DOMAIN>` as they are. Wait until `dig +short pwa.<DOMAIN>` shows the server's address.
 
-2. **Backend.** Follow `backend/deploy/deploy.md` (its `server-setup.sh` creates `/carpal/config/deploy.conf` with `DOMAIN`, the backend service and an nginx site that already contains the `pwa.<DOMAIN>` and `<DOMAIN>` blocks; its certbot command includes `pwa.<DOMAIN>` and `<DOMAIN>`). Check: `curl -sI http://127.0.0.1:8080/v1/health` answers `200` with `carpal-contract: 1.2.0`.
+2. **Backend.** Follow `backend/deploy/deploy.md` (its `server-setup.sh` creates `/carpal/config/deploy.conf` with `DOMAIN`, the backend service and an nginx site that already contains the `pwa.<DOMAIN>` block; its certbot command includes `pwa.<DOMAIN>`). Check: `curl -sI http://127.0.0.1:8080/v1/health` answers `200` with `carpal-contract: 1.2.0`.
 
 3. **Upload with WinSCP.** Connect with SFTP. In _Preferences → Transfer_ choose **Binary** (keeps the scripts' Linux line ends). Upload the repository folder's content to `/home/root/staging/` so that `/home/root/staging/pwa/package.json` and `/home/root/staging/shared/` exist. Leave out build output with a file mask in the transfer settings:
 
@@ -191,15 +191,17 @@ Order: backend first, then the PWA.
 
    It takes 3-8 minutes (install, type check, unit tests, build) and ends with "Release … runs".
 
-7. **TLS.** If the backend's certbot run already covered `pwa.<DOMAIN>` and `<DOMAIN>`, nothing to do. Otherwise:
+7. **TLS.** If the backend's certbot run already covered `pwa.<DOMAIN>`, nothing to do. Otherwise:
 
    ```sh
-   certbot --nginx -d pwa.<DOMAIN> -d <DOMAIN> --email <LETSENCRYPT_EMAIL> --agree-tos --redirect
+   certbot --nginx -d pwa.<DOMAIN> --email <LETSENCRYPT_EMAIL> --agree-tos --redirect
    ```
 
    (or set `RUN_CERTBOT=1` in `/carpal/config/pwa-deploy.conf` and run `pwa-setup.sh` again). Certbot renews automatically (`systemctl list-timers | grep certbot`).
 
 8. **Check** with [After each deployment](#after-each-deployment).
+
+9. **Landing site.** On cPanel, take `pwa` out of the coming-soon list in `.htaccess` (`landing/deploy/deploy.md`). Requests for `pwa.<DOMAIN>` now reach this server, so that's only tidying.
 
 ## Updates
 
@@ -237,7 +239,7 @@ Plan updates for quiet hours: the downtime is the build time (3-8 minutes). Set 
 systemctl status carpal-pwa --no-pager
 journalctl -u carpal-pwa -n 50 --no-pager
 curl -sI https://pwa.<DOMAIN>/fa | head -n 20          # 200, strict-transport-security, content-security-policy
-curl -sI https://<DOMAIN>/ | grep -i location          # 301 to https://pwa.<DOMAIN>/
+curl -sI https://<DOMAIN>/ | grep -i location          # 301 to https://www.<DOMAIN>/
 curl -s https://pwa.<DOMAIN>/robots.txt                 # names the sitemap on https://pwa.<DOMAIN>
 ```
 
@@ -280,14 +282,14 @@ A backup holds its own `node_modules` and `.next`, so nothing has to be built. I
 
 ## Changing the public host
 
-A new server needs none of this. It applies to a server already set up for another host, such as `www.<DOMAIN>`, which now belongs to the landing site. `backend.env`, `pwa.env` and any nginx site with TLS blocks are never overwritten, so the scripts cannot move them for you; `pwa-update.sh` stops until `pwa.env` matches.
+A new server needs none of this. It applies to a server already set up for another host, such as `www.<DOMAIN>`, which now belongs to the landing site (deploy that once this move is done). `backend.env`, `pwa.env` and any nginx site with TLS blocks are never overwritten, so the scripts cannot move them for you; `pwa-update.sh` stops until `pwa.env` matches.
 
 1. **DNS.** Point `pwa.<DOMAIN>` at the server.
 2. **`/carpal/config/deploy.conf`.** Remove any old `WEB_HOST` line.
 3. **`/carpal/config/backend.env`.** Put the new origin in `CARPAL_OAUTH_REDIRECT_URIS` (`cp-web-consumer`), `CARPAL_WEBAUTHN_ORIGINS`, `CARPAL_MEDIA_CORS_ORIGINS` and `CARPAL_LINK_BASE_URL`. Keep `CARPAL_WEBAUTHN_RP_ID=<DOMAIN>`, so existing passkeys keep working. Restart the backend.
 4. **`/carpal/config/pwa.env`.** Set `CARPAL_PWA_ORIGIN=https://pwa.<DOMAIN>`, and the portal URLs if they changed.
-5. **nginx.** In `/etc/nginx/sites-available/carpal` (or `carpal-pwa`), change `server_name` of the PWA block and the `return 301` target of the `<DOMAIN>` block, in the TLS blocks too. Then `nginx -t && systemctl reload nginx`.
-6. **Certificate.** Find its name with `certbot certificates`, then replace its host list: `certbot --nginx --cert-name <name> -d api.<DOMAIN> -d id.<DOMAIN> -d media.<DOMAIN> -d pwa.<DOMAIN> -d <DOMAIN>`.
+5. **nginx.** In `/etc/nginx/sites-available/carpal` (or `carpal-pwa`), change `server_name` of the PWA block, and set the `return 301` target of the `<DOMAIN>` block to `https://www.<DOMAIN>$request_uri`, in the TLS blocks too. Then `nginx -t && systemctl reload nginx`.
+6. **Certificate.** Find its name with `certbot certificates`, then replace its host list: `certbot --nginx --cert-name <name> -d api.<DOMAIN> -d id.<DOMAIN> -d media.<DOMAIN> -d pwa.<DOMAIN>`.
 7. **Release.** Run `pwa-update.sh`, which rebuilds with the new origin.
 
 Users are signed out, because cookies belong to the old host, and an installed PWA stays on the old address until it is installed again. Links in emails already sent still name the old host.

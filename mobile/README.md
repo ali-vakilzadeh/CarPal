@@ -9,4 +9,6 @@ WP19: a single React Native (TypeScript) codebase for the consumer app on iOS an
 | `ios/` | iOS native project (see its README). |
 | `preview/` | Clickable HTML preview of all 68 screens (Doc 21) in the CarPal design system, EN/FA and three themes. See [preview/README.md](preview/README.md). |
 
+The app calls the backend at `https://api.<DOMAIN>`. When the Android app is published (Google Play or another store), its link goes on the landing site (Docs/02 §1.4, WP22).
+
 Testing: Detox/Appium UI tests, push delivery tests, and RTL layout tests for Persian.

@@ -57,15 +57,15 @@ Production uses `DOMAIN=carpals.ir`. Every host comes from `DOMAIN`, and `deploy
 | `id.carpals.ir`        | the authorization server (8082)     | the same clients, for sign-in and tokens                            |
 | `media.carpals.ir`     | signed uploads and downloads (8083) | browsers and apps                                                   |
 | `pwa.carpals.ir`       | the consumer PWA (3000)             | browsers                                                            |
-| `carpals.ir`           | a 301 to `https://pwa.carpals.ir`   | browsers                                                            |
-| `www.carpals.ir`       | the landing site (`landing/`)       | not deployed by these kits yet                                      |
-| `fleet.carpals.ir`     | the fleet portal (next stage)       | nothing yet                                                         |
+| `carpals.ir`           | a 301 to `https://www.carpals.ir`   | browsers                                                            |
+| `www.carpals.ir`       | the landing site (`landing/`)       | browsers and QR codes                                               |
+| `fleet.carpals.ir`     | the web app's fleet view (later)    | will redirect to `web.`; shows the coming-soon page until then      |
 | `web.carpals.ir`       | the business portal (not built yet) | named in `backend.env` only; no nginx block until the portal exists |
 | `admin-api.carpals.ir` | the admin plane (8081)              | not published ([Admin plane](#admin-plane))                         |
 
-`www.<DOMAIN>` belongs to the landing site, and neither kit serves it yet. Don't point its DNS at this server until an nginx block exists: nginx would answer with its default site, or with the first TLS block it finds. Until then, `<DOMAIN>` redirects to the PWA so that it doesn't dead-end.
+`www.<DOMAIN>` and `<DOMAIN>` are the landing site, which runs on cPanel hosting (`landing/deploy/deploy.md`), so leave their DNS alone. That host also has a wildcard DNS record, which catches every name without its own record. So `pwa.`, `api.`, `id.` and `media.<DOMAIN>` each need their own A/AAAA record pointing at this server, or certbot fails.
 
-`carpals.ir` is a temporary MVP domain, so keep hosts in `deploy.conf` and `backend.env` rather than in code.
+`carpals.ir` is the Iran market's domain. Another market has its own domain and its own deployment, so keep hosts in `deploy.conf` and `backend.env` rather than in code.
 
 A client on this server, such as the PWA's BFF, connects to `127.0.0.1:8080` directly. Its tokens and DPoP proofs still name `https://api.carpals.ir`, because `CARPAL_API_AUDIENCE` is the API's identity whichever way a client connects. A client on another server uses `https://api.carpals.ir`.
 
@@ -116,14 +116,14 @@ All paths come from `deploy.conf`, so change them there (see `deploy.conf.exampl
 
 ## Server requirements
 
-|           | Minimum                                                                                         | Notes                                                                                                                        |
-| :-------- | :---------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
-| OS        | **Ubuntu 24.04 LTS** (x86-64 or arm64)                                                          | PostgreSQL 16 and pgvector come from the Ubuntu archive. Other releases need the PGDG repository.                            |
-| CPU / RAM | 2 vCPU, **4 GB RAM** (or 2 GB plus 2 GB swap)                                                   | `tsc` and the unit tests need memory during `2-build.sh`. Runtime needs much less.                                           |
-| Disk      | 40 GB SSD                                                                                       | Code with `node_modules` and the pnpm store is under 1 GB. Plan for uploads, the database and `KEEP_BACKUPS` copies of both. |
-| DNS       | A/AAAA records for `api.`, `id.`, `media.`, `pwa.` and the bare domain (and later `admin-api.`) | Needed before `certbot`.                                                                                                     |
-| Access    | SSH as root (or sudo), WinSCP with SFTP                                                         |                                                                                                                              |
-| Outbound  | HTTPS to `nodejs.org`, `registry.npmjs.org`, the Ubuntu mirrors, Let's Encrypt                  | For setup and `pnpm install`.                                                                                                |
+|           | Minimum                                                                        | Notes                                                                                                                        |
+| :-------- | :----------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
+| OS        | **Ubuntu 24.04 LTS** (x86-64 or arm64)                                         | PostgreSQL 16 and pgvector come from the Ubuntu archive. Other releases need the PGDG repository.                            |
+| CPU / RAM | 2 vCPU, **4 GB RAM** (or 2 GB plus 2 GB swap)                                  | `tsc` and the unit tests need memory during `2-build.sh`. Runtime needs much less.                                           |
+| Disk      | 40 GB SSD                                                                      | Code with `node_modules` and the pnpm store is under 1 GB. Plan for uploads, the database and `KEEP_BACKUPS` copies of both. |
+| DNS       | A/AAAA records for `api.`, `id.`, `media.` and `pwa.` (and later `admin-api.`) | Needed before `certbot`.                                                                                                     |
+| Access    | SSH as root (or sudo), WinSCP with SFTP                                        |                                                                                                                              |
+| Outbound  | HTTPS to `nodejs.org`, `registry.npmjs.org`, the Ubuntu mirrors, Let's Encrypt | For setup and `pnpm install`.                                                                                                |
 
 Add swap on a small server:
 
@@ -168,7 +168,7 @@ All scripts are in `backend/deploy/`. Run them as root with `bash <script>`. The
 
 ### 1. DNS
 
-Point `api.<domain>`, `id.<domain>`, `media.<domain>`, `pwa.<domain>` (the consumer PWA) and the bare `<domain>` (redirects to `pwa.`) at the server. `admin-api.<domain>` is optional (see [Admin plane](#admin-plane)).
+Add A/AAAA records for `api.<domain>`, `id.<domain>`, `media.<domain>` and `pwa.<domain>` (the consumer PWA) pointing at the server. Leave `www.<domain>` and the bare `<domain>` on the landing site's host ([Public hosts](#public-hosts)). `admin-api.<domain>` is optional (see [Admin plane](#admin-plane)).
 
 ### 2. Upload the repository and prepare the server
 
@@ -221,7 +221,7 @@ On the first run, `2-build.sh` installs the database baseline: the cluster roles
 ### 6. TLS
 
 ```bash
-certbot --nginx -d api.<domain> -d id.<domain> -d media.<domain> -d pwa.<domain> -d <domain> --email <you> --agree-tos --redirect
+certbot --nginx -d api.<domain> -d id.<domain> -d media.<domain> -d pwa.<domain> --email <you> --agree-tos --redirect
 ```
 
 certbot adds the TLS server blocks to `/etc/nginx/sites-available/carpal` and installs a renewal timer (`systemctl list-timers | grep certbot`). After that, `server-setup.sh` leaves the site file alone. If you change the template later, apply the change by hand.

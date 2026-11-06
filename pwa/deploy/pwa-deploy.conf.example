@@ -8,8 +8,8 @@
 # Production: DOMAIN=carpals.ir gives pwa.carpals.ir, api.carpals.ir, id.carpals.ir and media.carpals.ir.
 DOMAIN=example.com
 LETSENCRYPT_EMAIL=admin@example.com
-# The PWA is served at WEB_HOST (default pwa.<DOMAIN>); the bare <DOMAIN> redirects there. The business portal it
-# links to is PORTAL_HOST (default web.<DOMAIN>). The backend's public hosts default to api.<DOMAIN>, id.<DOMAIN> and
+# The PWA is served at WEB_HOST (default pwa.<DOMAIN>). The bare <DOMAIN> redirects to the landing site, LANDING_HOST
+# (default www.<DOMAIN>, landing/deploy). The business portal the PWA links to is PORTAL_HOST (default web.<DOMAIN>). The backend's public hosts default to api.<DOMAIN>, id.<DOMAIN> and
 # media.<DOMAIN>. Set an override in deploy.conf, not pwa-deploy.conf: the backend kit reads the same names.
 # WEB_HOST=pwa.example.com
 # PORTAL_HOST=web.example.com
@@ -56,5 +56,6 @@ KEEP_BACKUPS=5                            # previous releases kept (oldest remov
 AUTO_ROLLBACK=1                           # 1 = a release that fails its health check is replaced by the previous one
 
 # --- pwa-setup.sh --------------------------------------------------------------------
-RUN_CERTBOT=0                             # 1 = request the TLS certificate for WEB_HOST and DOMAIN (DNS must point here)
+RUN_CERTBOT=0                             # 1 = request the TLS certificate for WEB_HOST (DNS must point here)
+BARE_DOMAIN_HERE=0                        # 1 = <DOMAIN> points at this server, so certbot includes it; 0 = it stays with the landing site on cPanel
 FIRST_DEPLOY=1                            # 1 = pwa-setup.sh ends by running pwa-update.sh (the first release)

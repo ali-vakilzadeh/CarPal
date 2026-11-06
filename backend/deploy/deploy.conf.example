@@ -6,8 +6,9 @@
 
 # --- Public names --------------------------------------------------------------------
 # Base domain (production: carpals.ir). The hosts default to api.<DOMAIN>, id.<DOMAIN>, admin-api.<DOMAIN>,
-# media.<DOMAIN> (40 §1.1), pwa.<DOMAIN> for the consumer PWA (the bare <DOMAIN> redirects there) and web.<DOMAIN>
-# for the business portal; set API_HOST, AUTH_HOST, ADMIN_HOST, MEDIA_HOST, WEB_HOST or PORTAL_HOST to override one.
+# media.<DOMAIN> (40 §1.1), pwa.<DOMAIN> for the consumer PWA, web.<DOMAIN> for the business portal and www.<DOMAIN>
+# for the landing site (landing/deploy; the bare <DOMAIN> redirects there); set API_HOST, AUTH_HOST, ADMIN_HOST,
+# MEDIA_HOST, WEB_HOST, PORTAL_HOST or LANDING_HOST to override one.
 DOMAIN=example.com
 LETSENCRYPT_EMAIL=admin@example.com
 
@@ -56,6 +57,7 @@ KEEP_BACKUPS=7                       # backup folders kept (oldest removed first
 BACKUP_NODE_MODULES=0                # 1 = include backend/node_modules in the code backup (bigger, but a rollback needs no install)
 
 # --- server-setup.sh -------------------------------------------------------------------
+BARE_DOMAIN_HERE=0                   # 1 = <DOMAIN> points at this server, so certbot includes it; 0 = it stays with the landing site on cPanel
 ENABLE_UFW=0                         # 1 = enable the firewall (OpenSSH + Nginx Full only); check your SSH port first
 EXPOSE_ADMIN_API=0                   # 1 = publish admin-api.<DOMAIN> for ADMIN_ALLOW_IPS only (SEC-ADM-1); 0 = SSH tunnel only
 ADMIN_ALLOW_IPS=""                   # space-separated addresses or CIDRs allowed to reach admin-api when exposed

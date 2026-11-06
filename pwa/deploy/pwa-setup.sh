@@ -131,14 +131,17 @@ systemctl reload nginx
 ok "nginx configured"
 
 # ----------------------------------------------------------------------------- TLS
-step "TLS for $WEB_HOST and $DOMAIN"
+step "TLS for $WEB_HOST"
+# The bare domain only when it points here: certbot fails the whole request on a name it cannot verify.
+cert_hosts=(-d "$WEB_HOST")
+if [[ "$BARE_DOMAIN_HERE" == "1" ]]; then cert_hosts+=(-d "$DOMAIN"); fi
 if grep -rqsE "ssl_certificate[^;]*/live/[^/]*/" /etc/nginx/sites-enabled/ && certbot certificates 2>/dev/null | grep -qE "Domains:.*[[:space:]]$WEB_HOST([[:space:]]|$)"; then
   ok "a certificate for $WEB_HOST exists (certbot renews it automatically)"
 elif [[ "$RUN_CERTBOT" == "1" ]]; then
-  certbot --nginx --non-interactive --agree-tos --redirect --email "$LETSENCRYPT_EMAIL" -d "$WEB_HOST" -d "$DOMAIN"
+  certbot --nginx --non-interactive --agree-tos --redirect --email "$LETSENCRYPT_EMAIL" "${cert_hosts[@]}"
   ok "certificate issued; http redirects to https"
 else
-  warn "no certificate for $WEB_HOST yet. When DNS points here: certbot --nginx -d $WEB_HOST -d $DOMAIN --email $LETSENCRYPT_EMAIL --agree-tos --redirect"
+  warn "no certificate for $WEB_HOST yet. When DNS points here: certbot --nginx ${cert_hosts[*]} --email $LETSENCRYPT_EMAIL --agree-tos --redirect"
 fi
 
 # ------------------------------------------------------------- backend settings check
