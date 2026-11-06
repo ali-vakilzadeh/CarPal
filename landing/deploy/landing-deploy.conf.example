@@ -1,0 +1,32 @@
+# CarPal landing site deployment settings (defaults; sourced by every script in landing/deploy/).
+#
+# Order of reading: this file, then /carpal/config/deploy.conf (shared with the backend and the PWA: DOMAIN, STAGING_DIR,
+# ...), then /carpal/config/landing-deploy.conf (landing-only overrides, optional). Put only the values you change in the
+# server copies. Plain bash: KEY=value, no spaces around "=".
+
+# --- Public names (normally set once in /carpal/config/deploy.conf) ----------------------
+# Iran market: DOMAIN=carpals.ir. Another market has its own domain and its own deployment. Every host comes from it.
+DOMAIN=example.com
+LETSENCRYPT_EMAIL=admin@example.com
+# The landing site is LANDING_HOST (default www.<DOMAIN>), and the bare <DOMAIN> redirects there. Its pages link to
+# WEB_HOST (pwa.<DOMAIN>), PORTAL_HOST (web.<DOMAIN>) and FLEET_HOST (fleet.<DOMAIN>). Set an override in deploy.conf,
+# not landing-deploy.conf: the backend and PWA kits read the same names.
+# LANDING_HOST=www.example.com
+
+# --- Folders -------------------------------------------------------------------------
+CARPAL_ROOT=/carpal
+STAGING_DIR=/home/root/staging            # where WinSCP uploads the repository (the same folder the other kits use)
+CONFIG_DIR=/carpal/config
+LOG_DIR=/carpal/logs                      # logs of the deploy scripts
+LANDING_ROOT=/carpal/landing              # releases/<time>/ and the "current" link nginx serves
+
+# --- Web server ----------------------------------------------------------------------
+LANDING_WEB_GROUP=www-data                # the group nginx workers run as: it reads the files, nothing else does
+
+# --- landing-update.sh ---------------------------------------------------------------
+KEEP_RELEASES=5                           # previous releases kept (oldest removed first)
+
+# --- landing-setup.sh ----------------------------------------------------------------
+RUN_CERTBOT=0                             # 1 = request the TLS certificate for LANDING_HOST (DNS must point here)
+BARE_DOMAIN_HERE=0                        # 1 = <DOMAIN> points at this server: the setup checks that it redirects to LANDING_HOST
+FIRST_DEPLOY=1                            # 1 = landing-setup.sh ends by running landing-update.sh (the first release)

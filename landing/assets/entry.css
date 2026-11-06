@@ -1,0 +1,81 @@
+/* The entry page (index.html) and the coming-soon page (404.html). Every colour, size and space comes from ds/tokens.css.
+   Scripts and styles stay in files: the site's Content-Security-Policy allows nothing inline. */
+
+*, *::before, *::after { box-sizing: border-box; }
+h1, p { margin: 0; }
+html { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }
+.sprite { position: absolute; }
+.cp-btn { text-decoration: none; }
+.cp-btn:focus-visible { border-radius: var(--radius-md); }
+
+/* lang.js picks the language; without JS the page stays Persian */
+html[lang="fa"] [data-lang="en"], html[lang="en"] [data-lang="fa"] { display: none; }
+
+/* Entry page: the whole screen is the way in */
+.gate { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); min-block-size: 100vh; min-block-size: 100dvh; padding: var(--space-6); color: var(--ink); text-align: center; text-decoration: none; }
+.gate-name { font-family: var(--font-sans); font-size: calc(var(--space-12) * 1.5); line-height: 1.1; font-weight: 800; letter-spacing: -0.01em; }
+.gate-line { color: var(--ink-muted); text-wrap: balance; }
+.gate .gate-go { inline-size: var(--control-md); min-block-size: var(--control-md); margin-block-start: var(--space-6); padding: 0; border-radius: var(--radius-pill); }
+.gate:focus-visible { outline: none; }
+.gate:focus-visible .gate-go { box-shadow: var(--ring-focus); }
+[data-theme="sun"] .gate-line, [data-theme="sun"] .soon-text { font-weight: 700; }
+
+/* Coming-soon page */
+.soon { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-8); min-block-size: 100vh; min-block-size: 100dvh; padding: var(--space-6) var(--space-4); text-align: center; }
+.soon-copy { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }
+.soon-copy .cp-btn { margin-block-start: var(--space-3); }
+.soon-text { color: var(--ink-muted); text-wrap: balance; }
+
+/* The scene. Without animation it rests on its finished state, so reduced motion still shows a complete picture. */
+.soon-art { display: block; inline-size: 100%; max-inline-size: var(--measure); block-size: auto; }
+.soon-line, .soon-signal, .soon-track, .soon-progress { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.soon-line { stroke: var(--ink); stroke-width: 3.5; }
+.soon-signal { stroke: var(--signal); stroke-width: 3.5; }
+.soon-person { fill: var(--surface); }
+.soon-tool { stroke-width: 2.3; fill: var(--surface); }
+.soon-track { stroke: var(--selector-track); stroke-width: 6; }
+.soon-progress { stroke: var(--selector); stroke-width: 6; stroke-dasharray: 1 1; stroke-dashoffset: 0.4; }
+.soon-lamp { fill: var(--signal); }
+.soon-body { stroke-dasharray: 1 1; }
+.soon-spark { opacity: 0; }
+.soon-cable { transform-origin: 320px 46px; transform: scaleY(0.086); }
+.soon-hook { transform: translateY(-128px); }
+.soon-gear-a { transform-origin: 58px 100px; }
+.soon-gear-b { transform-origin: 66px 167px; }
+.soon-wheel-a { transform-origin: 265px 276px; }
+.soon-wheel-b { transform-origin: 375px 276px; }
+.soon-arm-a { transform-origin: 184px 214px; }
+.soon-arm-b { transform-origin: 470px 182px; }
+.soon-spark-a { transform-origin: 258px 224px; }
+.soon-spark-b { transform-origin: 410px 224px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .soon-gear-a { animation: soon-turn 12s linear infinite; }
+  .soon-gear-b { animation: soon-turn 8.4s linear infinite reverse; }
+  .soon-wheel { animation: soon-turn 5s linear infinite; }
+  .soon-arm-a { animation: soon-wrench 1.2s ease-in-out infinite; }
+  .soon-arm-b { animation: soon-hammer 1.6s ease-in infinite; }
+  .soon-spark-a { animation: soon-spark 1.2s linear infinite; }
+  .soon-spark-b { animation: soon-spark-b 1.6s linear infinite; }
+  .soon-build { animation: soon-build 10s linear infinite; }
+  .soon-body { animation: soon-draw 10s ease-out infinite; }
+  .soon-roof { animation: soon-roof 10s ease-in-out infinite; }
+  .soon-hook { animation: soon-hook 10s ease-in-out infinite; }
+  .soon-cable { animation: soon-cable 10s ease-in-out infinite; }
+  .soon-lamp { animation: soon-lamp 10s linear infinite; }
+  .soon-progress { animation: soon-progress 10s linear infinite; }
+}
+
+@keyframes soon-turn { to { transform: rotate(360deg); } }
+@keyframes soon-wrench { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(5deg); } }
+@keyframes soon-hammer { 0%, 100% { transform: rotate(20deg); } 45% { transform: rotate(0deg); } 60% { transform: rotate(4deg); } }
+@keyframes soon-spark { 0%, 42% { opacity: 0; transform: scale(0.6); } 50% { opacity: 1; transform: scale(1); } 66%, 100% { opacity: 0; transform: scale(1.3); } }
+@keyframes soon-spark-b { 0%, 40% { opacity: 0; transform: scale(0.6); } 46% { opacity: 1; transform: scale(1); } 62%, 100% { opacity: 0; transform: scale(1.3); } }
+@keyframes soon-build { 0% { opacity: 0; } 4%, 92% { opacity: 1; } 98%, 100% { opacity: 0; } }
+@keyframes soon-draw { 0% { stroke-dashoffset: 1; } 15%, 100% { stroke-dashoffset: 0; } }
+@keyframes soon-roof { 0%, 16% { transform: translateY(-128px); } 44%, 100% { transform: translateY(0); } }
+@keyframes soon-hook { 0%, 16% { transform: translateY(-128px); } 44%, 50% { transform: translateY(0); } 64%, 100% { transform: translateY(-128px); } }
+@keyframes soon-cable { 0%, 16% { transform: scaleY(0.086); } 44%, 50% { transform: scaleY(1); } 64%, 100% { transform: scaleY(0.086); } }
+@keyframes soon-lamp { 0%, 64% { opacity: 0; } 68% { opacity: 1; } 72% { opacity: 0.2; } 76%, 92% { opacity: 1; } 96%, 100% { opacity: 0; } }
+@keyframes soon-progress { 0% { stroke-dashoffset: 1; opacity: 1; } 92% { stroke-dashoffset: 0; opacity: 1; } 98%, 100% { stroke-dashoffset: 0; opacity: 0; } }

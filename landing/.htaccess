@@ -1,0 +1,17 @@
+# CarPal landing on cPanel (Apache or LiteSpeed). Lives in public_html, next to index.html.
+# If public_html already has a .htaccess, add these lines to it. Do not replace it.
+
+ErrorDocument 404 /404.html
+
+RewriteEngine On
+
+# The bare domain opens the landing site's own address. Certificate renewal stays reachable.
+RewriteCond %{HTTP_HOST} ^carpals\.ir$ [NC]
+RewriteCond %{REQUEST_URI} !^/\.well-known/
+RewriteRule ^ https://www.carpals.ir%{REQUEST_URI} [R=301,L]
+
+# Hosts whose app is not live yet share this folder, and every page on them shows the coming-soon page.
+# When an app goes live, take its name out of the list. The page, its styles and certificate renewal stay reachable.
+RewriteCond %{HTTP_HOST} ^(web|fleet|pwa)\.carpals\.ir$ [NC]
+RewriteCond %{REQUEST_URI} !^/(404\.html$|assets/|ds/|\.well-known/)
+RewriteRule ^ - [R=404,L]
