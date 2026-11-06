@@ -40,6 +40,10 @@ Production hosts (`DOMAIN=carpals.ir`):
 | `media.carpals.ir` | signed uploads and downloads        | browsers                                             |
 | `web.carpals.ir`   | the business portal (not built yet) | the PWA only links to it; no nginx block yet         |
 | `carpals.ir`       | a 301 to `https://pwa.carpals.ir`   | browsers                                             |
+| `www.carpals.ir`   | the landing site (`landing/`)       | not deployed by these kits yet                       |
+| `fleet.carpals.ir` | the fleet portal (next stage)       | nothing yet                                          |
+
+`www.<DOMAIN>` belongs to the landing site, and neither kit serves it yet. Don't point its DNS at this server until an nginx block exists: nginx would answer with its default site, or with the first TLS block it finds. Until then, `<DOMAIN>` redirects to the PWA so that it doesn't dead-end.
 
 **A PWA on its own server** would use the public addresses instead: set `BACKEND_API_URL=https://api.<DOMAIN>`, `BACKEND_AUTH_URL=https://id.<DOMAIN>` and `BACKEND_HEALTH_URL=https://api.<DOMAIN>/v1/health` in `pwa-deploy.conf`, set `CARPAL_API_URL` and `CARPAL_AUTH_URL` to the same values in `pwa.env`, and raise nginx's `carpal_api` limit, because every BFF call then arrives from one address. This layout has not been tested.
 
@@ -276,7 +280,7 @@ A backup holds its own `node_modules` and `.next`, so nothing has to be built. I
 
 ## Changing the public host
 
-A new server needs none of this. It applies to a server already set up for another host, such as `www.<DOMAIN>`. `backend.env`, `pwa.env` and any nginx site with TLS blocks are never overwritten, so the scripts cannot move them for you; `pwa-update.sh` stops until `pwa.env` matches.
+A new server needs none of this. It applies to a server already set up for another host, such as `www.<DOMAIN>`, which now belongs to the landing site. `backend.env`, `pwa.env` and any nginx site with TLS blocks are never overwritten, so the scripts cannot move them for you; `pwa-update.sh` stops until `pwa.env` matches.
 
 1. **DNS.** Point `pwa.<DOMAIN>` at the server.
 2. **`/carpal/config/deploy.conf`.** Remove any old `WEB_HOST` line.

@@ -160,7 +160,7 @@ describe('E2E (S3 acceptance): signup → email verify → authorize/token → m
 
     // Email verification link (ev, single use).
     const mail = auth.mail(email, 'identity.email_verification').at(-1)!;
-    expect(mail.variables.link).toMatch(/^https:\/\/carpal\.app\/l\/ev#cp_ev_[A-Za-z0-9_-]{43}$/);
+    expect(mail.variables.link).toMatch(/^https:\/\/pwa\.carpals\.ir\/l\/ev#cp_ev_[A-Za-z0-9_-]{43}$/);
     const ev = linkToken(mail.variables.link);
     const verified = await auth.request<Json>({ method: 'POST', path: '/v1/auth/email/verify', body: { token: ev } });
     expect(verified.status).toBe(200);

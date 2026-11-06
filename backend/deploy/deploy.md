@@ -58,8 +58,14 @@ Production uses `DOMAIN=carpals.ir`. Every host comes from `DOMAIN`, and `deploy
 | `media.carpals.ir`     | signed uploads and downloads (8083) | browsers and apps                                                   |
 | `pwa.carpals.ir`       | the consumer PWA (3000)             | browsers                                                            |
 | `carpals.ir`           | a 301 to `https://pwa.carpals.ir`   | browsers                                                            |
+| `www.carpals.ir`       | the landing site (`landing/`)       | not deployed by these kits yet                                      |
+| `fleet.carpals.ir`     | the fleet portal (next stage)       | nothing yet                                                         |
 | `web.carpals.ir`       | the business portal (not built yet) | named in `backend.env` only; no nginx block until the portal exists |
 | `admin-api.carpals.ir` | the admin plane (8081)              | not published ([Admin plane](#admin-plane))                         |
+
+`www.<DOMAIN>` belongs to the landing site, and neither kit serves it yet. Don't point its DNS at this server until an nginx block exists: nginx would answer with its default site, or with the first TLS block it finds. Until then, `<DOMAIN>` redirects to the PWA so that it doesn't dead-end.
+
+`carpals.ir` is a temporary MVP domain, so keep hosts in `deploy.conf` and `backend.env` rather than in code.
 
 A client on this server, such as the PWA's BFF, connects to `127.0.0.1:8080` directly. Its tokens and DPoP proofs still name `https://api.carpals.ir`, because `CARPAL_API_AUDIENCE` is the API's identity whichever way a client connects. A client on another server uses `https://api.carpals.ir`.
 
