@@ -27,7 +27,7 @@ beforeAll(async () => {
       origin: ORIGIN,
       apiUrl: API,
       authUrl: AUTH,
-      apiAudience: 'https://api.carpal.app',
+      apiAudience: 'https://api.carpals.ir',
       clientId: 'cp-web-consumer',
       ssrClientId: 'cp-ssr',
       clientVersion: '0.1.0',

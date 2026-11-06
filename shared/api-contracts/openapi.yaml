@@ -6,14 +6,14 @@ info:
   title: "CarPal API"
   version: "1.2.0"
   summary: "CarPal MVP API: consumer, business, admin plane and authorization server."
-  description: "Generated from Docs/40.API contract.md (contract 1.2.0, sha256 f482e7b25871ac8193cf1b7c9dd421bdb36b136f7f87a324254424c625d49ad6); the contract is authoritative.\n\nConventions (40 §0-§4): every schema is closed (additionalProperties false); unknown body members are 422 UNKNOWN_FIELD and unknown query parameters 400 UNKNOWN_QUERY_PARAM.\n\nRequest bodies are application/json except the OAuth forms of /oauth/* and the raw storage PUT. Personal or location data never appears in URLs (TR-7): searches use POST and page in the body.\n\nErrors are application/problem+json (Problem, RFC 9457) with a stable code; /oauth/* answer RFC 6749 error bodies (ProtocolError). Authorization failures are 404, never 403 (SEC-AZ-2).\n\nx-carpal-sec is the contract sec line (40 §0.4): PUB, USR, ORG(role groups), DRV, STF, LNK, AAL2/AAL3, ATT, IDEM, ETAG, RL, ENT, CNS, FLAG, ASYNC, AUD, RSN, 4EYES, PURP, PII.\n\nSchema keywords: x-node-type (taxonomy node type the id must have), x-conditional (rule of a conditional field), x-locale-config (enabled locales), x-vin (VIN normalization), x-external (standard document).\n\n4EYES operations answer 202 PendingChange until a second staff member approves (admin.four_eyes_decide); ASYNC operations answer 202 Job (jobs.get)."
-  x-carpal-contract-sha256: f482e7b25871ac8193cf1b7c9dd421bdb36b136f7f87a324254424c625d49ad6
+  description: "Generated from Docs/40.API contract.md (contract 1.2.0, sha256 3e4ffb5a7d6a38c2b42765098ad0beaefb5369fc7152b77c520e00eb57537d1c); the contract is authoritative.\n\nConventions (40 §0-§4): every schema is closed (additionalProperties false); unknown body members are 422 UNKNOWN_FIELD and unknown query parameters 400 UNKNOWN_QUERY_PARAM.\n\nRequest bodies are application/json except the OAuth forms of /oauth/* and the raw storage PUT. Personal or location data never appears in URLs (TR-7): searches use POST and page in the body.\n\nErrors are application/problem+json (Problem, RFC 9457) with a stable code; /oauth/* answer RFC 6749 error bodies (ProtocolError). Authorization failures are 404, never 403 (SEC-AZ-2).\n\nx-carpal-sec is the contract sec line (40 §0.4): PUB, USR, ORG(role groups), DRV, STF, LNK, AAL2/AAL3, ATT, IDEM, ETAG, RL, ENT, CNS, FLAG, ASYNC, AUD, RSN, 4EYES, PURP, PII.\n\nSchema keywords: x-node-type (taxonomy node type the id must have), x-conditional (rule of a conditional field), x-locale-config (enabled locales), x-vin (VIN normalization), x-external (standard document).\n\n4EYES operations answer 202 PendingChange until a second staff member approves (admin.four_eyes_decide); ASYNC operations answer 202 Job (jobs.get)."
+  x-carpal-contract-sha256: "3e4ffb5a7d6a38c2b42765098ad0beaefb5369fc7152b77c520e00eb57537d1c"
 servers:
-  - url: "https://api.carpal.app"
+  - url: "https://api.carpals.ir"
     description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
-  - url: "https://id.carpal.app"
+  - url: "https://id.carpals.ir"
     description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
-  - url: "https://admin-api.carpal.app"
+  - url: "https://admin-api.carpals.ir"
     description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
   - url: "https://media.carpal-usercontent.app"
     description: "Signed upload and download of media; separate registrable domain, cookieless (SEC-UP)."
@@ -55,7 +55,7 @@ tags:
 paths:
   /.well-known/jwks.json:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     get:
       operationId: auth.jwks
@@ -129,7 +129,7 @@ paths:
         line: 793
   /.well-known/openid-configuration:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     get:
       operationId: auth.discovery
@@ -277,7 +277,7 @@ paths:
         line: 3658
   /oauth/authorize:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     get:
       operationId: auth.authorize
@@ -430,7 +430,7 @@ paths:
         line: 801
   /oauth/challenge:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.pow_challenge
@@ -521,7 +521,7 @@ paths:
         line: 832
   /oauth/revoke:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.revoke
@@ -608,7 +608,7 @@ paths:
         line: 824
   /oauth/token:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.token
@@ -737,7 +737,7 @@ paths:
         line: 811
   /v1/admin/ai/insights/search:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.ai_insights_search
@@ -980,7 +980,7 @@ paths:
         line: 5133
   "/v1/admin/analytics/{dashboard_key}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.analytics_dashboard
@@ -1084,7 +1084,7 @@ paths:
         line: 5167
   "/v1/admin/assist-sessions/{assist_session_id}/end":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.assist_session_end
@@ -1184,7 +1184,7 @@ paths:
         line: 4798
   /v1/admin/audit-logs/search:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.audit_search
@@ -1322,7 +1322,7 @@ paths:
         line: 5083
   "/v1/admin/badges/{badge_id}/approve":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.badge_approve
@@ -1426,7 +1426,7 @@ paths:
         line: 5025
   /v1/admin/data-requests:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.dsr_queue
@@ -1634,7 +1634,7 @@ paths:
         line: 5092
   "/v1/admin/data-requests/{request_id}/execute-deletion":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.dsr_execute_deletion
@@ -1744,7 +1744,7 @@ paths:
         line: 5116
   "/v1/admin/data-requests/{request_id}/export":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.dsr_export
@@ -1853,7 +1853,7 @@ paths:
         line: 5108
   "/v1/admin/data-requests/{request_id}/status":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.dsr_update
@@ -1971,7 +1971,7 @@ paths:
         line: 5100
   /v1/admin/disputes:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.disputes_queue
@@ -2094,7 +2094,7 @@ paths:
         line: 4999
   "/v1/admin/disputes/{dispute_id}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.dispute_get
@@ -2180,7 +2180,7 @@ paths:
         line: 5007
   "/v1/admin/disputes/{dispute_id}/resolution":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.dispute_resolve
@@ -2327,7 +2327,7 @@ paths:
         line: 5014
   /v1/admin/exchange-rates:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.exchange_rates_list
@@ -2410,7 +2410,7 @@ paths:
         line: 5052
   "/v1/admin/exchange-rates/{currency}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     put:
       operationId: admin.exchange_rate_update
@@ -2536,7 +2536,7 @@ paths:
         line: 5059
   /v1/admin/flags:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.flags_list
@@ -2662,7 +2662,7 @@ paths:
         line: 5036
   "/v1/admin/flags/{key}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     patch:
       operationId: admin.flag_update
@@ -2829,7 +2829,7 @@ paths:
         line: 5044
   /v1/admin/four-eyes:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.four_eyes_list
@@ -2947,7 +2947,7 @@ paths:
         line: 5175
   "/v1/admin/four-eyes/{change_id}/decision":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.four_eyes_decide
@@ -3080,7 +3080,7 @@ paths:
         line: 5183
   /v1/admin/mcp/access-logs/search:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.mcp_access_log_search
@@ -3222,7 +3222,7 @@ paths:
         line: 5158
   /v1/admin/mcp/clients:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.mcp_clients_list
@@ -3329,7 +3329,7 @@ paths:
         line: 5142
   "/v1/admin/mcp/clients/{client_id}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     patch:
       operationId: admin.mcp_client_update
@@ -3480,7 +3480,7 @@ paths:
         line: 5149
   "/v1/admin/media/{media_id}/download-url":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.media_download_url
@@ -3583,7 +3583,7 @@ paths:
         line: 5125
   /v1/admin/moderation/cases:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.cases_list
@@ -3722,7 +3722,7 @@ paths:
         line: 4957
   "/v1/admin/moderation/cases/{case_id}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.case_get
@@ -3821,7 +3821,7 @@ paths:
         line: 4966
   "/v1/admin/moderation/cases/{case_id}/actions":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.case_action
@@ -3950,7 +3950,7 @@ paths:
         line: 4981
   "/v1/admin/moderation/cases/{case_id}/assign":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.case_assign
@@ -4055,7 +4055,7 @@ paths:
         line: 4973
   "/v1/admin/moderation/cases/{case_id}/close":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.case_close
@@ -4169,7 +4169,7 @@ paths:
         line: 4991
   /v1/admin/orgs/search:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.orgs_search
@@ -4270,7 +4270,7 @@ paths:
         line: 4730
   "/v1/admin/orgs/{org_id}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.org_get
@@ -4359,7 +4359,7 @@ paths:
         line: 4738
   "/v1/admin/orgs/{org_id}/assist-sessions":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.assist_session_start
@@ -4479,7 +4479,7 @@ paths:
         line: 4789
   "/v1/admin/orgs/{org_id}/locations/{location_id}/correct":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.location_correct
@@ -4635,7 +4635,7 @@ paths:
         line: 4779
   "/v1/admin/orgs/{org_id}/merge":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.org_merge
@@ -4742,7 +4742,7 @@ paths:
         line: 4754
   "/v1/admin/orgs/{org_id}/status":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.org_status
@@ -4853,7 +4853,7 @@ paths:
         line: 4745
   /v1/admin/plans:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.plans_list
@@ -4960,7 +4960,7 @@ paths:
         line: 4814
   "/v1/admin/plans/{plan_id}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     patch:
       operationId: admin.plan_update
@@ -5074,7 +5074,7 @@ paths:
         line: 4821
   /v1/admin/reports:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.reports_list
@@ -5202,7 +5202,7 @@ paths:
         line: 4941
   "/v1/admin/reports/{report_id}/triage":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.report_triage
@@ -5320,7 +5320,7 @@ paths:
         line: 4949
   /v1/admin/retention-policies:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.retention_list
@@ -5427,7 +5427,7 @@ paths:
         line: 5068
   "/v1/admin/retention-policies/{policy_id}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     put:
       operationId: admin.retention_update
@@ -5570,7 +5570,7 @@ paths:
         line: 5075
   /v1/admin/review-approvals:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.review_approvals_queue
@@ -5687,7 +5687,7 @@ paths:
         line: 4908
   "/v1/admin/review-approvals/{review_id}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.review_approval_get
@@ -5771,7 +5771,7 @@ paths:
         line: 4916
   "/v1/admin/review-approvals/{review_id}/decision":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.review_approval_decide
@@ -5914,7 +5914,7 @@ paths:
         line: 4923
   "/v1/admin/reviews/{review_id}/move-to-approval-path":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.review_move_to_approval_path
@@ -6017,7 +6017,7 @@ paths:
         line: 4933
   /v1/admin/subscriptions:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.subscription_assign
@@ -6103,7 +6103,7 @@ paths:
         line: 4806
   /v1/admin/taxonomy/mappings:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.mappings_list
@@ -6345,7 +6345,7 @@ paths:
         line: 4897
   /v1/admin/taxonomy/nodes:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.taxonomy_node_create
@@ -6466,7 +6466,7 @@ paths:
         line: 4831
   "/v1/admin/taxonomy/nodes/{node_id}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     patch:
       operationId: admin.taxonomy_node_update
@@ -6618,7 +6618,7 @@ paths:
         line: 4840
   "/v1/admin/taxonomy/nodes/{node_id}/merge":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.taxonomy_merge
@@ -6729,7 +6729,7 @@ paths:
         line: 4848
   "/v1/admin/taxonomy/nodes/{node_id}/synonyms":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.synonyms_list
@@ -6968,7 +6968,7 @@ paths:
         line: 4865
   "/v1/admin/taxonomy/synonyms/{synonym_id}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     delete:
       operationId: admin.synonym_delete
@@ -7053,7 +7053,7 @@ paths:
         line: 4882
   "/v1/admin/taxonomy/synonyms/{synonym_id}/decision":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.synonym_decide
@@ -7161,7 +7161,7 @@ paths:
         line: 4874
   /v1/admin/users/search:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.users_search
@@ -7267,7 +7267,7 @@ paths:
         line: 4675
   "/v1/admin/users/{user_id}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.user_get
@@ -7354,7 +7354,7 @@ paths:
         line: 4683
   "/v1/admin/users/{user_id}/onboarding/{flow_type}/reset":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.onboarding_reset
@@ -7466,7 +7466,7 @@ paths:
         line: 4722
   "/v1/admin/users/{user_id}/platform-roles":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.platform_role_grant
@@ -7577,7 +7577,7 @@ paths:
         line: 4707
   "/v1/admin/users/{user_id}/platform-roles/{role}":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     delete:
       operationId: admin.platform_role_revoke
@@ -7667,7 +7667,7 @@ paths:
         line: 4715
   "/v1/admin/users/{user_id}/sessions/revoke":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.user_sessions_revoke
@@ -7767,7 +7767,7 @@ paths:
         line: 4699
   "/v1/admin/users/{user_id}/status":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.user_status
@@ -7879,7 +7879,7 @@ paths:
         line: 4690
   /v1/admin/verifications:
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.verifications_queue
@@ -8084,7 +8084,7 @@ paths:
         line: 4762
   "/v1/admin/verifications/{verification_id}/decision":
     servers:
-      - url: "https://admin-api.carpal.app"
+      - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     post:
       operationId: admin.verification_decide
@@ -8202,7 +8202,7 @@ paths:
         line: 4770
   "/v1/ai/suggestions/{suggestion_id}/decision":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.suggestion_decide
@@ -8325,7 +8325,7 @@ paths:
         line: 4479
   "/v1/answers/{answer_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     delete:
       operationId: answers.delete
@@ -8404,7 +8404,7 @@ paths:
         line: 4185
   "/v1/approval-requests/{approval_id}/decision":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.approval_decide
@@ -8537,7 +8537,7 @@ paths:
         line: 4496
   /v1/auth/email/verify:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.email_verify
@@ -8642,7 +8642,7 @@ paths:
         line: 915
   /v1/auth/mfa/verify:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.mfa_verify
@@ -8758,7 +8758,7 @@ paths:
         line: 887
   /v1/auth/otp/start:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.otp_start
@@ -8870,7 +8870,7 @@ paths:
         line: 862
   /v1/auth/otp/verify:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.otp_verify
@@ -8976,7 +8976,7 @@ paths:
         line: 870
   /v1/auth/password-reset:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.password_reset_start
@@ -9069,7 +9069,7 @@ paths:
         line: 925
   /v1/auth/password-reset/complete:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.password_reset_complete
@@ -9196,7 +9196,7 @@ paths:
         line: 933
   /v1/auth/reactivate:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.reactivate
@@ -9297,7 +9297,7 @@ paths:
         line: 897
   /v1/auth/signin:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.signin_password
@@ -9411,7 +9411,7 @@ paths:
         line: 853
   /v1/auth/signup:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.signup
@@ -9548,7 +9548,7 @@ paths:
         line: 843
   /v1/auth/social/start:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.social_start
@@ -9662,12 +9662,12 @@ paths:
         line: 907
   /v1/auth/webauthn/options:
     servers:
-      - url: "https://id.carpal.app"
+      - url: "https://id.carpals.ir"
         description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
     post:
       operationId: auth.webauthn_options
-      summary: "Returns WebAuthn request or creation options (challenge valid 5 min, `userVerification: required`, RP ID `carpal.app`…"
-      description: "Returns WebAuthn request or creation options (challenge valid 5 min, `userVerification: required`, RP ID `carpal.app`) for sign-in, second factor or step-up."
+      summary: "Returns WebAuthn request or creation options (challenge valid 5 min, `userVerification: required`, RP ID `carpals.ir`…"
+      description: "Returns WebAuthn request or creation options (challenge valid 5 min, `userVerification: required`, RP ID `carpals.ir`) for sign-in, second factor or step-up."
       tags:
         - identity
       parameters:
@@ -9759,7 +9759,7 @@ paths:
         line: 879
   /v1/check-in:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: appointments.check_in_link
@@ -9888,7 +9888,7 @@ paths:
         line: 3430
   /v1/comments:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: comments.list
@@ -10146,7 +10146,7 @@ paths:
         line: 4104
   "/v1/comments/{comment_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     delete:
       operationId: comments.delete
@@ -10225,7 +10225,7 @@ paths:
         line: 4113
   /v1/config/client:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: config.client
@@ -10301,7 +10301,7 @@ paths:
         line: 4538
   /v1/consent-requests/respond:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: consents.request_respond
@@ -10443,7 +10443,7 @@ paths:
         line: 1146
   /v1/consent-requests/view:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: consents.request_view
@@ -10557,7 +10557,7 @@ paths:
         line: 1137
   /v1/disputes:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: disputes.create
@@ -10773,7 +10773,7 @@ paths:
         line: 3217
   "/v1/disputes/{dispute_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: disputes.get
@@ -10854,7 +10854,7 @@ paths:
         line: 3225
   "/v1/disputes/{dispute_id}/withdraw":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: disputes.withdraw
@@ -10952,7 +10952,7 @@ paths:
         line: 3232
   /v1/events:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: events.ingest
@@ -11072,7 +11072,7 @@ paths:
         line: 4561
   /v1/feed/discover:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: feed.discover
@@ -11189,7 +11189,7 @@ paths:
         line: 4033
   /v1/health:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: health.get
@@ -11265,7 +11265,7 @@ paths:
         line: 4579
   "/v1/insights/{insight_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: ai.insight_get
@@ -11347,7 +11347,7 @@ paths:
         line: 4448
   "/v1/insights/{insight_id}/feedback":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.insight_feedback
@@ -11445,7 +11445,7 @@ paths:
         line: 4455
   /v1/invitations/accept:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: org.invitation_accept
@@ -11569,7 +11569,7 @@ paths:
         line: 1333
   "/v1/jobs/{job_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: jobs.get
@@ -11653,7 +11653,7 @@ paths:
         line: 4545
   "/v1/jobs/{job_id}/cancel":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: jobs.cancel
@@ -11754,7 +11754,7 @@ paths:
         line: 4552
   /v1/map/pins:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: map.pins
@@ -11857,7 +11857,7 @@ paths:
         line: 2883
   /v1/me:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: me.get
@@ -12042,7 +12042,7 @@ paths:
         line: 952
   /v1/me/ai/suggestions:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: ai.suggestions_mine
@@ -12159,7 +12159,7 @@ paths:
         line: 4471
   /v1/me/appointments:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: appointments.create.me
@@ -12410,7 +12410,7 @@ paths:
         line: 3377
   "/v1/me/appointments/{appointment_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: appointments.get.me
@@ -12589,7 +12589,7 @@ paths:
         line: 3392
   "/v1/me/appointments/{appointment_id}/check-in":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: appointments.check_in.me
@@ -12689,7 +12689,7 @@ paths:
         line: 3420
   "/v1/me/appointments/{appointment_id}/delay":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: appointments.delay.me
@@ -12801,7 +12801,7 @@ paths:
         line: 3411
   "/v1/me/appointments/{appointment_id}/history":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: appointments.history.me
@@ -12913,7 +12913,7 @@ paths:
         line: 3440
   "/v1/me/appointments/{appointment_id}/notes":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: appointments.notes_list.me
@@ -13130,7 +13130,7 @@ paths:
         line: 3454
   "/v1/me/appointments/{appointment_id}/pre-visit-report":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: pre_visit.requester_get.me
@@ -13211,7 +13211,7 @@ paths:
         line: 3462
   "/v1/me/appointments/{appointment_id}/transitions":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: appointments.transition.me
@@ -13320,7 +13320,7 @@ paths:
         line: 3401
   /v1/me/consents:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: consents.list
@@ -13522,7 +13522,7 @@ paths:
         line: 1119
   "/v1/me/consents/{consent_id}/withdraw":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: consents.withdraw
@@ -13612,7 +13612,7 @@ paths:
         line: 1128
   /v1/me/data-requests:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: dsr.create
@@ -13821,7 +13821,7 @@ paths:
         line: 1190
   "/v1/me/data-requests/{request_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: dsr.get
@@ -13902,7 +13902,7 @@ paths:
         line: 1197
   "/v1/me/data-requests/{request_id}/download":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: dsr.export_download
@@ -14013,7 +14013,7 @@ paths:
         line: 1204
   /v1/me/deactivate:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: me.deactivate
@@ -14110,7 +14110,7 @@ paths:
         line: 995
   /v1/me/email-change:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: me.email_change
@@ -14211,7 +14211,7 @@ paths:
         line: 961
   /v1/me/favorites:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: favorites.list
@@ -14317,7 +14317,7 @@ paths:
         line: 4011
   "/v1/me/favorites/{org_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     put:
       operationId: favorites.put
@@ -14474,7 +14474,7 @@ paths:
         line: 4026
   /v1/me/follows:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: follows.list
@@ -14580,7 +14580,7 @@ paths:
         line: 3989
   "/v1/me/follows/{org_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     put:
       operationId: follows.put
@@ -14753,7 +14753,7 @@ paths:
         line: 4004
   /v1/me/inquiries:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: inquiries.create.me
@@ -14977,7 +14977,7 @@ paths:
         line: 2640
   "/v1/me/inquiries/{inquiry_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: inquiries.get.me
@@ -15068,7 +15068,7 @@ paths:
         line: 2648
   "/v1/me/inquiries/{inquiry_id}/messages":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: inquiries.message.me
@@ -15187,7 +15187,7 @@ paths:
         line: 2655
   "/v1/me/inquiries/{inquiry_id}/transitions":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: inquiries.transition.me
@@ -15300,7 +15300,7 @@ paths:
         line: 2664
   /v1/me/memberships:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: me.memberships_list
@@ -15411,7 +15411,7 @@ paths:
         line: 1021
   "/v1/me/memberships/{membership_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     delete:
       operationId: me.membership_leave
@@ -15506,7 +15506,7 @@ paths:
         line: 1029
   /v1/me/mfa-methods:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: me.mfa_list
@@ -15612,7 +15612,7 @@ paths:
         line: 1062
   /v1/me/mfa-methods/totp:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: me.mfa_totp_enroll
@@ -15721,7 +15721,7 @@ paths:
         line: 1069
   /v1/me/mfa-methods/webauthn/options:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: me.webauthn_register_options
@@ -15815,7 +15815,7 @@ paths:
         line: 1077
   "/v1/me/mfa-methods/{method_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     delete:
       operationId: me.mfa_remove
@@ -15898,7 +15898,7 @@ paths:
         line: 1094
   "/v1/me/mfa-methods/{method_id}/confirm":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: me.mfa_confirm
@@ -16024,7 +16024,7 @@ paths:
         line: 1085
   /v1/me/mfa-recovery-codes:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: me.recovery_codes_regenerate
@@ -16118,7 +16118,7 @@ paths:
         line: 1101
   /v1/me/notification-preferences:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: notification_prefs.get
@@ -16305,7 +16305,7 @@ paths:
         line: 4249
   /v1/me/notifications:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: notifications.list
@@ -16427,7 +16427,7 @@ paths:
         line: 4218
   /v1/me/notifications/read:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: notifications.mark_read
@@ -16518,7 +16518,7 @@ paths:
         line: 4234
   /v1/me/notifications/unread-count:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: notifications.unread_count
@@ -16605,7 +16605,7 @@ paths:
         line: 4226
   /v1/me/onboarding:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: onboarding.list
@@ -16711,7 +16711,7 @@ paths:
         line: 1218
   "/v1/me/onboarding/{flow_type}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     put:
       operationId: onboarding.update
@@ -16805,7 +16805,7 @@ paths:
         line: 1225
   "/v1/me/onboarding/{flow_type}/accept-terms":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: onboarding.accept_terms
@@ -16914,7 +16914,7 @@ paths:
         line: 1233
   /v1/me/password:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: me.password_change
@@ -17028,7 +17028,7 @@ paths:
         line: 986
   /v1/me/phone-change:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: me.phone_change_start
@@ -17121,7 +17121,7 @@ paths:
         line: 969
   /v1/me/phone-change/verify:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: me.phone_change_verify
@@ -17230,7 +17230,7 @@ paths:
         line: 977
   /v1/me/preferences:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: me.preferences_get
@@ -17413,7 +17413,7 @@ paths:
         line: 1012
   /v1/me/push-tokens:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: push_tokens.register
@@ -17509,7 +17509,7 @@ paths:
         line: 4258
   "/v1/me/push-tokens/{push_token_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     delete:
       operationId: push_tokens.revoke
@@ -17588,7 +17588,7 @@ paths:
         line: 4266
   /v1/me/review-invitations:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: review_invitations.mine_list
@@ -17694,7 +17694,7 @@ paths:
         line: 3089
   /v1/me/reviews:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: reviews.mine_list
@@ -17805,7 +17805,7 @@ paths:
         line: 3049
   "/v1/me/reviews/{review_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: reviews.mine_get
@@ -18061,7 +18061,7 @@ paths:
         line: 3073
   "/v1/me/reviews/{review_id}/evidence":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: reviews.evidence_add
@@ -18177,7 +18177,7 @@ paths:
         line: 3080
   /v1/me/sessions:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: me.sessions_list
@@ -18283,7 +18283,7 @@ paths:
         line: 1038
   /v1/me/sessions/revoke-all:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: me.sessions_revoke_all
@@ -18372,7 +18372,7 @@ paths:
         line: 1054
   "/v1/me/sessions/{session_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     delete:
       operationId: me.session_revoke
@@ -18451,7 +18451,7 @@ paths:
         line: 1046
   /v1/me/subscription:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: subscription.me_get
@@ -18526,7 +18526,7 @@ paths:
         line: 1925
   /v1/me/triage-sessions:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: triage.start
@@ -18666,7 +18666,7 @@ paths:
         line: 4312
   "/v1/me/triage-sessions/{session_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: triage.get
@@ -18745,7 +18745,7 @@ paths:
         line: 4330
   "/v1/me/triage-sessions/{session_id}/complete":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: triage.complete
@@ -18854,7 +18854,7 @@ paths:
         line: 4337
   "/v1/me/triage-sessions/{session_id}/turns":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: triage.reply
@@ -18970,7 +18970,7 @@ paths:
         line: 4321
   /v1/me/vehicle-transfers:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vehicles.transfer_request.me
@@ -19228,7 +19228,7 @@ paths:
         line: 2138
   "/v1/me/vehicle-transfers/{transfer_id}/cancel":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vehicles.transfer_cancel.me
@@ -19326,7 +19326,7 @@ paths:
         line: 2156
   "/v1/me/vehicle-transfers/{transfer_id}/decision":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vehicles.transfer_decide.me
@@ -19444,7 +19444,7 @@ paths:
         line: 2146
   /v1/me/vehicles:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: vehicles.list.me
@@ -19692,7 +19692,7 @@ paths:
         line: 2083
   "/v1/me/vehicles/{vehicle_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: vehicles.get.me
@@ -19972,7 +19972,7 @@ paths:
         line: 2100
   "/v1/me/vehicles/{vehicle_id}/ai/service-history":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.service_history_insights.me
@@ -20071,7 +20071,7 @@ paths:
         line: 4358
   "/v1/me/vehicles/{vehicle_id}/ai/suggestions":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.vehicle_suggestions.me
@@ -20190,7 +20190,7 @@ paths:
         line: 4350
   "/v1/me/vehicles/{vehicle_id}/documents":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: vehicles.documents_list.me
@@ -20420,7 +20420,7 @@ paths:
         line: 2202
   "/v1/me/vehicles/{vehicle_id}/documents/{document_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: vehicles.document_update.me
@@ -20636,7 +20636,7 @@ paths:
         line: 2219
   "/v1/me/vehicles/{vehicle_id}/issues":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: issues.list.me
@@ -20864,7 +20864,7 @@ paths:
         line: 2300
   "/v1/me/vehicles/{vehicle_id}/issues/{issue_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: issues.get.me
@@ -21073,7 +21073,7 @@ paths:
         line: 2317
   "/v1/me/vehicles/{vehicle_id}/issues/{issue_id}/status":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: issues.status_change.me
@@ -21196,7 +21196,7 @@ paths:
         line: 2325
   "/v1/me/vehicles/{vehicle_id}/mileage":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: vehicles.mileage_list.me
@@ -21398,7 +21398,7 @@ paths:
         line: 2187
   "/v1/me/vehicles/{vehicle_id}/reminders":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: reminders.list.me
@@ -21611,7 +21611,7 @@ paths:
         line: 2342
   "/v1/me/vehicles/{vehicle_id}/reminders/{reminder_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: reminders.update.me
@@ -21834,7 +21834,7 @@ paths:
         line: 2358
   "/v1/me/vehicles/{vehicle_id}/service-records":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: service_records.list.me
@@ -22064,7 +22064,7 @@ paths:
         line: 2234
   "/v1/me/vehicles/{vehicle_id}/service-records/{record_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: service_records.get.me
@@ -22396,7 +22396,7 @@ paths:
         line: 2259
   "/v1/me/vehicles/{vehicle_id}/service-records/{record_id}/evidence":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: service_records.evidence_add.me
@@ -22520,7 +22520,7 @@ paths:
         line: 2266
   "/v1/me/vehicles/{vehicle_id}/service-records/{record_id}/evidence/{evidence_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     delete:
       operationId: service_records.evidence_remove.me
@@ -22611,7 +22611,7 @@ paths:
         line: 2275
   "/v1/me/vehicles/{vehicle_id}/status":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vehicles.status_change.me
@@ -22720,7 +22720,7 @@ paths:
         line: 2110
   "/v1/me/vehicles/{vehicle_id}/status-history":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: vehicles.status_history.me
@@ -22832,7 +22832,7 @@ paths:
         line: 2173
   "/v1/me/vehicles/{vehicle_id}/vin-decode":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vehicles.vin_decode.me
@@ -22943,7 +22943,7 @@ paths:
         line: 2164
   "/v1/me/vehicles/{vehicle_id}/vin-reveal":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vehicles.vin_reveal.me
@@ -23040,7 +23040,7 @@ paths:
         line: 2120
   /v1/media/attachments:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: media.attach
@@ -23157,7 +23157,7 @@ paths:
         line: 3692
   "/v1/media/attachments/{attachment_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: media.attachment_update
@@ -23345,7 +23345,7 @@ paths:
         line: 3709
   /v1/media/uploads:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: media.upload_init
@@ -23453,7 +23453,7 @@ paths:
         line: 3649
   "/v1/media/uploads/{upload_id}/complete":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: media.upload_complete
@@ -23575,7 +23575,7 @@ paths:
         line: 3666
   "/v1/media/{media_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: media.get
@@ -23739,7 +23739,7 @@ paths:
         line: 3716
   "/v1/media/{media_id}/download-url":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: media.download_url
@@ -23852,7 +23852,7 @@ paths:
         line: 3683
   "/v1/media/{media_id}/redaction":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: media.redaction_decide
@@ -23951,7 +23951,7 @@ paths:
         line: 3723
   /v1/orgs:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: org.create
@@ -24056,7 +24056,7 @@ paths:
         line: 1291
   "/v1/orgs/{org_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: org.get
@@ -24239,7 +24239,7 @@ paths:
         line: 1307
   "/v1/orgs/{org_id}/ai/review-insights":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.review_insights
@@ -24360,7 +24360,7 @@ paths:
         line: 4390
   "/v1/orgs/{org_id}/ai/suggestions":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: ai.suggestions_list
@@ -24492,7 +24492,7 @@ paths:
         line: 4463
   "/v1/orgs/{org_id}/approval-requests":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: ai.approvals_list
@@ -24615,7 +24615,7 @@ paths:
         line: 4488
   "/v1/orgs/{org_id}/consents":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: org.consents_list
@@ -24832,7 +24832,7 @@ paths:
         line: 1163
   "/v1/orgs/{org_id}/consents/{consent_id}/withdraw":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: org.consents_withdraw
@@ -24929,7 +24929,7 @@ paths:
         line: 1171
   "/v1/orgs/{org_id}/fleet/ai/suggestions":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.fleet_suggestions
@@ -25047,7 +25047,7 @@ paths:
         line: 4438
   "/v1/orgs/{org_id}/fleet/appointments":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: appointments.create.fleet
@@ -25314,7 +25314,7 @@ paths:
         line: 3377
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: appointments.get.fleet
@@ -25509,7 +25509,7 @@ paths:
         line: 3392
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}/check-in":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: appointments.check_in.fleet
@@ -25618,7 +25618,7 @@ paths:
         line: 3420
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}/delay":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: appointments.delay.fleet
@@ -25739,7 +25739,7 @@ paths:
         line: 3411
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}/history":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: appointments.history.fleet
@@ -25860,7 +25860,7 @@ paths:
         line: 3440
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}/notes":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: appointments.notes_list.fleet
@@ -26093,7 +26093,7 @@ paths:
         line: 3454
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}/pre-visit-report":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: pre_visit.requester_get.fleet
@@ -26181,7 +26181,7 @@ paths:
         line: 3462
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}/transitions":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: appointments.transition.fleet
@@ -26297,7 +26297,7 @@ paths:
         line: 3401
   "/v1/orgs/{org_id}/fleet/approvals":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: fleet.approvals_list
@@ -26529,7 +26529,7 @@ paths:
         line: 3858
   "/v1/orgs/{org_id}/fleet/approvals/{approval_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: fleet.approval_get
@@ -26618,7 +26618,7 @@ paths:
         line: 3867
   "/v1/orgs/{org_id}/fleet/approvals/{approval_id}/decision":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: fleet.approval_decide
@@ -26745,7 +26745,7 @@ paths:
         line: 3874
   "/v1/orgs/{org_id}/fleet/assignments":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: fleet.assignments_list
@@ -26882,7 +26882,7 @@ paths:
         line: 3801
   "/v1/orgs/{org_id}/fleet/dashboard":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: fleet.dashboard
@@ -26964,7 +26964,7 @@ paths:
         line: 3794
   "/v1/orgs/{org_id}/fleet/exports":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: fleet.export_create
@@ -27180,7 +27180,7 @@ paths:
         line: 3900
   "/v1/orgs/{org_id}/fleet/exports/{export_id}/download":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: fleet.export_download
@@ -27284,7 +27284,7 @@ paths:
         line: 3907
   "/v1/orgs/{org_id}/fleet/partners":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: fleet.partners_list
@@ -27510,7 +27510,7 @@ paths:
         line: 3833
   "/v1/orgs/{org_id}/fleet/partners/{partner_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: fleet.partner_update
@@ -27638,7 +27638,7 @@ paths:
         line: 3842
   "/v1/orgs/{org_id}/fleet/profile":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: fleet.profile_get
@@ -27820,7 +27820,7 @@ paths:
         line: 3786
   "/v1/orgs/{org_id}/fleet/reports/{report_type}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: fleet.report
@@ -27932,7 +27932,7 @@ paths:
         line: 3884
   "/v1/orgs/{org_id}/fleet/vehicle-imports":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: fleet.import_create
@@ -28158,7 +28158,7 @@ paths:
         line: 3926
   "/v1/orgs/{org_id}/fleet/vehicle-imports/{batch_id}/error-report":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: fleet.import_error_report
@@ -28244,7 +28244,7 @@ paths:
         line: 3933
   "/v1/orgs/{org_id}/fleet/vehicle-transfers":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vehicles.transfer_request.fleet
@@ -28516,7 +28516,7 @@ paths:
         line: 2138
   "/v1/orgs/{org_id}/fleet/vehicle-transfers/{transfer_id}/cancel":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vehicles.transfer_cancel.fleet
@@ -28621,7 +28621,7 @@ paths:
         line: 2156
   "/v1/orgs/{org_id}/fleet/vehicle-transfers/{transfer_id}/decision":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vehicles.transfer_decide.fleet
@@ -28746,7 +28746,7 @@ paths:
         line: 2146
   "/v1/orgs/{org_id}/fleet/vehicles":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: vehicles.list.fleet
@@ -29010,7 +29010,7 @@ paths:
         line: 2083
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: vehicles.get.fleet
@@ -29306,7 +29306,7 @@ paths:
         line: 2100
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/ai/service-history":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.service_history_insights.fleet
@@ -29412,7 +29412,7 @@ paths:
         line: 4358
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/ai/suggestions":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.vehicle_suggestions.fleet
@@ -29538,7 +29538,7 @@ paths:
         line: 4350
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/assignment":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     put:
       operationId: fleet.assignment_set
@@ -29746,7 +29746,7 @@ paths:
         line: 3818
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/documents":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: vehicles.documents_list.fleet
@@ -29991,7 +29991,7 @@ paths:
         line: 2202
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/documents/{document_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: vehicles.document_update.fleet
@@ -30221,7 +30221,7 @@ paths:
         line: 2219
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/issues":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: issues.list.fleet
@@ -30467,7 +30467,7 @@ paths:
         line: 2300
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/issues/{issue_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: issues.get.fleet
@@ -30695,7 +30695,7 @@ paths:
         line: 2317
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/issues/{issue_id}/status":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: issues.status_change.fleet
@@ -30825,7 +30825,7 @@ paths:
         line: 2325
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/mileage":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: vehicles.mileage_list.fleet
@@ -31045,7 +31045,7 @@ paths:
         line: 2187
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/reminders":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: reminders.list.fleet
@@ -31274,7 +31274,7 @@ paths:
         line: 2342
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/reminders/{reminder_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: reminders.update.fleet
@@ -31511,7 +31511,7 @@ paths:
         line: 2358
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/service-records":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: service_records.list.fleet
@@ -31757,7 +31757,7 @@ paths:
         line: 2234
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/service-records/{record_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: service_records.get.fleet
@@ -32112,7 +32112,7 @@ paths:
         line: 2259
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/service-records/{record_id}/evidence":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: service_records.evidence_add.fleet
@@ -32243,7 +32243,7 @@ paths:
         line: 2266
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/service-records/{record_id}/evidence/{evidence_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     delete:
       operationId: service_records.evidence_remove.fleet
@@ -32341,7 +32341,7 @@ paths:
         line: 2275
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/status":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vehicles.status_change.fleet
@@ -32457,7 +32457,7 @@ paths:
         line: 2110
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/status-history":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: vehicles.status_history.fleet
@@ -32578,7 +32578,7 @@ paths:
         line: 2173
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/vin-decode":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vehicles.vin_decode.fleet
@@ -32696,7 +32696,7 @@ paths:
         line: 2164
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/vin-reveal":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vehicles.vin_reveal.fleet
@@ -32800,7 +32800,7 @@ paths:
         line: 2120
   "/v1/orgs/{org_id}/geo/geocode":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: geo.geocode
@@ -32911,7 +32911,7 @@ paths:
         line: 1399
   "/v1/orgs/{org_id}/geo/resolve-map-link":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: geo.resolve_map_link
@@ -33058,7 +33058,7 @@ paths:
         line: 1415
   "/v1/orgs/{org_id}/geo/reverse":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: geo.reverse
@@ -33174,7 +33174,7 @@ paths:
         line: 1407
   "/v1/orgs/{org_id}/inquiries":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: inquiries.create.org
@@ -33414,7 +33414,7 @@ paths:
         line: 2640
   "/v1/orgs/{org_id}/inquiries/{inquiry_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: inquiries.get.org
@@ -33513,7 +33513,7 @@ paths:
         line: 2648
   "/v1/orgs/{org_id}/inquiries/{inquiry_id}/messages":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: inquiries.message.org
@@ -33640,7 +33640,7 @@ paths:
         line: 2655
   "/v1/orgs/{org_id}/inquiries/{inquiry_id}/transitions":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: inquiries.transition.org
@@ -33761,7 +33761,7 @@ paths:
         line: 2664
   "/v1/orgs/{org_id}/locations":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: org.locations_list
@@ -33981,7 +33981,7 @@ paths:
         line: 1366
   "/v1/orgs/{org_id}/locations/pin-check":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: org.location_pin_check
@@ -34110,7 +34110,7 @@ paths:
         line: 1391
   "/v1/orgs/{org_id}/locations/{location_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: org.location_update
@@ -34398,7 +34398,7 @@ paths:
         line: 1383
   "/v1/orgs/{org_id}/members":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: org.members_list
@@ -34524,7 +34524,7 @@ paths:
         line: 1316
   "/v1/orgs/{org_id}/members/invitations":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: org.member_invite
@@ -34659,7 +34659,7 @@ paths:
         line: 1324
   "/v1/orgs/{org_id}/members/{membership_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: org.member_update
@@ -34879,7 +34879,7 @@ paths:
         line: 1351
   "/v1/orgs/{org_id}/posts":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: posts.org_list
@@ -35101,7 +35101,7 @@ paths:
         line: 4056
   "/v1/orgs/{org_id}/posts/{post_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: posts.update
@@ -35339,7 +35339,7 @@ paths:
         line: 4081
   "/v1/orgs/{org_id}/posts/{post_id}/publish":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: posts.publish
@@ -35457,7 +35457,7 @@ paths:
         line: 4072
   "/v1/orgs/{org_id}/provider/ai/profile-helper":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.profile_helper
@@ -35560,7 +35560,7 @@ paths:
         line: 4366
   "/v1/orgs/{org_id}/provider/ai/skill-heatmap":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: ai.skill_heatmap
@@ -35672,7 +35672,7 @@ paths:
         line: 4374
   "/v1/orgs/{org_id}/provider/appointments":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.appointments_list
@@ -35819,7 +35819,7 @@ paths:
         line: 3471
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.appointments_get
@@ -36004,7 +36004,7 @@ paths:
         line: 3487
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}/ai/suggestions":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.appointment_suggestions
@@ -36110,7 +36110,7 @@ paths:
         line: 4406
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}/notes":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.notes_list
@@ -36326,7 +36326,7 @@ paths:
         line: 3536
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}/participants":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.participants_list
@@ -36556,7 +36556,7 @@ paths:
         line: 3513
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}/participants/{participant_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     delete:
       operationId: provider.participant_remove
@@ -36648,7 +36648,7 @@ paths:
         line: 3522
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}/pre-visit-report":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: pre_visit.provider_get
@@ -36741,7 +36741,7 @@ paths:
         line: 3544
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}/transitions":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: provider.appointments_transition
@@ -36857,7 +36857,7 @@ paths:
         line: 3496
   "/v1/orgs/{org_id}/provider/availability-rules":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: availability.rules_list
@@ -37071,7 +37071,7 @@ paths:
         line: 3567
   "/v1/orgs/{org_id}/provider/availability-rules/{rule_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: availability.rule_update
@@ -37294,7 +37294,7 @@ paths:
         line: 3583
   "/v1/orgs/{org_id}/provider/badges":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: badges.list
@@ -37417,7 +37417,7 @@ paths:
         line: 3241
   "/v1/orgs/{org_id}/provider/calendar":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.calendar
@@ -37515,7 +37515,7 @@ paths:
         line: 3551
   "/v1/orgs/{org_id}/provider/capabilities":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.capabilities_list
@@ -37764,7 +37764,7 @@ paths:
         line: 1636
   "/v1/orgs/{org_id}/provider/capabilities/{capability_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: provider.capability_update
@@ -37949,7 +37949,7 @@ paths:
         line: 1653
   "/v1/orgs/{org_id}/provider/capabilities/{capability_id}/evidence":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.capability_evidence_list
@@ -38077,7 +38077,7 @@ paths:
         line: 1660
   "/v1/orgs/{org_id}/provider/certifications":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.certifications_list
@@ -38293,7 +38293,7 @@ paths:
         line: 1549
   "/v1/orgs/{org_id}/provider/certifications/{certification_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: provider.certification_update
@@ -38516,7 +38516,7 @@ paths:
         line: 1566
   "/v1/orgs/{org_id}/provider/coverage":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.coverage_list
@@ -38762,7 +38762,7 @@ paths:
         line: 1613
   "/v1/orgs/{org_id}/provider/coverage/{coverage_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     delete:
       operationId: provider.coverage_delete
@@ -38848,7 +38848,7 @@ paths:
         line: 1621
   "/v1/orgs/{org_id}/provider/customer-notes":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.customer_notes_list
@@ -39076,7 +39076,7 @@ paths:
         line: 1718
   "/v1/orgs/{org_id}/provider/customer-notes/{note_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: provider.customer_note_update
@@ -39263,7 +39263,7 @@ paths:
         line: 1735
   "/v1/orgs/{org_id}/provider/insights":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.insights_get
@@ -39355,7 +39355,7 @@ paths:
         line: 1793
   "/v1/orgs/{org_id}/provider/job-logs":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.job_logs_list
@@ -39592,7 +39592,7 @@ paths:
         line: 1686
   "/v1/orgs/{org_id}/provider/job-logs/{job_log_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: provider.job_log_update
@@ -39813,7 +39813,7 @@ paths:
         line: 1703
   "/v1/orgs/{org_id}/provider/portfolio":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.portfolio_list
@@ -40028,7 +40028,7 @@ paths:
         line: 1750
   "/v1/orgs/{org_id}/provider/portfolio/{item_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: provider.portfolio_update
@@ -40197,7 +40197,7 @@ paths:
         line: 1758
   "/v1/orgs/{org_id}/provider/portfolio/{item_id}/ai/compose":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.showcase_compose
@@ -40319,7 +40319,7 @@ paths:
         line: 4398
   "/v1/orgs/{org_id}/provider/portfolio/{item_id}/archive":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: provider.portfolio_archive
@@ -40412,7 +40412,7 @@ paths:
         line: 1785
   "/v1/orgs/{org_id}/provider/portfolio/{item_id}/consent-request":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: provider.portfolio_consent_request
@@ -40534,7 +40534,7 @@ paths:
         line: 1766
   "/v1/orgs/{org_id}/provider/portfolio/{item_id}/publish":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: provider.portfolio_publish
@@ -40654,7 +40654,7 @@ paths:
         line: 1775
   "/v1/orgs/{org_id}/provider/profile":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.profile_get
@@ -40830,7 +40830,7 @@ paths:
         line: 1516
   "/v1/orgs/{org_id}/provider/publish":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: provider.publish
@@ -40931,7 +40931,7 @@ paths:
         line: 1524
   "/v1/orgs/{org_id}/provider/service-categories":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: provider.service_categories_list
@@ -41168,7 +41168,7 @@ paths:
         line: 1581
   "/v1/orgs/{org_id}/provider/service-categories/{category_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: provider.service_category_update
@@ -41390,7 +41390,7 @@ paths:
         line: 1598
   "/v1/orgs/{org_id}/provider/service-records":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: provider.service_record_create
@@ -41503,7 +41503,7 @@ paths:
         line: 2282
   "/v1/orgs/{org_id}/provider/time-off":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: availability.time_off_list
@@ -41730,7 +41730,7 @@ paths:
         line: 3598
   "/v1/orgs/{org_id}/provider/time-off/{time_off_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     delete:
       operationId: availability.time_off_cancel
@@ -41816,7 +41816,7 @@ paths:
         line: 3606
   "/v1/orgs/{org_id}/provider/unpublish":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: provider.unpublish
@@ -41918,7 +41918,7 @@ paths:
         line: 1534
   "/v1/orgs/{org_id}/provider/{collection}/{record_id}/decision":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: provider.gated_decide
@@ -42043,7 +42043,7 @@ paths:
         line: 1668
   "/v1/orgs/{org_id}/review-approvals":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: review_approvals.list
@@ -42157,7 +42157,7 @@ paths:
         line: 3191
   "/v1/orgs/{org_id}/review-approvals/{review_id}/answer":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: review_approvals.answer
@@ -42285,7 +42285,7 @@ paths:
         line: 3198
   "/v1/orgs/{org_id}/review-invitations":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: review_invitations.send
@@ -42542,7 +42542,7 @@ paths:
         line: 3127
   "/v1/orgs/{org_id}/review-invitations/{invitation_id}/cancel":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: review_invitations.cancel
@@ -42636,7 +42636,7 @@ paths:
         line: 3135
   "/v1/orgs/{org_id}/reviews":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: reviews.org_list
@@ -42770,7 +42770,7 @@ paths:
         line: 3143
   "/v1/orgs/{org_id}/reviews/{review_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: reviews.org_get
@@ -42857,7 +42857,7 @@ paths:
         line: 3151
   "/v1/orgs/{org_id}/reviews/{review_id}/ai/response-draft":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.review_response_draft
@@ -42986,7 +42986,7 @@ paths:
         line: 4382
   "/v1/orgs/{org_id}/reviews/{review_id}/responses":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: review_responses.create
@@ -43100,7 +43100,7 @@ paths:
         line: 3158
   "/v1/orgs/{org_id}/reviews/{review_id}/responses/{response_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: review_responses.update
@@ -43307,7 +43307,7 @@ paths:
         line: 3184
   "/v1/orgs/{org_id}/reviews/{review_id}/responses/{response_id}/publish":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: review_responses.publish
@@ -43421,7 +43421,7 @@ paths:
         line: 3175
   "/v1/orgs/{org_id}/subscription":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: subscription.org_get
@@ -43503,7 +43503,7 @@ paths:
         line: 1932
   "/v1/orgs/{org_id}/subscription/change-requests":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: subscription.change_request
@@ -43619,7 +43619,7 @@ paths:
         line: 1939
   "/v1/orgs/{org_id}/trade-accounts":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: trade_accounts.request
@@ -43868,7 +43868,7 @@ paths:
         line: 2682
   "/v1/orgs/{org_id}/trust-signals":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: trust_signals.list
@@ -43993,7 +43993,7 @@ paths:
         line: 3249
   "/v1/orgs/{org_id}/vendor/ai/inventory-gaps":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.inventory_gaps
@@ -44093,7 +44093,7 @@ paths:
         line: 4430
   "/v1/orgs/{org_id}/vendor/ai/normalize":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.inventory_normalize
@@ -44214,7 +44214,7 @@ paths:
         line: 4414
   "/v1/orgs/{org_id}/vendor/coverage":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: vendor.coverage_list
@@ -44449,7 +44449,7 @@ paths:
         line: 1867
   "/v1/orgs/{org_id}/vendor/coverage/{coverage_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     delete:
       operationId: vendor.coverage_delete
@@ -44535,7 +44535,7 @@ paths:
         line: 1875
   "/v1/orgs/{org_id}/vendor/inquiries":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: inquiries.vendor_list
@@ -44658,7 +44658,7 @@ paths:
         line: 2593
   "/v1/orgs/{org_id}/vendor/inquiries/{inquiry_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: inquiries.vendor_get
@@ -44760,7 +44760,7 @@ paths:
         line: 2601
   "/v1/orgs/{org_id}/vendor/inquiries/{inquiry_id}/messages":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: inquiries.vendor_message
@@ -44886,7 +44886,7 @@ paths:
         line: 2608
   "/v1/orgs/{org_id}/vendor/inquiries/{inquiry_id}/transitions":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: inquiries.vendor_transition
@@ -44997,7 +44997,7 @@ paths:
         line: 2617
   "/v1/orgs/{org_id}/vendor/insights":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: vendor.insights_get
@@ -45089,7 +45089,7 @@ paths:
         line: 1882
   "/v1/orgs/{org_id}/vendor/inventory":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: inventory.list
@@ -45352,7 +45352,7 @@ paths:
         line: 2448
   "/v1/orgs/{org_id}/vendor/inventory/bulk":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: inventory.bulk_update
@@ -45451,7 +45451,7 @@ paths:
         line: 2482
   "/v1/orgs/{org_id}/vendor/inventory/imports":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: inventory.import_create
@@ -45677,7 +45677,7 @@ paths:
         line: 2553
   "/v1/orgs/{org_id}/vendor/inventory/imports/{batch_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: inventory.import_get
@@ -45765,7 +45765,7 @@ paths:
         line: 2560
   "/v1/orgs/{org_id}/vendor/inventory/imports/{batch_id}/error-report":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: inventory.import_error_report
@@ -45863,7 +45863,7 @@ paths:
         line: 2567
   "/v1/orgs/{org_id}/vendor/inventory/search":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: inventory.search
@@ -45987,7 +45987,7 @@ paths:
         line: 2440
   "/v1/orgs/{org_id}/vendor/inventory/{item_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: inventory.get
@@ -46367,7 +46367,7 @@ paths:
         line: 2474
   "/v1/orgs/{org_id}/vendor/inventory/{item_id}/ai/fitment":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: ai.fitment_suggest
@@ -46476,7 +46476,7 @@ paths:
         line: 4422
   "/v1/orgs/{org_id}/vendor/inventory/{item_id}/duplicate":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: inventory.duplicate_mark
@@ -46584,7 +46584,7 @@ paths:
         line: 2491
   "/v1/orgs/{org_id}/vendor/inventory/{item_id}/fitment":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: fitment.list
@@ -46838,7 +46838,7 @@ paths:
         line: 2507
   "/v1/orgs/{org_id}/vendor/inventory/{item_id}/fitment/{fitment_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     patch:
       operationId: fitment.update
@@ -47074,7 +47074,7 @@ paths:
         line: 2525
   "/v1/orgs/{org_id}/vendor/inventory/{item_id}/fitment/{fitment_id}/decision":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: fitment.decide
@@ -47204,7 +47204,7 @@ paths:
         line: 2533
   "/v1/orgs/{org_id}/vendor/profile":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: vendor.profile_get
@@ -47380,7 +47380,7 @@ paths:
         line: 1835
   "/v1/orgs/{org_id}/vendor/publish":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vendor.publish
@@ -47479,7 +47479,7 @@ paths:
         line: 1843
   "/v1/orgs/{org_id}/vendor/trade-accounts":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: trade_accounts.vendor_list
@@ -47602,7 +47602,7 @@ paths:
         line: 2576
   "/v1/orgs/{org_id}/vendor/trade-accounts/{trade_account_id}/decision":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: trade_accounts.vendor_decide
@@ -47730,7 +47730,7 @@ paths:
         line: 2584
   "/v1/orgs/{org_id}/vendor/unpublish":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: vendor.unpublish
@@ -47832,7 +47832,7 @@ paths:
         line: 1852
   "/v1/orgs/{org_id}/verifications":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: org.verifications_list
@@ -48051,7 +48051,7 @@ paths:
         line: 1431
   /v1/plans:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: plans.list
@@ -48150,7 +48150,7 @@ paths:
         line: 1917
   "/v1/public/inventory/{item_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: public.inventory_get
@@ -48238,7 +48238,7 @@ paths:
         line: 2939
   "/v1/public/orgs/{org_id}/availability":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: public.availability
@@ -48354,7 +48354,7 @@ paths:
         line: 2947
   "/v1/public/orgs/{org_id}/inventory/search":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: public.org_inventory_search
@@ -48519,7 +48519,7 @@ paths:
         line: 2928
   "/v1/public/orgs/{org_id}/portfolio":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: public.org_portfolio
@@ -48646,7 +48646,7 @@ paths:
         line: 2920
   "/v1/public/orgs/{org_id}/posts":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: posts.public_list
@@ -48777,7 +48777,7 @@ paths:
         line: 4088
   "/v1/public/orgs/{org_id}/reviews":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: public.org_reviews
@@ -48919,7 +48919,7 @@ paths:
         line: 2912
   "/v1/public/orgs/{slug}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: public.org_get
@@ -49001,7 +49001,7 @@ paths:
         line: 2905
   "/v1/public/showcases/{item_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: showcases.get
@@ -49083,7 +49083,7 @@ paths:
         line: 4041
   /v1/questions:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: questions.create
@@ -49177,7 +49177,7 @@ paths:
         line: 4136
   /v1/questions/search:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: questions.search
@@ -49312,7 +49312,7 @@ paths:
         line: 4145
   "/v1/questions/{question_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: questions.get
@@ -49519,7 +49519,7 @@ paths:
         line: 4161
   "/v1/questions/{question_id}/accept":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: answers.accept
@@ -49616,7 +49616,7 @@ paths:
         line: 4177
   "/v1/questions/{question_id}/answers":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: answers.create
@@ -49714,7 +49714,7 @@ paths:
         line: 4169
   /v1/reactions:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     put:
       operationId: reactions.put
@@ -49816,7 +49816,7 @@ paths:
         line: 4120
   /v1/reactions/remove:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: reactions.delete
@@ -49915,7 +49915,7 @@ paths:
         line: 4128
   /v1/reports:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: reports.create
@@ -50028,7 +50028,7 @@ paths:
         line: 4569
   /v1/review-invitations/open:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: review_invitations.open
@@ -50140,7 +50140,7 @@ paths:
         line: 3096
   /v1/review-invitations/verify:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: review_invitations.verify
@@ -50294,7 +50294,7 @@ paths:
         line: 3106
   /v1/reviews:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: reviews.create
@@ -50431,7 +50431,7 @@ paths:
         line: 3039
   /v1/reviews/eligibility:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: reviews.eligibility
@@ -50520,7 +50520,7 @@ paths:
         line: 3031
   /v1/safety/check:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: safety.check
@@ -50616,7 +50616,7 @@ paths:
         line: 2893
   /v1/search:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: search.run
@@ -50726,7 +50726,7 @@ paths:
         line: 2838
   "/v1/search/{session_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: search.session_get
@@ -50828,7 +50828,7 @@ paths:
         line: 2856
   "/v1/search/{session_id}/refine":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: search.refine
@@ -50932,7 +50932,7 @@ paths:
         line: 2865
   "/v1/search/{session_id}/results":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: search.page
@@ -51047,7 +51047,7 @@ paths:
         line: 2848
   "/v1/search/{session_id}/results/{result_id}/events":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: search.result_event
@@ -51150,7 +51150,7 @@ paths:
         line: 2875
   /v1/taxonomy/nodes:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: taxonomy.snapshot
@@ -51273,7 +51273,7 @@ paths:
         line: 1975
   "/v1/taxonomy/nodes/{node_id}":
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: taxonomy.node_get
@@ -51354,7 +51354,7 @@ paths:
         line: 1983
   /v1/taxonomy/suggest:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     post:
       operationId: taxonomy.suggest
@@ -51464,7 +51464,7 @@ paths:
         line: 1990
   /v1/taxonomy/version:
     servers:
-      - url: "https://api.carpal.app"
+      - url: "https://api.carpals.ir"
         description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
     get:
       operationId: taxonomy.version
@@ -60613,7 +60613,7 @@ components:
           type: string
           maxLength: 2048
           pattern: "^https://[^\\s@#/?]+([/?][^\\s#]*)?$"
-          description: "https://docs.carpal.app/errors/<code>"
+          description: "https://docs.carpals.ir/errors/<code>"
         title:
           type: string
           description: "localized, safe, generic"
@@ -69797,5 +69797,5 @@ components:
       description: "BFF client certificate (RFC 8705)."
     oidc:
       type: openIdConnect
-      openIdConnectUrl: "https://id.carpal.app/.well-known/openid-configuration"
+      openIdConnectUrl: "https://id.carpals.ir/.well-known/openid-configuration"
       description: "Where tokens come from: authorization code + PKCE (S256), refresh rotation, the anonymous grant (SEC-AU-14)."

@@ -166,11 +166,11 @@ describe('ID token verification', () => {
 describe('DPoP and PoW primitives', () => {
   it('proofs carry htm, htu without query, ath and the public key only', async () => {
     const key = await generateDpopKey();
-    const proof = await dpopProof(key, { method: 'post', url: 'https://api.carpal.app/v1/me?x=1', accessToken: 'tok' });
+    const proof = await dpopProof(key, { method: 'post', url: 'https://api.carpals.ir/v1/me?x=1', accessToken: 'tok' });
     const h = decodeProtectedHeader(proof);
     expect(h).toMatchObject({ alg: 'ES256', typ: 'dpop+jwt' });
     expect((h.jwk as JWK).d).toBeUndefined();
-    expect(decodeJwt(proof)).toMatchObject({ htm: 'POST', htu: 'https://api.carpal.app/v1/me', ath: await sha256Base64url('tok') });
+    expect(decodeJwt(proof)).toMatchObject({ htm: 'POST', htu: 'https://api.carpals.ir/v1/me', ath: await sha256Base64url('tok') });
     expect(await jwkThumbprint(key)).toBe(await jwkThumbprint(key));
   });
 

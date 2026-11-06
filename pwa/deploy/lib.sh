@@ -18,7 +18,8 @@ PWA_CONF="${CARPAL_PWA_DEPLOY_CONF:-/carpal/config/pwa-deploy.conf}"
 # shellcheck disable=SC1090
 [[ -f "$PWA_CONF" ]] && source "$PWA_CONF"
 
-WEB_HOST="${WEB_HOST:-www.$DOMAIN}"
+WEB_HOST="${WEB_HOST:-pwa.$DOMAIN}"
+PORTAL_HOST="${PORTAL_HOST:-web.$DOMAIN}"
 API_HOST="${API_HOST:-api.$DOMAIN}"
 AUTH_HOST="${AUTH_HOST:-id.$DOMAIN}"
 MEDIA_HOST="${MEDIA_HOST:-media.$DOMAIN}"
@@ -107,7 +108,7 @@ render() {
   local template="$1" out="$2" content name
   shift 2
   content="$(cat "$template")"
-  for name in "$@" DOMAIN WEB_HOST API_HOST AUTH_HOST MEDIA_HOST CARPAL_ROOT CONFIG_DIR PWA_ROOT PWA_SRC_DIR PWA_APP_DIR \
+  for name in "$@" DOMAIN WEB_HOST PORTAL_HOST API_HOST AUTH_HOST MEDIA_HOST CARPAL_ROOT CONFIG_DIR PWA_ROOT PWA_SRC_DIR PWA_APP_DIR \
     PWA_ENV_FILE PWA_SERVICE_NAME PWA_SERVICE_USER PWA_SERVICE_GROUP PWA_PORT BACKEND_API_URL BACKEND_AUTH_URL \
     REDIS_PORT REDIS_DB REDIS_MAXMEMORY NODE_BIN; do
     content="${content//@${name}@/${!name}}"

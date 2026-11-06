@@ -7,9 +7,9 @@ import { Authenticator, JwtKeyRing, SessionStore, TokenService, type AuthRequest
 
 const crypto = new CryptoServices('test-master-secret-0123456789-abcdefghij');
 const ring = JwtKeyRing.derived(crypto.keys);
-const ISS = 'https://id.carpal.app';
-const API = 'https://api.carpal.app';
-const ADMIN = 'https://admin-api.carpal.app';
+const ISS = 'https://id.carpals.ir';
+const API = 'https://api.carpals.ir';
+const ADMIN = 'https://admin-api.carpals.ir';
 const tokens = new TokenService(ring, ISS);
 
 let kv: MemoryKeyValueStore;
@@ -28,7 +28,7 @@ const req = (authorization: string | undefined, extra: Partial<AuthRequest> = {}
   dpop: undefined,
   clientId: 'cp-mobile',
   method: 'GET',
-  htu: 'https://api.carpal.app/v1/me',
+  htu: 'https://api.carpals.ir/v1/me',
   ...extra,
 });
 
@@ -256,7 +256,7 @@ describe('Authenticator', () => {
     const proof = (o: { htm?: string; htu?: string; jti?: string; iat?: number } = {}) =>
       new SignJWT({
         htm: o.htm ?? 'GET',
-        htu: o.htu ?? 'https://api.carpal.app/v1/me',
+        htu: o.htu ?? 'https://api.carpals.ir/v1/me',
         ath: createHash('sha256').update(token).digest('base64url'),
       })
         .setProtectedHeader({ alg: 'ES256', typ: 'dpop+jwt', jwk })

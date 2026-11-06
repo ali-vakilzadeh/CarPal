@@ -13,7 +13,7 @@ describe('link tokens (SEC-LT)', () => {
     expect(t.hash.equals(links.hash(t.token))).toBe(true);
     expect(t.expiresAt?.getTime()).toBe(now + 30 * 60_000);
     expect(links.issue('ci').expiresAt).toBeNull();
-    expect(links.link('ev', 'cp_ev_x')).toBe('https://carpal.app/l/ev#cp_ev_x');
+    expect(links.link('ev', 'cp_ev_x')).toBe('https://pwa.carpals.ir/l/ev#cp_ev_x');
   });
 
   it('treats malformed and foreign tokens like unknown ones (410, no oracle)', () => {

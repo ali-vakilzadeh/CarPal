@@ -45,7 +45,7 @@ describe('loadConfig', () => {
     expect(loadConfig({ CARPAL_ENV: 'dev', CARPAL_MEDIA_CORS_ORIGINS: undefined }).media.corsOrigins).toContain('http://localhost:3000');
     const staging = loadConfig({ CARPAL_ENV: 'staging', CARPAL_MASTER_SECRET: 'x'.repeat(40), CARPAL_MEDIA_CORS_ORIGINS: undefined });
     expect(staging.media.corsOrigins).toEqual([]);
-    expect(loadConfig({ CARPAL_MEDIA_CORS_ORIGINS: '["https://carpal.app"]' }).media.corsOrigins).toEqual(['https://carpal.app']);
-    expect(() => loadConfig({ CARPAL_MEDIA_CORS_ORIGINS: '["https://carpal.app/path"]' })).toThrow(/CARPAL_MEDIA_CORS_ORIGINS/);
+    expect(loadConfig({ CARPAL_MEDIA_CORS_ORIGINS: '["https://pwa.carpals.ir"]' }).media.corsOrigins).toEqual(['https://pwa.carpals.ir']);
+    expect(() => loadConfig({ CARPAL_MEDIA_CORS_ORIGINS: '["https://pwa.carpals.ir/path"]' })).toThrow(/CARPAL_MEDIA_CORS_ORIGINS/);
   });
 });

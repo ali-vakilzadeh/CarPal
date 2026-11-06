@@ -26,7 +26,7 @@ pnpm dev                              # http://localhost:3000 → redirects to /
 `pnpm dev` and `pnpm build` first copy the design-system files to `public/ds/` (gitignored). From P2 on, most pages need the backend: run `pnpm dev` in `backend/` (lite mode, see [backend/README.md](../backend/README.md)) with this environment (shell variables or `backend/.env`; see also `backend/.env.example`):
 
 ```sh
-CARPAL_OAUTH_REDIRECT_URIS='{"cp-mobile":["https://carpal.app/oauth/callback"],"cp-web-consumer":["https://localhost:3000/bff/oauth/callback","https://localhost:3100/bff/oauth/callback"],"cp-web-portal":["https://portal.carpal.app/bff/oauth/callback"],"cp-web-admin":["https://admin.carpal.app/bff/oauth/callback"]}'
+CARPAL_OAUTH_REDIRECT_URIS='{"cp-mobile":["https://carpals.ir/oauth/callback"],"cp-web-consumer":["https://localhost:3000/bff/oauth/callback","https://localhost:3100/bff/oauth/callback"],"cp-web-portal":["https://web.carpals.ir/bff/oauth/callback"],"cp-web-admin":["https://admin.carpals.ir/bff/oauth/callback"]}'
 CARPAL_WEBAUTHN_RP_ID=localhost
 CARPAL_WEBAUTHN_ORIGINS='["https://localhost:3000"]'
 CARPAL_RATE_LIMIT_SCALE=100        # test runs only: the BFF calls /oauth/token from one IP (DI-25)
@@ -60,7 +60,7 @@ All variables are validated at startup by `src/server/env.ts` (an invalid value 
 | `CARPAL_ENV`                                                | `dev`                                       | `dev` / `staging` / `prod`; prod requires https origins, the Redis session store, no demo pages and no redirect shim |
 | `CARPAL_PWA_ORIGIN`                                         | `http://localhost:3000`                     | public origin: canonical URLs, the BFF's Origin check, the OAuth redirect URI `<origin>/bff/oauth/callback`          |
 | `CARPAL_API_URL` / `CARPAL_AUTH_URL` / `CARPAL_STORAGE_URL` | `http://127.0.0.1:8080` / `:8082` / `:8083` | backend hosts (lite `pnpm dev`)                                                                                      |
-| `CARPAL_API_AUDIENCE`                                       | `https://api.carpal.app`                    | the API host's audience (DPoP `htu`); equal to the backend's                                                         |
+| `CARPAL_API_AUDIENCE`                                       | `https://api.carpals.ir`                    | the API host's audience (DPoP `htu`); equal to the backend's                                                         |
 | `CARPAL_STRICT_AUTH`                                        | `0`                                         | `1` with a strict backend: client assertions at `/oauth/token`, proof of work up front; see "Strict mode" below      |
 | `CARPAL_PWA_CLIENT_PRIVATE_JWKS`                            | -                                           | private keys for `private_key_jwt` (JSON by client id); required with `CARPAL_STRICT_AUTH=1`                         |
 | `CARPAL_PWA_SESSION_STORE` / `CARPAL_PWA_REDIS_URL`         | `lite` / –                                  | BFF session store (GD-08); `redis` in production (adapter written, not verified: OQ-06)                              |
@@ -69,8 +69,8 @@ All variables are validated at startup by `src/server/env.ts` (an invalid value 
 | `CARPAL_PWA_DEMO`                                           | `0`                                         | `1` enables `/<locale>/dev-kit` and the worker salt cookie (dev and E2E only)                                        |
 | `CARPAL_PWA_DEFAULT_TIME_ZONE`                              | `Asia/Tehran`                               | dates until the browser reports its zone (OQ-13)                                                                     |
 | `CARPAL_PWA_TERMS_VERSION` / `CARPAL_PWA_PRIVACY_VERSION`   | the texts' "Version" lines (`1.0`)          | versions accepted at sign-up and named in consent records; change only together with the texts                       |
-| `CARPAL_PWA_SUPPORT_EMAIL`                                  | `support@carpal.app`                        | "Contact support" and "Report a problem" (OQ-18); the domain is a placeholder until it is secured                    |
-| `CARPAL_PWA_PORTAL_SIGNUP_URL` / `CARPAL_PWA_PORTAL_URL`    | `https://portal.carpal.app[/signup]`        | business sign-up from onboarding; business notifications open in the portal (DI-16)                                  |
+| `CARPAL_PWA_SUPPORT_EMAIL`                                  | `support@carpals.ir`                        | "Contact support" and "Report a problem" (OQ-18)                                                                     |
+| `CARPAL_PWA_PORTAL_SIGNUP_URL` / `CARPAL_PWA_PORTAL_URL`    | `https://web.carpals.ir[/signup]`           | business sign-up from onboarding; business notifications open in the portal (DI-16)                                  |
 | `CARPAL_PWA_VAPID_PUBLIC_KEY`                               | –                                           | the web push sender's public key; empty = no web push controls (OQ-26 open)                                          |
 | `CARPAL_PWA_OAUTH_REDIRECT_URI`                             | –                                           | dev/E2E only: the registered https redirect URI while the PWA runs on http (DI-24)                                   |
 

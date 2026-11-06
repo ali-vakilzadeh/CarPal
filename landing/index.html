@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>کارپال · CarPal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="alternate" hreflang="fa" href="https://www.carpals.ir/fa/">
+<link rel="alternate" hreflang="en" href="https://www.carpals.ir/en/">
+<link rel="alternate" hreflang="x-default" href="https://www.carpals.ir/fa/">
+<script>
+  /* The language the visitor chose before, else English only when the browser has no Persian and asks for English first. */
+  (function () {
+    var lang = null;
+    try { lang = localStorage.getItem('cp-lang'); } catch (e) {}
+    if (lang !== 'fa' && lang !== 'en') {
+      var list = navigator.languages || [navigator.language || ''];
+      var hasFa = list.some(function (l) { return /^fa\b/i.test(l); });
+      lang = !hasFa && /^en\b/i.test(list[0] || '') ? 'en' : 'fa';
+    }
+    location.replace(lang + '/index.html');
+  })();
+</script>
+<noscript><meta http-equiv="refresh" content="0; url=fa/index.html"></noscript>
+</head>
+<body>
+<p><a href="fa/index.html">کارپال به فارسی</a></p>
+<p lang="en" dir="ltr"><a href="en/index.html">CarPal in English</a></p>
+</body>
+</html>

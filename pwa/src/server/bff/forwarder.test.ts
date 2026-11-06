@@ -18,11 +18,11 @@ describe('forwarder (/api/v1)', () => {
     expect(call.headers.get('accept-language')).toBe('en');
     const proof = decodeProof(call.headers.get('dpop')!);
     expect(proof.header).toMatchObject({ alg: 'ES256', typ: 'dpop+jwt' });
-    expect(proof.claims).toMatchObject({ htm: 'GET', htu: 'https://api.carpal.app/v1/config/client' });
+    expect(proof.claims).toMatchObject({ htm: 'GET', htu: 'https://api.carpals.ir/v1/config/client' });
     expect(proof.claims.ath).toBeTruthy();
     // The anonymous grant's proof names the issuer's token endpoint, not the internal host (DI-17).
     const grant = backend.calls.find((c) => c.url.endsWith('/oauth/token'))!;
-    expect(decodeProof(grant.headers.get('dpop')!).claims.htu).toBe('https://id.carpal.app/oauth/token');
+    expect(decodeProof(grant.headers.get('dpop')!).claims.htu).toBe('https://id.carpals.ir/oauth/token');
   });
 
   it('keeps the same DPoP key across anonymous renewals, so the anonymous principal is stable (DI-17)', async () => {
@@ -222,7 +222,7 @@ describe('forwarder (/api/v1)', () => {
     await record(login.clone());
     const loc = new URL(login.headers.get('location')!);
     const code = backend.issueCode({ nonce: loc.searchParams.get('nonce')! });
-    await record(await browser.fetch(`/bff/oauth/callback?code=${code}&state=${loc.searchParams.get('state')}&iss=https://id.carpal.app`));
+    await record(await browser.fetch(`/bff/oauth/callback?code=${code}&state=${loc.searchParams.get('state')}&iss=https://id.carpals.ir`));
     await record(await browser.fetch('/bff/session'));
     clock.now += 6 * 60_000;
     await record(await browser.fetch('/api/v1/me/vehicles'));

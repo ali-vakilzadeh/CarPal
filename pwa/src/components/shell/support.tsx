@@ -1,6 +1,6 @@
 'use client';
 // "Contact support" (OQ-18, P13.T8): for the MVP an email to the deployment's support address (CARPAL_PWA_SUPPORT_EMAIL,
-// default support@carpal.app; the domain will change). Offered by the footer, the timed sign-in lock (S-AUTH-09) and
+// default support@carpals.ir). Offered by the footer, the timed sign-in lock (S-AUTH-09) and
 // Settings → Help (C-PROF-09: Contact support, Report a problem with the app version).
 import type { ReactNode } from 'react';
 import { usePwaConfig } from '@/lib/config/client';

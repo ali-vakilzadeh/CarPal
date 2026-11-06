@@ -229,7 +229,7 @@ export function calendarEvent(
   const end =
     (a.confirmed_start_at ? a.confirmed_end_at : a.proposed_end_at) ??
     new Date(Date.parse(start) + (a.estimated_duration_minutes ?? DEFAULT_MINUTES) * 60_000).toISOString();
-  return { uid: `${a.id}@carpal.app`, ...o, start, end };
+  return { uid: `${a.id}@carpals.ir`, ...o, start, end };
 }
 
 /** 20261030T083000Z */

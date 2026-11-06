@@ -49,13 +49,13 @@ const EnvSchema = z
     CARPAL_ADMIN_API_PORT: port.default(8081),
     CARPAL_AUTH_PORT: port.default(8082),
     CARPAL_STORAGE_PORT: port.default(8083),
-    CARPAL_ISSUER: z.url().default('https://id.carpal.app'),
-    CARPAL_API_AUDIENCE: z.url().default('https://api.carpal.app'),
-    CARPAL_ADMIN_API_AUDIENCE: z.url().default('https://admin-api.carpal.app'),
+    CARPAL_ISSUER: z.url().default('https://id.carpals.ir'),
+    CARPAL_API_AUDIENCE: z.url().default('https://api.carpals.ir'),
+    CARPAL_ADMIN_API_AUDIENCE: z.url().default('https://admin-api.carpals.ir'),
     /** Base URL of signed media URLs. Lite: the local storage listener. */
     CARPAL_MEDIA_BASE_URL: z.url().optional(),
     /** Base of the link-token URLs in emails (<base>/<type>#<token>, SEC-LT-2): the consumer PWA's /l pages. */
-    CARPAL_LINK_BASE_URL: z.url().default('https://carpal.app/l'),
+    CARPAL_LINK_BASE_URL: z.url().default('https://pwa.carpals.ir/l'),
     CARPAL_I18N_BASE_URL: z.url().default('https://cdn.carpal.app/i18n'),
     CARPAL_I18N_VERSION: z.string().min(1).max(40).default('dev'),
     /** Minimum supported app version per client_id (40 §1.3), e.g. {"cp-mobile":"1.2.0"}. */
@@ -112,7 +112,7 @@ const EnvSchema = z
     // --- Auth server (S3, 40 §6.2)
     /** Hosted sign-in UI that auth.authorize redirects to (interaction_id in the query). */
     CARPAL_SIGNIN_URL: z.url().optional(),
-    /** Exact redirect_uri allowlist per client_id (SEC-AU-1), JSON {"cp-mobile":["https://carpal.app/oauth/callback"]}. */
+    /** Exact redirect_uri allowlist per client_id (SEC-AU-1), JSON {"cp-mobile":["https://carpals.ir/oauth/callback"]}. */
     CARPAL_OAUTH_REDIRECT_URIS: jsonRecord(z.array(z.url()).max(20)).optional(),
     /**
      * Public keys of the confidential clients for private_key_jwt (RFC 7523) at /oauth/token: JSON
@@ -160,8 +160,8 @@ const EnvSchema = z
     /** Tool call time limit (53 §16.1 timeout error). */
     CARPAL_MCP_TIMEOUT_MS: z.coerce.number().int().min(100).max(120_000).default(15_000),
 
-    // --- WebAuthn (S9, GD-31; 40 auth.webauthn_options "RP ID carpal.app")
-    CARPAL_WEBAUTHN_RP_ID: z.string().min(1).max(253).default('carpal.app'),
+    // --- WebAuthn (S9, GD-31; 40 auth.webauthn_options "RP ID carpals.ir")
+    CARPAL_WEBAUTHN_RP_ID: z.string().min(1).max(253).default('carpals.ir'),
     /** Origins allowed in clientDataJSON: the web apps and the mobile apps' origins (android:apk-key-hash:…). */
     CARPAL_WEBAUTHN_ORIGINS: z
       .string()
@@ -265,10 +265,10 @@ export const DEV_MEDIA_CORS_ORIGINS = ['http://localhost:3000', 'https://localho
 
 /** Development redirect URIs (claimed HTTPS links for mobile, BFF callbacks for web). */
 export const DEV_REDIRECT_URIS: Record<string, string[]> = {
-  'cp-mobile': ['https://carpal.app/oauth/callback'],
-  'cp-web-consumer': ['https://carpal.app/bff/oauth/callback'],
-  'cp-web-portal': ['https://portal.carpal.app/bff/oauth/callback'],
-  'cp-web-admin': ['https://admin.carpal.app/bff/oauth/callback'],
+  'cp-mobile': ['https://carpals.ir/oauth/callback'],
+  'cp-web-consumer': ['https://pwa.carpals.ir/bff/oauth/callback'],
+  'cp-web-portal': ['https://web.carpals.ir/bff/oauth/callback'],
+  'cp-web-admin': ['https://admin.carpals.ir/bff/oauth/callback'],
 };
 
 let envFileLoaded = false;
@@ -367,7 +367,7 @@ export function loadConfig(overrides: Record<string, string | undefined> = {}): 
     webauthn: {
       rpId: e.CARPAL_WEBAUTHN_RP_ID,
       rpName: 'CarPal',
-      origins: e.CARPAL_WEBAUTHN_ORIGINS ?? ['https://carpal.app', 'https://portal.carpal.app', 'https://admin.carpal.app'],
+      origins: e.CARPAL_WEBAUTHN_ORIGINS ?? ['https://pwa.carpals.ir', 'https://web.carpals.ir', 'https://admin.carpals.ir'],
     },
   };
   return deepFreeze(config);

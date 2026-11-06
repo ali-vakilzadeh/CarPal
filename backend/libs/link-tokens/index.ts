@@ -32,7 +32,7 @@ export interface IssuedLinkToken {
 export class LinkTokens {
   constructor(
     private readonly hmac: Hmac,
-    private readonly linkBase = 'https://carpal.app/l',
+    private readonly linkBase = 'https://pwa.carpals.ir/l',
   ) {}
 
   issue(type: LinkType, now = Date.now(), expiresAt?: Date): IssuedLinkToken {

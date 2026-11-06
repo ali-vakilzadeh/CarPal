@@ -233,7 +233,7 @@ describe('calendar', () => {
     title: 'Car service at Reza, Auto; Suspension',
     location: 'No. 14, Sattarkhan St',
     description: 'Line one\nline two',
-    url: 'https://carpal.app/en/appointments/x',
+    url: 'https://pwa.carpals.ir/en/appointments/x',
   })!;
 
   it('ends after the estimated duration when the shop set no end', () => {

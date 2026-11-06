@@ -16,8 +16,8 @@ export class SoftAuthenticator {
   #counter = 0;
 
   constructor(
-    readonly rpId = 'carpal.app',
-    readonly origin = 'https://carpal.app',
+    readonly rpId = 'carpals.ir',
+    readonly origin = 'https://pwa.carpals.ir',
     /** Synced passkey (backup eligible + backed up): multi-device, aal2 only. */
     readonly synced = false,
   ) {

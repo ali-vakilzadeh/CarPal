@@ -17,7 +17,7 @@ import { createTestApp, createTestWorker, testConfig, testLogger, type TestApp }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deep assertions on validated responses
 type Json = Record<string, any>;
 
-const REDIRECT = 'https://carpal.app/oauth/callback';
+const REDIRECT = 'https://carpals.ir/oauth/callback';
 const PASSWORD = 'correct horse battery staple';
 let infra: Infra;
 let auth: TestApp;
@@ -78,7 +78,7 @@ async function startInteraction(p: Pkce): Promise<{ id: string; cookie: string }
   const res = await auth.request({ path: authorizePath(p), client: null });
   expect(res.status).toBe(302);
   const location = new URL(res.headers.location!);
-  expect(`${location.origin}${location.pathname}`).toBe('https://id.carpal.app/signin');
+  expect(`${location.origin}${location.pathname}`).toBe('https://id.carpals.ir/signin');
   expect(res.headers['set-cookie']).toMatch(/^__Host-cp_ia=[0-9a-f-]{36}; Path=\/; Secure; HttpOnly; SameSite=Lax/);
   return { id: location.searchParams.get('interaction_id')!, cookie: cookieOf(res.headers['set-cookie']) };
 }
@@ -93,7 +93,7 @@ async function finish(p: Pkce, cookie: string): Promise<string> {
   const back = new URL(res.headers.location!);
   expect(`${back.origin}${back.pathname}`).toBe(REDIRECT);
   expect(back.searchParams.get('state')).toBe(p.state);
-  expect(back.searchParams.get('iss')).toBe('https://id.carpal.app');
+  expect(back.searchParams.get('iss')).toBe('https://id.carpals.ir');
   return back.searchParams.get('code')!;
 }
 
@@ -124,7 +124,7 @@ describe('discovery and keys', () => {
     expect(d.status).toBe(200);
     expect(d.headers['cache-control']).toBe('public, max-age=3600');
     expect(d.body).toMatchObject({
-      issuer: 'https://id.carpal.app',
+      issuer: 'https://id.carpals.ir',
       code_challenge_methods_supported: ['S256'],
       id_token_signing_alg_values_supported: ['EdDSA'],
       dpop_signing_alg_values_supported: ['ES256'],
@@ -512,7 +512,7 @@ describe('other grants and revocation', () => {
     const { privateKey, publicKey } = await generateKeyPair('ES256');
     const proof = await new SignJWT({
       htm: 'POST',
-      htu: 'https://id.carpal.app/oauth/token',
+      htu: 'https://id.carpals.ir/oauth/token',
       jti: uuidv7(),
       iat: Math.floor(Date.now() / 1000),
     })

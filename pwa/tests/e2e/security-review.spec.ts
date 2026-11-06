@@ -144,7 +144,7 @@ test('legal pages: both texts, English-only note in FA, the support address, the
   await page.goto('/en/privacy');
   await expect(page.getByRole('heading', { level: 1, name: 'CarPal Privacy Policy' })).toBeVisible();
   await expect(page.locator('#section-10-4')).toContainText('Cookies');
-  await expect(page.getByRole('link', { name: 'support@carpal.app' }).first()).toHaveAttribute('href', 'mailto:support@carpal.app');
+  await expect(page.getByRole('link', { name: 'support@carpals.ir' }).first()).toHaveAttribute('href', 'mailto:support@carpals.ir');
   await expect(page.getByRole('region', { name: 'Cookies and privacy' }).getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute(
     'href',
     '/en/privacy#section-10-4',

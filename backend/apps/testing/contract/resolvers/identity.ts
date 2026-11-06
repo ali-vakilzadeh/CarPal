@@ -9,7 +9,7 @@ import { base32Decode, hotp, totpStep } from '#modules/identity/domain/credentia
 import { openCase, purpose, REASON } from '../../s8-support.js';
 import { ok, type Actor, type Harness, type Json, type Resolvers, LINK_SECRET } from '../harness.js';
 
-const REDIRECT = 'https://carpal.app/oauth/callback';
+const REDIRECT = 'https://carpals.ir/oauth/callback';
 const PASSWORD = 'correct horse battery staple';
 const none = { kind: 'none' } as const;
 

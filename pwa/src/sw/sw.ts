@@ -30,7 +30,7 @@ import type { ExtendableEvent, FetchEvent, WorkerScope } from './worker-types';
 
 declare const self: WorkerScope & { __CARPAL_SW__?: WorkerConfig };
 
-const config: WorkerConfig = self.__CARPAL_SW__ ?? { version: 'dev', portalUrl: 'https://portal.carpal.app', locales: ['fa', 'en'] };
+const config: WorkerConfig = self.__CARPAL_SW__ ?? { version: 'dev', portalUrl: 'https://web.carpals.ir', locales: ['fa', 'en'] };
 const SHELL = `${SHELL_CACHE}-${config.version}`;
 const STATE_KEY = '/__carpal/state.json';
 const MAX_STATIC = 400;

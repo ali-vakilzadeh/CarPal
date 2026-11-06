@@ -90,7 +90,7 @@ export interface Problem {
 
 export function toProblem(err: ApiError, requestId: string, locale: Locale): Problem {
   const p: Problem = {
-    type: `https://docs.carpal.app/errors/${err.code.toLowerCase().replace(/_/g, '-')}`,
+    type: `https://docs.carpals.ir/errors/${err.code.toLowerCase().replace(/_/g, '-')}`,
     title: problemTitle(err.code, locale),
     status: err.status,
     code: err.code,

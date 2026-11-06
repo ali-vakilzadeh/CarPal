@@ -129,7 +129,7 @@ describe('/id proxy (GD-05 dev topology)', () => {
     expect(restartUrl(info, { origin: ORIGIN })).toBe('/bff/login/restart?state=st');
     // Another client's sign-in starts again with its own authorize request (a new interaction).
     const mobile = readResumeCookie(
-      `__Host-cp_iar=ia-1.${Buffer.from(q.replace('localhost%3A3000', 'carpal.app')).toString('base64url')}`,
+      `__Host-cp_iar=ia-1.${Buffer.from(q.replace('localhost%3A3000', 'carpals.ir')).toString('base64url')}`,
       'ia-1',
     )!;
     expect(restartUrl(mobile, { origin: ORIGIN })).toMatch(/^\/id\/oauth\/authorize\?.*&prompt=login$/);
@@ -166,7 +166,7 @@ describe('/id proxy (GD-05 dev topology)', () => {
       'http://localhost:3000/bff/oauth/callback?code=1',
     );
     expect(await rewriteLocation('http://auth.test/oauth/authorize?x=1', d)).toBe(`${ORIGIN}/id/oauth/authorize?x=1`);
-    expect(await rewriteLocation('https://id.carpal.app.evil.example/x', d)).toBe('https://id.carpal.app.evil.example/x');
+    expect(await rewriteLocation('https://id.carpals.ir.evil.example/x', d)).toBe('https://id.carpals.ir.evil.example/x');
     // Dev/E2E: the registered https callback of an http PWA comes back to this origin's callback (OQ-10).
     const dev = {
       ...d,

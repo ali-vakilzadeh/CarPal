@@ -230,7 +230,7 @@ describe('headers', () => {
     const p = toProblem(new ApiError('INTERNAL', { detail: 'SELECT * FROM secrets' }), 'rid', 'en');
     expect(JSON.stringify(p)).not.toContain('SELECT');
     expect(p).toEqual({
-      type: 'https://docs.carpal.app/errors/internal',
+      type: 'https://docs.carpals.ir/errors/internal',
       title: 'Something went wrong. Please try again.',
       status: 500,
       code: 'INTERNAL',

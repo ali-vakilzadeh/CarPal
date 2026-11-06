@@ -6,7 +6,7 @@
 #
 # Does: system packages (nginx, certbot, Redis, rsync), Node.js + pnpm, the service user carpal-web, the folders,
 # Redis for the BFF sessions (local only, password), /carpal/config/pwa.env, the systemd unit carpal-pwa, the nginx
-# site for www.<DOMAIN> (unless the backend's site already serves it), optionally the TLS certificate, a check of the
+# site for pwa.<DOMAIN> (unless the backend's site already serves it), optionally the TLS certificate, a check of the
 # backend's settings the PWA depends on, and (FIRST_DEPLOY=1) the first release through pwa-update.sh.
 # Safe to re-run: existing passwords, pwa.env and TLS blocks are never overwritten.
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -85,10 +85,12 @@ if [[ ! -f "$PWA_ENV_FILE" ]]; then
   [[ -f "$CLIENT_KEYS" ]] || die "$CLIENT_KEYS is missing: run the backend's server-setup.sh first (it makes the client key pairs)"
   CLIENT_PRIVATE_JWKS="$(tr -d '\n' <"$CLIENT_KEYS")"
   render "$DEPLOY_DIR/templates/pwa.env.template" "$PWA_ENV_FILE" REDIS_PASSWORD CLIENT_PRIVATE_JWKS
-  ok "generated pwa.env (review it: deploy.md step 4)"
+  ok "generated pwa.env (review it: deploy.md step 5)"
 else
   url="$(env_value CARPAL_PWA_REDIS_URL)"
   [[ "$url" == *":$REDIS_PASSWORD@"* ]] || warn "CARPAL_PWA_REDIS_URL in pwa.env does not carry the password of /etc/redis/carpal-pwa.conf"
+  [[ "$(env_value CARPAL_PWA_ORIGIN)" == "https://$WEB_HOST" ]] ||
+    warn "pwa.env CARPAL_PWA_ORIGIN is $(env_value CARPAL_PWA_ORIGIN), but this deployment serves https://$WEB_HOST (deploy.md 'Changing the public host')"
   ok "pwa.env exists: left unchanged"
 fi
 chown root:"$PWA_SERVICE_GROUP" "$PWA_ENV_FILE"
@@ -150,6 +152,8 @@ if [[ -f "$BACKEND_ENV" ]]; then
   [[ "$(bget CARPAL_WEBAUTHN_ORIGINS)" == *"\"$origin\""* ]] || warn "backend.env CARPAL_WEBAUTHN_ORIGINS needs \"$origin\" (passkeys)"
   [[ "$(bget CARPAL_MEDIA_CORS_ORIGINS)" == *"\"$origin\""* ]] || warn "backend.env CARPAL_MEDIA_CORS_ORIGINS needs \"$origin\" (uploads, PDF preview)"
   [[ "$(bget CARPAL_LINK_BASE_URL)" == "$origin/l" ]] || warn "backend.env CARPAL_LINK_BASE_URL should be $origin/l (emailed links)"
+  [[ "$(env_value CARPAL_API_AUDIENCE)" == "https://$API_HOST" ]] ||
+    warn "pwa.env CARPAL_API_AUDIENCE is $(env_value CARPAL_API_AUDIENCE), expected https://$API_HOST"
   [[ "$(bget CARPAL_API_AUDIENCE)" == "$(env_value CARPAL_API_AUDIENCE)" ]] ||
     warn "CARPAL_API_AUDIENCE differs: backend.env $(bget CARPAL_API_AUDIENCE), pwa.env $(env_value CARPAL_API_AUDIENCE)"
   [[ "$(bget CARPAL_STRICT_AUTH)" == "$(env_value CARPAL_STRICT_AUTH)" ]] ||
@@ -170,7 +174,7 @@ fi
 # ------------------------------------------------------------------------- checks
 mem_mb=$(($(awk '/MemTotal/ {print $2}' /proc/meminfo) / 1024))
 swap_mb=$(($(awk '/SwapTotal/ {print $2}' /proc/meminfo) / 1024))
-((mem_mb + swap_mb >= 4000)) || warn "RAM + swap is ${mem_mb}+${swap_mb} MB: next build needs about 4 GB (add swap, deploy.md 'Server')"
+((mem_mb + swap_mb >= 4000)) || warn "RAM + swap is ${mem_mb}+${swap_mb} MB: next build needs about 4 GB (add swap, deploy.md 'Troubleshooting')"
 
 finish
 if [[ "$FIRST_DEPLOY" == "1" && -f "$STAGING_DIR/pwa/package.json" ]]; then

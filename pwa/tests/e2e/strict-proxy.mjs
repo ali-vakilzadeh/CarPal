@@ -10,8 +10,8 @@ import { exportJWK, generateKeyPair, importJWK, SignJWT } from 'jose';
 
 const API = process.env.CARPAL_API_URL ?? 'http://127.0.0.1:8080';
 const AUTH = process.env.CARPAL_AUTH_URL ?? 'http://127.0.0.1:8082';
-const ISSUER = process.env.CARPAL_ISSUER ?? 'https://id.carpal.app';
-const AUDIENCE = process.env.CARPAL_API_AUDIENCE ?? 'https://api.carpal.app';
+const ISSUER = process.env.CARPAL_ISSUER ?? 'https://id.carpals.ir';
+const AUDIENCE = process.env.CARPAL_API_AUDIENCE ?? 'https://api.carpals.ir';
 const keys = JSON.parse(process.env.CARPAL_PWA_CLIENT_PRIVATE_JWKS ?? '{}');
 
 const dpop = await generateKeyPair('ES256');

@@ -9,7 +9,7 @@ import { clickTarget, parsePush, safePath } from './push';
 import { OFFLINE_SECTIONS, PRIVATE_PAGE_SECTIONS, assetUrlsOf, classify, isSnapshotApiPath, localeOfPath, titleOf } from './routes';
 import { SW_BUNDLE, SW_BUNDLE_HASH } from './generated/bundle';
 
-const ORIGIN = 'https://carpal.app';
+const ORIGIN = 'https://pwa.carpals.ir';
 const LOCALES = ['fa', 'en'] as const;
 const req = (path: string, o: { method?: string; mode?: string; rsc?: boolean; origin?: string } = {}) =>
   classify({
@@ -151,10 +151,10 @@ describe('web push in the worker', () => {
   });
 
   it('opens the notification on the notifications page, a business one in the portal, and only same-origin paths', () => {
-    const o = { locale: 'fa', portalUrl: 'https://portal.carpal.app' };
+    const o = { locale: 'fa', portalUrl: 'https://web.carpals.ir' };
     expect(clickTarget({ notificationId: 'n 1', organizationContextId: null, url: null }, o)).toBe('/fa/notifications?open=n%201');
     expect(clickTarget({ notificationId: null, organizationContextId: null, url: null }, o)).toBe('/fa/notifications');
-    expect(clickTarget({ notificationId: 'n1', organizationContextId: 'org', url: '/fa/x' }, o)).toBe('https://portal.carpal.app');
+    expect(clickTarget({ notificationId: 'n1', organizationContextId: 'org', url: '/fa/x' }, o)).toBe('https://web.carpals.ir');
     expect(clickTarget(parsePush(JSON.stringify({ data: { url: '/fa/appointments/1' } }), 'fa'), o)).toBe('/fa/appointments/1');
     expect(safePath('//evil.test')).toBeNull();
     expect(safePath('https://evil.test')).toBeNull();

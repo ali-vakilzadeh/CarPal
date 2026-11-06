@@ -1,4 +1,4 @@
-// Authorization server operations (40 §6.2) on id.carpal.app: OIDC discovery
+// Authorization server operations (40 §6.2) on id.carpals.ir: OIDC discovery
 // and JWKS, authorization code + PKCE through the hosted sign-in interaction,
 // the token endpoint (code, refresh rotation, client credentials, anonymous
 // grant), revocation, sign-up, password and one-time-code sign-in, second

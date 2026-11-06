@@ -83,7 +83,7 @@ function renderWithKey(ui: ReactNode, vapidPublicKey: string | null) {
         taxonomyVersion: 't1',
         i18nVersion: 'bundled',
         source: 'live',
-        pwa: { vapidPublicKey, portalUrl: 'https://portal.carpal.app', supportEmail: 'support@carpal.app', regionTimeZone: 'Asia/Tehran' },
+        pwa: { vapidPublicKey, portalUrl: 'https://web.carpals.ir', supportEmail: 'support@carpals.ir', regionTimeZone: 'Asia/Tehran' },
       }}
       timeZone="UTC"
       themeChoice="light"

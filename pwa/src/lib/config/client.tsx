@@ -30,8 +30,8 @@ export interface PwaConfig {
 
 const DEFAULT_PWA: PwaConfig = {
   vapidPublicKey: null,
-  portalUrl: 'https://portal.carpal.app',
-  supportEmail: 'support@carpal.app',
+  portalUrl: 'https://web.carpals.ir',
+  supportEmail: 'support@carpals.ir',
   regionTimeZone: 'Asia/Tehran',
 };
 

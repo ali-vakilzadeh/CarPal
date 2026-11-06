@@ -21,7 +21,7 @@ describe('JSON-LD serializer (GD-15)', () => {
 describe('schema.org builders', () => {
   it('describes a provider as AutoRepair with address, geo, hours and the rating of both review paths', () => {
     const p = providerProfile();
-    const ld = localBusiness(p, 'https://carpal.app/fa/shop/reza', 'desc', 'https://media/cover.jpg');
+    const ld = localBusiness(p, 'https://pwa.carpals.ir/fa/shop/reza', 'desc', 'https://media/cover.jpg');
     expect(ld['@type']).toBe('AutoRepair');
     expect(ld.aggregateRating).toEqual({
       '@type': 'AggregateRating',
@@ -63,7 +63,7 @@ describe('schema.org builders', () => {
 
   it('offers a part only at its public price', () => {
     const offer = (o: Parameters<typeof part>[0]) =>
-      product(part(o), 'https://carpal.app/en/parts/x', null).offers as Record<string, unknown> | undefined;
+      product(part(o), 'https://pwa.carpals.ir/en/parts/x', null).offers as Record<string, unknown> | undefined;
     expect(offer({})).toMatchObject({ price: '45', priceCurrency: 'USD', availability: 'https://schema.org/InStock' });
     expect(offer({ price_on_request: true })).toBeUndefined();
     expect(offer({ price: null })).toBeUndefined();
@@ -72,7 +72,7 @@ describe('schema.org builders', () => {
   });
 
   it('describes a showcase as an Article with the after photo first', () => {
-    const ld = showcaseArticle(showcase(), 'https://carpal.app/en/post/x', null, 'CarPal', 'https://carpal.app');
+    const ld = showcaseArticle(showcase(), 'https://pwa.carpals.ir/en/post/x', null, 'CarPal', 'https://pwa.carpals.ir');
     const images = ld.image as { contentUrl: string }[];
     expect(ld['@type']).toBe('Article');
     expect(images.map((i) => i.contentUrl)).toEqual(['https://media.example/after.jpg', 'https://media.example/before.jpg']);
@@ -115,14 +115,14 @@ describe('page metadata (Docs/22 §6)', () => {
 
 describe('sitemaps', () => {
   it('lists every language of a page with its alternates and escapes URLs', () => {
-    const xml = urlsetXml('https://carpal.app', [{ paths: { fa: '/fa/shop/a&b', en: '/en/shop/a&b' }, images: ['https://m/x.jpg'] }]);
+    const xml = urlsetXml('https://pwa.carpals.ir', [{ paths: { fa: '/fa/shop/a&b', en: '/en/shop/a&b' }, images: ['https://m/x.jpg'] }]);
     expect(xml.match(/<url>/g)).toHaveLength(2);
-    expect(xml).toContain('<loc>https://carpal.app/fa/shop/a&amp;b</loc>');
-    expect(xml).toContain('hreflang="x-default" href="https://carpal.app/fa/shop/a&amp;b"');
+    expect(xml).toContain('<loc>https://pwa.carpals.ir/fa/shop/a&amp;b</loc>');
+    expect(xml).toContain('hreflang="x-default" href="https://pwa.carpals.ir/fa/shop/a&amp;b"');
     expect(xml).toContain('<image:loc>https://m/x.jpg</image:loc>');
   });
 
   it('indexes the per-kind sitemaps', () => {
-    expect(sitemapIndexXml('https://carpal.app')).toContain('<loc>https://carpal.app/sitemaps/shops.xml</loc>');
+    expect(sitemapIndexXml('https://pwa.carpals.ir')).toContain('<loc>https://pwa.carpals.ir/sitemaps/shops.xml</loc>');
   });
 });

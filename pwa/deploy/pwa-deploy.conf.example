@@ -5,11 +5,14 @@
 # copies. Plain bash: KEY=value, no spaces around "=".
 
 # --- Public names (normally set once in /carpal/config/deploy.conf) ----------------------
+# Production: DOMAIN=carpals.ir gives pwa.carpals.ir, api.carpals.ir, id.carpals.ir and media.carpals.ir.
 DOMAIN=example.com
 LETSENCRYPT_EMAIL=admin@example.com
-# The PWA is served at WEB_HOST (default www.<DOMAIN>); the bare <DOMAIN> redirects there. The browser-facing API,
-# auth and media hosts default to api.<DOMAIN>, id.<DOMAIN>, media.<DOMAIN> (the backend's names).
-# WEB_HOST=www.example.com
+# The PWA is served at WEB_HOST (default pwa.<DOMAIN>); the bare <DOMAIN> redirects there. The business portal it
+# links to is PORTAL_HOST (default web.<DOMAIN>). The backend's public hosts default to api.<DOMAIN>, id.<DOMAIN> and
+# media.<DOMAIN>. Set an override in deploy.conf, not pwa-deploy.conf: the backend kit reads the same names.
+# WEB_HOST=pwa.example.com
+# PORTAL_HOST=web.example.com
 
 # --- Folders -------------------------------------------------------------------------
 CARPAL_ROOT=/carpal
@@ -26,7 +29,7 @@ PWA_SYNC_DIRS="pwa shared"
 PWA_SERVICE_NAME=carpal-pwa
 PWA_SERVICE_USER=carpal-web
 PWA_SERVICE_GROUP=carpal-web
-PWA_PORT=3000                             # next start listens on 127.0.0.1:PWA_PORT (nginx proxies www.<DOMAIN> here)
+PWA_PORT=3000                             # next start listens on 127.0.0.1:PWA_PORT (nginx proxies pwa.<DOMAIN> here)
 PWA_HEALTH_TIMEOUT_S=120
 
 # --- Backend this PWA talks to (server side; the browser never sees these) ---------------

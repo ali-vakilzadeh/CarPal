@@ -47,6 +47,22 @@ api.<domain>  id.<domain>  media.<domain>        (admin-api.<domain>: not publis
 - **Environment `staging`, strict authentication on.** It has real secrets, and responses are not re-validated against the contract. `CARPAL_STRICT_AUTH=1`: the consumer PWA's tokens are DPoP-bound and it authenticates with `private_key_jwt`. `prod` waits for the rest of NI-01 (see [Configuration](#environment-choice)).
 - **Code, data and secrets are separate.** Code lives in `/carpal/backend/src`, data in `/carpal/data`, `/carpal/upload` and `/carpal/db`, and secrets in `/carpal/config`. An update replaces the code and never touches the data.
 
+### Public hosts
+
+Production uses `DOMAIN=carpals.ir`. Every host comes from `DOMAIN`, and `deploy.conf` can override each one.
+
+| Host                   | Serves                              | Reached by                                                          |
+| :--------------------- | :---------------------------------- | :------------------------------------------------------------------ |
+| `api.carpals.ir`       | the backend API (8080)              | every client outside this server, such as the mobile app            |
+| `id.carpals.ir`        | the authorization server (8082)     | the same clients, for sign-in and tokens                            |
+| `media.carpals.ir`     | signed uploads and downloads (8083) | browsers and apps                                                   |
+| `pwa.carpals.ir`       | the consumer PWA (3000)             | browsers                                                            |
+| `carpals.ir`           | a 301 to `https://pwa.carpals.ir`   | browsers                                                            |
+| `web.carpals.ir`       | the business portal (not built yet) | named in `backend.env` only; no nginx block until the portal exists |
+| `admin-api.carpals.ir` | the admin plane (8081)              | not published ([Admin plane](#admin-plane))                         |
+
+A client on this server, such as the PWA's BFF, connects to `127.0.0.1:8080` directly. Its tokens and DPoP proofs still name `https://api.carpals.ir`, because `CARPAL_API_AUDIENCE` is the API's identity whichever way a client connects. A client on another server uses `https://api.carpals.ir`.
+
 ## Server layout
 
 ```
@@ -99,7 +115,7 @@ All paths come from `deploy.conf`, so change them there (see `deploy.conf.exampl
 | OS        | **Ubuntu 24.04 LTS** (x86-64 or arm64)                                                          | PostgreSQL 16 and pgvector come from the Ubuntu archive. Other releases need the PGDG repository.                            |
 | CPU / RAM | 2 vCPU, **4 GB RAM** (or 2 GB plus 2 GB swap)                                                   | `tsc` and the unit tests need memory during `2-build.sh`. Runtime needs much less.                                           |
 | Disk      | 40 GB SSD                                                                                       | Code with `node_modules` and the pnpm store is under 1 GB. Plan for uploads, the database and `KEEP_BACKUPS` copies of both. |
-| DNS       | A/AAAA records for `api.`, `id.`, `media.`, `www.` and the bare domain (and later `admin-api.`) | Needed before `certbot`.                                                                                                     |
+| DNS       | A/AAAA records for `api.`, `id.`, `media.`, `pwa.` and the bare domain (and later `admin-api.`) | Needed before `certbot`.                                                                                                     |
 | Access    | SSH as root (or sudo), WinSCP with SFTP                                                         |                                                                                                                              |
 | Outbound  | HTTPS to `nodejs.org`, `registry.npmjs.org`, the Ubuntu mirrors, Let's Encrypt                  | For setup and `pnpm install`.                                                                                                |
 
@@ -146,7 +162,7 @@ All scripts are in `backend/deploy/`. Run them as root with `bash <script>`. The
 
 ### 1. DNS
 
-Point `api.<domain>`, `id.<domain>`, `media.<domain>`, `www.<domain>` (the consumer PWA) and the bare `<domain>` (redirects to `www.`) at the server. `admin-api.<domain>` is optional (see [Admin plane](#admin-plane)).
+Point `api.<domain>`, `id.<domain>`, `media.<domain>`, `pwa.<domain>` (the consumer PWA) and the bare `<domain>` (redirects to `pwa.`) at the server. `admin-api.<domain>` is optional (see [Admin plane](#admin-plane)).
 
 ### 2. Upload the repository and prepare the server
 
@@ -169,7 +185,7 @@ nano /carpal/config/backend.env
 Check these values:
 
 - `CARPAL_ISSUER`, `CARPAL_API_AUDIENCE`, `CARPAL_MEDIA_BASE_URL`: the public `https://` names. Tokens carry the issuer and audience, so changing them later signs everybody out.
-- `CARPAL_OAUTH_REDIRECT_URIS`, `CARPAL_WEBAUTHN_RP_ID`, `CARPAL_WEBAUTHN_ORIGINS`: the exact app and web origins of your clients. The consumer PWA is `https://www.<domain>` (`WEB_HOST`).
+- `CARPAL_OAUTH_REDIRECT_URIS`, `CARPAL_WEBAUTHN_RP_ID`, `CARPAL_WEBAUTHN_ORIGINS`: the exact app and web origins of your clients. The consumer PWA is `https://pwa.<domain>` (`WEB_HOST`) and the business portal is `https://web.<domain>` (`PORTAL_HOST`).
 - `CARPAL_LINK_BASE_URL`, `CARPAL_MEDIA_CORS_ORIGINS`: emailed links open `<PWA origin>/l/…`, and the PWA's browsers upload to the media host. Both name the PWA origin.
 - `CARPAL_SIGNIN_URL`: the hosted sign-in UI (a frontend). The default is `<issuer>/signin`.
 - `CARPAL_MCP_MODE`: `unavailable` (AI answers 503, everything else works) or `stub` (deterministic demo results).
@@ -199,7 +215,7 @@ On the first run, `2-build.sh` installs the database baseline: the cluster roles
 ### 6. TLS
 
 ```bash
-certbot --nginx -d api.<domain> -d id.<domain> -d media.<domain> -d www.<domain> -d <domain> --email <you> --agree-tos --redirect
+certbot --nginx -d api.<domain> -d id.<domain> -d media.<domain> -d pwa.<domain> -d <domain> --email <you> --agree-tos --redirect
 ```
 
 certbot adds the TLS server blocks to `/etc/nginx/sites-available/carpal` and installs a renewal timer (`systemctl list-timers | grep certbot`). After that, `server-setup.sh` leaves the site file alone. If you change the template later, apply the change by hand.

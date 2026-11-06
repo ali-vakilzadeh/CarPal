@@ -1,6 +1,6 @@
 'use client';
 // /l/mi#<token> (P12.T4 "sign-in as a driver"): the organization invitation mailed by org.member_invite (backend
-// links point at https://carpal.app/l/mi#…, SEC-LT-2). A fleet invites its drivers this way; the invited person
+// links point at https://pwa.carpals.ir/l/mi#…, SEC-LT-2). A fleet invites its drivers this way; the invited person
 // signs in (or signs up) with the invited email — org.invitation_accept checks the match (SEC-LT-5) — and then
 // accepts. Guests keep the token in this tab's sessionStorage across the hosted sign-in (it never goes to the BFF
 // as an intent: the link is single-use and personal). Drivers go on to their vehicles; other roles to the portal.

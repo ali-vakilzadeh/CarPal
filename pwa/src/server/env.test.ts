@@ -9,7 +9,7 @@ describe('server env', () => {
       CARPAL_API_URL: 'http://127.0.0.1:8080',
       CARPAL_AUTH_URL: 'http://127.0.0.1:8082',
       CARPAL_STORAGE_URL: 'http://127.0.0.1:8083',
-      CARPAL_API_AUDIENCE: 'https://api.carpal.app',
+      CARPAL_API_AUDIENCE: 'https://api.carpals.ir',
       CARPAL_STRICT_AUTH: false,
       CARPAL_PWA_SESSION_STORE: 'lite',
       CARPAL_PWA_DEMO: false,
@@ -17,9 +17,9 @@ describe('server env', () => {
       // P13.T7: the "Version" lines of the published texts (Docs/User Agreement.md, Docs/Privacy Policy.md).
       CARPAL_PWA_TERMS_VERSION: '1.0',
       CARPAL_PWA_PRIVACY_VERSION: '1.0',
-      CARPAL_PWA_SUPPORT_EMAIL: 'support@carpal.app',
-      CARPAL_PWA_PORTAL_SIGNUP_URL: 'https://portal.carpal.app/signup',
-      CARPAL_PWA_PORTAL_URL: 'https://portal.carpal.app',
+      CARPAL_PWA_SUPPORT_EMAIL: 'support@carpals.ir',
+      CARPAL_PWA_PORTAL_SIGNUP_URL: 'https://web.carpals.ir/signup',
+      CARPAL_PWA_PORTAL_URL: 'https://web.carpals.ir',
     });
   });
 
@@ -44,8 +44,8 @@ describe('server env', () => {
     expect(() =>
       parseServerEnv({
         CARPAL_ENV: 'prod',
-        CARPAL_PWA_ORIGIN: 'https://carpal.app',
-        CARPAL_STORAGE_URL: 'https://media.carpal.app',
+        CARPAL_PWA_ORIGIN: 'https://pwa.carpals.ir',
+        CARPAL_STORAGE_URL: 'https://media.carpals.ir',
         CARPAL_PWA_SESSION_STORE: 'redis',
         CARPAL_PWA_REDIS_URL: 'redis://r:6379',
         CARPAL_PWA_OAUTH_REDIRECT_URI: uri,
@@ -93,7 +93,7 @@ describe('server env', () => {
     expect(
       parseServerEnv({
         CARPAL_ENV: 'prod',
-        CARPAL_PWA_ORIGIN: 'https://carpal.app',
+        CARPAL_PWA_ORIGIN: 'https://pwa.carpals.ir',
         CARPAL_STORAGE_URL: 'https://media.carpal-usercontent.app',
         CARPAL_PWA_SESSION_STORE: 'redis',
         CARPAL_PWA_REDIS_URL: 'redis://cache:6379',
@@ -102,7 +102,7 @@ describe('server env', () => {
     expect(() =>
       parseServerEnv({
         CARPAL_ENV: 'prod',
-        CARPAL_PWA_ORIGIN: 'https://carpal.app',
+        CARPAL_PWA_ORIGIN: 'https://pwa.carpals.ir',
         CARPAL_STORAGE_URL: 'https://media.carpal-usercontent.app',
         CARPAL_PWA_SESSION_STORE: 'redis',
         CARPAL_PWA_REDIS_URL: 'redis://cache:6379',

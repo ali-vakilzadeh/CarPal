@@ -42,7 +42,7 @@ const schema = z
     /** Media/storage host; signed media URLs and upload tickets point here (CSP img-src/connect-src, BA-06). */
     CARPAL_STORAGE_URL: url.default('http://127.0.0.1:8083'),
     /** Audience URL of the API host (backend CARPAL_API_AUDIENCE): the htu of DPoP proofs on API calls (GD-07). */
-    CARPAL_API_AUDIENCE: url.default('https://api.carpal.app'),
+    CARPAL_API_AUDIENCE: url.default('https://api.carpals.ir'),
     /** Mirrors the backend's CARPAL_STRICT_AUTH: client assertions at /oauth/token, and PoW before ATT grants (DI-22). */
     CARPAL_STRICT_AUTH: z
       .enum(['0', '1'])
@@ -50,7 +50,7 @@ const schema = z
       .transform((v) => v === '1'),
     /**
      * Private JWKs for private_key_jwt: JSON {"cp-web-consumer":{…},"cp-ssr":{…}}, each with kid. Strict mode needs both.
-     * Secret: lives only in pwa.env. `node pwa/deploy/gen-client-keys.mjs` makes the pair.
+     * Secret: lives only in pwa.env. `node backend/deploy/gen-client-keys.mjs` makes the pair.
      */
     CARPAL_PWA_CLIENT_PRIVATE_JWKS: clientKeys,
     /** Overrides config.client region.map.style_url (GD-12). */
@@ -79,14 +79,14 @@ const schema = z
     CARPAL_PWA_TERMS_VERSION: policyVersion.default(LEGAL_VERSIONS.terms),
     CARPAL_PWA_PRIVACY_VERSION: policyVersion.default(LEGAL_VERSIONS.privacy),
     /**
-     * "Contact support" (OQ-18, P13.T8): an email address for the MVP. The carpal.app domain is not secured yet, so
-     * each deployment states the address it can receive mail at.
+     * "Contact support" (OQ-18, P13.T8): an email address for the MVP. Each deployment states the address it can
+     * receive mail at.
      */
-    CARPAL_PWA_SUPPORT_EMAIL: z.email().default('support@carpal.app'),
+    CARPAL_PWA_SUPPORT_EMAIL: z.email().default('support@carpals.ir'),
     /** Business portal sign-up (onboarding step 1 business choices, W-ONB-01); a placeholder until the portal exists. */
-    CARPAL_PWA_PORTAL_SIGNUP_URL: url.default('https://portal.carpal.app/signup'),
+    CARPAL_PWA_PORTAL_SIGNUP_URL: url.default('https://web.carpals.ir/signup'),
     /** The business portal: notifications of a business (organization_context_id) open here (DI-16, P12.T3). */
-    CARPAL_PWA_PORTAL_URL: url.default('https://portal.carpal.app'),
+    CARPAL_PWA_PORTAL_URL: url.default('https://web.carpals.ir'),
     /**
      * Public VAPID key (base64url, an uncompressed P-256 point) of the push service that sends the backend's web
      * pushes (P12.T3). Empty = web push is not offered. The private key belongs to the sender, never to the PWA.

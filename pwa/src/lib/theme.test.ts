@@ -41,8 +41,8 @@ describe('theme choice', () => {
     let policy: { createScriptURL: (u: string) => string; createHTML: (h: string) => string } | undefined;
     const fakeWindow = { trustedTypes: { createPolicy: (_name: string, rules: typeof policy) => (policy = rules) } };
     new Function('window', 'location', TRUSTED_TYPES_BOOT_SCRIPT)(fakeWindow, {
-      href: 'https://carpal.app/fa',
-      origin: 'https://carpal.app',
+      href: 'https://pwa.carpals.ir/fa',
+      origin: 'https://pwa.carpals.ir',
     });
     // Unchanged: the Turbopack runtime finds its chunk scripts by the src attribute it set.
     expect(policy!.createScriptURL('/_next/static/chunks/a.js')).toBe('/_next/static/chunks/a.js');

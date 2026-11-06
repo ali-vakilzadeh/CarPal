@@ -33,8 +33,8 @@ afterAll(async () => {
 });
 
 const CLIENTS = {
-  'cp-mobile': 'https://carpal.app/oauth/callback',
-  'cp-web-admin': 'https://admin.carpal.app/bff/oauth/callback',
+  'cp-mobile': 'https://carpals.ir/oauth/callback',
+  'cp-web-admin': 'https://admin.carpals.ir/bff/oauth/callback',
 } as const;
 
 function pkce() {
@@ -106,7 +106,7 @@ describe('WebAuthn (GD-31)', () => {
     const key = new SoftAuthenticator();
     const { opts, confirmed } = await register(user, key);
     expect(opts.body).toMatchObject({
-      rp: { id: 'carpal.app', name: 'CarPal' },
+      rp: { id: 'carpals.ir', name: 'CarPal' },
       attestation: 'none',
       authenticatorSelection: { userVerification: 'required' },
     });
@@ -173,7 +173,7 @@ describe('WebAuthn (GD-31)', () => {
     // A staff member with a synced passkey (multi-device): the admin client refuses it.
     const staff = await api.fixtures.staff('platform_admin');
     await api.fixtures.withPassword(staff, PASSWORD);
-    const synced = new SoftAuthenticator('carpal.app', 'https://admin.carpal.app', true);
+    const synced = new SoftAuthenticator('carpals.ir', 'https://admin.carpals.ir', true);
     expect((await register(staff, synced)).confirmed.status).toBe(200);
     const s = await interaction('cp-web-admin');
     expect((await s.post('/v1/auth/signin', { interaction_id: s.id, email: staff.email, password: PASSWORD })).body).toEqual({
@@ -184,7 +184,7 @@ describe('WebAuthn (GD-31)', () => {
     const denied = await s.post('/v1/auth/mfa/verify', { interaction_id: s.id, method: 'webauthn', assertion: synced.assert(o.body) });
     expect(denied.status).toBe(401);
     // With a device-bound key the staff interaction completes at aal3.
-    const hw = new SoftAuthenticator('carpal.app', 'https://admin.carpal.app');
+    const hw = new SoftAuthenticator('carpals.ir', 'https://admin.carpals.ir');
     expect((await register(staff, hw)).confirmed.status).toBe(200);
     const s2 = await interaction('cp-web-admin');
     await s2.post('/v1/auth/signin', { interaction_id: s2.id, email: staff.email, password: PASSWORD });

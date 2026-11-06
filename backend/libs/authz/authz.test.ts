@@ -12,11 +12,11 @@ let purposes: PurposeVerifier;
 
 const authorizer = () => {
   const authenticator = new Authenticator({
-    tokens: new TokenService(JwtKeyRing.derived(crypto.keys), 'https://id.carpal.app'),
+    tokens: new TokenService(JwtKeyRing.derived(crypto.keys), 'https://id.carpals.ir'),
     sessions: new SessionStore(kv),
     kv,
     hmac: crypto.hmac,
-    audiences: { api: 'https://api.carpal.app', 'admin-api': 'https://admin-api.carpal.app' },
+    audiences: { api: 'https://api.carpals.ir', 'admin-api': 'https://admin-api.carpals.ir' },
     strict: false,
   });
   return new Authorizer({ memberships: dir, organizations: dir, drivers: dir, purposes, authenticator, kv, cacheTtlMs: 30_000 });

@@ -8,14 +8,14 @@ import { jwkThumbprint } from './oauth/dpop';
 import { LiteSessionStore } from './session/store';
 
 export const ORIGIN = 'http://localhost:3000';
-export const ISSUER = 'https://id.carpal.app';
+export const ISSUER = 'https://id.carpals.ir';
 
 export function testConfig(over: Partial<BffConfig> = {}): BffConfig {
   return {
     origin: ORIGIN,
     apiUrl: 'http://api.test',
     authUrl: 'http://auth.test',
-    apiAudience: 'https://api.carpal.app',
+    apiAudience: 'https://api.carpals.ir',
     clientId: 'cp-web-consumer',
     ssrClientId: 'cp-ssr',
     clientVersion: '0.1.0',
@@ -53,7 +53,7 @@ export interface FakeBackend {
 }
 
 export const problemResponse = (status: number, code: string, headers: Record<string, string> = {}) =>
-  new Response(JSON.stringify({ type: `https://docs.carpal.app/errors/${code}`, title: code, status, code, request_id: 'req-1' }), {
+  new Response(JSON.stringify({ type: `https://docs.carpals.ir/errors/${code}`, title: code, status, code, request_id: 'req-1' }), {
     status,
     headers: { 'content-type': 'application/problem+json', ...headers },
   });

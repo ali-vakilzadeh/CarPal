@@ -37,12 +37,12 @@ const HEADER =
 /** 40 §1.1 hosts (pilot values are region config). */
 const SERVERS: Record<Host, { url: string; description: string }> = {
   api: {
-    url: 'https://api.carpal.app',
+    url: 'https://api.carpals.ir',
     description: 'Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1).',
   },
-  auth: { url: 'https://id.carpal.app', description: 'OAuth 2.1 / OIDC authorization server and hosted sign-in UI.' },
+  auth: { url: 'https://id.carpals.ir', description: 'OAuth 2.1 / OIDC authorization server and hosted sign-in UI.' },
   'admin-api': {
-    url: 'https://admin-api.carpal.app',
+    url: 'https://admin-api.carpals.ir',
     description: 'Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1).',
   },
   storage: {
@@ -652,7 +652,7 @@ export function buildOpenApi(): Json {
         bffMutualTls: { type: 'mutualTLS', description: 'BFF client certificate (RFC 8705).' },
         oidc: {
           type: 'openIdConnect',
-          openIdConnectUrl: 'https://id.carpal.app/.well-known/openid-configuration',
+          openIdConnectUrl: 'https://id.carpals.ir/.well-known/openid-configuration',
           description: 'Where tokens come from: authorization code + PKCE (S256), refresh rotation, the anonymous grant (SEC-AU-14).',
         },
       },

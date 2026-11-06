@@ -644,7 +644,13 @@
       "id": "GD-42",
       "stage": "S11",
       "decision": "Production domain carpals.ir. Hosts come from DOMAIN in deploy.conf: api., id., media. (backend), www. (the consumer PWA, which is its own BFF and serves the hosted sign-in UI under /id, PWA OQ-03), the bare domain redirects to www.; admin-api. stays unpublished. backend.env: CARPAL_OAUTH_REDIRECT_URIS cp-web-consumer = https://www.<DOMAIN>/bff/oauth/callback, CARPAL_WEBAUTHN_RP_ID = <DOMAIN>, CARPAL_WEBAUTHN_ORIGINS and CARPAL_MEDIA_CORS_ORIGINS contain https://www.<DOMAIN>, CARPAL_LINK_BASE_URL = https://www.<DOMAIN>/l, CARPAL_SIGNIN_URL unset. Support mailbox support@carpals.ir. The carpal.app development defaults in code are renamed in the next iteration together with the PWA (NI-22 = PWA NI-P14-08), so the verified test runs stay valid.",
-      "reason": "User decisions 2026-11-04 (PWA NI-P13-12, OQ-18); the deploy kits (backend/deploy, pwa/deploy) already take every host from DOMAIN."
+      "reason": "User decisions 2026-11-04 (PWA NI-P13-12, OQ-18); the deploy kits (backend/deploy, pwa/deploy) already take every host from DOMAIN.",
+      "amendments": [
+        {
+          "stage": "2026-11-06",
+          "change": "User decision: the consumer PWA is pwa.<DOMAIN>, not www.<DOMAIN> (WEB_HOST default in both kits; every www value above now reads pwa), and the business portal is web.<DOMAIN>, not portal.<DOMAIN> (new PORTAL_HOST). api.<DOMAIN> is the backend's public address for clients outside the server; the PWA's BFF stays on 127.0.0.1 because it runs on the same server, and CARPAL_API_AUDIENCE is https://api.<DOMAIN> either way. The bare domain still redirects to the PWA until the landing site has a deployment."
+        }
+      ]
     },
     {
       "id": "GD-43",
@@ -5313,7 +5319,8 @@
           "PWA NI-P14-08",
           "PWA OQ-18"
         ],
-        "status": "not_started"
+        "status": "partly_done",
+        "note": "2026-11-06: the code defaults, tests, .env.example, Docs/40, Docs/41 and the OpenAPI servers now name carpals.ir (pwa., web., api., id., admin-api., admin., docs.); contract stays 1.2.0 because no field or rule changed. Still open: cdn.carpal.app in shared/region-config/ir-pilot.json and the CARPAL_I18N_BASE_URL default (the PWA's CSP and E2E follow it) until a real CDN host exists; media.carpal-usercontent.app in Docs/40 and OpenAPI (deployments use media.<DOMAIN>, see deploy.md Known limitations). Left on purpose: @test.carpal.app fixture addresses (existing test data and the baseline test key on them), admin@carpal.app in Docs/43 and tools/db (editing Docs/43 trips the baseline drift check; deployments set admin@<DOMAIN>), and the schemas.carpal.app JSON Schema $id (an identifier, never fetched)."
       }
     ]
   }

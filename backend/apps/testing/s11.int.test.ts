@@ -15,10 +15,10 @@ import { createTestApp, testConfig, testLogger, type TestApp } from './test-app.
 
 const WEB = 'cp-web-consumer/1.0.0 (web 1.0)';
 const SSR = 'cp-ssr/1.0.0 (web 1.0)';
-const ISSUER = 'https://id.carpal.app';
+const ISSUER = 'https://id.carpals.ir';
 const TOKEN_URL = `${ISSUER}/oauth/token`;
-const API = 'https://api.carpal.app';
-const REDIRECT = 'https://carpal.app/bff/oauth/callback';
+const API = 'https://api.carpals.ir';
+const REDIRECT = 'https://pwa.carpals.ir/bff/oauth/callback';
 const PASSWORD = 'correct horse battery staple';
 
 const formOf = (fields: Record<string, string>) => new URLSearchParams(fields).toString();
@@ -300,7 +300,7 @@ describe('contract 1.2.0 (lite)', () => {
     const q = new URLSearchParams({
       response_type: 'code',
       client_id: 'cp-mobile',
-      redirect_uri: 'https://carpal.app/oauth/callback',
+      redirect_uri: 'https://carpals.ir/oauth/callback',
       scope: 'openid offline_access',
       state: randomBytes(16).toString('base64url'),
       nonce: randomBytes(16).toString('base64url'),

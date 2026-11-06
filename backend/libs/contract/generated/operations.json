@@ -1,6 +1,6 @@
 {
   "source": "Docs/40.API contract.md",
-  "sourceSha256": "f482e7b25871ac8193cf1b7c9dd421bdb36b136f7f87a324254424c625d49ad6",
+  "sourceSha256": "3e4ffb5a7d6a38c2b42765098ad0beaefb5369fc7152b77c520e00eb57537d1c",
   "contractVersion": "1.2.0",
   "operationCount": 411,
   "routeCount": 463,
@@ -30,7 +30,7 @@
     {
       "opId": "auth.discovery",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Returns the OIDC discovery document so clients learn endpoints, supported algorithms (`EdDSA` for tokens, `ES256` for DPoP) and the PKCE method `S256`. Cacheable for 1 h.",
       "method": "GET",
@@ -69,7 +69,7 @@
     {
       "opId": "auth.jwks",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Returns the public signing keys for access and ID tokens; during rotation two keys are listed (SEC-CR). Cacheable for 10 min.",
       "method": "GET",
@@ -108,7 +108,7 @@
     {
       "opId": "auth.authorize",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Starts an authorization-code flow with PKCE and redirects the system browser to the hosted sign-in UI; only registered exact `redirect_uri` values are accepted, and errors never redirect to an unregistered URI (no open redirect).",
       "method": "GET",
@@ -211,7 +211,7 @@
     {
       "opId": "auth.token",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Exchanges an authorization code (with `code_verifier`), a refresh token (rotation, SEC-AU-5), client credentials (`cp-ssr`) or the anonymous grant (SEC-AU-14) for tokens; every request of a DPoP-bound client carries a DPoP proof with a server nonce (§2.2), and confidential clients also authenticate with `private_key_jwt`.",
       "method": "POST",
@@ -282,7 +282,7 @@
     {
       "opId": "auth.revoke",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Revokes a refresh token (and its family) or an access token's session; always returns 200 so token validity cannot be probed.",
       "method": "POST",
@@ -329,7 +329,7 @@
     {
       "opId": "auth.pow_challenge",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Issues a proof-of-work challenge for clients that cannot attest (SEC-BF-7); the difficulty grows with the risk score of the IP prefix and device.",
       "method": "POST",
@@ -375,7 +375,7 @@
     {
       "opId": "auth.signup",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Creates an account inside the current sign-in interaction (email + password, or email/phone for OTP-only sign-up) and sends a verification; the response is identical whether or not the email already exists (SEC-AU-11).",
       "method": "POST",
@@ -434,7 +434,7 @@
     {
       "opId": "auth.signin_password",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Verifies email and password inside the interaction and returns the next step (MFA or complete); every failure is `INVALID_CREDENTIALS` with a fixed minimum latency.",
       "method": "POST",
@@ -489,7 +489,7 @@
     {
       "opId": "auth.otp_start",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Sends a one-time sign-in or verification code to an email or a phone number on the region allowlist; always `202` with the same body.",
       "method": "POST",
@@ -539,7 +539,7 @@
     {
       "opId": "auth.otp_verify",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Checks the one-time code; five wrong codes invalidate it (SEC-AU-8).",
       "method": "POST",
@@ -590,9 +590,9 @@
     {
       "opId": "auth.webauthn_options",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
-      "summary": "Returns WebAuthn request or creation options (challenge valid 5 min, `userVerification: required`, RP ID `carpal.app`) for sign-in, second factor or step-up.",
+      "summary": "Returns WebAuthn request or creation options (challenge valid 5 min, `userVerification: required`, RP ID `carpals.ir`) for sign-in, second factor or step-up.",
       "method": "POST",
       "pathTemplate": "/v1/auth/webauthn/options",
       "routes": [
@@ -636,7 +636,7 @@
     {
       "opId": "auth.mfa_verify",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Completes the second factor with a TOTP code, a WebAuthn assertion or a recovery code, and raises the interaction to `aal2` (or `aal3` for hardware WebAuthn).",
       "method": "POST",
@@ -688,7 +688,7 @@
     {
       "opId": "auth.reactivate",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Confirms reactivation of an account its owner deactivated (`me.deactivate`), after a correct first factor answered `next: 'reactivate'`; the sign-in then continues as usual. Accounts suspended or deactivated by staff never reach this step: they get the generic sign-in answer (SEC-AU-11).",
       "method": "POST",
@@ -743,7 +743,7 @@
     {
       "opId": "auth.social_start",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Starts Google or Apple sign-in inside the interaction; linking to an existing account follows SEC-AU-13.",
       "method": "POST",
@@ -789,7 +789,7 @@
     {
       "opId": "auth.email_verify",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Consumes an `ev` link token and marks the email verified; the account becomes `active` when its first contact is verified.",
       "method": "POST",
@@ -855,7 +855,7 @@
     {
       "opId": "auth.password_reset_start",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Sends a password-reset link if the email belongs to an account; the response never reveals whether it does.",
       "method": "POST",
@@ -905,7 +905,7 @@
     {
       "opId": "auth.password_reset_complete",
       "section": "6.2",
-      "sectionTitle": "Authorization server (`id.carpal.app`)",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
       "module": "identity",
       "summary": "Consumes a `pr` token, sets the new password and revokes every session and refresh token of the account.",
       "method": "POST",

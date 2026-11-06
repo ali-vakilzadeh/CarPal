@@ -26,6 +26,11 @@ for d in $PWA_SYNC_DIRS; do [[ -d "$STAGING_DIR/$d" ]] || die "missing $STAGING_
 [[ -f "$(unit_file)" ]] || die "missing $(unit_file) (run pwa-setup.sh)"
 [[ -x "$NODE_BIN/node" && -x "$NODE_BIN/pnpm" ]] || die "Node.js / pnpm missing in $NODE_BIN (run pwa-setup.sh)"
 [[ "$(env_value CARPAL_PWA_DEMO)" != "1" ]] || die "CARPAL_PWA_DEMO=1 in pwa.env: never in production"
+# pwa.env is written once, so a host change does not reach it: stop here, before the downtime.
+[[ "$(env_value CARPAL_PWA_ORIGIN)" == "https://$WEB_HOST" ]] ||
+  die "pwa.env CARPAL_PWA_ORIGIN is $(env_value CARPAL_PWA_ORIGIN), but this deployment serves https://$WEB_HOST (deploy.md 'Changing the public host')"
+[[ "$(env_value CARPAL_API_AUDIENCE)" == "https://$API_HOST" ]] ||
+  die "pwa.env CARPAL_API_AUDIENCE is $(env_value CARPAL_API_AUDIENCE), expected https://$API_HOST (the htu of the BFF's DPoP proofs)"
 
 want="$(grep -o '"version":"[0-9.]*"' "$STAGING_DIR/shared/api-contracts/generated/operations.ts" | head -n 1 | cut -d'"' -f4)"
 [[ -n "$want" ]] || die "cannot read the contract version of the upload (shared/api-contracts/generated/operations.ts)"

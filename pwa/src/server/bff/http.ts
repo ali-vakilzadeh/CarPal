@@ -60,7 +60,7 @@ export function problem(
   const requestId = o.requestId ?? uuidv7();
   headers.set('carpal-request-id', requestId);
   const body = {
-    type: `https://docs.carpal.app/errors/${code}`,
+    type: `https://docs.carpals.ir/errors/${code}`,
     title: TITLES[code],
     status,
     code,
