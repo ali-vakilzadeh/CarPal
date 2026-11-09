@@ -12,7 +12,8 @@ export function staffRolesOf(memberships: readonly string[]): StaffRole[] {
 }
 
 export function canCall(opId: AdminOperationId, roles: readonly StaffRole[]): boolean {
-  const op = ADMIN_OPERATIONS[opId];
+  // Widened on purpose: contract 1.3.0 has no GD-07 api read (AC2, BR-18), but one may come back.
+  const op: { readonly plane: 'admin' | 'api-read'; readonly roles: readonly string[] } = ADMIN_OPERATIONS[opId];
   // GD-07 api reads carry no STF(...) set: any signed-in staff member.
   if (op.plane === 'api-read') return roles.length > 0;
   return (op.roles as readonly StaffRole[]).some((r) => roles.includes(r));

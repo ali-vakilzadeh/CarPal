@@ -37,6 +37,7 @@ export const ERROR_CODES = {
   METHOD_NOT_ALLOWED: { status: 405, meaning: "", common: true },
   NOT_FOUND: { status: 404, meaning: "", common: true },
   OVERLOADED: { status: 503, meaning: "Load shedding; wait `retry_after_ms` before retrying (SEC-RL-2)", common: true },
+  PASSKEY_NOT_DEVICE_BOUND: { status: 422, meaning: "Staff need a device-bound WebAuthn credential; a passkey synced across devices was refused (SEC-ADM-2)", common: false },
   PAYLOAD_TOO_LARGE: { status: 413, meaning: "", common: true },
   PRECONDITION_REQUIRED: { status: 428, meaning: "", common: true },
   PUBLISH_REQUIREMENTS_UNMET: { status: 409, meaning: "Publish rules not met (52 §21); body lists missing requirements", common: false },

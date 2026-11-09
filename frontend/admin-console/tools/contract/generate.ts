@@ -23,13 +23,16 @@ export const PATHS = {
 };
 
 /** The contract version this plan was written against; a new version is a reviewed change (meta.sources_of_truth). */
-export const EXPECTED_CONTRACT = '1.2.0';
+export const EXPECTED_CONTRACT = '1.3.0';
 
 /**
- * GD-07: api-host reads the console may forward besides the admin plane. Whether the cp-web-admin token is accepted
- * on the api host is checked in AC2 (BR-04); until then these entries are marked `plane: 'api-read'`.
+ * GD-07: api-host reads the console may forward besides the admin plane. AC2 (BR-04, backend S12, 2026-11-09) found
+ * that the api host refuses every cp-web-admin token: its audience is admin-api, and even the PUB reads need a token of
+ * the api audience. The list is therefore empty. The staff identity comes from admin.staff_me (contract 1.3.0); the api
+ * reads the console still needs (taxonomy tree for AC12, region map settings for AC9) are backend request BR-18. The
+ * 'api-read' plane stays so an accepted read can be added back here.
  */
-export const API_READS = ['me.get', 'config.client', 'taxonomy.version', 'taxonomy.snapshot', 'taxonomy.node_get'] as const;
+export const API_READS: readonly string[] = [];
 
 /** The four staff roles of Docs/40 §0.5 and their RoleMembership.role values (GD-09). */
 export const STAFF_ROLES = {

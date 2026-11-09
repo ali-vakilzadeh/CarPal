@@ -14,8 +14,8 @@ describe('role checks (GD-09)', () => {
     expect(canCallAny(['admin.audit_search', 'admin.cases_list'], ['MOD'])).toBe(true);
   });
 
-  it('lets any staff member call the GD-07 api reads, and nobody without a staff role', () => {
-    expect(canCall('me.get', ['SUP'])).toBe(true);
-    expect(canCall('me.get', [])).toBe(false);
+  it('lets every staff role read itself (admin.staff_me, contract 1.3.0), and nobody without a staff role', () => {
+    for (const role of ['ADM', 'MOD', 'SUP', 'CRV'] as const) expect(canCall('admin.staff_me', [role])).toBe(true);
+    expect(canCall('admin.staff_me', [])).toBe(false);
   });
 });

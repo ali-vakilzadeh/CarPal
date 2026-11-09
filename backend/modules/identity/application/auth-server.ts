@@ -14,8 +14,10 @@ import type { Infra } from '#libs/infra/index.js';
 import type { Logger } from '#libs/observability/index.js';
 import { InjectConfig, InjectInfra, InjectLogger } from '#libs/runtime/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
-import { activeSecondFactors, platformRoles, type UserRow } from '../infrastructure/accounts.js';
-import { AuthState, type Interaction } from '../infrastructure/auth-state.js';
+import { constantTimeEqual, newOtpCode } from '../domain/credentials.js';
+import { activeSecondFactors, platformRoles, type MethodRow, type UserRow } from '../infrastructure/accounts.js';
+import { AuthState, OTP_MAX_ATTEMPTS, OTP_RESEND_MS, OTP_TTL_MS, type Interaction } from '../infrastructure/auth-state.js';
+import { IdentityMessages } from '../infrastructure/messages.js';
 
 export const INTERACTION_COOKIE = '__Host-cp_ia';
 const JWT_BEARER = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
@@ -24,7 +26,7 @@ const CLIENT_ASSERTION_MAX_S = 300;
 const CLIENT_ASSERTION_SKEW_S = 30;
 
 export type AuthNext = {
-  next: 'verify_email' | 'verify_phone' | 'mfa' | 'complete' | 'consent' | 'reactivate';
+  next: 'verify_email' | 'verify_phone' | 'mfa' | 'complete' | 'consent' | 'reactivate' | 'enrol_passkey';
   mfa_methods?: ('totp_mfa' | 'webauthn')[];
 };
 
@@ -55,6 +57,7 @@ export class AuthServer {
     @InjectConfig() readonly config: CarpalConfig,
     @InjectInfra() private readonly infra: Infra,
     @InjectLogger() private readonly logger: Logger,
+    private readonly messages: IdentityMessages,
   ) {}
 
   // ---------------------------------------------------------- interactions
@@ -98,6 +101,15 @@ export class AuthServer {
     if (i.clientId === 'cp-web-admin') {
       // SEC-ADM-2: staff complete every sign-in with a device-bound WebAuthn credential (aal3, auth.mfa_verify).
       i.mfaPending = true;
+      // Contract 1.3.0: a staff account without one enrols it first, after its password (never after a one-time
+      // code alone) and a code sent to its verified email. Others (and non-staff, who fail at the token) go on to mfa.
+      if (
+        amr === 'pwd' &&
+        user.email_verified_at &&
+        !factors.some(isDeviceBoundPasskey) &&
+        (await platformRoles(scope, user.id)).length > 0
+      )
+        return this.#startEnrolment(i, user);
       await this.state.saveInteraction(i);
       return { next: 'mfa', mfa_methods: ['webauthn'] };
     }
@@ -109,6 +121,40 @@ export class AuthServer {
     i.completed = true;
     await this.state.saveInteraction(i);
     return { next: 'complete' };
+  }
+
+  /** Sends the enrolment code (SEC-AU-8: a new code only after 60 s; the earlier one stays valid until then). */
+  async #startEnrolment(i: Interaction, user: UserRow): Promise<AuthNext> {
+    const now = Date.now();
+    if (!i.enrol || now - i.enrol.sentAt >= OTP_RESEND_MS) {
+      const code = newOtpCode();
+      i.enrol = { codeHash: this.state.otpHash(code, `enrol:${i.id}`), attempts: 0, expiresAt: now + OTP_TTL_MS, sentAt: now };
+      await this.messages.email(user.email, 'identity.otp_code', user.locale, { code });
+    }
+    this.logger.info({ security_event: 'staff_passkey_enrolment_started', client_id: i.clientId }, 'staff passkey enrolment');
+    await this.state.saveInteraction(i);
+    return { next: 'enrol_passkey' };
+  }
+
+  /** The enrolment code of the interaction; wrong codes count, five end the enrolment (and the interaction's way to it). */
+  async checkEnrolmentCode(i: Interaction, code: string): Promise<boolean> {
+    const e = i.enrol;
+    if (!e || e.expiresAt < Date.now() || e.attempts >= OTP_MAX_ATTEMPTS) return false;
+    if (constantTimeEqual(this.state.otpHash(code, `enrol:${i.id}`), e.codeHash)) return true;
+    e.attempts += 1;
+    if (e.attempts >= OTP_MAX_ATTEMPTS) delete i.enrol;
+    await this.state.saveInteraction(i);
+    return false;
+  }
+
+  /** The stored passkey proves itself at once: a fresh mfa ceremony on the same interaction (aal3 at auth.mfa_verify). */
+  async afterEnrolment(i: Interaction): Promise<AuthNext> {
+    delete i.enrol;
+    delete i.webauthn;
+    i.mfaPending = true;
+    i.mfaEnrolled = true;
+    await this.state.saveInteraction(i);
+    return { next: 'mfa', mfa_methods: ['webauthn'] };
   }
 
   /**
@@ -370,6 +416,10 @@ export class AuthServer {
     return this.tokens;
   }
 }
+
+/** A WebAuthn method whose credential is bound to one device (a security key or a non-synced platform key). */
+export const isDeviceBoundPasskey = (m: MethodRow): boolean =>
+  m.method_type === 'webauthn' && (m.credential_data as { device_bound?: boolean } | null)?.device_bound === true;
 
 /** A passkey used as the only factor (auth.webauthn_options purpose signin): aal2, aal3 when device-bound (SEC-AU-10). */
 export async function completePasskeySignin(state: AuthState, i: Interaction, userId: string, deviceBound: boolean): Promise<AuthNext> {

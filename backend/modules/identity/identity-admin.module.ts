@@ -10,6 +10,7 @@ import {
   AdminOnboardingResetHandler,
   AdminPlatformRoleGrantHandler,
   AdminPlatformRoleRevokeHandler,
+  AdminStaffMeHandler,
   AdminUserGetHandler,
   AdminUsersSearchHandler,
   AdminUserSessionsRevokeHandler,
@@ -22,6 +23,7 @@ import { DsrViews } from './application/privacy-ops.js';
   providers: [
     StaffUserViews,
     DsrViews,
+    AdminStaffMeHandler,
     AdminUsersSearchHandler,
     AdminUserGetHandler,
     AdminUserStatusHandler,

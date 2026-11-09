@@ -12,9 +12,12 @@ describe('environment badge (GD-06)', () => {
     expect(badge).toHaveTextContent('Environment: PROD — Production: changes affect real users.');
   });
 
-  it('is translated', () => {
+  it('keeps the Latin label in Persian and translates only the hint (OQ-12)', () => {
     render(<EnvBadge env="staging" t={getTranslator('fa')} />);
-    expect(screen.getByTestId('env-badge')).toHaveTextContent('آزمایشی');
+    const badge = screen.getByTestId('env-badge');
+    expect(badge).toHaveTextContent('STAGING');
+    expect(badge).toHaveTextContent('محیط آزمایشی');
+    expect(screen.getByText('STAGING')).toHaveAttribute('lang', 'en');
   });
 });
 

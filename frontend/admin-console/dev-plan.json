@@ -20,14 +20,14 @@
     ],
     "progress": {
       "as_of": "2026-11-09",
-      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11; 62 admin-plane operations implemented and covered by the S9b contract sweep) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) that installs with --frozen-lockfile, passes pnpm check (lint, logical CSS, typecheck, 88 unit/DOM tests, contract:check, i18n:check, ds:check), builds, and passes the Playwright smoke (6 tests with axe) on :3300. The admin contract (62 admin-api operations + 5 GD-07 api reads) and the role table are generated. No sign-in, BFF or real screen yet. Uncommitted.",
-      "stages_done": ["AC1"],
-      "next": "AC2 (backend prerequisites, logged as backend S12). Before it: answer OQ-01 or accept its default; see AC1 report notes_for_next.",
+      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) with pnpm check, build and a Playwright smoke. AC2 done 2026-11-09 (backend S12): contract 1.3.0 gives cp-web-admin DPoP + private_key_jwt, the staff passkey enrolment inside the sign-in (auth.passkey_enrol_options, auth.passkey_enrol), admin.staff_me, and a first-run staff bootstrap (backend pnpm staff:bootstrap, backend/deploy/staff-bootstrap.sh); the console is regenerated (63 admin-api operations, no api reads, because the api host refuses admin tokens), shows a Latin environment badge (OQ-12) and sends HSTS outside dev (OQ-11). OQ-01, OQ-10, OQ-11 and OQ-12 are answered. No sign-in page, BFF or real screen yet. Uncommitted.",
+      "stages_done": ["AC1", "AC2"],
+      "next": "AC3 (admin BFF). No blocker: its inputs are in AC2 report notes_for_next. OQ-13 and OQ-14 are needed later (AC9, AC4).",
       "decisions_needed_now": [
-        "OQ-01 (needed by AC2): staff sign-in on the console's own /id pages (default) or through the PWA's hosted sign-in?",
-        "OQ-10 (new, needed by AC7, affects pilot staffing): Path 2 review approvals can be decided by CRV only in contract 1.2.0 — not by ADM. Keep the contract, or widen it?",
-        "OQ-11 (new, needed by AC3): local development over http://localhost like the PWA, or https://localhost as GD-13 says?",
-        "OQ-12 (new, small): environment badge in Persian ('توسعه / آزمایشی / عملیاتی', as built) or always Latin 'DEV / STAGING / PROD'?"
+        "OQ-14 (new, needed by AC4 and the pilot staffing): staff need a device-bound passkey (a security key or Windows Hello); synced phone passkeys are refused (SEC-ADM-2). Buy security keys for pilot staff, or allow synced passkeys (contract change)?",
+        "OQ-13 (new, needed by AC9/AC12): how should the console read the taxonomy tree and the region map settings now that the api host refuses admin tokens (BR-18)?",
+        "OQ-02 (needed by AC11): access gate for admin.<DOMAIN>.",
+        "OQ-03, OQ-08 (needed by AC4): staff role mapping; company SSO (defaults apply if unanswered)."
       ]
     },
     "milestones": [
@@ -55,11 +55,12 @@
     "admin_console": "Since AC1: frontend/admin-console installs with `pnpm install --frozen-lockfile` (own lockfile, no root workspace); `source tools/use-local-node.sh` first. Playwright Chromium 1248 is installed on this machine.",
     "pwa_dev_ports": "PWA uses 3000 (dev) and 3100 (e2e). The console uses 3200 (dev) and 3300 (e2e) (GD-13).",
     "known_state": [
-      "backend/libs/auth/index.ts registers cp-web-admin as confidential with binding 'mtls' (not yet DPoP + private_key_jwt like cp-web-consumer) — BR-01.",
-      "backend/libs/config/config.ts has one CARPAL_SIGNIN_URL for every client (the PWA's /id/signin) — BR-02.",
-      "Staff tests in the backend use fixture sessions (apps/testing/s8-support.ts); staff sign-in through a hosted UI end to end is backend NI-04 work — BR-03.",
-      "No dev tool creates a staff user (backend/tools has none) — BR-05.",
-      "Dev redirect URI for cp-web-admin is https://admin.carpals.ir/bff/oauth/callback only (config.ts DEV_REDIRECT_URIS) — BR-06."
+      "Since AC2 (backend S12, contract 1.3.0): cp-web-admin is DPoP-bound with private_key_jwt (libs/auth CLIENTS); its key pair is /carpal/config/oauth-admin-client-keys.json on a server (backend/deploy/gen-client-keys.mjs --admin), separate from the PWA's file.",
+      "Hosted sign-in: authorize sends every client to <issuer>/signin; the console serves it through its own /id proxy like the PWA (BR-02 not needed).",
+      "A staff account without a device-bound passkey answers next 'enrol_passkey' after its password; auth.passkey_enrol_options (emailed code) and auth.passkey_enrol add the first passkey; then next 'mfa' (aal3).",
+      "admin.staff_me (GET /v1/admin/me) returns the caller's name, locale, time zone, platform roles and session end. The api host refuses cp-web-admin tokens (audience), so me.get, config.client and the taxonomy reads are not reachable (BR-18).",
+      "Staff accounts: backend `pnpm staff:bootstrap` (dev: adm1, adm2, mod1, crv1, sup1 @staff.carpals.test, password carpal-staff-dev-password), `pnpm dev:staff create|list`; on a server backend/deploy/staff-bootstrap.sh with /carpal/config/staff-bootstrap.json.",
+      "Dev settings for the console in backend/.env (documented in backend/.env.example): cp-web-admin redirect URIs https://localhost:3200 and :3300 /bff/oauth/callback, CARPAL_WEBAUTHN_RP_ID=localhost, WebAuthn origins http://localhost:3200 and :3300 (plus the PWA's). Production: ADMIN_CONSOLE_HOST in the shared deploy.conf (default admin.<DOMAIN>)."
     ]
   },
 
@@ -86,6 +87,7 @@
       "id": "GD-04",
       "decision": "Staff sign-in (A-AUTH-01) is hosted by the console itself at /id/* on the admin host, not by the PWA. Only what staff need: email + password, then a passkey (WebAuthn) for aal3; no sign-up, no SMS code, no social sign-in. A staff account without a passkey is taken through a forced passkey enrolment after password + email code, then signs in again at aal3. Needs the backend to choose the sign-in URL per client (BR-02) and to finish staff WebAuthn end to end (BR-03).",
       "reason": "Keeps staff credentials and the staff flow off the public consumer app and behind the same gate as the console; A-AUTH-01 differs from the consumer sign-in in almost every rule. Override with OQ-01.",
+      "amendment_2026_11_09": "OQ-01 answered: sign-in on the console's own pages. As built in AC2 (backend S12): the console's /id proxy serves <issuer>/signin (no per-client URL, BR-02). Steps: email + password, then for an account without a device-bound passkey an emailed code and the passkey enrolment, then the passkey (aal3). Only device-bound credentials count (security key or a non-synced platform passkey; SEC-ADM-2); a one-time code alone never opens enrolment. A passkey-only sign-in (auth.webauthn_options purpose signin) also reaches aal3 with a device-bound key.",
       "stage": "plan"
     },
     {
@@ -98,12 +100,14 @@
       "id": "GD-06",
       "decision": "Design: shared/design-system/web tokens, fonts and components, synced with a copy of pwa/tools/sync-design-system.mjs; the PWA's ported components (pwa/src/components/ds) are copied as the starting kit. The console adds a dense admin layer: data table, three-panel case layout, drawer, reason panel, masked field, four-eyes banner, entity chip, timeline. Logical CSS properties only (copy of pwa/tools/check-logical-css.mjs). Light and dark themes. An environment badge (DEV / STAGING / PROD in red) is always visible.",
       "reason": "Docs/23 §3, Docs/02 §14.4 RTL-first.",
+      "amendment_2026_11_09": "OQ-12 answered: the environment badge label is always the Latin DEV / STAGING / PROD (lang=\"en\"), in both languages; only the screen-reader hint is translated.",
       "stage": "plan"
     },
     {
       "id": "GD-07",
       "decision": "API scope: the console calls the 62 admin-api operations of contract 1.2.0 through its BFF. A short, explicit list of api-host reads may be forwarded as well if the cp-web-admin token is accepted there (checked in AC2): me.get (staff identity and roles), config.client, taxonomy reads for the tree. Anything else is reached by opening the public page (pwa.<DOMAIN>) in a new tab, never by widening the BFF.",
       "reason": "SEC-WEB-1 (no widening), SEC-ADM-7, least exposure.",
+      "amendment_2026_11_09": "Checked in AC2: the api host refuses every cp-web-admin token (it verifies the api audience; PUB reads also need a token of that audience). The api-read list is empty; staff identity comes from admin.staff_me (contract 1.3.0). The reads still needed from the api host (taxonomy tree in AC12, region map settings in AC9) are BR-18 / OQ-13.",
       "stage": "plan"
     },
     {
@@ -140,6 +144,7 @@
       "id": "GD-13",
       "decision": "Ports: dev 3200, e2e 3300, both over https://localhost with the PWA's dev certificate approach. Backend lite: admin-api :8081, auth :8082.",
       "reason": "No clash with the PWA (3000, 3100).",
+      "amendment_2026_11_09": "OQ-11 answered: every page in production (and staging) opens over https only: env.ts refuses an http CARPAL_ADMIN_ORIGIN outside dev, pages send HSTS outside dev (AC2), and nginx answers port 80 with a redirect (AC11). Dev (3200) and E2E (3300) run over http://localhost like the PWA, with the https redirect URI brought back by the /id proxy.",
       "stage": "plan"
     },
     {
@@ -285,16 +290,30 @@
       "issue": "shared/i18n/package.json and the PWA's i18n:check describe the shared dictionary as the PWA's. The console now reads two of its namespaces (common, format) but keeps its own text in an 'admin' namespace inside the console (deviation D-01). A key renamed or removed in shared/i18n fails only the console's own check, not the PWA's.",
       "action": "Recommendation R-04: run the console's `pnpm i18n:check` (or its whole `pnpm check`) whenever shared/ changes, and mention the console in shared/i18n/package.json 'description' at the next PWA stage that touches shared/i18n.",
       "status": "open"
+    },
+    {
+      "id": "DI-12",
+      "raised_in": "AC2",
+      "issue": "Docs/40 §6.2 says the /v1/auth/* endpoints 'are used only by the hosted sign-in UI on id.carpals.ir'. In practice each BFF serves the hosted sign-in on its own origin through an /id proxy (the PWA since P2, the console from AC3), which is also why no per-client sign-in URL is needed (BR-02).",
+      "action": "Reword the §6.2 sentence at the next contract change (no field changes, so no version of its own): 'used only by a hosted sign-in UI, served by the client's BFF under /id on its own origin or on the auth host'.",
+      "status": "open"
+    },
+    {
+      "id": "DI-13",
+      "raised_in": "AC2",
+      "issue": "GD-07 assumed the api host might accept the cp-web-admin token for a few reads. It cannot: SEC-AU-2 validates the audience of the host, and PUB still needs a token. Docs/23 screens that show taxonomy trees (A-TAX-01) and maps with region settings (A-ORG-02 Locations) need data the admin plane does not serve.",
+      "action": "GD-07 amended (no api reads). BR-18 and OQ-13 decide how the console gets those reads.",
+      "status": "decided_in_plan"
     }
   ],
 
   "backend_requests": [
-    { "id": "BR-01", "stage": "AC2", "priority": "blocker", "request": "Register cp-web-admin like cp-web-consumer: DPoP-bound tokens (binding 'dpop') and private_key_jwt client authentication with a registered public key (backend/deploy/gen-client-keys.mjs gains the admin client).", "source": "backend dev_plan GD-06 amendment 2026-11-04, NI-08", "status": "open" },
-    { "id": "BR-02", "stage": "AC2", "priority": "blocker", "request": "Sign-in URL per client (e.g. CARPAL_SIGNIN_URLS JSON map, default CARPAL_SIGNIN_URL) so cp-web-admin interactions go to the console's /id/signin.", "source": "GD-04", "status": "open" },
-    { "id": "BR-03", "stage": "AC2", "priority": "blocker", "request": "Staff WebAuthn sign-in at aal3 end to end through a hosted UI, including the first-time passkey enrolment path for a staff account that has none (password + email code → restricted session that can only register a passkey → sign in again at aal3).", "source": "backend NI-04, backend dev_plan line 4853", "status": "open" },
-    { "id": "BR-04", "stage": "AC2", "priority": "blocker", "request": "The console must learn the signed-in staff member's platform roles and display name: confirm that me.get accepts the cp-web-admin token (memberships carry platform_* roles), or add admin.staff_me on admin-api.", "source": "GD-07, GD-09", "status": "open" },
-    { "id": "BR-05", "stage": "AC2", "priority": "blocker", "request": "Dev-only tool `pnpm dev:staff create --email --name --roles ADM,MOD,…` (refused unless CARPAL_ENV=dev, like dev:flags) and a seed of one staff user per role for E2E.", "source": "PWA DI-18 precedent", "status": "open", "note_ac1": "Seed a second ADM as well: ADM-only four-eyes changes need two ADMs (OQ-10, R-05)." },
-    { "id": "BR-06", "stage": "AC2", "priority": "blocker", "request": "Dev redirect URI https://localhost:3200/bff/oauth/callback (and :3300) for cp-web-admin and the dev WebAuthn origins, documented in backend/.env.example; production values from ADMIN_HOST in backend/deploy.", "source": "GD-13, GD-15", "status": "open" },
+    { "id": "BR-01", "stage": "AC2", "priority": "blocker", "request": "Register cp-web-admin like cp-web-consumer: DPoP-bound tokens (binding 'dpop') and private_key_jwt client authentication with a registered public key (backend/deploy/gen-client-keys.mjs gains the admin client).", "source": "backend dev_plan GD-06 amendment 2026-11-04, NI-08", "status": "done", "note_ac2": "Done in AC2 (backend S12.T1): binding dpop + private_key_jwt; key pair in its own file (gen-client-keys.mjs --admin) so the PWA never holds it; strict mode only warns without it." },
+    { "id": "BR-02", "stage": "AC2", "priority": "blocker", "request": "Sign-in URL per client (e.g. CARPAL_SIGNIN_URLS JSON map, default CARPAL_SIGNIN_URL) so cp-web-admin interactions go to the console's /id/signin.", "source": "GD-04", "status": "closed_not_needed", "note_ac2": "Not needed (AC2, backend S12.T2): authorize sends every client to <issuer>/signin and the console serves it through its /id proxy like the PWA. The S12 test asserts the redirect." },
+    { "id": "BR-03", "stage": "AC2", "priority": "blocker", "request": "Staff WebAuthn sign-in at aal3 end to end through a hosted UI, including the first-time passkey enrolment path for a staff account that has none (password + email code → restricted session that can only register a passkey → sign in again at aal3).", "source": "backend NI-04, backend dev_plan line 4853", "status": "done", "note_ac2": "Done in AC2 (backend S12.T3): auth.passkey_enrol_options and auth.passkey_enrol (contract 1.3.0) after password + emailed code; synced passkeys refused (PASSKEY_NOT_DEVICE_BOUND); the new passkey is proven in the same interaction (aal3)." },
+    { "id": "BR-04", "stage": "AC2", "priority": "blocker", "request": "The console must learn the signed-in staff member's platform roles and display name: confirm that me.get accepts the cp-web-admin token (memberships carry platform_* roles), or add admin.staff_me on admin-api.", "source": "GD-07, GD-09", "status": "done", "note_ac2": "Done in AC2 (backend S12.T4): me.get is refused for a cp-web-admin token (api audience), so admin.staff_me was added (GET /v1/admin/me, every staff role)." },
+    { "id": "BR-05", "stage": "AC2", "priority": "blocker", "request": "Dev-only tool `pnpm dev:staff create --email --name --roles ADM,MOD,…` (refused unless CARPAL_ENV=dev, like dev:flags) and a seed of one staff user per role for E2E.", "source": "PWA DI-18 precedent", "status": "done", "note_ac2": "Done in AC2 (backend S12.T5): pnpm staff:bootstrap (first run, any environment, idempotent; dev accounts adm1, adm2, mod1, crv1, sup1) and pnpm dev:staff create|list.", "note_ac1": "Seed a second ADM as well: ADM-only four-eyes changes need two ADMs (OQ-10, R-05)." },
+    { "id": "BR-06", "stage": "AC2", "priority": "blocker", "request": "Dev redirect URI https://localhost:3200/bff/oauth/callback (and :3300) for cp-web-admin and the dev WebAuthn origins, documented in backend/.env.example; production values from ADMIN_HOST in backend/deploy.", "source": "GD-13, GD-15", "status": "done", "note_ac2": "Done in AC2 (backend S12.T6): dev redirect URIs and WebAuthn origins documented in backend/.env.example; ADMIN_CONSOLE_HOST in the backend deploy kit for the production redirect URI and WebAuthn origin." },
     { "id": "BR-07", "stage": "before AC10", "priority": "high", "request": "Lift timed suspensions automatically (backend DI-66: suspended_until column and a job).", "source": "backend NI-04", "status": "open" },
     { "id": "BR-08", "stage": "before AC9 (merge)", "priority": "medium", "request": "Organization merge re-pointing registry (backend DI-67). Until done, AC9 hides Merge.", "source": "backend NI-04", "status": "open" },
     { "id": "BR-09", "stage": "before AC11", "priority": "high", "request": "Bind staff access purposes to the record being read (backend NI-02, SEC-ADM-5). The console already sends the purpose of the work item it came from (GD-10).", "source": "backend NI-02, RCP-01", "status": "open" },
@@ -306,10 +325,13 @@
     { "id": "BR-15", "stage": "AC14", "priority": "should", "request": "Moderation actions reduce_weight, edit_request (with highlighted spans) and apply_redaction (boxes → redacted copy).", "source": "DI-05", "status": "open" },
     { "id": "BR-16", "stage": "AC14", "priority": "should", "request": "Extended staff reads for user and organization tabs (vehicles summary, appointments, consents history, sessions, capabilities/badges with rule evaluation, portfolio with consent, inventory quality, members, plan history), each PURP.", "source": "DI-06, DI-07", "status": "open" },
     { "id": "BR-17", "stage": "AC13/AC14", "priority": "should", "request": "System health metrics for the dashboard (import failures, notification delivery failures, media scan failures).", "source": "DI-09", "status": "open" }
+,
+    { "id": "BR-18", "stage": "before AC9 (map settings) and AC12 (taxonomy tree)", "priority": "high", "request": "The console cannot call the api host (it refuses cp-web-admin tokens). Serve on admin-api what the console still needs from it: the taxonomy tree (taxonomy.snapshot / node reads, for A-TAX-01) and the region settings the map needs (map style, location threshold; part of config.client). Option decided by OQ-13.", "source": "AC2 finding, GD-07, DI-13", "status": "open" },
+    { "id": "BR-19", "stage": "before the pilot (AC10 or AC11)", "priority": "high", "request": "Staff passkey management on admin-api: list own passkeys, add a second (backup) device-bound key with a fresh aal3 re-authentication, remove one (never the last); and an ADM reset of another staff member's passkeys with a reason and four-eyes (the next sign-in then enrols again with password + emailed code). Today me.webauthn_register_options and me.mfa_remove are on the api host, which refuses admin tokens.", "source": "AC2 (SEC-ADM-2, lost-key recovery)", "status": "open", "interim": "Operator runbook in AC11.T3: disable the staff member's webauthn methods in SQL; the next sign-in enrols again." }
   ],
 
   "open_questions": [
-    { "id": "OQ-01", "question": "Where do staff sign in: on the console's own /id pages (GD-04) or through the PWA's hosted sign-in UI?", "default_if_unanswered": "On the console (GD-04).", "owner": "user", "needed_by": "AC2", "answer": null, "status": "open" },
+    { "id": "OQ-01", "question": "Where do staff sign in: on the console's own /id pages (GD-04) or through the PWA's hosted sign-in UI?", "default_if_unanswered": "On the console (GD-04).", "owner": "user", "needed_by": "AC2", "answer": "Staff sign-in on the console's own pages (user, 2026-11-09).", "status": "answered", "applied": "GD-04 confirmed; built on the backend side in AC2, pages in AC4." },
     { "id": "OQ-02", "question": "Pilot access gate for admin.<DOMAIN> (Docs/02 §15 keeps the strategy open): IP allowlist, VPN, or none beyond passkeys?", "default_if_unanswered": "IP allowlist in nginx (ADMIN_GATE=ip_allowlist) plus aal3 passkeys; revisit after the UI exists.", "owner": "user", "needed_by": "AC11", "answer": null, "status": "open" },
     { "id": "OQ-03", "question": "Confirm the staff role mapping of GD-09 (nine Docs/23 roles onto four contract roles), or ask the backend for more roles?", "default_if_unanswered": "GD-09 mapping.", "owner": "user", "needed_by": "AC4", "answer": null, "status": "open" },
     { "id": "OQ-04", "question": "Four-eyes list: Docs/23 §7.3 proposes more 4EYES actions than the contract tags (e.g. vendor suspension, policy publishing). Follow the contract tags only?", "default_if_unanswered": "Contract tags only; the server enforces them.", "owner": "user", "needed_by": "AC5", "answer": null, "status": "open" },
@@ -318,13 +340,16 @@
     { "id": "OQ-07", "question": "Which contract gaps BR-10..BR-17 belong in the MVP?", "default_if_unanswered": "Must: BR-10 staff directory, BR-11 notification templates/rules, BR-12 policy texts. With the AI build: BR-14. Should (only if time allows): BR-13, BR-15, BR-16, BR-17.", "owner": "user", "needed_by": "AC14", "answer": null, "status": "open" },
     { "id": "OQ-08", "question": "Is a company SSO for staff needed in the MVP?", "default_if_unanswered": "No (passkeys only).", "owner": "user", "needed_by": "AC4", "answer": null, "status": "open" },
     { "id": "OQ-09", "question": "When does the business web app (provider/vendor/fleet, cp-web-portal) start: after milestone M1 (AC11) with AC12-AC15 later, or after AC15?", "default_if_unanswered": "After M1. Shops are the supply side of the pilot; the remaining admin stages can follow or run in between.", "owner": "user", "needed_by": "AC11", "answer": null, "status": "open" },
-    { "id": "OQ-10", "raised_in": "AC1", "question": "Contract 1.2.0 lets only CRV (platform_community_reviewer) decide Path 2 review approvals (admin.review_approval_decide is STF(CRV); admin.review_approvals_queue and admin.review_approval_get are STF(CRV, MOD)). An ADM cannot even open the approval queue or the disputes (admin.disputes_queue and admin.dispute_resolve are STF(MOD, CRV)). Keep that, or widen the sets to ADM (a contract change, backend 1.2.1)? Related staffing fact from the generated table: every four-eyes change needs a second staff member who may decide it (admin.four_eyes_decide is STF(ADM, MOD: moderation changes only)), so ADM-only changes (kill switch off, a rate change over 20 %, plan and retention edits, staff role grants) need two ADM accounts, and moving a Path 1 review to Path 2 (STF(MOD) 4EYES) needs two MOD or a MOD and an ADM.", "default_if_unanswered": "Keep the contract. For the pilot: at least two ADM accounts and at least one MOD and one CRV (a person may hold several roles; the console and server keep the 'different staff member' rule per action). Grant CRV as a second role to whoever reviews (role grants are four-eyes, AC10), and seed one user per role plus a second ADM in BR-05.", "owner": "user", "needed_by": "AC7 (and the pilot staffing plan)", "answer": null, "status": "open" },
-    { "id": "OQ-11", "raised_in": "AC1", "question": "Local development: GD-13 says https://localhost:3200, but the PWA runs over http://localhost and brings the OAuth code back through its /id proxy because the backend registers https redirect URIs only (PWA DI-24, OQ-10). Follow the PWA (http dev; backend BR-06 registers https://localhost:3200 and the BFF maps it), or run next dev --experimental-https with a local certificate?", "default_if_unanswered": "Follow the PWA (http in dev and E2E). AC1 already runs this way; browsers treat localhost as a secure context, so __Host- Secure cookies still work in Chromium.", "owner": "user", "needed_by": "AC3", "answer": null, "status": "open" },
-    { "id": "OQ-12", "raised_in": "AC1", "question": "Environment badge text in Persian: translated ('توسعه' / 'آزمایشی' / 'عملیاتی', as built in AC1) or always the Latin 'DEV / STAGING / PROD' of GD-06, so staff who switch languages see the same label?", "default_if_unanswered": "Translated, as built; PROD stays solid red in both languages. Switching is a two-line change in src/lib/i18n/locales/fa.json.", "owner": "user", "needed_by": "AC4", "answer": null, "status": "open" }
+    { "id": "OQ-10", "raised_in": "AC1", "question": "Contract 1.2.0 lets only CRV (platform_community_reviewer) decide Path 2 review approvals (admin.review_approval_decide is STF(CRV); admin.review_approvals_queue and admin.review_approval_get are STF(CRV, MOD)). An ADM cannot even open the approval queue or the disputes (admin.disputes_queue and admin.dispute_resolve are STF(MOD, CRV)). Keep that, or widen the sets to ADM (a contract change, backend 1.2.1)? Related staffing fact from the generated table: every four-eyes change needs a second staff member who may decide it (admin.four_eyes_decide is STF(ADM, MOD: moderation changes only)), so ADM-only changes (kill switch off, a rate change over 20 %, plan and retention edits, staff role grants) need two ADM accounts, and moving a Path 1 review to Path 2 (STF(MOD) 4EYES) needs two MOD or a MOD and an ADM.", "default_if_unanswered": "Keep the contract. For the pilot: at least two ADM accounts and at least one MOD and one CRV (a person may hold several roles; the console and server keep the 'different staff member' rule per action). Grant CRV as a second role to whoever reviews (role grants are four-eyes, AC10), and seed one user per role plus a second ADM in BR-05.", "owner": "user", "needed_by": "AC7 (and the pilot staffing plan)", "answer": "Keep the contract (only CRV decides Path 2 approvals). Add a script that, on the first run, creates (if not existing) as many base accounts (ADM, MOD, CRV) as required (user, 2026-11-09).", "status": "answered", "applied": "AC2: backend `pnpm staff:bootstrap` creates the missing accounts from a spec (pilot minimum two ADM, one MOD, one CRV; warns below it; never changes an existing account); backend/deploy/staff-bootstrap.sh runs it on a server; the console's admin-setup.sh calls it on its first install (AC11.T3). In dev it seeds adm1, adm2, mod1, crv1, sup1." },
+    { "id": "OQ-11", "raised_in": "AC1", "question": "Local development: GD-13 says https://localhost:3200, but the PWA runs over http://localhost and brings the OAuth code back through its /id proxy because the backend registers https redirect URIs only (PWA DI-24, OQ-10). Follow the PWA (http dev; backend BR-06 registers https://localhost:3200 and the BFF maps it), or run next dev --experimental-https with a local certificate?", "default_if_unanswered": "Follow the PWA (http in dev and E2E). AC1 already runs this way; browsers treat localhost as a secure context, so __Host- Secure cookies still work in Chromium.", "owner": "user", "needed_by": "AC3", "answer": "All pages in production open over https only (user, 2026-11-09).", "status": "answered", "applied": "Dev and E2E stay on http://localhost (the default); outside dev env.ts refuses an http origin and pages send HSTS (AC2); nginx redirects port 80 (AC11). GD-13 amended." },
+    { "id": "OQ-12", "raised_in": "AC1", "question": "Environment badge text in Persian: translated ('توسعه' / 'آزمایشی' / 'عملیاتی', as built in AC1) or always the Latin 'DEV / STAGING / PROD' of GD-06, so staff who switch languages see the same label?", "default_if_unanswered": "Translated, as built; PROD stays solid red in both languages. Switching is a two-line change in src/lib/i18n/locales/fa.json.", "owner": "user", "needed_by": "AC4", "answer": "No need to translate the badge (user, 2026-11-09).", "status": "answered", "applied": "AC2: the label is always DEV / STAGING / PROD with lang=\"en\"; the hint stays translated. GD-06 amended." }
+,
+    { "id": "OQ-13", "raised_in": "AC2", "question": "The api host refuses cp-web-admin tokens, so the console cannot read the taxonomy tree (AC12) or the region map settings (AC9) there. Add admin-api reads for them (contract 1.4.0, BR-18), or let the api host accept the admin token for a short list of public reads (a change to SEC-AU-2, which checks one audience per host)?", "default_if_unanswered": "Admin-api reads (admin.taxonomy_snapshot, admin.region_settings), built with AC9 as a small backend stage; SEC-AU-2 stays as it is.", "owner": "user", "needed_by": "AC9", "answer": null, "status": "open" },
+    { "id": "OQ-14", "raised_in": "AC2", "question": "Staff sign-in accepts only device-bound credentials (SEC-ADM-2): a security key (e.g. FIDO2 USB/NFC) or a platform passkey that is not synced (Windows Hello on a PC). iPhone and Android passkeys are usually synced and are refused. Provide security keys to pilot staff (two each: one spare), or allow synced passkeys for staff (contract change, weaker: a phone account takeover would reach the admin plane)?", "default_if_unanswered": "Keep device-bound only. Two security keys per staff member (the second registered as a spare once BR-19 exists), or Windows Hello on a managed work PC.", "owner": "user", "needed_by": "AC4 (and pilot staffing)", "answer": null, "status": "open" }
   ],
 
   "screen_coverage": [
-    { "screen": "A-AUTH-01 Staff sign-in", "stage": "AC4", "operations": ["auth.authorize", "auth.token", "hosted sign-in endpoints", "me.webauthn_register_options"], "coverage": "full after BR-02/BR-03 (no SSO)" },
+    { "screen": "A-AUTH-01 Staff sign-in", "stage": "AC4", "operations": ["auth.authorize", "auth.token", "auth.signin_password", "auth.passkey_enrol_options", "auth.passkey_enrol", "auth.webauthn_options", "auth.mfa_verify", "admin.staff_me"], "coverage": "full (no SSO); backend side done in AC2 (contract 1.3.0)" },
     { "screen": "A-DASH-01 Dashboard", "stage": "AC5 (My work + queue counts), AC13 (full)", "operations": ["admin.analytics_dashboard", "queue list operations", "admin.four_eyes_list", "admin.flags_list"], "coverage": "partial (System widget BR-17)" },
     { "screen": "A-USR-01 User lookup", "stage": "AC10", "operations": ["admin.users_search"], "coverage": "exact lookup only (DI-03)" },
     { "screen": "A-USR-02 User detail", "stage": "AC10", "operations": ["admin.user_get", "admin.user_status", "admin.user_sessions_revoke", "admin.onboarding_reset", "admin.platform_role_grant", "admin.platform_role_revoke"], "coverage": "partial (tabs BR-16)" },
@@ -455,7 +480,7 @@
     {
       "id": "AC2",
       "title": "Backend prerequisites for the console (logged as backend S12)",
-      "status": "not_started",
+      "status": "done",
       "depends_on": ["AC1 (only for the dev origin)", "OQ-01 answered or default"],
       "goal": "The backend can sign a staff member in through the console at aal3 with a passkey, issues DPoP-bound tokens to cp-web-admin with private_key_jwt, and offers dev tools to create staff. Work happens in backend/ with its tests; this stage only records it here.",
       "scope": {
@@ -472,13 +497,13 @@
         "Docs/40.API contract.md lines 200-232 and 391-402"
       ],
       "tasks": [
-        { "id": "AC2.T1", "task": "BR-01: cp-web-admin → binding 'dpop', private_key_jwt with a registered key; gen-client-keys.mjs gains the admin client; strict-mode tests for the admin client mirror the cp-web-consumer ones.", "status": "not_started" },
-        { "id": "AC2.T2", "task": "BR-02: per-client sign-in URL (CARPAL_SIGNIN_URLS map with CARPAL_SIGNIN_URL as default); test that a cp-web-admin authorize redirects to the console's /id/signin.", "status": "not_started" },
-        { "id": "AC2.T3", "task": "BR-03: staff aal3 end to end — password first factor, WebAuthn second factor for cp-web-admin; first-time enrolment path (restricted session that may only call me.webauthn_register_options/registration, then a fresh aal3 sign-in); integration test with a virtual authenticator.", "status": "not_started" },
-        { "id": "AC2.T4", "task": "BR-04: verify me.get with a cp-web-admin token returns memberships with platform_* roles; if the audience is refused, add admin.staff_me (contract 1.2.1 patch: registry, OpenAPI, sweep).", "status": "not_started" },
-        { "id": "AC2.T5", "task": "BR-05: `pnpm dev:staff create|list|grant` (CARPAL_ENV=dev only) + an E2E seed of one staff user per role; unit test.", "status": "not_started" },
-        { "id": "AC2.T6", "task": "BR-06: dev redirect URIs and WebAuthn origins for https://localhost:3200 and :3300 in backend/.env.example; ADMIN_HOST in backend/deploy templates (redirect URI https://admin.<DOMAIN>/bff/oauth/callback, WebAuthn origin).", "status": "not_started" },
-        { "id": "AC2.T7", "task": "Log the work as backend stage S12 in backend/dev_plan.json (tasks, report); run backend pnpm check, test:int (auth + admin suites) and contract:check.", "status": "not_started" }
+        { "id": "AC2.T1", "task": "BR-01: cp-web-admin → binding 'dpop', private_key_jwt with a registered key; gen-client-keys.mjs gains the admin client; strict-mode tests for the admin client mirror the cp-web-consumer ones.", "status": "done", "note": "backend/libs/auth CLIENTS binding dpop; strict-mode tests in apps/testing/s12.int.test.ts (private_key_jwt with the admin key, DPoP nonce, cnf.jkt, admin-api call needs the proof). Key pair in its own file oauth-admin-client-keys.json (gen-client-keys.mjs --admin; --public merges files) because pwa-setup.sh copies oauth-client-keys.json whole into pwa.env. Strict mode warns at startup instead of refusing to start without the admin key (D-11)." },
+        { "id": "AC2.T2", "task": "BR-02: per-client sign-in URL (CARPAL_SIGNIN_URLS map with CARPAL_SIGNIN_URL as default); test that a cp-web-admin authorize redirects to the console's /id/signin.", "status": "done", "note": "No backend change (D-09): authorize already redirects every client to <issuer>/signin and the console's /id proxy (copied from pwa/src/server/bff/auth-proxy.ts in AC3) rewrites it to its own origin, as the PWA does in production. The S12 test asserts the cp-web-admin redirect." },
+        { "id": "AC2.T3", "task": "BR-03: staff aal3 end to end — password first factor, WebAuthn second factor for cp-web-admin; first-time enrolment path (restricted session that may only call me.webauthn_register_options/registration, then a fresh aal3 sign-in); integration test with a virtual authenticator.", "status": "done", "note": "Contract 1.3.0: after the password (never after a one-time code alone) a staff account without a device-bound WebAuthn credential answers next 'enrol_passkey' and gets a code by email; auth.passkey_enrol_options checks it (five wrong codes end the enrolment; the code is not spent, so a cancelled prompt can retry) and returns creation options; auth.passkey_enrol stores only a device-bound credential (else 422 PASSKEY_NOT_DEVICE_BOUND, nothing stored), revokes the other sessions, emails identity.staff_passkey_added and answers next 'mfa': the new key signs in at once (D-10). Tested with the soft authenticator: strict end to end, synced key refused, wrong codes, OTP-first never enrols, non-staff never enrols." },
+        { "id": "AC2.T4", "task": "BR-04: verify me.get with a cp-web-admin token returns memberships with platform_* roles; if the audience is refused, add admin.staff_me (contract 1.2.1 patch: registry, OpenAPI, sweep).", "status": "done", "note": "me.get is refused: the api host checks the api audience and a cp-web-admin token carries admin-api. Added admin.staff_me (GET /v1/admin/me, STF(ADM, MOD, SUP, CRV)): user_id, display_name, email, locale, timezone, platform_roles, acr, auth_time, session_expires_at. Contract 1.3.0 (minor, not a 1.2.1 patch: TR-8, D-13). The console's GD-07 api reads are dropped (BR-18)." },
+        { "id": "AC2.T5", "task": "BR-05: `pnpm dev:staff create|list|grant` (CARPAL_ENV=dev only) + an E2E seed of one staff user per role; unit test.", "status": "done", "note": "With the OQ-10 answer: backend tools/db/staff.ts + staff-cli.ts. `pnpm staff:bootstrap [--file spec.json]` creates the missing base accounts (pilot minimum two ADM, one MOD, one CRV; warns below it), never changes an existing one, audits staff.bootstrap_created, works in every environment (outside dev only from a file, without passwords: one-time passwords are generated and printed once). Without --file in dev it seeds adm1, adm2, mod1, crv1, sup1 @staff.carpals.test (password carpal-staff-dev-password). `pnpm dev:staff create` (dev only) and `list`. Server: backend/deploy/staff-bootstrap.sh + templates/staff-bootstrap.json.example. Unit test tools/db/staff.test.ts (5) and an integration test." },
+        { "id": "AC2.T6", "task": "BR-06: dev redirect URIs and WebAuthn origins for https://localhost:3200 and :3300 in backend/.env.example; ADMIN_HOST in backend/deploy templates (redirect URI https://admin.<DOMAIN>/bff/oauth/callback, WebAuthn origin).", "status": "done", "note": "backend/.env.example documents the console's dev settings (https redirect URIs for :3200 and :3300, brought back to http by the /id proxy per OQ-11; WebAuthn origins http://localhost:3200 and :3300 with RP ID localhost). Deploy kit: ADMIN_CONSOLE_HOST (default admin.<DOMAIN>) in lib.sh and deploy.conf.example, used for the cp-web-admin redirect URI and WebAuthn origin in backend.env.template; deploy.md sections for the admin key, the staff accounts and the admin plane." },
+        { "id": "AC2.T7", "task": "Log the work as backend stage S12 in backend/dev_plan.json (tasks, report); run backend pnpm check, test:int (auth + admin suites) and contract:check.", "status": "done", "note": "backend/dev_plan.json stage S12 with tasks and report; NI-04 and NI-08 notes. Backend checks: see report.tests." }
       ],
       "deliverables": ["backend changes with tests", "backend/dev_plan.json S12 entry", "updated backend/.env.example and deploy notes"],
       "acceptance_criteria": [
@@ -488,7 +513,70 @@
         "Backend pnpm check and the auth/admin integration suites pass; contract sweep still green."
       ],
       "out_of_scope": ["BR-07..BR-17", "risk-based sign-in (rest of NI-01)"],
-      "report": null
+      "report": {
+        "started_at": "2026-11-09",
+        "completed_at": "2026-11-09",
+        "summary": "The backend prerequisites are in place as backend stage S12 with contract 1.3.0 (additive): cp-web-admin is DPoP-bound with private_key_jwt, a new staff account enrols its first device-bound passkey inside the sign-in (password, emailed code, passkey, then aal3 with it), admin.staff_me tells the console who is signed in and with which roles, and a first-run bootstrap creates the base staff accounts (OQ-10 answer). BR-02 turned out to be unnecessary. The four open questions are answered and applied: OQ-12 (Latin badge) and OQ-11 (HSTS outside dev) in the console. Contract 1.3.0 is regenerated in shared/api-contracts (from pwa/), in the PWA (three version pins, one template classification) and in the console (63 admin-api operations, no api reads because the api host refuses admin tokens). All acceptance criteria are met. Nothing is committed.",
+        "acceptance": {
+          "A backend integration test signs in a staff user through authorize → console sign-in URL → password → passkey → token, and the token carries acr aal3 and a DPoP cnf": "passed: apps/testing/s12.int.test.ts in strict mode (authorize → <issuer>/signin, the URL the console's /id proxy serves → password → emailed code → first passkey → mfa with it → code → private_key_jwt + DPoP nonce → token_type DPoP, acr aal3, cnf.jkt = the proof key → admin.staff_me with a DPoP proof)",
+          "A staff user without a passkey can only enrol one, then must sign in again": "passed: until the passkey exists, only the enrolment calls work; a synced passkey is refused and not stored; after enrolment the new key must sign in (fresh mfa ceremony) before the interaction completes (D-10). Later sign-ins go straight to the passkey.",
+          "pnpm dev:staff creates a working staff user in dev and is refused outside dev": "passed: unit tests (assertDev, spec rules) and the integration test (a bootstrapped account signs in with its password and reaches enrolment). With the OQ-10 answer, staff:bootstrap also runs outside dev, from a spec file only.",
+          "Backend pnpm check and the auth/admin integration suites pass; contract sweep still green": "passed: see tests (the backend has no `pnpm check`; lint, typecheck, format:check, test, contract:check, openapi:check, contract:coverage --strict and test:int were run)"
+        },
+        "screens_built": [],
+        "operations_used": [
+          "(backend) auth.passkey_enrol_options, auth.passkey_enrol, admin.staff_me added; auth.signin_password and auth.token changed for cp-web-admin"
+        ],
+        "files_created": [
+          "backend/apps/testing/s12.int.test.ts",
+          "backend/tools/db/{staff.ts, staff-cli.ts, staff.test.ts}",
+          "backend/deploy/staff-bootstrap.sh, backend/deploy/templates/staff-bootstrap.json.example"
+        ],
+        "files_changed": [
+          "Docs/40.API contract.md (contract 1.3.0: §2.2, SEC-ADM-2, §4.4, §6.1 AuthNext, §6.2 two operations, §23.1 StaffMe, §23.2 admin.staff_me, Appendix D)",
+          "backend: libs/auth/index.ts, libs/contract/generated/*, libs/contract/contract.test.ts, libs/http-pipeline/problem.ts, modules/identity (auth-server, auth-ops, admin-ops, auth-state, messages, both modules), modules/notification/domain/templates.ts, apps/shared/bootstrap.ts, apps/testing/contract (2 generated suites, 2 resolvers), package.json, .env.example, deploy (gen-client-keys.mjs, server-setup.sh, lib.sh, deploy.conf.example, deploy.md, templates/backend.env.template), dev_plan.json (S12)",
+          "shared/api-contracts/{openapi.yaml, generated/*} (regenerated from pwa/)",
+          "pwa: src/server/config.ts and tests/support/fallback-config.ts (contract_version 1.3.0), src/server/bff/bff.int.test.ts (CarPal-Contract 1.3.0), src/features/notifications/catalog.ts (identity.staff_passkey_added is message-only)",
+          "frontend/admin-console: tools/contract/generate.ts (+test: EXPECTED_CONTRACT 1.3.0, API_READS empty), src/lib/api/generated/* (63 operations), src/lib/roles (+test), src/components/shell/env-badge.tsx (+test: Latin label), src/lib/i18n/locales/{en,fa}.json (badge labels removed) and locales.test.ts, src/proxy.ts (HSTS outside dev), tests/e2e/smoke.spec.ts, dev-plan.json (this report)"
+        ],
+        "tests": {
+          "unit": "backend 291 passed (42 files, + staff tool 5); console 88 passed (14 files); PWA 691 passed (76 files)",
+          "int": "backend 775 tests in 51 files. First full run: 769 passed, 6 failed: three expectations pinned to 1.2.0 (pipeline, platform-ops, s11) and the WebAuthn staff case (a staff member with only a synced key now gets enrol_passkey), all expected from contract 1.3.0 and updated; the baseline seed count, raised by the S12 bootstrap test's non-fixture addresses (fixed: fixture domain, and the 6 rows it left in the local test database renamed); and the known local baseline hash. The 6 affected files re-run: 71 of 72 passed; the one failure is the known local baseline hash (the local database was migrated, not reset: tools/db/baseline.int.test.ts passes on a fresh install after pnpm db:reset, the user's call); apps/testing/s12.int.test.ts 7 passed on its own; admin + identity contract sweeps 86 passed",
+          "e2e": "console smoke 6 passed (pnpm e2e: build + Chromium on :3300; the FA page shows DEV)",
+          "a11y": "axe: 0 violations on the FA home, the EN home and the FA 404 (smoke)",
+          "static": "backend lint (eslint + dependency-cruiser), typecheck, format:check, contract:check, openapi:check, contract:coverage --strict (413/414 served, 0 unexplained); console pnpm check (lint, logical CSS, typecheck, unit, contract:check, i18n:check, ds:check) and prettier; PWA typecheck, lint, unit, contract:check, i18n:check",
+          "not_run": "PWA pnpm test:int and pnpm e2e (need a running backend; the PWA only regenerated types and changed three version strings and one template list). Run them at the next PWA stage (R-10)."
+        },
+        "deviations": [
+          "D-08: AC2 was planned as backend-only. It also changed the console (OQ-11, OQ-12, contract regeneration) and the PWA (contract 1.3.0 regenerated into shared/api-contracts, three version pins, the new template in its message-only list), because a contract version change must reach every generated client.",
+          "D-09: BR-02 was not built: no per-client sign-in URL is needed (the /id proxy rewrites <issuer>/signin).",
+          "D-10: after enrolment the new passkey is proven in the same interaction (next 'mfa', a fresh challenge) instead of a second sign-in from the start: the same assurance without typing the password again.",
+          "D-11: strict mode does not refuse to start without the cp-web-admin public key (a startup warning instead), so a backend updated before the console is deployed keeps running; staff token requests answer invalid_client until the key is in CARPAL_OAUTH_CLIENT_JWKS.",
+          "D-12: the cp-web-admin key pair has its own file (oauth-admin-client-keys.json): pwa-setup.sh copies oauth-client-keys.json whole into pwa.env, and the PWA must not hold the staff client's key.",
+          "D-13: the contract became 1.3.0 (minor), not the 1.2.1 patch named in AC2.T4: TR-8 raises the minor version for additive changes. AC14's gap contract is now 1.4.0.",
+          "D-14: GD-07 api reads removed from the console's generated map (the api host refuses admin tokens)."
+        ],
+        "new_doc_issues": ["DI-12", "DI-13"],
+        "new_backend_requests": ["BR-18", "BR-19"],
+        "new_open_questions": ["OQ-13", "OQ-14"],
+        "notes_for_next": [
+          "AC3 BFF config: client cp-web-admin; private JWKS from `node backend/deploy/gen-client-keys.mjs --private <oauth-admin-client-keys.json>` (in dev: make a pair with `--admin`, put the `--public` half in backend/.env CARPAL_OAUTH_CLIENT_JWKS next to the PWA's, the private half in the console's .env.local); token endpoint <issuer>/oauth/token with DPoP nonce retry (same as the PWA); DPoP htu on admin-api = CARPAL_ADMIN_API_AUDIENCE + path (https://admin-api.carpals.ir/v1/admin/... in dev, while the request goes to http://127.0.0.1:8081).",
+          "AC3 /id proxy: copy pwa/src/server/bff/auth-proxy.ts. Its BROWSER_OPS come from @carpal/api-contracts OPERATIONS (every auth-host operation except token and revoke), so auth.passkey_enrol_options and auth.passkey_enrol are forwarded without extra work. Interaction cookie __Host-cp_ia; Origin and Sec-Fetch-Site checked by the proxy (the auth host does not, PWA DI-09).",
+          "AC3 /bff/session: after the code exchange call admin.staff_me once and keep display_name, platform_roles, locale, timezone and session_expires_at in the server session (refresh it on token refresh); never send tokens to the browser.",
+          "AC3 dev backend settings (backend/.env, see backend/.env.example): cp-web-admin redirect URIs https://localhost:3200/bff/oauth/callback and :3300; CARPAL_WEBAUTHN_RP_ID=localhost; CARPAL_WEBAUTHN_ORIGINS must list http://localhost:3200 and :3300 (and the PWA's origin if both run). Then `pnpm staff:bootstrap` in backend/ for the dev accounts.",
+          "AC4 sign-in page: handle next 'enrol_passkey' (code field + 'Create passkey' → auth.passkey_enrol_options then navigator.credentials.create → auth.passkey_enrol → continue with the mfa step), the 422 PASSKEY_NOT_DEVICE_BOUND message (use a security key or this computer's built-in key; phone passkeys that sync are refused), CODE_INVALID, and 401 INVALID_CREDENTIALS (interaction ended: start again). Offer 'Sign in with a passkey' too (purpose signin works for staff with a device-bound key). A 'Forgot password' link can start auth.password_reset_start; the emailed link opens the PWA's /l/pr page (CARPAL_LINK_BASE_URL), which completes the reset.",
+          "AC4 E2E: Chrome's CDP virtual authenticator (ctap2, internal or usb, hasUserVerification, isUserVerified) creates credentials without backup flags, which the backend counts as device-bound; the emailed code is in backend/.data/outbox-mail.jsonl (template identity.otp_code).",
+          "The staff accounts made by `pnpm staff:bootstrap` have the terms/privacy version 'staff-bootstrap'; if such an account signs in to the PWA it will be asked to accept the current texts, which is intended.",
+          "BR-19 matters before the pilot: without it a staff member cannot add a spare key, and a lost key needs the operator (SQL).",
+          "Commands: backend `source tools/use-local-node.sh` first; `pnpm staff:bootstrap`, `pnpm dev:staff list`."
+        ],
+        "open_after_stage": [
+          "OQ-13 (AC9), OQ-14 (AC4, pilot staffing), OQ-02 (AC11), OQ-03/OQ-08 (AC4) — see open_questions.",
+          "BR-18, BR-19 (new); BR-07..BR-17 as before.",
+          "DI-12, DI-13 (new); DI-01, DI-05..DI-11 as before.",
+          "Nothing committed (commit only when the user asks)."
+        ]
+      }
     },
     {
       "id": "AC3",
@@ -781,7 +869,7 @@
       "tasks": [
         { "id": "AC11.T1", "task": "deploy/: deploy.md, admin-setup.sh (service user, systemd unit on 127.0.0.1:3200, nginx server block for ADMIN_HOST with TLS, gate per ADMIN_GATE, client key placement), admin-update.sh (stop, copy from staging, pnpm install --frozen-lockfile, build, restart), lib.sh; LF only; reads /carpal/config/deploy.conf.", "status": "not_started" },
         { "id": "AC11.T2", "task": "Backend deploy settings for the admin client (redirect URI, WebAuthn origin, sign-in URL map, client public key) documented and added to backend/deploy templates.", "status": "not_started" },
-        { "id": "AC11.T3", "task": "First-staff runbook: create the first ADM on the server (dev tool is refused in prod → document a one-time server command or backend bootstrap flag), enrol passkeys, grant roles by four-eyes from then on.", "status": "not_started" },
+        { "id": "AC11.T3", "task": "First-staff runbook: create the first ADM on the server (dev tool is refused in prod → document a one-time server command or backend bootstrap flag), enrol passkeys, grant roles by four-eyes from then on.", "status": "not_started", "note_ac2": "OQ-10 answer: admin-setup.sh runs backend/deploy/staff-bootstrap.sh on its first install when /carpal/config/staff-bootstrap.json exists (it prints one-time passwords; existing accounts are left alone). The runbook covers handing over the passwords, the first sign-in (password, emailed code from the outbox until NI-07, device-bound passkey), and until BR-19 a lost key (SQL to disable the staff member's webauthn methods)." },
         { "id": "AC11.T4", "task": "Pilot E2E suite in strict mode: sign-in, exchange rate, kill switch, Path 2 approval, report → case → action, verification, DSR deletion with four-eyes.", "status": "not_started" },
         { "id": "AC11.T5", "task": "Security pass: headers and CSP on every route, no tokens or PII in the browser storage or logs, purpose header on every PURP call, BFF allowlist review, rate limit behaviour, session limits; findings fixed or recorded.", "status": "not_started" },
         { "id": "AC11.T6", "task": "Docs: README (setup, commands, env), update frontend/README and Docs/02 §1.4 if DI-01 is confirmed; memory/handoff notes; milestone M1 report.", "status": "not_started" }
@@ -863,10 +951,10 @@
     },
     {
       "id": "AC14",
-      "title": "Contract gaps: backend contract 1.3.0 for the missing admin screens, and those screens",
+      "title": "Contract gaps: backend contract 1.4.0 for the missing admin screens, and those screens",
       "status": "not_started",
       "depends_on": ["AC11", "OQ-07 answered"],
-      "goal": "The Docs/23 screens the contract cannot serve today are added in the backend (contract 1.3.0, logged as backend S13) and built in the console, limited to what the user approves in OQ-07.",
+      "goal": "The Docs/23 screens the contract cannot serve today are added in the backend (contract 1.4.0, logged as backend S13) and built in the console, limited to what the user approves in OQ-07.",
       "scope": {
         "docs": ["Docs/23 A-STAFF-01, A-NOTIF-01, A-POL-01, A-SUP-01, A-AI-02/03, A-REV-02/A-CON-02 actions", "Docs/40 (to be extended)", "Docs/52 entities for templates, policies, tickets"],
         "screens": ["A-STAFF-01 (list)", "A-NOTIF-01", "A-POL-01", "A-SUP-01 (Should)", "A-AI-02/A-AI-03 decisions", "extended user/org tabs (Should)"],
@@ -877,18 +965,18 @@
         "backend/dev_plan.json conventions (how to add an operation: registry, OpenAPI, sweep resolver, tests)",
         "Docs/23.Admin_WebUI_screens.md lines 445-462, 505-518"
       ],
-      "split_note": "If OQ-07 approves more than BR-10..BR-12, split into AC14-a (backend contract 1.3.0) and AC14-b (console screens).",
+      "split_note": "If OQ-07 approves more than BR-10..BR-12, split into AC14-a (backend contract 1.4.0) and AC14-b (console screens).",
       "tasks": [
-        { "id": "AC14.T1", "task": "Backend: contract 1.3.0 for the approved BRs (Docs/40 text, registry, OpenAPI, module code, sweep resolvers, integration tests); log as backend S13.", "status": "not_started" },
+        { "id": "AC14.T1", "task": "Backend: contract 1.4.0 for the approved BRs (Docs/40 text, registry, OpenAPI, module code, sweep resolvers, integration tests); log as backend S13.", "status": "not_started" },
         { "id": "AC14.T2", "task": "Console: regenerate the contract; A-STAFF-01 list with invite/disable/role changes and the access-request flow.", "status": "not_started" },
         { "id": "AC14.T3", "task": "Console: A-NOTIF-01 templates per event/channel/locale with preview and missing-translation flags; rules editor (invitation delay, reminders 0-3, quiet hours, digest), critical alerts marked 'Always delivered'.", "status": "not_started" },
         { "id": "AC14.T4", "task": "Console: A-POL-01 policy versions (draft → publish with effective date, re-consent flag, 4EYES); published versions read-only. Feeds the legal-texts go-live item.", "status": "not_started" },
         { "id": "AC14.T5", "task": "Console: other approved gaps (support inbox, AI decisions, moderation actions, extended tabs, system health).", "status": "not_started" },
         { "id": "AC14.T6", "task": "E2E and axe for every new screen in EN and FA; update screen_coverage.", "status": "not_started" }
       ],
-      "deliverables": ["backend contract 1.3.0", "new console screens"],
+      "deliverables": ["backend contract 1.4.0", "new console screens"],
       "acceptance_criteria": [
-        "Backend contract sweep and console contract:check green at 1.3.0.",
+        "Backend contract sweep and console contract:check green at 1.4.0.",
         "Every approved gap has a working screen with E2E coverage."
       ],
       "out_of_scope": ["A-FEAT-01 featured placements", "A-TRU-01 trusted users"],
@@ -935,12 +1023,21 @@
     { "stage": "AC1", "id": "D-05", "summary": "Full nonce CSP with Trusted Types in AC1 instead of a stub; AC3.T6 becomes a review plus BFF/API route headers.", "affects": ["AC1.T5", "AC3.T6"] },
     { "stage": "AC1", "id": "D-06", "summary": "Dev and E2E over http://localhost like the PWA, not https (GD-13); decision in OQ-11.", "affects": ["GD-13"] },
     { "stage": "AC1", "id": "D-07", "summary": "Later-stage dependencies installed now to lock GD-01 versions; maplibre-gl waits for AC9.", "affects": ["GD-01"] }
+,
+    { "stage": "AC2", "id": "D-08", "summary": "AC2 also changed the console and the PWA (contract 1.3.0 regenerated everywhere; OQ-11, OQ-12 applied).", "affects": ["AC2"] },
+    { "stage": "AC2", "id": "D-09", "summary": "BR-02 not built: the /id proxy serves <issuer>/signin.", "affects": ["BR-02", "AC2.T2"] },
+    { "stage": "AC2", "id": "D-10", "summary": "The new passkey is proven in the same interaction instead of a second full sign-in.", "affects": ["BR-03", "GD-04"] },
+    { "stage": "AC2", "id": "D-11", "summary": "Strict mode warns instead of refusing to start without the cp-web-admin key.", "affects": ["BR-01"] },
+    { "stage": "AC2", "id": "D-12", "summary": "The cp-web-admin key pair has its own file (the PWA reads its key file whole).", "affects": ["BR-01", "GD-15"] },
+    { "stage": "AC2", "id": "D-13", "summary": "Contract 1.3.0 (minor) instead of a 1.2.1 patch; AC14 becomes contract 1.4.0.", "affects": ["AC2.T4", "AC14"] },
+    { "stage": "AC2", "id": "D-14", "summary": "GD-07 api reads removed: the api host refuses admin tokens.", "affects": ["GD-07", "BR-18"] }
   ],
 
   "handoff_notes": [
     "Backend facts for the console (2026-11-08): contract 1.2.0; 62 admin-api operations, all implemented and covered by the S9b sweep (BOLA, BFLA, 4EYES 202, PURP, RSN). Staff roles ADM/MOD/SUP/CRV. Admin tests use fixture sessions from backend/apps/testing/s8-support.ts until BR-03.",
     "The exchange rate is seeded with a placeholder; until AC6 ships, backend/deploy/deploy.md 'Exchange rate' documents a one-time SQL.",
     "In dev, flags can be changed without the console with backend `pnpm dev:flags` (PWA DI-18).",
+    "Backend facts after AC2 (2026-11-09, backend S12): contract 1.3.0, 414 operations (413 served), 63 on admin-api. Staff sign-in: password → (first time) emailed code + device-bound passkey enrolment → passkey at aal3; cp-web-admin DPoP + private_key_jwt; admin.staff_me for the shell. Staff accounts: backend `pnpm staff:bootstrap`, on a server backend/deploy/staff-bootstrap.sh.",
     "Go-live items outside this plan (from backend S11 and PWA P15 open_after_stage): first production deploy and DNS A records for the app hosts; real email/SMS senders (backend NI-07); legal placeholders and Persian legal texts (PWA NI-P13-12); region-config CDN host still cdn.carpal.app (backend NI-22)."
   ],
 
@@ -950,6 +1047,10 @@
     { "id": "R-03", "text": "Run backend NI-02 (purpose bound to the record, BR-09) before real staff use the console with real user data." },
     { "id": "R-04", "raised_in": "AC1", "text": "The console now depends on shared/ (api-contracts generated by the PWA, i18n common/format, design-system web copy). Whenever shared/ or the backend contract changes, run in this order: `pnpm contract:generate` in pwa/, then `pnpm contract:generate` and `pnpm check` in frontend/admin-console. A small root script (or CI job) that runs both apps' checks would make this automatic (DI-11)." },
     { "id": "R-05", "raised_in": "AC1", "text": "Plan the pilot's staff accounts before AC6 (OQ-10): two ADM accounts are needed for any ADM-only four-eyes change (kill switch off, a rate change over 20 %, plans, retention, role grants), plus at least one MOD and one CRV. The first ADM comes from the AC11.T3 runbook; the second must be granted by four-eyes, so create both before the four-eyes rule matters (backend bootstrap or the dev tool in dev)." },
-    { "id": "R-06", "raised_in": "AC1", "text": "AC3 can be smaller than planned: security headers (D-05), the operation map with roles, reason/purpose/4EYES/ETAG/IDEM/ASYNC/AAL3 flags, and the route allowlist source (src/lib/api/generated/operations.ts) are ready. The forwarder should build its allowlist straight from ADMIN_OPERATIONS (method + path template + host), never from a hand-written list." }
+    { "id": "R-06", "raised_in": "AC1", "text": "AC3 can be smaller than planned: security headers (D-05), the operation map with roles, reason/purpose/4EYES/ETAG/IDEM/ASYNC/AAL3 flags, and the route allowlist source (src/lib/api/generated/operations.ts) are ready. The forwarder should build its allowlist straight from ADMIN_OPERATIONS (method + path template + host), never from a hand-written list." },
+    { "id": "R-07", "raised_in": "AC2", "text": "Order security keys for the pilot staff now (OQ-14 default: two per person, FIDO2 with USB-C/NFC), or check that each staff PC has Windows Hello. Phone passkeys usually sync and are refused for staff." },
+    { "id": "R-08", "raised_in": "AC2", "text": "Build BR-19 (staff passkey management, ADM reset with four-eyes) before the pilot, so a spare key can be registered and a lost key does not need SQL on the server." },
+    { "id": "R-09", "raised_in": "AC2", "text": "Decide OQ-13 before AC9 and build BR-18 as a small backend stage with it (admin-api reads for the taxonomy tree and region map settings, contract 1.4.0 together with any AC14 items that are ready)." },
+    { "id": "R-10", "raised_in": "AC2", "text": "At the next PWA stage run its pnpm test:int and pnpm e2e once against the backend at contract 1.3.0 (AC2 changed only generated types, three version strings and one template list in pwa/, checked by its unit tests, lint and contract:check)." }
   ]
 }

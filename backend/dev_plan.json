@@ -2,11 +2,11 @@
   "meta": {
     "title": "CarPal backend — scratch build plan and stage log",
     "created": "2026-10-10",
-    "last_updated": "2026-11-05",
+    "last_updated": "2026-11-09",
     "status": "scratch_build_done",
     "progress": {
-      "as_of": "2026-11-04",
-      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list. S10 is DONE (2026-10-26): contract 1.1.0 served — search.session_get (406/407 operations served), search facets, the soonest sort with next_available_slot, search.page limit and the map.pins changes; the 1.1.0 text was corrected before use (DI-74). Next: the next_iteration list; the PWA continues with P7 and adopts 1.1.0 in P14. 2026-11-04: plan aligned with the closed PWA scratch build (pwa/dev_plan.json P1-P14, meta.status scratch_build_done). Rule GD-43: where the two plans disagree, the newer PWA decision wins and the backend follows. The PWA's pilot blockers that need the backend are now stage S11 'Pilot readiness: PWA integration 2' (strict auth for the BFF clients by DPoP + private_key_jwt, contract 1.2.0 for the profile and settings fields of PWA DI-55, USD prices with an admin-set exchange rate, the carpals.ir production setup). Backend-owned PWA follow-ups that do not block the pilot are NI-19..NI-22. Next: S11, then the next_iteration list. S11 is DONE in code (2026-11-05): strict auth for the BFF clients (DPoP-bound tokens + private_key_jwt, CARPAL_OAUTH_CLIENT_JWKS, no mTLS), contract 1.2.0 (411 operations, 410 served; me.deactivate, auth.reactivate, admin.exchange_rates_list, admin.exchange_rate_update, the profile and settings fields of PWA DI-55), USD as the base currency with an admin rate served by config.client, the carpals.ir deploy kit with strict mode on by default. The first server deployment (S11.T4 c) is still to be done by the user: see S11.report.open_after_stage. Next: the deployment, then the next_iteration list.",
+      "as_of": "2026-11-09",
+      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list. S10 is DONE (2026-10-26): contract 1.1.0 served — search.session_get (406/407 operations served), search facets, the soonest sort with next_available_slot, search.page limit and the map.pins changes; the 1.1.0 text was corrected before use (DI-74). Next: the next_iteration list; the PWA continues with P7 and adopts 1.1.0 in P14. 2026-11-04: plan aligned with the closed PWA scratch build (pwa/dev_plan.json P1-P14, meta.status scratch_build_done). Rule GD-43: where the two plans disagree, the newer PWA decision wins and the backend follows. The PWA's pilot blockers that need the backend are now stage S11 'Pilot readiness: PWA integration 2' (strict auth for the BFF clients by DPoP + private_key_jwt, contract 1.2.0 for the profile and settings fields of PWA DI-55, USD prices with an admin-set exchange rate, the carpals.ir production setup). Backend-owned PWA follow-ups that do not block the pilot are NI-19..NI-22. Next: S11, then the next_iteration list. S11 is DONE in code (2026-11-05): strict auth for the BFF clients (DPoP-bound tokens + private_key_jwt, CARPAL_OAUTH_CLIENT_JWKS, no mTLS), contract 1.2.0 (411 operations, 410 served; me.deactivate, auth.reactivate, admin.exchange_rates_list, admin.exchange_rate_update, the profile and settings fields of PWA DI-55), USD as the base currency with an admin rate served by config.client, the carpals.ir deploy kit with strict mode on by default. The first server deployment (S11.T4 c) is still to be done by the user: see S11.report.open_after_stage. Next: the deployment, then the next_iteration list. 2026-11-09: S12 'Admin console prerequisites' is DONE in code (frontend/admin-console/dev-plan.json AC2): contract 1.3.0 (414 operations, 413 served; auth.passkey_enrol_options, auth.passkey_enrol, admin.staff_me, AuthNext 'enrol_passkey', error PASSKEY_NOT_DEVICE_BOUND), cp-web-admin DPoP-bound with private_key_jwt, the staff passkey enrolment inside the cp-web-admin sign-in, the first-run staff bootstrap (pnpm staff:bootstrap, deploy/staff-bootstrap.sh) and dev:staff, the admin key pair in its own file. Next: the admin console builds its BFF (AC3), then the next_iteration list.",
       "stages": [
         {
           "stage": "S1",
@@ -140,6 +140,14 @@
           "title": "Pilot readiness: PWA integration 2 (strict auth for BFF clients, contract 1.2.0 profile/settings, USD + exchange rate, carpals.ir)",
           "status": "not_started",
           "note": "Pilot blockers raised by the PWA (pwa/dev_plan.json NI-P13-01, NI-P13-08 / PWA DI-55, NI-P14-06) and the 2026-11-04 currency decision (GD-41)."
+        },
+        {
+          "stage": "S12",
+          "title": "Admin console prerequisites (contract 1.3.0: cp-web-admin strict auth, staff passkey enrolment, admin.staff_me, staff bootstrap)",
+          "status": "done",
+          "completed_at": "2026-11-09",
+          "ops_implemented": 3,
+          "note": "Requested by frontend/admin-console/dev-plan.json AC2 (BR-01..BR-06) and its OQ-10 answer."
         }
       ],
       "operations": {
@@ -3545,6 +3553,174 @@
           "The provider, vendor and admin web apps do not exist (frontend/ folders are empty, NI-08): shops cannot onboard, and staff cannot moderate, approve Path 2 reviews or carry out data requests, without direct API or database work."
         ]
       }
+    },
+    {
+      "id": "S12",
+      "title": "Admin console prerequisites (contract 1.3.0: cp-web-admin strict auth, staff passkey enrolment, admin.staff_me, staff bootstrap)",
+      "status": "done",
+      "depends_on": [
+        "S11"
+      ],
+      "goal": "The backend can sign a staff member in through the admin console (frontend/admin-console, client cp-web-admin) at aal3 with a device-bound passkey, including the first passkey of a new staff account; issues DPoP-bound tokens to cp-web-admin with private_key_jwt; tells the console who is signed in; and creates the base staff accounts on the first run of a deployment. Requested by the admin console plan (AC2: BR-01..BR-06) and its OQ-10 answer (2026-11-09).",
+      "scope": {
+        "contract_sections": [
+          "§2.2 client table (cp-web-admin), §2.14 SEC-ADM-2 (device-bound credentials, enrolment)",
+          "§4.4 PASSKEY_NOT_DEVICE_BOUND; §6.1 AuthNext.next enrol_passkey; §6.2 auth.passkey_enrol_options, auth.passkey_enrol (new)",
+          "§23.1 StaffMe; §23.2 admin.staff_me (new)",
+          "Appendix D 'Contract 1.3.0'; TR-8 (CarPal-Contract: 1.3.0)"
+        ],
+        "modules": [
+          "identity (auth server, admin ops)",
+          "notification (template identity.staff_passkey_added)",
+          "libs/auth (CLIENTS)"
+        ],
+        "ops_target": 3,
+        "ops_note": "3 new operations; changed: auth.signin_password (cp-web-admin staff without a device-bound passkey answers enrol_passkey), auth.token (cp-web-admin DPoP-bound in strict mode). Registry after S12: 414 operations, 466 routes."
+      },
+      "context_to_read": [
+        "frontend/admin-console/dev-plan.json: stage AC2, backend_requests BR-01..BR-06, open_questions OQ-01 and OQ-10 (answers)",
+        "this plan: S11 (T1 strict auth), NI-04, NI-08",
+        "libs/auth/index.ts, modules/identity/application/{auth-server.ts, auth-ops.ts, webauthn.ts, admin-ops.ts}, tools/db/dev-flags.ts, deploy/{gen-client-keys.mjs, server-setup.sh}"
+      ],
+      "tasks": [
+        {
+          "id": "S12.T1",
+          "status": "done",
+          "refs": [
+            "admin console BR-01",
+            "GD-06",
+            "NI-08"
+          ],
+          "title": "cp-web-admin binding 'dpop' with private_key_jwt (same model as cp-web-consumer). Strict mode does not require its key at startup (a backend updated before the console still starts; a startup warning names it, and every staff token request answers invalid_client). gen-client-keys.mjs --admin writes the admin pair to its own file, oauth-admin-client-keys.json, because pwa-setup.sh copies oauth-client-keys.json whole into pwa.env; --public merges files; server-setup.sh makes both and warns when backend.env lacks the admin key."
+        },
+        {
+          "id": "S12.T2",
+          "status": "done",
+          "refs": [
+            "admin console BR-02"
+          ],
+          "title": "Per-client sign-in URL: not needed. authorize sends every client's browser to <issuer>/signin, and each BFF serves the hosted sign-in under its own /id proxy (the PWA's rewriteLocation; the console copies it in AC3). The S12 test asserts the cp-web-admin redirect."
+        },
+        {
+          "id": "S12.T3",
+          "status": "done",
+          "refs": [
+            "admin console BR-03",
+            "NI-04",
+            "SEC-ADM-2"
+          ],
+          "title": "Staff aal3 sign-in end to end with the first passkey: after a password (never after a one-time code alone) a staff account without a device-bound WebAuthn credential answers next 'enrol_passkey' and gets a code by email; auth.passkey_enrol_options checks it (five wrong codes end the enrolment) and returns creation options; auth.passkey_enrol stores the credential only when it is device-bound (PASSKEY_NOT_DEVICE_BOUND otherwise, nothing stored), ends the account's other sessions, sends identity.staff_passkey_added and answers next 'mfa': the new passkey signs in at once (aal3)."
+        },
+        {
+          "id": "S12.T4",
+          "status": "done",
+          "refs": [
+            "admin console BR-04"
+          ],
+          "title": "admin.staff_me (GET {adm}/me, STF(ADM, MOD, SUP, CRV)): user id, display name, email, locale, time zone, platform roles, acr, auth time and the session's absolute end. me.get cannot serve the console: the api host verifies the api audience, so a cp-web-admin token (audience admin-api) is refused there, even on PUB reads (follow-up: admin console BR-18)."
+        },
+        {
+          "id": "S12.T5",
+          "status": "done",
+          "refs": [
+            "admin console BR-05",
+            "admin console OQ-10"
+          ],
+          "title": "Staff tool tools/db/staff.ts + staff-cli.ts: pnpm staff:bootstrap [--file spec.json] creates, if missing, the base staff accounts (pilot minimum two ADM, one MOD, one CRV; warns below it), never changes an existing account, audits staff.bootstrap_created; any environment, but outside dev only from a spec file without passwords (a generated one-time password is printed once). Without --file in dev: adm1, adm2, mod1, crv1, sup1 @staff.carpals.test with password carpal-staff-dev-password. pnpm dev:staff create (dev only) | list. deploy/staff-bootstrap.sh runs it on the server with backend.env (spec /carpal/config/staff-bootstrap.json, template templates/staff-bootstrap.json.example); the admin console's setup script calls it on its first install (AC11)."
+        },
+        {
+          "id": "S12.T6",
+          "status": "done",
+          "refs": [
+            "admin console BR-06"
+          ],
+          "title": "Dev and deploy settings: backend/.env.example documents the console's dev redirect URIs (https://localhost:3200 and :3300 /bff/oauth/callback, brought back to http by the console's /id proxy like the PWA) and WebAuthn origins (http://localhost:3200, :3300); deploy.conf gains ADMIN_CONSOLE_HOST (default admin.<DOMAIN>) for the redirect URI and the WebAuthn origin in backend.env.template; deploy.md: client keys, staff accounts, admin plane."
+        },
+        {
+          "id": "S12.T7",
+          "status": "done",
+          "refs": [
+            "TR-3",
+            "TR-8"
+          ],
+          "title": "Contract 1.3.0 (Docs/40, regenerated registry, sweep suites with resolvers for the 3 operations, openapi.yaml, coverage), shared/api-contracts regenerated from pwa/ (PWA version pins and its template classification updated), the admin console regenerated (63 admin-api operations)."
+        }
+      ],
+      "deliverables": [
+        "contract 1.3.0 (Docs/40, libs/contract/generated, shared/api-contracts)",
+        "identity: staff passkey enrolment, admin.staff_me; libs/auth cp-web-admin DPoP",
+        "tools/db/staff.ts, staff-cli.ts; pnpm staff:bootstrap, pnpm dev:staff; deploy/staff-bootstrap.sh",
+        "deploy kit: admin key file, ADMIN_CONSOLE_HOST, deploy.md sections",
+        "apps/testing/s12.int.test.ts, tools/db/staff.test.ts, sweep resolvers"
+      ],
+      "acceptance_criteria": [
+        "A backend integration test signs in a staff user through authorize → <issuer>/signin → password → emailed code → first passkey → aal3 with it → token, and the token carries acr aal3 and a DPoP cnf (strict mode, private_key_jwt).",
+        "A staff user without a passkey can only enrol one (device-bound), then proves it before the sign-in completes.",
+        "pnpm staff:bootstrap creates working staff users and leaves existing ones unchanged; pnpm dev:staff create is refused outside dev.",
+        "pnpm lint, typecheck, test, contract:check, openapi:check, contract:coverage --strict and test:int pass."
+      ],
+      "out_of_scope": [
+        "Staff passkey management after enrolment (second key, removal, ADM reset of a lost key): admin console BR-19",
+        "api-host reads for the console (taxonomy tree, region settings): admin console BR-18",
+        "BR-07..BR-17 of the admin console plan",
+        "The admin console BFF and pages (admin console AC3, AC4)"
+      ],
+      "report": {
+        "started_at": "2026-11-09",
+        "completed_at": "2026-11-09",
+        "summary": "Contract 1.3.0 is additive: 1.2.0 clients never reach the new sign-in step (only cp-web-admin staff sign-ins do). cp-web-admin is DPoP-bound with private_key_jwt; a staff account without a device-bound passkey enrols one inside the sign-in after its password and an emailed code, then proves it at once; admin.staff_me tells the console who is signed in; pnpm staff:bootstrap creates the base staff accounts on a first run. All acceptance criteria are met.",
+        "ops_implemented": [
+          "auth.passkey_enrol_options",
+          "auth.passkey_enrol",
+          "admin.staff_me"
+        ],
+        "ops_changed": [
+          "auth.signin_password (cp-web-admin enrolment step)",
+          "auth.token (cp-web-admin DPoP-bound in strict mode)"
+        ],
+        "ops_deferred": [],
+        "files_created": [
+          "apps/testing/s12.int.test.ts",
+          "tools/db/{staff.ts, staff-cli.ts, staff.test.ts}",
+          "deploy/staff-bootstrap.sh, deploy/templates/staff-bootstrap.json.example"
+        ],
+        "files_changed": [
+          "Docs/40.API contract.md (1.3.0)",
+          "libs/contract/generated/*, libs/contract/contract.test.ts (414 operations, 466 routes), libs/http-pipeline/problem.ts (PASSKEY_NOT_DEVICE_BOUND titles)",
+          "libs/auth/index.ts (cp-web-admin dpop)",
+          "modules/identity/application/{auth-server.ts, auth-ops.ts, admin-ops.ts}, modules/identity/infrastructure/{auth-state.ts, messages.ts}, modules/identity/identity-{auth,admin}.module.ts",
+          "modules/notification/domain/templates.ts (identity.staff_passkey_added EN/FA)",
+          "apps/shared/bootstrap.ts (startup warning without the admin key)",
+          "apps/testing/contract/generated/{admin,identity}.contract.int.test.ts, apps/testing/contract/resolvers/{admin,identity}.ts",
+          "apps/testing/{pipeline,platform-ops,s11}.int.test.ts (CarPal-Contract and contract_version 1.3.0), apps/testing/webauthn.int.test.ts (a staff member with only a synced key is offered enrolment)",
+          "package.json (staff:bootstrap, dev:staff), .env.example",
+          "deploy/{gen-client-keys.mjs, server-setup.sh, lib.sh, deploy.conf.example, deploy.md, templates/backend.env.template}",
+          "../shared/api-contracts/{openapi.yaml, generated/*}; ../pwa (3 version pins, template classification); ../frontend/admin-console (regenerated contract)"
+        ],
+        "tests": {
+          "unit": "291 passed (42 files; + tools/db/staff.test.ts 5)",
+          "integration": "775 tests in 51 files. First full run: 769 passed, 6 failed: three expectations pinned to 1.2.0 (pipeline, platform-ops, s11) and the WebAuthn staff case (a staff member with only a synced key now gets enrol_passkey), all expected from contract 1.3.0 and updated; the baseline seed count, raised by the S12 bootstrap test's non-fixture addresses (fixed: fixture domain, and the 6 rows it left in the local test database renamed); and the known local baseline hash. The 6 affected files re-run: 71 of 72 passed; the one failure is the known local baseline hash (the local database was migrated, not reset: tools/db/baseline.int.test.ts passes on a fresh install after pnpm db:reset, the user's call)",
+          "s12": "7 passed (apps/testing/s12.int.test.ts: strict end-to-end staff sign-in with enrolment, DPoP token and admin.staff_me; synced passkey refused; wrong codes; one-time code never enrols; non-staff and consumer client never enrol; staff_me per role; staff bootstrap)",
+          "contract": "contract:check up to date (1.3.0, 414 operations); admin + identity sweeps 86 passed; openapi:check matches router and registry (466 operations); contract:coverage --strict 413/414 served, 0 unexplained",
+          "static": "lint (eslint + dependency-cruiser), typecheck and format:check pass"
+        },
+        "deviations": [
+          "BR-02 (per-client sign-in URL) was not built: the BFFs serve <issuer>/signin through their own /id proxy, so the default URL already reaches the console.",
+          "The new passkey is proven in the same interaction (a fresh mfa ceremony) instead of a second sign-in from the start: the same assurance (a new assertion on a new challenge) without typing the password again.",
+          "Strict mode does not refuse to start without the cp-web-admin key (only a warning): deployments updated before the console exists keep running.",
+          "Contract 1.3.0 (minor) instead of the '1.2.1 patch' in the console plan: TR-8 raises the minor version for additive changes."
+        ],
+        "notes_for_next": [
+          "The console BFF (admin console AC3) takes CARPAL_ADMIN_CLIENT_PRIVATE_JWKS from `node deploy/gen-client-keys.mjs --private /carpal/config/oauth-admin-client-keys.json`; in dev any ES256 pair whose public half is in CARPAL_OAUTH_CLIENT_JWKS.",
+          "Passkey-only staff sign-in (auth.webauthn_options purpose signin) already works for cp-web-admin with a device-bound key (aal3); the console may offer it next to password + passkey.",
+          "Staff passkey management after the first key (backup key, removal, an ADM resetting a lost key) has no operation yet (admin console BR-19). Until then a lost key needs the operator: disable the staff member's webauthn methods in SQL, and the next sign-in enrols again with password + emailed code.",
+          "The api host refuses cp-web-admin tokens (audience). Reads the console needs from it are admin console BR-18."
+        ],
+        "open_after_stage": [
+          "Admin console BR-18 (api-host reads) and BR-19 (staff passkey management) wait for the console plan's decisions.",
+          "Nothing committed (commit only when the user asks)."
+        ]
+      }
     }
   ],
   "coverage_summary": {
@@ -4987,7 +5163,7 @@
         ],
         "status": "not_started",
         "note_2026_11_04": "The BFF part (confidential client authentication for cp-web-consumer and cp-ssr) is now S11.T1 and a pilot blocker: DPoP-bound tokens + private_key_jwt, no mTLS at the edge (GD-06 amendment 2026-11-04, PWA NI-P13-01). The other work items stay here.",
-      "note_2026_11_05": "S11.T1 done: the BFF part of this item is closed."
+        "note_2026_11_05": "S11.T1 done: the BFF part of this item is closed."
       },
       {
         "id": "NI-02",
@@ -5032,7 +5208,8 @@
           "DI-67",
           "deviations S8 #97, #99, #100"
         ],
-        "status": "not_started"
+        "status": "not_started",
+        "note_2026_11_09": "S12 done: staff WebAuthn sign-in through the hosted UI end to end, including the first passkey (contract 1.3.0). DI-66, DI-67 and DI-05 remain (admin console BR-07, BR-08, DI-08)."
       },
       {
         "id": "NI-05",
@@ -5102,7 +5279,8 @@
         ],
         "status": "not_started",
         "note_2026_10_25": "Coordination with pwa/dev_plan.json (GD-03, BA-23): the consumer BFF is being built in the PWA stage P2 as framework-free code under pwa/src/server/bff/ (session store port, OAuth client, 1:1 forwarder with the registry allowlist, CSRF). NI-08 should move or reuse that code for the consumer BFF instead of writing a second one; the portal and admin BFFs stay with NI-08. The PWA plan also records backend follow-ups it needs: storage CORS (pwa DI-08), auth-host Origin checks (pwa DI-09), separate consumer/portal web push tokens (pwa DI-16), a dev-only feature-flag CLI (pwa DI-18), slug history (pwa DI-20) and a profile.contact_revealed analytics event (pwa DI-10).",
-        "note_2026_11_04": "GD-43: the consumer BFF stays in the PWA (pwa/src/server/bff, deployed by pwa/deploy at www.<DOMAIN>); it is not moved to api-gateway/. NI-08 = portal and admin BFFs only. SEC-WEB-3 on the auth host moved to NI-19."
+        "note_2026_11_04": "GD-43: the consumer BFF stays in the PWA (pwa/src/server/bff, deployed by pwa/deploy at www.<DOMAIN>); it is not moved to api-gateway/. NI-08 = portal and admin BFFs only. SEC-WEB-3 on the auth host moved to NI-19.",
+        "note_2026_11_09": "The admin BFF is built in the admin console (frontend/admin-console/src/server/bff, its GD-03), not in api-gateway/. S12 gave cp-web-admin DPoP + private_key_jwt. NI-08 = the portal BFF only."
       },
       {
         "id": "NI-09",

@@ -26,6 +26,8 @@ import {
 import { LinkTokens, consumeFailure } from '#libs/link-tokens/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import { RegionConfigService } from '#libs/region-config/index.js';
+import type { Logger } from '#libs/observability/index.js';
+import { InjectLogger } from '#libs/runtime/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { constantTimeEqual, isBreachedPassword, newOtpCode, pkceMatches } from '../domain/credentials.js';
 import {
@@ -39,7 +41,7 @@ import {
 } from '../infrastructure/accounts.js';
 import { OTP_MAX_ATTEMPTS, OTP_RESEND_MS, OTP_TTL_MS } from '../infrastructure/auth-state.js';
 import { IdentityMessages } from '../infrastructure/messages.js';
-import { AuthServer, completePasskeySignin, type AuthNext } from './auth-server.js';
+import { AuthServer, completePasskeySignin, isDeviceBoundPasskey, type AuthNext } from './auth-server.js';
 import { CHALLENGE_TTL_MS, WebAuthnService } from './webauthn.js';
 import { withMinLatency } from './common.js';
 import { MfaService } from './mfa-service.js';
@@ -679,6 +681,88 @@ export class MfaVerifyHandler implements OperationHandler {
     if (b.method === 'webauthn')
       return { body: await this.auth.afterSecondFactor(i, result.deviceBound ? 'hwk' : 'swk', result.deviceBound ? 'aal3' : 'aal2') };
     return { body: await this.auth.afterSecondFactor(i, b.method === 'totp_mfa' ? 'otp' : 'rc') };
+  }
+}
+
+// ------------------------------------------------------------------ staff passkey enrolment (contract 1.3.0, SEC-ADM-2)
+
+/**
+ * auth.passkey_enrol_options: after a staff password sign-in on cp-web-admin answered enrol_passkey, the emailed code
+ * opens creation options for the first device-bound passkey (a pending WebAuthn method holds the challenge). The code
+ * is not spent here, so a cancelled browser prompt can ask again with the same code until it expires.
+ */
+@Injectable()
+@Operation('auth.passkey_enrol_options')
+export class PasskeyEnrolOptionsHandler implements OperationHandler {
+  constructor(
+    private readonly auth: AuthServer,
+    private readonly webauthn: WebAuthnService,
+  ) {}
+
+  async handle(ctx: OperationContext<{ interaction_id: string; code: string }>): Promise<OperationResult> {
+    const i = await this.auth.interaction(ctx, ctx.body.interaction_id);
+    const userId = i.userId;
+    if (!userId || !i.enrol || i.clientId !== 'cp-web-admin') throw new ApiError('INVALID_CREDENTIALS');
+    await ctx.rateLimit('auth.signin', 'account', userId);
+    if (!(await this.auth.checkEnrolmentCode(i, ctx.body.code))) throw new ApiError('CODE_INVALID');
+    const r = await ctx.tx(async (scope) => {
+      const user = await getUser(scope, userId);
+      if (!user || user.status !== 'active') return null;
+      return this.webauthn.registrationOptions(
+        scope,
+        { id: user.id, email: user.email, displayName: user.display_name ?? user.full_name },
+        'Staff passkey',
+      );
+    });
+    if (!r) throw new ApiError('INVALID_CREDENTIALS');
+    i.enrol!.methodId = r.methodId;
+    await this.auth.state.saveInteraction(i);
+    return { body: r.options };
+  }
+}
+
+/**
+ * auth.passkey_enrol: verifies the attestation against the pending challenge, refuses a credential synced across
+ * devices (nothing is stored), activates the method, ends the account's other sessions (SEC-AU-4), tells the account by
+ * email and continues with a fresh mfa ceremony: the new passkey signs in at once (aal3).
+ */
+@Injectable()
+@Operation('auth.passkey_enrol')
+export class PasskeyEnrolHandler implements OperationHandler {
+  constructor(
+    private readonly auth: AuthServer,
+    private readonly webauthn: WebAuthnService,
+    private readonly sessions: SessionStore,
+    private readonly messages: IdentityMessages,
+    @InjectLogger() private readonly log: Logger,
+  ) {}
+
+  async handle(ctx: OperationContext<{ interaction_id: string; attestation: unknown }>): Promise<OperationResult> {
+    const i = await this.auth.interaction(ctx, ctx.body.interaction_id);
+    const userId = i.userId;
+    const methodId = i.enrol?.methodId;
+    if (!userId || !methodId || i.clientId !== 'cp-web-admin') throw new ApiError('INVALID_CREDENTIALS');
+    await ctx.rateLimit('auth.signin', 'account', userId);
+    const user = await ctx.tx(async (scope) => {
+      const pending = (await methods(scope, userId, ['webauthn'], true)).find((m) => m.id === methodId && m.status === 'pending');
+      if (!pending) throw new ApiError('CODE_INVALID', { detail: 'no pending passkey' });
+      await this.webauthn.confirmRegistration(scope, pending, ctx.body.attestation);
+      const stored = (await methods(scope, userId, ['webauthn'])).find((m) => m.id === methodId)!;
+      // Throwing rolls the stored credential back: a synced passkey never becomes a staff credential (SEC-ADM-2).
+      if (!isDeviceBoundPasskey(stored)) throw new ApiError('PASSKEY_NOT_DEVICE_BOUND');
+      await scope.db
+        .updateTable('identity.authentication_methods')
+        .set({ status: 'active', verified_at: sql`now()` })
+        .where('id', '=', methodId)
+        .execute();
+      await scope.db.updateTable('identity.user_accounts').set({ mfa_enabled: true }).where('id', '=', userId).execute();
+      await writeAudit(scope, { action: 'user.mfa_enabled', entityType: 'authentication_method', entityId: methodId, next: 'webauthn' });
+      return getUser(scope, userId);
+    });
+    await this.sessions.revokeAll(userId);
+    if (user) await this.messages.email(user.email, 'identity.staff_passkey_added', user.locale);
+    this.log.info({ security_event: 'staff_passkey_enrolled', client_id: i.clientId }, 'staff passkey enrolled');
+    return { body: await this.auth.afterEnrolment(i) };
   }
 }
 

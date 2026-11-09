@@ -63,6 +63,12 @@ export async function startWorkerApp(module: DynamicModule, logger: Logger): Pro
 export function logDeviations(config: CarpalConfig, logger: Logger): void {
   if (!config.strictAuth)
     logger.warn({ deviation: 'GD-06' }, 'CARPAL_STRICT_AUTH=0: DPoP, mTLS binding, app attestation and PoW are not enforced');
+  else if (!config.auth.clientJwks['cp-web-admin'])
+    // S12: optional so a backend updated before the admin console is deployed still starts; staff cannot sign in.
+    logger.warn(
+      { client_id: 'cp-web-admin' },
+      'CARPAL_OAUTH_CLIENT_JWKS has no cp-web-admin key: staff token requests answer invalid_client',
+    );
   if (config.infra === 'lite')
     logger.warn(
       { deviation: 'GD-04' },

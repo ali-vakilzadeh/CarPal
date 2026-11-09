@@ -17,6 +17,7 @@ export type MailTemplate =
   | 'identity.otp_code'
   | 'identity.password_changed'
   | 'identity.security_alert'
+  | 'identity.staff_passkey_added'
   | 'identity.consent_request';
 
 @Injectable()

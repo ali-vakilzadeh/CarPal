@@ -2594,7 +2594,8 @@
       "date": "2026-11-05",
       "from": "P15",
       "note": "NI-P14-09 is done: backend S11 is adopted (strict auth signed in, contract 1.2.0, admin rate, deploy kit). Joint run: Strict mode (CARPAL_STRICT_AUTH=1 on both sides, signed in, 2026-11-05): first full pnpm e2e run 86 passed, 9 failed, 5 did not run, 5 skipped; after updating tests for the new behaviour and one journey race, those 9 and the 5 journey steps passed when re-run on their own, so no single uninterrupted all-green strict run exists yet. Lite: pnpm test:int 13 passed; full run 97 passed, 1 failed (journey Ch. 3 stayed on onboarding after a re-login, cause not found, passed alone every time), 1 did not run, 6 skipped."
-    }
+    },
+    { "date": "2026-11-09", "from": "admin console AC2 (backend S12)", "note": "Contract 1.3.0 (additive) for the admin console: cp-web-admin DPoP + private_key_jwt, staff passkey enrolment in the sign-in (auth.passkey_enrol_options, auth.passkey_enrol, AuthNext.next 'enrol_passkey', error PASSKEY_NOT_DEVICE_BOUND) and admin.staff_me. Done in pwa/ during that stage: `pnpm contract:generate` (shared/api-contracts at 1.3.0), contract_version '1.3.0' in src/server/config.ts and tests/support/fallback-config.ts, CarPal-Contract 1.3.0 in src/server/bff/bff.int.test.ts, and identity.staff_passkey_added in MESSAGE_ONLY_TEMPLATE_KEYS (staff only). Checked: typecheck, lint, 691 unit tests, contract:check, i18n:check. Not run: pnpm test:int and pnpm e2e (need a running backend; run them at the next PWA stage, admin console R-10). The PWA never sees 'enrol_passkey' (only cp-web-admin staff sign-ins do); its /id proxy forwards the two new auth operations like every auth-host operation, and the backend refuses them outside a cp-web-admin enrolment. The admin client's key pair is in its own file (oauth-admin-client-keys.json): pwa-setup.sh keeps reading oauth-client-keys.json, which no longer gains clients." }
   ],
 
   "open_questions": [

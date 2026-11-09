@@ -56,6 +56,21 @@ export interface Interaction {
   reactivate?: { amr: string; passkeyDeviceBound?: boolean };
   /** The open WebAuthn ceremony of auth.webauthn_options (challenge valid 5 min). */
   webauthn?: { challenge: string; purpose: 'signin' | 'mfa' | 'step_up'; expiresAt: number };
+  /**
+   * cp-web-admin, contract 1.3.0 (SEC-ADM-2): a staff account without a device-bound WebAuthn credential proved its
+   * password; the code sent to its verified email opens auth.passkey_enrol_options, whose pending method
+   * auth.passkey_enrol activates.
+   */
+  enrol?: PendingEnrolment;
+}
+
+export interface PendingEnrolment {
+  codeHash: string;
+  attempts: number;
+  expiresAt: number;
+  sentAt: number;
+  /** The pending WebAuthn method of the last auth.passkey_enrol_options. */
+  methodId?: string;
 }
 
 export interface AuthCodeGrant {

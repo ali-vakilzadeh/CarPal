@@ -58,6 +58,7 @@ export const MESSAGE_ONLY_TEMPLATE_KEYS = [
   'identity.otp_code',
   'identity.password_changed',
   'identity.security_alert',
+  'identity.staff_passkey_added', // staff only (backend S12, contract 1.3.0): never reaches the consumer PWA
   'identity.consent_request',
   'organization.member_invitation',
   'appointment.check_in_link',

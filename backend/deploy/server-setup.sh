@@ -112,14 +112,21 @@ if [[ ! -f "$CONFIG_DIR/db-admin.env" ]]; then
   render "$DEPLOY_DIR/templates/db-admin.env.template" "$CONFIG_DIR/db-admin.env" PW_SUPERUSER
   ok "generated db-admin.env"
 fi
-# Key pairs of the BFF clients: public halves in backend.env, private halves in pwa.env (pwa-setup.sh reads this file).
+# Key pairs of the BFF clients: public halves in backend.env; private halves in pwa.env (pwa-setup.sh reads
+# oauth-client-keys.json whole) and in the admin console's env (oauth-admin-client-keys.json, apart so the PWA never
+# holds the staff client's key; backend S12).
 CLIENT_KEYS="$CONFIG_DIR/oauth-client-keys.json"
+ADMIN_CLIENT_KEYS="$CONFIG_DIR/oauth-admin-client-keys.json"
 if [[ ! -f "$CLIENT_KEYS" ]]; then
   (umask 077 && "$NODE_BIN/node" "$DEPLOY_DIR/gen-client-keys.mjs" >"$CLIENT_KEYS")
   ok "generated oauth-client-keys.json"
 fi
-chown root:root "$CLIENT_KEYS" && chmod 600 "$CLIENT_KEYS"
-CLIENT_PUBLIC_JWKS="$("$NODE_BIN/node" "$DEPLOY_DIR/gen-client-keys.mjs" --public "$CLIENT_KEYS")"
+if [[ ! -f "$ADMIN_CLIENT_KEYS" ]]; then
+  (umask 077 && "$NODE_BIN/node" "$DEPLOY_DIR/gen-client-keys.mjs" --admin >"$ADMIN_CLIENT_KEYS")
+  ok "generated oauth-admin-client-keys.json"
+fi
+chown root:root "$CLIENT_KEYS" "$ADMIN_CLIENT_KEYS" && chmod 600 "$CLIENT_KEYS" "$ADMIN_CLIENT_KEYS"
+CLIENT_PUBLIC_JWKS="$("$NODE_BIN/node" "$DEPLOY_DIR/gen-client-keys.mjs" --public "$CLIENT_KEYS" "$ADMIN_CLIENT_KEYS")"
 if [[ ! -f "$CONFIG_DIR/backend.env" ]]; then
   MASTER_SECRET="$(gen 32)"
   PW_MIGRATOR="$(gen)" PW_AUTH="$(gen)" PW_API="$(gen)" PW_ADMIN_API="$(gen)" PW_WORKER="$(gen)" PW_AI="$(gen)"
@@ -129,6 +136,8 @@ if [[ ! -f "$CONFIG_DIR/backend.env" ]]; then
   ok "generated backend.env (review it: deploy.md step 3)"
 elif ! grep -q '^CARPAL_OAUTH_CLIENT_JWKS=' "$CONFIG_DIR/backend.env"; then
   warn "backend.env has no CARPAL_OAUTH_CLIENT_JWKS: add CARPAL_OAUTH_CLIENT_JWKS='$CLIENT_PUBLIC_JWKS' before setting CARPAL_STRICT_AUTH=1"
+elif ! grep -q '^CARPAL_OAUTH_CLIENT_JWKS=.*cp-web-admin' "$CONFIG_DIR/backend.env"; then
+  warn "backend.env CARPAL_OAUTH_CLIENT_JWKS lacks cp-web-admin (staff sign-in answers invalid_client): set CARPAL_OAUTH_CLIENT_JWKS='$CLIENT_PUBLIC_JWKS' and restart (4-start.sh)"
 fi
 chown root:root "$CONFIG_DIR/db-admin.env" && chmod 600 "$CONFIG_DIR/db-admin.env"
 chown root:"$SERVICE_GROUP" "$CONFIG_DIR/backend.env" && chmod 640 "$CONFIG_DIR/backend.env"

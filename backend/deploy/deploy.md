@@ -288,6 +288,8 @@ How long an update takes:
 - `/carpal/config/deploy.conf`: the folders, host names, build switches and backup retention of these scripts. Defaults are in `deploy.conf.example`.
 
 - `/carpal/config/oauth-client-keys.json`: the key pairs of `cp-web-consumer` and `cp-ssr`, root only. `server-setup.sh` makes it once. The public halves are in `backend.env` (`CARPAL_OAUTH_CLIENT_JWKS`), the private halves in `pwa.env` (`CARPAL_PWA_CLIENT_PRIVATE_JWKS`). Back it up with `backend.env`.
+- `/carpal/config/oauth-admin-client-keys.json`: the key pair of `cp-web-admin` (the admin console, S12), root only, made once by `server-setup.sh`. It is a separate file because `pwa-setup.sh` copies `oauth-client-keys.json` whole into `pwa.env`: the PWA must never hold the staff client's key. Its public half is in `CARPAL_OAUTH_CLIENT_JWKS` too; the private half goes to the admin console's env (frontend/admin-console/deploy, stage AC11). Back it up with `backend.env`.
+- `/carpal/config/staff-bootstrap.json`: the base staff accounts for `staff-bootstrap.sh` ([Admin plane](#admin-plane)), root only. Names and email addresses, no passwords.
 
 After changing `backend.env`, restart: `bash /carpal/backend/src/backend/deploy/4-start.sh`.
 
@@ -300,6 +302,9 @@ cd /carpal/config
 node /home/root/staging/backend/deploy/gen-client-keys.mjs >oauth-client-keys.json && chmod 600 oauth-client-keys.json
 node /home/root/staging/backend/deploy/gen-client-keys.mjs --public oauth-client-keys.json    # CARPAL_OAUTH_CLIENT_JWKS in backend.env, in single quotes
 node /home/root/staging/backend/deploy/gen-client-keys.mjs --private oauth-client-keys.json   # CARPAL_PWA_CLIENT_PRIVATE_JWKS in pwa.env, in single quotes
+# The admin console's key (S12) lives in its own file:
+node /home/root/staging/backend/deploy/gen-client-keys.mjs --admin >oauth-admin-client-keys.json && chmod 600 oauth-admin-client-keys.json
+node /home/root/staging/backend/deploy/gen-client-keys.mjs --public oauth-client-keys.json oauth-admin-client-keys.json   # CARPAL_OAUTH_CLIENT_JWKS with all three clients
 ```
 
 Then restart the backend and run `pwa-update.sh`. Token requests fail between the two restarts.
@@ -318,9 +323,17 @@ Clients see it within five minutes. This skips the audit entry and the second ap
 
 ### Admin plane
 
-`admin-api` listens on `127.0.0.1:8081` and is **not published**. SEC-ADM-1 puts it behind a private network, and staff sessions need WebAuthn `aal3` through the admin BFF, which doesn't exist yet. Reach it through an SSH tunnel: `ssh -L 8081:127.0.0.1:8081 root@<server>`. To publish it to fixed addresses only, set `EXPOSE_ADMIN_API=1` and `ADMIN_ALLOW_IPS="203.0.113.10"` in `deploy.conf`, then re-run `server-setup.sh` before certbot, or edit the nginx site by hand after it.
+`admin-api` listens on `127.0.0.1:8081` and is **not published**. SEC-ADM-1 puts it behind a private network. Staff use it through the admin console (frontend/admin-console, client `cp-web-admin`, host `admin.<domain>` = `ADMIN_CONSOLE_HOST` in `deploy.conf`): its BFF calls admin-api on the server itself, so admin-api stays unpublished. The console's deploy kit is stage AC11 of frontend/admin-console/dev-plan.json; until it exists there is no browser path. `backend.env` already registers the console's redirect URI (`https://<ADMIN_CONSOLE_HOST>/bff/oauth/callback`) and WebAuthn origin, and `CARPAL_OAUTH_CLIENT_JWKS` carries its public key (S12). Reach admin-api by hand through an SSH tunnel: `ssh -L 8081:127.0.0.1:8081 root@<server>`. To publish it to fixed addresses only, set `EXPOSE_ADMIN_API=1` and `ADMIN_ALLOW_IPS="203.0.113.10"` in `deploy.conf`, then re-run `server-setup.sh` before certbot, or edit the nginx site by hand after it.
 
-The baseline seeds a bootstrap admin (`CARPAL_ADMIN_EMAIL`). Completing its sign-up needs a password reset and a WebAuthn registration through the admin console.
+**Staff accounts (first run).** The pilot needs at least two ADM (every ADM-only four-eyes change needs a second ADM), one MOD and one CRV (only CRV decides Path 2 review approvals); one person may hold several roles. Copy `templates/staff-bootstrap.json.example` to `/carpal/config/staff-bootstrap.json`, put the real names and addresses in it and run, as root:
+
+```bash
+sudo bash /carpal/backend/src/backend/deploy/staff-bootstrap.sh
+```
+
+It creates the accounts that do not exist and prints a one-time password for each (hand them over on a separate channel); accounts that exist are reported and never changed, so it is safe to run again. The admin console's setup script runs it on its first install. On the first console sign-in a staff member enters the email and that password, then the code sent to the email (until real email exists, NI-07, it is in `/carpal/data/outbox-mail.jsonl`), then registers a **device-bound** passkey: a security key, or a platform passkey that is not synced (Windows Hello; synced iCloud or Google passkeys are refused, SEC-ADM-2). After that every sign-in is password + passkey at `aal3`. Later role changes go through the console (`admin.platform_role_grant`, four eyes).
+
+The baseline also seeds a bootstrap admin (`CARPAL_ADMIN_EMAIL`) without a password. Either leave it unused, or give it a password with a password reset (the reset link goes to the PWA's `/l/pr` page) and it enrols a passkey on its first console sign-in like the others. Listing its address in `staff-bootstrap.json` only reports it as existing.
 
 ## Backups, restore and rollback
 
@@ -397,7 +410,7 @@ These come from lite mode and the current state of the code. They are not caused
 2. **Restarts sign everybody out.** Sessions, rate-limit windows, idempotency records and queued jobs are in memory. A restart (every deployment) drops them. Events are safe: the outbox lives in PostgreSQL and is relayed after the restart. Media processing is re-queued by its sweep. Other background jobs that were waiting in the queue may have to be requested again. The search index is rebuilt from the database at startup (`CARPAL_SEARCH_REBUILD_ON_START`). Redis, NATS and OpenSearch adapters (full mode) are NI-06.
 3. **Client IP behind nginx.** The backend reads the client address from the TCP socket only, so behind nginx every client looks like `127.0.0.1`. The per-IP windows of 40 §2.8 would then be shared by all users: 30 sign-ins per 15 minutes and 20 OTPs per hour for the whole platform. As a stopgap, `backend.env` raises only those three IP windows (`CARPAL_RATE_LIMITS`), and nginx enforces per-client limits with the contract's values (`templates/nginx-carpal.conf`). The proper fix is code: trust `X-Forwarded-For` from a configured proxy address in `libs/http-pipeline/pipeline.ts`. Until then, the backend's IP-prefix signals (abuse escalation, audit `ip_prefix`) record `127.0.0.0`.
 4. **`prod` is not reachable yet** ([Environment choice](#environment-choice)). App attestation and the rest of NI-01, and the portal and admin BFFs (NI-08).
-5. **The admin plane has no browser path** until the admin BFF exists ([Admin plane](#admin-plane)).
+5. **The admin plane has no browser path** until the admin console is deployed (frontend/admin-console, stage AC11; [Admin plane](#admin-plane)). The backend side (S12: DPoP + `private_key_jwt` for `cp-web-admin`, staff passkey enrolment, `admin.staff_me`, the staff bootstrap) is in place.
 6. **AI is off** (`CARPAL_MCP_MODE=unavailable`) until the real MCP gateway exists (NI-09). `stub` is fine for demos.
 7. **Media domain.** 40 SEC-UP wants media on a separate registrable domain (`media.carpal-usercontent.app`). `media.<domain>` works, but then user uploads are served from the same registrable domain as the apps, which weakens the origin isolation SEC-UP asks for.
 8. **One server, one process.** There is no high availability. Load scales only vertically, until full mode exists.

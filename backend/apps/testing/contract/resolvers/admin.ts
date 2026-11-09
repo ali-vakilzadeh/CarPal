@@ -95,6 +95,7 @@ export const resolvers: Resolvers = {
     const c = await userCase(h, mod);
     return { as: mod, params: { case_id: c.caseId }, body: { status: 'dismissed', resolution: 'No breach found', reason: REASON } };
   },
+  'admin.staff_me': async (h) => ({ as: await h.staff('platform_community_reviewer') }),
   'admin.flags_list': async (h) => ({ as: await h.staff('platform_admin'), query: { flag_type: 'release', limit: 100 } }),
   'admin.flag_update': async (h) => {
     const as = await h.staff('platform_admin');

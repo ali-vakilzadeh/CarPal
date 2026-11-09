@@ -176,9 +176,10 @@ describe('WebAuthn (GD-31)', () => {
     const synced = new SoftAuthenticator('carpals.ir', 'https://admin.carpals.ir', true);
     expect((await register(staff, synced)).confirmed.status).toBe(200);
     const s = await interaction('cp-web-admin');
+    // Contract 1.3.0 (S12): only a synced key, so the staff sign-in offers the enrolment of a device-bound one; the
+    // synced key still cannot pass the second factor.
     expect((await s.post('/v1/auth/signin', { interaction_id: s.id, email: staff.email, password: PASSWORD })).body).toEqual({
-      next: 'mfa',
-      mfa_methods: ['webauthn'],
+      next: 'enrol_passkey',
     });
     const o = await s.post('/v1/auth/webauthn/options', { interaction_id: s.id, purpose: 'mfa' });
     const denied = await s.post('/v1/auth/mfa/verify', { interaction_id: s.id, method: 'webauthn', assertion: synced.assert(o.body) });

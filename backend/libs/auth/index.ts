@@ -29,7 +29,8 @@ const D = 24 * H;
  * Registered OAuth clients (40 §2.2): access-token lifetime, refresh-token
  * idle (sliding) and absolute lifetimes (= session lifetime), client kind and
  * token binding. Redirect URIs are configuration (CARPAL_OAUTH_REDIRECT_URIS). The BFF clients are DPoP-bound
- * (GD-06 amendment 2026-11-04); cp-web-portal and cp-web-admin follow when their BFFs exist (NI-08).
+ * (GD-06 amendment 2026-11-04); cp-web-admin since S12 (contract 1.3.0, admin console BR-01); cp-web-portal follows
+ * when its BFF exists (NI-08).
  */
 export const CLIENTS = {
   'cp-mobile': { accessTtlS: 300, refreshIdleMs: 30 * D, sessionAbsoluteMs: 90 * D, kind: 'public', binding: 'dpop', audience: 'api' },
@@ -54,7 +55,7 @@ export const CLIENTS = {
     refreshIdleMs: 30 * 60_000,
     sessionAbsoluteMs: 8 * H,
     kind: 'confidential',
-    binding: 'mtls',
+    binding: 'dpop',
     audience: 'admin-api',
   },
   'cp-ssr': { accessTtlS: 300, refreshIdleMs: 0, sessionAbsoluteMs: 0, kind: 'confidential', binding: 'dpop', audience: 'api' },

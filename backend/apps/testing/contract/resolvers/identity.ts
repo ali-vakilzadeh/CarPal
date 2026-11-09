@@ -5,6 +5,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { expect } from 'vitest';
 import { LinkTokens } from '#libs/link-tokens/index.js';
+import { SoftAuthenticator } from '#libs/testing/webauthn.js';
 import { base32Decode, hotp, totpStep } from '#modules/identity/domain/credentials.js';
 import { openCase, purpose, REASON } from '../../s8-support.js';
 import { ok, type Actor, type Harness, type Json, type Resolvers, LINK_SECRET } from '../harness.js';
@@ -42,6 +43,31 @@ async function interaction(h: Harness): Promise<{ id: string; cookie: string }> 
     id: new URL(res.headers.location!).searchParams.get('interaction_id')!,
     cookie: (res.headers['set-cookie'] ?? '').split(';')[0]!,
   };
+}
+
+/** A cp-web-admin interaction (contract 1.3.0): a staff member with a password and no passkey, at enrol_passkey. */
+async function staffEnrolment(h: Harness): Promise<{ id: string; cookie: string; code: string }> {
+  const staff = await h.fx.staff('platform_moderator');
+  await h.fx.withPassword(staff, PASSWORD);
+  const p = pkce();
+  const q = {
+    ...authorizeQuery(p),
+    client_id: 'cp-web-admin',
+    redirect_uri: 'https://admin.carpals.ir/bff/oauth/callback',
+    scope: 'openid',
+  };
+  const res = await h.auth.request({ path: `/oauth/authorize?${new URLSearchParams(q).toString()}`, client: null });
+  if (res.status !== 302) throw new Error(`authorize ${res.status} ${res.text}`);
+  const ia = {
+    id: new URL(res.headers.location!).searchParams.get('interaction_id')!,
+    cookie: (res.headers['set-cookie'] ?? '').split(';')[0]!,
+  };
+  const next = ok(
+    await authPost(h, '/v1/auth/signin', ia.cookie, { interaction_id: ia.id, email: staff.email, password: PASSWORD }),
+    'signin',
+  );
+  expect(next).toEqual({ next: 'enrol_passkey' });
+  return { ...ia, code: h.auth.mail(staff.email, 'identity.otp_code').at(-1)!.variables.code! };
 }
 
 const authPost = (h: Harness, path: string, cookie: string, body: Json) =>
@@ -212,6 +238,28 @@ export const resolvers: Resolvers = {
       headers: { cookie: ia.cookie },
       body: { interaction_id: ia.id },
       check: (res) => expect(res.body).toEqual({ next: 'complete' }),
+    };
+  },
+  'auth.passkey_enrol_options': async (h) => {
+    const ia = await staffEnrolment(h);
+    return {
+      as: none,
+      headers: { cookie: ia.cookie },
+      body: { interaction_id: ia.id, code: ia.code },
+      check: (res) => expect(res.body).toMatchObject({ attestation: 'none', authenticatorSelection: { userVerification: 'required' } }),
+    };
+  },
+  'auth.passkey_enrol': async (h) => {
+    const ia = await staffEnrolment(h);
+    const options = ok(
+      await authPost(h, '/v1/auth/passkey-enrolment/options', ia.cookie, { interaction_id: ia.id, code: ia.code }),
+      'options',
+    );
+    return {
+      as: none,
+      headers: { cookie: ia.cookie },
+      body: { interaction_id: ia.id, attestation: new SoftAuthenticator('carpals.ir', 'https://admin.carpals.ir').register(options) },
+      check: (res) => expect(res.body).toEqual({ next: 'mfa', mfa_methods: ['webauthn'] }),
     };
   },
   'auth.social_start': async (h) => {

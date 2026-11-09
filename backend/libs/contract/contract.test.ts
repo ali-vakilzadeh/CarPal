@@ -12,11 +12,11 @@ describe('generated contract', () => {
     }
   });
 
-  it('declares 411 operations and 463 routes (S11: me.deactivate, auth.reactivate, exchange rates, contract 1.2.0)', () => {
+  it('declares 414 operations and 466 routes (S12: staff passkey enrolment, admin.staff_me, contract 1.3.0)', () => {
     const r = loadRegistry();
-    expect(r.operationCount).toBe(411);
-    expect(OPERATION_IDS).toHaveLength(411);
-    expect(r.routeCount).toBe(463);
+    expect(r.operationCount).toBe(414);
+    expect(OPERATION_IDS).toHaveLength(414);
+    expect(r.routeCount).toBe(466);
     for (const op of r.operations) {
       expect(op.routes.length, op.opId).toBeGreaterThan(0);
       for (const route of op.routes) {

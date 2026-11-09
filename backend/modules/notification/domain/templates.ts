@@ -85,6 +85,16 @@ export const TEMPLATES: Catalog = {
       text: 'پس از یک فعالیت غیرعادی ({kind}) یک دستگاه را از حساب شما خارج کردیم. نشست‌ها را بررسی و در صورت نیاز گذرواژه را عوض کنید.',
     },
   },
+  'identity.staff_passkey_added': {
+    en: {
+      subject: 'A passkey was added to your CarPal staff account',
+      text: 'A passkey was added to your staff account and your other sessions were signed out. If this was not you, tell a platform admin now.',
+    },
+    fa: {
+      subject: 'یک کلید عبور به حساب کارکنان کارپال شما افزوده شد',
+      text: 'یک کلید عبور به حساب کارکنان شما افزوده شد و نشست‌های دیگرتان بسته شدند. اگر شما نبودید، همین حالا به یک مدیر پلتفرم خبر دهید.',
+    },
+  },
   'identity.consent_request': {
     en: {
       subject: '{organization_name} asks for your permission',

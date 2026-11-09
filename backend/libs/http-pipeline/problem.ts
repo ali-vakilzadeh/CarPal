@@ -44,6 +44,10 @@ const TITLES: Record<ErrorCode, [en: string, fa: string]> = {
   NOT_FOUND: ['Not found.', 'پیدا نشد.'],
   OVERLOADED: ['The service is busy. Please try again shortly.', 'سرویس شلوغ است. لطفاً کمی بعد دوباره تلاش کنید.'],
   PAYLOAD_TOO_LARGE: ['The request is too large.', 'درخواست بیش از حد بزرگ است.'],
+  PASSKEY_NOT_DEVICE_BOUND: [
+    'Staff need a security key or a passkey kept on this device only; a passkey synced across devices cannot be used.',
+    'کارکنان به کلید امنیتی یا کلید عبوری نیاز دارند که فقط روی همین دستگاه بماند؛ کلید عبورِ همگام‌شده میان دستگاه‌ها پذیرفته نیست.',
+  ],
   PRECONDITION_REQUIRED: ['An If-Match header is required.', 'سرآیند If-Match لازم است.'],
   PUBLISH_REQUIREMENTS_UNMET: ['Some requirements for publishing are missing.', 'برخی شرایط انتشار کامل نیست.'],
   RATE_LIMITED: ['Too many requests. Please wait a moment.', 'درخواست‌ها بیش از حد است. لطفاً کمی صبر کنید.'],

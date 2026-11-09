@@ -18,7 +18,7 @@ test('falls back to Persian, right to left, for a language the console does not 
   await expect(html).toHaveAttribute('lang', 'fa');
   await expect(html).toHaveAttribute('dir', 'rtl');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('کنسول مدیریت');
-  await expect(page.getByTestId('env-badge')).toContainText('توسعه');
+  await expect(page.getByTestId('env-badge')).toContainText('DEV');
   await expect.poll(() => fontLoaded(page, 'Vazirmatn')).toBe(true);
   await expectNoAxeViolations(page);
   await context.close();
@@ -32,7 +32,7 @@ test('renders English left to right with the environment badge and the admin con
   await expect(html).toHaveAttribute('lang', 'en');
   await expect(html).toHaveAttribute('dir', 'ltr');
   await expect(page.getByTestId('env-badge')).toContainText('DEV');
-  await expect(page.getByTestId('contract-line')).toHaveText('Admin contract 1.2.0: 67 operations');
+  await expect(page.getByTestId('contract-line')).toHaveText('Admin contract 1.3.0: 63 operations');
   await expect.poll(() => fontLoaded(page, 'Atkinson Hyperlegible Next')).toBe(true);
   await expectNoAxeViolations(page);
   await context.close();

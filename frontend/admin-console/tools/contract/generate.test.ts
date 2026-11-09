@@ -25,11 +25,12 @@ describe('admin contract generation (AC1.T2)', () => {
     expect(contractProblems(registry())).toEqual([]);
   });
 
-  it('selects the 62 admin-api operations of contract 1.2.0 plus the GD-07 api reads', () => {
+  it('selects the 63 admin-api operations of contract 1.3.0 and no api reads (AC2: the api host refuses admin tokens)', () => {
     const ops = selectOperations(registry());
-    expect([...ops.values()].filter((o) => o.plane === 'admin')).toHaveLength(62);
-    expect([...ops.values()].filter((o) => o.plane === 'api-read').map((o) => o.path)).toHaveLength(API_READS.length);
-    expect(ADMIN_CONTRACT).toMatchObject({ version: '1.2.0', adminOperationCount: 62, apiReadCount: API_READS.length });
+    expect([...ops.values()].filter((o) => o.plane === 'admin')).toHaveLength(63);
+    expect(API_READS).toEqual([]);
+    expect([...ops.values()].filter((o) => o.plane === 'api-read')).toHaveLength(0);
+    expect(ADMIN_CONTRACT).toMatchObject({ version: '1.3.0', adminOperationCount: 63, apiReadCount: 0 });
     for (const op of ops.values()) if (op.plane === 'admin') expect(op.host).toBe('admin-api');
   });
 
@@ -48,7 +49,8 @@ describe('admin contract generation (AC1.T2)', () => {
       roleQualifier: 'moderation changes only',
       aal3: true,
     });
-    expect(ADMIN_OPERATIONS['me.get']).toMatchObject({ plane: 'api-read', host: 'api', roles: [] });
+    // Contract 1.3.0 (BR-04): every staff role may read itself.
+    expect(ADMIN_OPERATIONS['admin.staff_me']).toMatchObject({ method: 'GET', path: '/v1/admin/me', roles: ['ADM', 'MOD', 'SUP', 'CRV'] });
   });
 
   it('builds the role table from the STF(...) sets', () => {

@@ -10,7 +10,7 @@
 import { Injectable } from '@nestjs/common';
 import { sql } from 'kysely';
 import { writeAudit } from '#libs/audit/index.js';
-import { SessionStore } from '#libs/auth/index.js';
+import { CLIENTS, SessionStore } from '#libs/auth/index.js';
 import { Authorizer } from '#libs/authz/index.js';
 import { ApiError } from '#libs/contract/index.js';
 import { Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
@@ -89,6 +89,40 @@ async function loadUser(scope: TxScope, id: string, lock = false): Promise<UserR
   const u = await (lock ? q.forUpdate() : q).executeTakeFirst();
   if (!u) throw new ApiError('NOT_FOUND');
   return u;
+}
+
+/**
+ * admin.staff_me (contract 1.3.0, admin console BR-04): the signed-in staff member for the console's shell. me.get is
+ * on the api host and refuses an admin-api token, so the console reads its caller here. Roles come from server state
+ * (SEC-AU-3); the session end is the absolute limit of cp-web-admin (8 h), not the idle one.
+ */
+@Injectable()
+@Operation('admin.staff_me')
+export class AdminStaffMeHandler implements OperationHandler {
+  constructor(private readonly sessions: SessionStore) {}
+
+  async handle(ctx: OperationContext): Promise<OperationResult> {
+    const s = staffOf(ctx);
+    if (ctx.principal.kind !== 'staff') throw new ApiError('NOT_FOUND');
+    const principal = ctx.principal;
+    const session = await this.sessions.get(principal.sessionId);
+    if (!session) throw new ApiError('UNAUTHENTICATED', { detail: 'session revoked or unknown' });
+    const u = await ctx.tx((scope) => loadUser(scope, s.userId), { readOnly: true });
+    const absoluteMs = CLIENTS['cp-web-admin'].sessionAbsoluteMs;
+    return {
+      body: {
+        user_id: u.id,
+        display_name: u.display_name ?? u.full_name,
+        email: u.email,
+        locale: u.locale,
+        timezone: u.timezone,
+        platform_roles: PLATFORM_ROLES.filter((r) => s.roles.includes(r)),
+        acr: 'aal3',
+        auth_time: iso(new Date(principal.authTime * 1000)),
+        session_expires_at: iso(new Date(Date.parse(session.createdAt) + absoluteMs)),
+      },
+    };
+  }
 }
 
 type UserSearch = { email?: string; phone?: string; name?: string; user_id?: string };

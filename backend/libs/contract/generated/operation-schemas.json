@@ -474,6 +474,65 @@
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/AuthNext"
       }
     },
+    "auth.passkey_enrol_options": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "type": "object",
+        "properties": {
+          "interaction_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$"
+          }
+        },
+        "required": [
+          "interaction_id",
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "type": "object",
+        "x-external": "WebAuthn Level 3 PublicKeyCredential*OptionsJSON"
+      }
+    },
+    "auth.passkey_enrol": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "type": "object",
+        "properties": {
+          "interaction_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "attestation": {
+            "type": "object",
+            "x-server-schema": "WebAuthnAttestation"
+          }
+        },
+        "required": [
+          "interaction_id",
+          "attestation"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/AuthNext"
+      }
+    },
     "auth.social_start": {
       "query": {
         "type": "object",
@@ -12993,6 +13052,17 @@
           "status"
         ],
         "additionalProperties": false
+      }
+    },
+    "admin.staff_me": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffMe"
       }
     },
     "admin.users_search": {

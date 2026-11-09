@@ -26,7 +26,9 @@ export function proxy(request: NextRequest): NextResponse {
     nonce,
     dev: process.env.NODE_ENV === 'development',
     https,
-    hsts: https && env.CARPAL_ADMIN_ENV === 'prod',
+    // OQ-11 (answered 2026-11-09): outside dev every page opens over https only. env.ts refuses an http origin there;
+    // HSTS keeps browsers on https (nginx answers port 80 with a redirect, AC11).
+    hsts: https && env.CARPAL_ADMIN_ENV !== 'dev',
   });
 
   const lang = url.searchParams.get('lang');
