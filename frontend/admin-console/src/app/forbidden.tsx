@@ -1,6 +1,7 @@
-// 403 (AC1.T5, experimental.authInterrupts): rendered when a page calls forbidden(). AC4.T6 adds the role the
-// section needs; "Request access" stays text only until BR-10.
+// 403 (AC1.T5, experimental.authInterrupts): the root fallback if forbidden() is ever called. Console pages do not call
+// it: they render the no-permission state inside the shell (src/components/shell/console-states.tsx, AC4.T6, D-26).
 import type { Metadata } from 'next';
+import { PlainFrame } from '@/components/shell/plain-frame';
 import { SystemPage, systemMetaTitle } from '@/components/shell/system-page';
 import { getTranslator } from '@/lib/i18n/dictionary';
 import { requestLocale } from '@/server/request-locale';
@@ -10,5 +11,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Forbidden() {
-  return <SystemPage kind="forbidden" t={getTranslator(await requestLocale())} />;
+  return (
+    <PlainFrame>
+      <SystemPage kind="forbidden" t={getTranslator(await requestLocale())} />
+    </PlainFrame>
+  );
 }

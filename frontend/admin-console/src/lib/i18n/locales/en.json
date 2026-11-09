@@ -3,10 +3,13 @@
     "console": {
       "name": "CarPal Admin",
       "metaTitle": "Admin console",
-      "placeholderTitle": "Admin console",
-      "placeholderText": "The console is being built. Staff sign-in with a passkey arrives in a later stage; until then this page only checks language, direction, themes and the environment badge.",
       "contractLine": "Admin contract {{version}}: {{n}} operations",
-      "rolesLine": "Staff roles: {{roles}}"
+      "home": {
+        "title": "Welcome, {{name}}",
+        "text": "You are signed in with your security key. My work, the queues and the dashboard arrive in the next stages; each section on the left opens when it is built.",
+        "roles": "Your roles: {{roles}}",
+        "sections": "Sections you can open"
+      }
     },
     "env": {
       "label": "Environment",
@@ -27,7 +30,9 @@
       "forbidden": {
         "metaTitle": "No access",
         "title": "You don't have access to this page",
-        "text": "Your staff role does not include this section. Ask a platform admin if you need it for your work."
+        "text": "Your staff role does not include this section. Ask a platform admin if you need it for your work.",
+        "needs": "This page needs one of these staff roles: {{roles}}.",
+        "request": "To get access, ask a platform admin to grant the role. Access requests from the console come later."
       },
       "error": {
         "metaTitle": "Something went wrong",
@@ -36,6 +41,176 @@
         "reference": "Reference: {{digest}}"
       },
       "home": "Go to the console home"
+    },
+    "roles": {
+      "ADM": "Platform admin",
+      "MOD": "Moderator",
+      "SUP": "Support",
+      "CRV": "Community reviewer"
+    },
+    "signin": {
+      "metaTitle": "Staff sign-in",
+      "title": "Staff sign-in",
+      "intro": "Sign in with your staff email and password, then confirm with your security key.",
+      "email": "Work email",
+      "password": "Password",
+      "continue": "Continue",
+      "withKey": "Sign in with a security key",
+      "or": "or",
+      "forgotLink": "Forgot your password?",
+      "forgot": {
+        "title": "Reset your password",
+        "text": "Enter your work email. If it belongs to an account, we send a link to set a new password.",
+        "send": "Send link",
+        "sent": "If the address belongs to an account, a link is on its way. Open it, set a new password, then sign in here again.",
+        "back": "Back to sign-in"
+      },
+      "stepUpTitle": "Confirm it's you",
+      "stepUpText": "This action needs a fresh confirmation with your security key. You will return to the page you were on.",
+      "errors": {
+        "invalid": "The email or password is not correct. If your staff account was disabled, ask a platform admin.",
+        "emailMissing": "Enter your work email address.",
+        "passwordMissing": "Enter your password.",
+        "generic": "Something went wrong. Try again.",
+        "network": "The sign-in service cannot be reached. Check your connection and try again.",
+        "keyFailed": "This security key was not accepted. Use the key registered for your staff account.",
+        "notDeviceBound": "This passkey syncs across devices. Staff sign-in accepts only a key bound to one device: a security key, or this computer's built-in key (for example Windows Hello).",
+        "codeWrong": "The code is not correct. Check the latest email and try again.",
+        "codeFormat": "Enter the 6-digit code from the email.",
+        "alreadyRegistered": "This security key is already registered. Use another key, or start again and sign in with this one.",
+        "unsupported": "This browser cannot use security keys. Use a current version of Chrome, Edge, Firefox or Safari."
+      },
+      "mfa": {
+        "title": "Confirm with your security key",
+        "text": "Insert or touch your security key, or use this computer's built-in key, when the browser asks.",
+        "action": "Use security key",
+        "added": "Security key added. Now confirm with it once to finish signing in."
+      },
+      "enrol": {
+        "title": "Set up your security key",
+        "why": "Your staff account has no security key yet. Staff sign in with a key that stays on one device: a USB or NFC security key, or this computer's built-in key. Passkeys that sync to a phone or a cloud account are not accepted.",
+        "sent": "We sent a 6-digit code to your work email. Enter it, then follow the browser's prompt to create the key.",
+        "code": "Code from the email",
+        "codeHint": "The code is valid for 10 minutes.",
+        "create": "Create security key",
+        "noCode": "No email after a minute? Start again to get a new code."
+      },
+      "locked": {
+        "title": "Sign-in is paused",
+        "text": "Too many attempts. You can try again when the timer ends.",
+        "ready": "You can try again now.",
+        "back": "Back to sign-in"
+      },
+      "expired": {
+        "title": "This sign-in page has expired",
+        "text": "Sign-in pages are valid for 30 minutes. Start again; you will come back to the page you wanted.",
+        "restart": "Start again"
+      },
+      "gate": {
+        "title": "Use the company network",
+        "text": "The admin console can only be reached from the company network. Connect to it (or to the company VPN) and try again."
+      },
+      "finishing": "Signing you in…",
+      "outcome": {
+        "expired": "The sign-in took too long or was opened in another tab. Sign in again.",
+        "state": "The sign-in took too long or was opened in another tab. Sign in again.",
+        "issuer": "Sign-in failed. Sign in again; if it keeps failing, tell the platform team.",
+        "failed": "Sign-in failed. Sign in again; if it keeps failing, tell the platform team.",
+        "cancelled": "Sign-in was cancelled.",
+        "step_up": "The sign-in did not use a security key bound to one device. Use your security key.",
+        "account": "Confirm with the same staff account you are signed in with.",
+        "not_staff": "This account has no staff role. Sign in with your staff account."
+      }
+    },
+    "signedOut": {
+      "metaTitle": "Signed out",
+      "idleTitle": "You were signed out",
+      "idleText": "For security, staff sessions end after 30 minutes without activity. Sign in again to continue where you were.",
+      "endedTitle": "Your session has ended",
+      "endedText": "Staff sessions end after 8 hours, when your security key is changed, or when a platform admin ends them. Sign in again to continue.",
+      "logoutTitle": "You are signed out",
+      "logoutText": "You signed out of the admin console. Close the browser if you share this computer.",
+      "signinTitle": "Sign-in did not finish",
+      "signIn": "Sign in again"
+    },
+    "shell": {
+      "openNav": "Open the section menu",
+      "closeNav": "Close the section menu",
+      "nav": {
+        "label": "Console sections",
+        "groups": {
+          "work": "Work",
+          "records": "Records",
+          "oversight": "Oversight",
+          "settings": "Settings"
+        },
+        "dashboard": "Dashboard",
+        "approvals": "Pending approvals",
+        "verification": "Verification",
+        "reviews": "Reviews",
+        "content": "Content",
+        "inventory": "Inventory",
+        "disputes": "Disputes & appeals",
+        "privacy": "Privacy requests",
+        "users": "Users",
+        "orgs": "Organizations",
+        "taxonomy": "Taxonomy",
+        "ai": "AI oversight",
+        "mcp": "MCP clients",
+        "analytics": "Analytics",
+        "audit": "Audit log",
+        "plans": "Plans & entitlements",
+        "flags": "Feature flags",
+        "rates": "Exchange rates",
+        "retention": "Data retention",
+        "staff": "Staff"
+      },
+      "lookup": {
+        "label": "Look up",
+        "placeholder": "User, organization or record ID",
+        "soon": "Lookup arrives with the user and organization screens."
+      },
+      "myQueue": "My queue",
+      "myQueueSoon": "Queue counts arrive with My work.",
+      "account": {
+        "menu": "Account menu",
+        "roles": "Roles: {{roles}}",
+        "myActions": "My actions in the audit log",
+        "signOut": "Sign out"
+      },
+      "section": {
+        "text": "This section is not built yet. It arrives in stage {{stage}} of the console plan.",
+        "needs": "Who can open it: {{roles}}"
+      },
+      "idle": {
+        "title": "Still there?",
+        "text": "Without activity you will be signed out in {{time}}.",
+        "stay": "Stay signed in",
+        "signOut": "Sign out now",
+        "endText": "Your 8-hour session ends in {{time}}. Finish what you are doing; you will need to sign in again."
+      },
+      "stepUp": {
+        "title": "Confirm it's you",
+        "text": "This action needs a fresh confirmation with your security key. You will come back to this page and the action runs once.",
+        "continue": "Confirm with security key",
+        "failed": "The action could not be kept for after the confirmation. Try again."
+      },
+      "shortcuts": {
+        "title": "Keyboard shortcuts",
+        "open": "Keyboard shortcuts",
+        "key": "Key",
+        "action": "Action",
+        "unavailable": "not on this page",
+        "typing": "Shortcuts are off while you type in a field.",
+        "lookup": "Go to the lookup box",
+        "next": "Next item",
+        "previous": "Previous item",
+        "approve": "Approve",
+        "reject": "Reject",
+        "escalate": "Escalate",
+        "audit": "Open the audit trail",
+        "help": "Show this list"
+      }
     }
   }
 }

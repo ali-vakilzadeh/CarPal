@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// E2E (GD-14): runs the built console (`pnpm e2e` builds first) in Chromium on :3300 (GD-13). From AC3 on, suites
-// that sign in expect `pnpm dev` running in backend/.
+// E2E (GD-14): runs the built console (`pnpm e2e` builds first) in Chromium on :3300 (GD-13). From AC4 on, suites
+// that sign in (tests/e2e/signin.spec.ts) expect `pnpm dev` running in backend/ with the console's settings (README
+// "End-to-end tests"); strict mode passes CARPAL_STRICT_AUTH=1 and CARPAL_ADMIN_CLIENT_PRIVATE_JWKS through.
 const PORT = Number(process.env.CARPAL_E2E_PORT ?? 3300);
 
 export default defineConfig({
@@ -27,6 +28,12 @@ export default defineConfig({
       NEXT_TELEMETRY_DISABLED: '1',
       CARPAL_ADMIN_ENV: 'dev',
       CARPAL_ADMIN_ORIGIN: `http://localhost:${PORT}`,
+      // The backend registers https redirect URIs only; the /id proxy brings the code back to http (OQ-11).
+      CARPAL_ADMIN_OAUTH_REDIRECT_URI: `https://localhost:${PORT}/bff/oauth/callback`,
+      CARPAL_STRICT_AUTH: process.env.CARPAL_STRICT_AUTH ?? '0',
+      ...(process.env.CARPAL_ADMIN_CLIENT_PRIVATE_JWKS
+        ? { CARPAL_ADMIN_CLIENT_PRIVATE_JWKS: process.env.CARPAL_ADMIN_CLIENT_PRIVATE_JWKS }
+        : {}),
     },
   },
 });

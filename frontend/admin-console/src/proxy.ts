@@ -4,9 +4,12 @@
 //   - the UI language (GD-05, no locale segment): cpa_locale cookie, else Accept-Language, else the deployment
 //     default; passed to server components as the x-carpal-locale request header;
 //   - ?lang=fa|en and ?theme=light|sun|dark|auto store the choice in a cookie and redirect to the same page without
-//     the parameter (work without JavaScript; the avatar menu of AC4 uses the same links).
+//     the parameter (work without JavaScript; the avatar menu of AC4 uses the same links);
+//   - the sign-in pages (/id/…) speak the language the authorize request named (ui_locales), as the PWA's do;
+//   - the page's path and query go to server components as x-carpal-path, so the console layout can send a signed-out
+//     browser to the sign-in and back to the same page (AC4).
 import { NextResponse, type NextRequest } from 'next/server';
-import { LOCALE_COOKIE, LOCALE_HEADER, isLocale, negotiateLocale } from './lib/i18n/locales';
+import { LOCALE_COOKIE, LOCALE_HEADER, PATH_HEADER, isLocale, negotiateLocale } from './lib/i18n/locales';
 import { ONE_YEAR_S, THEME_COOKIE, isTheme } from './lib/theme';
 import { serverEnv } from './server/env';
 import { createNonce, pageSecurityHeaders } from './server/security-headers';
@@ -45,21 +48,22 @@ export function proxy(request: NextRequest): NextResponse {
     return secure(response, headers);
   }
 
-  const locale = negotiateLocale(
-    request.headers.get('accept-language'),
-    request.cookies.get(LOCALE_COOKIE)?.value,
-    env.CARPAL_ADMIN_DEFAULT_LOCALE,
-  );
+  const uiLocales = url.pathname.startsWith('/id/') ? url.searchParams.get('ui_locales') : null;
+  const locale = isLocale(uiLocales)
+    ? uiLocales
+    : negotiateLocale(request.headers.get('accept-language'), request.cookies.get(LOCALE_COOKIE)?.value, env.CARPAL_ADMIN_DEFAULT_LOCALE);
   // The request carries the CSP too: Next.js takes the nonce from it while rendering (Next.js CSP guide).
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('content-security-policy', headers['content-security-policy']!);
   requestHeaders.set('x-nonce', nonce);
   requestHeaders.set(LOCALE_HEADER, locale);
+  requestHeaders.set(PATH_HEADER, `${url.pathname}${url.search}`);
   return secure(NextResponse.next({ request: { headers: requestHeaders } }), headers);
 }
 
 export const config = {
-  // Page paths only: not the BFF and API routes (/bff, /api; AC3), Next.js internals, the design-system files (/ds)
-  // or any file with an extension.
-  matcher: ['/((?!(?:api|bff)(?:/|$)|_next/|ds/|.*\\.[A-Za-z0-9]+$).*)'],
+  // Page paths only: not the BFF and API routes (/bff, /api) or the proxied auth-host endpoints (/id/oauth, /id/v1,
+  // /id/.well-known), which set their own headers (src/server/bff/http.ts, AC3.T6); not Next.js internals, the
+  // design-system files (/ds) or any file with an extension. The sign-in pages under /id (AC4) are pages and match.
+  matcher: ['/((?!(?:api|bff)(?:/|$)|id/(?:oauth|v1|\\.well-known)(?:/|$)|_next/|ds/|.*\\.[A-Za-z0-9]+$).*)'],
 };

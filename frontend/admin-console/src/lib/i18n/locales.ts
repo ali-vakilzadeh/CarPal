@@ -8,6 +8,8 @@ export const DEFAULT_LOCALE: Locale = 'fa';
 export const LOCALE_COOKIE = 'cpa_locale';
 /** Request header the proxy sets with the negotiated locale for server components. */
 export const LOCALE_HEADER = 'x-carpal-locale';
+/** Request header the proxy sets with the page's path and query (the sign-in return path, AC4). */
+export const PATH_HEADER = 'x-carpal-path';
 
 export function isLocale(value: unknown): value is Locale {
   return typeof value === 'string' && (LOCALES as readonly string[]).includes(value);

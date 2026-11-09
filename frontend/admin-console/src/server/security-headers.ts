@@ -23,7 +23,8 @@ export function contentSecurityPolicy(o: CspOptions): string {
     ['img-src', join("'self'", 'data:', 'blob:')],
     ['font-src', "'self'"],
     ['connect-src', join("'self'", o.dev ? 'ws:' : '')],
-    ['worker-src', "'none'"],
+    // The proof-of-work solver of the staff sign-in runs in a same-origin worker (src/lib/api/pow.ts, AC4.T1).
+    ['worker-src', "'self'"],
     ['manifest-src', "'none'"],
     ['frame-src', "'none'"],
     ['object-src', "'none'"],

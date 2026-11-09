@@ -6,9 +6,10 @@ oversight and analytics. It is its own Next.js app with its own BFF for the `cp-
 audience `admin-api`) and is served only on `admin.<DOMAIN>` behind an access gate.
 
 The build plan and stage log is [dev-plan.json](dev-plan.json). Sources of truth: `Docs/40.API contract.md`
-(contract 1.2.0, §23 admin plane) for operations and security rules, `Docs/23.Admin_WebUI_screens.md` for screens.
+(contract 1.3.0, §23 admin plane) for operations and security rules, `Docs/23.Admin_WebUI_screens.md` for screens.
 
-Status: stage AC1 (foundation) is done. There is no sign-in, BFF or real screen yet (AC2–AC4).
+Status: AC1 (foundation), AC2 (backend S12: staff sign-in, contract 1.3.0), AC3 (the BFF) and AC4 (staff sign-in
+and the console shell) are done. The sections in the navigation are placeholders until their stages (AC5 on).
 
 ## Requirements
 
@@ -21,31 +22,41 @@ Status: stage AC1 (foundation) is done. There is no sign-in, BFF or real screen 
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `pnpm install --frozen-lockfile` | Install dependencies. |
-| `pnpm dev` | Copy the design-system files to `public/ds`, then `next dev` on http://localhost:3200. |
-| `pnpm build` / `pnpm start` | Production build / serve on :3200. |
-| `pnpm check` | lint + logical CSS + typecheck + unit/DOM tests + contract:check + i18n:check + ds:check. |
-| `pnpm test` | Vitest unit (`*.test.ts`) and DOM (`*.test.tsx`) projects. |
-| `pnpm test:int` | Integration tests against backend `pnpm dev` (from AC3; none yet). |
-| `pnpm e2e` | Build, then Playwright (Chromium) on :3300. `pnpm e2e:install` downloads Chromium once. |
-| `pnpm contract:generate` / `contract:check` | Admin operation map, role table and types in `src/lib/api/generated/`. |
-| `pnpm i18n:check` | EN/FA parity of the console dictionary (`admin` + shared `common`, `format`). |
-| `pnpm ds:sync` / `ds:check` | Design-system copy in `shared/design-system/web` (same tool as the PWA). |
+| Command                                     | What it does                                                                              |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `pnpm install --frozen-lockfile`            | Install dependencies.                                                                     |
+| `pnpm dev`                                  | Copy the design-system files to `public/ds`, then `next dev` on http://localhost:3200.    |
+| `pnpm build` / `pnpm start`                 | Production build / serve on :3200.                                                        |
+| `pnpm check`                                | lint + logical CSS + typecheck + unit/DOM tests + contract:check + i18n:check + ds:check. |
+| `pnpm test`                                 | Vitest unit (`*.test.ts`) and DOM (`*.test.tsx`) projects.                                |
+| `pnpm test:int`                             | Integration tests against backend `pnpm dev` (see "Integration tests").                   |
+| `pnpm e2e`                                  | Build, then Playwright (Chromium) on :3300. `pnpm e2e:install` downloads Chromium once.   |
+| `pnpm contract:generate` / `contract:check` | Admin operation map, role table and types in `src/lib/api/generated/`.                    |
+| `pnpm i18n:check`                           | EN/FA parity of the console dictionary (`admin` + shared `common`, `format`).             |
+| `pnpm ds:sync` / `ds:check`                 | Design-system copy in `shared/design-system/web` (same tool as the PWA).                  |
 
 ## Layout
 
 ```
-src/app/                 root layout (lang/dir/theme, environment badge), (console)/ pages, 404/403/500
-src/proxy.ts             security headers on every page, language and theme switches (?lang=, ?theme=)
-src/server/              server-only: env, security headers, request locale (BFF from AC3 in src/server/bff/)
+src/app/                 root layout (lang/dir/theme), 404/403/500 in the plain frame
+src/app/(console)/       signed-in pages in the shell; [section]/ = placeholder of a section not built yet
+src/app/id/signin|signed-out  staff sign-in (A-AUTH-01) and the page after a session ends
+src/proxy.ts             security headers on every page, language and theme switches (?lang=, ?theme=), x-carpal-path
+src/server/              server-only: env, security headers, request locale, bff-runtime.ts, staff-session.ts
+                         (the session view for pages), hosted-signin.ts (the sign-in page's interaction)
+src/server/bff/          the admin BFF (copied from the PWA, GD-03): session, OAuth + DPoP + private_key_jwt, forwarder
+src/app/bff|api|id/…     thin route adapters over src/server/bff (/bff/*, /api/*, /id/oauth|v1|.well-known/*)
+src/lib/api/             typed client: api()/act() by operation id, problems, retries, TanStack provider
 src/lib/api/generated/   GENERATED admin contract: operations.ts, roles.ts, types.ts
 src/lib/roles/           role checks over the generated role table (UI hides; the server decides)
 src/lib/i18n/            i18next runtime; console strings in src/lib/i18n/locales/{en,fa}.json ('admin' namespace)
 src/lib/format/          Jalali/Gregorian dates, digits, money (copied from the PWA)
 src/components/ds/       design-system components (copied from the PWA)
-src/components/shell/    console frame, environment badge, system pages, providers
+src/components/shell/    plain frame, environment badge, system pages, console states (no access, not found),
+                         dialog, providers
+src/features/auth/       staff sign-in steps, /id auth client with proof of work, passkeys, error mapping
+src/features/shell/      console shell: navigation sections (role table), account menu, idle watch, step-up with
+                         replay, keyboard shortcuts
 tools/                   contract generator, design-system sync, logical-CSS check, i18n check, local Node
 tests/                   Vitest setup, Playwright specs
 ```
@@ -53,7 +64,79 @@ tests/                   Vitest setup, Playwright specs
 ## Environment
 
 See [.env.example](.env.example). `CARPAL_ADMIN_ENV` (dev | staging | prod) drives the environment badge that is
-always visible; outside dev the origin must be https.
+always visible; outside dev the origin must be https, strict mode must be on and the `cp-web-admin` private key set.
+
+## BFF
+
+The browser holds one cookie of its own, `__Host-cpa_sid` (HttpOnly, Secure, SameSite=Strict, a browser-session
+cookie). Tokens, the DPoP key and the staff profile stay in the server-side session.
+
+| Path                                                  | What it does                                                                               |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `GET /bff/login?return_to=…`                          | Sign-in at aal3 (code + PKCE) through the console's own `/id` pages.                       |
+| `GET /bff/reauth?return_to=…&intent=…`                | Step-up after STEP_UP_REQUIRED (prompt=login); the same staff member must sign in.         |
+| `GET /bff/oauth/callback`                             | Code exchange (DPoP-bound, private_key_jwt), aal3 check, `admin.staff_me`, new session id. |
+| `GET /bff/session`                                    | Who is signed in, roles, language, time zone, idle and absolute end. Never tokens.         |
+| `GET /bff/csrf`, `POST /bff/logout`                   | CSRF token; sign-out (revokes the refresh token).                                          |
+| `POST /bff/intents`, `POST /bff/intents/<id>/consume` | An action saved before a step-up, replayed once after it.                                  |
+| `/api/v1/admin/*`                                     | The 63 admin-api operations of the generated map, 1:1; anything else 404.                  |
+| `/id/oauth/*`, `/id/v1/auth/*`, `/id/.well-known/*`   | The auth host on this origin (sign-in steps, passkey enrolment).                           |
+
+Sessions end after 30 minutes without an API call and 8 hours after sign-in (the backend's `cp-web-admin`
+lifetimes). Writes need `X-CSRF-Token`, `Origin` and `Sec-Fetch-Site: same-origin`. Purpose-bound reads send
+`CarPal-Access-Purpose: <case|dispute|dsr|verification|approval>:<uuid>` (the client refuses a PURP call without one);
+DELETEs that need a reason send `CarPal-Reason`.
+
+## Sign-in and the shell (AC4)
+
+- Every page under `src/app/(console)` needs a staff session: without one the layout sends the browser to
+  `/bff/login?return_to=<the page>`. A sign-in that failed comes back with `?signin=<outcome>` and, when nobody is
+  signed in, goes to `/id/signed-out?reason=<outcome>` instead (no loops).
+- `/id/signin` is the staff sign-in: work email + password (proof of work in strict mode), then the security key. An
+  account without a device-bound key gets an emailed code and creates one in the same sign-in (the browser prompt),
+  then confirms with it. "Sign in with a security key" uses the key alone; a step-up (`/bff/reauth`) shows it first.
+  Synced passkeys are refused (SEC-ADM-2). No sign-up, no one-time-code sign-in, no social sign-in.
+- At the first sign-in the BFF sets `cpa_locale` from the staff member's language, unless this browser chose one.
+- The navigation shows the sections whose operations one of the caller's roles may call (`src/features/shell/sections.ts`
+  over the generated role table). A section without access shows the no-permission state with the roles that may open
+  it. Console pages render that state (and "not found") themselves: never call `forbidden()` or `notFound()` under
+  `(console)` — in Next.js 16.4.3 they leave a blank page under the Trusted Types CSP (dev-plan D-26).
+- Idle: a warning 5 minutes before the 30-minute end ("Stay signed in" makes an API call), then sign-out and
+  `/id/signed-out?reason=idle`. The deadline is measured against the server's clock (`server_time` in `/bff/session`).
+- Step-up: `useStepUp()` runs an action; on `STEP_UP_REQUIRED` it explains, saves the action (`/bff/intents`) and goes
+  through `/bff/reauth`; back on the page, `useIntentHandler(type, …)` repeats it once.
+- Keyboard: `useShortcut('next' | 'previous' | 'approve' | 'reject' | 'escalate' | 'audit', handler)` per page; `/` goes
+  to the lookup box, `?` lists the keys. Off while typing and while a dialog is open.
+
+## Integration tests
+
+`pnpm test:int` signs a fresh ADM account in through the BFF (password, emailed code, a software security key, then
+the key at aal3) and calls the forwarder. It needs backend `pnpm dev` with these settings (environment or
+`backend/.env`; see `backend/.env.example`):
+
+```
+CARPAL_OAUTH_REDIRECT_URIS={…, "cp-web-admin":["https://localhost:3200/bff/oauth/callback","https://localhost:3300/bff/oauth/callback"]}
+CARPAL_WEBAUTHN_RP_ID=localhost
+CARPAL_WEBAUTHN_ORIGINS=["https://localhost:3000","http://localhost:3200","http://localhost:3300"]
+CARPAL_RATE_LIMIT_SCALE=100
+```
+
+Strict mode (the acceptance run): make the key files with `node backend/deploy/gen-client-keys.mjs >pwa-keys.json`
+and `node backend/deploy/gen-client-keys.mjs --admin >admin-keys.json`; start the backend with `CARPAL_STRICT_AUTH=1`
+and `CARPAL_OAUTH_CLIENT_JWKS` set to the output of `gen-client-keys.mjs --public pwa-keys.json admin-keys.json`; then
+run `pnpm test:int` with `CARPAL_STRICT_AUTH=1` and `CARPAL_ADMIN_CLIENT_PRIVATE_JWKS` set to the content of
+`admin-keys.json`. The test creates its account with backend `pnpm dev:staff create` (dev only), or uses
+`CARPAL_INT_STAFF_EMAIL` (password `admin-console-int-password`, no passkey yet).
+
+## End-to-end tests
+
+`pnpm e2e` builds and runs Playwright on :3300. `tests/e2e/smoke.spec.ts` and `bff.spec.ts` need no backend.
+`tests/e2e/signin.spec.ts` (AC4) signs real staff in: it needs backend `pnpm dev` with the settings above (the
+`:3300` redirect URI and WebAuthn origin), creates one account per test with backend `pnpm dev:staff create` (dev
+only; `e2e-…@staff.carpals.test` accounts stay in the dev database), reads the emailed code from
+`backend/.data/outbox-mail.jsonl`, and uses Chrome's virtual authenticator as a device-bound security key. For the
+strict run, export `CARPAL_STRICT_AUTH=1` and `CARPAL_ADMIN_CLIENT_PRIVATE_JWKS` before `pnpm e2e`; the Playwright
+config passes them, and the dev redirect URI, to `next start`. The idle test mocks the browser clock.
 
 ## Language and theme
 
@@ -64,7 +147,7 @@ PWA's because cookies on localhost are shared across ports.
 
 ## Rules
 
-- No widening: the BFF will forward only the operations in `src/lib/api/generated/operations.ts`.
+- No widening: the BFF forwards only the operations in `src/lib/api/generated/operations.ts`.
 - No personal data in the browser: no Web Storage or IndexedDB for responses (lint-enforced), no service worker, no
   analytics; every page answers `Cache-Control: private, no-store` and `X-Robots-Tag: noindex`.
 - Logical CSS properties only; colours and sizes from the design-system tokens.

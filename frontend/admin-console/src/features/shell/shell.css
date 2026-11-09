@@ -1,0 +1,377 @@
+/* Console shell (AC4.T3, Docs/23 §3.1): top bar, left navigation, main area; the account menu, the dialogs and the
+   shortcut list. Tokens only, logical properties only (tools/check-logical-css.mjs). Dense desktop layout; below
+   1000 px the navigation folds behind the menu button. */
+
+.adm-shell {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'top top'
+    'nav main';
+  min-block-size: 100vh;
+}
+
+.adm-topbar {
+  grid-area: top;
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--bar-height);
+  padding-inline: var(--space-4);
+  background: var(--surface-raised);
+  border-block-end: 1px solid var(--divider);
+}
+
+.adm-nav-toggle {
+  display: none;
+}
+
+.adm-lookup {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-inline-size: 480px;
+  min-block-size: var(--control-sm);
+  padding-inline: var(--space-3);
+  margin-inline-start: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink-muted);
+}
+.adm-lookup:focus-within {
+  box-shadow: var(--ring-focus);
+}
+.adm-lookup-input {
+  flex: 1;
+  min-inline-size: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+.adm-lookup-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+.adm-lookup-key {
+  padding-inline: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.adm-queue {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  margin-inline-start: auto;
+  color: var(--ink-muted);
+  font-size: 15px;
+}
+.adm-queue-count {
+  min-inline-size: 24px;
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  text-align: center;
+}
+
+.adm-nav {
+  grid-area: nav;
+  position: sticky;
+  inset-block-start: var(--bar-height);
+  align-self: start;
+  max-block-size: calc(100vh - var(--bar-height));
+  overflow-y: auto;
+  padding: var(--space-3);
+  border-inline-end: 1px solid var(--divider);
+  background: var(--surface);
+}
+.adm-nav-group + .adm-nav-group {
+  margin-block-start: var(--space-4);
+}
+.adm-nav-heading {
+  margin: 0;
+  padding-inline: var(--space-3);
+  padding-block-end: var(--space-1);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+:lang(fa) .adm-nav-heading {
+  text-transform: none;
+  letter-spacing: 0;
+}
+.adm-nav ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: 40px;
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 15px;
+}
+.adm-nav-link:hover {
+  background: var(--surface-sunken);
+}
+.adm-nav-link[aria-current='page'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.adm-main {
+  grid-area: main;
+  min-inline-size: 0;
+  padding-block: var(--space-6);
+  padding-inline: var(--space-6);
+}
+.adm-main:focus {
+  outline: none;
+}
+.adm-notice {
+  margin-block-end: var(--space-4);
+}
+
+@media (max-width: 999px) {
+  .adm-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'top'
+      'main';
+  }
+  .adm-nav-toggle {
+    display: inline-flex;
+  }
+  .adm-nav {
+    display: none;
+  }
+  .adm-shell[data-nav-open='true'] .adm-nav {
+    display: block;
+    position: fixed;
+    inset-block: var(--bar-height) 0;
+    inset-inline-start: 0;
+    z-index: 20;
+    inline-size: min(280px, 85vw);
+    max-block-size: none;
+    box-shadow: var(--shadow-2);
+  }
+  .adm-queue,
+  .adm-account-name,
+  .adm-lookup-key {
+    display: none;
+  }
+}
+
+/* Account menu */
+.adm-account {
+  position: relative;
+}
+.adm-account-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--tap-min);
+  padding-inline: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.adm-account-button:hover {
+  background: var(--surface-sunken);
+}
+.adm-account-panel {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  z-index: 30;
+  inline-size: 280px;
+  padding: var(--space-4);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-2);
+}
+.adm-account-panel[hidden] {
+  display: none;
+}
+.adm-account-who {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-3);
+}
+.adm-account-heading {
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+.adm-account-list,
+.adm-account-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-account-list {
+  flex-direction: column;
+}
+.adm-account-panel a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 36px;
+  color: var(--accent);
+}
+.adm-account-panel a[aria-current='true'] {
+  font-weight: 800;
+  color: var(--ink);
+}
+.adm-account-panel .cp-btn {
+  margin-block-start: var(--space-4);
+}
+
+/* Pages */
+.adm-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.adm-section-title {
+  margin-block: var(--space-4) 0;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+}
+.adm-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: 56px;
+  padding-inline: var(--space-4);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--ink);
+  text-decoration: none;
+}
+.adm-tile:hover {
+  border-color: var(--accent);
+}
+.adm-muted {
+  color: var(--ink-muted);
+}
+
+/* Dialogs (copied from the PWA's pwa-dialog, modal only) */
+.adm-dialog {
+  inline-size: calc(100vw - var(--space-8));
+  max-inline-size: 520px;
+  max-block-size: calc(100dvh - var(--space-8));
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  color: var(--ink);
+  box-shadow: var(--shadow-2);
+}
+.adm-dialog::backdrop {
+  background: var(--scrim);
+}
+[data-theme='sun'] .adm-dialog {
+  border: 2px solid var(--border);
+}
+.adm-dialog-frame {
+  display: flex;
+  flex-direction: column;
+  max-block-size: inherit;
+}
+.adm-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--tap-min);
+  padding-block: var(--space-2);
+  padding-inline: var(--space-5) var(--space-2);
+}
+.adm-dialog-title {
+  flex: 1;
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+}
+.adm-dialog-body {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 0 var(--space-5) var(--space-5);
+}
+.adm-dialog-body p {
+  margin: 0;
+}
+.adm-dialog-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5) var(--space-5);
+  border-block-start: 1px solid var(--divider);
+}
+
+/* Keyboard shortcut list */
+.adm-shortcuts {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+.adm-shortcuts th,
+.adm-shortcuts td {
+  padding-block: var(--space-2);
+  padding-inline: var(--space-2);
+  border-block-end: 1px solid var(--divider);
+  text-align: start;
+}
+.adm-shortcuts tr[data-available='false'] td:last-child {
+  color: var(--ink-muted);
+}
+.adm-shortcuts kbd {
+  display: inline-block;
+  min-inline-size: 28px;
+  padding-inline: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-family: var(--font-sans);
+  text-align: center;
+}

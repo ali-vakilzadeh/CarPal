@@ -1,6 +1,6 @@
-/* Console frame (AC1.T5): the bar with the wordmark and the environment badge, the main area and the system pages.
-   Tokens only, logical properties only (tools/check-logical-css.mjs). AC4 replaces the bar with the full shell;
-   AC5 adds the dense admin layer (tables, case layout, drawers). Console classes carry the adm- prefix. */
+/* Plain frame (AC1.T5, AC4): the bar with the wordmark, language links and the environment badge on the sign-in and
+   system pages, the main area and the system pages. The console shell is in src/features/shell/shell.css. Tokens
+   only, logical properties only (tools/check-logical-css.mjs). Console classes carry the adm- prefix. */
 
 .adm-body {
   min-block-size: 100vh;
@@ -17,6 +17,29 @@
   padding-inline: var(--space-6);
   background: var(--surface-raised);
   border-block-end: 1px solid var(--divider);
+}
+
+.adm-frame-end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.adm-frame-langs {
+  display: flex;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-frame-langs a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--tap-min);
+  color: var(--accent);
+}
+.adm-frame-langs a[aria-current='true'] {
+  font-weight: 800;
+  color: var(--ink);
 }
 
 .adm-wordmark {
@@ -54,6 +77,14 @@
   padding-block: var(--space-8);
   padding-inline: var(--space-6);
 }
+.adm-frame-main:focus {
+  outline: none;
+}
+.adm-frame-narrow {
+  inline-size: 100%;
+  max-inline-size: 440px;
+  margin-inline: auto;
+}
 
 .adm-page-title {
   margin-block: 0 var(--space-4);
@@ -69,40 +100,6 @@
 
 .adm-measure {
   max-inline-size: var(--measure);
-}
-
-.adm-facts {
-  margin-block: var(--space-6);
-  padding-inline-start: var(--space-6);
-  color: var(--ink-muted);
-}
-
-.adm-prefs {
-  margin-block-start: var(--space-6);
-}
-.adm-prefs-title {
-  margin-block: 0 var(--space-2);
-  font-size: 16px;
-  line-height: 20px;
-  font-weight: 700;
-}
-.adm-prefs ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.adm-prefs a {
-  display: inline-flex;
-  align-items: center;
-  min-block-size: var(--tap-min);
-  color: var(--accent);
-}
-.adm-prefs a[aria-current='true'] {
-  font-weight: 800;
-  color: var(--ink);
 }
 
 .adm-system {
