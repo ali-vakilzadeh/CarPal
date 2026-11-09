@@ -38,7 +38,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
 apt-get install -y -q ca-certificates curl gnupg openssl rsync tar xz-utils \
   nginx certbot python3-certbot-nginx ufw \
-  "postgresql-$PG_VERSION" "postgresql-$PG_VERSION-pgvector" postgresql-common
+  postgresql-16 postgresql-16-pgvector postgresql-common
 ok "packages installed"
 
 # ---------------------------------------------------------------------------- Node.js
@@ -95,6 +95,9 @@ if [[ -n "$current" && "$current" != "$PG_DATA" ]]; then
   current=""
 fi
 if [[ -z "$current" ]]; then
+  # pg_createcluster would create the missing parents as root under our umask 027 (root:root 750), which
+  # initdb (running as postgres) cannot enter: create them for postgres first (also repairs a failed earlier run).
+  install -d -m 700 -o postgres -g postgres "$DB_DIR/$PG_VERSION" "$PG_DATA"
   pg_createcluster "$PG_VERSION" "$PG_CLUSTER" -d "$PG_DATA" -p "$PG_PORT" --start -- \
     --auth-local=peer --auth-host=scram-sha-256 --encoding=UTF8 --locale=C.UTF-8
 fi
