@@ -1,0 +1,955 @@
+{
+  "meta": {
+    "title": "CarPal admin console (WP15 UI, WP20 admin part; frontend/admin-console/) — build plan and stage log",
+    "created": "2026-11-08",
+    "last_updated": "2026-11-09",
+    "status": "in_progress",
+    "owner": "ali-vakilzadeh",
+    "purpose": "Build the internal staff console that operates the platform: Path 2 review approvals, moderation, disputes, verification, privacy requests, plans, flags and the AI kill switch, the USD exchange rate, taxonomy, audit, AI/MCP oversight and analytics. Without it the pilot cannot run without direct API or database work (backend S11 open_after_stage, NI-08).",
+    "sources_of_truth": [
+      "Docs/40.API contract.md (contract 1.2.0) wins for operations, fields, roles and security rules. §23 is the admin plane (62 operations on host admin-api), §2.14 SEC-ADM-1..7.",
+      "Docs/23.Admin_WebUI_screens.md wins for screens, layout and UX rules where the contract allows them. Where it asks for data or actions the contract lacks, the gap is recorded in backend_requests (GD-08).",
+      "Docs/02.Detailed project plan.md (WP15, WP17, WP20, §1.4, §15) and Docs/90 §9 for scope and hosts.",
+      "Cross-plan rule (memory, 2026-11-04): the newer frontend plan wins over backend/dev_plan.json when they disagree; the backend follows. Write ids from other plans with a prefix: 'backend NI-04', 'PWA GD-03'. This plan's ids use the prefix 'ADM' when quoted elsewhere (e.g. 'ADM DI-02')."
+    ],
+    "how_to_use": [
+      "One stage per working session. Each stage is sized to fit one session (about a 5-hour token budget). If a stage runs long, stop at a task boundary, mark it 'partial' with partial_reason, and continue it as ACn-b next session (as backend S9a/b/c did).",
+      "At the start of a stage: read only its context_to_read, then the report of the previous stage (notes_for_next, open_after_stage).",
+      "At the end of a stage: set task statuses, fill report (template in conventions.report_template), add new DI/OQ/BR entries, update meta.progress, and run the stage's acceptance commands. Commit only when the user asks.",
+      "Backend work that a stage needs (backend_requests with stage 'AC2' or other) is done in backend/ and also logged as a backend stage (S12, S13) in backend/dev_plan.json."
+    ],
+    "progress": {
+      "as_of": "2026-11-09",
+      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11; 62 admin-plane operations implemented and covered by the S9b contract sweep) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) that installs with --frozen-lockfile, passes pnpm check (lint, logical CSS, typecheck, 88 unit/DOM tests, contract:check, i18n:check, ds:check), builds, and passes the Playwright smoke (6 tests with axe) on :3300. The admin contract (62 admin-api operations + 5 GD-07 api reads) and the role table are generated. No sign-in, BFF or real screen yet. Uncommitted.",
+      "stages_done": ["AC1"],
+      "next": "AC2 (backend prerequisites, logged as backend S12). Before it: answer OQ-01 or accept its default; see AC1 report notes_for_next.",
+      "decisions_needed_now": [
+        "OQ-01 (needed by AC2): staff sign-in on the console's own /id pages (default) or through the PWA's hosted sign-in?",
+        "OQ-10 (new, needed by AC7, affects pilot staffing): Path 2 review approvals can be decided by CRV only in contract 1.2.0 — not by ADM. Keep the contract, or widen it?",
+        "OQ-11 (new, needed by AC3): local development over http://localhost like the PWA, or https://localhost as GD-13 says?",
+        "OQ-12 (new, small): environment badge in Persian ('توسعه / آزمایشی / عملیاتی', as built) or always Latin 'DEV / STAGING / PROD'?"
+      ]
+    },
+    "milestones": [
+      {
+        "id": "M1",
+        "name": "pilot_minimum",
+        "after_stage": "AC11",
+        "meaning": "Staff can sign in with a passkey on the admin host and can: set the USD/IRR rate, change flags and the AI kill switch, assign plans, decide Path 2 review approvals and disputes, work moderation cases and reports, verify organizations and correct locations, handle privacy requests, suspend and reactivate users, grant staff roles. Deployed with its own kit. This is the console the pilot needs. Work on the provider/vendor web app (cp-web-portal) can start here (OQ-09)."
+      },
+      {
+        "id": "M2",
+        "name": "scratch_build_done",
+        "after_stage": "AC15",
+        "meaning": "Every Must screen of Docs/23 exists (or is recorded as a contract gap the user deferred), E2E, a11y, RTL and security checks are green, and the shared BFF extraction for the business web app is planned."
+      }
+    ]
+  },
+
+  "environment": {
+    "checked_on": "2026-11-09",
+    "os": "Windows 11, Git Bash + PowerShell",
+    "node": "System Node 20.10.0 must stay (another project uses it). Use the project-local Node 24.21.0 in backend/.tools/node, as the PWA does (PWA GD-02).",
+    "pnpm": "10.5.2",
+    "backend_dev": "pnpm dev in backend/ runs api :8080, admin-api :8081, auth :8082, storage :8083 and the workers in one process (lite mode, embedded PostgreSQL on :54329). Email/SMS/push go to backend/.data/outbox-*.jsonl. `pnpm dev:flags` changes flags in dev without the console.",
+    "admin_console": "Since AC1: frontend/admin-console installs with `pnpm install --frozen-lockfile` (own lockfile, no root workspace); `source tools/use-local-node.sh` first. Playwright Chromium 1248 is installed on this machine.",
+    "pwa_dev_ports": "PWA uses 3000 (dev) and 3100 (e2e). The console uses 3200 (dev) and 3300 (e2e) (GD-13).",
+    "known_state": [
+      "backend/libs/auth/index.ts registers cp-web-admin as confidential with binding 'mtls' (not yet DPoP + private_key_jwt like cp-web-consumer) — BR-01.",
+      "backend/libs/config/config.ts has one CARPAL_SIGNIN_URL for every client (the PWA's /id/signin) — BR-02.",
+      "Staff tests in the backend use fixture sessions (apps/testing/s8-support.ts); staff sign-in through a hosted UI end to end is backend NI-04 work — BR-03.",
+      "No dev tool creates a staff user (backend/tools has none) — BR-05.",
+      "Dev redirect URI for cp-web-admin is https://admin.carpals.ir/bff/oauth/callback only (config.ts DEV_REDIRECT_URIS) — BR-06."
+    ]
+  },
+
+  "global_decisions": [
+    {
+      "id": "GD-01",
+      "decision": "The console is its own Next.js app in frontend/admin-console/ (App Router, TypeScript strict, ESM, Tailwind CSS v4), its own pnpm package (@carpal/admin-console) with its own lockfile, no root workspace. Versions match the PWA so code and fixes move between them: next 16.4.3, react/react-dom 19.3.1, tailwindcss 4.3.3, @tanstack/react-query 5.104.5, zod 4.6.7, i18next 26.4.3, react-i18next 17.0.16, jose 6.2.12, @simplewebauthn/browser 14.0.0, maplibre-gl 6.14.0 (AC9 only), @playwright/test 1.64.1, @axe-core/playwright 4.14.0. Later minor updates are recorded in the stage report.",
+      "reason": "The admin plane has its own OAuth client (cp-web-admin, aal3, audience admin-api) and must stay reachable only through a gate (SEC-ADM-1; the gate itself is still open, Docs/02 §15). A separate deployable keeps every gate option possible and never ships admin code or routes from the public web.<DOMAIN> origin. Docs/02 §1.4 says admin pages are part of the web app: see DI-01.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-02",
+      "decision": "Node: run on backend/.tools/node (24.21.0) through tools/use-local-node.sh and .ps1 copied from pwa/tools. .node-version = 24.21.0.",
+      "reason": "Same as PWA GD-02.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-03",
+      "decision": "Admin BFF = a copy, with provenance comments, of the framework-free PWA BFF (pwa/src/server/bff: session store port, OAuth client, DPoP, private_key_jwt signer, 1:1 forwarder with registry allowlist, CSRF, header hygiene) under frontend/admin-console/src/server/bff/, adapted for cp-web-admin: acr_values=aal3, audience admin-api, access 5 min, refresh 30 min idle, 8 h absolute, allowlist = admin-api routes + the api-host reads in GD-07. No guest/anonymous tokens and no cp-ssr. When the business web app (cp-web-portal) starts, the three copies are extracted to one shared package (recommendation R-01).",
+      "reason": "Reuse what already passed the strict-mode checks in PWA P15 without touching the live PWA now; extract once there are three users (rule of three).",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-04",
+      "decision": "Staff sign-in (A-AUTH-01) is hosted by the console itself at /id/* on the admin host, not by the PWA. Only what staff need: email + password, then a passkey (WebAuthn) for aal3; no sign-up, no SMS code, no social sign-in. A staff account without a passkey is taken through a forced passkey enrolment after password + email code, then signs in again at aal3. Needs the backend to choose the sign-in URL per client (BR-02) and to finish staff WebAuthn end to end (BR-03).",
+      "reason": "Keeps staff credentials and the staff flow off the public consumer app and behind the same gate as the console; A-AUTH-01 differs from the consumer sign-in in almost every rule. Override with OQ-01.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-05",
+      "decision": "EN and FA with full RTL. The locale comes from the staff member's me.locale (switchable in the avatar menu, kept in a cookie); no locale segment in URLs (internal app, no SEO). Common keys come from shared/i18n/locales; console strings go in an 'admin' namespace following the PWA layout (pwa/src/lib/i18n), and the key-parity check covers it. Dates: Jalali in FA and Gregorian in EN, stored and sent in UTC; digits localised for display only; IDs, codes and timestamps in tables can switch to Latin digits.",
+      "reason": "Docs/02 §3, Docs/23 principle 9.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-06",
+      "decision": "Design: shared/design-system/web tokens, fonts and components, synced with a copy of pwa/tools/sync-design-system.mjs; the PWA's ported components (pwa/src/components/ds) are copied as the starting kit. The console adds a dense admin layer: data table, three-panel case layout, drawer, reason panel, masked field, four-eyes banner, entity chip, timeline. Logical CSS properties only (copy of pwa/tools/check-logical-css.mjs). Light and dark themes. An environment badge (DEV / STAGING / PROD in red) is always visible.",
+      "reason": "Docs/23 §3, Docs/02 §14.4 RTL-first.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-07",
+      "decision": "API scope: the console calls the 62 admin-api operations of contract 1.2.0 through its BFF. A short, explicit list of api-host reads may be forwarded as well if the cp-web-admin token is accepted there (checked in AC2): me.get (staff identity and roles), config.client, taxonomy reads for the tree. Anything else is reached by opening the public page (pwa.<DOMAIN>) in a new tab, never by widening the BFF.",
+      "reason": "SEC-WEB-1 (no widening), SEC-ADM-7, least exposure.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-08",
+      "decision": "The contract wins over Docs/23. A screen ships with what the contract provides; missing data or actions are recorded as backend_requests (BR-xx) and as doc issues, and are built in AC14 only if the user approves them (OQ-07). Buttons for actions that do not exist are not shown (no dead buttons).",
+      "reason": "The backend is finished and swept; the console must not invent endpoints.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-09",
+      "decision": "Staff roles are the contract's four: ADM platform_admin, MOD platform_moderator, SUP platform_support, CRV platform_community_reviewer. Navigation and buttons are shown from the role sets in each operation's sec: line (generated into a role table at AC1). Docs/23's nine roles map as: Content moderator, Verification officer, Trust & Safety lead → MOD (lead powers that need ADM are shown only to ADM); Community reviewer → CRV; Privacy officer, AI governance, Commercial admin, Platform admin → ADM; Support agent → SUP. The server always decides; the UI only hides.",
+      "reason": "Docs/40 §0.5 role groups; DI-02.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-10",
+      "decision": "Purpose-bound reads (SEC-ADM-5): every PURP read is opened from a work item (case, dispute, DSR, verification, review approval). The purpose travels in the URL (?purpose=<kind>:<id>) and the BFF sends it as CarPal-Access-Purpose. Opening a person or organization without a work item asks the staff member to pick or open one. A-USR-01 is therefore an exact lookup (one identifier), not a browsable list (DI-03).",
+      "reason": "Docs/40 SEC-ADM-5, admin.users_search 'exactly one identifier'.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-11",
+      "decision": "Every mutating action opens the reason panel (reason code + note; note required for removals, suspensions and rejections) and sends the reason as the contract asks (body 'reason', or the CarPal-Reason header on DELETE). A 202 PendingChange (4EYES) shows 'Waiting for a second staff member' with a link to Pending approvals; SELF_APPROVAL_FORBIDDEN is explained, not shown as an error. Operations tagged AAL3 or STEP_UP trigger a re-authentication with the passkey and replay the action.",
+      "reason": "SEC-ADM-2, SEC-ADM-3, SEC-ADM-6; Docs/23 principles 1 and 7.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-12",
+      "decision": "No personal data is stored in the browser: TanStack Query cache in memory only, cleared on sign-out, idle timeout and staff switch; no localStorage/sessionStorage/IndexedDB for responses; Cache-Control: no-store on every page and BFF response; no service worker; no analytics or error-reporting SDK; console logs never print response bodies. Saved views and column choices (no data) may be kept in localStorage.",
+      "reason": "Docs/23 principle 4, SEC-ADM-7, Docs/02 §5.9.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-13",
+      "decision": "Ports: dev 3200, e2e 3300, both over https://localhost with the PWA's dev certificate approach. Backend lite: admin-api :8081, auth :8082.",
+      "reason": "No clash with the PWA (3000, 3100).",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-14",
+      "decision": "Tests: Vitest unit and DOM projects; integration project against the live lite backend; Playwright E2E (Chromium) with a CDP virtual authenticator for passkeys; @axe-core/playwright for accessibility; RTL screenshots for key screens. `pnpm check` = lint + logical-css + typecheck + unit + contract:check + i18n:check + ds:check.",
+      "reason": "Same quality bar as the PWA (P13).",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-15",
+      "decision": "Deployment: frontend/admin-console/deploy/ (deploy.md, admin-setup.sh, admin-update.sh, lib.sh, templates/) following the WinSCP + staging-folder workflow and the shared /carpal/config/deploy.conf; ADMIN_HOST=admin.<DOMAIN> derived from DOMAIN; scripts LF-only. The access gate in front of the console is a setting (ADMIN_GATE=ip_allowlist | none), default ip_allowlist, because the final access strategy is still open (Docs/02 §15, OQ-02).",
+      "reason": "Memory: deploy workflow and host naming; SEC-ADM-1.",
+      "stage": "plan"
+    },
+    {
+      "id": "GD-16",
+      "decision": "Order of stages follows pilot value: foundation and sign-in first, then the settings that unblock the pilot (exchange rate, flags, plans), then the queues the pilot depends on (Path 2 approvals, moderation, verification, privacy), then deploy (milestone M1), then taxonomy, oversight and analytics, contract gaps and closure.",
+      "reason": "Backend S11 open_after_stage lists the missing admin console as a pilot blocker for moderation, Path 2 approvals, data requests and the exchange rate.",
+      "stage": "plan"
+    }
+  ],
+
+  "conventions": {
+    "ids": {
+      "stages": "AC1..AC15 (AC = admin console). Split stages: AC7-a, AC7-b.",
+      "tasks": "ACn.Tm",
+      "doc_issues": "DI-nn (this plan)",
+      "open_questions": "OQ-nn (this plan)",
+      "backend_requests": "BR-nn: backend changes this console needs; done in backend/ and logged in backend/dev_plan.json",
+      "screens": "Docs/23 screen ids (A-REV-01 …)"
+    },
+    "folder_layout": {
+      "frontend/admin-console/package.json, next.config.ts, tsconfig.json, eslint.config.js, vitest.config.ts, playwright.config.ts, .env.example, .node-version": "Package root.",
+      "src/app/(console)/": "Signed-in console pages, one folder per navigation section (dashboard, queue, users, orgs, verification, reviews, content, inventory, disputes, privacy, taxonomy, ai, mcp, plans, flags, rates, retention, analytics, audit, staff, approvals). Layout checks the BFF session and staff roles.",
+      "src/app/id/": "Staff sign-in UI (GD-04): signin, passkey, enrol-passkey, locked, disabled, expired. Minimal layout, no console shell.",
+      "src/app/bff/*/route.ts, src/app/api/v1/admin/[...path]/route.ts": "Thin Next.js adapters over src/server/bff/.",
+      "src/server/bff/": "Copied and adapted PWA BFF (GD-03): session, oauth, dpop, private_key_jwt, forwarder, allowlist, csrf, purpose and reason headers.",
+      "src/lib/api/": "Typed client over the generated admin operation map; problem mapping; idempotency; ETag; 202 PendingChange handling; TanStack helpers.",
+      "src/lib/{i18n,format,roles,config}/": "i18n runtime, Jalali/digits/money formatters, generated role table, console config (SLA targets, reason codes).",
+      "src/components/ds/": "Ported design-system components.",
+      "src/components/admin/": "Admin kit (AC5): DataTable, CaseLayout, ReasonPanel, PurposeGate, MaskedField, FourEyesBanner, EntityChip, AuditDrawer, AiEvidenceBlock, Timeline, ConfirmDialog, KeyboardShortcuts.",
+      "src/features/<area>/": "One folder per area: auth, shell, approvals, rates, flags, plans, retention, reviews, disputes, moderation, orgs, verification, users, privacy, staff, taxonomy, audit, ai, mcp, analytics, dashboard.",
+      "tests/e2e/": "Playwright specs and helpers (staff factory via backend dev tool, virtual authenticator, outbox reader).",
+      "tools/": "use-local-node, contract generator (admin audience), sync-design-system, check-logical-css, i18n-check.",
+      "deploy/": "Deploy kit (AC11)."
+    },
+    "commands_expected": {
+      "pnpm dev": "next dev on https://localhost:3200",
+      "pnpm build / start": "production build / serve",
+      "pnpm check": "lint + logical-css + typecheck + unit + contract:check + i18n:check + ds:check",
+      "pnpm test:int": "integration tests against backend pnpm dev",
+      "pnpm e2e": "build + Playwright on :3300",
+      "pnpm contract:generate / contract:check": "admin operation map, types and role table from backend/libs/contract/generated/operations.json and shared/api-contracts"
+    },
+    "report_template": {
+      "started_at": "",
+      "completed_at": "",
+      "summary": "",
+      "screens_built": [],
+      "operations_used": [],
+      "files_created": [],
+      "files_changed": [],
+      "tests": { "unit": "", "int": "", "e2e": "", "a11y": "" },
+      "deviations": [],
+      "new_doc_issues": [],
+      "new_backend_requests": [],
+      "notes_for_next": [],
+      "open_after_stage": []
+    },
+    "code_rules": [
+      "No widening: the BFF forwards only allowlisted operations 1:1 (SEC-WEB-1).",
+      "Every action button is gated by the generated role table and hidden when the caller lacks the role; server errors 403 still render the no-permission state.",
+      "Unknown enum values from the server render as 'Unknown (<value>)', never crash (PWA P13 rule).",
+      "Masked by default: phone, email, full name, VIN, plate, documents. Reveal = purpose-bound read, logged by the backend.",
+      "Removals and suspensions are never bulk (Docs/23 §3.3)."
+    ]
+  },
+
+  "doc_issues": [
+    {
+      "id": "DI-01",
+      "issue": "Docs/02 §1.4 says admin.carpals.ir opens 'Admin pages of the web app'; frontend/README says the portals may ship as one app. GD-01 makes the console a separate app, because cp-web-admin is a separate client with aal3 and SEC-ADM-1 asks for a private entry point.",
+      "action": "After the user confirms GD-01: change the Docs/02 §1.4 row to 'Admin console (separate app, frontend/admin-console)' and the frontend/README sentence.",
+      "status": "open"
+    },
+    {
+      "id": "DI-02",
+      "issue": "Docs/23 §2 proposes nine staff roles; Docs/40 has four platform roles (ADM, MOD, SUP, CRV).",
+      "action": "GD-09 mapping. The WP0 permission matrix should settle it (Docs/23 §7.2).",
+      "status": "decided_in_plan"
+    },
+    {
+      "id": "DI-03",
+      "issue": "Docs/23 A-USR-01 is a browsable user list with filters; Docs/40 admin.users_search takes exactly one identifier and is PURP.",
+      "action": "A-USR-01 becomes an exact lookup tied to a work item (GD-10). A browsable list would need a contract change and a privacy decision.",
+      "status": "decided_in_plan"
+    },
+    {
+      "id": "DI-04",
+      "issue": "Docs/23 A-AUTH-01 lists a company SSO button and an IP allow-list notice; the contract has no SSO and the gate is undecided.",
+      "action": "Password + passkey only (GD-04); SSO is out of scope (OQ-08). The 'use the company network' state appears only when the gate answers 403.",
+      "status": "decided_in_plan"
+    },
+    {
+      "id": "DI-05",
+      "issue": "Docs/23 actions with no ModerationActionType in Docs/40: 'Reduce weight', 'Edit request' with highlighted text (A-REV-02), 'Apply redaction' with boxes (A-CON-02).",
+      "action": "Not shown until BR-15 (AC14). request_changes and apply_trust_penalty cover part of it.",
+      "status": "open"
+    },
+    {
+      "id": "DI-06",
+      "issue": "Docs/23 A-ORG-02 tabs Capabilities & badges, Reviews, Portfolio, Inventory, Members, Plan history, Cases need reads that StaffOrgView does not carry.",
+      "action": "AC9 shows what StaffOrgView has (profile, locations, verifications, subscription, counts) and links to the public profile; the rest is BR-16.",
+      "status": "open"
+    },
+    {
+      "id": "DI-07",
+      "issue": "Docs/23 A-USR-02 tabs Vehicles, Appointments, Consents, Privacy requests, Sessions & devices need reads that StaffUserView does not carry.",
+      "action": "AC10 shows StaffUserView (memberships, subscription, counts, verification marks); Force sign-out uses admin.user_sessions_revoke; the rest is BR-16.",
+      "status": "open"
+    },
+    {
+      "id": "DI-08",
+      "issue": "Docs/23 'Assist onboarding' opens the business wizard on behalf of an owner; backend DI-05 leaves the {adm}/assist/{id}/… routes undefined and the wizard lives in the business web app, which does not exist yet.",
+      "action": "AC9 builds start/end of an assist session only; the assisted wizard waits for backend DI-05 and the business web app.",
+      "status": "open"
+    },
+    {
+      "id": "DI-09",
+      "issue": "Docs/23 A-DASH-01 System widget (import, notification delivery, media scan failures) and parts of A-NOTIF-01 delivery health have no DashboardKey.",
+      "action": "Dashboard uses the 11 contract keys and queue counts; system metrics are BR-17.",
+      "status": "open"
+    },
+    {
+      "id": "DI-10",
+      "issue": "Docs/23 lists A-NOTIF-01, A-POL-01, A-STAFF-01 (list), A-SUP-01, the A-AI-02 decisions and A-AI-03 as Must or Should, but Docs/40 §23 has no operations for them.",
+      "action": "Recorded as BR-10..BR-14; built in AC14 after OQ-07.",
+      "status": "open"
+    },
+    {
+      "id": "DI-11",
+      "raised_in": "AC1",
+      "issue": "shared/i18n/package.json and the PWA's i18n:check describe the shared dictionary as the PWA's. The console now reads two of its namespaces (common, format) but keeps its own text in an 'admin' namespace inside the console (deviation D-01). A key renamed or removed in shared/i18n fails only the console's own check, not the PWA's.",
+      "action": "Recommendation R-04: run the console's `pnpm i18n:check` (or its whole `pnpm check`) whenever shared/ changes, and mention the console in shared/i18n/package.json 'description' at the next PWA stage that touches shared/i18n.",
+      "status": "open"
+    }
+  ],
+
+  "backend_requests": [
+    { "id": "BR-01", "stage": "AC2", "priority": "blocker", "request": "Register cp-web-admin like cp-web-consumer: DPoP-bound tokens (binding 'dpop') and private_key_jwt client authentication with a registered public key (backend/deploy/gen-client-keys.mjs gains the admin client).", "source": "backend dev_plan GD-06 amendment 2026-11-04, NI-08", "status": "open" },
+    { "id": "BR-02", "stage": "AC2", "priority": "blocker", "request": "Sign-in URL per client (e.g. CARPAL_SIGNIN_URLS JSON map, default CARPAL_SIGNIN_URL) so cp-web-admin interactions go to the console's /id/signin.", "source": "GD-04", "status": "open" },
+    { "id": "BR-03", "stage": "AC2", "priority": "blocker", "request": "Staff WebAuthn sign-in at aal3 end to end through a hosted UI, including the first-time passkey enrolment path for a staff account that has none (password + email code → restricted session that can only register a passkey → sign in again at aal3).", "source": "backend NI-04, backend dev_plan line 4853", "status": "open" },
+    { "id": "BR-04", "stage": "AC2", "priority": "blocker", "request": "The console must learn the signed-in staff member's platform roles and display name: confirm that me.get accepts the cp-web-admin token (memberships carry platform_* roles), or add admin.staff_me on admin-api.", "source": "GD-07, GD-09", "status": "open" },
+    { "id": "BR-05", "stage": "AC2", "priority": "blocker", "request": "Dev-only tool `pnpm dev:staff create --email --name --roles ADM,MOD,…` (refused unless CARPAL_ENV=dev, like dev:flags) and a seed of one staff user per role for E2E.", "source": "PWA DI-18 precedent", "status": "open", "note_ac1": "Seed a second ADM as well: ADM-only four-eyes changes need two ADMs (OQ-10, R-05)." },
+    { "id": "BR-06", "stage": "AC2", "priority": "blocker", "request": "Dev redirect URI https://localhost:3200/bff/oauth/callback (and :3300) for cp-web-admin and the dev WebAuthn origins, documented in backend/.env.example; production values from ADMIN_HOST in backend/deploy.", "source": "GD-13, GD-15", "status": "open" },
+    { "id": "BR-07", "stage": "before AC10", "priority": "high", "request": "Lift timed suspensions automatically (backend DI-66: suspended_until column and a job).", "source": "backend NI-04", "status": "open" },
+    { "id": "BR-08", "stage": "before AC9 (merge)", "priority": "medium", "request": "Organization merge re-pointing registry (backend DI-67). Until done, AC9 hides Merge.", "source": "backend NI-04", "status": "open" },
+    { "id": "BR-09", "stage": "before AC11", "priority": "high", "request": "Bind staff access purposes to the record being read (backend NI-02, SEC-ADM-5). The console already sends the purpose of the work item it came from (GD-10).", "source": "backend NI-02, RCP-01", "status": "open" },
+    { "id": "BR-10", "stage": "AC14", "priority": "must", "request": "Staff directory: admin.staff_list (staff, roles, MFA status, last sign-in, status) and admin.staff_disable for A-STAFF-01.", "source": "DI-10", "status": "open" },
+    { "id": "BR-11", "stage": "AC14", "priority": "must", "request": "Notification templates and rules (A-NOTIF-01): list templates per event, channel and locale with missing-translation flags; edit rules (invitation delay, reminders 0-3, quiet hours, digest).", "source": "DI-10", "status": "open" },
+    { "id": "BR-12", "stage": "AC14", "priority": "must", "request": "Policies and consent texts with versions (A-POL-01): list, draft, publish with effective date and re-consent flag (4EYES).", "source": "DI-10; needed for the legal texts go-live item (PWA NI-P13-12)", "status": "open" },
+    { "id": "BR-13", "stage": "AC14", "priority": "should", "request": "Support tickets for A-SUP-01 (today 'Contact support' is an email address).", "source": "DI-10", "status": "open" },
+    { "id": "BR-14", "stage": "AC14 or with Stage 5 AI", "priority": "must_with_ai", "request": "AI output review decisions (mark ok / wrong with category, add to evaluation set) and triage safety review queues (A-AI-02, A-AI-03).", "source": "DI-10", "status": "open" },
+    { "id": "BR-15", "stage": "AC14", "priority": "should", "request": "Moderation actions reduce_weight, edit_request (with highlighted spans) and apply_redaction (boxes → redacted copy).", "source": "DI-05", "status": "open" },
+    { "id": "BR-16", "stage": "AC14", "priority": "should", "request": "Extended staff reads for user and organization tabs (vehicles summary, appointments, consents history, sessions, capabilities/badges with rule evaluation, portfolio with consent, inventory quality, members, plan history), each PURP.", "source": "DI-06, DI-07", "status": "open" },
+    { "id": "BR-17", "stage": "AC13/AC14", "priority": "should", "request": "System health metrics for the dashboard (import failures, notification delivery failures, media scan failures).", "source": "DI-09", "status": "open" }
+  ],
+
+  "open_questions": [
+    { "id": "OQ-01", "question": "Where do staff sign in: on the console's own /id pages (GD-04) or through the PWA's hosted sign-in UI?", "default_if_unanswered": "On the console (GD-04).", "owner": "user", "needed_by": "AC2", "answer": null, "status": "open" },
+    { "id": "OQ-02", "question": "Pilot access gate for admin.<DOMAIN> (Docs/02 §15 keeps the strategy open): IP allowlist, VPN, or none beyond passkeys?", "default_if_unanswered": "IP allowlist in nginx (ADMIN_GATE=ip_allowlist) plus aal3 passkeys; revisit after the UI exists.", "owner": "user", "needed_by": "AC11", "answer": null, "status": "open" },
+    { "id": "OQ-03", "question": "Confirm the staff role mapping of GD-09 (nine Docs/23 roles onto four contract roles), or ask the backend for more roles?", "default_if_unanswered": "GD-09 mapping.", "owner": "user", "needed_by": "AC4", "answer": null, "status": "open" },
+    { "id": "OQ-04", "question": "Four-eyes list: Docs/23 §7.3 proposes more 4EYES actions than the contract tags (e.g. vendor suspension, policy publishing). Follow the contract tags only?", "default_if_unanswered": "Contract tags only; the server enforces them.", "owner": "user", "needed_by": "AC5", "answer": null, "status": "open" },
+    { "id": "OQ-05", "question": "SLA targets for queue timers (Docs/23 §6 proposals)?", "default_if_unanswered": "Use the Docs/23 §6 proposals from a console config file; timers computed from created_at (or due_at where the contract gives one).", "owner": "user", "needed_by": "AC5", "answer": null, "status": "open" },
+    { "id": "OQ-06", "question": "Default console language for pilot staff?", "default_if_unanswered": "The staff member's me.locale; fa if unknown.", "owner": "user", "needed_by": "AC1", "answer": null, "status": "open", "applied_default": "AC1 (2026-11-09): cpa_locale cookie, then Accept-Language, then CARPAL_ADMIN_DEFAULT_LOCALE=fa. me.locale joins in AC4 once staff can sign in. Changing the default is one environment variable." },
+    { "id": "OQ-07", "question": "Which contract gaps BR-10..BR-17 belong in the MVP?", "default_if_unanswered": "Must: BR-10 staff directory, BR-11 notification templates/rules, BR-12 policy texts. With the AI build: BR-14. Should (only if time allows): BR-13, BR-15, BR-16, BR-17.", "owner": "user", "needed_by": "AC14", "answer": null, "status": "open" },
+    { "id": "OQ-08", "question": "Is a company SSO for staff needed in the MVP?", "default_if_unanswered": "No (passkeys only).", "owner": "user", "needed_by": "AC4", "answer": null, "status": "open" },
+    { "id": "OQ-09", "question": "When does the business web app (provider/vendor/fleet, cp-web-portal) start: after milestone M1 (AC11) with AC12-AC15 later, or after AC15?", "default_if_unanswered": "After M1. Shops are the supply side of the pilot; the remaining admin stages can follow or run in between.", "owner": "user", "needed_by": "AC11", "answer": null, "status": "open" },
+    { "id": "OQ-10", "raised_in": "AC1", "question": "Contract 1.2.0 lets only CRV (platform_community_reviewer) decide Path 2 review approvals (admin.review_approval_decide is STF(CRV); admin.review_approvals_queue and admin.review_approval_get are STF(CRV, MOD)). An ADM cannot even open the approval queue or the disputes (admin.disputes_queue and admin.dispute_resolve are STF(MOD, CRV)). Keep that, or widen the sets to ADM (a contract change, backend 1.2.1)? Related staffing fact from the generated table: every four-eyes change needs a second staff member who may decide it (admin.four_eyes_decide is STF(ADM, MOD: moderation changes only)), so ADM-only changes (kill switch off, a rate change over 20 %, plan and retention edits, staff role grants) need two ADM accounts, and moving a Path 1 review to Path 2 (STF(MOD) 4EYES) needs two MOD or a MOD and an ADM.", "default_if_unanswered": "Keep the contract. For the pilot: at least two ADM accounts and at least one MOD and one CRV (a person may hold several roles; the console and server keep the 'different staff member' rule per action). Grant CRV as a second role to whoever reviews (role grants are four-eyes, AC10), and seed one user per role plus a second ADM in BR-05.", "owner": "user", "needed_by": "AC7 (and the pilot staffing plan)", "answer": null, "status": "open" },
+    { "id": "OQ-11", "raised_in": "AC1", "question": "Local development: GD-13 says https://localhost:3200, but the PWA runs over http://localhost and brings the OAuth code back through its /id proxy because the backend registers https redirect URIs only (PWA DI-24, OQ-10). Follow the PWA (http dev; backend BR-06 registers https://localhost:3200 and the BFF maps it), or run next dev --experimental-https with a local certificate?", "default_if_unanswered": "Follow the PWA (http in dev and E2E). AC1 already runs this way; browsers treat localhost as a secure context, so __Host- Secure cookies still work in Chromium.", "owner": "user", "needed_by": "AC3", "answer": null, "status": "open" },
+    { "id": "OQ-12", "raised_in": "AC1", "question": "Environment badge text in Persian: translated ('توسعه' / 'آزمایشی' / 'عملیاتی', as built in AC1) or always the Latin 'DEV / STAGING / PROD' of GD-06, so staff who switch languages see the same label?", "default_if_unanswered": "Translated, as built; PROD stays solid red in both languages. Switching is a two-line change in src/lib/i18n/locales/fa.json.", "owner": "user", "needed_by": "AC4", "answer": null, "status": "open" }
+  ],
+
+  "screen_coverage": [
+    { "screen": "A-AUTH-01 Staff sign-in", "stage": "AC4", "operations": ["auth.authorize", "auth.token", "hosted sign-in endpoints", "me.webauthn_register_options"], "coverage": "full after BR-02/BR-03 (no SSO)" },
+    { "screen": "A-DASH-01 Dashboard", "stage": "AC5 (My work + queue counts), AC13 (full)", "operations": ["admin.analytics_dashboard", "queue list operations", "admin.four_eyes_list", "admin.flags_list"], "coverage": "partial (System widget BR-17)" },
+    { "screen": "A-USR-01 User lookup", "stage": "AC10", "operations": ["admin.users_search"], "coverage": "exact lookup only (DI-03)" },
+    { "screen": "A-USR-02 User detail", "stage": "AC10", "operations": ["admin.user_get", "admin.user_status", "admin.user_sessions_revoke", "admin.onboarding_reset", "admin.platform_role_grant", "admin.platform_role_revoke"], "coverage": "partial (tabs BR-16)" },
+    { "screen": "A-ORG-01 Organization list", "stage": "AC9", "operations": ["admin.orgs_search"], "coverage": "full" },
+    { "screen": "A-ORG-02 Organization detail", "stage": "AC9", "operations": ["admin.org_get", "admin.org_status", "admin.org_merge", "admin.location_correct", "admin.assist_session_start", "admin.assist_session_end", "admin.subscription_assign"], "coverage": "partial (tabs BR-16; merge after BR-08; assisted wizard DI-08)" },
+    { "screen": "A-VER-01 / A-VER-02 Verification", "stage": "AC9", "operations": ["admin.verifications_queue", "admin.verification_decide", "admin.media_download_url"], "coverage": "full" },
+    { "screen": "A-REV-01 / A-REV-02 Reviews and approvals", "stage": "AC7", "operations": ["admin.review_approvals_queue", "admin.review_approval_get", "admin.review_approval_decide", "admin.review_move_to_approval_path", "admin.cases_list (case_type review)", "admin.case_action", "admin.media_download_url"], "coverage": "full except reduce weight / edit request (BR-15)" },
+    { "screen": "A-CON-01 / A-CON-02 Content moderation", "stage": "AC8", "operations": ["admin.reports_list", "admin.report_triage", "admin.cases_list", "admin.case_get", "admin.case_assign", "admin.case_action", "admin.case_close", "admin.media_download_url"], "coverage": "full except redaction drawing (BR-15)" },
+    { "screen": "A-INV-01 Inventory moderation", "stage": "AC8", "operations": ["admin.cases_list (case_type inventory_item, inventory_fitment)", "admin.case_action"], "coverage": "full as a filtered case view" },
+    { "screen": "A-DSP-01 Disputes & appeals", "stage": "AC7", "operations": ["admin.disputes_queue", "admin.dispute_get", "admin.dispute_resolve"], "coverage": "full" },
+    { "screen": "A-DSR-01 / A-DSR-02 Privacy requests", "stage": "AC10", "operations": ["admin.dsr_queue", "admin.dsr_update", "admin.dsr_export", "admin.dsr_execute_deletion"], "coverage": "full" },
+    { "screen": "A-TAX-01 / A-TAX-02 Taxonomy", "stage": "AC12", "operations": ["admin.taxonomy_node_create", "admin.taxonomy_node_update", "admin.taxonomy_merge", "admin.synonyms_list", "admin.synonym_create", "admin.synonym_decide", "admin.synonym_delete", "admin.mappings_list", "admin.mapping_upsert", "taxonomy reads (GD-07)"], "coverage": "full (zero-result terms via analytics search_and_map)" },
+    { "screen": "A-AI-01 AI oversight", "stage": "AC13", "operations": ["admin.analytics_dashboard (ai_quality)", "admin.ai_insights_search", "admin.flags_list"], "coverage": "read-only" },
+    { "screen": "A-AI-02 / A-AI-03 AI review, triage safety", "stage": "AC13 (read), AC14 (decisions)", "operations": ["admin.ai_insights_search"], "coverage": "read-only until BR-14" },
+    { "screen": "A-MCP-01 / A-MCP-02 MCP clients and audit", "stage": "AC13", "operations": ["admin.mcp_clients_list", "admin.mcp_client_update", "admin.mcp_access_log_search"], "coverage": "full (token rotation not in contract)" },
+    { "screen": "A-PLAN-01 Plans & entitlements", "stage": "AC6", "operations": ["admin.plans_list", "admin.plan_update", "admin.subscription_assign"], "coverage": "partial (history tab via audit search)" },
+    { "screen": "A-FLAG-01 Feature flags + kill switch", "stage": "AC6", "operations": ["admin.flags_list", "admin.flag_update"], "coverage": "full (scheduled changes not in contract)" },
+    { "screen": "Exchange rates (new, not in Docs/23)", "stage": "AC6", "operations": ["admin.exchange_rates_list", "admin.exchange_rate_update"], "coverage": "full; pilot blocker (backend S11 open_after_stage)" },
+    { "screen": "A-RET-01 Retention", "stage": "AC6", "operations": ["admin.retention_list", "admin.retention_update"], "coverage": "partial (no add, no dry run in contract)" },
+    { "screen": "A-ANL-01 Analytics", "stage": "AC13", "operations": ["admin.analytics_dashboard"], "coverage": "full for the 11 dashboard keys" },
+    { "screen": "A-AUD-01 Audit log + audit drawer", "stage": "AC13 (screen), AC5 (drawer component)", "operations": ["admin.audit_search"], "coverage": "full (ADM only)" },
+    { "screen": "Pending approvals (four-eyes inbox)", "stage": "AC5", "operations": ["admin.four_eyes_list", "admin.four_eyes_decide"], "coverage": "full" },
+    { "screen": "A-STAFF-01 Staff & permissions", "stage": "AC10 (grant/revoke on user detail), AC14 (list)", "operations": ["admin.platform_role_grant", "admin.platform_role_revoke"], "coverage": "partial until BR-10" },
+    { "screen": "A-NOTIF-01 Notification templates", "stage": "AC14", "operations": [], "coverage": "gap (BR-11)" },
+    { "screen": "A-POL-01 Policies & consent texts", "stage": "AC14", "operations": [], "coverage": "gap (BR-12)" },
+    { "screen": "A-SUP-01 Support inbox", "stage": "AC14 (Should)", "operations": [], "coverage": "gap (BR-13)" },
+    { "screen": "A-FEAT-01 Featured placements", "stage": "none", "operations": [], "coverage": "Later (flag off in the MVP)" },
+    { "screen": "A-TRU-01 Trusted users", "stage": "none", "operations": [], "coverage": "Later (post-MVP)" }
+  ],
+
+  "stages": [
+    {
+      "id": "AC1",
+      "title": "Foundation: package, toolchain, generated admin contract, design system, i18n, checks",
+      "status": "done",
+      "depends_on": [],
+      "goal": "An empty but correct Next.js app in frontend/admin-console that builds, lints, type-checks and tests, with the admin operation map and role table generated from the contract, the design system synced, EN/FA with RTL, and an environment badge.",
+      "scope": {
+        "docs": ["Docs/02 §2, §3, §14", "Docs/23 §1, §3.1", "Docs/40 §0.4-0.5 (security tags, role groups), §23.1 schemas"],
+        "screens": [],
+        "operations": ["(generation only) all 62 admin-api operations"]
+      },
+      "context_to_read": [
+        "pwa/package.json, pwa/next.config.ts, pwa/tsconfig.json, pwa/eslint.config.js, pwa/vitest.config.ts (copy the setup, not the features)",
+        "pwa/tools/contract/generate.ts and schema-to-ts.ts (adapt to the admin-api audience and emit a role table from sec: STF(...))",
+        "pwa/tools/sync-design-system.mjs, check-logical-css.mjs, i18n-check.ts, use-local-node.*",
+        "pwa/src/lib/i18n/* (namespaces, loader), shared/i18n/locales/en.json (common keys)",
+        "shared/design-system/web/README.md",
+        "Docs/40.API contract.md lines 61-115 (tags, role groups) and 4588-4672 (§23.1 schemas)"
+      ],
+      "tasks": [
+        { "id": "AC1.T1", "task": "Package root per GD-01/GD-02: package.json (@carpal/admin-console, engines node >=24.7, packageManager pnpm@10.5.2, links to @carpal/api-contracts, @carpal/i18n, @carpal/region-config), .node-version, tools/use-local-node.*, tsconfig strict, eslint (copy PWA config), prettier, .env.example, .gitignore, README skeleton.", "status": "done", "note": "package.json (deps as GD-01 except maplibre-gl, added in AC9), .node-version 24.21.0, tools/use-local-node.sh/.ps1 (path ../../../backend), tsconfig (PWA strictness), eslint.config.js (PWA rules + GD-12 ban on localStorage/sessionStorage/indexedDB), prettier, .env.example, .gitignore, README.md. pnpm install --frozen-lockfile passes." },
+        { "id": "AC1.T2", "task": "Contract generator tools/contract/generate.ts: from backend/libs/contract/generated/operations.json keep routes with host admin-api plus the GD-07 api-host reads; emit src/lib/api/generated/{operations.ts, types.ts, roles.ts} (opId → method, path, tags RSN/PURP/4EYES/ETAG/IDEM/ASYNC/AAL3, allowed staff roles). contract:check fails on drift. Unit tests.", "status": "done", "note": "tools/contract/generate.ts + generate.test.ts (7 tests). Emits operations.ts (62 admin-api + 5 api reads, with roles, roleQualifier, reason, purpose, fourEyes/aal3 as true or a list of conditions, etag, idempotent, async, pii, audited, rateLimit, sec line), roles.ts (STAFF_ROLES, ROLE_TABLE) and types.ts (Pick of @carpal/api-contracts OperationTypes, see deviation D-02). contract:check also fails when the contract version is not 1.2.0 or shared/api-contracts/generated was made from another registry. src/lib/roles adds canCall/canCallAny/staffRolesOf." },
+        { "id": "AC1.T3", "task": "Design system: sync tokens/fonts (tools/sync-design-system.mjs --check in CI), copy pwa/src/components/ds as the starting kit, theme (light/dark, no flash), logical-CSS lint.", "status": "done", "note": "ds:check uses a copy of pwa/tools/sync-design-system.mjs (paths adapted; --public fills public/ds on dev/build). pwa/src/components/ds copied whole with its tests; the DOM snapshot is byte-identical to the PWA one. Themes: Daylight, Sunlight and Night with the pre-paint boot script (deviation D-03). Logical CSS: copied check-logical-css.mjs and the carpal ESLint plugin." },
+        { "id": "AC1.T4", "task": "i18n: i18next runtime with the 'admin' namespace (EN + FA), html lang/dir from the locale cookie (GD-05), Jalali date and digit formatters (copy from pwa/src/lib/format), i18n:check parity.", "status": "done", "note": "src/lib/i18n: core.ts and client.tsx copied, locales.ts (cookie cpa_locale, D-04), keys.ts and dictionary.ts compose shared common + format with the console admin namespace in src/lib/i18n/locales/{en,fa}.json (deviation D-01). src/lib/format copied (Jalali/Gregorian, digits, money). tools/i18n-check.ts checks the composed dictionary: 68 keys, parity OK." },
+        { "id": "AC1.T5", "task": "Minimal app: root layout, a placeholder console page, environment badge from CARPAL_ADMIN_ENV (dev/staging/prod), security headers stub (no-store, frame-ancestors none), 404/403/500 pages.", "status": "done", "note": "src/app/layout.tsx (lang/dir/data-theme, DS stylesheets, font preload, nonce boot script, skip link, frame bar with the environment badge), (console)/page.tsx placeholder (contract line, ?lang= and ?theme= links), not-found.tsx, forbidden.tsx (authInterrupts), error.tsx, global-error.tsx. src/proxy.ts sets the headers of src/server/security-headers.ts on every page: these are already the full nonce CSP with strict-dynamic and Trusted Types copied from the PWA, not a stub (D-05). src/server/env.ts validates CARPAL_ADMIN_ENV/ORIGIN/DEFAULT_LOCALE/DEFAULT_TIME_ZONE." },
+        { "id": "AC1.T6", "task": "Test setup: vitest unit + dom projects, integration project placeholder, playwright.config.ts on :3300 with one smoke spec; `pnpm check` script per GD-14.", "status": "done", "note": "vitest.config.ts with unit, dom and integration projects (integration: none yet, passWithNoTests); playwright.config.ts on :3300 with tests/e2e/smoke.spec.ts (6 tests, axe on 3 pages); pnpm check = lint + logical-css + typecheck + test + contract:check + i18n:check + ds:check." }
+      ],
+      "deliverables": ["frontend/admin-console package that builds", "generated admin operation map + role table", "README with commands"],
+      "acceptance_criteria": [
+        "pnpm install --frozen-lockfile, pnpm check and pnpm build pass with the local Node 24.",
+        "contract:check reports 62 admin-api operations at contract 1.2.0 and fails when operations.json changes.",
+        "The placeholder page renders in EN (ltr) and FA (rtl) with the environment badge; Playwright smoke passes."
+      ],
+      "out_of_scope": ["BFF, sign-in, any real screen"],
+      "report": {
+        "started_at": "2026-11-09",
+        "completed_at": "2026-11-09",
+        "summary": "Foundation built in one session. frontend/admin-console is its own pnpm package on the local Node 24.21.0 with the PWA's versions and tooling. The admin contract is generated from the backend registry: 62 admin-api operations of contract 1.2.0 plus 5 GD-07 api reads, a role table for ADM/MOD/SUP/CRV, and request/response types picked from @carpal/api-contracts. The design system, the PWA component kit and the formatters are copied; EN/FA with RTL works without a locale segment; the environment badge is on every page; every page answers no-store/noindex with a nonce CSP. All acceptance criteria are met. Nothing is committed.",
+        "acceptance": {
+          "pnpm install --frozen-lockfile, pnpm check and pnpm build pass with the local Node 24": "passed (2026-11-09; pnpm check about 30 s; build: routes / and /_not-found, proxy active)",
+          "contract:check reports 62 admin-api operations at contract 1.2.0 and fails when operations.json changes": "passed: 'Admin contract 1.2.0 is up to date: 62 admin-api operations + 5 api reads (GD-07)'. The failure on drift is covered by the unit test 'fails the check when operations.json changes' (changed STF set → operations.ts and roles.ts stale; version bump → version and shared-sha problems). Not tried by editing backend/libs/contract/generated/operations.json itself, so the backend tree was not touched.",
+          "The placeholder page renders in EN (ltr) and FA (rtl) with the environment badge; Playwright smoke passes": "passed: 6/6 smoke tests in Chromium on :3300, axe clean on the FA home, the EN home and the FA 404"
+        },
+        "screens_built": ["placeholder console home (/)", "404 not found", "403 no permission (forbidden.tsx; no route calls forbidden() yet)", "500 error (error.tsx, global-error.tsx)"],
+        "operations_used": [],
+        "files_created": [
+          "frontend/admin-console/{package.json, pnpm-lock.yaml, .node-version, .gitignore, .prettierrc.json, .prettierignore, .env.example, README.md, AGENTS.md (written by next dev), tsconfig.json, next.config.ts, postcss.config.mjs, eslint.config.js, vitest.config.ts, playwright.config.ts}",
+          "tools/{use-local-node.sh, use-local-node.ps1, sync-design-system.mjs (+test), check-logical-css.mjs (+test), i18n-check.ts (+test), eslint/carpal-plugin.js (+test)} — copies of pwa/tools with provenance comments, paths adapted",
+          "tools/contract/{generate.ts, generate.test.ts} — new (admin audience)",
+          "src/lib/api/generated/{operations.ts, roles.ts, types.ts, index.ts} — GENERATED",
+          "src/lib/roles/{index.ts, roles.test.ts}",
+          "src/lib/i18n/{core.ts, client.tsx (copied), locales.ts, keys.ts, dictionary.ts, locales.test.ts, locales/en.json, locales/fa.json}",
+          "src/lib/format/* (copied from pwa/src/lib/format with tests), src/lib/{theme.ts, theme.test.ts, design-system.ts} (copied)",
+          "src/components/ds/* (copied from pwa/src/components/ds with ds.test.tsx and its snapshot)",
+          "src/components/shell/{providers.tsx, env-badge.tsx, system-page.tsx, theme-boot-script.tsx (copied), frame.css, shell.test.tsx}",
+          "src/app/{layout.tsx, globals.css, (console)/page.tsx, not-found.tsx, forbidden.tsx, error.tsx, global-error.tsx}",
+          "src/proxy.ts, src/server/{env.ts, env.test.ts, security-headers.ts, security-headers.test.ts, request-locale.ts}",
+          "tests/setup/{dom.ts, server-only.ts} (copied), tests/e2e/{support.ts, smoke.spec.ts}"
+        ],
+        "files_changed": ["frontend/admin-console/dev-plan.json (this report). Nothing outside frontend/admin-console/ was changed: pwa/, shared/ and backend/ are untouched."],
+        "tests": {
+          "unit": "88 passed in 14 files (unit + dom projects): contract generator 7, i18n check 5, locales 5, roles 3, env 2, security headers 4, shell/system pages 6, theme, format, jalali, ds components, sync-design-system, logical CSS, ESLint plugin",
+          "int": "none yet (integration project is a placeholder with passWithNoTests; first suite in AC3)",
+          "e2e": "6 passed (tests/e2e/smoke.spec.ts, Chromium chromium-1248, next start on :3300): FA fallback + RTL + Vazirmatn, EN + LTR + Atkinson + contract line '67 operations', language link + cpa_locale cookie, three themes without JavaScript, security headers, 404 in the frame",
+          "a11y": "axe: 0 violations on the FA home, the EN home and the FA 404",
+          "dev_server": "pnpm dev checked once: GET / on :3200 answered 200 with lang=en dir=ltr and the DEV badge (curl with Accept-Language: en). next dev wrote frontend/admin-console/AGENTS.md (Next.js agent rules, identical to the committed pwa/AGENTS.md); keep and commit it, as the PWA does. Note: stopping `pnpm dev` with a timeout left the node child listening on :3200; stop it by PID if that happens."
+        },
+        "deviations": [
+          "D-01: console strings live in frontend/admin-console/src/lib/i18n/locales/{en,fa}.json ('admin' namespace), not in shared/i18n, so admin text never ships in the public PWA bundle and the PWA's MessageKey type does not grow. The shared namespaces common and format are read from @carpal/i18n. The console's i18n:check covers both.",
+          "D-02: src/lib/api/generated/types.ts does not carry its own copy of the request/response types; it picks the console's operations from @carpal/api-contracts (written by pwa `pnpm contract:generate`). contract:check fails when that shared package was made from another registry, so a stale shared contract cannot slip through. Consequence: after a backend contract change, run contract:generate in pwa/ first, then in the console.",
+          "D-03: three themes (Daylight, Sunlight high-contrast, Night) instead of 'light and dark' (GD-06, AC1.T3), because the design system and the copied theme code have three. No extra cost.",
+          "D-04: cookies are cpa_locale and cpa_theme, not the PWA's cp_locale/cp_theme: cookies on localhost are shared across ports, so the PWA (:3000) and the console (:3200) would overwrite each other's choice in development.",
+          "D-05: AC1.T5 asked for a security-headers stub; the full nonce CSP with strict-dynamic and Trusted Types (copied from the PWA, narrowed: no media/map origins, all permissions off except WebAuthn, Referrer-Policy no-referrer, private no-store and noindex on every page) is already in place. AC3.T6 shrinks to a review plus the BFF and API route headers.",
+          "D-06: dev and E2E run over http://localhost (3200, 3300), not https as GD-13 says, the same as the PWA. Decision for AC3 recorded as OQ-11.",
+          "D-07: dependencies for later stages (@simplewebauthn/browser, jose, @tanstack/react-query) are installed now to lock GD-01's versions; maplibre-gl waits for AC9."
+        ],
+        "new_doc_issues": ["DI-11"],
+        "new_backend_requests": [],
+        "new_open_questions": ["OQ-10", "OQ-11", "OQ-12"],
+        "notes_for_next": [
+          "AC2 is backend work (backend S12). The console side it needs is ready: the dev origin is http://localhost:3200 (E2E :3300), the redirect path will be /bff/oauth/callback, the WebAuthn origin is the console origin. With OQ-11's default, BR-06 registers https://localhost:3200/bff/oauth/callback (and :3300) and the console BFF brings the code back to its http origin as the PWA does (PWA DI-24, pwa/README 'Sign-in in development').",
+          "BR-05 seed: one staff user per role plus a second ADM, because every ADM-only four-eyes change needs two ADMs (OQ-10).",
+          "The GD-07 api reads in the generated map are me.get, config.client, taxonomy.version, taxonomy.snapshot and taxonomy.node_get (taxonomy.suggest left out: a POST in the 'search' rate-limit bucket; add it in AC12 if the tree search needs it). They carry plane 'api-read' until AC2 (BR-04) confirms that the api host accepts the cp-web-admin token; drop any it refuses from tools/contract/generate.ts API_READS.",
+          "Conditional tags in contract 1.2.0 that AC5/AC6/AC8/AC13 must handle: 4EYES on admin.flag_update ('kill switch off', 'featured.enabled on'), admin.exchange_rate_update ('change over 20 %'), admin.mcp_client_update ('scope', 'resource or tool changes'); AAL3 on admin.case_action only for suspend_account, apply_trust_penalty, merge_duplicate. The generator emits the conditions as string lists; the client must still treat any 202 PendingChange as four-eyes, whatever the map says.",
+          "admin.four_eyes_decide is STF(ADM, MOD: moderation changes only): the console cannot tell which pending changes count as moderation, so AC5 shows approve/reject to MOD and explains the server's refusal.",
+          "AC3: reuse src/server/security-headers.ts for the BFF/API routes (no-store already in place) and extend connect-src only if the browser talks to another origin (it should not: everything goes through the BFF).",
+          "AC4: the frame bar in src/app/layout.tsx is the place for the shell; move it into src/app/(console)/layout.tsx so /id pages render without it but keep the environment badge on the sign-in pages too.",
+          "Commands: always `source tools/use-local-node.sh` (or `. tools\\use-local-node.ps1`) first; Playwright Chromium 1248 is already installed on this machine (shared with the PWA)."
+        ],
+        "open_after_stage": [
+          "OQ-01 (needed by AC2), OQ-10 (AC7, pilot staffing), OQ-11 (AC3), OQ-12 (AC4) — see open_questions.",
+          "DI-11: the console depends on shared/i18n keys common.* and format.* but the PWA's i18n:check does not know that; a renamed shared key fails only the console's check. See R-04.",
+          "Nothing committed (commit only when the user asks). The root .gitignore pattern '*.env.*' also matches .env.example; frontend/admin-console/.gitignore re-includes it with '!.env.example' so `git add frontend/admin-console` picks it up (pwa/.env.example is tracked only because it was force-added)."
+        ]
+      }
+    },
+    {
+      "id": "AC2",
+      "title": "Backend prerequisites for the console (logged as backend S12)",
+      "status": "not_started",
+      "depends_on": ["AC1 (only for the dev origin)", "OQ-01 answered or default"],
+      "goal": "The backend can sign a staff member in through the console at aal3 with a passkey, issues DPoP-bound tokens to cp-web-admin with private_key_jwt, and offers dev tools to create staff. Work happens in backend/ with its tests; this stage only records it here.",
+      "scope": {
+        "docs": ["Docs/40 §2.2 clients, §2.3 SEC-AU, §2.14 SEC-ADM, §6.2 authorization server"],
+        "screens": [],
+        "operations": ["auth.authorize", "auth.token", "auth.webauthn_options", "me.webauthn_register_options", "me.get"]
+      },
+      "context_to_read": [
+        "backend/dev_plan.json: stage S11 (T1 strict auth for BFF clients), next_iteration NI-04 and NI-08",
+        "backend/libs/auth/index.ts (CLIENTS), backend/libs/config/config.ts (signinUrl, DEV_REDIRECT_URIS, webauthn)",
+        "backend/apps/testing/webauthn.int.test.ts (cp-web-admin interaction), backend/apps/testing/s8-support.ts",
+        "backend/deploy/gen-client-keys.mjs, backend/deploy/deploy.md (client keys section)",
+        "backend/tools/db/dev-flags.ts (pattern for a dev-only CLI)",
+        "Docs/40.API contract.md lines 200-232 and 391-402"
+      ],
+      "tasks": [
+        { "id": "AC2.T1", "task": "BR-01: cp-web-admin → binding 'dpop', private_key_jwt with a registered key; gen-client-keys.mjs gains the admin client; strict-mode tests for the admin client mirror the cp-web-consumer ones.", "status": "not_started" },
+        { "id": "AC2.T2", "task": "BR-02: per-client sign-in URL (CARPAL_SIGNIN_URLS map with CARPAL_SIGNIN_URL as default); test that a cp-web-admin authorize redirects to the console's /id/signin.", "status": "not_started" },
+        { "id": "AC2.T3", "task": "BR-03: staff aal3 end to end — password first factor, WebAuthn second factor for cp-web-admin; first-time enrolment path (restricted session that may only call me.webauthn_register_options/registration, then a fresh aal3 sign-in); integration test with a virtual authenticator.", "status": "not_started" },
+        { "id": "AC2.T4", "task": "BR-04: verify me.get with a cp-web-admin token returns memberships with platform_* roles; if the audience is refused, add admin.staff_me (contract 1.2.1 patch: registry, OpenAPI, sweep).", "status": "not_started" },
+        { "id": "AC2.T5", "task": "BR-05: `pnpm dev:staff create|list|grant` (CARPAL_ENV=dev only) + an E2E seed of one staff user per role; unit test.", "status": "not_started" },
+        { "id": "AC2.T6", "task": "BR-06: dev redirect URIs and WebAuthn origins for https://localhost:3200 and :3300 in backend/.env.example; ADMIN_HOST in backend/deploy templates (redirect URI https://admin.<DOMAIN>/bff/oauth/callback, WebAuthn origin).", "status": "not_started" },
+        { "id": "AC2.T7", "task": "Log the work as backend stage S12 in backend/dev_plan.json (tasks, report); run backend pnpm check, test:int (auth + admin suites) and contract:check.", "status": "not_started" }
+      ],
+      "deliverables": ["backend changes with tests", "backend/dev_plan.json S12 entry", "updated backend/.env.example and deploy notes"],
+      "acceptance_criteria": [
+        "A backend integration test signs in a staff user through authorize → console sign-in URL → password → passkey → token, and the token carries acr aal3 and a DPoP cnf.",
+        "A staff user without a passkey can only enrol one, then must sign in again.",
+        "pnpm dev:staff creates a working staff user in dev and is refused outside dev.",
+        "Backend pnpm check and the auth/admin integration suites pass; contract sweep still green."
+      ],
+      "out_of_scope": ["BR-07..BR-17", "risk-based sign-in (rest of NI-01)"],
+      "report": null
+    },
+    {
+      "id": "AC3",
+      "title": "Admin BFF: session, OAuth with DPoP and private_key_jwt, 1:1 forwarder, purpose and reason headers",
+      "status": "not_started",
+      "depends_on": ["AC1", "AC2"],
+      "goal": "The browser holds only a __Host- session cookie. The console's BFF signs staff in with code + PKCE at aal3, keeps DPoP-bound tokens server-side, refreshes within the 30-minute idle / 8-hour absolute limits, and forwards only allowlisted admin operations with CSRF, purpose and reason headers.",
+      "scope": {
+        "docs": ["Docs/40 §1.3-1.4 headers, §2.2 clients, §2.7 idempotency/ETag, §2.12 SEC-WEB, §2.14 SEC-ADM"],
+        "screens": [],
+        "operations": ["auth.authorize", "auth.token", "auth.revoke", "me.get or admin.staff_me", "all admin-api operations (forwarding)"]
+      },
+      "context_to_read": [
+        "pwa/src/server/bff/* (index, config, oauth/, session/, forwarder.ts, allowlist.ts, csrf.ts, tokens.ts, crypto.ts) and their tests",
+        "pwa/src/app/bff/ and pwa/src/app/api/v1/ route adapters",
+        "pwa/src/lib/api/ (typed client, problem mapping, idempotency, ETag cache)",
+        "PWA stage P15 report (strict_mode) in pwa/dev_plan.json",
+        "Docs/40.API contract.md lines 141-180 (headers) and 371-402 (SEC-WEB, SEC-ADM)"
+      ],
+      "tasks": [
+        { "id": "AC3.T1", "task": "Copy the BFF core with provenance headers (GD-03); remove guest/anonymous tokens and cp-ssr; config for cp-web-admin (client id, private JWK from CARPAL_ADMIN_CLIENT_PRIVATE_JWKS, redirect URI, issuer, admin-api base URL).", "status": "not_started" },
+        { "id": "AC3.T2", "task": "Session: in-memory (lite) and redis adapters, idle 30 min / absolute 8 h, DPoP key per session, rotation on login, single-flight refresh, logout revokes; /bff/session returns display name, roles, acr, locale, idle deadline (never tokens).", "status": "not_started" },
+        { "id": "AC3.T3", "task": "OAuth: /bff/login (state, nonce, PKCE, acr_values=aal3, safe return path), /bff/oauth/callback, /bff/logout; /bff/reauth for step-up (prompt=login, max_age) returning to the pending action.", "status": "not_started" },
+        { "id": "AC3.T4", "task": "Forwarder /api/v1/admin/[...path]: allowlist from the generated map (admin-api + GD-07 reads), CSRF + Origin + Sec-Fetch-Site on writes, CarPal-Client cp-web-admin/<version>, CarPal-Access-Purpose from the request (validated format kind:id), CarPal-Reason on DELETE, Idempotency-Key, If-Match, Accept-Language; strip cookies and hop-by-hop headers; no-store on every response.", "status": "not_started" },
+        { "id": "AC3.T5", "task": "Typed browser client: api(opId, {path, query, body, purpose, reason}); problem+json mapping incl. STEP_UP_REQUIRED, SELF_APPROVAL_FORBIDDEN, PURPOSE_REQUIRED, PRECONDITION_FAILED; 202 PendingChange result type; ASYNC job polling helper; TanStack Query provider with in-memory cache cleared on logout (GD-12).", "status": "not_started" },
+        { "id": "AC3.T6", "task": "Security headers in proxy/middleware: nonce CSP with Trusted Types, frame-ancestors none, COOP/CORP, Permissions-Policy, Referrer-Policy no-referrer, no-store.", "status": "not_started", "note": "Page headers already done in AC1 (D-05, src/server/security-headers.ts via src/proxy.ts). Left: review, and the same headers (no-store, nosniff) on the /bff and /api route responses, which the proxy matcher skips." },
+        { "id": "AC3.T7", "task": "Tests: unit (allowlist, header hygiene, purpose/reason headers, CSRF, refresh single-flight, idle expiry with fake timers); integration against backend lite with a staff user from pnpm dev:staff (sign-in via the backend test helper, then admin.flags_list through the forwarder; a consumer path → 404; a write without CSRF → 403).", "status": "not_started" }
+      ],
+      "deliverables": ["src/server/bff/", "src/app/bff/*", "src/app/api/v1/admin/[...path]", "src/lib/api/"],
+      "acceptance_criteria": [
+        "The browser never sees an access or refresh token (checked in an integration test).",
+        "Only allowlisted operations are forwarded; anything else answers 404.",
+        "A session idles out after 30 minutes and ends after 8 hours.",
+        "pnpm check and pnpm test:int pass against backend pnpm dev in strict mode."
+      ],
+      "out_of_scope": ["sign-in pages (AC4)", "screens"],
+      "report": null
+    },
+    {
+      "id": "AC4",
+      "title": "Staff sign-in (A-AUTH-01) and the console shell",
+      "status": "not_started",
+      "depends_on": ["AC3"],
+      "goal": "Staff sign in on the console's own pages with password and passkey (and enrol a passkey the first time), then land in a shell with the top bar, role-filtered left navigation, no-permission state, idle warning and step-up re-authentication.",
+      "scope": {
+        "docs": ["Docs/23 A-AUTH-01, §2 roles, §3.1 layout, principle 9 keyboard", "Docs/40 §6.2 hosted sign-in endpoints, SEC-ADM-2"],
+        "screens": ["A-AUTH-01", "console shell", "no-permission state"],
+        "operations": ["hosted sign-in endpoints of the auth server", "me.webauthn_register_options", "me.get or admin.staff_me"]
+      },
+      "context_to_read": [
+        "pwa/src/app/id/* and pwa/src/features/auth/* (hosted sign-in UI; reuse the password and passkey steps, drop sign-up, codes by SMS and social)",
+        "pwa/src/components/shell/step-up.tsx (step-up with intent replay)",
+        "Docs/23.Admin_WebUI_screens.md lines 32-81 and 127-133",
+        "Docs/40.API contract.md lines 779-941 (§6.2)"
+      ],
+      "tasks": [
+        { "id": "AC4.T1", "task": "Hosted sign-in /id/signin: email + password → passkey step (WebAuthn get) → back to the authorize flow; states: wrong credentials, locked (timed), account disabled, expired interaction with restart, gate refused ('use the company network').", "status": "not_started" },
+        { "id": "AC4.T2", "task": "Forced passkey enrolment /id/enrol-passkey for staff without one (BR-03 path) with a clear explanation, then sign in again.", "status": "not_started" },
+        { "id": "AC4.T3", "task": "Shell: top bar (environment badge, global lookup box placeholder, My queue count placeholder, avatar menu: my actions, language, theme, sign out); left navigation with all Docs/23 §3.1 sections filtered by the generated role table (GD-09); main area; skip link; RTL.", "status": "not_started" },
+        { "id": "AC4.T4", "task": "Idle handling: warning dialog at 25 minutes with 'Stay signed in' (refreshes), sign-out at 30; clear the query cache on sign-out (GD-12).", "status": "not_started" },
+        { "id": "AC4.T5", "task": "Step-up: a STEP_UP_REQUIRED or AAL3 problem opens a re-authentication with the passkey and replays the pending action once.", "status": "not_started" },
+        { "id": "AC4.T6", "task": "No-permission page (403) with the role needed; 'Request access' is shown as text only until BR-10.", "status": "not_started" },
+        { "id": "AC4.T7", "task": "Keyboard shortcut framework (/, J/K, A, R, E, Shift+H) with a help overlay (?), disabled while typing.", "status": "not_started" },
+        { "id": "AC4.T8", "task": "E2E: staff sign-in with a virtual authenticator for each of the four roles; navigation shows only permitted sections; enrolment path; idle warning (clock mocked); EN and FA; axe on sign-in and shell.", "status": "not_started" }
+      ],
+      "deliverables": ["src/app/id/*", "src/features/auth", "src/features/shell"],
+      "acceptance_criteria": [
+        "A staff user created with pnpm dev:staff signs in with password + passkey and reaches the shell; the session acr is aal3.",
+        "A MOD user does not see ADM-only sections, and opening an ADM URL shows the no-permission page.",
+        "E2E and axe pass in EN and FA."
+      ],
+      "out_of_scope": ["any queue or detail screen"],
+      "report": null
+    },
+    {
+      "id": "AC5",
+      "title": "Admin interaction kit, Pending approvals and My work",
+      "status": "not_started",
+      "depends_on": ["AC4"],
+      "goal": "Every later screen is built from one tested kit that applies the admin rules: reason panel, purpose gate, four-eyes handling, masked fields, data tables with cursor paging, the three-panel case layout, entity chips and the audit drawer. The four-eyes inbox and a first home page (My work) work end to end.",
+      "scope": {
+        "docs": ["Docs/23 §1 principles, §3.2 case layout, §3.3 shared components, §6 SLA", "Docs/40 §3.3 pagination, SEC-ADM-3/5/6/7"],
+        "screens": ["Pending approvals", "A-DASH-01 (My work + queue counts only)"],
+        "operations": ["admin.four_eyes_list", "admin.four_eyes_decide", "admin.audit_search (drawer)", "queue list operations (counts)"]
+      },
+      "context_to_read": [
+        "Docs/23.Admin_WebUI_screens.md lines 15-81 and 556-571",
+        "Docs/40.API contract.md lines 484-487 (pagination), 4588-4672 (PendingChange, AuditEntry), 5034-5193 (§23.5 four_eyes and audit_search blocks)"
+      ],
+      "tasks": [
+        { "id": "AC5.T1", "task": "DataTable: fixed header, column choice, saved views (stored without data), cursor paging (limit ≤ 100), sort/filter bound to the URL, keyboard row navigation, empty/error/loading states, Latin-digit toggle for IDs.", "status": "not_started" },
+        { "id": "AC5.T2", "task": "ReasonPanel (reason code list per action from a console config, note rules, notify toggle where the contract has one) and ConfirmDialog with second confirmation for irreversible actions.", "status": "not_started" },
+        { "id": "AC5.T3", "task": "PurposeGate: reads tagged PURP require a purpose; carries ?purpose=kind:id from the work item; when missing, asks to open a work item (GD-10). MaskedField with Reveal = a purpose-bound re-read.", "status": "not_started" },
+        { "id": "AC5.T4", "task": "Four-eyes: FourEyesBanner for 202 PendingChange; Pending approvals page (admin.four_eyes_list) with approve/reject + reason (admin.four_eyes_decide, AAL3 step-up), own requests shown as 'Waiting for someone else'.", "status": "not_started" },
+        { "id": "AC5.T5", "task": "CaseLayout (queue list 320 px / item and context / decision panel 360 px, collapsing on narrow screens), EntityChip with preview popover, Timeline, AiEvidenceBlock (labelled, model/prompt version, link to the MCP log entry).", "status": "not_started" },
+        { "id": "AC5.T6", "task": "AuditDrawer (Shift+H) using admin.audit_search filtered by entity_type/entity_id, shown only to roles allowed to call it (ADM); others see 'Audit visible to platform admins'.", "status": "not_started" },
+        { "id": "AC5.T7", "task": "Home 'My work': pending approvals for me, and count + oldest age per queue the caller may see (verifications, review approvals, reports, cases, disputes, privacy requests), SLA colours from the OQ-05 config.", "status": "not_started" },
+        { "id": "AC5.T8", "task": "Tests: DOM tests for every kit component (RTL, keyboard, reasons required); E2E: a four-eyes change requested by staff A is approved by staff B and refused for A (SELF_APPROVAL_FORBIDDEN explained).", "status": "not_started" }
+      ],
+      "deliverables": ["src/components/admin/*", "src/features/approvals", "src/features/dashboard (My work)"],
+      "acceptance_criteria": [
+        "No mutating action in the kit can be sent without a reason.",
+        "The four-eyes round trip works with two staff users; the requester cannot approve.",
+        "Kit components pass DOM tests and axe in EN and FA."
+      ],
+      "out_of_scope": ["full dashboard widgets (AC13)"],
+      "report": null
+    },
+    {
+      "id": "AC6",
+      "title": "Platform settings: exchange rate, feature flags and AI kill switch, plans and subscriptions, retention",
+      "status": "not_started",
+      "depends_on": ["AC5"],
+      "goal": "An ADM can set the USD/IRR rate (removing the one-time SQL from backend deploy.md), switch flags and the AI kill switch, edit plans, assign plans and trials, and edit retention policies — all with reasons, ETags and four-eyes where the contract asks.",
+      "scope": {
+        "docs": ["Docs/23 A-FLAG-01, A-PLAN-01, A-RET-01", "Docs/40 §23.2 plans, §23.5 flags/rates/retention, Appendix B flags", "memory: USD stored, admin sets the rate, PWA shows local currency"],
+        "screens": ["Exchange rates (new)", "A-FLAG-01", "A-PLAN-01", "A-RET-01"],
+        "operations": ["admin.exchange_rates_list", "admin.exchange_rate_update", "admin.flags_list", "admin.flag_update", "admin.plans_list", "admin.plan_update", "admin.subscription_assign", "admin.retention_list", "admin.retention_update"]
+      },
+      "context_to_read": [
+        "Docs/23.Admin_WebUI_screens.md lines 424-478",
+        "Docs/40.API contract.md §23.2 plan blocks (from 'admin.subscription_assign') and §23.5 lines 5034-5110, Appendix B (line 5244)",
+        "backend/deploy/deploy.md section 'Exchange rate'"
+      ],
+      "tasks": [
+        { "id": "AC6.T1", "task": "Exchange rates page: list per currency with per_usd, updated by/at; edit with If-Match (version), preview of a sample price in IRR, warning and 4EYES banner when the change is over 20 %.", "status": "not_started" },
+        { "id": "AC6.T2", "task": "Feature flags: table (key, description, type, enabled, targeting, environment, last changed); toggle and targeting editor with If-Match; reason required; the AI kill switch as a large separate control at the top (turning it on: reason + confirm; turning it off: 4EYES); featured.enabled on is 4EYES and shows the MVP note.", "status": "not_started" },
+        { "id": "AC6.T3", "task": "Plans: list with entitlements; edit (4EYES); the 'plan and payment never affect organic ranking' rule shown on screen.", "status": "not_started" },
+        { "id": "AC6.T4", "task": "Assign plan / start trial / overrides form (subscriber = user or organization picked by exact id from a work item or org search; trial_ends_at required for trials; vehicle/user limit overrides; entitlement overrides).", "status": "not_started" },
+        { "id": "AC6.T5", "task": "Retention policies: list and edit (4EYES); no add or dry run (not in the contract, noted on screen).", "status": "not_started" },
+        { "id": "AC6.T6", "task": "Update backend/deploy/deploy.md 'Exchange rate' to point at the console (keep the SQL as a fallback); E2E: rate change reflected in config.client; kill switch on → an AI operation answers the kill-switch problem; flag change with a stale ETag shows the conflict.", "status": "not_started" }
+      ],
+      "deliverables": ["src/features/{rates,flags,plans,retention}"],
+      "acceptance_criteria": [
+        "The USD/IRR rate set in the console is what the PWA displays (via config.client) after the cache refresh.",
+        "Kill switch on and off works with the four-eyes rule for off.",
+        "E2E and axe pass in EN and FA."
+      ],
+      "out_of_scope": ["plan change history beyond audit search", "scheduled flag changes"],
+      "report": null
+    },
+    {
+      "id": "AC7",
+      "title": "Reviews: Path 2 approval queue, review cases, disputes and appeals",
+      "status": "not_started",
+      "depends_on": ["AC5"],
+      "goal": "Community reviewers decide reviews written without a visit, moderators handle reported reviews and move invalid Path 1 reviews to Path 2 (four-eyes), and disputes and appeals are decided by a different staff member — the trust flow the pilot depends on.",
+      "scope": {
+        "docs": ["Docs/23 A-REV-01, A-REV-02, A-DSP-01, §6 SLA", "Docs/40 §23.4", "Docs/02 WP9 two confirmation paths", "Docs/54 trust weights (labels only)"],
+        "screens": ["A-REV-01", "A-REV-02", "A-DSP-01"],
+        "operations": ["admin.review_approvals_queue", "admin.review_approval_get", "admin.review_approval_decide", "admin.review_move_to_approval_path", "admin.disputes_queue", "admin.dispute_get", "admin.dispute_resolve", "admin.media_download_url", "admin.cases_list (case_type review)", "admin.case_action"]
+      },
+      "context_to_read": [
+        "Docs/23.Admin_WebUI_screens.md lines 254-293 and 323-332",
+        "Docs/40.API contract.md lines 4906-5033 (§23.4) and the StaffReviewApprovalView / StaffDispute schemas (4592-4672)",
+        "Docs/02 WP9 (lines 269-278)"
+      ],
+      "tasks": [
+        { "id": "AC7.T1", "task": "A-REV-01 tabs: Awaiting approval (admin.review_approvals_queue) and Reported / AI flagged / Disputed (case list filtered to case_type review), columns per Docs/23 where the data exists, SLA timers.", "status": "not_started" },
+        { "id": "AC7.T2", "task": "Approval case view (CaseLayout): the review, business answer and due date, author history (no contact data), evidence via admin.media_download_url, fraud signals, linked dispute; decisions confirm / reject / request evidence with reasons; the 'a low rating alone is never a reason' reminder when the business objected; the first decider shown for appeals.", "status": "not_started" },
+        { "id": "AC7.T3", "task": "Move to approval path (Path 1 → Path 2) from a review case: 4EYES flow with MOD.", "status": "not_started" },
+        { "id": "AC7.T4", "task": "A-DSP-01: disputes queue with type/status filters; detail with statement, target, original decision, evidence of both sides, moderator notes; resolve upheld / rejected / start mediation / withdrawn where the contract allows; the 'different staff member' rule surfaced from the server error.", "status": "not_started" },
+        { "id": "AC7.T5", "task": "Keyboard flow for the approval queue (J/K, A confirm, R reject) with the reason panel still required.", "status": "not_started" },
+        { "id": "AC7.T6", "task": "E2E: a Path 2 review created through the API (the PWA E2E helpers show how) is confirmed by a CRV and becomes 'approved_without_visit'; a business rejection opens a dispute that a different staff member resolves; EN and FA; axe.", "status": "not_started" }
+      ],
+      "deliverables": ["src/features/{reviews,disputes}"],
+      "acceptance_criteria": [
+        "A CRV can clear the approval queue end to end; a MOD without CRV cannot decide approvals.",
+        "Dispute decisions by the original decider are refused and explained.",
+        "E2E and axe pass in EN and FA."
+      ],
+      "out_of_scope": ["reduce weight and edit request (BR-15)"],
+      "report": null
+    },
+    {
+      "id": "AC8",
+      "title": "Moderation: reports, cases for content, inventory, users, organizations and AI output; badges",
+      "status": "not_started",
+      "depends_on": ["AC5"],
+      "goal": "Moderators triage user reports into cases, work cases of every target type in the three-panel layout with the right actions, close them with a resolution, and approve badges; safety cases sort first.",
+      "scope": {
+        "docs": ["Docs/23 A-CON-01, A-CON-02, A-INV-01, principle 10 safety first", "Docs/40 §23.4 reports and cases, ModerationReason/ReportTargetType/ModerationActionType enums (lines 668-676)"],
+        "screens": ["A-CON-01", "A-CON-02", "A-INV-01", "reports inbox"],
+        "operations": ["admin.reports_list", "admin.report_triage", "admin.cases_list", "admin.case_get", "admin.case_assign", "admin.case_action", "admin.case_close", "admin.badge_approve", "admin.media_download_url"]
+      },
+      "context_to_read": [
+        "Docs/23.Admin_WebUI_screens.md lines 296-321",
+        "Docs/40.API contract.md lines 664-680 (enums) and 4906-5033 (§23.4)",
+        "backend/dev_plan.json S8 report (moderation intake of held content, OQ-16)"
+      ],
+      "tasks": [
+        { "id": "AC8.T1", "task": "Reports inbox (admin.reports_list) with triage to a case or dismiss (admin.report_triage).", "status": "not_started" },
+        { "id": "AC8.T2", "task": "Case queues as saved views of admin.cases_list: Content (post, comment, question, answer, portfolio_item, media_asset), Inventory (inventory_item, inventory_fitment), Users & organizations, AI output; tabs Reported / AI flagged / System rule / Unsafe advice / Consent & redaction; severity colours and safety cases first.", "status": "not_started" },
+        { "id": "AC8.T3", "task": "Case detail: item as the public sees it (with public link), context blocks the case returns, media viewer via admin.media_download_url (watermark 'CarPal internal', no download button), AI evidence block; assign on open with 'Being handled by …'.", "status": "not_started" },
+        { "id": "AC8.T4", "task": "Actions per target type from ModerationActionType (approve, hide, remove, restore, request_changes, warn_user, suspend_account [AAL3], reactivate_account, revoke_badge, apply_trust_penalty [AAL3], merge_duplicate [AAL3]); showcase approval disabled without a valid consent if the case says so; close with resolution (≤ 1000 chars).", "status": "not_started" },
+        { "id": "AC8.T5", "task": "Badge approval (admin.badge_approve) from the case or organization context.", "status": "not_started" },
+        { "id": "AC8.T6", "task": "E2E: a community post reported in the PWA flow (API helper) is triaged, hidden, restored and closed; a suspend action triggers step-up; EN and FA; axe.", "status": "not_started" }
+      ],
+      "deliverables": ["src/features/moderation"],
+      "acceptance_criteria": [
+        "Every case type can be opened, actioned with a reason and closed.",
+        "Suspend, trust penalty and merge require a fresh passkey step-up.",
+        "E2E and axe pass in EN and FA."
+      ],
+      "out_of_scope": ["redaction drawing (BR-15)"],
+      "report": null
+    },
+    {
+      "id": "AC9",
+      "title": "Organizations, verification and locations (map), assist sessions",
+      "status": "not_started",
+      "depends_on": ["AC5"],
+      "goal": "Staff find organizations, verify businesses within the 2-day promise, correct pins and addresses on the map with reasons, change organization status, and start or end an assist session.",
+      "scope": {
+        "docs": ["Docs/23 A-ORG-01, A-ORG-02, A-VER-01, A-VER-02", "Docs/40 §23.2 org operations, §7 Organization/Location schemas", "Docs/02 §3.5 region config (map style, pin check threshold)"],
+        "screens": ["A-ORG-01", "A-ORG-02", "A-VER-01", "A-VER-02"],
+        "operations": ["admin.orgs_search", "admin.org_get", "admin.org_status", "admin.org_merge (after BR-08)", "admin.verifications_queue", "admin.verification_decide", "admin.location_correct", "admin.assist_session_start", "admin.assist_session_end", "admin.media_download_url", "admin.subscription_assign (link to AC6 form)"]
+      },
+      "context_to_read": [
+        "Docs/23.Admin_WebUI_screens.md lines 204-251",
+        "Docs/40.API contract.md lines 1243-1441 (§7 schemas) and §23.2 org blocks (4735-4828)",
+        "pwa/src/features/map/* (MapLibre setup, built-in style fallback, CSP notes)",
+        "shared/region-config/ir-pilot.json"
+      ],
+      "tasks": [
+        { "id": "AC9.T1", "task": "A-ORG-01: search by name/slug/id with status, verification and type filters; saved views Pending verification, Suspended.", "status": "not_started" },
+        { "id": "AC9.T2", "task": "A-ORG-02 (purpose-bound): header with status chips and View public profile; tabs Profile, Locations, Verification, Plan (current subscription, link to assign), Audit drawer; other Docs/23 tabs listed as 'not available yet' (DI-06).", "status": "not_started" },
+        { "id": "AC9.T3", "task": "Locations tab with MapLibre: owner pin, typed address, distance flag from the region threshold, service radius circle; correct pin or address with a reason (admin.location_correct).", "status": "not_started" },
+        { "id": "AC9.T4", "task": "A-VER-01 queue with SLA; A-VER-02 three panels: submitted data, document viewer (admin.media_download_url, zoom/rotate/page, watermark), checklist and decision (approve / request info / reject with reason).", "status": "not_started" },
+        { "id": "AC9.T5", "task": "Organization status change (suspend/reactivate with reason); merge behind BR-08 (hidden until available, then 4EYES with a preview); assist session start/end with reason and a visible banner while active (DI-08).", "status": "not_started" },
+        { "id": "AC9.T6", "task": "E2E: a provider organization created through the API is verified; a location pin is corrected; EN and FA; axe (map has a keyboard alternative).", "status": "not_started" }
+      ],
+      "deliverables": ["src/features/{orgs,verification}"],
+      "acceptance_criteria": [
+        "Verification decisions update the organization's verification status and badge eligibility.",
+        "Location corrections are audited and visible in the audit drawer.",
+        "E2E and axe pass in EN and FA."
+      ],
+      "out_of_scope": ["assisted onboarding wizard", "extended org tabs (BR-16)"],
+      "report": null
+    },
+    {
+      "id": "AC10",
+      "title": "Users, staff roles and privacy requests",
+      "status": "not_started",
+      "depends_on": ["AC5", "BR-07 recommended"],
+      "goal": "Support and moderators look up a user by one identifier for a work item, suspend or reactivate, force sign-out and reset onboarding; ADM grants and revokes staff roles (four-eyes); privacy requests are processed on time, including the four-eyes deletion run.",
+      "scope": {
+        "docs": ["Docs/23 A-USR-01, A-USR-02, A-DSR-01, A-DSR-02, A-STAFF-01", "Docs/40 §6.5 DSR, §23.2 users, §23.5 dsr operations", "Docs/02 WP2 data subject rights"],
+        "screens": ["A-USR-01 (lookup)", "A-USR-02", "A-DSR-01", "A-DSR-02", "staff roles on user detail"],
+        "operations": ["admin.users_search", "admin.user_get", "admin.user_status", "admin.user_sessions_revoke", "admin.onboarding_reset", "admin.platform_role_grant", "admin.platform_role_revoke", "admin.dsr_queue", "admin.dsr_update", "admin.dsr_export", "admin.dsr_execute_deletion"]
+      },
+      "context_to_read": [
+        "Docs/23.Admin_WebUI_screens.md lines 158-200 and 335-357, 514-518",
+        "Docs/40.API contract.md lines 1179-1215 (§6.5) and §23.2 user blocks (4673-4734), §23.5 dsr blocks"
+      ],
+      "tasks": [
+        { "id": "AC10.T1", "task": "User lookup: one identifier (email, phone, name or id) inside a work item context (GD-10); results masked; opening a result carries the purpose.", "status": "not_started" },
+        { "id": "AC10.T2", "task": "User detail from StaffUserView: header with masked contacts and Reveal, status, verification marks, counts, memberships, subscription; actions Suspend (duration, permanent → 4EYES if the contract tags it), Reactivate, Force sign-out, Reset onboarding (flow type), all with reasons; deleted and under-deletion states.", "status": "not_started" },
+        { "id": "AC10.T3", "task": "Staff roles on user detail (ADM): grant (4EYES) and revoke platform roles with reasons.", "status": "not_started" },
+        { "id": "AC10.T4", "task": "A-DSR-01 queue with type/status filters, due-date countdown and overdue view.", "status": "not_started" },
+        { "id": "AC10.T5", "task": "A-DSR-02 by type: export (regenerate via admin.dsr_export ASYNC with progress, mark completed), deletion (identity check step → run deletion 4EYES + AAL3 → completion), rectification and consent withdrawal (status updates with summaries).", "status": "not_started" },
+        { "id": "AC10.T6", "task": "E2E: a deletion request from the PWA flow (API helper) is run by two staff; an export is regenerated; a user is suspended for 7 days and reactivated; EN and FA; axe.", "status": "not_started" }
+      ],
+      "deliverables": ["src/features/{users,privacy,staff}"],
+      "acceptance_criteria": [
+        "No user data can be opened without a work item purpose.",
+        "A deletion runs only after a second staff member approves.",
+        "E2E and axe pass in EN and FA."
+      ],
+      "out_of_scope": ["extended user tabs (BR-16)", "staff directory list (BR-10)"],
+      "report": null
+    },
+    {
+      "id": "AC11",
+      "title": "Pilot release: deploy kit, pilot E2E, security pass (milestone M1)",
+      "status": "not_started",
+      "depends_on": ["AC6", "AC7", "AC8", "AC9", "AC10", "OQ-02 answered or default", "BR-09 recommended"],
+      "goal": "The console runs on admin.<DOMAIN> behind the chosen gate with strict auth, deployed by setup/update scripts in the WinSCP workflow, and the pilot flows are covered by E2E and a security review.",
+      "scope": {
+        "docs": ["Docs/02 §1.4, §15 admin access", "SEC-ADM-1..7", "memory: WinSCP deploy workflow, host naming"],
+        "screens": [],
+        "operations": []
+      },
+      "context_to_read": [
+        "pwa/deploy/* (deploy.md, pwa-setup.sh, pwa-update.sh, lib.sh, templates) and backend/deploy/deploy.md",
+        "backend/deploy/templates/nginx-carpal*.conf (current changes in the working tree)",
+        "PWA P13 report (security review method)"
+      ],
+      "tasks": [
+        { "id": "AC11.T1", "task": "deploy/: deploy.md, admin-setup.sh (service user, systemd unit on 127.0.0.1:3200, nginx server block for ADMIN_HOST with TLS, gate per ADMIN_GATE, client key placement), admin-update.sh (stop, copy from staging, pnpm install --frozen-lockfile, build, restart), lib.sh; LF only; reads /carpal/config/deploy.conf.", "status": "not_started" },
+        { "id": "AC11.T2", "task": "Backend deploy settings for the admin client (redirect URI, WebAuthn origin, sign-in URL map, client public key) documented and added to backend/deploy templates.", "status": "not_started" },
+        { "id": "AC11.T3", "task": "First-staff runbook: create the first ADM on the server (dev tool is refused in prod → document a one-time server command or backend bootstrap flag), enrol passkeys, grant roles by four-eyes from then on.", "status": "not_started" },
+        { "id": "AC11.T4", "task": "Pilot E2E suite in strict mode: sign-in, exchange rate, kill switch, Path 2 approval, report → case → action, verification, DSR deletion with four-eyes.", "status": "not_started" },
+        { "id": "AC11.T5", "task": "Security pass: headers and CSP on every route, no tokens or PII in the browser storage or logs, purpose header on every PURP call, BFF allowlist review, rate limit behaviour, session limits; findings fixed or recorded.", "status": "not_started" },
+        { "id": "AC11.T6", "task": "Docs: README (setup, commands, env), update frontend/README and Docs/02 §1.4 if DI-01 is confirmed; memory/handoff notes; milestone M1 report.", "status": "not_started" }
+      ],
+      "deliverables": ["frontend/admin-console/deploy/*", "pilot E2E suite", "security pass notes", "M1 report"],
+      "acceptance_criteria": [
+        "A fresh server deploy following deploy.md serves the console on admin.<DOMAIN> behind the gate; update.sh redeploys without manual steps.",
+        "Pilot E2E suite green in strict mode against backend pnpm dev.",
+        "No open high-severity security finding."
+      ],
+      "out_of_scope": ["the first production deploy itself (needs server access; the user runs it)"],
+      "report": null
+    },
+    {
+      "id": "AC12",
+      "title": "Taxonomy management: tree, node editor, merge, synonyms and mappings",
+      "status": "not_started",
+      "depends_on": ["AC5"],
+      "goal": "ADM and the taxonomy specialist maintain brands, models, systems, tasks, part categories, symptoms and review tags in EN and FA, approve AI-suggested and local synonyms (incl. Latin-letter Persian), edit mappings and merge duplicates.",
+      "scope": {
+        "docs": ["Docs/23 A-TAX-01, A-TAX-02", "Docs/40 §11 taxonomy reads, §23.3", "Docs/44 taxonomy catalog", "Docs/02 §3.5 native-language search"],
+        "screens": ["A-TAX-01", "A-TAX-02"],
+        "operations": ["taxonomy reads (GD-07)", "admin.taxonomy_node_create", "admin.taxonomy_node_update", "admin.taxonomy_merge", "admin.synonyms_list", "admin.synonym_create", "admin.synonym_decide", "admin.synonym_delete", "admin.mappings_list", "admin.mapping_upsert", "admin.analytics_dashboard (search_and_map for zero-result terms)"]
+      },
+      "context_to_read": [
+        "Docs/23.Admin_WebUI_screens.md lines 360-374",
+        "Docs/40.API contract.md lines 1949-1999 (§11) and 4829-4905 (§23.3)"
+      ],
+      "tasks": [
+        { "id": "AC12.T1", "task": "Tree with search by any label or synonym and type filter; list mode with missing-translation and region flags.", "status": "not_started" },
+        { "id": "AC12.T2", "task": "Node editor: labels per enabled locale (EN and FA required), parent, type, regions, attributes, status (deprecate), If-Match; add child (Idempotency-Key).", "status": "not_started" },
+        { "id": "AC12.T3", "task": "Merge with preview, cycle guard message, 4EYES and ASYNC job progress.", "status": "not_started" },
+        { "id": "AC12.T4", "task": "Synonyms per node: add (type, locale, script for transliteration), decide pending AI-suggested ones, delete; a 'Pending synonyms' work view.", "status": "not_started" },
+        { "id": "AC12.T5", "task": "Mappings (symptom→system/task, part category→system, task→part category) list and upsert with weight.", "status": "not_started" },
+        { "id": "AC12.T6", "task": "Zero-result search terms view from the search_and_map dashboard with 'add as synonym' shortcut; E2E and axe in EN and FA.", "status": "not_started" }
+      ],
+      "deliverables": ["src/features/taxonomy"],
+      "acceptance_criteria": [
+        "A node cannot be saved without EN and FA labels.",
+        "A merge runs through four-eyes and its job finishes visibly.",
+        "E2E and axe pass in EN and FA."
+      ],
+      "out_of_scope": ["bulk import of taxonomy"],
+      "report": null
+    },
+    {
+      "id": "AC13",
+      "title": "Oversight: audit log, AI oversight, MCP clients and access log, analytics, full dashboard",
+      "status": "not_started",
+      "depends_on": ["AC5"],
+      "goal": "Staff answer 'who changed what, when and why', AI governance watches AI quality and MCP access and edits MCP client scopes with four-eyes, and everyone sees the MVP metric dashboards and a complete home dashboard.",
+      "scope": {
+        "docs": ["Docs/23 A-AUD-01, A-AI-01, A-AI-02 (read), A-MCP-01, A-MCP-02, A-ANL-01, A-DASH-01", "Docs/40 §23.5", "Docs/02 §16 metrics (MVP)", "dataviz skill for charts"],
+        "screens": ["A-AUD-01", "A-AI-01", "A-AI-02 (read-only)", "A-MCP-01", "A-MCP-02", "A-ANL-01", "A-DASH-01"],
+        "operations": ["admin.audit_search", "admin.ai_insights_search", "admin.mcp_clients_list", "admin.mcp_client_update", "admin.mcp_access_log_search", "admin.analytics_dashboard", "admin.flags_list"]
+      },
+      "context_to_read": [
+        "Docs/23.Admin_WebUI_screens.md lines 136-156, 377-421, 480-502",
+        "Docs/40.API contract.md lines 5034-5193 (§23.5) and the AuditEntry/McpClientView/McpAccessLogView/Dashboard schemas",
+        "Docs/53.MCP Catalog.md (scope and tool names for the scope editor)"
+      ],
+      "tasks": [
+        { "id": "AC13.T1", "task": "A-AUD-01: filters (actor type, entity, action, time range), append-only notice, entity chips; searches are themselves audited (show a note).", "status": "not_started" },
+        { "id": "AC13.T2", "task": "A-MCP-01: clients list and detail; scope/resource/tool editor as a checkbox tree from the catalog; If-Match; 4EYES for scope changes; suspend.", "status": "not_started" },
+        { "id": "AC13.T3", "task": "A-MCP-02: access log search with risk level, policy decision, consent result, model version, latency; masked principals; links to insights.", "status": "not_started" },
+        { "id": "AC13.T4", "task": "A-AI-01 from the ai_quality dashboard + kill switch status; A-AI-02 read-only list of insights with filters and detail (decisions wait for BR-14).", "status": "not_started" },
+        { "id": "AC13.T5", "task": "A-ANL-01: one page per DashboardKey (activation, trust, matching, provider_value, vendor_value, fleet_value, ai_quality, growth, moderation_load, search_and_map, reviews) with date range; charts built with the dataviz rules, accessible tables behind each chart, RTL axes.", "status": "not_started" },
+        { "id": "AC13.T6", "task": "A-DASH-01 full: My work, Queues, Safety, Growth today, Trust, AI widgets from existing data, each failing independently with Retry; refresh every 60 s while visible.", "status": "not_started" },
+        { "id": "AC13.T7", "task": "E2E and axe in EN and FA (charts included).", "status": "not_started" }
+      ],
+      "deliverables": ["src/features/{audit,ai,mcp,analytics,dashboard}"],
+      "acceptance_criteria": [
+        "Every DashboardKey renders with real dev data or a clear empty state.",
+        "MCP scope changes go through four-eyes.",
+        "E2E and axe pass in EN and FA."
+      ],
+      "out_of_scope": ["AI decisions (BR-14)", "system health widget (BR-17)", "MCP token rotation"],
+      "report": null
+    },
+    {
+      "id": "AC14",
+      "title": "Contract gaps: backend contract 1.3.0 for the missing admin screens, and those screens",
+      "status": "not_started",
+      "depends_on": ["AC11", "OQ-07 answered"],
+      "goal": "The Docs/23 screens the contract cannot serve today are added in the backend (contract 1.3.0, logged as backend S13) and built in the console, limited to what the user approves in OQ-07.",
+      "scope": {
+        "docs": ["Docs/23 A-STAFF-01, A-NOTIF-01, A-POL-01, A-SUP-01, A-AI-02/03, A-REV-02/A-CON-02 actions", "Docs/40 (to be extended)", "Docs/52 entities for templates, policies, tickets"],
+        "screens": ["A-STAFF-01 (list)", "A-NOTIF-01", "A-POL-01", "A-SUP-01 (Should)", "A-AI-02/A-AI-03 decisions", "extended user/org tabs (Should)"],
+        "operations": ["new operations from BR-10..BR-17 as approved"]
+      },
+      "context_to_read": [
+        "This plan: backend_requests, doc_issues DI-05..DI-10, open_questions OQ-07 answer",
+        "backend/dev_plan.json conventions (how to add an operation: registry, OpenAPI, sweep resolver, tests)",
+        "Docs/23.Admin_WebUI_screens.md lines 445-462, 505-518"
+      ],
+      "split_note": "If OQ-07 approves more than BR-10..BR-12, split into AC14-a (backend contract 1.3.0) and AC14-b (console screens).",
+      "tasks": [
+        { "id": "AC14.T1", "task": "Backend: contract 1.3.0 for the approved BRs (Docs/40 text, registry, OpenAPI, module code, sweep resolvers, integration tests); log as backend S13.", "status": "not_started" },
+        { "id": "AC14.T2", "task": "Console: regenerate the contract; A-STAFF-01 list with invite/disable/role changes and the access-request flow.", "status": "not_started" },
+        { "id": "AC14.T3", "task": "Console: A-NOTIF-01 templates per event/channel/locale with preview and missing-translation flags; rules editor (invitation delay, reminders 0-3, quiet hours, digest), critical alerts marked 'Always delivered'.", "status": "not_started" },
+        { "id": "AC14.T4", "task": "Console: A-POL-01 policy versions (draft → publish with effective date, re-consent flag, 4EYES); published versions read-only. Feeds the legal-texts go-live item.", "status": "not_started" },
+        { "id": "AC14.T5", "task": "Console: other approved gaps (support inbox, AI decisions, moderation actions, extended tabs, system health).", "status": "not_started" },
+        { "id": "AC14.T6", "task": "E2E and axe for every new screen in EN and FA; update screen_coverage.", "status": "not_started" }
+      ],
+      "deliverables": ["backend contract 1.3.0", "new console screens"],
+      "acceptance_criteria": [
+        "Backend contract sweep and console contract:check green at 1.3.0.",
+        "Every approved gap has a working screen with E2E coverage."
+      ],
+      "out_of_scope": ["A-FEAT-01 featured placements", "A-TRU-01 trusted users"],
+      "report": null
+    },
+    {
+      "id": "AC15",
+      "title": "Hardening and closure: full E2E, accessibility, RTL visuals, performance, security review, handoff",
+      "status": "not_started",
+      "depends_on": ["AC12", "AC13", "AC14"],
+      "goal": "The console is complete for the MVP, passes the same quality bar as the PWA, and hands over a plan for sharing the BFF and admin kit with the business web app.",
+      "scope": {
+        "docs": ["Docs/02 WP20 acceptance and tests, WP21", "Docs/23 principles"],
+        "screens": ["all"],
+        "operations": []
+      },
+      "context_to_read": [
+        "This plan: all stage reports (open_after_stage)",
+        "pwa/dev_plan.json P13 report (method for a11y, perf and security)"
+      ],
+      "tasks": [
+        { "id": "AC15.T1", "task": "Full E2E across all sections in EN and FA, per role (a MOD, CRV, SUP and ADM journey each).", "status": "not_started" },
+        { "id": "AC15.T2", "task": "Accessibility sweep (axe on every route × EN/FA × themes, keyboard only, screen-reader labels on tables and charts, reduced motion).", "status": "not_started" },
+        { "id": "AC15.T3", "task": "RTL visual regression screenshots for key screens (shell, case layout, tables, forms, charts).", "status": "not_started" },
+        { "id": "AC15.T4", "task": "Performance: large queues (1000+ items through paging), table rendering, dashboard refresh; budgets recorded.", "status": "not_started" },
+        { "id": "AC15.T5", "task": "Security review (repeat AC11.T5 on the whole app, plus dependency audit); deploy kit updated.", "status": "not_started" },
+        { "id": "AC15.T6", "task": "Closure: README final, screen_coverage final, next_iteration list, recommendation R-01 detailed (shared BFF + kit package for cp-web-portal), meta.status scratch_build_done.", "status": "not_started" }
+      ],
+      "deliverables": ["test suites", "final README", "closure report"],
+      "acceptance_criteria": [
+        "pnpm check, build, test:int and two consecutive full pnpm e2e runs green.",
+        "No open high-severity accessibility or security finding."
+      ],
+      "out_of_scope": ["post-MVP screens"],
+      "report": null
+    }
+  ],
+
+  "deviations_log": [
+    { "stage": "AC1", "id": "D-01", "summary": "Console strings in the console's own src/lib/i18n/locales ('admin' namespace), shared common/format read from @carpal/i18n.", "affects": ["GD-05", "AC1.T4"] },
+    { "stage": "AC1", "id": "D-02", "summary": "Generated types.ts picks from @carpal/api-contracts instead of a second full copy; contract:check verifies the shared package's registry sha.", "affects": ["AC1.T2"] },
+    { "stage": "AC1", "id": "D-03", "summary": "Three themes (Daylight, Sunlight, Night) instead of light/dark.", "affects": ["GD-06", "AC1.T3"] },
+    { "stage": "AC1", "id": "D-04", "summary": "Cookies cpa_locale / cpa_theme (not the PWA's names) because localhost cookies are shared across ports.", "affects": ["GD-05"] },
+    { "stage": "AC1", "id": "D-05", "summary": "Full nonce CSP with Trusted Types in AC1 instead of a stub; AC3.T6 becomes a review plus BFF/API route headers.", "affects": ["AC1.T5", "AC3.T6"] },
+    { "stage": "AC1", "id": "D-06", "summary": "Dev and E2E over http://localhost like the PWA, not https (GD-13); decision in OQ-11.", "affects": ["GD-13"] },
+    { "stage": "AC1", "id": "D-07", "summary": "Later-stage dependencies installed now to lock GD-01 versions; maplibre-gl waits for AC9.", "affects": ["GD-01"] }
+  ],
+
+  "handoff_notes": [
+    "Backend facts for the console (2026-11-08): contract 1.2.0; 62 admin-api operations, all implemented and covered by the S9b sweep (BOLA, BFLA, 4EYES 202, PURP, RSN). Staff roles ADM/MOD/SUP/CRV. Admin tests use fixture sessions from backend/apps/testing/s8-support.ts until BR-03.",
+    "The exchange rate is seeded with a placeholder; until AC6 ships, backend/deploy/deploy.md 'Exchange rate' documents a one-time SQL.",
+    "In dev, flags can be changed without the console with backend `pnpm dev:flags` (PWA DI-18).",
+    "Go-live items outside this plan (from backend S11 and PWA P15 open_after_stage): first production deploy and DNS A records for the app hosts; real email/SMS senders (backend NI-07); legal placeholders and Persian legal texts (PWA NI-P13-12); region-config CDN host still cdn.carpal.app (backend NI-22)."
+  ],
+
+  "recommendations_for_next_stages": [
+    { "id": "R-01", "text": "When the business web app (cp-web-portal) starts, extract the BFF core (session, oauth, dpop, private_key_jwt, forwarder, csrf), the typed client and the design-system kit from pwa/ and frontend/admin-console/ into shared packages instead of making a third copy." },
+    { "id": "R-02", "text": "Ask the WP0 owner to settle the staff permission matrix (DI-02) and the four-eyes list (OQ-04) before AC14, so the backend roles and the Docs/23 roles match." },
+    { "id": "R-03", "text": "Run backend NI-02 (purpose bound to the record, BR-09) before real staff use the console with real user data." },
+    { "id": "R-04", "raised_in": "AC1", "text": "The console now depends on shared/ (api-contracts generated by the PWA, i18n common/format, design-system web copy). Whenever shared/ or the backend contract changes, run in this order: `pnpm contract:generate` in pwa/, then `pnpm contract:generate` and `pnpm check` in frontend/admin-console. A small root script (or CI job) that runs both apps' checks would make this automatic (DI-11)." },
+    { "id": "R-05", "raised_in": "AC1", "text": "Plan the pilot's staff accounts before AC6 (OQ-10): two ADM accounts are needed for any ADM-only four-eyes change (kill switch off, a rate change over 20 %, plans, retention, role grants), plus at least one MOD and one CRV. The first ADM comes from the AC11.T3 runbook; the second must be granted by four-eyes, so create both before the four-eyes rule matters (backend bootstrap or the dev tool in dev)." },
+    { "id": "R-06", "raised_in": "AC1", "text": "AC3 can be smaller than planned: security headers (D-05), the operation map with roles, reason/purpose/4EYES/ETAG/IDEM/ASYNC/AAL3 flags, and the route allowlist source (src/lib/api/generated/operations.ts) are ready. The forwarder should build its allowlist straight from ADMIN_OPERATIONS (method + path template + host), never from a hand-written list." }
+  ]
+}
