@@ -41,6 +41,19 @@ describe('page security headers (AC1.T5)', () => {
     expect(originsOf('not a url')).toEqual([]);
   });
 
+  it('lets the map load its style and tiles from the map style host only (AC9)', () => {
+    const csp = contentSecurityPolicy({
+      nonce: 'n',
+      dev: false,
+      https: true,
+      mapOrigins: originsOf('https://tiles.carpals.ir/ir-pilot/style.json'),
+    });
+    expect(csp).toContain("img-src 'self' data: blob: https://tiles.carpals.ir");
+    expect(csp).toContain("connect-src 'self' https://tiles.carpals.ir");
+    expect(csp).toContain("worker-src 'self'");
+    expect(contentSecurityPolicy({ nonce: 'n', dev: false, https: true })).toContain("connect-src 'self';");
+  });
+
   it('makes a fresh nonce each time', () => {
     expect(createNonce()).not.toBe(createNonce());
     expect(atob(createNonce())).toHaveLength(16);

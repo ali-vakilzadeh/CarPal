@@ -20,7 +20,7 @@
     ],
     "progress": {
       "as_of": "2026-11-10",
-      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) with pnpm check, build and a Playwright smoke. AC2 done 2026-11-09 (backend S12): contract 1.3.0 gives cp-web-admin DPoP + private_key_jwt, the staff passkey enrolment inside the sign-in (auth.passkey_enrol_options, auth.passkey_enrol), admin.staff_me, and a first-run staff bootstrap (backend pnpm staff:bootstrap, backend/deploy/staff-bootstrap.sh); the console is regenerated (63 admin-api operations, no api reads, because the api host refuses admin tokens), shows a Latin environment badge (OQ-12) and sends HSTS outside dev (OQ-11). OQ-01, OQ-10, OQ-11 and OQ-12 are answered. AC3 done 2026-11-09: the admin BFF (src/server/bff, copied from the PWA with provenance headers) signs staff in at aal3 with code + PKCE, DPoP-bound tokens and private_key_jwt, keeps tokens, the DPoP key and the admin.staff_me profile server-side (browser: one __Host-cpa_sid cookie), ends sessions after 30 min idle / 8 h, forwards exactly the 63 admin-api operations (purpose and reason headers, CSRF), and offers /bff/reauth for step-up; the typed client (src/lib/api) and the TanStack provider (memory-only cache, cleared on sign-out, session end and staff switch) are in. Tests: pnpm check (196), pnpm test:int against the strict backend (7), pnpm e2e (10). AC4 done 2026-11-09: staff sign in on the console's own /id/signin (work email + password with proof of work in strict mode, then the security key; a first-time account enrols a device-bound key with the emailed code in the same sign-in; the key alone for a step-up) and land in the shell: top bar with the environment badge, lookup and My queue placeholders, shortcut list and avatar menu (roles, My actions for ADM, language, theme, sign-out), left navigation filtered by the role table (20 sections, placeholders until their stages), no-permission and not-found states inside the shell, idle warning at 25 min and sign-out at 30 (measured against the server clock), step-up with one-time replay of the saved action, and keyboard shortcuts. Tests: pnpm check (243), pnpm test:int (7), pnpm e2e (22, strict backend). Uncommitted. AC5 done 2026-11-10: the admin interaction kit (src/components/admin) carries the admin rules into every later screen: useAdminAction refuses an RSN write without a 3-500 character reason, runs it through the step-up with a one-time replay and reports applied / waiting for a second staff member (FourEyesBanner) / accepted job / an explained problem (SELF_APPROVAL_FORBIDDEN, expired, changed meanwhile); ReasonDialog (console reason codes per kind of action + note, sent as '<code>: <note>', D-29) and ConfirmDialog (second confirmation for irreversible actions); PurposeGate and MaskedField (GD-10); DataTable with URL-bound filters, cursor paging, column choice, saved views without data, keyboard rows and Latin digits; CaseLayout, EntityChip, Timeline, AiEvidenceBlock, SlaBadge and the ADM-only AuditDrawer (Shift+H). Pending approvals (/approvals) lists and decides four-eyes changes; My work (/) shows the approvals waiting and one tile per queue the roles may see with count, oldest age and SLA state (OQ-05 targets, D-32); the top bar's My queue links there with the approvals count. Tests: pnpm check (301), pnpm test:int (7), pnpm e2e (25, strict backend; the four-eyes round trip with two ADM accounts). Uncommitted. AC6 built 2026-11-10 (partial: the signed-in E2E is not run yet): Exchange rates (/rates: preview, 20 % four-eyes warning, If-Match; replaces the deploy SQL), Feature flags (/flags: the AI kill switch on top, on at once and off by four-eyes; switch and targeting with If-Match and a Reload on 412), Plans & entitlements (/plans: the ranking rule, plan edits by four-eyes, the audit history, assign plan / trial / overrides) and Data retention (/retention: edits by four-eyes). Tests: pnpm check (330), smoke + bff E2E (13); tests/e2e/settings.spec.ts written, waiting for a strict run with the client key. Uncommitted. AC7 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6): Reviews (/reviews: the Path 2 approval queue by stage for community reviewers — the review read for its approval purpose with the business answer, the author history without contact data and evidence links, Confirm once the business step is done, Reject with a note, Ask for evidence, a reason code that is never a rating, A/R keys; moderators read the queue and work review cases: remove, restore, approve a held-back review, warn, move to Path 2 by four-eyes, close) and Disputes & appeals (/disputes: the disputed review with both sides' evidence and the first decider, mediation / uphold / reject with what each does, the different-staff rule explained). Tests: pnpm check (363), smoke + bff E2E (13); tests/e2e/reviews.spec.ts written, its API seeding run against the strict backend. Uncommitted. AC8 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6 and AC7): the moderation case workspace for every target type (also under the AC7 review cases): Reports (/content: triage into a case — safety reasons at least high — into the open case about the same item, or dismiss), Content / Accounts & organizations / AI output (/content tabs) and Inventory (/inventory) queues with safety cases first; a case read for its purpose shows the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), \"Take this case\", the actions the backend applies to that item in its state (showcase approval needs the customer's consent), warn / suspend (security key) / reactivate, trust penalties (security key, second confirmation) and badges by id, and closing with a resolution. Tests: pnpm check (397), smoke + bff E2E (13); tests/e2e/moderation.spec.ts written, its API seeding run. Uncommitted.",
+      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) with pnpm check, build and a Playwright smoke. AC2 done 2026-11-09 (backend S12): contract 1.3.0 gives cp-web-admin DPoP + private_key_jwt, the staff passkey enrolment inside the sign-in (auth.passkey_enrol_options, auth.passkey_enrol), admin.staff_me, and a first-run staff bootstrap (backend pnpm staff:bootstrap, backend/deploy/staff-bootstrap.sh); the console is regenerated (63 admin-api operations, no api reads, because the api host refuses admin tokens), shows a Latin environment badge (OQ-12) and sends HSTS outside dev (OQ-11). OQ-01, OQ-10, OQ-11 and OQ-12 are answered. AC3 done 2026-11-09: the admin BFF (src/server/bff, copied from the PWA with provenance headers) signs staff in at aal3 with code + PKCE, DPoP-bound tokens and private_key_jwt, keeps tokens, the DPoP key and the admin.staff_me profile server-side (browser: one __Host-cpa_sid cookie), ends sessions after 30 min idle / 8 h, forwards exactly the 63 admin-api operations (purpose and reason headers, CSRF), and offers /bff/reauth for step-up; the typed client (src/lib/api) and the TanStack provider (memory-only cache, cleared on sign-out, session end and staff switch) are in. Tests: pnpm check (196), pnpm test:int against the strict backend (7), pnpm e2e (10). AC4 done 2026-11-09: staff sign in on the console's own /id/signin (work email + password with proof of work in strict mode, then the security key; a first-time account enrols a device-bound key with the emailed code in the same sign-in; the key alone for a step-up) and land in the shell: top bar with the environment badge, lookup and My queue placeholders, shortcut list and avatar menu (roles, My actions for ADM, language, theme, sign-out), left navigation filtered by the role table (20 sections, placeholders until their stages), no-permission and not-found states inside the shell, idle warning at 25 min and sign-out at 30 (measured against the server clock), step-up with one-time replay of the saved action, and keyboard shortcuts. Tests: pnpm check (243), pnpm test:int (7), pnpm e2e (22, strict backend). AC5 done 2026-11-10: the admin interaction kit (src/components/admin) carries the admin rules into every later screen: useAdminAction refuses an RSN write without a 3-500 character reason, runs it through the step-up with a one-time replay and reports applied / waiting for a second staff member (FourEyesBanner) / accepted job / an explained problem (SELF_APPROVAL_FORBIDDEN, expired, changed meanwhile); ReasonDialog (console reason codes per kind of action + note, sent as '<code>: <note>', D-29) and ConfirmDialog (second confirmation for irreversible actions); PurposeGate and MaskedField (GD-10); DataTable with URL-bound filters, cursor paging, column choice, saved views without data, keyboard rows and Latin digits; CaseLayout, EntityChip, Timeline, AiEvidenceBlock, SlaBadge and the ADM-only AuditDrawer (Shift+H). Pending approvals (/approvals) lists and decides four-eyes changes; My work (/) shows the approvals waiting and one tile per queue the roles may see with count, oldest age and SLA state (OQ-05 targets, D-32); the top bar's My queue links there with the approvals count. Tests: pnpm check (301), pnpm test:int (7), pnpm e2e (25, strict backend; the four-eyes round trip with two ADM accounts). AC6 built 2026-11-10 (partial: the signed-in E2E is not run yet): Exchange rates (/rates: preview, 20 % four-eyes warning, If-Match; replaces the deploy SQL), Feature flags (/flags: the AI kill switch on top, on at once and off by four-eyes; switch and targeting with If-Match and a Reload on 412), Plans & entitlements (/plans: the ranking rule, plan edits by four-eyes, the audit history, assign plan / trial / overrides) and Data retention (/retention: edits by four-eyes). Tests: pnpm check (330), smoke + bff E2E (13); tests/e2e/settings.spec.ts written, waiting for a strict run with the client key. AC7 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6): Reviews (/reviews: the Path 2 approval queue by stage for community reviewers — the review read for its approval purpose with the business answer, the author history without contact data and evidence links, Confirm once the business step is done, Reject with a note, Ask for evidence, a reason code that is never a rating, A/R keys; moderators read the queue and work review cases: remove, restore, approve a held-back review, warn, move to Path 2 by four-eyes, close) and Disputes & appeals (/disputes: the disputed review with both sides' evidence and the first decider, mediation / uphold / reject with what each does, the different-staff rule explained). Tests: pnpm check (363), smoke + bff E2E (13); tests/e2e/reviews.spec.ts written, its API seeding run against the strict backend. AC8 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6 and AC7): the moderation case workspace for every target type (also under the AC7 review cases): Reports (/content: triage into a case — safety reasons at least high — into the open case about the same item, or dismiss), Content / Accounts & organizations / AI output (/content tabs) and Inventory (/inventory) queues with safety cases first; a case read for its purpose shows the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), \"Take this case\", the actions the backend applies to that item in its state (showcase approval needs the customer's consent), warn / suspend (security key) / reactivate, trust penalties (security key, second confirmation) and badges by id, and closing with a resolution. Tests: pnpm check (397), smoke + bff E2E (13); tests/e2e/moderation.spec.ts written, its API seeding run. AC4-AC8 are committed (the user, 2026-11-10). AC9 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6-AC8): Organizations (/orgs: search by name, slug or id without contact data, two saved views) and the organization page read for an open work item (a pending verification or an open case; otherwise the header from the search and the checks to open it for): Profile with masked contact data, Locations with a MapLibre map (owner's pin, service radius, the server's pin-to-address verdict) and pin or address correction by click, drag or typed coordinates, Verification with the badge approval, Plan; suspend and reactivate; assist sessions with a banner on every page. Verification (/verification: queue with the 2-working-day SLA; submitted data, a watermarked document viewer with zoom, rotate and paging, the checklist; approve blocked by a far pin; reject with the message for the business; the organization's new status after the decision). Tests: pnpm check (429), smoke + bff E2E (13); tests/e2e/orgs.spec.ts written, its API seeding run.",
       "stages_done": [
         "AC1",
         "AC2",
@@ -28,7 +28,7 @@
         "AC4",
         "AC5"
       ],
-      "next": "Run `pnpm e2e` in strict mode with CARPAL_ADMIN_CLIENT_PRIVATE_JWKS (closes AC6, AC7 and AC8); then the contract 1.4.0 backend stage (BR-18 with BR-21, BR-31 and what else is ready, R-09, R-16, R-22) and AC9 (organizations, verification, locations, assist sessions). OQ-15 still open (SLA working days); BR-19 waits for the user's research.",
+      "next": "Run `pnpm e2e` in strict mode with CARPAL_ADMIN_CLIENT_PRIVATE_JWKS (closes AC6-AC9); then AC10 (users, staff roles, privacy requests; BR-20 first) and the contract 1.4.0 backend stage (BR-18, BR-21, BR-31, BR-34 and what else is ready). OQ-15 still open (SLA working days); BR-19 waits for the user's research.",
       "decisions_needed_now": [
         "BR-19 (staff passkey management and lost-key reset): the user is researching the risk review of 2026-11-09 before it is scheduled.",
         "BR-21 and BR-22 (new in AC5, could join contract 1.4.0 with BR-18 before AC9): a list of the caller's own four-eyes requests with their outcome, and a queue summary read for My work and the navigation counts. Neither blocks AC6.",
@@ -36,12 +36,14 @@
         "OQ-02 (needed by AC11): access gate for admin.<DOMAIN>.",
         "OQ-15 (new, needed before the pilot): SLA working days — Friday-only weekend as built, or Thursday and Friday; and whether official holidays should pause SLA timers.",
         "BR-30 (new, docs): the meaning of \"upheld\" for a business objection to a review (today it publishes the review); the console names the outcomes by their effect meanwhile.",
-        "BR-31 (new in AC8, high): a list of badges (and the Verified Business badges waiting for approval); proposed for contract 1.4.0 before AC9 (R-22)."
+        "BR-31 (new in AC8, high): a list of badges (and the Verified Business badges waiting for approval); proposed for contract 1.4.0 before AC9 (R-22).",
+        "BR-35 (new in AC9, medium): a narrower organization search row with the Docs/23 filters, \"request more info\" for verification checks, and an organization profile correction — for AC14 or earlier if the pilot needs request-more-info."
       ],
       "stages_partial": [
         "AC6",
         "AC7",
-        "AC8"
+        "AC8",
+        "AC9"
       ]
     },
     "milestones": [
@@ -431,6 +433,27 @@
       "issue": "Docs/23 A-CON-01 \"unsafe_advice, non_consensual_media and privacy cases are at least high\": the backend opens cases with the severity it is given (admin.report_triage open_case) or its own (AI flags, rules) and does not enforce the floor.",
       "action": "The console proposes high and offers nothing lower in triage (D-57) and sorts these reasons first whatever their severity; BR-32 asks the backend to enforce it.",
       "status": "open"
+    },
+    {
+      "id": "DI-30",
+      "raised_in": "AC9",
+      "issue": "Docs/23 A-VER-02 \"Request more info (choose missing items; message template; status stays pending, SLA pauses)\" and the A-VER-01 columns AI pre-check, assignee and request types certification / location change / wrong-location report: admin.verification_decide knows verified and rejected only, OrganizationVerification has no assignee or pre-check, and certifications are not a verification type in contract 1.3.0. The submitted data lacks registration number, owner and call-back result.",
+      "action": "The console offers Approve and Reject only and says so (no dead buttons, GD-08); BR-35 asks for the rest.",
+      "status": "open"
+    },
+    {
+      "id": "DI-31",
+      "raised_in": "AC9",
+      "issue": "admin.orgs_search is not PURP but returns full StaffOrgView rows (contact email and phone, exact location points), while admin.org_get with the same view is PURP PII. Docs/23 A-ORG-01 also asks for city, plan, rating, possible duplicate and location issue filters and the saved views \"Possible duplicates\" and \"Location issues\", which OrgSearch lacks.",
+      "action": "The list and the header show no contact data or points from the search (GD-10); BR-35 asks for a narrower search row and the filters.",
+      "status": "open"
+    },
+    {
+      "id": "DI-32",
+      "raised_in": "AC9",
+      "issue": "Docs/23 A-ORG-02 Profile \"Staff can correct obvious data errors (e.g. wrong city) with a reason; changes are audited and the organization is notified\" and \"with edit history\": the admin plane has no organization profile correction or history read (only locations, admin.location_correct).",
+      "action": "The Profile tab is read-only and says so; part of BR-35.",
+      "status": "open"
     }
   ],
   "backend_requests": [
@@ -709,6 +732,22 @@
       "request": "Typed target snapshots for content (with BR-27): the author (display name, role member/provider/vendor, the organization card when posted for an organization) and a short author history (published, removed, warnings) for posts, comments, questions, answers and files; for a showcase item its consent record (customer display, scope, granted_at) and media ids; for a fitment row the listing name; and an admin read of the comments or answers around a reported comment or answer (PURP case).",
       "source": "AC8 (DI-28)",
       "status": "open"
+    },
+    {
+      "id": "BR-34",
+      "stage": "contract 1.4.0",
+      "priority": "low",
+      "request": "A read of open assist sessions: GET {adm}/assist-sessions?mine=true&status=active (admin.assist_sessions_list, STF(ADM, SUP)) → { items: { assist_session_id, organization: OrgSummary, flow_type, expires_at }[] }, so the console can show the banner after a reload and on another device.",
+      "source": "AC9 (D-62, DI-08)",
+      "status": "open"
+    },
+    {
+      "id": "BR-35",
+      "stage": "contract 1.4.0 (AC14)",
+      "priority": "medium",
+      "request": "Organizations and verification on the admin plane: (1) admin.orgs_search returns a list row without contact data or exact points (name, type, city, plan, statuses, members, open cases, trust, created) and filters city, plan_key, has_open_cases, location_issue (far_apart or open wrong-location report) and possible_duplicate; (2) admin.verification_decide decision \"info_requested\" with missing items and a message (status stays pending, the SLA pauses), and assignee / AI pre-check / registration number, owner and call-back result in the queue item; (3) an organization profile correction (admin.org_correct, RSN AUD, the organization notified) and its history.",
+      "source": "AC9 (DI-30, DI-31, DI-32)",
+      "status": "open"
     }
   ],
   "open_questions": [
@@ -921,7 +960,8 @@
       "operations": [
         "admin.orgs_search"
       ],
-      "coverage": "full"
+      "coverage": "full",
+      "coverage_ac9": "built: search by name/slug/id, status/verification/type filters, two saved views as links; no city/plan/duplicate/location-issue filters (DI-31, BR-35)"
     },
     {
       "screen": "A-ORG-02 Organization detail",
@@ -935,7 +975,8 @@
         "admin.assist_session_end",
         "admin.subscription_assign"
       ],
-      "coverage": "partial (tabs BR-16; merge after BR-08; assisted wizard DI-08)"
+      "coverage": "partial (tabs BR-16; merge after BR-08; assisted wizard DI-08)",
+      "coverage_ac9": "built: header and actions (suspend/reactivate, assist, change plan link, audit), Profile (read-only, DI-32), Locations (map, correction), Verification (+ badge approval by id), Plan; other tabs listed as not available (DI-06); merge hidden (BR-08)"
     },
     {
       "screen": "A-VER-01 / A-VER-02 Verification",
@@ -945,7 +986,8 @@
         "admin.verification_decide",
         "admin.media_download_url"
       ],
-      "coverage": "full"
+      "coverage": "full",
+      "coverage_ac9": "built: queue with SLA, three-panel review, checklist, approve/reject; no request-more-info, pre-check or assignee (DI-30, BR-35)"
     },
     {
       "screen": "A-REV-01 / A-REV-02 Reviews and approvals",
@@ -2536,7 +2578,7 @@
     {
       "id": "AC9",
       "title": "Organizations, verification and locations (map), assist sessions",
-      "status": "not_started",
+      "status": "partial",
       "depends_on": [
         "AC5"
       ],
@@ -2577,32 +2619,38 @@
         {
           "id": "AC9.T1",
           "task": "A-ORG-01: search by name/slug/id with status, verification and type filters; saved views Pending verification, Suspended.",
-          "status": "not_started"
+          "status": "done",
+          "result": "src/features/orgs/orgs-page.tsx (/orgs; ADM, MOD, SUP): admin.orgs_search with name (part, ≥ 2), slug or id (\"Search in\", an id is checked as a UUID) and the status, verification and type filters in the URL, 50 a page; columns name, type, city (primary location), plan, verification, status, members, open cases, trust (hidden), created. The search answers full StaffOrgView rows without a purpose, but the list never shows contact data or exact points (DI-31). Saved views of Docs/23 the contract can serve are links (Pending verification = verification_status pending, Suspended = status suspended); Possible duplicates and Location issues need filters the search lacks (DI-31). A row opens the organization page with its oldest pending verification as the purpose."
         },
         {
           "id": "AC9.T2",
           "task": "A-ORG-02 (purpose-bound): header with status chips and View public profile; tabs Profile, Locations, Verification, Plan (current subscription, link to assign), Audit drawer; other Docs/23 tabs listed as 'not available yet' (DI-06).",
-          "status": "not_started"
+          "status": "done",
+          "result": "src/features/orgs/org-page.tsx (/orgs/<id>): admin.org_get for the purpose in the URL. The backend accepts a purpose only while its work item is open (verification: pending and not taken by another staff member; case: open, unassigned or the caller's), so without one — or once it is closed (404) — the header comes from admin.orgs_search {organization_id} and the page lists the pending checks to open it for (D-63). Header: name, type, status chips (organization, verification), plan, city, View public profile (active with a slug; provider/hybrid → /shop, vendor → /parts-seller), Suspend/Reactivate, Assist onboarding, Change plan (ADM: /plans?subscriber=organization:<id>#assign) and the Audit trail (entity organization). Tabs (role=tablist, arrow keys, ?tab=): Profile (contact email and phone masked, Reveal re-reads for the purpose; no edit, DI-32), Locations, Verification (checks with a Review link for pending ones, the badge approval of AC8 BadgePanel) and Plan (subscription facts, no history); Capabilities & badges, Reviews, Portfolio, Inventory, Members and Cases listed as not available yet (DI-06). Moderation cases about an organization or a location link to the page for the case's purpose (target-view.tsx)."
         },
         {
           "id": "AC9.T3",
           "task": "Locations tab with MapLibre: owner pin, typed address, distance flag from the region threshold, service radius circle; correct pin or address with a reason (admin.location_correct).",
-          "status": "not_started"
+          "status": "done",
+          "result": "src/features/orgs/locations-tab.tsx and map/ (MapLibre 6.14.0 as in the PWA, lazy, worker under /_next/static/; built-in style without a basemap unless CARPAL_ADMIN_MAP_STYLE_URL is set, its origin in img-src and connect-src; D-59). Each location: typed address, owner's pin (exact point), the pin-to-address distance with the server's verdict (far_apart / consistent / not checked) and the threshold (300 m: the backend default, StaffOrgView carries none, D-58), geo source, address visibility, service radius (circle on the map), hours, verified date, its own audit trail. Correct pin or address (ADM, MOD): click the map or drag the proposed pin, or type the coordinates (Latin or Persian digits; the keyboard alternative), the move size is shown; only changed fields are sent (cleared optional fields as null) with a reason (location_correction); the answer shows the new verdict and the organization is re-read."
         },
         {
           "id": "AC9.T4",
           "task": "A-VER-01 queue with SLA; A-VER-02 three panels: submitted data, document viewer (admin.media_download_url, zoom/rotate/page, watermark), checklist and decision (approve / request info / reject with reason).",
-          "status": "not_started"
+          "status": "done",
+          "result": "src/features/verification/ (/verification; ADM, MOD): admin.verifications_queue by status (pending default) and type, oldest first, SLA 2 working days from submission (OQ-05 default), documents, pin check, wrong-location reports. A check opens for verification:<id> in three panels inside CaseLayout: submitted data (admin.org_get for the purpose: legal name, masked contact data with Reveal, primary address, distance and threshold from PinCheck), the document viewer (admin.media_download_url display copy per document on demand, zoom 50-300 %, rotate, page through, \"CarPal internal\" watermark, no download; a file without a display copy opens as the original in a new tab, D-61), and the checklist + decision. Approve needs every checklist item of the check type (state saved at the end of the reason, D-60) and no far pin for a location/address check (link to the Locations tab for the purpose); Reject needs a reason and the message the business reads (rejection_reason). A/R keys. After the decision the purpose ends; the answer stays with the organization's new verification status (admin.orgs_search) and the badge hint. Request more info is not offered (DI-30)."
         },
         {
           "id": "AC9.T5",
           "task": "Organization status change (suspend/reactivate with reason); merge behind BR-08 (hidden until available, then 4EYES with a preview); assist session start/end with reason and a visible banner while active (DI-08).",
-          "status": "not_started"
+          "status": "done",
+          "result": "org-actions.tsx: Suspend (reason kind suspension, a second confirmation; profiles leave search and the map) and Reactivate (restore) through admin.org_status, offered by the backend's accepted transitions; Archive is not offered (D-64). Merge hidden (BR-08). assist.tsx: Assist onboarding (ADM, SUP) for the flows of the organization type (hybrid: provider or vendor) with a reason; the session (id, organization, end time) is kept in memory for the staff member who started it and shown by AssistBanner on every console page (app/(console)/layout.tsx) with End the session (reason); a session that ended or expired elsewhere is forgotten on 404/409. No Web Storage (GD-12, lint-enforced), so a reload forgets the banner (D-62, BR-34). The assisted wizard waits for the business web app (DI-08)."
         },
         {
           "id": "AC9.T6",
           "task": "E2E: a provider organization created through the API is verified; a location pin is corrected; EN and FA; axe (map has a keyboard alternative).",
-          "status": "not_started"
+          "status": "partial",
+          "result": "tests/e2e/orgs.spec.ts (2 tests: EN — a published provider submits business identity and location checks through the API; a moderator approves the identity check after the checklist, corrects the pin on the Locations tab by typed coordinates, approves the location check and sees the organization verified, axe on the review and the Locations tab; FA — an admin finds the organization by id, opens it for a pending phone check, reads the correction in the location's audit drawer, suspends and reactivates it, axe in FA) and app-user.ts submitVerification. axe-core in jsdom: 0 violations on the organization page with its Locations tab (EN, FA), the list (FA) and a check under review (EN, FA). The API seeding ran against the running backend (shop published, two checks submitted: passed). NOT RUN signed in: the sign-in stopped at /id/signed-out?reason=failed, as AC6-AC8 (no CARPAL_ADMIN_CLIENT_PRIVATE_JWKS in this session)."
         }
       ],
       "deliverables": [
@@ -2617,7 +2665,102 @@
         "assisted onboarding wizard",
         "extended org tabs (BR-16)"
       ],
-      "report": null
+      "report": {
+        "started_at": "2026-11-10",
+        "completed_at": null,
+        "summary": "Staff find organizations (/orgs) by name, slug or id without seeing contact data, and open one for a work item: the backend accepts a purpose only while its item is open, so the page is read for a pending verification or an open case and otherwise shows the header from the search with the checks to open it for. The organization page has Profile (masked contact data), Locations (a MapLibre map with the owner's pin, the service radius and the server's pin-to-address verdict; pin or address corrected with a reason by click, drag or typed coordinates), Verification (the checks, the Verified Business badge approval) and Plan; suspend and reactivate with a reason; assist sessions start and end with a banner on every page. Verification (/verification) is a queue with the 2-working-day SLA and a three-panel review: the submitted data, the documents (watermarked display copies with zoom, rotate and paging) and the checklist; Approve needs the checklist and no far pin, Reject needs the message for the business, and the organization's new verification status is shown after the decision. Contract gaps: no request-more-info, no org search filters for duplicates or location issues and full StaffOrgView rows without a purpose, no profile correction, no read of open assist sessions, no region settings on the admin plane (DI-30..DI-32, BR-34, BR-35, BR-18). The E2E is written and its seeding ran; the signed-in part waits for the client key, like AC6-AC8.",
+        "acceptance": {
+          "Verification decisions update the organization's verification status and badge eligibility.": "The backend recomputes the organization's status on every decision (verified when business identity and a location are verified; then the trust worker awards Verified Business pending_approval). The console shows the new status from admin.orgs_search after the decision and the badge hint (DOM test: approve → \"The organization's verification status is now: Verified.\"); a location check cannot be approved while a pin is far (DOM test). E2E written (orgs.spec.ts test 1 ends on the verified status), not run signed in (partial_reason).",
+          "Location corrections are audited and visible in the audit drawer.": "admin.location_correct writes organization.location_corrected (entity organization_location) with the reason; each location has its own Audit trail button (AuditDrawer, ADM). DOM test: the correction sends only the pin with the reason and the page shows the new verdict and source; E2E test 2 reads the correction (reason code and note) in the drawer in FA — written, not run.",
+          "E2E and axe pass in EN and FA.": "axe-core in jsdom: 0 violations on the organization page with Locations (EN, FA), the list (FA) and a check under review (EN, FA). Chromium axe is in orgs.spec.ts (EN review and Locations tab, FA organization page), not run. smoke + bff E2E: 13 passed against the AC9 production build."
+        },
+        "screens_built": [
+          "A-ORG-01 Organization list (/orgs)",
+          "A-ORG-02 Organization detail (/orgs/<id>): header and actions, Profile, Locations (map, correction), Verification, Plan",
+          "A-VER-01 Verification queue (/verification)",
+          "A-VER-02 Verification review: submitted data, document viewer, checklist and decision",
+          "Assist session banner (every console page)"
+        ],
+        "operations_used": [
+          "admin.orgs_search (list, header without a purpose, status after a decision)",
+          "admin.org_get (PURP verification:<id> or case:<id>; Reveal re-reads)",
+          "admin.org_status (RSN: suspended, active)",
+          "admin.verifications_queue, admin.verification_decide (PURP RSN: verified, rejected with rejection_reason)",
+          "admin.location_correct (RSN: pin and/or address fields)",
+          "admin.media_download_url (PURP AUD, display then original)",
+          "admin.assist_session_start, admin.assist_session_end (RSN)",
+          "admin.badge_approve (AC8 BadgePanel on the Verification tab)",
+          "admin.subscription_assign (link to the AC6 form)",
+          "E2E only, on the api host as cp-mobile users: org.create, org.location_create, provider profile/categories/coverage/publish, org.verification_submit"
+        ],
+        "files_created": [
+          "src/features/orgs/{index.ts, org-logic.ts, orgs-page.tsx, org-page.tsx, org-actions.tsx, locations-tab.tsx, assist.tsx, map/maplibre.ts, map/location-map.tsx, org-logic.test.ts, orgs.test.tsx}",
+          "src/features/verification/{index.ts, verification-logic.ts, verification-page.tsx, document-viewer.tsx, verification-logic.test.ts, verification.test.tsx}",
+          "src/app/(console)/{orgs/page.tsx, orgs/[orgId]/page.tsx, verification/page.tsx}",
+          "src/lib/config/geo.ts",
+          "tests/e2e/orgs.spec.ts"
+        ],
+        "files_changed": [
+          "package.json, pnpm-lock.yaml (maplibre-gl 6.14.0, installed offline from the store, same as the PWA)",
+          "src/app/(console)/layout.tsx (AssistBanner)",
+          "src/features/moderation/target-view.tsx (organization and location cases link to the organization page; moderation.test.tsx asserts it)",
+          "src/lib/config/reasons.ts (verification_approve, verification_reject, location_correction, assist_start, assist_end)",
+          "src/server/env.ts (CARPAL_ADMIN_MAP_STYLE_URL, https outside dev), security-headers.ts (mapOrigins in img-src and connect-src), src/proxy.ts, .env.example (also documents the AC8 storage and public web settings), env.test.ts, security-headers.test.ts",
+          "src/components/admin/admin.css (chips, organization header, search, map and markers, MapLibre essentials, correction form, document viewer, verification panels, checklist, assist banner)",
+          "src/lib/i18n/locales/{en,fa}.json (admin.orgs, admin.verification, reason codes; 1553 keys)",
+          "tests/e2e/app-user.ts (submitVerification)",
+          "README.md (status, layout, environment, \"Organizations and verification (AC9)\", E2E)",
+          "dev-plan.json"
+        ],
+        "tests": {
+          "unit": "console 429 passed in 44 files (397 before AC9): organization rules 7, verification rules 5, organization DOM 12 (incl. axe EN/FA ×3), verification DOM 7 (incl. axe EN/FA ×2), CSP map origin 1, env map URL assertions; the moderation case test checks the organization link",
+          "int": "not run (no BFF change)",
+          "e2e": "written: tests/e2e/orgs.spec.ts (2 tests) - signed-in part NOT RUN (no client key in this session; the sign-in stops at /id/signed-out?reason=failed). Its API seeding ran against the running backend (shop published, business identity and location checks submitted: passed). smoke + bff: 13 passed against the AC9 production build.",
+          "a11y": "axe-core in jsdom: 0 violations on the organization page with Locations (EN, FA), the list (FA) and a check under review (EN, FA). Chromium axe written in orgs.spec.ts (not run).",
+          "static": "pnpm check (lint + logical CSS, typecheck, unit + DOM 429, contract:check, i18n:check 1553 keys, ds:check), pnpm format:check, pnpm build (routes /orgs, /orgs/[orgId], /verification; maplibre worker emitted under /_next/static/media)",
+          "not_run": "All signed-in E2E (signin, approvals, settings, reviews, moderation, orgs); pnpm test:int; the map with WebGL in a real browser (jsdom has none: the DOM tests cover the no-map path); Firefox/Safari."
+        },
+        "deviations": [
+          "D-58",
+          "D-59",
+          "D-60",
+          "D-61",
+          "D-62",
+          "D-63",
+          "D-64"
+        ],
+        "new_doc_issues": [
+          "DI-30",
+          "DI-31",
+          "DI-32"
+        ],
+        "new_backend_requests": [
+          "BR-34",
+          "BR-35"
+        ],
+        "new_open_questions": [],
+        "decisions": [
+          "The organization is read only for an open work item (the backend's purpose rule); without one the page uses the organization search for its header and offers the pending checks — never a purpose the staff member types.",
+          "The map is never the only way: typed coordinates are the keyboard alternative and the no-WebGL path keeps the form (axe in jsdom runs on that path).",
+          "The far/near verdict is always the server's (location_check_status), never recomputed in the browser; the console only shows the size of a proposed move.",
+          "BR-18 was not built first (R-09): the map needs only the style (env, D-59) and the threshold (backend default, D-58); BR-18 stays open for AC12 and the region settings."
+        ],
+        "notes_for_next": [
+          "AC10 (users, staff, privacy): orgHref(orgId, purpose, tab) and the purpose rule apply to users as well (admin.user_get is PURP): open a user only for an open work item, fall back to an exact lookup without contact data; reuse MaskedField with a purpose-bound re-read as the organization Profile tab does.",
+          "The map component (src/features/orgs/map) is self-contained: a later screen that shows a point (a user's vehicle location is not one; an appointment place could be) can reuse LocationMap.",
+          "E2E data: tests/e2e/app-user.ts publishedShop() + submitVerification(shop, type).",
+          "AC11 deploy kit: set CARPAL_ADMIN_MAP_STYLE_URL when the region tile host exists (its origin enters the CSP), and check that the tile host allows the console origin (CORS) for style, tiles, glyphs and sprites."
+        ],
+        "open_after_stage": [
+          "Run the signed-in E2E in strict mode (partial_reason): AC6, AC7, AC8 and AC9 close together.",
+          "BR-34, BR-35 (new); BR-31 (badge list) still matters for the Verified Business approval; BR-18 (region settings, taxonomy) for AC12; BR-08 (merge); BR-27..BR-33, BR-21..BR-26, BR-19 (user research), BR-20 (AC10), BR-07..BR-17 as before.",
+          "DI-30..DI-32 (new); DI-01, DI-05..DI-29 as before.",
+          "OQ-15 (SLA working days), OQ-02 (AC11), OQ-03, OQ-06..OQ-09 with their defaults.",
+          "The E2E seeding left test data in the dev database (a published shop with two verification checks) besides the earlier suites' data.",
+          "Commit when the user asks (the user committed AC6-AC8 before this stage)."
+        ]
+      },
+      "partial_reason": "All code, docs, unit and DOM tests are done and green, and the E2E seeding through the API ran against the running backend; the signed-in part of tests/e2e/orgs.spec.ts (and the AC4-AC8 suites) has not run, because the strict backend needs the cp-web-admin private key (CARPAL_ADMIN_CLIENT_PRIVATE_JWKS) and this session had none. Run: export CARPAL_STRICT_AUTH=1 and CARPAL_ADMIN_CLIENT_PRIVATE_JWKS, then `pnpm e2e` in frontend/admin-console (backend `pnpm dev` running). When it passes, set AC9 and AC9.T6 (and AC6-AC8 with their T6) to done."
     },
     {
       "id": "AC10",
@@ -3599,6 +3742,62 @@
       "affects": [
         "AC8.T1"
       ]
+    },
+    {
+      "stage": "AC9",
+      "id": "D-58",
+      "summary": "The Locations tab shows the backend's default pin threshold (300 m, CARPAL_LOCATION_CHECK_THRESHOLD_M) because StaffOrgView has no threshold; the verification review shows the real one (PinCheck.threshold_m). The verdict itself is always the server's. BR-18 (region settings on the admin plane) would remove the default.",
+      "affects": [
+        "AC9.T3"
+      ]
+    },
+    {
+      "stage": "AC9",
+      "id": "D-59",
+      "summary": "The map style comes from the console's environment (CARPAL_ADMIN_MAP_STYLE_URL, origin added to img-src and connect-src), not from region settings read at run time (BR-18 not built; R-09). Unset — the pilot today, its tile URLs are placeholders — the map uses a built-in style without a basemap; centre and zoom defaults come from shared/region-config.",
+      "affects": [
+        "AC9.T3"
+      ]
+    },
+    {
+      "stage": "AC9",
+      "id": "D-60",
+      "summary": "The verification checklist (Docs/23 A-VER-02) has no field in admin.verification_decide: its state is appended to the audited reason (\"<code>: <note> [checklist: a, b]\", the note cut first so the whole stays ≤ 500). Approve needs every item of the check type.",
+      "affects": [
+        "AC9.T4"
+      ]
+    },
+    {
+      "stage": "AC9",
+      "id": "D-61",
+      "summary": "Documents are shown as the display copy inline with a watermark; a file without one (a PDF) answers 404 for the display variant and is offered as the original in a new tab (5-minute link, audited like every staff download). Paging is per document, not per PDF page.",
+      "affects": [
+        "AC9.T4"
+      ]
+    },
+    {
+      "stage": "AC9",
+      "id": "D-62",
+      "summary": "Open assist sessions are kept in memory for the staff member who started them (no read of open sessions in the contract, and GD-12 forbids Web Storage for responses): a reload forgets the banner; the session still expires after 4 hours. BR-34.",
+      "affects": [
+        "AC9.T5"
+      ]
+    },
+    {
+      "stage": "AC9",
+      "id": "D-63",
+      "summary": "Without an open work item the organization page shows its header from admin.orgs_search (no purpose needed; contact data and points not shown) and the pending checks to open it for, instead of the \"pick a work item\" page alone (GD-10), so staff can still suspend, reactivate or assist from the header (those operations are not PURP).",
+      "affects": [
+        "AC9.T2"
+      ]
+    },
+    {
+      "stage": "AC9",
+      "id": "D-64",
+      "summary": "admin.org_status also archives; Docs/23 lists Suspend and Reactivate only, so Archive is not offered (an archived organization is still reactivated).",
+      "affects": [
+        "AC9.T5"
+      ]
     }
   ],
   "handoff_notes": [
@@ -3610,7 +3809,8 @@
     "Console after AC5 (2026-11-10): the admin kit in src/components/admin is the building block of every screen (README 'Admin kit'). Pending approvals and My work are live; the other sections are placeholders until AC6-AC13.",
     "Console after AC6 (2026-11-10): platform admins set the exchange rate, flags and the AI kill switch, plans and assignments, and retention in the console (README \"Platform settings (AC6)\"); backend/deploy/deploy.md keeps the rate SQL only as a fallback. The signed-in E2E of AC6 waits for a strict run with the client key.",
     "Console after AC7 (2026-11-10): community reviewers decide Path 2 reviews on /reviews and moderators work review cases there; disputes and appeals are decided on /disputes (README \"Reviews and disputes (AC7)\"). The E2E data comes from the API through cp-mobile users (tests/e2e/app-user.ts). The signed-in E2E of AC6 and AC7 waits for a strict run with the client key.",
-    "Console after AC8 (2026-11-10): moderators triage reports and work content, account, AI output and inventory cases on /content and /inventory (README \"Moderation (AC8)\"); review cases use the same workspace. The signed-in E2E of AC6-AC8 waits for a strict run with the client key."
+    "Console after AC8 (2026-11-10): moderators triage reports and work content, account, AI output and inventory cases on /content and /inventory (README \"Moderation (AC8)\"); review cases use the same workspace. The signed-in E2E of AC6-AC8 waits for a strict run with the client key.",
+    "Console after AC9 (2026-11-10): moderators and admins verify organizations on /verification and correct locations on the organization page (/orgs/<id>, read for an open work item); support staff and admins start assist sessions there (README \"Organizations and verification (AC9)\"). Set CARPAL_ADMIN_MAP_STYLE_URL once the region tile host exists. The signed-in E2E of AC6-AC9 waits for a strict run with the client key."
   ],
   "recommendations_for_next_stages": [
     {
@@ -3724,6 +3924,16 @@
       "id": "R-23",
       "raised_in": "AC8",
       "text": "AC11 deploy kit: set CARPAL_STORAGE_URL (https storage host of signed links) and CARPAL_ADMIN_PUBLIC_WEB_URL (https://pwa.<DOMAIN>) in the console's env file, and check that the storage host serves display copies without Cross-Origin-Resource-Policy: same-origin (an <img> from admin.<DOMAIN> would be blocked)."
+    },
+    {
+      "id": "R-24",
+      "raised_in": "AC9",
+      "text": "Publish the region tile host (WP1/WP8) before the pilot and set CARPAL_ADMIN_MAP_STYLE_URL in the console (and the PWA's style URL): without a basemap, staff correcting a pin see the pins on a blank map and must rely on the typed coordinates and the distance."
+    },
+    {
+      "id": "R-25",
+      "raised_in": "AC9",
+      "text": "Decide whether the pilot needs \"request more info\" for verification (BR-35 part 2): today staff must reject with what to fix, which restarts the business's submission and its SLA."
     }
   ]
 }

@@ -11,6 +11,8 @@ export interface CspOptions {
   https: boolean;
   /** Signed media URLs (the storage host): the media viewer of moderation cases shows display copies (AC8). */
   mediaOrigins?: readonly string[];
+  /** The map style host (AC9 Locations tab): style, tiles, glyphs and sprites are fetched and drawn from it. */
+  mapOrigins?: readonly string[];
 }
 
 /** The origin of a URL for a CSP source list ([] for an empty or invalid value). */
@@ -29,15 +31,17 @@ export const TRUSTED_TYPES_POLICIES = ['nextjs', 'nextjs#bundler', 'default'] as
 export function contentSecurityPolicy(o: CspOptions): string {
   const join = (...parts: string[]) => parts.filter(Boolean).join(' ');
   const media = (o.mediaOrigins ?? []).join(' ');
+  const map = (o.mapOrigins ?? []).join(' ');
   const directives: [string, string][] = [
     ['default-src', "'self'"],
     ['script-src', join("'self'", `'nonce-${o.nonce}'`, "'strict-dynamic'", o.dev ? "'unsafe-eval'" : '')],
     ['style-src', join("'self'", `'nonce-${o.nonce}'`)],
-    ['img-src', join("'self'", 'data:', 'blob:', media)],
+    ['img-src', join("'self'", 'data:', 'blob:', media, map)],
     ...(media ? ([['media-src', join("'self'", media)]] as [string, string][]) : []),
     ['font-src', "'self'"],
-    ['connect-src', join("'self'", o.dev ? 'ws:' : '')],
-    // The proof-of-work solver of the staff sign-in runs in a same-origin worker (src/lib/api/pow.ts, AC4.T1).
+    ['connect-src', join("'self'", map, o.dev ? 'ws:' : '')],
+    // The proof-of-work solver of the staff sign-in (src/lib/api/pow.ts, AC4.T1) and MapLibre's worker (AC9, a static
+    // file under /_next/static/) run in same-origin workers.
     ['worker-src', "'self'"],
     ['manifest-src', "'none'"],
     ['frame-src', "'none'"],

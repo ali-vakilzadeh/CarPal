@@ -760,3 +760,299 @@
 [dir='rtl'] .adm-media-mark {
   translate: 50% -50%;
 }
+
+/* Organizations, verification and locations (AC9): status chips, the organization header, search, the location map
+   (canvas dir=ltr, controls mirror), pins by shape, the correction form, the document viewer (zoom/rotate inside a
+   clipped frame with the watermark), the three-panel verification item and the assist session banner. */
+.adm-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.adm-chip {
+  display: inline-flex;
+  align-items: center;
+  padding-block: 2px;
+  padding-inline: var(--space-2);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.adm-chip[data-tone='ok'] {
+  border-color: var(--success);
+}
+.adm-chip[data-tone='warn'] {
+  border-color: var(--signal);
+}
+.adm-chip[data-tone='danger'] {
+  border-color: var(--danger);
+  border-width: 2px;
+}
+.adm-org-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-block-end: var(--space-4);
+}
+.adm-org-head > p {
+  margin: 0;
+}
+.adm-org-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+.adm-header-notice:empty {
+  display: none;
+}
+.adm-header-notice {
+  flex-basis: 100%;
+}
+.adm-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin-block-end: var(--space-3);
+}
+.adm-search .cp-field {
+  min-inline-size: 12rem;
+}
+.adm-quick-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-block-end: var(--space-3);
+}
+.adm-tab[aria-selected='true'] {
+  border-block-end-color: var(--accent);
+  color: var(--ink);
+}
+button.adm-tab {
+  border-block-start: 0;
+  border-inline: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.adm-missing {
+  margin-block-start: var(--space-5);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--divider);
+}
+.adm-simple-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+.adm-simple-table th,
+.adm-simple-table td {
+  padding-block: var(--space-2);
+  padding-inline: var(--space-2);
+  border-block-end: 1px solid var(--divider);
+  text-align: start;
+  vertical-align: top;
+}
+.adm-locations,
+.adm-location {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.adm-location-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.adm-location-head .adm-subtitle {
+  margin: 0;
+}
+.adm-map {
+  position: relative;
+  inline-size: 100%;
+  min-block-size: 320px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface-sunken);
+  isolation: isolate;
+}
+.adm-map-canvas {
+  position: absolute;
+  inset: 0;
+}
+.adm-map-canvas:focus-visible,
+.adm-map-canvas canvas:focus-visible {
+  box-shadow: inset var(--ring-focus);
+  outline: none;
+}
+.adm-map-note {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline: var(--space-4);
+  margin: 0;
+  text-align: center;
+}
+.adm-map-controls {
+  position: absolute;
+  z-index: 3;
+  inset-block-start: var(--space-3);
+  inset-inline-end: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.adm-map-controls .cp-iconbtn {
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-1);
+}
+.adm-map-basemap,
+.adm-map-attribution {
+  position: absolute;
+  z-index: 3;
+  margin: 0;
+  padding-block: 2px;
+  padding-inline: var(--space-2);
+  background: var(--surface-raised);
+  font-size: 0.75rem;
+}
+.adm-map-basemap {
+  inset-block-start: var(--space-3);
+  inset-inline-start: var(--space-3);
+  border-radius: var(--radius-sm);
+}
+.adm-map-attribution {
+  inset-block-end: 0;
+  inset-inline-end: 0;
+}
+.adm-marker {
+  inline-size: 22px;
+  block-size: 22px;
+  border: 3px solid var(--surface-raised);
+  box-shadow: var(--shadow-2);
+  cursor: default;
+}
+.adm-marker-pin {
+  border-radius: 50% 50% 50% 0;
+  rotate: -45deg;
+  background: var(--accent);
+}
+.adm-marker-proposed {
+  border-radius: 2px;
+  rotate: 45deg;
+  background: var(--danger);
+  outline: 2px dashed var(--ink);
+  outline-offset: 2px;
+  cursor: grab;
+}
+.adm-correct {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-inline-size: 48rem;
+}
+.adm-correct-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-3);
+}
+.adm-ver-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: var(--space-4);
+}
+.adm-ver .adm-subtitle {
+  margin: 0;
+}
+.adm-docs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.adm-docs-nav,
+.adm-doc-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.adm-doc-frame {
+  overflow: auto;
+  max-block-size: 560px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+.adm-doc-frame img {
+  max-block-size: none;
+  transform-origin: center;
+  transition: transform 0.15s ease;
+}
+.adm-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+}
+.adm-checklist legend,
+.adm-radios legend {
+  padding-inline: var(--space-1);
+  font-weight: 700;
+}
+.adm-radios {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+.adm-assist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-block-end: var(--space-3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .adm-doc-frame img {
+    transition: none;
+  }
+}
+/* MapLibre's own stylesheet is not loaded (copied essentials from pwa map.css); the canvas holder is dir=ltr. */
+.adm-map-canvas.maplibregl-map {
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+.adm-map-canvas .maplibregl-canvas {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+}
+.adm-map-canvas .maplibregl-canvas-container.maplibregl-interactive {
+  cursor: crosshair;
+  user-select: none;
+}
+.adm-map-canvas .maplibregl-canvas-container.maplibregl-touch-zoom-rotate,
+.adm-map-canvas .maplibregl-canvas-container.maplibregl-touch-zoom-rotate .maplibregl-canvas {
+  touch-action: pan-x pan-y;
+}
+.adm-map-canvas .maplibregl-canvas-container.maplibregl-touch-drag-pan,
+.adm-map-canvas .maplibregl-canvas-container.maplibregl-touch-drag-pan .maplibregl-canvas {
+  touch-action: pinch-zoom;
+}
+.adm-map-canvas .maplibregl-canvas-container.maplibregl-touch-zoom-rotate.maplibregl-touch-drag-pan,
+.adm-map-canvas .maplibregl-canvas-container.maplibregl-touch-zoom-rotate.maplibregl-touch-drag-pan .maplibregl-canvas {
+  touch-action: none;
+}
+.adm-map-canvas .maplibregl-marker {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  will-change: transform;
+}

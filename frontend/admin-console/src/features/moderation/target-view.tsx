@@ -5,6 +5,7 @@
 // a new tab, never read through the BFF), and a file through the media viewer: admin.media_download_url (PURP, AUD)
 // gives a 5-minute display link, shown inline with a "CarPal internal" watermark and no download button (images; other
 // files open in a new tab). Unknown target types show their fields as they come.
+import Link from 'next/link';
 import { useState } from 'react';
 import { EntityChip, problemText } from '@/components/admin';
 import { Badge } from '@/components/ds/badge';
@@ -15,6 +16,7 @@ import { useApiClient } from '@/lib/api/query';
 import { Bidi } from '@/lib/format/bidi';
 import { useFormat } from '@/lib/format/client';
 import { useLocale, useT } from '@/lib/i18n/client';
+import { orgHref } from '../orgs/org-logic';
 import { enumLabel, field, num, str, thingKey, type Target } from './case-logic';
 
 /** Labels of target statuses the backend uses (anything else renders as "Unknown (…)"). */
@@ -103,6 +105,14 @@ export function TargetBlock({ target: tg, purpose, publicWeb }: TargetBlockProps
   const status = field(tg, 'status');
   const moderation = field(tg, 'moderation_status');
   const href = publicHref(tg, publicWeb, locale);
+  // AC9: an organization or location case opens the organization page for the case's purpose (Locations tab to
+  // correct a pin, admin.location_correct).
+  const orgPage =
+    tg.type === 'organization'
+      ? orgHref(tg.id, purpose)
+      : tg.type === 'organization_location' && field(tg, 'organization_id')
+        ? orgHref(field(tg, 'organization_id')!, purpose, 'locations')
+        : null;
   const statusLabel = (v: string | null) => enumLabel(TARGET_STATUSES, 'admin.moderation.status', v, t);
   const org = (key: string) => {
     const id = field(tg, key);
@@ -345,6 +355,13 @@ export function TargetBlock({ target: tg, purpose, publicWeb }: TargetBlockProps
           <a href={href} target="_blank" rel="noopener noreferrer" data-testid="public-link">
             {t('admin.moderation.publicPage')}
           </a>
+        </p>
+      ) : null}
+      {orgPage ? (
+        <p>
+          <Link href={orgPage} data-testid="org-link">
+            {tg.type === 'organization_location' ? t('admin.moderation.orgLocations') : t('admin.moderation.orgPage')}
+          </Link>
         </p>
       ) : null}
     </section>

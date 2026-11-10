@@ -11,9 +11,10 @@ The build plan and stage log is [dev-plan.json](dev-plan.json). Sources of truth
 Status: AC1 (foundation), AC2 (backend S12: staff sign-in, contract 1.3.0), AC3 (the BFF), AC4 (staff sign-in and
 the console shell), AC5 (the admin interaction kit, Pending approvals and My work) and AC6 (platform settings:
 exchange rates, feature flags and the AI kill switch, plans and assignments, data retention) are done; AC7 (reviews:
-the Path 2 approval queue, review cases, disputes and appeals) and AC8 (moderation: the reports inbox, content,
-account, AI output and inventory cases, badges) are built, their signed-in E2E waiting for a strict run with the
-client key. The other sections in the navigation are placeholders until their stages (AC9 on).
+the Path 2 approval queue, review cases, disputes and appeals), AC8 (moderation: the reports inbox, content,
+account, AI output and inventory cases, badges) and AC9 (organizations, verification with documents, locations on a
+map with pin correction, assist sessions) are built, their signed-in E2E waiting for a strict run with the client key.
+The other sections in the navigation are placeholders until their stages (AC10 on).
 
 ## Requirements
 
@@ -80,6 +81,9 @@ src/features/reviews/    Reviews (AC7): Path 2 approval queue and decisions, rev
 src/features/disputes/   Disputes & appeals (AC7): queue, the disputed review with both sides' evidence, decisions
 src/features/moderation/ Moderation (AC8): reports inbox, the case workspace for every target type (also used by the
                          review cases), target views and the media viewer, badges; the case rules (case-logic.ts)
+src/features/orgs/       Organizations (AC9): search list, the organization page (purpose, tabs), Locations with the
+                         MapLibre map (map/) and pin correction, suspend/reactivate, assist sessions and their banner
+src/features/verification/ Verification (AC9): queue, three-panel review (data, document viewer, checklist), rules
 src/server/section-page  the server half of a built section: title and the no-permission state
 tools/                   contract generator, design-system sync, logical-CSS check, i18n check, local Node
 tests/                   Vitest setup, DOM-test harness (tests/support), Playwright specs
@@ -91,6 +95,9 @@ See [.env.example](.env.example). `CARPAL_ADMIN_ENV` (dev | staging | prod) driv
 always visible; outside dev the origin must be https, strict mode must be on and the `cp-web-admin` private key set.
 `CARPAL_STORAGE_URL` (the storage host of signed media links; the page CSP allows it for images and video) and
 `CARPAL_ADMIN_PUBLIC_WEB_URL` (the public web app, for "Open the public page" links) are https outside dev too (AC8).
+`CARPAL_ADMIN_MAP_STYLE_URL` (optional, AC9) is the MapLibre style of the region's tile host for the Locations map; its
+origin is allowed by the page CSP (images, connections). Unset, the map uses a built-in style without a basemap (the
+pilot tile URLs are placeholders): pins, the radius circle, the keyboard and the coordinates still work.
 
 ## BFF
 
@@ -228,6 +235,40 @@ waiting for the caller's approval.
   because no read lists an organization's badges yet, BR-31). Every action needs a reason; the case is closed with an
   outcome and a resolution. Merging duplicates is not offered until BR-08.
 
+## Organizations and verification (AC9)
+
+- **Organizations** (`/orgs`; platform admins, moderators, support): search by name (part), slug or id, filtered by
+  status, verification and type; the saved views "Pending verification" and "Suspended" are links. The search needs
+  no purpose and the list shows no contact data or exact points. A row opens the organization page for the
+  organization's oldest pending verification.
+- **Organization page** (`/orgs/<id>?purpose=…`): the backend accepts a purpose only while its work item is open (a
+  pending verification of the organization, or an open case nobody else has taken), so the page is read for the work
+  item it came from; without one, or once it is closed, the header comes from the search and the page lists the
+  pending checks to open it for. Header: type, status chips, plan, city, View public profile, Suspend / Reactivate
+  (moderators, admins; reason, a second confirmation for Suspend), Assist onboarding (support, admins), Change plan
+  (admins, a link to the AC6 form) and the Audit trail. Tabs: **Profile** (contact data masked, Reveal re-reads for
+  the purpose), **Locations**, **Verification** (the checks, a link to review a pending one, the Verified Business
+  badge approval) and **Plan**; the other Docs/23 tabs are listed as not available yet (DI-06). Moderation cases about
+  an organization or a location link here for the case's purpose. Merge is hidden until BR-08.
+- **Locations**: each location with the typed address, the owner's pin, the pin-to-address distance with the server's
+  verdict (far apart above the region threshold, 300 m by default), where the point came from, address visibility,
+  the service radius (a circle on the map) and the hours. **Correct pin or address** (moderators, admins): click the
+  map or drag the proposed pin, or type the coordinates (the keyboard alternative); only changed fields are sent with
+  a reason; the backend marks the point corrected by CarPal, resolves the check and tells the organization. Each
+  location has its own audit trail.
+- **Verification** (`/verification`; moderators, admins): checks by status (pending first) and type, oldest first,
+  with the 2-working-day SLA, documents, the pin check and wrong-location reports. A check opens for its purpose in
+  three panels: the submitted data (contact data masked), the documents (shown on demand as a 5-minute display copy
+  with a "CarPal internal" watermark, zoom, rotate, one document at a time; a file without a display copy opens in a
+  new tab), and the checklist with the decision. Approve needs every checklist item (their state is saved at the end
+  of the reason) and, for a location or address check, no pin far from its address; Reject needs a reason and the
+  message the business reads. After the decision the organization's new verification status is shown. "Request more
+  info" is not in the contract (DI-30).
+- **Assist sessions**: a 4-hour session for one of the organization type's onboarding flows, started and ended with a
+  reason; a banner shows it on every page while it is open. The contract has no read of open sessions, so the
+  console keeps them in memory: after a reload the banner is gone (the session still ends by itself, BR-34). The
+  assisted wizard waits for the business web app (DI-08).
+
 ## Integration tests
 
 `pnpm test:int` signs a fresh ADM account in through the BFF (password, emailed code, a software security key, then
@@ -256,8 +297,9 @@ re-files a data retention policy with its own values, so approving it changes no
 the rate reaches config.client, the kill switch on and off with a second admin, a stale flag version, plans,
 retention and an assignment, Persian), `reviews.spec.ts` (AC7: a reviewer confirms a Path 2 review end to end, a
 moderator cannot decide, a business objection decided by a different staff member, Persian) and `moderation.spec.ts`
-(AC8: a reported post triaged, hidden, restored and closed; a suspension that asks for the security key, Persian) sign
-real staff in. `moderation.spec.ts` turns the community flags on in dev (backend `pnpm dev:flags set community on`)
+(AC8: a reported post triaged, hidden, restored and closed; a suspension that asks for the security key, Persian) and
+`orgs.spec.ts` (AC9: a provider's identity and location checks approved after a pin correction by typed coordinates;
+an admin finds it by id, reads the audited correction, suspends and reactivates it, Persian) sign real staff in. `moderation.spec.ts` turns the community flags on in dev (backend `pnpm dev:flags set community on`)
 and has a shop publish a post and a customer report it; the backend asks for the key only when the sign-in is older
 than 10 minutes, so the spec answers the first suspend call with the backend's `STEP_UP_REQUIRED` and the replay
 after the key goes to the real backend.

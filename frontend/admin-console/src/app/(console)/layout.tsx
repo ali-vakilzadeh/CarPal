@@ -8,6 +8,7 @@ import { notFound, redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { EnvBadge } from '@/components/shell/env-badge';
 import { isSigninOutcome } from '@/features/auth/problems';
+import { AssistBanner } from '@/features/orgs/assist';
 import { signedOutUrl } from '@/features/shell/idle';
 import { ConsoleShell } from '@/features/shell/console-shell';
 import { loginUrl } from '@/lib/api/session';
@@ -34,6 +35,8 @@ export default async function ConsoleLayout({ children }: { children: ReactNode 
   const t = getTranslator(locale);
   return (
     <ConsoleShell envBadge={<EnvBadge env={serverEnv().CARPAL_ADMIN_ENV} t={t} />} themeChoice={theme.choice}>
+      {/* An assist session started in this tab stays visible on every page until it ends (AC9.T5, DI-08). */}
+      <AssistBanner />
       {children}
     </ConsoleShell>
   );

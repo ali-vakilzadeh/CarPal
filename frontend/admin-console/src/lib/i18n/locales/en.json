@@ -413,7 +413,23 @@
         "repeat_reports": "Reported again",
         "not_a_violation": "Not a violation",
         "duplicate_report": "Duplicate report",
-        "abusive_reporting": "Abusive reporting"
+        "abusive_reporting": "Abusive reporting",
+        "documents_match": "Documents match",
+        "location_confirmed": "Location confirmed",
+        "contact_confirmed": "Contact confirmed",
+        "documents_unreadable": "Documents unreadable",
+        "details_mismatch": "Details do not match",
+        "address_not_found": "Address not found",
+        "owner_pin_wrong": "Owner's pin is wrong",
+        "address_typo": "Typo in the address",
+        "wrong_location_report": "Wrong-location report confirmed",
+        "verification_check": "Found during verification",
+        "owner_requested": "The owner asked for help",
+        "onboarding_help": "Onboarding is stuck",
+        "pilot_onboarding": "Pilot onboarding",
+        "onboarding_done": "Onboarding done",
+        "owner_takes_over": "The owner takes over",
+        "session_not_needed": "Session not needed"
       }
     },
     "ops": {
@@ -1537,7 +1553,389 @@
           "link": "The report joins the open case about the same item.",
           "dismiss": "The report is closed without a case. The reporter is not told the reason."
         }
+      },
+      "orgPage": "Open the organization",
+      "orgLocations": "Correct it on the organization’s Locations tab"
+    },
+    "orgs": {
+      "title": "Organizations",
+      "detailTitle": "Organization",
+      "intro": "Find a provider, parts seller or fleet by name, slug or id. The list shows no contact data; an organization opens for a work item (a pending verification or a case).",
+      "listLabel": "Organizations",
+      "empty": "No organization matches.",
+      "back": "All organizations",
+      "search": {
+        "label": "Search organizations",
+        "in": "Search in",
+        "text": "Search for",
+        "go": "Search",
+        "idInvalid": "An organization id looks like 0193a3c4-5d6e-7f80-9a1b-000000000001.",
+        "by": {
+          "name": "Name",
+          "slug": "Slug",
+          "id": "Id"
+        },
+        "hint": {
+          "name": "Part of the name, at least 2 characters.",
+          "slug": "The exact slug of the public profile.",
+          "id": "The exact organization id."
+        }
+      },
+      "views": {
+        "label": "Saved views",
+        "pending": "Pending verification",
+        "suspended": "Suspended",
+        "all": "Clear search and filters"
+      },
+      "filter": {
+        "status": "Status",
+        "verification": "Verification",
+        "type": "Type"
+      },
+      "col": {
+        "name": "Name",
+        "type": "Type",
+        "city": "City",
+        "plan": "Plan",
+        "verification": "Verification",
+        "status": "Status",
+        "members": "Members",
+        "cases": "Open cases",
+        "trust": "Trust score",
+        "created": "Created"
+      },
+      "type": {
+        "provider": "Service provider",
+        "vendor": "Parts seller",
+        "fleet": "Fleet",
+        "hybrid_provider_vendor": "Provider and parts seller"
+      },
+      "status": {
+        "draft": "Draft",
+        "pending_verification": "Pending verification",
+        "active": "Active",
+        "suspended": "Suspended",
+        "archived": "Archived",
+        "merged": "Merged",
+        "do": {
+          "suspend": "Suspend",
+          "reactivate": "Reactivate"
+        },
+        "dialog": {
+          "suspend": "Suspend this organization",
+          "reactivate": "Reactivate this organization"
+        },
+        "effect": {
+          "suspend": "Its public profiles leave search and the map at once; its team can still sign in. Suspensions are never bulk.",
+          "reactivate": "The organization becomes active again and its suspended public profiles are published again."
+        },
+        "done": {
+          "suspend": "The organization is suspended.",
+          "reactivate": "The organization is active again."
+        }
+      },
+      "verification": {
+        "unverified": "Not verified",
+        "pending": "Verification pending",
+        "verified": "Verified",
+        "rejected": "Verification rejected",
+        "expired": "Verification expired",
+        "suspended": "Verification suspended"
+      },
+      "check": {
+        "business_identity": "Business identity",
+        "address": "Address",
+        "phone": "Phone",
+        "email": "Email",
+        "location": "Location"
+      },
+      "checkStatus": {
+        "pending": "Pending",
+        "verified": "Verified",
+        "rejected": "Rejected",
+        "expired": "Expired"
+      },
+      "planIs": "Plan: {{plan}}",
+      "publicProfile": "View public profile",
+      "changePlan": "Change plan",
+      "merged": "This organization was merged into another one.",
+      "mergedLink": "Open the surviving organization",
+      "notFound": {
+        "title": "Organization not found",
+        "text": "No organization has this id, or it was deleted."
+      },
+      "purpose": {
+        "text": "Contact data, locations and documents are read for a work item that is still open: a pending verification of this organization or an open case about it.",
+        "closed": "That work item is closed or taken by someone else",
+        "items": "Open it for",
+        "verification": "{{type}} check, submitted {{when}}",
+        "none": "This organization has no pending verification. Open cases about it: {{cases}}. Open one from the case queue.",
+        "cases": "Cases about accounts and organizations",
+        "readFor": "Read for this work item: {{kind}}. Each read is logged.",
+        "kind": {
+          "case": "a moderation case",
+          "dispute": "a dispute",
+          "dsr": "a privacy request",
+          "verification": "a verification",
+          "approval": "a review approval"
+        }
+      },
+      "tabsLabel": "Organization details",
+      "tab": {
+        "profile": "Profile",
+        "locations": "Locations",
+        "verification": "Verification",
+        "plan": "Plan"
+      },
+      "missing": {
+        "title": "Not available yet",
+        "text": "These parts of the organization page need reads the admin plane does not offer yet; open the public profile meanwhile.",
+        "tab": {
+          "badges": "Capabilities & badges",
+          "reviews": "Reviews",
+          "portfolio": "Portfolio",
+          "inventory": "Inventory",
+          "members": "Members",
+          "cases": "Cases"
+        }
+      },
+      "profile": {
+        "name": "Name",
+        "legalName": "Legal name",
+        "slug": "Slug",
+        "id": "Organization id",
+        "email": "Contact email",
+        "phone": "Contact phone",
+        "website": "Website",
+        "trust": "Trust score",
+        "members": "Active members",
+        "cases": "Open cases",
+        "created": "Created",
+        "updated": "Last changed",
+        "description": "Description",
+        "noEdit": "Profile fields cannot be corrected from the console yet; locations can (Locations tab)."
+      },
+      "locations": {
+        "none": "This organization has no location.",
+        "listLabel": "Locations",
+        "threshold": "A pin counts as far from its address above {{m}} m (the region's threshold).",
+        "far": "far from address",
+        "primary": "Primary",
+        "inactive": "Inactive",
+        "verdict": {
+          "far": "Pin far from address",
+          "ok": "Pin matches address",
+          "unchecked": "Not checked"
+        },
+        "address": "Typed address",
+        "pin": "Owner's pin",
+        "distance": "Pin to address",
+        "distanceText": "{{d}} (threshold {{m}} m)",
+        "noDistance": "The address could not be located.",
+        "source": "Point from",
+        "geoSource": {
+          "user_pin": "The owner's pin",
+          "geocoded": "The geocoded address",
+          "admin_corrected": "Corrected by CarPal"
+        },
+        "visibility": "Address shown",
+        "exact": "Exact",
+        "approximate": "Approximate",
+        "radius": "Service radius",
+        "verified": "Location verified",
+        "notVerified": "Not verified",
+        "hours": "Opening hours",
+        "noHours": "Not given"
+      },
+      "map": {
+        "label": "Map of {{name}}",
+        "loading": "Loading the map…",
+        "failed": "The map cannot be shown in this browser. The coordinates and the form still work.",
+        "noBasemap": "No map tiles are configured: the map shows the pins and the radius only.",
+        "pin": "Owner's pin",
+        "proposed": "Proposed pin",
+        "zoomIn": "Zoom in",
+        "zoomOut": "Zoom out",
+        "recenter": "Back to the pin"
+      },
+      "correct": {
+        "open": "Correct pin or address",
+        "formLabel": "Correct the location",
+        "hint": "Click the map or drag the proposed pin, or type the coordinates. Change only what is wrong; the rest stays as it is.",
+        "lat": "Latitude",
+        "lng": "Longitude",
+        "moved": "The pin moves by {{d}}.",
+        "line1": "Address line 1",
+        "line2": "Address line 2",
+        "city": "City",
+        "region": "Province",
+        "postal": "Postal code",
+        "save": "Save the correction",
+        "nothing": "Nothing changed yet.",
+        "dialog": "Correct this location",
+        "effect": "The point is marked as corrected by CarPal, the check runs again and the organization is told.",
+        "applied": "The location is corrected.",
+        "done": "Now: {{verdict}}.",
+        "field": {
+          "pin": "Pin",
+          "address_line_1": "Address line 1",
+          "address_line_2": "Address line 2",
+          "city": "City",
+          "region": "Province",
+          "postal_code": "Postal code"
+        },
+        "problem": {
+          "required": "Required.",
+          "invalid": "Not valid.",
+          "too_long": "Too long."
+        }
+      },
+      "verificationNow": "Verification status: {{status}}.",
+      "verificationRule": "An organization is verified when its business identity and a location are verified. The Verified Business badge then waits for staff approval.",
+      "checks": {
+        "caption": "Verification checks",
+        "type": "Check",
+        "status": "Status",
+        "submitted": "Submitted",
+        "reviewed": "Reviewed",
+        "documents": "Documents",
+        "note": "Note",
+        "review": "Review",
+        "expires": "Valid until {{when}}",
+        "none": "No verification was requested."
+      },
+      "plan": {
+        "plan": "Plan",
+        "status": "Status",
+        "state": {
+          "trial": "Trial",
+          "active": "Active",
+          "expired": "Expired",
+          "cancelled": "Cancelled"
+        },
+        "trialEnds": "Trial ends",
+        "started": "Started",
+        "expires": "Ends",
+        "entitlements": "Entitlements in effect",
+        "noHistory": "The plan history is not available yet."
+      },
+      "assist": {
+        "start": "Assist onboarding",
+        "startTitle": "Start an assisted onboarding session",
+        "flowLabel": "Onboarding to assist",
+        "flowOnly": "Onboarding: {{flow}}.",
+        "flow": {
+          "provider": "Service provider",
+          "vendor": "Parts seller",
+          "fleet": "Fleet"
+        },
+        "effect": "The session lasts 4 hours and every step is recorded. Consents and terms stay with the owner. The assisted wizard opens in the business web app once it exists.",
+        "started": "The assist session is open until {{until}}.",
+        "bannerTitle": "Assist session open",
+        "bannerText": "{{flow}} onboarding until {{until}} for",
+        "bannerNote": "Everything done in this session is recorded as assisted onboarding. Keep this page open: after a reload the console cannot show the session any more (it still ends by itself).",
+        "end": "End the session",
+        "endTitle": "End the assist session"
       }
+    },
+    "verification": {
+      "title": "Verification",
+      "intro": "Business and location checks waiting for a decision. CarPal promises an answer within 2 working days.",
+      "listLabel": "Verification requests",
+      "itemLabel": "Request",
+      "decisionLabel": "Checklist and decision",
+      "empty": "No request in this view.",
+      "pick": "Pick a request from the queue.",
+      "pickFirst": "Pick a request first.",
+      "filter": {
+        "status": "Status",
+        "type": "Check"
+      },
+      "col": {
+        "org": "Organization",
+        "orgType": "Type",
+        "type": "Check",
+        "submitted": "Submitted",
+        "sla": "SLA",
+        "docs": "Documents",
+        "pin": "Pin check",
+        "reports": "Wrong-location reports"
+      },
+      "pinFar": "Far from address",
+      "pinOk": "Matches",
+      "pinUnchecked": "Not checked",
+      "itemTitle": "{{type}} check of {{name}}",
+      "data": "Submitted data",
+      "orgUnavailable": "The organization cannot be read for this request any more (decided, or taken by someone else).",
+      "notInContract": "Registration number, owner and call-back result are not part of the request yet.",
+      "openLocations": "Open the organization's locations",
+      "openOrg": "Open the organization",
+      "docs": {
+        "title": "Documents",
+        "none": "No documents were submitted with this check.",
+        "closed": "The documents are read only while the request is pending.",
+        "page": "Document {{n}} of {{total}}",
+        "prev": "Previous document",
+        "next": "Next document",
+        "file": "File",
+        "show": "Show the document",
+        "logged": "Opening a document is logged.",
+        "tools": "Document view",
+        "zoomIn": "Zoom in",
+        "zoomOut": "Zoom out",
+        "rotate": "Rotate",
+        "alt": "Submitted document (CarPal internal)",
+        "open": "Open the file (no preview)"
+      },
+      "checklist": "Checklist",
+      "check": {
+        "details_match": "Business details match the document",
+        "address_matches_pin": "The address exists and matches the map pin",
+        "contact_verified": "Contact verified (call-back code done)",
+        "taxonomy_consistent": "Claimed services make sense for the business type",
+        "no_duplicate": "No duplicate organization",
+        "reports_checked": "Wrong-location reports checked"
+      },
+      "far": {
+        "title": "A pin is far from its address",
+        "text": "Correct the pin or the address before approving a location check.",
+        "link": "Correct it on the Locations tab"
+      },
+      "approve": "Approve",
+      "reject": "Reject",
+      "block": {
+        "far_apart": "A pin is far from its address: correct it first.",
+        "checklist": "Tick every checklist item to approve.",
+        "not_pending": "This request is decided."
+      },
+      "noMoreInfo": "Asking the business for more information is not available yet: reject with what to fix, or contact them.",
+      "message": "Message to the business",
+      "messageHint": "What to fix, in words the business understands (up to 500 characters).",
+      "messageProblem": {
+        "required": "Write what the business should fix.",
+        "too_long": "At most 500 characters."
+      },
+      "dialog": {
+        "checklist": "Checklist: {{n}} of {{total}} ticked (saved with the reason).",
+        "verified": {
+          "title": "Approve this check",
+          "button": "Approve",
+          "effect": "The check is verified. With business identity and a location verified, the organization becomes verified."
+        },
+        "rejected": {
+          "title": "Reject this check",
+          "button": "Reject",
+          "effect": "The check is rejected and the business is told your message."
+        }
+      },
+      "done": {
+        "verified": "The check is verified.",
+        "rejected": "The check is rejected."
+      },
+      "orgNow": "The organization's verification status is now: {{status}}.",
+      "badgeNext": "The Verified Business badge is awarded by the trust check and waits for staff approval (organization page, Verification tab).",
+      "alreadyDecided": "This request is decided: {{status}}.",
+      "cannotDecide": "Only moderators and platform admins decide verification requests."
     }
   }
 }

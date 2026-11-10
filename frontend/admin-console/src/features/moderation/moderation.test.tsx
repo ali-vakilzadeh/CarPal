@@ -382,6 +382,8 @@ describe('Accounts, penalties and badges (AC8.T4/T5)', () => {
       'href',
       'https://pwa.carpals.ir/en/shop/pars',
     );
+    // AC9: the organization page opens for the case's purpose.
+    expect(screen.getByTestId('org-link')).toHaveAttribute('href', `/orgs/${ORG}?purpose=${encodeURIComponent(`case:${C1}`)}`);
     expect(screen.queryByTestId('case-actions')).toBeNull();
 
     const penalty = screen.getByTestId('penalty');

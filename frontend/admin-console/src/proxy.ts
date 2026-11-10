@@ -31,6 +31,8 @@ export function proxy(request: NextRequest): NextResponse {
     https,
     // The media viewer of moderation cases (AC8) shows signed display copies from the storage host.
     mediaOrigins: originsOf(env.CARPAL_STORAGE_URL),
+    // The map of the Locations tab (AC9) loads its style and tiles from the map style host when one is set.
+    mapOrigins: originsOf(env.CARPAL_ADMIN_MAP_STYLE_URL),
     // OQ-11 (answered 2026-11-09): outside dev every page opens over https only. env.ts refuses an http origin there;
     // HSTS keeps browsers on https (nginx answers port 80 with a redirect, AC11).
     hsts: https && env.CARPAL_ADMIN_ENV !== 'dev',

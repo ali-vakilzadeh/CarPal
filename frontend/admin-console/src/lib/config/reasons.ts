@@ -27,7 +27,12 @@ export type ReasonKind =
   | 'trust_penalty'
   | 'badge_revoke'
   | 'triage'
-  | 'report_dismiss';
+  | 'report_dismiss'
+  | 'verification_approve'
+  | 'verification_reject'
+  | 'location_correction'
+  | 'assist_start'
+  | 'assist_end';
 
 export interface ReasonSet {
   codes: readonly string[];
@@ -67,6 +72,19 @@ export const REASON_SETS: Record<ReasonKind, ReasonSet> = {
   badge_revoke: { codes: ['rule_not_met', 'fraud', 'challenge_upheld', 'other'], noteRequired: true },
   triage: { codes: ['needs_review', 'safety_risk', 'repeat_reports', 'other'], noteRequired: false },
   report_dismiss: { codes: ['not_a_violation', 'duplicate_report', 'abusive_reporting', 'other'], noteRequired: false },
+  // Organizations and verification (AC9). A rejection tells the business what to fix in its own message
+  // (rejection_reason); the note here is the staff record and is required like every rejection.
+  verification_approve: { codes: ['documents_match', 'location_confirmed', 'contact_confirmed', 'other'], noteRequired: false },
+  verification_reject: {
+    codes: ['documents_unreadable', 'details_mismatch', 'address_not_found', 'duplicate', 'other'],
+    noteRequired: true,
+  },
+  location_correction: {
+    codes: ['owner_pin_wrong', 'address_typo', 'wrong_location_report', 'verification_check', 'other'],
+    noteRequired: false,
+  },
+  assist_start: { codes: ['owner_requested', 'onboarding_help', 'pilot_onboarding', 'other'], noteRequired: false },
+  assist_end: { codes: ['onboarding_done', 'owner_takes_over', 'session_not_needed', 'other'], noteRequired: false },
 };
 
 /** Every code of every set (for the translation check and the parser). */

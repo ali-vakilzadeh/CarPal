@@ -34,6 +34,12 @@ describe('server env (AC1.T5, AC3.T1)', () => {
     expect(() => parseEnv({ ...PROD, CARPAL_ADMIN_ORIGIN: 'http://admin.example' })).toThrow(/https/);
     expect(() => parseEnv({ ...PROD, CARPAL_STORAGE_URL: 'http://media.example' })).toThrow(/CARPAL_STORAGE_URL/);
     expect(() => parseEnv({ ...PROD, CARPAL_ADMIN_PUBLIC_WEB_URL: 'http://pwa.example' })).toThrow(/CARPAL_ADMIN_PUBLIC_WEB_URL/);
+    expect(() => parseEnv({ ...PROD, CARPAL_ADMIN_MAP_STYLE_URL: 'http://tiles.example/style.json' })).toThrow(
+      /CARPAL_ADMIN_MAP_STYLE_URL/,
+    );
+    expect(parseEnv({ ...PROD, CARPAL_ADMIN_MAP_STYLE_URL: 'https://tiles.example/style.json' }).CARPAL_ADMIN_MAP_STYLE_URL).toBe(
+      'https://tiles.example/style.json',
+    );
     expect(parseEnv(PROD).CARPAL_ADMIN_ENV).toBe('prod');
   });
 

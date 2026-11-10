@@ -51,6 +51,11 @@ const schema = z
     CARPAL_STORAGE_URL: z.url().default('http://127.0.0.1:8083'),
     /** The public web app (pwa.<DOMAIN>): "Open the public page" links of moderation cases (GD-07, AC8). */
     CARPAL_ADMIN_PUBLIC_WEB_URL: z.url().default('http://localhost:3000'),
+    /**
+     * The map style of the Locations tab (AC9, a MapLibre style.json on the region's tile host). Unset: the built-in
+     * style without a basemap (the pilot tile URLs are placeholders, D-59). Its origin is allowed by the page CSP.
+     */
+    CARPAL_ADMIN_MAP_STYLE_URL: z.url().optional(),
     /** Audience URL of the admin-api host (backend CARPAL_ADMIN_API_AUDIENCE): the htu of DPoP proofs on admin calls. */
     CARPAL_ADMIN_API_AUDIENCE: z.url().default('https://admin-api.carpals.ir'),
     /** Mirrors the backend's CARPAL_STRICT_AUTH (client assertion at /oauth/token, DPoP everywhere). */
@@ -80,6 +85,8 @@ const schema = z
       issue('CARPAL_ADMIN_ORIGIN', 'must be https outside dev');
     for (const key of ['CARPAL_STORAGE_URL', 'CARPAL_ADMIN_PUBLIC_WEB_URL'] as const)
       if (env.CARPAL_ADMIN_ENV !== 'dev' && !env[key].startsWith('https://')) issue(key, 'must be https outside dev');
+    if (env.CARPAL_ADMIN_MAP_STYLE_URL && env.CARPAL_ADMIN_ENV !== 'dev' && !env.CARPAL_ADMIN_MAP_STYLE_URL.startsWith('https://'))
+      issue('CARPAL_ADMIN_MAP_STYLE_URL', 'must be https outside dev');
     if ((env.CARPAL_STRICT_AUTH || env.CARPAL_ADMIN_ENV !== 'dev') && !env.CARPAL_ADMIN_CLIENT_PRIVATE_JWKS?.[ADMIN_CLIENT_ID])
       issue('CARPAL_ADMIN_CLIENT_PRIVATE_JWKS', `needs the private key of ${ADMIN_CLIENT_ID} in strict mode and outside dev`);
     if (env.CARPAL_ADMIN_ENV !== 'dev' && !env.CARPAL_STRICT_AUTH) issue('CARPAL_STRICT_AUTH', 'must be 1 outside dev');

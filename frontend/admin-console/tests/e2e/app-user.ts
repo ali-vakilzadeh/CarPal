@@ -345,3 +345,12 @@ export async function publicPostStatus(viewer: AppUser, shop: Shop, postId: stri
   const items = (res.body.items as { id: string }[] | undefined) ?? [];
   return items.some((p) => p.id === postId) ? 'visible' : 'gone';
 }
+
+/** AC9: the owner asks for a verification check of their organization (no documents: they are optional). */
+export async function submitVerification(
+  shop: Shop,
+  type: 'business_identity' | 'location' | 'address' | 'phone' | 'email',
+): Promise<string> {
+  const v = await ok(shop.owner.call('POST', `/v1/orgs/${shop.id}/verifications`, { verification_type: type }), `verification ${type}`);
+  return v.id as string;
+}
