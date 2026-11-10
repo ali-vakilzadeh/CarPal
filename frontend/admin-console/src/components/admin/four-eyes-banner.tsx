@@ -6,6 +6,7 @@
 import Link from 'next/link';
 import type { PendingChange } from '@carpal/api-contracts';
 import { Banner } from '@/components/ds/banner';
+import { Button } from '@/components/ds/button';
 import { Bidi } from '@/lib/format/bidi';
 import { useFormat } from '@/lib/format/client';
 import type { ApiProblem } from '@/lib/api/problem';
@@ -50,8 +51,12 @@ export function problemText(p: ApiProblem, t: Translate): string {
   return t('admin.kit.problem.other');
 }
 
-/** The result of a kit action, ready to show under the action (nothing while idle or busy). */
-export function ActionNotice<T>({ state, applied }: { state: ActionState<T>; applied?: string }) {
+/**
+ * The result of a kit action, ready to show under the action (nothing while idle or busy). `onReload` (ETAG screens,
+ * AC6) adds a Reload button when someone changed the record meanwhile (412/428): the screen re-reads the record and
+ * keeps what the staff member typed.
+ */
+export function ActionNotice<T>({ state, applied, onReload }: { state: ActionState<T>; applied?: string; onReload?: () => void }) {
   const t = useT();
   if (state.status === 'done') {
     const o = state.outcome;
@@ -82,6 +87,11 @@ export function ActionNotice<T>({ state, applied }: { state: ActionState<T>; app
             </>
           }
         />
+        {p.preconditionFailed && onReload ? (
+          <Button size="sm" icon="refresh" onClick={onReload}>
+            {t('admin.kit.problem.reload')}
+          </Button>
+        ) : null}
       </div>
     );
   }

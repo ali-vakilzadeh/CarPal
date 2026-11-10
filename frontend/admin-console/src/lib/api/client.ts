@@ -112,6 +112,14 @@ export class EtagCache {
   }
 }
 
+/**
+ * If-Match for a record read from a list (AC6): admin lists carry no ETag header per record, so the record's own
+ * `version` is the precondition (SEC-IC-3: the server's ETag is "v<version>"). A stale one answers 412 VERSION_MISMATCH.
+ */
+export function ifMatchOf(version: number): string {
+  return `"v${version}"`;
+}
+
 export function fillPath(op: Pick<AdminOperationMeta, 'path'>, params: Record<string, unknown> | undefined): string {
   return op.path.replace(/\{([a-z_]+)\}/g, (_, name: string) => {
     const v = params?.[name];

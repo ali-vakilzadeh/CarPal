@@ -9,8 +9,9 @@ The build plan and stage log is [dev-plan.json](dev-plan.json). Sources of truth
 (contract 1.3.0, §23 admin plane) for operations and security rules, `Docs/23.Admin_WebUI_screens.md` for screens.
 
 Status: AC1 (foundation), AC2 (backend S12: staff sign-in, contract 1.3.0), AC3 (the BFF), AC4 (staff sign-in and
-the console shell) and AC5 (the admin interaction kit, Pending approvals and My work) are done. The other sections in
-the navigation are placeholders until their stages (AC6 on).
+the console shell), AC5 (the admin interaction kit, Pending approvals and My work) and AC6 (platform settings:
+exchange rates, feature flags and the AI kill switch, plans and assignments, data retention) are done. The other
+sections in the navigation are placeholders until their stages (AC7 on).
 
 ## Requirements
 
@@ -53,7 +54,8 @@ src/lib/api/generated/   GENERATED admin contract: operations.ts, roles.ts, type
 src/lib/roles/           role checks over the generated role table (UI hides; the server decides)
 src/lib/i18n/            i18next runtime; console strings in src/lib/i18n/locales/{en,fa}.json ('admin' namespace)
 src/lib/format/          Jalali/Gregorian dates, digits, money (copied from the PWA)
-src/lib/config/          console config: reason codes per kind of action, SLA targets and working days (OQ-05)
+src/lib/config/          console config: reason codes per kind of action, SLA targets and working days (OQ-05),
+                         plan keys and names
 src/lib/work/            work queues of My work: list operation, open statuses, SLA timer, summary (count, oldest)
 src/lib/prefs.ts         language/theme links; table view settings (the only module that uses localStorage)
 src/components/ds/       design-system components (copied from the PWA)
@@ -67,6 +69,11 @@ src/features/shell/      console shell: navigation sections (role table), accoun
                          replay, keyboard shortcuts, My queue
 src/features/approvals/  Pending approvals (four-eyes list and decision)
 src/features/dashboard/  My work (approvals waiting, queue counts with SLA)
+src/features/rates/      Exchange rates (AC6): per currency, preview, 20 % four-eyes warning, If-Match
+src/features/flags/      Feature flags (AC6): AI kill switch on top, toggle and targeting with If-Match
+src/features/plans/      Plans & entitlements (AC6): plan edits (four-eyes), assign plan / trial / overrides
+src/features/retention/  Data retention (AC6): policy edits (four-eyes)
+src/server/section-page  the server half of a built section: title and the no-permission state
 tools/                   contract generator, design-system sync, logical-CSS check, i18n check, local Node
 tests/                   Vitest setup, DOM-test harness (tests/support), Playwright specs
 ```
@@ -138,6 +145,28 @@ Every console screen is built from `src/components/admin` so the admin rules hol
 - DOM tests render with `tests/support/console-harness.tsx` (providers, scripted transport, axe in jsdom) and mock
   `next/navigation` with `tests/support/navigation-mock.ts`.
 
+## Platform settings (AC6)
+
+Platform admins only (the other roles see the no-permission state).
+
+- **Exchange rates** (`/rates`): the amount of each display currency per US dollar, which every app reads through
+  config.client. This replaces the one-time SQL in `backend/deploy/deploy.md`. The editor previews sample prices
+  and warns when a change is over 20 %; such a change waits for a second admin.
+- **Feature flags** (`/flags`): the AI automation kill switch is a large control on top. Turning it on is immediate
+  (reason and confirmation). Turning it off waits for a second admin. Every flag can be switched and its targeting
+  edited (roles, regions, organization ids, plans, share of users). Turning `featured.enabled` on waits for a second
+  admin and shows the MVP note.
+- **Plans & entitlements** (`/plans`): plan edits send only the changed entitlements and always wait for a second
+  admin. The plan's history is its audit trail (Shift+H). The assignment form gives one user or organization a plan,
+  a trial (end day required) and limit or entitlement overrides. It applies at once. Other screens link to it with
+  `/plans?subscriber=organization:<id>` or `user:<id>`.
+- **Data retention** (`/retention`): policy edits always wait for a second admin. The contract has no add and no
+  dry run, and the screen says so.
+
+Writes that carry an ETag send the record's `version` from the list as If-Match (`ifMatchOf` in
+`src/lib/api/client.ts`; lists have no per-record ETag header). A 412 shows "changed meanwhile" with a **Reload**
+(`ActionNotice onReload`) that keeps what was typed.
+
 My work (`/`) counts each queue from its list operation (at most two pages of 100 per status; "200+" beyond) and
 colours it with the SLA targets of `src/lib/config/sla.ts`; the top bar's My queue shows the number of changes
 waiting for the caller's approval.
@@ -165,8 +194,12 @@ run `pnpm test:int` with `CARPAL_STRICT_AUTH=1` and `CARPAL_ADMIN_CLIENT_PRIVATE
 ## End-to-end tests
 
 `pnpm e2e` builds and runs Playwright on :3300. `tests/e2e/smoke.spec.ts` and `bff.spec.ts` need no backend.
-`tests/e2e/signin.spec.ts` (AC4) and `approvals.spec.ts` (AC5: the four-eyes round trip with two ADM accounts; it
-re-files a data retention policy with its own values, so approving it changes nothing) sign real staff in. They need
+`tests/e2e/signin.spec.ts` (AC4), `approvals.spec.ts` (AC5: the four-eyes round trip with two ADM accounts; it
+re-files a data retention policy with its own values, so approving it changes nothing) and `settings.spec.ts` (AC6:
+the rate reaches config.client, the kill switch on and off with a second admin, a stale flag version, plans,
+retention and an assignment, Persian) sign real staff in. `settings.spec.ts` reads config.client on the api host
+(`:8080`) as an anonymous app (`tests/e2e/public-api.ts`), puts the rate and the flags back, and has a second admin
+reject the plan and retention changes it files. They need
 backend `pnpm dev` with the settings above (the `:3300` redirect URI and WebAuthn origin), create one account per test
 with backend `pnpm dev:staff create` (dev only; `e2e-…@staff.carpals.test` accounts stay in the dev database), read the
 emailed code from `backend/.data/outbox-mail.jsonl`, and use Chrome's virtual authenticator as a device-bound

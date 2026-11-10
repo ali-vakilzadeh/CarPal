@@ -311,7 +311,9 @@ Then restart the backend and run `pwa-update.sh`. Token requests fail between th
 
 ### Exchange rate
 
-Prices are stored in USD. `admin.exchange_rate_update` sets the USD → IRR rate that every client shows (GD-41), and the seed is a **placeholder (1,000,000 IRR per USD)**. Until the admin console exists ([Admin plane](#admin-plane)) staff cannot reach that operation, so the server operator sets the rate once in SQL, as root:
+Prices are stored in USD. `admin.exchange_rate_update` sets the USD → IRR rate that every client shows (GD-41), and the seed is a **placeholder (1,000,000 IRR per USD)**. Set the real rate in the admin console ([Admin plane](#admin-plane)): a platform admin opens **Settings → Exchange rates**, chooses IRR, enters the amount per US dollar (the page previews sample prices at the current and the new rate) and saves it with a reason. The change is audited. Clients see it within five minutes (config.client). A change of more than 20 % waits until a **second** platform admin approves it on **Pending approvals**. The first real rate is usually far from the placeholder, so plan for two admins (the staff bootstrap below creates both).
+
+Fallback, only while the console is not reachable yet (before its deploy kit, stage AC11 of `frontend/admin-console/dev-plan.json`, or if it is down): the server operator sets the rate once in SQL, as root:
 
 ```bash
 set -a; . /carpal/config/db-admin.env; set +a
@@ -319,7 +321,7 @@ PGPASSWORD="$CARPAL_DB_SUPERUSER_PASSWORD" psql -h 127.0.0.1 -U postgres carpal 
   -c "UPDATE admin.exchange_rates SET per_usd = 1050000, reason = 'Initial rate, ticket 1' WHERE currency = 'IRR'"
 ```
 
-Clients see it within five minutes. This skips the audit entry and the second approver of the staff operation, so keep it for the bootstrap.
+This skips the audit entry and the second approver of the staff operation, so use it for the bootstrap only.
 
 ### Admin plane
 
