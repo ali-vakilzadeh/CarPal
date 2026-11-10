@@ -1,0 +1,489 @@
+/* Admin interaction kit (AC5, GD-06): tables, reason and confirm dialogs, masked fields, the three-panel case layout,
+   entity chips, timeline, AI evidence, the audit drawer, and the Pending approvals and My work pages. Tokens only,
+   logical properties only (tools/check-logical-css.mjs). */
+
+.adm-select,
+.adm-input {
+  min-block-size: var(--control-sm);
+  padding-inline: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+.cp-field-box .adm-select {
+  flex: 1;
+  border: 0;
+  background: transparent;
+}
+.adm-error {
+  margin: 0;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Reason and confirm dialogs */
+.adm-reason,
+.adm-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.adm-confirm-summary {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+.adm-confirm-second {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 2px solid var(--danger);
+  border-radius: var(--radius-md);
+}
+.adm-confirm-second > p {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Masked field (inside a <dl>) */
+.adm-masked dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+.adm-masked dt {
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+.adm-masked-value {
+  font-variant-numeric: tabular-nums;
+}
+.adm-masked-hint {
+  font-size: 13px;
+}
+
+/* Data table */
+.adm-table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+.adm-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+.adm-filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.adm-table-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+.adm-table-scroll {
+  max-block-size: 70vh;
+  overflow: auto;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+.adm-table-scroll:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+.adm-table table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.adm-table th,
+.adm-table td {
+  padding-block: var(--space-2);
+  padding-inline: var(--space-3);
+  border-block-end: 1px solid var(--divider);
+  text-align: start;
+  vertical-align: top;
+}
+.adm-table th[data-align='end'],
+.adm-table td[data-align='end'] {
+  text-align: end;
+}
+.adm-table thead th {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  background: var(--surface-sunken);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.adm-table tbody tr[aria-current='true'] {
+  background: var(--accent-soft);
+}
+.adm-row-button {
+  display: block;
+  inline-size: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+.adm-row-button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+  border-radius: var(--radius-sm);
+}
+.adm-table-state {
+  margin: 0;
+  padding: var(--space-4);
+  color: var(--ink-muted);
+}
+.adm-table-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.adm-table-paging {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+/* Disclosure menus (columns, views) */
+.adm-menu {
+  position: relative;
+}
+.adm-menu > summary {
+  list-style: none;
+}
+.adm-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.adm-menu-panel {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-1));
+  inset-inline-end: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-inline-size: 240px;
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-2);
+}
+.adm-views {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-views li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.adm-view-save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Three-panel case layout (Docs/23 §3.2) */
+.adm-case {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 360px;
+  grid-template-areas: 'list item decision';
+  gap: var(--space-4);
+  align-items: start;
+}
+.adm-case[data-has-decision='false'] {
+  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-areas: 'list item';
+}
+.adm-case-list {
+  grid-area: list;
+  min-inline-size: 0;
+}
+.adm-case-item {
+  grid-area: item;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+.adm-case-decision {
+  grid-area: decision;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+@media (max-width: 1279px) {
+  .adm-case,
+  .adm-case[data-has-decision='false'] {
+    grid-template-columns: 320px minmax(0, 1fr);
+    grid-template-areas:
+      'list item'
+      'list decision';
+  }
+}
+@media (max-width: 899px) {
+  .adm-case,
+  .adm-case[data-has-decision='false'] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'list'
+      'item'
+      'decision';
+  }
+}
+
+/* Entity chip */
+.adm-entity {
+  position: relative;
+  display: inline-block;
+}
+.adm-entity-chip {
+  min-block-size: 32px;
+}
+.adm-entity-panel {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-1));
+  inset-inline-start: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 240px;
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-2);
+}
+.adm-entity-panel[hidden] {
+  display: none;
+}
+.adm-entity-panel p {
+  margin: 0;
+}
+.adm-entity-type {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.adm-entity-name {
+  font-weight: 700;
+}
+
+/* Timeline */
+.adm-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-timeline > li {
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--divider);
+}
+.adm-timeline-head,
+.adm-timeline-title,
+.adm-timeline-detail {
+  margin: 0;
+}
+.adm-timeline-head {
+  font-size: 13px;
+}
+.adm-timeline-title {
+  font-weight: 600;
+}
+
+/* AI evidence */
+.adm-ai {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-md);
+}
+.adm-ai p {
+  margin: 0;
+}
+.adm-ai-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.adm-ai-title {
+  font-weight: 700;
+}
+.adm-ai-score {
+  margin-inline-start: auto;
+  font-weight: 700;
+}
+.adm-ai-reasons {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+}
+.adm-ai-meta,
+.adm-audit-states {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: 13px;
+}
+.adm-ai-meta > div,
+.adm-audit-states > div {
+  display: contents;
+}
+.adm-ai-meta dt,
+.adm-audit-states dt {
+  color: var(--ink-muted);
+}
+.adm-ai-meta dd,
+.adm-audit-states dd {
+  margin: 0;
+}
+
+/* Audit drawer: a side sheet on the inline end */
+.adm-dialog.adm-drawer {
+  max-inline-size: 560px;
+  block-size: 100dvh;
+  max-block-size: 100dvh;
+  margin-block: 0;
+  margin-inline: auto 0;
+  border-radius: 0;
+}
+
+/* Purpose missing */
+.adm-purpose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Detail lists in panels */
+.adm-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+}
+.adm-facts > div {
+  display: contents;
+}
+.adm-facts dt {
+  color: var(--ink-muted);
+}
+.adm-facts dd {
+  margin: 0;
+}
+.adm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.adm-panel-title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+/* My work */
+.adm-work {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-work-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  block-size: 100%;
+  padding: var(--space-4);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--ink);
+  text-decoration: none;
+}
+.adm-work-tile:hover {
+  border-color: var(--accent);
+}
+.adm-work-tile[data-sla='warn'] {
+  border-inline-start: var(--space-1) solid var(--signal);
+}
+.adm-work-tile[data-sla='breach'] {
+  border-inline-start: var(--space-1) solid var(--danger);
+}
+.adm-work-tile p {
+  margin: 0;
+}
+.adm-work-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+}
+.adm-work-count {
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.adm-mine {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-mine > li {
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+.adm-mine p {
+  margin: 0;
+}

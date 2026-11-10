@@ -5,10 +5,7 @@
       "metaTitle": "Admin console",
       "contractLine": "Admin contract {{version}}: {{n}} operations",
       "home": {
-        "title": "Welcome, {{name}}",
-        "text": "You are signed in with your security key. My work, the queues and the dashboard arrive in the next stages; each section on the left opens when it is built.",
-        "roles": "Your roles: {{roles}}",
-        "sections": "Sections you can open"
+        "roles": "Your roles: {{roles}}"
       }
     },
     "env": {
@@ -171,7 +168,6 @@
         "soon": "Lookup arrives with the user and organization screens."
       },
       "myQueue": "My queue",
-      "myQueueSoon": "Queue counts arrive with My work.",
       "account": {
         "menu": "Account menu",
         "roles": "Roles: {{roles}}",
@@ -210,7 +206,255 @@
         "escalate": "Escalate",
         "audit": "Open the audit trail",
         "help": "Show this list"
+      },
+      "myQueueCount": "{{n}} changes wait for your approval"
+    },
+    "kit": {
+      "unknown": "Unknown ({{value}})",
+      "reason": {
+        "code": "Reason",
+        "choose": "Choose a reason",
+        "codeRequired": "Choose a reason.",
+        "note": "Note (optional)",
+        "noteRequiredLabel": "Note (required)",
+        "noteHint": "Saved in the audit log with the reason. Up to {{n}} characters.",
+        "noteRequired": "Write a note: it is required for this action.",
+        "noteTooLong": "The note is too long (at most {{n}} characters).",
+        "notify": "Notify the person affected"
+      },
+      "confirm": {
+        "irreversible": "This cannot be undone.",
+        "understood": "I understand, and I want to go ahead",
+        "tickFirst": "Tick the box to confirm."
+      },
+      "fourEyes": {
+        "title": "Waiting for a second staff member",
+        "text": "{{op}} was filed and has not taken effect. Another staff member must approve it.",
+        "expires": "Expires {{when}} if nobody decides it.",
+        "link": "Open Pending approvals"
+      },
+      "problem": {
+        "selfApprovalTitle": "Someone else must decide this",
+        "selfApproval": "You requested this change yourself. A second staff member has to approve or reject it (four-eyes rule).",
+        "invalidTransition": "This is no longer possible: it expired or someone already decided it. The list has been refreshed.",
+        "changed": "Someone changed this record meanwhile. Reload it and try again.",
+        "duplicate": "The same change is already waiting for approval.",
+        "purpose": "Open this record from a work item first.",
+        "forbidden": "Your role does not allow this action.",
+        "notFound": "This record does not exist any more.",
+        "invalid": "Some values were not accepted. Check them and try again.",
+        "busy": "Too many requests just now. Wait a moment and try again.",
+        "network": "No connection to the console. Check your network and try again.",
+        "other": "Something went wrong. Try again; if it keeps failing, report the request ID.",
+        "requestId": "Request ID:"
+      },
+      "outcome": {
+        "applied": "Done.",
+        "accepted": "Accepted. It runs in the background."
+      },
+      "purpose": {
+        "title": "Open this from a work item",
+        "text": "Private data is shown only for an open work item (a case, dispute, privacy request, verification or review approval). Open the record from that item.",
+        "queues": "Your work queues:"
+      },
+      "masked": {
+        "none": "Not given",
+        "reveal": "Reveal",
+        "hide": "Hide",
+        "noPurpose": "Open from a work item to reveal",
+        "logged": "Revealing is recorded in the audit log."
+      },
+      "table": {
+        "retry": "Try again",
+        "loading": "Loading…",
+        "failed": "The list could not be loaded.",
+        "rows_one": "{{count}} row",
+        "rows_other": "{{count}} rows",
+        "paging": "Pages",
+        "prev": "Previous page",
+        "next": "Next page",
+        "page": "Page {{n}}",
+        "all": "All",
+        "columns": "Columns",
+        "views": "Saved views",
+        "deleteView": "Delete view {{name}}",
+        "noViews": "No saved views yet.",
+        "viewName": "Name for the current filters",
+        "saveView": "Save view",
+        "viewsLocal": "Views keep only filters, in this browser.",
+        "latinDigits": "Latin digits for IDs"
+      },
+      "case": {
+        "list": "Queue",
+        "item": "Item",
+        "decision": "Decision"
+      },
+      "entity": {
+        "user": "User",
+        "organization": "Organization",
+        "review": "Review",
+        "appointment": "Appointment",
+        "case": "Case",
+        "dispute": "Dispute",
+        "report": "Report",
+        "change": "Pending change",
+        "media": "File",
+        "open": "Open"
+      },
+      "timeline": {
+        "label": "History",
+        "empty": "No events yet."
+      },
+      "ai": {
+        "label": "AI assessment",
+        "badge": "AI",
+        "risk": "Risk {{score}}",
+        "humanDecides": "An input for your decision. AI never decides.",
+        "model": "Model",
+        "prompt": "Prompt version",
+        "log": "MCP log entry"
+      },
+      "sla": {
+        "ok": "On time",
+        "warn": "Due soon",
+        "breach": "Overdue"
+      },
+      "audit": {
+        "open": "Audit trail",
+        "title": "Audit trail",
+        "titleFor": "Audit trail: {{name}}",
+        "adminsOnly": "Audit visible to platform admins.",
+        "loading": "Loading the audit trail…",
+        "window": "Entries from the last {{days}} days. Opening this view is itself recorded.",
+        "empty": "No entries in this period.",
+        "before": "Before",
+        "after": "After",
+        "reason": "Reason:",
+        "more": "Show more",
+        "actor": {
+          "user": "user",
+          "platform_staff": "staff",
+          "system": "system",
+          "mcp_client": "AI client"
+        }
       }
+    },
+    "reasons": {
+      "codes": {
+        "checked_and_correct": "Checked and correct",
+        "planned_change": "Planned change",
+        "incident_response": "Incident response",
+        "other": "Other (explain in the note)",
+        "values_incorrect": "Values are incorrect",
+        "not_justified": "Not justified",
+        "wrong_target": "Wrong record",
+        "needs_discussion": "Needs discussion first",
+        "correction": "Correction of an error",
+        "pilot_operation": "Pilot operation",
+        "meets_policy": "Meets the policy",
+        "evidence_sufficient": "Evidence is sufficient",
+        "policy_violation": "Policy violation",
+        "evidence_insufficient": "Evidence is insufficient",
+        "duplicate": "Duplicate",
+        "safety_risk": "Safety risk",
+        "privacy_violation": "Privacy violation",
+        "legal_request": "Legal request",
+        "repeated_violations": "Repeated violations",
+        "fraud": "Fraud",
+        "decision_reversed": "Decision reversed",
+        "appeal_upheld": "Appeal upheld",
+        "mistake": "Earlier mistake",
+        "needs_lead": "Needs a team lead",
+        "needs_admin": "Needs a platform admin",
+        "legal_question": "Legal question"
+      }
+    },
+    "ops": {
+      "platform_role_grant": "Staff role grant",
+      "org_merge": "Organization merge",
+      "plan_update": "Plan change",
+      "taxonomy_merge": "Taxonomy merge",
+      "review_move_to_approval_path": "Review moved to the approval path",
+      "flag_update": "Feature flag change",
+      "exchange_rate_update": "Exchange rate change",
+      "retention_update": "Data retention change",
+      "dsr_execute_deletion": "Account data deletion",
+      "mcp_client_update": "MCP client change"
+    },
+    "approvals": {
+      "title": "Pending approvals",
+      "intro": "Changes that take effect only after a second staff member approves them. Check the change and its reason, then approve or reject with your own reason.",
+      "ownHint": "Changes you requested yourself never appear here: someone else decides them.",
+      "filter": {
+        "status": "Status"
+      },
+      "status": {
+        "pending": "Waiting",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "expired": "Expired"
+      },
+      "col": {
+        "change": "Change",
+        "summary": "Summary",
+        "requestedBy": "Requested by",
+        "requestedAt": "Requested",
+        "expires": "Expires",
+        "status": "Status"
+      },
+      "expiresIn": "Expires {{when}}",
+      "reason": "Their reason",
+      "listLabel": "Changes",
+      "itemLabel": "Change",
+      "decisionLabel": "Your decision",
+      "empty": "Nothing waits for your approval.",
+      "notListed": "This change is not in the list: it may be your own, already decided, expired, or not for your role.",
+      "pick": "Choose a change from the list.",
+      "pickFirst": "Choose a change first.",
+      "cannotDecide": "Your role cannot decide this change.",
+      "alreadyDecided": "Already decided: {{status}}.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveTitle": "Approve this change",
+      "rejectTitle": "Reject this change",
+      "approveEffect": "Approving applies the change now, in your name as approver.",
+      "rejectEffect": "Rejecting drops the change; the requester can file it again.",
+      "approved": "Approved. The change is applied.",
+      "rejected": "Rejected. The change will not be applied.",
+      "decisionDone": "Your decision is recorded.",
+      "stepUpHint": "Deciding needs a recent security-key sign-in; you may be asked to confirm with your key.",
+      "mine": {
+        "title": "Your requests (this tab)",
+        "none": "You have not requested a change in this tab."
+      }
+    },
+    "work": {
+      "metaTitle": "My work",
+      "title": "My work",
+      "welcome": "Welcome, {{name}}.",
+      "approvals": {
+        "title": "Waiting for your approval",
+        "none": "Nothing waits for your approval."
+      },
+      "queues": "Queues",
+      "noQueues": "Your roles have no work queues.",
+      "loading": "Loading…",
+      "failed": "Could not load this queue.",
+      "refresh": "Numbers refresh every minute.",
+      "queue": {
+        "approvals": "Pending approvals",
+        "verification": "Verification requests",
+        "reviewApproval": "Reviews awaiting your decision",
+        "reports": "Open reports",
+        "cases": "Moderation cases",
+        "disputes": "Disputes and appeals",
+        "privacy": "Privacy requests"
+      },
+      "atLeast": "{{n}}+",
+      "countLabel": "{{n}} open",
+      "oldest": "Oldest: {{age}}",
+      "empty": "Nothing open.",
+      "overdue": "{{n}} overdue"
     }
   }
 }

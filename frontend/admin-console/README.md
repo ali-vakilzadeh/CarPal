@@ -8,8 +8,9 @@ audience `admin-api`) and is served only on `admin.<DOMAIN>` behind an access ga
 The build plan and stage log is [dev-plan.json](dev-plan.json). Sources of truth: `Docs/40.API contract.md`
 (contract 1.3.0, §23 admin plane) for operations and security rules, `Docs/23.Admin_WebUI_screens.md` for screens.
 
-Status: AC1 (foundation), AC2 (backend S12: staff sign-in, contract 1.3.0), AC3 (the BFF) and AC4 (staff sign-in
-and the console shell) are done. The sections in the navigation are placeholders until their stages (AC5 on).
+Status: AC1 (foundation), AC2 (backend S12: staff sign-in, contract 1.3.0), AC3 (the BFF), AC4 (staff sign-in and
+the console shell) and AC5 (the admin interaction kit, Pending approvals and My work) are done. The other sections in
+the navigation are placeholders until their stages (AC6 on).
 
 ## Requirements
 
@@ -39,7 +40,8 @@ and the console shell) are done. The sections in the navigation are placeholders
 
 ```
 src/app/                 root layout (lang/dir/theme), 404/403/500 in the plain frame
-src/app/(console)/       signed-in pages in the shell; [section]/ = placeholder of a section not built yet
+src/app/(console)/       signed-in pages in the shell: page.tsx = My work, approvals/ = Pending approvals;
+                         [section]/ = placeholder of a section not built yet
 src/app/id/signin|signed-out  staff sign-in (A-AUTH-01) and the page after a session ends
 src/proxy.ts             security headers on every page, language and theme switches (?lang=, ?theme=), x-carpal-path
 src/server/              server-only: env, security headers, request locale, bff-runtime.ts, staff-session.ts
@@ -51,14 +53,22 @@ src/lib/api/generated/   GENERATED admin contract: operations.ts, roles.ts, type
 src/lib/roles/           role checks over the generated role table (UI hides; the server decides)
 src/lib/i18n/            i18next runtime; console strings in src/lib/i18n/locales/{en,fa}.json ('admin' namespace)
 src/lib/format/          Jalali/Gregorian dates, digits, money (copied from the PWA)
+src/lib/config/          console config: reason codes per kind of action, SLA targets and working days (OQ-05)
+src/lib/work/            work queues of My work: list operation, open statuses, SLA timer, summary (count, oldest)
+src/lib/prefs.ts         language/theme links; table view settings (the only module that uses localStorage)
 src/components/ds/       design-system components (copied from the PWA)
 src/components/shell/    plain frame, environment badge, system pages, console states (no access, not found),
                          dialog, providers
+src/components/admin/    the admin kit (AC5): useAdminAction, ReasonDialog/ConfirmDialog, FourEyesBanner,
+                         PurposeGate, MaskedField, DataTable, CaseLayout, EntityChip, Timeline, AiEvidenceBlock,
+                         SlaBadge, AuditDrawer
 src/features/auth/       staff sign-in steps, /id auth client with proof of work, passkeys, error mapping
 src/features/shell/      console shell: navigation sections (role table), account menu, idle watch, step-up with
-                         replay, keyboard shortcuts
+                         replay, keyboard shortcuts, My queue
+src/features/approvals/  Pending approvals (four-eyes list and decision)
+src/features/dashboard/  My work (approvals waiting, queue counts with SLA)
 tools/                   contract generator, design-system sync, logical-CSS check, i18n check, local Node
-tests/                   Vitest setup, Playwright specs
+tests/                   Vitest setup, DOM-test harness (tests/support), Playwright specs
 ```
 
 ## Environment
@@ -108,6 +118,30 @@ DELETEs that need a reason send `CarPal-Reason`.
 - Keyboard: `useShortcut('next' | 'previous' | 'approve' | 'reject' | 'escalate' | 'audit', handler)` per page; `/` goes
   to the lookup box, `?` lists the keys. Off while typing and while a dialog is open.
 
+## Admin kit (AC5)
+
+Every console screen is built from `src/components/admin` so the admin rules hold everywhere:
+
+- Writes: `useAdminAction(opId)` is the only way a screen sends a mutating operation. It refuses an RSN operation
+  without a reason of 3–500 characters, runs it through the step-up (and repeats it once after the security key), and
+  returns the outcome: applied, waiting for a second staff member (202 PendingChange: `FourEyesBanner`, remembered in
+  memory as "your requests"), accepted job, or a problem (`ActionNotice` explains SELF_APPROVAL_FORBIDDEN, expired,
+  changed meanwhile). The reason comes from `ReasonDialog`: a code from `src/lib/config/reasons.ts` for that kind of
+  action plus a note (required for rejections, removals, suspensions and "Other"), sent as `"<code>: <note>"`.
+  Irreversible actions pass `irreversible` (a second confirmation).
+- Reads of private data: wrap them in `PurposeGate` (the work item comes from `?purpose=<kind>:<id>`; links keep it with
+  `withPurpose`); `MaskedField` masks phone, email, names, VIN and plates and reveals through a purpose-bound re-read.
+- Lists: `DataTable` + `useUrlFilters` (enumerated filters in the URL) + `useCursorPaging` (≤ 100 rows a page).
+  Saved views and column choices stay in this browser and never hold data.
+- Case screens: `CaseLayout` (queue 320 px / item / decision 360 px), `EntityChip`, `Timeline`, `AiEvidenceBlock`,
+  `SlaBadge`, and `AuditDrawer` (Shift+H; ADM only, others see "Audit visible to platform admins").
+- DOM tests render with `tests/support/console-harness.tsx` (providers, scripted transport, axe in jsdom) and mock
+  `next/navigation` with `tests/support/navigation-mock.ts`.
+
+My work (`/`) counts each queue from its list operation (at most two pages of 100 per status; "200+" beyond) and
+colours it with the SLA targets of `src/lib/config/sla.ts`; the top bar's My queue shows the number of changes
+waiting for the caller's approval.
+
 ## Integration tests
 
 `pnpm test:int` signs a fresh ADM account in through the BFF (password, emailed code, a software security key, then
@@ -131,12 +165,14 @@ run `pnpm test:int` with `CARPAL_STRICT_AUTH=1` and `CARPAL_ADMIN_CLIENT_PRIVATE
 ## End-to-end tests
 
 `pnpm e2e` builds and runs Playwright on :3300. `tests/e2e/smoke.spec.ts` and `bff.spec.ts` need no backend.
-`tests/e2e/signin.spec.ts` (AC4) signs real staff in: it needs backend `pnpm dev` with the settings above (the
-`:3300` redirect URI and WebAuthn origin), creates one account per test with backend `pnpm dev:staff create` (dev
-only; `e2e-…@staff.carpals.test` accounts stay in the dev database), reads the emailed code from
-`backend/.data/outbox-mail.jsonl`, and uses Chrome's virtual authenticator as a device-bound security key. For the
-strict run, export `CARPAL_STRICT_AUTH=1` and `CARPAL_ADMIN_CLIENT_PRIVATE_JWKS` before `pnpm e2e`; the Playwright
-config passes them, and the dev redirect URI, to `next start`. The idle test mocks the browser clock.
+`tests/e2e/signin.spec.ts` (AC4) and `approvals.spec.ts` (AC5: the four-eyes round trip with two ADM accounts; it
+re-files a data retention policy with its own values, so approving it changes nothing) sign real staff in. They need
+backend `pnpm dev` with the settings above (the `:3300` redirect URI and WebAuthn origin), create one account per test
+with backend `pnpm dev:staff create` (dev only; `e2e-…@staff.carpals.test` accounts stay in the dev database), read the
+emailed code from `backend/.data/outbox-mail.jsonl`, and use Chrome's virtual authenticator as a device-bound
+security key. For the strict run, export `CARPAL_STRICT_AUTH=1` and `CARPAL_ADMIN_CLIENT_PRIVATE_JWKS` before
+`pnpm e2e`; the Playwright config passes them, and the dev redirect URI, to `next start`. The idle test mocks the
+browser clock.
 
 ## Language and theme
 

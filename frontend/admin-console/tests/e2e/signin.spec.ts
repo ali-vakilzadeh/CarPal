@@ -39,7 +39,7 @@ test('first sign-in: password, emailed code, security key enrolment, the key; th
 
 test('a moderator sees no ADM-only section, and an ADM URL answers the no-permission page', async ({ context, page }) => {
   await signInAs(context, page, ['MOD']);
-  await expect(page.getByRole('heading', { level: 1, name: /^Welcome, / })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'My work' })).toBeVisible();
   const sections = await navSections(page);
   expect(sections).toEqual(expect.arrayContaining(['Pending approvals', 'Reviews', 'Content', 'Disputes & appeals']));
   for (const adm of ['Feature flags', 'Exchange rates', 'Plans & entitlements', 'Data retention', 'Audit log', 'MCP clients', 'Staff'])
@@ -84,7 +84,7 @@ test('the next sign-in goes straight to the key; sign-out ends the session', asy
 
   await page.getByRole('link', { name: 'Sign in again' }).click();
   await signInOnPage(page, email, { enrol: false });
-  await expect(page.getByRole('heading', { level: 1, name: /^Welcome, / })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'My work' })).toBeVisible();
 });
 
 test('idle warning at 25 minutes, "Stay signed in", and sign-out at 30 (clock mocked)', async ({ context, page }) => {
@@ -116,7 +116,7 @@ test('Persian: sign-in and shell right to left, in the staff member’s language
   const html = page.locator('html');
   await expect(html).toHaveAttribute('lang', 'fa');
   await expect(html).toHaveAttribute('dir', 'rtl');
-  await expect(page.getByRole('heading', { level: 1, name: /^خوش آمدید، / })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'کارهای من' })).toBeVisible();
   expect(await navSections(page, 'بخش‌های کنسول')).toEqual(['داشبورد', 'نظرها', 'اختلاف‌ها و اعتراض‌ها']);
   await expectNoAxeViolations(page);
   await context.close();
