@@ -20,7 +20,7 @@
     ],
     "progress": {
       "as_of": "2026-11-10",
-      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) with pnpm check, build and a Playwright smoke. AC2 done 2026-11-09 (backend S12): contract 1.3.0 gives cp-web-admin DPoP + private_key_jwt, the staff passkey enrolment inside the sign-in (auth.passkey_enrol_options, auth.passkey_enrol), admin.staff_me, and a first-run staff bootstrap (backend pnpm staff:bootstrap, backend/deploy/staff-bootstrap.sh); the console is regenerated (63 admin-api operations, no api reads, because the api host refuses admin tokens), shows a Latin environment badge (OQ-12) and sends HSTS outside dev (OQ-11). OQ-01, OQ-10, OQ-11 and OQ-12 are answered. AC3 done 2026-11-09: the admin BFF (src/server/bff, copied from the PWA with provenance headers) signs staff in at aal3 with code + PKCE, DPoP-bound tokens and private_key_jwt, keeps tokens, the DPoP key and the admin.staff_me profile server-side (browser: one __Host-cpa_sid cookie), ends sessions after 30 min idle / 8 h, forwards exactly the 63 admin-api operations (purpose and reason headers, CSRF), and offers /bff/reauth for step-up; the typed client (src/lib/api) and the TanStack provider (memory-only cache, cleared on sign-out, session end and staff switch) are in. Tests: pnpm check (196), pnpm test:int against the strict backend (7), pnpm e2e (10). AC4 done 2026-11-09: staff sign in on the console's own /id/signin (work email + password with proof of work in strict mode, then the security key; a first-time account enrols a device-bound key with the emailed code in the same sign-in; the key alone for a step-up) and land in the shell: top bar with the environment badge, lookup and My queue placeholders, shortcut list and avatar menu (roles, My actions for ADM, language, theme, sign-out), left navigation filtered by the role table (20 sections, placeholders until their stages), no-permission and not-found states inside the shell, idle warning at 25 min and sign-out at 30 (measured against the server clock), step-up with one-time replay of the saved action, and keyboard shortcuts. Tests: pnpm check (243), pnpm test:int (7), pnpm e2e (22, strict backend). Uncommitted. AC5 done 2026-11-10: the admin interaction kit (src/components/admin) carries the admin rules into every later screen: useAdminAction refuses an RSN write without a 3-500 character reason, runs it through the step-up with a one-time replay and reports applied / waiting for a second staff member (FourEyesBanner) / accepted job / an explained problem (SELF_APPROVAL_FORBIDDEN, expired, changed meanwhile); ReasonDialog (console reason codes per kind of action + note, sent as '<code>: <note>', D-29) and ConfirmDialog (second confirmation for irreversible actions); PurposeGate and MaskedField (GD-10); DataTable with URL-bound filters, cursor paging, column choice, saved views without data, keyboard rows and Latin digits; CaseLayout, EntityChip, Timeline, AiEvidenceBlock, SlaBadge and the ADM-only AuditDrawer (Shift+H). Pending approvals (/approvals) lists and decides four-eyes changes; My work (/) shows the approvals waiting and one tile per queue the roles may see with count, oldest age and SLA state (OQ-05 targets, D-32); the top bar's My queue links there with the approvals count. Tests: pnpm check (301), pnpm test:int (7), pnpm e2e (25, strict backend; the four-eyes round trip with two ADM accounts). Uncommitted. AC6 built 2026-11-10 (partial: the signed-in E2E is not run yet): Exchange rates (/rates: preview, 20 % four-eyes warning, If-Match; replaces the deploy SQL), Feature flags (/flags: the AI kill switch on top, on at once and off by four-eyes; switch and targeting with If-Match and a Reload on 412), Plans & entitlements (/plans: the ranking rule, plan edits by four-eyes, the audit history, assign plan / trial / overrides) and Data retention (/retention: edits by four-eyes). Tests: pnpm check (330), smoke + bff E2E (13); tests/e2e/settings.spec.ts written, waiting for a strict run with the client key. Uncommitted.",
+      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) with pnpm check, build and a Playwright smoke. AC2 done 2026-11-09 (backend S12): contract 1.3.0 gives cp-web-admin DPoP + private_key_jwt, the staff passkey enrolment inside the sign-in (auth.passkey_enrol_options, auth.passkey_enrol), admin.staff_me, and a first-run staff bootstrap (backend pnpm staff:bootstrap, backend/deploy/staff-bootstrap.sh); the console is regenerated (63 admin-api operations, no api reads, because the api host refuses admin tokens), shows a Latin environment badge (OQ-12) and sends HSTS outside dev (OQ-11). OQ-01, OQ-10, OQ-11 and OQ-12 are answered. AC3 done 2026-11-09: the admin BFF (src/server/bff, copied from the PWA with provenance headers) signs staff in at aal3 with code + PKCE, DPoP-bound tokens and private_key_jwt, keeps tokens, the DPoP key and the admin.staff_me profile server-side (browser: one __Host-cpa_sid cookie), ends sessions after 30 min idle / 8 h, forwards exactly the 63 admin-api operations (purpose and reason headers, CSRF), and offers /bff/reauth for step-up; the typed client (src/lib/api) and the TanStack provider (memory-only cache, cleared on sign-out, session end and staff switch) are in. Tests: pnpm check (196), pnpm test:int against the strict backend (7), pnpm e2e (10). AC4 done 2026-11-09: staff sign in on the console's own /id/signin (work email + password with proof of work in strict mode, then the security key; a first-time account enrols a device-bound key with the emailed code in the same sign-in; the key alone for a step-up) and land in the shell: top bar with the environment badge, lookup and My queue placeholders, shortcut list and avatar menu (roles, My actions for ADM, language, theme, sign-out), left navigation filtered by the role table (20 sections, placeholders until their stages), no-permission and not-found states inside the shell, idle warning at 25 min and sign-out at 30 (measured against the server clock), step-up with one-time replay of the saved action, and keyboard shortcuts. Tests: pnpm check (243), pnpm test:int (7), pnpm e2e (22, strict backend). Uncommitted. AC5 done 2026-11-10: the admin interaction kit (src/components/admin) carries the admin rules into every later screen: useAdminAction refuses an RSN write without a 3-500 character reason, runs it through the step-up with a one-time replay and reports applied / waiting for a second staff member (FourEyesBanner) / accepted job / an explained problem (SELF_APPROVAL_FORBIDDEN, expired, changed meanwhile); ReasonDialog (console reason codes per kind of action + note, sent as '<code>: <note>', D-29) and ConfirmDialog (second confirmation for irreversible actions); PurposeGate and MaskedField (GD-10); DataTable with URL-bound filters, cursor paging, column choice, saved views without data, keyboard rows and Latin digits; CaseLayout, EntityChip, Timeline, AiEvidenceBlock, SlaBadge and the ADM-only AuditDrawer (Shift+H). Pending approvals (/approvals) lists and decides four-eyes changes; My work (/) shows the approvals waiting and one tile per queue the roles may see with count, oldest age and SLA state (OQ-05 targets, D-32); the top bar's My queue links there with the approvals count. Tests: pnpm check (301), pnpm test:int (7), pnpm e2e (25, strict backend; the four-eyes round trip with two ADM accounts). Uncommitted. AC6 built 2026-11-10 (partial: the signed-in E2E is not run yet): Exchange rates (/rates: preview, 20 % four-eyes warning, If-Match; replaces the deploy SQL), Feature flags (/flags: the AI kill switch on top, on at once and off by four-eyes; switch and targeting with If-Match and a Reload on 412), Plans & entitlements (/plans: the ranking rule, plan edits by four-eyes, the audit history, assign plan / trial / overrides) and Data retention (/retention: edits by four-eyes). Tests: pnpm check (330), smoke + bff E2E (13); tests/e2e/settings.spec.ts written, waiting for a strict run with the client key. Uncommitted. AC7 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6): Reviews (/reviews: the Path 2 approval queue by stage for community reviewers — the review read for its approval purpose with the business answer, the author history without contact data and evidence links, Confirm once the business step is done, Reject with a note, Ask for evidence, a reason code that is never a rating, A/R keys; moderators read the queue and work review cases: remove, restore, approve a held-back review, warn, move to Path 2 by four-eyes, close) and Disputes & appeals (/disputes: the disputed review with both sides' evidence and the first decider, mediation / uphold / reject with what each does, the different-staff rule explained). Tests: pnpm check (363), smoke + bff E2E (13); tests/e2e/reviews.spec.ts written, its API seeding run against the strict backend. Uncommitted. AC8 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6 and AC7): the moderation case workspace for every target type (also under the AC7 review cases): Reports (/content: triage into a case — safety reasons at least high — into the open case about the same item, or dismiss), Content / Accounts & organizations / AI output (/content tabs) and Inventory (/inventory) queues with safety cases first; a case read for its purpose shows the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), \"Take this case\", the actions the backend applies to that item in its state (showcase approval needs the customer's consent), warn / suspend (security key) / reactivate, trust penalties (security key, second confirmation) and badges by id, and closing with a resolution. Tests: pnpm check (397), smoke + bff E2E (13); tests/e2e/moderation.spec.ts written, its API seeding run. Uncommitted.",
       "stages_done": [
         "AC1",
         "AC2",
@@ -28,16 +28,20 @@
         "AC4",
         "AC5"
       ],
-      "next": "Finish AC6: run `pnpm e2e` in strict mode (needs CARPAL_ADMIN_CLIENT_PRIVATE_JWKS) and fix what it finds; then AC7 (Path 2 approval queue, review cases, disputes and appeals). No blocker for AC7: the AC5 kit plus the AC6 notes_for_next (SectionGate, ifMatchOf, ActionNotice onReload). OQ-15 can be answered any time; BR-19 still waits for the user's research.",
+      "next": "Run `pnpm e2e` in strict mode with CARPAL_ADMIN_CLIENT_PRIVATE_JWKS (closes AC6, AC7 and AC8); then the contract 1.4.0 backend stage (BR-18 with BR-21, BR-31 and what else is ready, R-09, R-16, R-22) and AC9 (organizations, verification, locations, assist sessions). OQ-15 still open (SLA working days); BR-19 waits for the user's research.",
       "decisions_needed_now": [
         "BR-19 (staff passkey management and lost-key reset): the user is researching the risk review of 2026-11-09 before it is scheduled.",
         "BR-21 and BR-22 (new in AC5, could join contract 1.4.0 with BR-18 before AC9): a list of the caller's own four-eyes requests with their outcome, and a queue summary read for My work and the navigation counts. Neither blocks AC6.",
         "BR-20 (needed by AC10): no admin-plane read of the job admin.dsr_export starts (DI-14).",
         "OQ-02 (needed by AC11): access gate for admin.<DOMAIN>.",
-        "OQ-15 (new, needed before the pilot): SLA working days — Friday-only weekend as built, or Thursday and Friday; and whether official holidays should pause SLA timers."
+        "OQ-15 (new, needed before the pilot): SLA working days — Friday-only weekend as built, or Thursday and Friday; and whether official holidays should pause SLA timers.",
+        "BR-30 (new, docs): the meaning of \"upheld\" for a business objection to a review (today it publishes the review); the console names the outcomes by their effect meanwhile.",
+        "BR-31 (new in AC8, high): a list of badges (and the Verified Business badges waiting for approval); proposed for contract 1.4.0 before AC9 (R-22)."
       ],
       "stages_partial": [
-        "AC6"
+        "AC6",
+        "AC7",
+        "AC8"
       ]
     },
     "milestones": [
@@ -364,6 +368,69 @@
       "issue": "Docs/23 A-PLAN-01 \"Assignments\" lists organizations and individuals with their plan, trial end and overrides, and A-RET-01 asks for add and a dry run. Contract 1.3.0 has no list of subscriptions (only one per organization in StaffOrgView and per user in StaffUserView), no retention create and no dry run.",
       "action": "AC6 builds the assignment form (no list) and says on the retention screen that add and dry run are not available. BR-24 and BR-25.",
       "status": "open"
+    },
+    {
+      "id": "DI-21",
+      "raised_in": "AC7",
+      "issue": "Docs/23 A-REV-01 has tabs Reported / AI flagged / Suspicious pattern and columns review excerpt, rating and author for review cases. Contract 1.3.0 admin.cases_list filters by status, severity, case_type and assignee only (no source), and ModerationCase carries no excerpt; admin.case_get returns the target as Json<TargetSnapshot> whose only typed fields are type, id and available (the review fields are the backend's choice).",
+      "action": "AC7 shows one list of review cases with a Source column (D-47) and reads the review from the snapshot defensively (reviewSnapshot; unknown shapes show the target chip). BR-27.",
+      "status": "open"
+    },
+    {
+      "id": "DI-22",
+      "raised_in": "AC7",
+      "issue": "Docs/23 A-REV-02 lists Hide (kept for review) and Remove as separate actions and an Edit request. The backend's review target applies hide and remove the same way (status removed; there is no hidden review status) and refuses request_changes for reviews.",
+      "action": "AC7 offers Remove (and Restore) only, with the effect said in the dialog; Edit request and Reduce weight stay with BR-15.",
+      "status": "open"
+    },
+    {
+      "id": "DI-23",
+      "raised_in": "AC7",
+      "issue": "Docs/23 A-DSP-01 asks for a message thread with each party, the original decision of an appeal (with its decision-maker), evidence from both sides for every target and \"Withdraw on request\". Contract 1.3.0 has no dispute messages, no admin read of a moderation action, a service record or a badge, and dispute_resolve cannot set withdrawn.",
+      "action": "AC7 shows the statement, the target chip, and for Path 2 reviews the review with the business answer and the author's evidence (admin.review_approval_get under the dispute purpose); the screen says what is not available. BR-28.",
+      "status": "open"
+    },
+    {
+      "id": "DI-24",
+      "raised_in": "AC7",
+      "issue": "For review_approval_objection the backend's resolved_upheld publishes the review (\"Disputed by the business\", Docs/02 WP9 \"if upheld it shows Disputed by the business\") and resolved_rejected rejects it, so \"upheld\" upholds the review, not the objection the business raised; for every other dispute type upheld means the raiser's claim is accepted. A staff member reading \"Uphold\" on a business objection would expect the opposite effect.",
+      "action": "AC7 names the two outcomes of an objection by their effect (D-44) and shows the effect of every outcome before the decision. BR-30 asks to settle the wording in Docs/40 / Docs/52.",
+      "status": "open"
+    },
+    {
+      "id": "DI-25",
+      "raised_in": "AC7",
+      "issue": "StaffReviewApprovalView has no stage and no time of the business answer (the 2-working-day timer starts then, Docs/23 §6); fraud_signals is always empty (backend S7 deviation); and the approval and dispute purposes end with the decision, so a reviewer cannot re-open what they just decided.",
+      "action": "The console derives the stage like the backend filter, starts the timer at the deadline or the review's last change (as My work, AC5), shows \"No fraud signals reported\", and keeps the decision's answer on screen (D-48). BR-29.",
+      "status": "open"
+    },
+    {
+      "id": "DI-26",
+      "raised_in": "AC8",
+      "issue": "Docs/23 A-ORG-02 \"Capabilities & badges\" and the Verified Business approval (54 §4: the trust worker awards it pending_approval) need the badges of an organization and the badges waiting for approval. Contract 1.3.0 has admin.badge_approve and revoke_badge by badge id, but no read that lists badges (StaffOrgView carries none; ProviderBadge has no organization).",
+      "action": "AC8 approves and revokes by a badge id the staff member enters (D-53); BR-31 asks for the list.",
+      "status": "open"
+    },
+    {
+      "id": "DI-27",
+      "raised_in": "AC8",
+      "issue": "Docs/23 A-INV-01 actions \"Downgrade fitment (confirmed → likely/uncertain)\" and \"Suspend vendor (T&S lead, four-eyes)\", and A-CON-01 tabs Counterfeit / Wrong fitment / Prohibited / Duplicate / Vendor data: the backend's fitment target only rejects and restores a row (no confidence change), vendor suspension is admin.org_status (not four-eyes in contract 1.3.0, OQ-04), and the case list cannot filter by reason.",
+      "action": "AC8 offers reject / restore for fitment rows and shows the reason column; vendor status is changed on the organization page (AC9). Fitment downgrade joins BR-15; the reason filter is BR-32.",
+      "status": "open"
+    },
+    {
+      "id": "DI-28",
+      "raised_in": "AC8",
+      "issue": "Docs/23 A-CON-01 \"author (role badge)\" and A-CON-02 \"consent record for showcases (customer, scope, date)\", \"author history\", \"the whole post with its comments\": the target snapshots of admin.case_get carry the record's own fields only (a post has no author or organization, a showcase item only its consent status, no media ids), and the admin plane has no read of a post's comments.",
+      "action": "AC8 shows what the snapshot has (text, state, owner organization where present, consent status) and a public link for published posts and open questions. BR-33.",
+      "status": "open"
+    },
+    {
+      "id": "DI-29",
+      "raised_in": "AC8",
+      "issue": "Docs/23 A-CON-01 \"unsafe_advice, non_consensual_media and privacy cases are at least high\": the backend opens cases with the severity it is given (admin.report_triage open_case) or its own (AI flags, rules) and does not enforce the floor.",
+      "action": "The console proposes high and offers nothing lower in triage (D-57) and sorts these reasons first whatever their severity; BR-32 asks the backend to enforce it.",
+      "status": "open"
     }
   ],
   "backend_requests": [
@@ -428,7 +495,8 @@
       "priority": "high",
       "request": "Lift timed suspensions automatically (backend DI-66: suspended_until column and a job).",
       "source": "backend NI-04",
-      "status": "open"
+      "status": "open",
+      "note_ac8": "AC8 suspends without an end date (D-52): suspend_until is accepted by the backend but never lifted."
     },
     {
       "id": "BR-08",
@@ -436,7 +504,8 @@
       "priority": "medium",
       "request": "Organization merge re-pointing registry (backend DI-67). Until done, AC9 hides Merge.",
       "source": "backend NI-04",
-      "status": "open"
+      "status": "open",
+      "note_ac8": "AC8 does not offer merge_duplicate on organization cases either (D-51)."
     },
     {
       "id": "BR-09",
@@ -492,7 +561,8 @@
       "priority": "should",
       "request": "Moderation actions reduce_weight, edit_request (with highlighted spans) and apply_redaction (boxes → redacted copy).",
       "source": "DI-05",
-      "status": "open"
+      "status": "open",
+      "note_ac8": "Add \"downgrade fitment\" (confirmed → likely/uncertain) for A-INV-01 (DI-27)."
     },
     {
       "id": "BR-16",
@@ -581,6 +651,63 @@
       "priority": "low",
       "request": "id in FeatureFlag and ExchangeRate (the audit entity ids), or admin.audit_search by entity key, for the per-record history; and a staff notification (in-app, ADM) when ai.automation.kill_switch is turned on or off (Docs/23 A-FLAG-01 \"broadcast to the dashboard and AI governance staff\").",
       "source": "AC6 (DI-19)",
+      "status": "open"
+    },
+    {
+      "id": "BR-27",
+      "stage": "contract 1.4.0 (AC14) or with AC8",
+      "priority": "medium",
+      "request": "admin.cases_list q: source (user_report | ai_flag | system_rule | admin), and in ModerationCase a short target summary (excerpt ≤ 120, rating for reviews); a typed target snapshot per target type in admin.case_get (ReviewSnapshot: subject_organization_id, overall_rating, title, body, status, confirmation_path, verified_status, created_at, …); later the suspicious-pattern and automatic-check-failed tabs of A-REV-01 when their signals exist.",
+      "source": "AC7 (DI-21)",
+      "status": "open",
+      "note_ac8": "AC8: the Content views (reported, AI flagged, held by a rule, unsafe advice, consent) narrow the loaded cases on the client (D-49); BR-32 adds the reason filter, BR-33 the content snapshots."
+    },
+    {
+      "id": "BR-28",
+      "stage": "contract 1.4.0 (AC14)",
+      "priority": "medium",
+      "request": "Disputes: a message thread per party (staff templated messages, the party's replies and added evidence), admin reads of the dispute targets the console cannot show (moderation action with its decider, service record, badge), and a staff \"withdraw on request\" (status withdrawn with the raiser's request as the reason).",
+      "source": "AC7 (DI-23)",
+      "status": "open"
+    },
+    {
+      "id": "BR-29",
+      "stage": "contract 1.4.0",
+      "priority": "low",
+      "request": "StaffReviewApprovalView: stage and business_answered_at (the reviewer timer's start), and fraud signals when SEC-BF-1 has a source; a read of one's own decided approvals and disputes (history) without a live purpose.",
+      "source": "AC7 (DI-25)",
+      "status": "open"
+    },
+    {
+      "id": "BR-30",
+      "stage": "docs (WP0) / contract 1.4.0",
+      "priority": "medium",
+      "request": "Settle the meaning of resolved_upheld / resolved_rejected for review_approval_objection in Docs/40 §23.4 and Docs/52 Dispute (today upheld = the review is published as disputed, the opposite of upholding the objection), or give objections their own outcomes (publish_disputed / reject_review).",
+      "source": "AC7 (DI-24)",
+      "status": "open"
+    },
+    {
+      "id": "BR-31",
+      "stage": "contract 1.4.0 (with BR-18, before AC9) — before the pilot",
+      "priority": "high",
+      "request": "Badges on the admin plane: admin.badges_list (GET {adm}/badges, STF(ADM, MOD); q status pending_approval|active|revoked|expired, organization_id, badge_type, cursor, limit ≤ 100; items ProviderBadge & { organization: OrgSummary }), or the badges in StaffOrgView (part of BR-16) plus a \"badges waiting for approval\" queue for My work. Without it a Verified Business badge awarded pending_approval cannot be found in the console.",
+      "source": "AC8 (DI-26)",
+      "status": "open"
+    },
+    {
+      "id": "BR-32",
+      "stage": "contract 1.4.0 (with BR-27)",
+      "priority": "medium",
+      "request": "Enforce the Docs/23 A-CON-01 severity floor (unsafe_advice, non_consensual_media, privacy at least high) wherever a case is opened (report_triage open_case, AI flags, rules), and add q reason (ModerationReason, several allowed) to admin.cases_list next to BR-27's source, for the Unsafe advice / Consent tabs of A-CON-01 and the tabs of A-INV-01.",
+      "source": "AC8 (DI-27, DI-29)",
+      "status": "open"
+    },
+    {
+      "id": "BR-33",
+      "stage": "contract 1.4.0 (AC14)",
+      "priority": "medium",
+      "request": "Typed target snapshots for content (with BR-27): the author (display name, role member/provider/vendor, the organization card when posted for an organization) and a short author history (published, removed, warnings) for posts, comments, questions, answers and files; for a showcase item its consent record (customer display, scope, granted_at) and media ids; for a fitment row the listing name; and an admin read of the comments or answers around a reported comment or answer (PURP case).",
+      "source": "AC8 (DI-28)",
       "status": "open"
     }
   ],
@@ -830,9 +957,13 @@
         "admin.review_move_to_approval_path",
         "admin.cases_list (case_type review)",
         "admin.case_action",
-        "admin.media_download_url"
+        "admin.media_download_url",
+        "admin.case_get",
+        "admin.case_close (D-43)"
       ],
-      "coverage": "full except reduce weight / edit request (BR-15)"
+      "coverage": "full except reduce weight / edit request (BR-15)",
+      "coverage_ac7": "Built in AC7: approval queue by stage with decisions, review cases (remove, restore, approve held-back, warn, move to Path 2 by four-eyes, close). Not built: reduce weight / edit request (BR-15), source tabs and suspicious-pattern tab (DI-21, BR-27).",
+      "coverage_ac8": "AC8: review cases run on the shared moderation workspace (take the case, account and penalty panels added)."
     },
     {
       "screen": "A-CON-01 / A-CON-02 Content moderation",
@@ -847,7 +978,8 @@
         "admin.case_close",
         "admin.media_download_url"
       ],
-      "coverage": "full except redaction drawing (BR-15)"
+      "coverage": "full except redaction drawing (BR-15)",
+      "coverage_ac8": "Built in AC8: reports inbox with triage; Content / Accounts & organizations / AI output queues (safety first, views on the client, D-49); case detail with the item, media viewer, actions by target and state, account, penalty, badges, close. Not built: redaction overlay and drawing (BR-15), author column and history, consent record and the whole thread (BR-33), \"Pending pre-publication review\" as a server filter (BR-27)."
     },
     {
       "screen": "A-INV-01 Inventory moderation",
@@ -856,7 +988,8 @@
         "admin.cases_list (case_type inventory_item, inventory_fitment)",
         "admin.case_action"
       ],
-      "coverage": "full as a filtered case view"
+      "coverage": "full as a filtered case view",
+      "coverage_ac8": "Built in AC8 (/inventory): listings and fitment rows (request correction, hide, remove, restore, reject fitment, vendor penalty). Not built: downgrade fitment (BR-15), the reason tabs (BR-32), vendor suspension here (organization page, AC9)."
     },
     {
       "screen": "A-DSP-01 Disputes & appeals",
@@ -866,7 +999,8 @@
         "admin.dispute_get",
         "admin.dispute_resolve"
       ],
-      "coverage": "full"
+      "coverage": "partial (thread, target reads and staff withdraw BR-28)",
+      "coverage_ac7": "Built in AC7: queue (status, type, assignment), detail with the disputed Path 2 review and both sides' evidence, mediation / uphold / reject with the different-staff rule explained."
     },
     {
       "screen": "A-DSR-01 / A-DSR-02 Privacy requests",
@@ -2046,7 +2180,7 @@
     {
       "id": "AC7",
       "title": "Reviews: Path 2 approval queue, review cases, disputes and appeals",
-      "status": "not_started",
+      "status": "partial",
       "depends_on": [
         "AC5"
       ],
@@ -2085,32 +2219,38 @@
         {
           "id": "AC7.T1",
           "task": "A-REV-01 tabs: Awaiting approval (admin.review_approvals_queue) and Reported / AI flagged / Disputed (case list filtered to case_type review), columns per Docs/23 where the data exists, SLA timers.",
-          "status": "not_started"
+          "status": "done",
+          "result": "src/features/reviews/{reviews-page.tsx, approval-queue.tsx, review-cases.tsx}, src/app/(console)/reviews/page.tsx: /reviews with tabs by role (?tab=approvals|cases; a third tab links to Disputes filtered to business objections). Awaiting approval = admin.review_approvals_queue by stage (waiting for a CarPal reviewer [default], for the business, evidence requested), oldest first, 50 a page; columns review excerpt, rating, business, author, business answer, stage (hidden), written, due (the 2-working-day timer from the business answer or deadline, reviewApprovalTimer shared with My work; \"Business until <date>\" while the business has time), files, objection. Review cases = admin.cases_list case_type=review with status (open default) and severity filters; columns reason, source, severity, AI risk, reports, opened, due (24 h; 4 h for safety reasons and critical), assignee, status. Reported / AI flagged are one list with a Source column: the list has no source filter (DI-21, D-47)."
         },
         {
           "id": "AC7.T2",
           "task": "Approval case view (CaseLayout): the review, business answer and due date, author history (no contact data), evidence via admin.media_download_url, fraud signals, linked dispute; decisions confirm / reject / request evidence with reasons; the 'a low rating alone is never a reason' reminder when the business objected; the first decider shown for appeals.",
-          "status": "not_started"
+          "status": "done",
+          "result": "Approval item (CaseLayout): admin.review_approval_get for purpose approval:<id> (audited), the review with statuses, sub-ratings, service date and appointment chip; the business step (answer, how it was settled, deadline, the business note, the first decider); evidence files through admin.media_download_url (variant display, same purpose: a short-lived link opened in a new tab, never inline: img-src is self only); the author's history without contact data and fraud signals (the backend reports none yet, DI-25). Decisions (CRV only, admin.review_approval_decide): Confirm (A; disabled with the reason until the business confirmed or the deadline passed, or after an objection), Reject (R; note required) and Ask for evidence, each through the ReasonDialog with its own codes (review_confirm, review_reject, review_evidence; none names a rating); the code goes out as reason_code and \"<code>: <note>\" as reason. \"A low rating alone is never a reason\" is shown in the panel and in the reject dialog; an objection shows a banner with the link to its dispute. After a decision the answer of the call stays on screen (the approval purpose ends, D-48)."
         },
         {
           "id": "AC7.T3",
           "task": "Move to approval path (Path 1 → Path 2) from a review case: 4EYES flow with MOD.",
-          "status": "not_started"
+          "status": "done",
+          "result": "Review case item: admin.case_get for purpose case:<id> (open cases, unassigned or the caller's; otherwise \"being handled by <name>\"), the review from the target snapshot (reviewSnapshot; untyped in the contract, DI-21), the case facts, the AI risk as an AiEvidenceBlock and the action history as a Timeline. Actions by the review's state (admin.case_action, reason first): approve a held-back Path 1 review, remove (= hide for reviews, DI-22), restore, warn the author. Move to the approval path (MOD, a Path 1 review published or held back): admin.review_move_to_approval_path with a path_change reason (note required), answered 202 → FourEyesBanner; a second moderator approves it on Pending approvals. Close the case (admin.case_close, an AC8 operation used here so review cases can be finished, D-43): keep the review (dismissed), done (action taken) or escalate, with a resolution (≤ 1000) and a case_close reason."
         },
         {
           "id": "AC7.T4",
           "task": "A-DSP-01: disputes queue with type/status filters; detail with statement, target, original decision, evidence of both sides, moderator notes; resolve upheld / rejected / start mediation / withdrawn where the contract allows; the 'different staff member' rule surfaced from the server error.",
-          "status": "not_started"
+          "status": "done",
+          "result": "src/features/disputes/disputes-page.tsx, src/app/(console)/disputes/page.tsx: admin.disputes_queue with status (open default), type and assignment (mine / nobody → assigned_to_me true/false) in the URL; columns type, about, raised by (organization and person), status, raised, due (5 working days), assignee. The item: admin.dispute_get for purpose dispute:<id> (decided disputes are shown from the list, their purpose has ended), the statement, who raised it, the target chip, resolution and internal notes; for a review the disputed review with the business answer and note, the author's evidence and the first decider (admin.review_approval_get under the dispute purpose). Decision (MOD, CRV; admin.dispute_resolve): start mediation (open only), uphold, reject, each with what it does to the target (the backend's outcomes: an upheld objection publishes the review as disputed, an upheld fake-review claim removes it, a badge challenge revokes the badge, an appeal restores hidden or removed content, the others record the outcome only); an outcome message required to resolve (≤ 2000, both sides see it), internal notes (≤ 3000, sent when changed), a reason (mediation / dispute_uphold / dispute_reject) and the irreversible tick for a resolution. For a business objection the two outcomes read \"Publish the review (the objection is not accepted)\" and \"Accept the objection (the review is rejected)\" (DI-24, D-44). The rule is stated up front and SELF_APPROVAL_FORBIDDEN is explained as \"A colleague must decide this\". Withdrawing is the raiser's step (said on screen; no staff operation)."
         },
         {
           "id": "AC7.T5",
           "task": "Keyboard flow for the approval queue (J/K, A confirm, R reject) with the reason panel still required.",
-          "status": "not_started"
+          "status": "done",
+          "result": "J/K move through the approval queue (DataTable), A opens Confirm and R opens Reject (useShortcut; A does nothing while Confirm is blocked); both open the reason dialog, nothing is sent without a reason. DOM-tested."
         },
         {
           "id": "AC7.T6",
           "task": "E2E: a Path 2 review created through the API (the PWA E2E helpers show how) is confirmed by a CRV and becomes 'approved_without_visit'; a business rejection opens a dispute that a different staff member resolves; EN and FA; axe.",
-          "status": "not_started"
+          "status": "partial",
+          "result": "tests/e2e/reviews.spec.ts (2 tests: a CRV confirms a Path 2 review the business confirmed → the author sees approved_without_visit; a MOD reads the queue without decision buttons and opens Review cases; a CRV who asked for evidence is refused on the business objection and the screen explains it; a MOD in Persian publishes the review as disputed → the author sees it published with disputed_by_business; axe in EN and FA) and tests/e2e/app-user.ts (shop, customers, Path 2 reviews and the business answer through the API as cp-mobile users: sign-up, mailed link, code flow with PKCE and DPoP, proof of work when the server asks; D-46). The seeding was run against the strict backend (shop published, Path 2 review, objection, author view: passed). NOT RUN signed in: the staff sign-in of the strict backend needs CARPAL_ADMIN_CLIENT_PRIVATE_JWKS (the run stopped at /id/signed-out?reason=failed, as AC6)."
         }
       ],
       "deliverables": [
@@ -2124,12 +2264,100 @@
       "out_of_scope": [
         "reduce weight and edit request (BR-15)"
       ],
-      "report": null
+      "report": {
+        "started_at": "2026-11-10",
+        "completed_at": null,
+        "summary": "The trust flow the pilot depends on is in the console. Community reviewers clear the Path 2 approval queue (/reviews): each review opens for its approval purpose with the business answer, the author history without contact data and the evidence files, and is confirmed, rejected or sent back for evidence with a reason code (never a rating); Confirm waits for the business step and A/R open the reason. Moderators work review cases (remove, restore, approve a held-back review, warn, close) and move a review whose visit evidence proved invalid to Path 2 by four-eyes. Disputes & appeals (/disputes) shows the statement, the disputed review with both sides' evidence and the first decider, says what each outcome does, and explains the different-staff rule when the server refuses. Contract gaps: no source filter or typed snapshot for cases, no hidden state for reviews, no thread, target reads or staff withdraw for disputes, no stage or answer time in the approval view, and the inverted meaning of \"upheld\" for business objections (DI-21..DI-25, BR-27..BR-30). The E2E is written and its API seeding ran against the strict backend; the signed-in part waits for the client key, like AC6.",
+        "acceptance": {
+          "A CRV can clear the approval queue end to end; a MOD without CRV cannot decide approvals.": "DOM-tested (queue by stage, the purpose-bound read, Confirm / Reject / Ask for evidence bodies with reason_code, Confirm blocked until the business step, A/R, MOD sees \"Only community reviewers decide\" and no buttons). E2E written (reviews.spec.ts test 1: confirm → the author sees approved_without_visit; MOD without buttons); its seeding ran against the strict backend, the signed-in part did not (partial_reason). The server rule is the backend's (STF(CRV) on admin.review_approval_decide, S9b sweep).",
+          "Dispute decisions by the original decider are refused and explained.": "DOM-tested (SELF_APPROVAL_FORBIDDEN → \"A colleague must decide this\"; the rule stated before deciding; the first decider shown). E2E written (test 2: the CRV who asked for evidence is refused on the objection; a MOD decides in Persian; the author sees the review published as disputed); not run signed in.",
+          "E2E and axe pass in EN and FA.": "axe in jsdom: 0 violations on the approval item, the review case and the dispute, in EN and FA (6 tests). Chromium axe is in reviews.spec.ts (EN approval and cases, EN refused dispute, FA dispute), not run. smoke + bff E2E: 13 passed against the AC7 build."
+        },
+        "screens_built": [
+          "A-REV-01 Review queues (/reviews): Awaiting approval by stage; Review cases",
+          "A-REV-02 Review case detail: the approval item (Path 2) and the review case (actions, move to Path 2, close)",
+          "A-DSP-01 Disputes & appeals (/disputes): queue, detail with the disputed review, decision"
+        ],
+        "operations_used": [
+          "admin.review_approvals_queue, admin.review_approval_get (PURP approval; also under a dispute purpose), admin.review_approval_decide (PURP RSN, reason_code)",
+          "admin.review_move_to_approval_path (4EYES RSN)",
+          "admin.cases_list (case_type review), admin.case_get (PURP case), admin.case_action (PURP RSN: approve, remove, restore, warn_user), admin.case_close (RSN; D-43)",
+          "admin.disputes_queue, admin.dispute_get (PURP dispute), admin.dispute_resolve (PURP RSN)",
+          "admin.media_download_url (PURP AUD, variant display)",
+          "E2E only, on the api host as cp-mobile users: auth sign-up / email verify / sign-in, the code grant, orgs.create, locations, provider profile, categories, coverage, publish, reviews.create, review_approvals.answer, reviews.mine_get"
+        ],
+        "files_created": [
+          "src/features/reviews/{index.ts, review-logic.ts, review-parts.tsx, approval-queue.tsx, review-cases.tsx, reviews-page.tsx, review-logic.test.ts, reviews.test.tsx}",
+          "src/features/disputes/{index.ts, disputes-page.tsx, disputes.test.tsx}",
+          "src/app/(console)/{reviews,disputes}/page.tsx",
+          "tests/e2e/{reviews.spec.ts, app-user.ts}"
+        ],
+        "files_changed": [
+          "src/lib/config/reasons.ts (reason kinds review_confirm, review_reject, review_evidence, warning, path_change, case_close, dispute_uphold, dispute_reject, mediation) and config.test.ts",
+          "src/lib/work/queues.ts (reviewApprovalTimer, disputeTimer exported for the queues)",
+          "src/components/admin/case-layout.tsx (EntityChip types service_record, badge, moderation_action)",
+          "src/components/admin/admin.css (tabs, stacked panels, review quote, files, radios)",
+          "src/lib/i18n/locales/{en,fa}.json (admin.trust, admin.reviews, admin.cases, admin.disputes, reason codes; 983 keys)",
+          "tests/e2e/public-api.ts (exports the DPoP, proof-of-work and token helpers for app-user.ts)",
+          "README.md (status, layout, \"Reviews and disputes (AC7)\", E2E)",
+          "dev-plan.json"
+        ],
+        "tests": {
+          "unit": "console 363 passed in 38 files (331 before AC7): review rules 8, reviews DOM 17 (incl. axe EN/FA ×2), disputes DOM 7 (incl. axe EN/FA), reasons +1",
+          "int": "not run (no BFF change)",
+          "e2e": "written: tests/e2e/reviews.spec.ts (2 tests) - signed-in part NOT RUN (strict backend; no client key in this session). The API seeding (app-user.ts) ran against the strict backend in a temporary check (passed; removed). smoke + bff: 13 passed against the AC7 production build.",
+          "a11y": "axe-core in jsdom: 0 violations on the approval item, the review case and the dispute in EN and FA. Chromium axe written in reviews.spec.ts (not run).",
+          "static": "pnpm check (lint + logical CSS, typecheck, unit + DOM 363, contract:check, i18n:check 983 keys, ds:check), pnpm format:check, pnpm build (routes /reviews, /disputes)",
+          "not_run": "All signed-in E2E (signin, approvals, settings, reviews); pnpm test:int; Firefox/Safari."
+        },
+        "deviations": [
+          "D-43",
+          "D-44",
+          "D-45",
+          "D-46",
+          "D-47",
+          "D-48"
+        ],
+        "new_doc_issues": [
+          "DI-21",
+          "DI-22",
+          "DI-23",
+          "DI-24",
+          "DI-25"
+        ],
+        "new_backend_requests": [
+          "BR-27",
+          "BR-28",
+          "BR-29",
+          "BR-30"
+        ],
+        "new_open_questions": [],
+        "decisions": [
+          "A decision on a review or a dispute is final for this staff member: the reason dialog for Reject (review) and for uphold/reject (dispute) asks for a note or the irreversible tick; Ask for evidence and mediation do not.",
+          "The business-objection outcomes are named by their effect (D-44) because the backend's \"upheld\" keeps the author's review.",
+          "Decided items are not re-read: the console keeps the answer of the decision on screen (the purpose of the work item ends with it, D-48)."
+        ],
+        "notes_for_next": [
+          "AC8 (moderation): the review case in src/features/reviews/review-cases.tsx is the first case screen (purpose read, actions by target state, Timeline, AiEvidenceBlock, close with a resolution, \"being handled by\"); lift its generic parts (case facts, close panel, history, SeverityBadge, reviewCaseDue) into a cases module for content, inventory, users and AI output rather than copying. Moderation enums and labels (admin.cases.status/severity/source/reason/action) and the MODERATION_REASONS list are already there (review-logic.ts).",
+          "Purpose reads end with the work item (backend purposes: case and dispute open and unassigned-or-mine, approval pending_approval): wait for the list, read only open items, and keep the answer of the decision on screen (approval-queue.tsx `decided`, disputes-page.tsx `resolved`).",
+          "admin.review_approval_decide has its own reason_code: send the ReasonDialog draft code (onSubmit(reason, draft)).",
+          "E2E data through the API: tests/e2e/app-user.ts appUser() (any user), publishedShop(), path2Review(), businessAnswers(), authorView(); AC8 can add a post or a report the same way (the PWA helpers need the PWA client key in strict mode, these do not).",
+          "Docs/23 A-REV-01 tabs \"Suspicious pattern\" and \"Pending automatic check failed\" have no data source yet (fraud_signals is empty, W4 holds back to pending_moderation which shows as approve on a review case); revisit with BR-27."
+        ],
+        "open_after_stage": [
+          "Run the signed-in E2E in strict mode (partial_reason): AC6 and AC7 close together.",
+          "BR-27..BR-30 (new); BR-21..BR-26, BR-19 (user research), BR-20 (AC10), BR-18 (with AC9), BR-07..BR-17 as before.",
+          "DI-21..DI-25 (new); DI-01, DI-05..DI-20 as before.",
+          "OQ-15 (SLA working days; disputes and review approvals use it), OQ-02 (AC11), OQ-03, OQ-06..OQ-09 with their defaults.",
+          "Nothing committed (commit only when the user asks)."
+        ]
+      },
+      "partial_reason": "All code, docs, unit and DOM tests are done and green, and the E2E seeding through the API ran against the strict backend; the signed-in part of tests/e2e/reviews.spec.ts (and the AC4-AC6 suites) has not run, because the strict backend needs the cp-web-admin private key (CARPAL_ADMIN_CLIENT_PRIVATE_JWKS) and this session had none. Run: export CARPAL_STRICT_AUTH=1 and CARPAL_ADMIN_CLIENT_PRIVATE_JWKS, then `pnpm e2e` in frontend/admin-console (backend `pnpm dev` running). When it passes, set AC7 and AC7.T6 (and AC6, AC6.T6) to done."
     },
     {
       "id": "AC8",
       "title": "Moderation: reports, cases for content, inventory, users, organizations and AI output; badges",
-      "status": "not_started",
+      "status": "partial",
       "depends_on": [
         "AC5"
       ],
@@ -2166,36 +2394,44 @@
         {
           "id": "AC8.T1",
           "task": "Reports inbox (admin.reports_list) with triage to a case or dismiss (admin.report_triage).",
-          "status": "not_started"
+          "status": "done",
+          "result": "src/features/moderation/reports-inbox.tsx: the Reports tab of /content (MOD, SUP; admin.reports_list with status [open default], target type and reason in the URL, 50 a page). Open reports with a safety reason first, then the oldest; columns reason, type, reported by, received, due (Docs/23 §6 by reason and target: 4 h safety, 24 h reviews, 48 h the rest), status. The report: reason, target chip, reporter, what they wrote. Triage (admin.report_triage, reason first): Open a case with a severity (unsafe advice, media without consent and private data are proposed high and cannot go lower, Docs/23 A-CON-01; D-57), Add to that case when an open case about the same target exists (MOD/ADM: admin.cases_list case_type=<target type>, limit 100, matched by target id), or Dismiss. The answer stays on screen with \"Open its case\" (caseHref to the section of the case type, with its purpose)."
         },
         {
           "id": "AC8.T2",
           "task": "Case queues as saved views of admin.cases_list: Content (post, comment, question, answer, portfolio_item, media_asset), Inventory (inventory_item, inventory_fitment), Users & organizations, AI output; tabs Reported / AI flagged / System rule / Unsafe advice / Consent & redaction; severity colours and safety cases first.",
-          "status": "not_started"
+          "status": "done",
+          "result": "src/features/moderation/case-workspace.tsx + moderation-pages.tsx: queues as views of admin.cases_list by case type (case-logic CASE_QUEUES): /content tabs Content (post, comment, question, answer, portfolio_item, media_asset, review_response), Accounts & organizations (user, organization, organization_location), AI output (ai_output); /inventory (inventory_item, inventory_fitment); /reviews keeps review cases (AC7, now on the same workspace). A queue of several types reads one call per type (up to 50 each) unless ?type= picks one, which pages on the server (D-49). Status (open default) and severity filters; safety cases first, then severity, then age (bySafetyFirst); severity badges, a \"Safety case\" banner. The Docs/23 A-CON-01 views (reported, AI flagged, held by a rule, unsafe advice, consent and privacy) narrow the loaded cases on the client: the list has no source or reason filter (BR-27, BR-32)."
         },
         {
           "id": "AC8.T3",
           "task": "Case detail: item as the public sees it (with public link), context blocks the case returns, media viewer via admin.media_download_url (watermark 'CarPal internal', no download button), AI evidence block; assign on open with 'Being handled by …'.",
-          "status": "not_started"
+          "status": "done",
+          "result": "Case item: admin.case_get for purpose case:<id> (\"being handled by <name>\" when the purpose check refuses); the target as the public sees it (target-view.tsx TargetBlock per target type from the untyped snapshot: text in its own direction, status and moderation status, owner chips, consent, scan, fitment years, location point, names of a listing) and \"Open the public page\" for published posts, open questions and active shops/vendors (CARPAL_ADMIN_PUBLIC_WEB_URL, a new tab; GD-07). Media viewer: admin.media_download_url (display variant, same purpose) shown inline with a \"CarPal internal\" watermark, no download button, no context menu; other files open as a short-lived link (the page CSP now allows CARPAL_STORAGE_URL for img/media, D-54). AI risk as AiEvidenceBlock, the action history as a Timeline with every ModerationActionType. \"Take this case\" (admin.case_assign, the caller; the button is the reason \"taking_case\", D-50) then \"You are handling this case\"."
         },
         {
           "id": "AC8.T4",
           "task": "Actions per target type from ModerationActionType (approve, hide, remove, restore, request_changes, warn_user, suspend_account [AAL3], reactivate_account, revoke_badge, apply_trust_penalty [AAL3], merge_duplicate [AAL3]); showcase approval disabled without a valid consent if the case says so; close with resolution (≤ 1000 chars).",
-          "status": "not_started"
+          "status": "done",
+          "result": "Actions per target type and state (case-logic targetActions, the backend ModerationTargets): community content approve / hide / remove / restore / warn (a question has no removed state); business replies, files and AI output remove / restore (hide = remove); showcase items approve (disabled with the reason without a granted or not-required customer consent), request changes, reject, restore; listings approve, request changes, hide, remove, restore; fitment rows reject / restore; reviews as AC7. Accounts: warn, Suspend the account (AAL3: the security key, replayed once; no end date, D-52), Reactivate (user cases). Organizations and content with a known organization: trust penalty (1-100 points, AAL3, irreversible tick). Reason kinds per action (changes_request, trust_penalty, badge_revoke new); the effect of every action is said in the dialog. Close with an outcome and a resolution (≤ 1000). merge_duplicate is not offered until BR-08 (D-51)."
         },
         {
           "id": "AC8.T5",
           "task": "Badge approval (admin.badge_approve) from the case or organization context.",
-          "status": "not_started"
+          "status": "done",
+          "result": "src/features/moderation/badge-panel.tsx (BadgePanel, exported for AC9): on organization cases; Approve the badge (admin.badge_approve, ADM/MOD, reason kind approval) and Revoke the badge (admin.case_action revoke_badge on the case, target badge, params.badge_id, irreversible) by badge id, because no read lists an organization's badges or the badges waiting for approval (DI-26, BR-31, D-53)."
         },
         {
           "id": "AC8.T6",
           "task": "E2E: a community post reported in the PWA flow (API helper) is triaged, hidden, restored and closed; a suspend action triggers step-up; EN and FA; axe.",
-          "status": "not_started"
+          "status": "partial",
+          "result": "tests/e2e/moderation.spec.ts (2 tests: EN — a post published by a shop and reported by a customer is triaged into a case, taken, hidden [the public list no longer shows it], restored [shown again] and closed with a resolution, axe on the report and the case; FA — suspending the post's author asks for the security key, the virtual key confirms on the sign-in page and the saved action runs once against the backend, the author's next API call is refused, axe in FA) and app-user.ts helpers communityOn (backend dev:flags set community on), shopPost, reportAs, publicPostStatus. The step-up is triggered by answering the first suspend call with the backend's STEP_UP_REQUIRED (page.route): the backend's 10-minute window never expires in a fresh E2E session (D-55). The API seeding ran against the running backend (shop, post published, report: passed). NOT RUN signed in: the sign-in stopped at /id/signed-out?reason=failed, as AC6 and AC7 (no CARPAL_ADMIN_CLIENT_PRIVATE_JWKS in this session)."
         }
       ],
       "deliverables": [
-        "src/features/moderation"
+        "src/features/moderation",
+        "src/app/(console)/{content,inventory}",
+        "tests/e2e/moderation.spec.ts"
       ],
       "acceptance_criteria": [
         "Every case type can be opened, actioned with a reason and closed.",
@@ -2205,7 +2441,97 @@
       "out_of_scope": [
         "redaction drawing (BR-15)"
       ],
-      "report": null
+      "report": {
+        "started_at": "2026-11-10",
+        "completed_at": null,
+        "summary": "Moderators work every kind of case in the console. Reports (/content) are triaged into a case (safety reasons at least high), into the open case about the same item, or dismissed, safety reports first. Content, account, AI output (/content tabs) and inventory (/inventory) cases are queues of admin.cases_list with safety cases first; a case opens for its purpose with the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), the AI risk and the history; \"Take this case\" assigns it; the actions are the ones the backend applies to that item in its state (approve held content, hide, remove, restore, request changes, reject a fitment row; a showcase cannot be approved without the customer's consent), accounts are warned, suspended (security key) and reactivated, organizations get trust penalties (security key, second confirmation) and badge decisions; every action takes a reason, and the case closes with an outcome and a resolution. The AC7 review case now runs on the same workspace. Contract gaps: no badge list (Verified Business approval needs the badge id), no reason or source filter, no severity floor on the server, snapshots without author or consent record, no fitment downgrade (DI-26..DI-29, BR-31..BR-33). The E2E is written and its seeding ran; the signed-in part waits for the client key, like AC6 and AC7.",
+        "acceptance": {
+          "Every case type can be opened, actioned with a reason and closed.": "DOM-tested on post (read for the purpose, take, hide with reason, done), showcase item (approve blocked without consent), user (suspend), organization (penalty, badge approve and revoke), file (media viewer), listing (request changes needs a note), and closing (AC7 test on the shared workspace); unit-tested action sets for all 14 target types (case-logic.test.ts). E2E written (moderation.spec.ts test 1: triage, take, hide, restore, close on a real post); seeding ran, the signed-in part did not (partial_reason).",
+          "Suspend, trust penalty and merge require a fresh passkey step-up.": "Suspend and trust penalty: the server enforces AAL3 (admin.case_action AAL3(suspend_account, apply_trust_penalty, merge_duplicate), 10-minute window); the console says so in the dialog and the kit replays the action once after the key (DOM test: STEP_UP_REQUIRED → \"Confirm it's you\" → the action saved as act.admin.case_action; E2E test 2 written, not run). Merge is not offered (BR-08 open, D-51).",
+          "E2E and axe pass in EN and FA.": "axe-core in jsdom: 0 violations on a report, a content case and an organization case in EN and FA (6 tests). Chromium axe is in moderation.spec.ts (EN report and case, FA account panel), not run. smoke + bff E2E: 13 passed against the AC8 production build."
+        },
+        "screens_built": [
+          "Reports inbox (/content?tab=reports): list, report, triage",
+          "A-CON-01 Content moderation queue (/content?tab=content, accounts, ai) with the views of Docs/23",
+          "A-CON-02 Content case detail: item, media viewer, actions by target, account, penalty, badges, close",
+          "A-INV-01 Inventory moderation (/inventory)"
+        ],
+        "operations_used": [
+          "admin.reports_list, admin.report_triage (RSN: open_case with severity, moderation_case_id, dismiss)",
+          "admin.cases_list (one case type per call), admin.case_get (PURP case), admin.case_assign (RSN, the caller), admin.case_action (PURP RSN AAL3: approve, hide, remove, restore, request_changes, warn_user, suspend_account, reactivate_account, apply_trust_penalty, revoke_badge), admin.case_close (RSN)",
+          "admin.badge_approve (RSN)",
+          "admin.media_download_url (PURP AUD, variant display)",
+          "E2E only, on the api host as cp-mobile users: posts.create, posts.publish, reports.create, posts.public_list, me.get; backend dev:flags (community on)"
+        ],
+        "files_created": [
+          "src/features/moderation/{index.ts, case-logic.ts, case-workspace.tsx, target-view.tsx, badge-panel.tsx, reports-inbox.tsx, moderation-pages.tsx, case-logic.test.ts, moderation.test.tsx}",
+          "src/app/(console)/{content,inventory}/page.tsx",
+          "tests/e2e/moderation.spec.ts"
+        ],
+        "files_changed": [
+          "src/features/reviews/review-cases.tsx (now a thin wrapper over CaseWorkspace: the review target, the rating note and the move to Path 2) and review-logic.ts (the case vocabulary comes from the moderation rules; reviewActions uses reviewContentActions)",
+          "src/lib/work/queues.ts (case and report timers from the moderation rules: review cases 24 h in My work too, D-56)",
+          "src/lib/config/reasons.ts (reason kinds changes_request, trust_penalty, badge_revoke, triage, report_dismiss)",
+          "src/components/admin/case-layout.tsx (EntityChip types for every moderation target) and admin.css (media viewer and watermark)",
+          "src/server/env.ts (CARPAL_STORAGE_URL, CARPAL_ADMIN_PUBLIC_WEB_URL; https outside dev), security-headers.ts (img-src and media-src allow the storage origin; originsOf), src/proxy.ts, .env.example, env.test.ts, security-headers.test.ts",
+          "src/lib/i18n/locales/{en,fa}.json (admin.moderation, entity names, reason codes; generic case texts; 1249 keys)",
+          "tests/e2e/app-user.ts (communityOn, shopPost, reportAs, publicPostStatus)",
+          "README.md (status, layout, environment, \"Moderation (AC8)\", E2E)",
+          "dev-plan.json"
+        ],
+        "tests": {
+          "unit": "console 397 passed in 40 files (363 before AC8): case rules 15, moderation DOM 18 (incl. axe EN/FA ×3), CSP media origin 1; env assertions added; the AC7 review-case tests pass unchanged on the shared workspace",
+          "int": "not run (no BFF change)",
+          "e2e": "written: tests/e2e/moderation.spec.ts (2 tests) - signed-in part NOT RUN (no client key in this session; the sign-in stops at /id/signed-out?reason=failed). Its API seeding ran against the running backend (community flags on, shop, post published, report: passed). smoke + bff: 13 passed against the AC8 production build.",
+          "a11y": "axe-core in jsdom: 0 violations on a report, a content case and an organization case in EN and FA. Chromium axe written in moderation.spec.ts (not run).",
+          "static": "pnpm check (lint + logical CSS, typecheck, unit + DOM 397, contract:check, i18n:check 1249 keys, ds:check), pnpm format:check, pnpm build (routes /content, /inventory)",
+          "not_run": "All signed-in E2E (signin, approvals, settings, reviews, moderation); pnpm test:int; Firefox/Safari."
+        },
+        "deviations": [
+          "D-49",
+          "D-50",
+          "D-51",
+          "D-52",
+          "D-53",
+          "D-54",
+          "D-55",
+          "D-56",
+          "D-57"
+        ],
+        "new_doc_issues": [
+          "DI-26",
+          "DI-27",
+          "DI-28",
+          "DI-29"
+        ],
+        "new_backend_requests": [
+          "BR-31",
+          "BR-32",
+          "BR-33"
+        ],
+        "new_open_questions": [],
+        "decisions": [
+          "One case workspace for every target type (and the AC7 review cases): the generic parts were lifted, not copied (AC7 notes_for_next).",
+          "Only the actions the backend applies to the item in its state are offered (no dead buttons, GD-08); a showcase without consent shows Approve disabled with the reason (Docs/23 A-CON-02 rule).",
+          "Suspension is never bulk and has no end date in the console (BR-07); trust penalties and badge revocations ask for the second confirmation.",
+          "Content is shown, never downloaded: the display copy inline with a watermark (D-54)."
+        ],
+        "notes_for_next": [
+          "AC9 (organizations, verification, locations): BadgePanel (src/features/moderation) is exported for the organization page; organization_location cases point staff to correct the location there (admin.location_correct). Vendor suspension of A-INV-01 is admin.org_status on the organization page (DI-27).",
+          "Every case type now has a home: caseHref(caseType, caseId) in case-logic.ts builds the link with the purpose; use it from verification, users and organizations when they show linked cases.",
+          "E2E data: tests/e2e/app-user.ts communityOn(), shopPost(), reportAs(), publicPostStatus() next to the AC7 helpers.",
+          "The deploy kit (AC11) must set CARPAL_STORAGE_URL (the storage host of signed links; the page CSP allows it) and CARPAL_ADMIN_PUBLIC_WEB_URL (https://pwa.<DOMAIN>); check that the storage host does not send Cross-Origin-Resource-Policy: same-origin on display copies, or the media viewer stays blank (R-23)."
+        ],
+        "open_after_stage": [
+          "Run the signed-in E2E in strict mode (partial_reason): AC6, AC7 and AC8 close together.",
+          "BR-31..BR-33 (new; BR-31 matters for the pilot: Verified Business approval); BR-27..BR-30, BR-21..BR-26, BR-19 (user research), BR-20 (AC10), BR-18 (with AC9), BR-07..BR-17 as before.",
+          "DI-26..DI-29 (new); DI-01, DI-05..DI-25 as before.",
+          "OQ-15 (SLA working days), OQ-02 (AC11), OQ-03, OQ-06..OQ-09 with their defaults.",
+          "The E2E seeding left test data in the dev database (shops, posts, reports, staff accounts) and turned the community flags on in dev.",
+          "Nothing committed (commit only when the user asks)."
+        ]
+      },
+      "partial_reason": "All code, docs, unit and DOM tests are done and green, and the E2E seeding through the API ran against the running backend; the signed-in part of tests/e2e/moderation.spec.ts (and the AC4-AC7 suites) has not run, because the strict backend needs the cp-web-admin private key (CARPAL_ADMIN_CLIENT_PRIVATE_JWKS) and this session had none. Run: export CARPAL_STRICT_AUTH=1 and CARPAL_ADMIN_CLIENT_PRIVATE_JWKS, then `pnpm e2e` in frontend/admin-console (backend `pnpm dev` running). When it passes, set AC8 and AC8.T6 (and AC6, AC7 with their T6) to done."
     },
     {
       "id": "AC9",
@@ -3149,6 +3475,130 @@
       "affects": [
         "AC6.T3"
       ]
+    },
+    {
+      "stage": "AC7",
+      "id": "D-43",
+      "summary": "AC7 also calls admin.case_get and admin.case_close (AC8 operations) so a review case can be read for its purpose and closed with an outcome; AC8 generalises the screen instead of building it twice.",
+      "affects": [
+        "AC7.T3",
+        "AC8"
+      ]
+    },
+    {
+      "stage": "AC7",
+      "id": "D-44",
+      "summary": "The two resolutions of a business objection read \"Publish the review (the objection is not accepted)\" and \"Accept the objection (the review is rejected)\" instead of Uphold / Reject (DI-24).",
+      "affects": [
+        "AC7.T4"
+      ]
+    },
+    {
+      "stage": "AC7",
+      "id": "D-45",
+      "summary": "admin.review_approval_decide gets the console reason code as reason_code and \"<code>: <note>\" as reason; the review reason sets have no rating code, and the backend refuses rating codes as well.",
+      "affects": [
+        "AC7.T2"
+      ]
+    },
+    {
+      "stage": "AC7",
+      "id": "D-46",
+      "summary": "The E2E creates its shop, customers and Path 2 reviews through the API as cp-mobile users (tests/e2e/app-user.ts: public client, DPoP, proof of work on demand), not with the PWA helpers, which need the PWA client key in strict mode; tests/e2e/public-api.ts now exports its DPoP and proof-of-work helpers.",
+      "affects": [
+        "AC7.T6"
+      ]
+    },
+    {
+      "stage": "AC7",
+      "id": "D-47",
+      "summary": "A-REV-01 tabs: Awaiting approval and Review cases (Reported, AI flagged and rule cases in one list with a Source column, DI-21); \"Disputed by the business\" links to Disputes filtered to objections; Suspicious pattern and Pending automatic check failed are not built (no data, BR-27).",
+      "affects": [
+        "AC7.T1"
+      ]
+    },
+    {
+      "stage": "AC7",
+      "id": "D-48",
+      "summary": "After a decision the approval item and the dispute show the operation's answer instead of re-reading: the backend ends the approval and dispute purposes with the decision (decided items answer 404 for a purpose read).",
+      "affects": [
+        "AC7.T2",
+        "AC7.T4"
+      ]
+    },
+    {
+      "stage": "AC8",
+      "id": "D-49",
+      "summary": "Case queues of several types read admin.cases_list once per type (up to 50 each, no paging until a type is chosen with ?type=); the Docs/23 A-CON-01 tabs are views that narrow the loaded cases on the client, because the list filters one case type and no source or reason (BR-27, BR-32).",
+      "affects": [
+        "AC8.T2"
+      ]
+    },
+    {
+      "stage": "AC8",
+      "id": "D-50",
+      "summary": "\"Take this case\" assigns the case to the caller with the fixed reason \"taking_case\" (the button is the reason; no dialog), and the case is not taken automatically on open (opening a list item would claim it). Assigning to another moderator is not offered: no staff list (BR-10).",
+      "affects": [
+        "AC8.T3"
+      ]
+    },
+    {
+      "stage": "AC8",
+      "id": "D-51",
+      "summary": "merge_duplicate is not offered on organization cases until BR-08 (organization merge re-pointing) is done, as planned for AC9.",
+      "affects": [
+        "AC8.T4"
+      ]
+    },
+    {
+      "stage": "AC8",
+      "id": "D-52",
+      "summary": "Suspension has no end date in the console: the backend stores suspend_until but nothing lifts it (BR-07).",
+      "affects": [
+        "AC8.T4"
+      ]
+    },
+    {
+      "stage": "AC8",
+      "id": "D-53",
+      "summary": "Badges are approved and revoked by a badge id the staff member enters (from a badge challenge, the verification or the audit log): no read lists badges (DI-26, BR-31).",
+      "affects": [
+        "AC8.T5"
+      ]
+    },
+    {
+      "stage": "AC8",
+      "id": "D-54",
+      "summary": "The media viewer shows the display copy inline (images; other files as a short-lived link) with a CSS \"CarPal internal\" watermark over it (not burned into the image), no download button and no context menu. The page CSP allows the storage origin for img-src and media-src (new env CARPAL_STORAGE_URL, as in the PWA); \"Open the public page\" uses CARPAL_ADMIN_PUBLIC_WEB_URL.",
+      "affects": [
+        "AC8.T3",
+        "AC11"
+      ]
+    },
+    {
+      "stage": "AC8",
+      "id": "D-55",
+      "summary": "The E2E triggers the step-up by answering the first suspend call with the backend's STEP_UP_REQUIRED (Playwright route): the backend asks only when the sign-in is older than 10 minutes. The security-key confirmation and the replay run against the real backend.",
+      "affects": [
+        "AC8.T6"
+      ]
+    },
+    {
+      "stage": "AC8",
+      "id": "D-56",
+      "summary": "My work counts case and report timers with the moderation rule (reviews 24 h as Docs/23 §6; it used 48 h for review cases before).",
+      "affects": [
+        "AC5.T7",
+        "AC8.T2"
+      ]
+    },
+    {
+      "stage": "AC8",
+      "id": "D-57",
+      "summary": "Triage proposes high for unsafe advice, media without consent and private data and offers nothing lower (Docs/23 A-CON-01); the backend does not enforce it (DI-29, BR-32).",
+      "affects": [
+        "AC8.T1"
+      ]
     }
   ],
   "handoff_notes": [
@@ -3158,7 +3608,9 @@
     "Backend facts after AC2 (2026-11-09, backend S12): contract 1.3.0, 414 operations (413 served), 63 on admin-api. Staff sign-in: password → (first time) emailed code + device-bound passkey enrolment → passkey at aal3; cp-web-admin DPoP + private_key_jwt; admin.staff_me for the shell. Staff accounts: backend `pnpm staff:bootstrap`, on a server backend/deploy/staff-bootstrap.sh.",
     "Go-live items outside this plan (from backend S11 and PWA P15 open_after_stage): first production deploy and DNS A records for the app hosts; real email/SMS senders (backend NI-07); legal placeholders and Persian legal texts (PWA NI-P13-12); region-config CDN host still cdn.carpal.app (backend NI-22).",
     "Console after AC5 (2026-11-10): the admin kit in src/components/admin is the building block of every screen (README 'Admin kit'). Pending approvals and My work are live; the other sections are placeholders until AC6-AC13.",
-    "Console after AC6 (2026-11-10): platform admins set the exchange rate, flags and the AI kill switch, plans and assignments, and retention in the console (README \"Platform settings (AC6)\"); backend/deploy/deploy.md keeps the rate SQL only as a fallback. The signed-in E2E of AC6 waits for a strict run with the client key."
+    "Console after AC6 (2026-11-10): platform admins set the exchange rate, flags and the AI kill switch, plans and assignments, and retention in the console (README \"Platform settings (AC6)\"); backend/deploy/deploy.md keeps the rate SQL only as a fallback. The signed-in E2E of AC6 waits for a strict run with the client key.",
+    "Console after AC7 (2026-11-10): community reviewers decide Path 2 reviews on /reviews and moderators work review cases there; disputes and appeals are decided on /disputes (README \"Reviews and disputes (AC7)\"). The E2E data comes from the API through cp-mobile users (tests/e2e/app-user.ts). The signed-in E2E of AC6 and AC7 waits for a strict run with the client key.",
+    "Console after AC8 (2026-11-10): moderators triage reports and work content, account, AI output and inventory cases on /content and /inventory (README \"Moderation (AC8)\"); review cases use the same workspace. The signed-in E2E of AC6-AC8 waits for a strict run with the client key."
   ],
   "recommendations_for_next_stages": [
     {
@@ -3262,6 +3714,16 @@
       "id": "R-21",
       "raised_in": "AC6",
       "text": "Before the pilot, set the real IRR rate in the console with two ADM accounts ready: the placeholder 1,000,000 is far from the market rate, so the first change is over 20 % and needs the second admin (deploy.md \"Exchange rate\")."
+    },
+    {
+      "id": "R-22",
+      "raised_in": "AC8",
+      "text": "Build BR-31 (badge list) with the contract 1.4.0 stage before AC9: the Verified Business badge is the pilot's most visible trust mark, and without a list the badge waiting for approval cannot be found in the console."
+    },
+    {
+      "id": "R-23",
+      "raised_in": "AC8",
+      "text": "AC11 deploy kit: set CARPAL_STORAGE_URL (https storage host of signed links) and CARPAL_ADMIN_PUBLIC_WEB_URL (https://pwa.<DOMAIN>) in the console's env file, and check that the storage host serves display copies without Cross-Origin-Resource-Policy: same-origin (an <img> from admin.<DOMAIN> would be blocked)."
     }
   ]
 }

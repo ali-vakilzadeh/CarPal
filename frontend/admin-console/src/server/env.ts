@@ -44,6 +44,13 @@ const schema = z
     /** Internal base URLs of the backend hosts the BFF calls (backend lite: admin-api :8081, auth :8082). */
     CARPAL_ADMIN_API_URL: z.url().default('http://127.0.0.1:8081'),
     CARPAL_AUTH_URL: z.url().default('http://127.0.0.1:8082'),
+    /**
+     * Media/storage host (as in the PWA): the 5-minute display links of admin.media_download_url point here, so the
+     * page CSP allows it for images and video (AC8 media viewer). Dev: the backend's storage listener.
+     */
+    CARPAL_STORAGE_URL: z.url().default('http://127.0.0.1:8083'),
+    /** The public web app (pwa.<DOMAIN>): "Open the public page" links of moderation cases (GD-07, AC8). */
+    CARPAL_ADMIN_PUBLIC_WEB_URL: z.url().default('http://localhost:3000'),
     /** Audience URL of the admin-api host (backend CARPAL_ADMIN_API_AUDIENCE): the htu of DPoP proofs on admin calls. */
     CARPAL_ADMIN_API_AUDIENCE: z.url().default('https://admin-api.carpals.ir'),
     /** Mirrors the backend's CARPAL_STRICT_AUTH (client assertion at /oauth/token, DPoP everywhere). */
@@ -71,6 +78,8 @@ const schema = z
     const issue = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message });
     if (env.CARPAL_ADMIN_ENV !== 'dev' && !env.CARPAL_ADMIN_ORIGIN.startsWith('https://'))
       issue('CARPAL_ADMIN_ORIGIN', 'must be https outside dev');
+    for (const key of ['CARPAL_STORAGE_URL', 'CARPAL_ADMIN_PUBLIC_WEB_URL'] as const)
+      if (env.CARPAL_ADMIN_ENV !== 'dev' && !env[key].startsWith('https://')) issue(key, 'must be https outside dev');
     if ((env.CARPAL_STRICT_AUTH || env.CARPAL_ADMIN_ENV !== 'dev') && !env.CARPAL_ADMIN_CLIENT_PRIVATE_JWKS?.[ADMIN_CLIENT_ID])
       issue('CARPAL_ADMIN_CLIENT_PRIVATE_JWKS', `needs the private key of ${ADMIN_CLIENT_ID} in strict mode and outside dev`);
     if (env.CARPAL_ADMIN_ENV !== 'dev' && !env.CARPAL_STRICT_AUTH) issue('CARPAL_STRICT_AUTH', 'must be 1 outside dev');

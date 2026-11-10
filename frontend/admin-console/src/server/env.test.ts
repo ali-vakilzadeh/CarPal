@@ -7,6 +7,8 @@ const PROD = {
   CARPAL_ADMIN_ORIGIN: 'https://admin.carpals.ir',
   CARPAL_STRICT_AUTH: '1',
   CARPAL_ADMIN_CLIENT_PRIVATE_JWKS: KEY,
+  CARPAL_STORAGE_URL: 'https://media.carpal-usercontent.app',
+  CARPAL_ADMIN_PUBLIC_WEB_URL: 'https://pwa.carpals.ir',
 };
 
 describe('server env (AC1.T5, AC3.T1)', () => {
@@ -18,6 +20,8 @@ describe('server env (AC1.T5, AC3.T1)', () => {
       CARPAL_ADMIN_DEFAULT_TIME_ZONE: 'Asia/Tehran',
       CARPAL_ADMIN_API_URL: 'http://127.0.0.1:8081',
       CARPAL_AUTH_URL: 'http://127.0.0.1:8082',
+      CARPAL_STORAGE_URL: 'http://127.0.0.1:8083',
+      CARPAL_ADMIN_PUBLIC_WEB_URL: 'http://localhost:3000',
       CARPAL_ADMIN_API_AUDIENCE: 'https://admin-api.carpals.ir',
       CARPAL_STRICT_AUTH: false,
       CARPAL_ADMIN_SESSION_STORE: 'lite',
@@ -28,6 +32,8 @@ describe('server env (AC1.T5, AC3.T1)', () => {
     expect(() => parseEnv({ CARPAL_ADMIN_ENV: 'live' })).toThrow(/CARPAL_ADMIN_ENV/);
     expect(() => parseEnv({ CARPAL_ADMIN_DEFAULT_TIME_ZONE: 'Mars/Base' })).toThrow(/IANA/);
     expect(() => parseEnv({ ...PROD, CARPAL_ADMIN_ORIGIN: 'http://admin.example' })).toThrow(/https/);
+    expect(() => parseEnv({ ...PROD, CARPAL_STORAGE_URL: 'http://media.example' })).toThrow(/CARPAL_STORAGE_URL/);
+    expect(() => parseEnv({ ...PROD, CARPAL_ADMIN_PUBLIC_WEB_URL: 'http://pwa.example' })).toThrow(/CARPAL_ADMIN_PUBLIC_WEB_URL/);
     expect(parseEnv(PROD).CARPAL_ADMIN_ENV).toBe('prod');
   });
 

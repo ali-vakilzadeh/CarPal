@@ -6,31 +6,31 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { SignJWT, exportJWK, generateKeyPair, type JWK } from 'jose';
 
-const AUTH = process.env.CARPAL_AUTH_URL ?? 'http://127.0.0.1:8082';
-const API = process.env.CARPAL_API_URL ?? 'http://127.0.0.1:8080';
+export const AUTH = process.env.CARPAL_AUTH_URL ?? 'http://127.0.0.1:8082';
+export const API = process.env.CARPAL_API_URL ?? 'http://127.0.0.1:8080';
 // DPoP proofs name the public URLs (htu): the issuer's token endpoint and the api audience, not the local ports.
-const API_AUDIENCE = process.env.CARPAL_API_AUDIENCE ?? 'https://api.carpals.ir';
+export const API_AUDIENCE = process.env.CARPAL_API_AUDIENCE ?? 'https://api.carpals.ir';
 const CLIENT_ID = 'cp-mobile';
-const CLIENT_HEADER = 'cp-mobile/1.0.0 (android 14)';
+export const CLIENT_HEADER = 'cp-mobile/1.0.0 (android 14)';
 
 export interface ClientConfig {
   flags: { key: string; enabled: boolean }[];
   region: { currency: string; display_currencies: string[]; exchange_rates: { currency: string; per_usd: string; updated_at: string }[] };
 }
 
-interface Key {
+export interface Key {
   privateKey: CryptoKey;
   publicJwk: JWK;
 }
 
-async function newKey(): Promise<Key> {
+export async function newKey(): Promise<Key> {
   const { privateKey, publicKey } = await generateKeyPair('ES256', { extractable: true });
   return { privateKey, publicJwk: await exportJWK(publicKey) };
 }
 
 const b64url = (buf: Buffer) => buf.toString('base64url');
 
-async function proof(key: Key, method: string, url: string, o: { token?: string; nonce?: string } = {}): Promise<string> {
+export async function proof(key: Key, method: string, url: string, o: { token?: string; nonce?: string } = {}): Promise<string> {
   const u = new URL(url);
   const claims: Record<string, unknown> = { htm: method, htu: `${u.protocol}//${u.host}${u.pathname}`, jti: b64url(randomBytes(16)) };
   if (o.token) claims.ath = b64url(createHash('sha256').update(o.token).digest());
@@ -51,7 +51,7 @@ function leadingZeroBits(hash: Uint8Array): number {
 }
 
 /** auth.pow_challenge + a solution: the CarPal-PoW header value. */
-async function pow(): Promise<string> {
+export async function pow(): Promise<string> {
   const res = await fetch(`${AUTH}/oauth/challenge`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'carpal-client': CLIENT_HEADER },
@@ -72,7 +72,7 @@ async function pow(): Promise<string> {
   }
 }
 
-async function tokenEndpoint(): Promise<string> {
+export async function tokenEndpoint(): Promise<string> {
   const res = await fetch(`${AUTH}/.well-known/openid-configuration`);
   if (!res.ok) throw new Error(`discovery: ${res.status}`);
   return ((await res.json()) as { token_endpoint: string }).token_endpoint;

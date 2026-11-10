@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contentSecurityPolicy, createNonce, pageSecurityHeaders } from './security-headers';
+import { contentSecurityPolicy, createNonce, originsOf, pageSecurityHeaders } from './security-headers';
 
 describe('page security headers (AC1.T5)', () => {
   it('never lets the console be framed, cached or indexed', () => {
@@ -24,6 +24,21 @@ describe('page security headers (AC1.T5)', () => {
     const p = pageSecurityHeaders({ nonce: 'n', dev: false, https: false, hsts: false })['permissions-policy'];
     expect(p).toContain('publickey-credentials-get=(self)');
     expect(p).toContain('camera=()');
+  });
+
+  it('allows display copies from the storage host only, for the media viewer (AC8)', () => {
+    const csp = contentSecurityPolicy({
+      nonce: 'n',
+      dev: false,
+      https: true,
+      mediaOrigins: originsOf('https://media.carpal-usercontent.app/x?y=1'),
+    });
+    expect(csp).toContain("img-src 'self' data: blob: https://media.carpal-usercontent.app");
+    expect(csp).toContain("media-src 'self' https://media.carpal-usercontent.app");
+    expect(csp).toContain("connect-src 'self'");
+    expect(csp).not.toContain("connect-src 'self' https://media");
+    expect(contentSecurityPolicy({ nonce: 'n', dev: false, https: true })).not.toContain('media-src');
+    expect(originsOf('not a url')).toEqual([]);
   });
 
   it('makes a fresh nonce each time', () => {

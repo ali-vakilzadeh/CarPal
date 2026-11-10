@@ -630,3 +630,133 @@
 .adm-switch > p {
   margin: 0;
 }
+
+/* Reviews and disputes (AC7): queue tabs, stacked item panels, the review as written, evidence files, radio choices */
+.adm-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-block-end: var(--space-3);
+  border-block-end: 1px solid var(--divider);
+}
+.adm-tab {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--control-sm);
+  padding-inline: var(--space-3);
+  border-block-end: 3px solid transparent;
+  color: var(--ink-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+.adm-tab:hover {
+  color: var(--ink);
+}
+.adm-tab[aria-current='page'] {
+  border-block-end-color: var(--accent);
+  color: var(--ink);
+}
+.adm-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.adm-badges,
+.adm-review-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+.adm-rating {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.adm-quote {
+  margin: 0;
+  padding-block: var(--space-2);
+  padding-inline: var(--space-3);
+  border-inline-start: var(--space-1) solid var(--divider);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+.adm-quote > p {
+  margin: 0;
+  white-space: pre-line;
+}
+.adm-quote > .adm-quote-title {
+  margin-block-end: var(--space-1);
+  font-weight: 700;
+}
+.adm-inline-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-files {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-files > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.adm-radio {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--control-sm);
+}
+.adm-radio > input {
+  inline-size: 20px;
+  block-size: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+/* Media viewer of moderation cases (AC8.T3): a display copy with a "CarPal internal" watermark, no download button. */
+.adm-media {
+  position: relative;
+  margin: 0;
+  max-inline-size: 100%;
+}
+.adm-media img {
+  display: block;
+  max-inline-size: 100%;
+  max-block-size: 480px;
+  border-radius: var(--radius-sm);
+  user-select: none;
+}
+.adm-media-mark {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  translate: -50% -50%;
+  rotate: -24deg;
+  padding-block: var(--space-1);
+  padding-inline: var(--space-3);
+  border: 2px solid currentcolor;
+  border-radius: var(--radius-sm);
+  color: var(--on-accent);
+  background: var(--scrim);
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+[dir='rtl'] .adm-media-mark {
+  translate: 50% -50%;
+}

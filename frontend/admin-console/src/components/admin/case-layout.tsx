@@ -42,7 +42,31 @@ export function CaseLayout({ list, item, decision, labels }: CaseLayoutProps) {
   );
 }
 
-export type EntityType = 'user' | 'organization' | 'review' | 'appointment' | 'case' | 'dispute' | 'report' | 'change' | 'media';
+export type EntityType =
+  | 'user'
+  | 'organization'
+  | 'review'
+  | 'appointment'
+  | 'case'
+  | 'dispute'
+  | 'report'
+  | 'change'
+  | 'media'
+  | 'service_record'
+  | 'badge'
+  | 'moderation_action'
+  // Moderation targets (AC8, Docs/40 ReportTargetType).
+  | 'post'
+  | 'comment'
+  | 'question'
+  | 'answer'
+  | 'portfolio_item'
+  | 'media_asset'
+  | 'review_response'
+  | 'inventory_item'
+  | 'inventory_fitment'
+  | 'organization_location'
+  | 'ai_output';
 
 const ENTITY_ICON: Record<EntityType, IconName> = {
   user: 'user',
@@ -54,6 +78,20 @@ const ENTITY_ICON: Record<EntityType, IconName> = {
   report: 'alert',
   change: 'check',
   media: 'image',
+  service_record: 'wrench',
+  badge: 'shield',
+  moderation_action: 'flag',
+  post: 'doc',
+  comment: 'comment',
+  question: 'help',
+  answer: 'chat',
+  portfolio_item: 'camera',
+  media_asset: 'image',
+  review_response: 'comment',
+  inventory_item: 'part',
+  inventory_fitment: 'car',
+  organization_location: 'pin',
+  ai_output: 'spark',
 };
 
 export interface EntityChipProps {

@@ -300,7 +300,21 @@
         "report": "Report",
         "change": "Pending change",
         "media": "File",
-        "open": "Open"
+        "open": "Open",
+        "service_record": "Service record",
+        "badge": "Badge",
+        "moderation_action": "Moderation decision",
+        "post": "Post",
+        "comment": "Comment",
+        "question": "Question",
+        "answer": "Answer",
+        "portfolio_item": "Showcase item",
+        "media_asset": "File",
+        "review_response": "Business reply",
+        "inventory_item": "Listing",
+        "inventory_fitment": "Fitment record",
+        "organization_location": "Location",
+        "ai_output": "AI output"
       },
       "timeline": {
         "label": "History",
@@ -367,7 +381,39 @@
         "mistake": "Earlier mistake",
         "needs_lead": "Needs a team lead",
         "needs_admin": "Needs a platform admin",
-        "legal_question": "Legal question"
+        "legal_question": "Legal question",
+        "customer_confirmed": "The business confirmed the customer",
+        "no_business_objection": "No objection by the deadline",
+        "not_a_customer": "Not a customer of this business",
+        "conflict_of_interest": "Conflict of interest",
+        "invoice_needed": "An invoice or receipt is needed",
+        "photo_needed": "A photo of the work is needed",
+        "visit_details_needed": "Visit details are needed",
+        "abusive_language": "Abusive language",
+        "visit_evidence_invalid": "Visit evidence is invalid",
+        "appointment_not_held": "The appointment did not take place",
+        "action_completed": "Action completed",
+        "no_violation": "No violation",
+        "report_unfounded": "Report unfounded",
+        "evidence_supports_claim": "Evidence supports the claim",
+        "original_decision_wrong": "The original decision was wrong",
+        "policy_misapplied": "Policy was misapplied",
+        "original_decision_stands": "The original decision stands",
+        "outside_policy": "Outside the policy",
+        "both_sides_needed": "Both sides need to add information",
+        "more_information": "More information needed",
+        "blur_needed": "Plate or faces must be blurred",
+        "wrong_information": "Wrong information",
+        "missing_consent": "Customer consent missing",
+        "confirmed_fake_reviews": "Confirmed fake reviews",
+        "misleading_listings": "Misleading listings",
+        "rule_not_met": "Badge rule not met",
+        "challenge_upheld": "Badge challenge upheld",
+        "needs_review": "Needs a moderator",
+        "repeat_reports": "Reported again",
+        "not_a_violation": "Not a violation",
+        "duplicate_report": "Duplicate report",
+        "abusive_reporting": "Abusive reporting"
       }
     },
     "ops": {
@@ -793,6 +839,705 @@
       "fourEyesHint": "Retention changes need a second platform admin before they apply.",
       "dialogTitle": "Change retention of {{entity}}",
       "summary": "{{from}}, then {{fromAction}} → {{to}}, then {{toAction}} ({{status}})."
+    },
+    "trust": {
+      "reviewStatus": {
+        "draft": "Draft",
+        "pending_moderation": "Held for checks",
+        "pending_approval": "Waiting for approval",
+        "published": "Published",
+        "rejected": "Rejected",
+        "removed": "Removed"
+      },
+      "path": {
+        "visit_based": "Path 1: after a visit",
+        "approval_based": "Path 2: approval"
+      },
+      "verified": {
+        "appointment_verified": "Verified visit",
+        "inquiry_verified": "Verified stock inquiry",
+        "service_record_verified": "Verified service record",
+        "invoice_verified": "Verified invoice",
+        "fleet_confirmed": "Confirmed by the fleet",
+        "admin_verified": "Verified by CarPal",
+        "pending_approval": "Waiting for approval",
+        "approved_without_visit": "Approved by the business and CarPal",
+        "rejected": "Rejected"
+      },
+      "business": {
+        "pending": "Waiting for the business",
+        "confirmed": "Confirmed by the business",
+        "rejected": "Rejected by the business",
+        "no_response": "No answer (no objection)"
+      },
+      "businessSource": {
+        "business_answer": "The business answered",
+        "business_invited": "The business invited the review",
+        "deadline_passed": "The 7-day deadline passed"
+      }
+    },
+    "reviews": {
+      "title": "Reviews",
+      "intro": "Reviews written without a visit (Path 2) wait for the business for 7 days, then for a CarPal community reviewer, who has 2 working days. Confirm, reject or ask for evidence; a rating alone is never a reason to reject.",
+      "tabsLabel": "Review queues",
+      "tab": {
+        "approvals": "Awaiting approval",
+        "cases": "Review cases",
+        "disputed": "Disputed by the business"
+      },
+      "filter": {
+        "stage": "Stage"
+      },
+      "stage": {
+        "awaiting_reviewer": "Waiting for a CarPal reviewer",
+        "awaiting_business": "Waiting for the business",
+        "evidence_requested": "Evidence requested"
+      },
+      "col": {
+        "review": "Review",
+        "rating": "Rating",
+        "subject": "Business",
+        "author": "Author",
+        "business": "Business answer",
+        "stage": "Stage",
+        "written": "Written",
+        "sla": "Due",
+        "evidence": "Files",
+        "dispute": "Objection"
+      },
+      "empty": {
+        "awaiting_reviewer": "No review waits for a CarPal reviewer.",
+        "awaiting_business": "No review waits for a business answer.",
+        "evidence_requested": "No review waits for evidence."
+      },
+      "approvalsLabel": "Reviews awaiting approval",
+      "itemLabel": "Selected review",
+      "decisionLabel": "Your decision",
+      "noText": "(no text)",
+      "businessUntil": "Business until {{when}}",
+      "dueIn": "Due {{when}}",
+      "yes": "Yes",
+      "no": "No",
+      "pick": "Choose a review from the list.",
+      "pickFirst": "Choose a review first.",
+      "unavailable": "This review is no longer waiting for approval, or it does not exist.",
+      "decided": {
+        "confirm": "Confirmed. The review is published as “Approved by the business and CarPal”.",
+        "reject": "Rejected. The review is not published; the author is told the reason category and can appeal.",
+        "evidence": "Evidence requested. The review keeps waiting for approval until the author adds it."
+      },
+      "nowStatus": "Now: {{status}}.",
+      "crvOnly": "Only community reviewers decide reviews awaiting approval. You can read the queue.",
+      "alreadyDecided": "Already decided: {{status}}.",
+      "objected": {
+        "title": "The business says the author was not its customer",
+        "text": "This does not remove the review. A different staff member decides it on the objection dispute; the author may add evidence there.",
+        "link": "Open the objection dispute"
+      },
+      "ratingRule": "A low rating alone is never a reason to reject or remove a review.",
+      "confirm": "Confirm",
+      "reject": "Reject",
+      "askEvidence": "Ask for evidence",
+      "block": {
+        "not_pending": "This review is not waiting for approval.",
+        "business_pending": "The business has until its deadline to answer. Confirm when it has answered or the deadline has passed.",
+        "business_rejected": "The business objected: confirming happens by deciding the objection dispute."
+      },
+      "reviewOf": "Review of {{name}}",
+      "dialog": {
+        "confirm": {
+          "title": "Confirm this review",
+          "button": "Confirm",
+          "effect": "The review is published as “Approved by the business and CarPal”, at the lower weight of Path 2."
+        },
+        "reject": {
+          "title": "Reject this review",
+          "button": "Reject",
+          "effect": "The review is not published. The author is told the reason category and can appeal."
+        },
+        "evidence": {
+          "title": "Ask the author for evidence",
+          "button": "Ask for evidence",
+          "effect": "The author is asked for an invoice or a photo; the review keeps waiting for approval."
+        }
+      },
+      "ratingOf": "Rated {{n}} of 5",
+      "reviewLabel": "The review",
+      "disputedByBusiness": "Disputed by the business",
+      "subRatings": "Sub-ratings",
+      "serviceDate": "Service date",
+      "written": "Written",
+      "appointment": "Appointment",
+      "reports": "Reports",
+      "reportStatus": {
+        "none": "None",
+        "reported": "Reported",
+        "under_review": "Under review",
+        "resolved": "Resolved"
+      },
+      "businessLabel": "Business step",
+      "businessSource": "Settled by",
+      "businessDue": "Business deadline",
+      "businessNote": "Business note to CarPal",
+      "firstDecider": "First decision by",
+      "authorLabel": "Author",
+      "accountAge": "Account age",
+      "days": "{{n}} days",
+      "published": "Published reviews",
+      "rejectedBefore": "Rejected reviews",
+      "verifiedContact": "Verified contact",
+      "fraudSignals": "Fraud signals",
+      "noFraudSignals": "No fraud signals reported.",
+      "evidenceLabel": "Evidence from the author",
+      "noEvidence": "No files attached.",
+      "mediaType": {
+        "image": "Photo",
+        "video": "Video",
+        "document": "Document"
+      },
+      "openFile": "Open the file",
+      "linkExpires": "link valid until {{when}}",
+      "getLink": "Get a link"
+    },
+    "cases": {
+      "intro": "Reported, AI-flagged and rule-flagged reviews. Take an action with a reason, then close the case. Moving a review to the approval path needs a second moderator.",
+      "filter": {
+        "status": "Status",
+        "severity": "Severity"
+      },
+      "status": {
+        "open": "Open",
+        "investigating": "Being handled",
+        "escalated": "Escalated",
+        "action_taken": "Action taken",
+        "dismissed": "Dismissed"
+      },
+      "severity": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical"
+      },
+      "source": {
+        "user_report": "User report",
+        "ai_flag": "AI flag",
+        "system_rule": "System rule",
+        "admin": "Staff"
+      },
+      "reason": {
+        "fake": "Fake",
+        "abusive": "Abusive",
+        "hate_speech": "Hate speech",
+        "harassment": "Harassment",
+        "spam": "Spam",
+        "off_topic": "Off topic",
+        "privacy": "Private data",
+        "unsafe_advice": "Unsafe advice",
+        "misleading": "Misleading",
+        "counterfeit": "Counterfeit",
+        "inaccurate_fitment": "Wrong fitment",
+        "wrong_location_or_closed": "Wrong location or closed",
+        "impersonation": "Impersonation",
+        "non_consensual_media": "Media without consent",
+        "consent_issue": "Consent issue",
+        "redaction_issue": "Redaction issue",
+        "hallucination": "AI made it up",
+        "other": "Other"
+      },
+      "col": {
+        "reason": "Reason",
+        "source": "Source",
+        "severity": "Severity",
+        "risk": "AI risk",
+        "reports": "Reports",
+        "opened": "Opened",
+        "sla": "Due",
+        "assignee": "Assignee",
+        "status": "Status"
+      },
+      "resolutionRequired": "Write the resolution.",
+      "resolutionTooLong": "At most {{n}} characters.",
+      "resolution": "Resolution",
+      "resolutionHint": "What was decided, for the case record (at most {{n}} characters).",
+      "pick": "Choose a case from the list.",
+      "unavailable": "This case is closed, handled by someone else, or does not exist.",
+      "handledBy": "Being handled by {{name}}: only they can open it now.",
+      "closedSummary": "Closed cases show their summary only.",
+      "targetGone": "The review of this case is no longer available.",
+      "unassigned": "Nobody yet",
+      "aiRisk": "Risk assessment",
+      "history": "Actions on this case",
+      "action": {
+        "approve": "Approved",
+        "remove": "Removed",
+        "hide": "Hidden",
+        "restore": "Restored",
+        "warn_user": "Author warned"
+      },
+      "pickFirst": "Choose a case first.",
+      "cannotAct": "Your role cannot act on moderation cases.",
+      "closed": "This case is closed: {{status}}.",
+      "cannotActNow": "Actions need the case to be open and yours or unassigned.",
+      "do": {
+        "approve": "Approve and publish",
+        "remove": "Remove",
+        "restore": "Restore",
+        "warn_user": "Warn the author"
+      },
+      "done": {
+        "approve": "Approved. The review is published.",
+        "remove": "Removed. The review is hidden from everyone and kept for audit; scores are recalculated.",
+        "restore": "Restored.",
+        "warn_user": "The author has been warned."
+      },
+      "move": {
+        "title": "Move to the approval path",
+        "text": "When the visit evidence of this review proves invalid, it becomes a Path 2 review: unpublished, waiting for the business and a CarPal reviewer. A second moderator must approve the move.",
+        "button": "Move to the approval path"
+      },
+      "close": {
+        "title": "Close the case",
+        "outcome": "Outcome",
+        "dismissed": "Keep the {{thing}} (no violation)",
+        "action_taken": "Done (action taken)",
+        "escalated": "Escalate to a lead",
+        "button": "Close the case",
+        "done": "The case is closed."
+      },
+      "listLabel": "Review cases",
+      "itemLabel": "Selected case",
+      "decisionLabel": "Actions",
+      "empty": "No review case matches these filters.",
+      "dialog": {
+        "approve": "Approve and publish this review",
+        "remove": "Remove this review",
+        "restore": "Restore this review",
+        "warn_user": "Warn the author",
+        "move": "Move this review to the approval path",
+        "close": "Close this case"
+      },
+      "effect": {
+        "approve": "The review the automatic checks held back is published as a verified visit.",
+        "remove": "The review disappears from public pages and scores; it is kept for audit and can be restored.",
+        "restore": "The review comes back as it was before the removal.",
+        "warn_user": "The author gets a warning with the reason category.",
+        "move": "Files a four-eyes request. After a second moderator approves, the review is unpublished and waits for the business and a CarPal reviewer.",
+        "close": "The case leaves the open queue with this outcome and resolution."
+      }
+    },
+    "disputes": {
+      "title": "Disputes & appeals",
+      "intro": "Disagreements that need a human decision: business objections to reviews, review and badge disputes, service-record corrections, mediation requests and appeals. A different staff member from the one who made the decision under dispute decides.",
+      "filter": {
+        "status": "Status",
+        "type": "Type",
+        "assigned": "Assigned"
+      },
+      "assigned": {
+        "mine": "To me",
+        "unassigned": "Nobody"
+      },
+      "type": {
+        "review_approval_objection": "Business objection to a review",
+        "fake_review": "Fake review",
+        "inaccurate_review": "Inaccurate review",
+        "mediation_request": "Mediation request",
+        "badge_challenge": "Badge challenge",
+        "service_record_dispute": "Service record correction",
+        "moderation_appeal": "Moderation appeal"
+      },
+      "status": {
+        "open": "Open",
+        "in_mediation": "In mediation",
+        "resolved_upheld": "Upheld",
+        "resolved_rejected": "Rejected",
+        "withdrawn": "Withdrawn"
+      },
+      "target": {
+        "review": "Review",
+        "service_record": "Service record",
+        "badge": "Badge",
+        "appointment": "Appointment",
+        "moderation_action": "Moderation decision"
+      },
+      "col": {
+        "type": "Type",
+        "target": "About",
+        "raisedBy": "Raised by",
+        "status": "Status",
+        "raised": "Raised",
+        "sla": "Due",
+        "assignee": "Assignee"
+      },
+      "listLabel": "Disputes",
+      "itemLabel": "Dispute",
+      "decisionLabel": "Decision",
+      "empty": "No dispute matches these filters.",
+      "unavailable": "This dispute is decided, handled by someone else, or does not exist.",
+      "pick": "Choose a dispute from the list.",
+      "pickFirst": "Choose a dispute first.",
+      "cannotDecide": "Your role cannot decide disputes.",
+      "handledBy": "Being handled by {{name}}: only they can open it now.",
+      "statement": "Statement",
+      "unassigned": "Nobody yet",
+      "resolution": "Outcome message",
+      "resolvedAt": "Decided",
+      "notes": "Internal notes",
+      "targetNotShown": "The console cannot show this record yet; use its ID to look it up.",
+      "decidedSummary": "Decided disputes show their summary only.",
+      "noThread": "Messages to each side are not available in the console yet.",
+      "reviewNotPath2": "This review is not on the approval path, so its details are shown in its moderation case.",
+      "closed": "This dispute is closed: {{status}}.",
+      "done": {
+        "in_mediation": "Mediation started. Both sides are invited to add information.",
+        "resolved_upheld": "Upheld. The outcome is applied and both sides are told.",
+        "resolved_rejected": "Rejected. The original decision stands and both sides are told."
+      },
+      "cannotDecideNow": "Deciding needs the dispute to be open and yours or unassigned.",
+      "differentStaff": "Rule: you cannot decide a dispute you raised or about a decision you made. A colleague decides it.",
+      "outcome": "Outcome",
+      "outcomes": {
+        "in_mediation": "Start mediation",
+        "resolved_upheld": "Uphold",
+        "resolved_rejected": "Reject"
+      },
+      "outcomeRequired": "Choose an outcome.",
+      "resolutionRequiredLabel": "Outcome message (required)",
+      "resolutionHint": "Both sides see it (at most {{n}} characters).",
+      "resolutionInvalid": "Write the outcome message (at most {{n}} characters).",
+      "notesHint": "Only staff see these (at most {{n}} characters).",
+      "notesTooLong": "At most {{n}} characters.",
+      "record": "Record the decision",
+      "withdrawNote": "Only the person who raised a dispute can withdraw it.",
+      "refused": {
+        "title": "A colleague must decide this",
+        "text": "You raised this dispute or made the decision under dispute. A different staff member has to decide it."
+      },
+      "effect": {
+        "mediation": "Both sides are invited to add information. Decide when they have.",
+        "objectionUpheld": "The review is published with the label “Disputed by the business”.",
+        "objectionRejected": "The business's objection stands: the review is rejected and not published.",
+        "fakeUpheld": "The review is removed as a confirmed fake and the trust rules for fakes apply.",
+        "badgeUpheld": "The badge is revoked.",
+        "appealUpheld": "The hidden or removed content is restored.",
+        "manualUpheld": "The outcome is recorded; correct the record itself where it is kept.",
+        "keepTarget": "Nothing changes on the record; the original decision stands."
+      },
+      "outcomesObjection": {
+        "resolved_upheld": "Publish the review (the objection is not accepted)",
+        "resolved_rejected": "Accept the objection (the review is rejected)"
+      }
+    },
+    "moderation": {
+      "title": "Content moderation",
+      "tabsLabel": "Moderation queues",
+      "tab": {
+        "reports": "Reports",
+        "content": "Content",
+        "accounts": "Accounts & organizations",
+        "ai": "AI output"
+      },
+      "intro": {
+        "reports": "What users reported. Open a case (it gathers every open report about the same item), add the report to the open case, or dismiss it — always with a reason. Safety reports come first.",
+        "content": "Cases about posts, comments, questions, answers, showcase items, files and business replies. Safety cases come first. Take an action with a reason, then close the case with a resolution.",
+        "accounts": "Cases about user accounts, organizations and locations: warnings, suspensions (with the security key), trust penalties and badges.",
+        "ai": "Cases about AI output users reported or the checks flagged. Removing hides the output from its owner; it stays for audit."
+      },
+      "list": {
+        "content": "Content cases",
+        "accounts": "Account and organization cases",
+        "ai": "AI output cases",
+        "inventory": "Inventory cases"
+      },
+      "empty": "No case matches these filters.",
+      "inventory": {
+        "title": "Inventory moderation",
+        "intro": "Cases about parts listings and fitment records: counterfeit suspicion, wrong fitment, prohibited items, duplicates and wrong vendor data. Send a listing back for correction, hide or remove it, reject a fitment record, or penalise the vendor."
+      },
+      "filter": {
+        "type": "Type",
+        "view": "View"
+      },
+      "view": {
+        "reported": "Reported",
+        "ai": "AI flagged",
+        "rule": "Held by a rule",
+        "unsafe": "Unsafe advice",
+        "consent": "Consent and privacy"
+      },
+      "viewNote": "A view narrows the cases on this page; the list cannot filter by source or reason yet.",
+      "morePerType": "Showing up to {{n}} cases of each type. Choose a type to page through all of them.",
+      "col": {
+        "type": "Type",
+        "reporter": "Reported by",
+        "received": "Received"
+      },
+      "safety": "Safety case",
+      "safetyFirst": "Safety case: decide within 4 hours. Unsafe advice is removed or annotated, never left as it is.",
+      "thing": {
+        "post": "post",
+        "comment": "comment",
+        "question": "question",
+        "answer": "answer",
+        "portfolio_item": "showcase item",
+        "media_asset": "file",
+        "review": "review",
+        "review_response": "business reply",
+        "inventory_item": "listing",
+        "inventory_fitment": "fitment record",
+        "organization": "organization",
+        "organization_location": "location",
+        "user": "account",
+        "ai_output": "AI output",
+        "item": "item"
+      },
+      "targetLabel": "The {{thing}} of this case",
+      "targetGone": "The {{thing}} of this case is no longer available.",
+      "publicPage": "Open the public page (new tab)",
+      "moderationStatus": "Moderation: {{status}}",
+      "status": {
+        "draft": "Draft",
+        "published": "Published",
+        "active": "Active",
+        "open": "Open",
+        "hidden": "Hidden",
+        "removed": "Removed",
+        "rejected": "Rejected",
+        "pending_review": "Waiting for review",
+        "pending_moderation": "Held for moderation",
+        "pending_approval": "Waiting for approval",
+        "suspended": "Suspended",
+        "deleted": "Deleted",
+        "inactive": "Inactive",
+        "merged": "Merged",
+        "closed": "Closed"
+      },
+      "moderation": {
+        "pending": "pending",
+        "approved": "approved",
+        "rejected": "rejected"
+      },
+      "consent": {
+        "not_required": "Not needed",
+        "requested": "Requested, not given yet",
+        "granted": "Given by the customer",
+        "withdrawn": "Withdrawn by the customer",
+        "missing": "Missing"
+      },
+      "scan": {
+        "pending": "Being scanned",
+        "clean": "Clean",
+        "infected": "Infected",
+        "failed": "Scan failed"
+      },
+      "fact": {
+        "postType": "Kind of post",
+        "organization": "Organization",
+        "review": "Review",
+        "consent": "Customer consent (showcase)",
+        "mediaType": "File type",
+        "purpose": "Used as",
+        "privacy": "Visibility of the file",
+        "scan": "Virus scan",
+        "vendor": "Vendor",
+        "sku": "SKU",
+        "visibility": "Visibility",
+        "listing": "Listing",
+        "years": "Model years",
+        "source": "Source",
+        "orgType": "Kind of organization",
+        "verification": "Verification",
+        "trustScore": "Trust score",
+        "place": "Place",
+        "point": "Public map point",
+        "locationCheck": "Location check",
+        "trustedUser": "Trusted user",
+        "insightType": "Kind of output",
+        "names": "Names",
+        "created": "Created"
+      },
+      "media": {
+        "show": "Show the file",
+        "alt": "The reported file (internal copy)",
+        "internal": "Internal copy for this case only; the link ends at {{when}}. Do not save or share it."
+      },
+      "actionType": {
+        "approve": "Approved",
+        "hide": "Hidden",
+        "remove": "Removed",
+        "restore": "Restored",
+        "request_changes": "Changes requested",
+        "warn_user": "Warned",
+        "suspend_account": "Account suspended",
+        "reactivate_account": "Account reactivated",
+        "verify_organization": "Organization verified",
+        "reject_verification": "Verification rejected",
+        "merge_duplicate": "Merge requested",
+        "revoke_badge": "Badge revoked",
+        "apply_trust_penalty": "Trust penalty",
+        "confirm_review_approval": "Review approved",
+        "reject_review_approval": "Review rejected",
+        "request_evidence": "Evidence requested",
+        "correct_location": "Location corrected",
+        "assist_onboarding": "Onboarding assisted"
+      },
+      "do": {
+        "approve": "Approve",
+        "hide": "Hide",
+        "remove": "Remove",
+        "restore": "Restore",
+        "request_changes": "Request changes",
+        "warn_user": "Warn",
+        "suspend_account": "Suspend the account",
+        "reactivate_account": "Reactivate the account",
+        "apply_trust_penalty": "Apply the penalty",
+        "revoke_badge": "Revoke the badge"
+      },
+      "dialog": {
+        "approve": "Approve this {{thing}}",
+        "hide": "Hide this {{thing}}",
+        "remove": "Remove this {{thing}}",
+        "restore": "Restore this {{thing}}",
+        "request_changes": "Request changes to this {{thing}}",
+        "warn_user": "Warn the person behind this {{thing}}",
+        "suspend_account": "Suspend the account",
+        "reactivate_account": "Reactivate the account",
+        "apply_trust_penalty": "Apply a trust penalty",
+        "revoke_badge": "Revoke the badge"
+      },
+      "effect": {
+        "approve": "The {{thing}} passes moderation and becomes visible where its owner published it.",
+        "hide": "The {{thing}} is hidden from everyone but kept for review; it can be restored.",
+        "remove": "The {{thing}} is removed from public pages and kept for audit; it can be restored. Scores are recalculated.",
+        "removeOnly": "The {{thing}} is taken down for everyone (for this kind of item hiding and removing are the same); it is kept for audit and can be restored.",
+        "restore": "The {{thing}} comes back as it was before.",
+        "request_changes": "The {{thing}} goes back to its owner to fix; your note tells them what to change.",
+        "warn_user": "The person gets a warning with the reason category.",
+        "suspend_account": "The account cannot sign in or act until a moderator reactivates it (timed suspensions are not lifted automatically yet). Needs your security key.",
+        "reactivate_account": "The account can sign in and act again.",
+        "apply_trust_penalty": "Lowers the organization's trust score for 12 months. It cannot be undone from the console. Needs your security key.",
+        "revoke_badge": "The badge disappears from the organization's profile at once.",
+        "portfolio": {
+          "approve": "The showcase item is published on the provider's profile with its photos.",
+          "remove": "The showcase item is rejected and goes back to the provider; its photos are taken down.",
+          "restore": "The showcase item goes back to the review queue (not published yet).",
+          "request_changes": "The showcase item goes back to the provider as a draft (for example to blur a plate)."
+        },
+        "fitment": {
+          "remove": "The fitment record is rejected: the listing no longer shows this vehicle.",
+          "restore": "The fitment record is active again."
+        },
+        "ai": {
+          "remove": "The AI output is hidden from its owner and kept for audit.",
+          "restore": "The AI output is visible to its owner again."
+        },
+        "inventory": {
+          "request_changes": "The listing goes back to the vendor as a draft; your note says what to correct."
+        }
+      },
+      "done": {
+        "approve": "Approved.",
+        "hide": "Hidden.",
+        "remove": "Removed.",
+        "restore": "Restored.",
+        "request_changes": "Sent back for changes.",
+        "warn_user": "The warning has been sent.",
+        "suspend_account": "The account is suspended.",
+        "reactivate_account": "The account is active again.",
+        "apply_trust_penalty": "The penalty is recorded; the trust score is recalculated.",
+        "revoke_badge": "The badge is revoked."
+      },
+      "blocked": {
+        "consent_missing": "Approve is not possible: the customer has not given a valid showcase consent. Request changes or reject."
+      },
+      "assign": {
+        "take": "Take this case",
+        "hint": "Others then see that you handle it.",
+        "yours": "You are handling this case."
+      },
+      "account": {
+        "titleUser": "Account",
+        "titleAuthor": "The person behind it",
+        "text": "Suspensions are never bulk. Suspending asks for your security key again."
+      },
+      "penalty": {
+        "title": "Trust penalty",
+        "text": "For confirmed fake reviews, repeated violations or misleading listings of this organization:",
+        "points": "Penalty points",
+        "pointsHint": "From {{min}} to {{max}}; it lasts 12 months.",
+        "pointsInvalid": "Enter a whole number from {{min}} to {{max}}.",
+        "summary": "Penalty: {{n}} points."
+      },
+      "stepUp": "You will be asked for your security key before this is sent.",
+      "locationHint": "To fix a wrong location, correct it on the organization's page (Organizations); this case records the report.",
+      "badge": {
+        "title": "Badges",
+        "text": "The Verified Business badge waits for staff approval; any badge can be revoked here. The console cannot list an organization's badges yet: enter the badge id from the badge challenge (Disputes), the verification or the audit log.",
+        "id": "Badge id",
+        "idHint": "For example 0193a3c4-5d6e-7f80-9a1b-…",
+        "idInvalid": "Enter a badge id (a UUID).",
+        "approve": "Approve the badge",
+        "revoke": "Revoke the badge",
+        "approveTitle": "Approve this badge",
+        "revokeTitle": "Revoke this badge",
+        "approveEffect": "The badge becomes active and shows on the organization's profile.",
+        "revokeEffect": "The badge disappears from the organization's profile at once. The organization is told.",
+        "approved": "Approved: {{badge}} is active.",
+        "revoked": "The badge is revoked.",
+        "type": {
+          "verified_business": "Verified Business",
+          "make_specialist": "Make specialist",
+          "system_expert": "System expert",
+          "highly_rated": "Highly rated",
+          "fast_responder": "Fast responder",
+          "high_response_rate": "High response rate",
+          "repeat_customer_favorite": "Repeat customer favourite",
+          "fast_appointment_turnaround": "Fast appointment turnaround",
+          "excellent_communication": "Excellent communication",
+          "fleet_friendly": "Fleet friendly",
+          "ev_ready": "EV ready"
+        }
+      },
+      "reportStatus": {
+        "open": "Waiting",
+        "triaged": "In a case",
+        "resolved": "Resolved",
+        "dismissed": "Dismissed"
+      },
+      "reports": {
+        "listLabel": "User reports",
+        "itemLabel": "Selected report",
+        "decisionLabel": "Triage",
+        "empty": "No report matches these filters.",
+        "pick": "Choose a report from the list.",
+        "pickFirst": "Choose a report first.",
+        "gone": "This report is not in the list any more.",
+        "details": "What the reporter wrote",
+        "noDetails": "The reporter added no details.",
+        "openCase": "Open its case",
+        "inCase": "In case",
+        "cannotTriage": "Your role cannot triage reports.",
+        "done": "This report is done: {{status}}.",
+        "triaged": "The report is in a case now.",
+        "dismissed": "The report is dismissed.",
+        "openTitle": "Open a case",
+        "atLeastHigh": "Unsafe advice, media without consent and private data are at least high.",
+        "openButton": "Open a case",
+        "linkTitle": "Add to the open case",
+        "linkText": "There is already an open case about the same item ({{reason}}):",
+        "linkButton": "Add to that case",
+        "dismissButton": "Dismiss the report",
+        "dialog": {
+          "open_case": "Open a case for this report",
+          "link": "Add this report to the open case",
+          "dismiss": "Dismiss this report"
+        },
+        "effect": {
+          "open_case": "A {{severity}} case is opened; every open report about the same item joins it.",
+          "link": "The report joins the open case about the same item.",
+          "dismiss": "The report is closed without a case. The reporter is not told the reason."
+        }
+      }
     }
   }
 }

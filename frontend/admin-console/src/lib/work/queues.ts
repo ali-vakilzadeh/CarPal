@@ -13,7 +13,8 @@ import type {
 } from '@carpal/api-contracts';
 import type { ApiClient, CallRest } from '@/lib/api/client';
 import type { AdminOperationId, StaffRole } from '@/lib/api/generated';
-import { dueAt, SLA_TARGETS, slaState, URGENT_REASONS, worse, type SlaState } from '@/lib/config/sla';
+import { dueAt, SLA_TARGETS, slaState, worse, type SlaState } from '@/lib/config/sla';
+import { caseDue, reportDue } from '@/features/moderation/case-logic';
 import { canCall } from '@/lib/roles';
 
 export type QueueId = 'approvals' | 'verification' | 'reviewApproval' | 'reports' | 'cases' | 'disputes' | 'privacy';
@@ -34,7 +35,26 @@ export interface QueueDef {
 }
 
 const at = (iso: string | null | undefined) => (iso ? Date.parse(iso) : NaN);
-const INVENTORY_TARGETS: ReadonlySet<string> = new Set(['inventory_item', 'inventory_fitment']);
+
+/**
+ * The CarPal reviewer's timer of a Path 2 review (Docs/23 §6): 2 working days after the business answered or its
+ * 7-day deadline passed. The view has no answer time: the deadline when it has passed, else the review's last change
+ * (the business answer updates it). Used by My work and the approval queue (AC7).
+ */
+export function reviewApprovalTimer(
+  r: Pick<StaffReviewApprovalView, 'business_confirmation_due_at' | 'review'>,
+  timeZone: string,
+  now = Date.now(),
+): Timer {
+  const deadline = at(r.business_confirmation_due_at);
+  const start = Number.isFinite(deadline) && deadline <= now ? deadline : at(r.review.updated_at);
+  return { start, due: dueAt(start, SLA_TARGETS.reviewApproval, timeZone) };
+}
+
+/** Disputes and appeals: 5 working days from the day it was raised (Docs/23 §6). */
+export function disputeTimer(d: Pick<StaffDispute, 'created_at'>, timeZone: string): Timer {
+  return { start: at(d.created_at), due: dueAt(at(d.created_at), SLA_TARGETS.dispute, timeZone) };
+}
 
 function def<T>(d: Omit<QueueDef, 'timer'> & { timer: (item: T, timeZone: string) => Timer }): QueueDef {
   return d as unknown as QueueDef;
@@ -61,49 +81,29 @@ export const QUEUES: readonly QueueDef[] = [
     opId: 'admin.review_approvals_queue',
     queries: [{ stage: 'awaiting_reviewer' }],
     href: '/reviews',
-    // Docs/23 §6: 2 working days after the business answered or its deadline passed. The view has no answer time:
-    // the deadline when it has passed, else the review's last change (the business answer updates it).
-    timer: (r, tz) => {
-      const deadline = at(r.business_confirmation_due_at);
-      const start = Number.isFinite(deadline) && deadline <= Date.now() ? deadline : at(r.review.updated_at);
-      return { start, due: dueAt(start, SLA_TARGETS.reviewApproval, tz) };
-    },
+    timer: (r, tz) => reviewApprovalTimer(r, tz),
   }),
   def<StaffReport>({
     id: 'reports',
     opId: 'admin.reports_list',
     queries: [{ status: 'open' }],
     href: '/content',
-    timer: (r, tz) => {
-      const target = URGENT_REASONS.has(r.reason)
-        ? SLA_TARGETS.reportUrgent
-        : INVENTORY_TARGETS.has(r.target.type)
-          ? SLA_TARGETS.inventory
-          : SLA_TARGETS.reportOther;
-      return { start: at(r.created_at), due: dueAt(at(r.created_at), target, tz) };
-    },
+    // Docs/23 §6 by reason and target (the moderation rules, AC8: reviews 24 h, safety 4 h, the rest 48 h).
+    timer: (r, tz) => ({ start: at(r.created_at), due: reportDue(r, tz) }),
   }),
   def<ModerationCase>({
     id: 'cases',
     opId: 'admin.cases_list',
     queries: [{ status: 'open' }, { status: 'investigating' }, { status: 'escalated' }],
     href: '/content',
-    timer: (c, tz) => {
-      const target =
-        URGENT_REASONS.has(c.reason) || c.severity === 'critical'
-          ? SLA_TARGETS.reportUrgent
-          : INVENTORY_TARGETS.has(c.case_type)
-            ? SLA_TARGETS.inventory
-            : SLA_TARGETS.reportOther;
-      return { start: at(c.created_at), due: dueAt(at(c.created_at), target, tz) };
-    },
+    timer: (c, tz) => ({ start: at(c.created_at), due: caseDue(c, tz) }),
   }),
   def<StaffDispute>({
     id: 'disputes',
     opId: 'admin.disputes_queue',
     queries: [{ status: 'open' }, { status: 'in_mediation' }],
     href: '/disputes',
-    timer: (d, tz) => ({ start: at(d.created_at), due: dueAt(at(d.created_at), SLA_TARGETS.dispute, tz) }),
+    timer: (d, tz) => disputeTimer(d, tz),
   }),
   def<DataSubjectRequest>({
     id: 'privacy',

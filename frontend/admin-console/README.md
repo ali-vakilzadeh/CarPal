@@ -10,8 +10,10 @@ The build plan and stage log is [dev-plan.json](dev-plan.json). Sources of truth
 
 Status: AC1 (foundation), AC2 (backend S12: staff sign-in, contract 1.3.0), AC3 (the BFF), AC4 (staff sign-in and
 the console shell), AC5 (the admin interaction kit, Pending approvals and My work) and AC6 (platform settings:
-exchange rates, feature flags and the AI kill switch, plans and assignments, data retention) are done. The other
-sections in the navigation are placeholders until their stages (AC7 on).
+exchange rates, feature flags and the AI kill switch, plans and assignments, data retention) are done; AC7 (reviews:
+the Path 2 approval queue, review cases, disputes and appeals) and AC8 (moderation: the reports inbox, content,
+account, AI output and inventory cases, badges) are built, their signed-in E2E waiting for a strict run with the
+client key. The other sections in the navigation are placeholders until their stages (AC9 on).
 
 ## Requirements
 
@@ -73,6 +75,11 @@ src/features/rates/      Exchange rates (AC6): per currency, preview, 20 % four-
 src/features/flags/      Feature flags (AC6): AI kill switch on top, toggle and targeting with If-Match
 src/features/plans/      Plans & entitlements (AC6): plan edits (four-eyes), assign plan / trial / overrides
 src/features/retention/  Data retention (AC6): policy edits (four-eyes)
+src/features/reviews/    Reviews (AC7): Path 2 approval queue and decisions, review cases (actions, move to Path 2,
+                         close); the review rules (review-logic.ts) and parts shared with disputes
+src/features/disputes/   Disputes & appeals (AC7): queue, the disputed review with both sides' evidence, decisions
+src/features/moderation/ Moderation (AC8): reports inbox, the case workspace for every target type (also used by the
+                         review cases), target views and the media viewer, badges; the case rules (case-logic.ts)
 src/server/section-page  the server half of a built section: title and the no-permission state
 tools/                   contract generator, design-system sync, logical-CSS check, i18n check, local Node
 tests/                   Vitest setup, DOM-test harness (tests/support), Playwright specs
@@ -82,6 +89,8 @@ tests/                   Vitest setup, DOM-test harness (tests/support), Playwri
 
 See [.env.example](.env.example). `CARPAL_ADMIN_ENV` (dev | staging | prod) drives the environment badge that is
 always visible; outside dev the origin must be https, strict mode must be on and the `cp-web-admin` private key set.
+`CARPAL_STORAGE_URL` (the storage host of signed media links; the page CSP allows it for images and video) and
+`CARPAL_ADMIN_PUBLIC_WEB_URL` (the public web app, for "Open the public page" links) are https outside dev too (AC8).
 
 ## BFF
 
@@ -171,6 +180,54 @@ My work (`/`) counts each queue from its list operation (at most two pages of 10
 colours it with the SLA targets of `src/lib/config/sla.ts`; the top bar's My queue shows the number of changes
 waiting for the caller's approval.
 
+## Reviews and disputes (AC7)
+
+- **Reviews** (`/reviews`), two tabs by role. **Awaiting approval** (community reviewers decide; moderators read):
+  Path 2 reviews by stage (waiting for a CarPal reviewer, for the business, for evidence), oldest first, with the
+  2-working-day timer. A review opens for its approval purpose (`?review=<id>&purpose=approval:<id>`) with the
+  business's answer and note, the author's history (no contact data) and evidence files (a short-lived link through
+  `admin.media_download_url`, never inline). **Confirm** (A) is possible once the business confirmed or its 7 days
+  passed; **Reject** (R, note required) and **Ask for evidence** work in every stage. The reason code is sent as
+  `reason_code` and none of the codes is a rating. A business objection shows a link to its dispute.
+  **Review cases** (moderators, platform admins): reported, AI-flagged and rule cases on reviews; a case opens for its
+  purpose and offers the actions that fit the review's state (approve a held-back Path 1 review, remove, restore,
+  warn the author), **Move to the approval path** (four-eyes, a second moderator decides it on Pending approvals) and
+  **Close the case** with an outcome and a resolution.
+- **Disputes & appeals** (`/disputes`): open disputes by type and assignment (`?type=…&assigned=mine|unassigned`); a
+  dispute opens for its purpose with the statement, who raised it and, for a review, the review with both sides'
+  evidence and the first decider. Start mediation, uphold or reject with an outcome message both sides see, internal
+  notes and a reason; resolving asks for the irreversible tick. For a business objection the outcomes read as what
+  they do ("Publish the review (the objection is not accepted)" / "Accept the objection (the review is rejected)").
+  Whoever raised the dispute or made the decision under dispute is refused by the server and the screen says a
+  colleague must decide.
+- Open cases and disputes are readable only while they are open and unassigned or the caller's (the backend's purpose
+  check); decided ones show the summary from the list.
+- Review cases run on the moderation case workspace of AC8 (same reading, actions, history and closing).
+
+## Moderation (AC8)
+
+- **Content** (`/content`), tabs by role. **Reports** (moderators, support): user reports by status, target type and
+  reason, safety reasons first, with the Docs/23 §6 timer (4 h for unsafe advice, media without consent and private
+  data; 24 h reviews; 48 h the rest). A report is triaged with a reason: **Open a case** (severity chosen; the three
+  safety reasons start at high and cannot go lower), **Add to that case** when an open case about the same item
+  exists (moderators), or **Dismiss**. Opening a case gathers every open report about the same item.
+  **Content**, **Accounts & organizations** and **AI output** (moderators, platform admins): case queues of
+  `admin.cases_list`. A queue of several types reads every type at once (up to 50 each, `?type=` pages one type on
+  the server); safety cases sort first, then severity, then age; the Content queue has the Docs/23 views (reported,
+  AI flagged, held by a rule, unsafe advice, consent and privacy), which narrow the loaded cases.
+- **Inventory** (`/inventory`): cases of listings and fitment records.
+- A case opens for its purpose (`?case=<id>&purpose=case:<id>`): the item as the public sees it (text, state,
+  owner, "Open the public page" for published posts, open questions and active shops), a file inline with a
+  "CarPal internal" watermark and no download button (`admin.media_download_url`, display copy), the case facts,
+  the AI risk and the action history. **Take this case** assigns it to you. The actions are the ones that fit the
+  item in its state (the backend's moderation targets): approve held content, hide, remove, restore, request changes
+  (showcase items, listings), reject a fitment record; a showcase item cannot be approved without a valid customer
+  consent. Accounts: warn, **Suspend** (asks for the security key again; no end date until timed suspensions are
+  lifted automatically, BR-07), reactivate. Organizations: a **trust penalty** (1-100 points, 12 months, security key,
+  second confirmation) and **Badges** (approve the Verified Business badge, revoke a badge; the badge id is entered,
+  because no read lists an organization's badges yet, BR-31). Every action needs a reason; the case is closed with an
+  outcome and a resolution. Merging duplicates is not offered until BR-08.
+
 ## Integration tests
 
 `pnpm test:int` signs a fresh ADM account in through the BFF (password, emailed code, a software security key, then
@@ -197,7 +254,17 @@ run `pnpm test:int` with `CARPAL_STRICT_AUTH=1` and `CARPAL_ADMIN_CLIENT_PRIVATE
 `tests/e2e/signin.spec.ts` (AC4), `approvals.spec.ts` (AC5: the four-eyes round trip with two ADM accounts; it
 re-files a data retention policy with its own values, so approving it changes nothing) and `settings.spec.ts` (AC6:
 the rate reaches config.client, the kill switch on and off with a second admin, a stale flag version, plans,
-retention and an assignment, Persian) sign real staff in. `settings.spec.ts` reads config.client on the api host
+retention and an assignment, Persian), `reviews.spec.ts` (AC7: a reviewer confirms a Path 2 review end to end, a
+moderator cannot decide, a business objection decided by a different staff member, Persian) and `moderation.spec.ts`
+(AC8: a reported post triaged, hidden, restored and closed; a suspension that asks for the security key, Persian) sign
+real staff in. `moderation.spec.ts` turns the community flags on in dev (backend `pnpm dev:flags set community on`)
+and has a shop publish a post and a customer report it; the backend asks for the key only when the sign-in is older
+than 10 minutes, so the spec answers the first suspend call with the backend's `STEP_UP_REQUIRED` and the replay
+after the key goes to the real backend.
+`reviews.spec.ts` creates its shop, customers and Path 2 reviews through the API as cp-mobile users
+(`tests/e2e/app-user.ts`: sign-up, the mailed link, the code flow with PKCE and DPoP, a proof of work whenever the
+server asks for an attestation; it needs no client key, and needs `https://carpals.ir/oauth/callback` among the
+cp-mobile redirect URIs, the dev default). `settings.spec.ts` reads config.client on the api host
 (`:8080`) as an anonymous app (`tests/e2e/public-api.ts`), puts the rate and the flags back, and has a second admin
 reject the plan and retention changes it files. They need
 backend `pnpm dev` with the settings above (the `:3300` redirect URI and WebAuthn origin), create one account per test

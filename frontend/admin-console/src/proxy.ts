@@ -12,7 +12,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { LOCALE_COOKIE, LOCALE_HEADER, PATH_HEADER, isLocale, negotiateLocale } from './lib/i18n/locales';
 import { ONE_YEAR_S, THEME_COOKIE, isTheme } from './lib/theme';
 import { serverEnv } from './server/env';
-import { createNonce, pageSecurityHeaders } from './server/security-headers';
+import { createNonce, originsOf, pageSecurityHeaders } from './server/security-headers';
 
 function secure(response: NextResponse, headers: Record<string, string>): NextResponse {
   for (const [k, v] of Object.entries(headers)) response.headers.set(k, v);
@@ -29,6 +29,8 @@ export function proxy(request: NextRequest): NextResponse {
     nonce,
     dev: process.env.NODE_ENV === 'development',
     https,
+    // The media viewer of moderation cases (AC8) shows signed display copies from the storage host.
+    mediaOrigins: originsOf(env.CARPAL_STORAGE_URL),
     // OQ-11 (answered 2026-11-09): outside dev every page opens over https only. env.ts refuses an http origin there;
     // HSTS keeps browsers on https (nginx answers port 80 with a redirect, AC11).
     hsts: https && env.CARPAL_ADMIN_ENV !== 'dev',

@@ -5,7 +5,29 @@
 // removals, suspensions and rejections (Docs/23 §1), and wherever a code is "other".
 
 export type ReasonKind =
-  'approve_change' | 'reject_change' | 'setting_change' | 'approval' | 'rejection' | 'removal' | 'suspension' | 'restore' | 'escalation';
+  | 'approve_change'
+  | 'reject_change'
+  | 'setting_change'
+  | 'approval'
+  | 'rejection'
+  | 'removal'
+  | 'suspension'
+  | 'restore'
+  | 'escalation'
+  | 'review_confirm'
+  | 'review_reject'
+  | 'review_evidence'
+  | 'warning'
+  | 'path_change'
+  | 'case_close'
+  | 'dispute_uphold'
+  | 'dispute_reject'
+  | 'mediation'
+  | 'changes_request'
+  | 'trust_penalty'
+  | 'badge_revoke'
+  | 'triage'
+  | 'report_dismiss';
 
 export interface ReasonSet {
   codes: readonly string[];
@@ -24,6 +46,27 @@ export const REASON_SETS: Record<ReasonKind, ReasonSet> = {
   suspension: { codes: ['repeated_violations', 'fraud', 'safety_risk', 'legal_request', 'other'], noteRequired: true },
   restore: { codes: ['decision_reversed', 'appeal_upheld', 'mistake', 'other'], noteRequired: false },
   escalation: { codes: ['needs_lead', 'needs_admin', 'legal_question', 'other'], noteRequired: false },
+  // Reviews and disputes (AC7). A rating is never a reason to reject (Docs/23 A-REV-02 rule, Docs/02 WP9): no code
+  // here names one, and the backend refuses rating codes (admin.review_approval_decide).
+  review_confirm: { codes: ['customer_confirmed', 'no_business_objection', 'evidence_sufficient', 'other'], noteRequired: false },
+  review_reject: {
+    codes: ['not_a_customer', 'evidence_insufficient', 'policy_violation', 'conflict_of_interest', 'duplicate', 'other'],
+    noteRequired: true,
+  },
+  review_evidence: { codes: ['invoice_needed', 'photo_needed', 'visit_details_needed', 'other'], noteRequired: false },
+  warning: { codes: ['policy_violation', 'abusive_language', 'repeated_violations', 'other'], noteRequired: true },
+  path_change: { codes: ['visit_evidence_invalid', 'appointment_not_held', 'conflict_of_interest', 'other'], noteRequired: true },
+  case_close: { codes: ['action_completed', 'no_violation', 'report_unfounded', 'needs_lead', 'other'], noteRequired: false },
+  dispute_uphold: { codes: ['evidence_supports_claim', 'original_decision_wrong', 'policy_misapplied', 'other'], noteRequired: false },
+  dispute_reject: { codes: ['original_decision_stands', 'evidence_insufficient', 'outside_policy', 'other'], noteRequired: true },
+  mediation: { codes: ['both_sides_needed', 'more_information', 'other'], noteRequired: false },
+  // Moderation (AC8). The author or vendor learns what to change from the note, so it is required there; a penalty
+  // and a badge revocation are final for the organization, so they carry a note as well.
+  changes_request: { codes: ['blur_needed', 'wrong_information', 'missing_consent', 'policy_violation', 'other'], noteRequired: true },
+  trust_penalty: { codes: ['confirmed_fake_reviews', 'repeated_violations', 'misleading_listings', 'other'], noteRequired: true },
+  badge_revoke: { codes: ['rule_not_met', 'fraud', 'challenge_upheld', 'other'], noteRequired: true },
+  triage: { codes: ['needs_review', 'safety_risk', 'repeat_reports', 'other'], noteRequired: false },
+  report_dismiss: { codes: ['not_a_violation', 'duplicate_report', 'abusive_reporting', 'other'], noteRequired: false },
 };
 
 /** Every code of every set (for the translation check and the parser). */

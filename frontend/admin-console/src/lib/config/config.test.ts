@@ -21,6 +21,15 @@ describe('reasons (AC5.T2)', () => {
     expect(reasonReady('approve_change', { code: 'other', note: 'see ticket 12' })).toBe(true);
   });
 
+  it('never offers a rating as a reason to reject a review, and needs a note for rejections (AC7, WP9)', () => {
+    for (const kind of ['review_reject', 'dispute_reject', 'removal'] as const)
+      for (const code of REASON_SETS[kind].codes) expect(code).not.toMatch(/rating|star/);
+    for (const kind of ['review_reject', 'dispute_reject', 'warning', 'path_change'] as const)
+      expect(REASON_SETS[kind].noteRequired).toBe(true);
+    // admin.review_approval_decide reason_code: Str<1,60>.
+    for (const code of REASON_CODES) expect(code.length).toBeLessThanOrEqual(60);
+  });
+
   it('composes "<code>: <note>" within the contract limit of 500 characters', () => {
     expect(composeReason({ code: 'values_incorrect', note: ' rate  is\n off ' })).toBe('values_incorrect: rate  is off');
     expect(composeReason({ code: 'planned_change', note: '' })).toBe('planned_change');

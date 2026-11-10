@@ -9,6 +9,18 @@ export interface CspOptions {
   /** next dev: React needs eval for its debug stacks and HMR talks over a WebSocket. */
   dev: boolean;
   https: boolean;
+  /** Signed media URLs (the storage host): the media viewer of moderation cases shows display copies (AC8). */
+  mediaOrigins?: readonly string[];
+}
+
+/** The origin of a URL for a CSP source list ([] for an empty or invalid value). */
+export function originsOf(url: string | undefined): string[] {
+  if (!url) return [];
+  try {
+    return [new URL(url).origin];
+  } catch {
+    return [];
+  }
 }
 
 /** Next.js's own client and bundler policies, plus the narrow 'default' policy of the boot script (src/lib/theme.ts). */
@@ -16,11 +28,13 @@ export const TRUSTED_TYPES_POLICIES = ['nextjs', 'nextjs#bundler', 'default'] as
 
 export function contentSecurityPolicy(o: CspOptions): string {
   const join = (...parts: string[]) => parts.filter(Boolean).join(' ');
+  const media = (o.mediaOrigins ?? []).join(' ');
   const directives: [string, string][] = [
     ['default-src', "'self'"],
     ['script-src', join("'self'", `'nonce-${o.nonce}'`, "'strict-dynamic'", o.dev ? "'unsafe-eval'" : '')],
     ['style-src', join("'self'", `'nonce-${o.nonce}'`)],
-    ['img-src', join("'self'", 'data:', 'blob:')],
+    ['img-src', join("'self'", 'data:', 'blob:', media)],
+    ...(media ? ([['media-src', join("'self'", media)]] as [string, string][]) : []),
     ['font-src', "'self'"],
     ['connect-src', join("'self'", o.dev ? 'ws:' : '')],
     // The proof-of-work solver of the staff sign-in runs in a same-origin worker (src/lib/api/pow.ts, AC4.T1).
