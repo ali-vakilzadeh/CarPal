@@ -35,7 +35,7 @@
       "todo": 21,
       "r_item_actions_for_backend": 12,
       "unlinked_open_doc_issues": 4,
-      "stages": 13,
+      "stages": 14,
       "by_priority": {
         "P0": 4,
         "P1": 7,
@@ -58,11 +58,18 @@
         "S13",
         "S14"
       ],
-      "stages_in_progress": [],
-      "next_stage": "S15 (backend; needs DQ-02 and DQ-03). By action_plan.admin_console_resume.suggested_interleaving the console resumes AC10 (with the catch-up patch) and AC12 first.",
+      "stages_in_progress": [
+        "S15"
+      ],
+      "next_stage": "S15 is in development (DQ-02 answered; DQ-03 still pending for the DI-01 text). Then S16a and S16b (DQ-04 answered; DQ-11 and DQ-16 open).",
       "contract": "Docs/40 1.4.0 open (421 operations, 473 routes; 420 served, auth.social_start deferred; 52 error codes). Frozen at S25.",
       "summary": "S14 done: purpose bound to the record (RCP-01 mitigated, R-03 closed), StaffOrgSearchRow, timed suspensions lifted automatically. BR-09 and BR-07 done, BR-35 part 1 row done. Open decisions: DQ-11 (before S16), DQ-13 and DQ-14 (defaults applied), plus owner confirmations of DQ-01, DQ-08, DQ-09, DQ-10, DQ-12."
-    }
+    },
+    "decisions_from_owner_2026_11_13": [
+      "DQ-04 answered: the recommended staff recovery process (own recovery codes, requester proof, two ADM approvals in the console with an out-of-band check, 72-hour restriction, break glass). S16 split into S16a and S16b; R-11 and R-15 moved to S25.",
+      "DQ-02 answered: defaults approved (S15 builds on them).",
+      "DQ-08 confirmed: lite-mode tests inside each stage; the strict cross-component run waits until the plan is complete."
+    ]
   },
   "recommendations": [
     {
@@ -837,11 +844,13 @@
       },
       "plan": {
         "priority": "P0",
-        "complexity": "L",
+        "complexity": "XL",
         "stage": [
-          "S16"
+          "S16a",
+          "S16b"
         ],
-        "why": "With one device-bound key per person, a lost key locks a staff member out and needs SQL on the server (R-08); OQ-14 plans two keys each, which needs \"add a backup key\". Security-sensitive WebAuthn code. The ADM reset design waits for the owner (DQ-04)."
+        "why": "With one device-bound key per person, a lost key locks a staff member out and needs SQL on the server (R-08); OQ-14 plans two keys each, which needs \"add a backup key\". Design decided in DQ-04 (2026-11-13): own recovery codes, requester proof (password + code + emailed code), two ADM approvals in the console with an out-of-band check, 72-hour restriction, break glass on the server. Split into S16a (signed-in part) and S16b (recovery flow).",
+        "decision": "DQ-04"
       }
     },
     {
@@ -1598,7 +1607,7 @@
       "raised_in": "AC1",
       "plan": {
         "stage": null,
-        "note": "Owner preparation (pilot_prep_checklist). S25 updates deploy.md for two ADM accounts at bootstrap."
+        "note": "Owner preparation (pilot_prep_checklist). Three ADM accounts recommended so ADM recovery works without server access (DQ-16). S25 updates deploy.md for the ADM accounts at bootstrap."
       }
     },
     {
@@ -1615,9 +1624,10 @@
       "raised_in": "AC2",
       "plan": {
         "stage": [
-          "S16"
+          "S16a",
+          "S16b"
         ],
-        "note": "Closed by BR-19."
+        "note": "Break glass replaces the SQL in S16a; the full recovery flow closes it in S16b."
       }
     },
     {
@@ -1657,9 +1667,9 @@
       "raised_in": "AC3",
       "plan": {
         "stage": [
-          "S16"
+          "S25"
         ],
-        "note": "Must land before the whole-plan test run."
+        "note": "Moved from S16 (2026-11-13) to make room for the DQ-04 recovery flow; must land before the whole-plan test run."
       }
     },
     {
@@ -1673,9 +1683,9 @@
       "raised_in": "AC4",
       "plan": {
         "stage": [
-          "S16"
+          "S25"
         ],
-        "note": "Dev tooling next to BR-19 test helpers."
+        "note": "Moved from S16 (2026-11-13)."
       }
     },
     {
@@ -1925,7 +1935,8 @@
       "S13",
       "S14",
       "S15",
-      "S16",
+      "S16a",
+      "S16b",
       "S17",
       "S18",
       "S19",
@@ -1936,10 +1947,10 @@
       "S24",
       "S25"
     ],
-    "total_load_points": 119,
+    "total_load_points": 128.5,
     "principles": [
-      "Order: first the reads that unblock the console (S13), then the pilot blockers (privacy S14, legal S15, staff keys S16), then pilot-operations completeness (S17-S19), then Should items (S20-S24), then closure (S25).",
-      "One stage = one working session that fits a 5-hour token window. Target load <= 11 points (backend S12 was about 9, S11 about 11). Security-sensitive or cross-module stages are planned lighter (S16, S22, S23).",
+      "Order: first the reads that unblock the console (S13), then the pilot blockers (privacy S14, legal S15, staff keys S16a/S16b), then pilot-operations completeness (S17-S19), then Should items (S20-S24), then closure (S25).",
+      "One stage = one working session that fits a 5-hour token window. Target load <= 11 points (backend S12 was about 9, S11 about 11). Security-sensitive or cross-module stages are planned lighter (S16a, S16b, S22, S23).",
       "A stage groups items by module and contract area so the session reads one set of docs and code (backend conventions.context_budget: read only the listed ranges, lean on the generated registry, copy patterns from finished modules).",
       "Every stage follows the backend definition of done per operation and ends with contract:check and openapi:check green and the console contract regenerated, so the tree is never left with a half-updated registry.",
       "If a session runs long, stop at the stage's split_point and move the rest to S25 or the named later stage; never split inside a task.",
@@ -2422,7 +2433,7 @@
       {
         "id": "S15",
         "title": "Policies and consent texts (legal go-live), docs alignment",
-        "status": "not_started",
+        "status": "in_progress",
         "items": [
           "BR-12",
           "DI-12 (from BR-02)",
@@ -2495,93 +2506,187 @@
           "policy.current returns the effective version per locale.",
           "A user who accepted an older version is flagged for re-consent when a requires_reconsent version becomes effective, and the flag clears after acceptance."
         ],
-        "split_point": "T5 can move to S25."
+        "split_point": "T5 can move to S25.",
+        "started_at": "2026-11-13"
       },
       {
-        "id": "S16",
-        "title": "Staff passkeys, and test tooling",
+        "id": "S16a",
+        "title": "Staff passkeys (self-service) and recovery codes",
         "status": "not_started",
         "items": [
-          "BR-19",
-          "R-11",
-          "R-15"
+          "BR-19 (self-service keys, recovery codes, break glass)",
+          "DQ-11 (if confirmed)"
         ],
-        "closes_r_items": [
-          "R-08",
-          "R-11",
-          "R-15"
-        ],
-        "priority_mix": "P0: BR-19. P1: R-11. P2: R-15.",
+        "closes_r_items": [],
+        "priority_mix": "P0: BR-19.",
         "load": {
-          "points": 7.5,
+          "points": 7,
           "rating": "light (security-sensitive)",
-          "breakdown": "BR-19 6, R-11 1, R-15 0.5"
+          "breakdown": "recovery codes 2.5, own keys list/add/remove 3, break-glass CLI 1, DQ-11 0.5"
         },
-        "why_this_stage": "Staff sign in only with device-bound keys (SEC-ADM-2). With one key a lost key means SQL on the server (R-08), and OQ-14 plans two keys per staff member, which needs \"add a backup key\". BR-19 is WebAuthn and aal3 step-up code in identity (webauthn.ts, mfa-service.ts, the S12 enrolment path) where a mistake locks staff out or lets an attacker in, so the stage is kept light. The two tooling items are small, live next to the staff test helpers (tools/db/staff*), and R-11 must exist before the whole-plan test run.",
+        "why_this_stage": "The signed-in half of BR-19 per DQ-04. A backup key (OQ-14, R-07: two keys per staff member) makes recovery rare, and the recovery codes must exist on every account before the recovery flow (S16b) can rely on them, so this half goes first. It changes the S12 enrolment path and webauthn/mfa-service in identity, where a mistake locks staff out, so the stage is kept light. The break-glass CLI lands here so R-08 (SQL on the server) is closed even if S16b slips.",
         "depends_on": [
-          "S13 (staff list for the reset target)",
-          "DQ-04 for T4"
+          "S13 (staff list, disable/enable)",
+          "DQ-04 (answered)"
         ],
-        "gate": "If the owner's lost-key research (DQ-04) is not finished, build T1-T3, T5, T6 and move T4 to S25.",
         "context_to_read": [
+          "action_plan.decisions_needed DQ-04 decision",
           "Docs/40 SEC-ADM-2, SEC-AU-9",
-          "backend modules/identity/application/{webauthn.ts, mfa-service.ts, auth-server.ts}",
-          "backend dev_plan.json S12 report (passkey enrolment)"
+          "backend modules/identity/application/{webauthn.ts, mfa-service.ts, auth-ops.ts, auth-server.ts}",
+          "backend dev_plan.json S12 report (passkey enrolment)",
+          "backend tools/db/staff*.ts"
         ],
         "tasks": [
           {
-            "id": "S16.T1",
+            "id": "S16a.T1",
+            "items": [
+              "BR-19"
+            ],
+            "task": "Docs/52 and migration: staff recovery codes (account, keyed hash, used_at, set_id, created_at). Generation per DQ-04 (10 codes, 20 Crockford base32 characters in groups of four, HMAC-SHA-256 with CARPAL_RECOVERY_CODE_PEPPER, constant-time compare, single use)."
+          },
+          {
+            "id": "S16a.T2",
+            "items": [
+              "BR-19"
+            ],
+            "task": "The S12 first-passkey enrolment (auth.passkey_enrol) returns the first code set once; admin.staff_me carries recovery_codes_remaining (0 for existing staff, so the console asks them to create a set); admin.staff_recovery_codes_regenerate (fresh aal3 within 5 minutes, else STEP_UP_REQUIRED; cancels the old set; returns the new set once; notice to the staff email; audited without the codes)."
+          },
+          {
+            "id": "S16a.T3",
             "items": [
               "BR-19"
             ],
             "task": "admin.staff_passkeys_list (own keys: label, created_at, last_used_at, device-bound, authenticator label)."
           },
           {
-            "id": "S16.T2",
+            "id": "S16a.T4",
             "items": [
               "BR-19"
             ],
-            "task": "admin.staff_passkey_register_options and admin.staff_passkey_register: a backup key after a fresh aal3 re-authentication (auth_time within 5 minutes, else STEP_UP_REQUIRED); device-bound only (PASSKEY_NOT_DEVICE_BOUND); notice identity.staff_passkey_added."
+            "task": "admin.staff_passkey_register_options and admin.staff_passkey_register: a backup key after a fresh aal3; device-bound only (PASSKEY_NOT_DEVICE_BOUND); notice identity.staff_passkey_added."
           },
           {
-            "id": "S16.T3",
+            "id": "S16a.T5",
             "items": [
               "BR-19"
             ],
             "task": "admin.staff_passkey_remove: own key, fresh aal3, never the last key (LAST_PASSKEY); a removal notice."
           },
           {
-            "id": "S16.T4",
+            "id": "S16a.T6",
             "items": [
               "BR-19"
             ],
-            "task": "admin.staff_passkeys_reset (ADM, another staff member, 4EYES RSN AUD): disables that member's keys and sessions; the next sign-in enrols again with password + emailed code (the S12 path). Design per DQ-04."
+            "task": "Break glass: pnpm staff:break-glass --email <staff> --reason <text> (any environment, run on the server shell): disables the account's keys and sessions so the next sign-in enrols again with password + emailed code, audited as actor system with the reason, every ADM notified; deploy.md runbook section \"Lost security key, fewer than two other admins\"."
           },
           {
-            "id": "S16.T5",
+            "id": "S16a.T7",
             "items": [
-              "R-11"
+              "DQ-11"
             ],
-            "task": "Integration-test settings (strict auth, client keys, env) in a git-ignored backend/.env.test or a small script, so console and PWA test:int run against one strict backend with one command; README \"Integration tests\" updated."
-          },
-          {
-            "id": "S16.T6",
-            "items": [
-              "R-15"
-            ],
-            "task": "pnpm dev:staff prune --domain staff.carpals.test --prefix e2e- (refused unless CARPAL_ENV=dev)."
+            "task": "If DQ-11 is confirmed: admin.staff_disable rejects the member's pending four-eyes requests with the reason \"requester disabled\" in the same transaction."
           }
         ],
-        "contract_changes": "Additive: staff passkey operations on admin-api; problem codes STEP_UP_REQUIRED (if not present) and LAST_PASSKEY.",
-        "console_impact": "A \"Security keys\" page for the signed-in staff member and a reset action on the staff list become buildable; the AC11 runbook lost-key section no longer needs SQL.",
+        "contract_changes": "Additive: admin staff passkey and recovery-code operations; Me/StaffMe gains recovery_codes_remaining; auth.passkey_enrol response gains the code set; problem codes STEP_UP_REQUIRED (if not present) and LAST_PASSKEY.",
+        "console_impact": "Show the code set once after the first enrolment (with print and \"I have stored them\" confirmation, never kept in browser storage, GD-12); a \"Security keys and recovery codes\" page (list, add backup key, remove, regenerate codes); a prompt for staff with recovery_codes_remaining = 0.",
         "pwa_impact": "None.",
         "acceptance_criteria": [
-          "A backup key needs a fresh aal3.",
+          "A code set is shown once and only its keyed hashes are stored.",
+          "A used code cannot be used again; regeneration voids the old set.",
+          "A backup key and regeneration need a fresh aal3.",
           "The last key cannot be removed.",
-          "A reset needs a second ADM and forces enrolment at the next sign-in.",
           "Synced passkeys stay refused.",
-          "dev:staff prune is refused outside dev."
-        ]
+          "Break glass writes an audit entry with the reason and notifies every ADM."
+        ],
+        "split_point": "T6 (break glass) and T7 can move to S16b."
+      },
+      {
+        "id": "S16b",
+        "title": "Staff account recovery with two ADM approvals",
+        "status": "not_started",
+        "items": [
+          "BR-19 (recovery flow per DQ-04)"
+        ],
+        "closes_r_items": [
+          "R-08"
+        ],
+        "priority_mix": "P0: BR-19.",
+        "load": {
+          "points": 8.5,
+          "rating": "medium (security-sensitive, public endpoints)",
+          "breakdown": "request start and email code on the auth host 3, ADM approval queue 2.5, completion and post-recovery restriction 2.5, notices 0.5"
+        },
+        "why_this_stage": "The recovery flow of DQ-04 is the riskiest part of BR-19: it adds endpoints a signed-out person can call (enumeration, guessing, notification spam) and a two-approver workflow that four-eyes does not cover (four-eyes has a signed-in requester and one approver). It gets its own session so the public-endpoint protections and the state machine are built and tested with full attention.",
+        "depends_on": [
+          "S16a (recovery codes, backup keys)",
+          "S13 (staff list, disable)",
+          "DQ-15"
+        ],
+        "context_to_read": [
+          "action_plan.decisions_needed DQ-04 decision",
+          "backend modules/identity/application/{auth-ops.ts, auth-server.ts, webauthn.ts} (the S12 interaction and enrolment path)",
+          "backend modules/admin/application/four-eyes-ops.ts (approval patterns to reuse)",
+          "Docs/40 SEC-AU-11 (generic sign-in errors), rate-limit buckets"
+        ],
+        "tasks": [
+          {
+            "id": "S16b.T1",
+            "items": [
+              "BR-19"
+            ],
+            "task": "Docs/52 and migration: staff recovery requests (account, status awaiting_email_code|awaiting_approvals|approved|rejected|expired|completed, password_forgotten, expires_at = created + 24 h, request handle hash) and recovery approvals (approver, decision, reason, verification_method phone_known_number|in_person|video_call|other, note, decided_at)."
+          },
+          {
+            "id": "S16b.T2",
+            "items": [
+              "BR-19"
+            ],
+            "task": "Auth host, cp-web-admin interactions only: auth.staff_recovery_start (email, password unless password_forgotten, one recovery code) and auth.staff_recovery_verify (the emailed one-time code). The same answer and timing whatever the account state; per-account and per-IP rate limits (and the PoW of the anonymous grant where it applies); one open request per account; the recovery code is consumed when the request is created; disabled accounts never get a request. Returns an opaque request handle bound to the interaction."
+          },
+          {
+            "id": "S16b.T3",
+            "items": [
+              "BR-19"
+            ],
+            "task": "Notices on creation: to the account email (\"if this was not you, tell an administrator\") and to every other active ADM (in-app and email; the email links to the console, nothing can be approved from it)."
+          },
+          {
+            "id": "S16b.T4",
+            "items": [
+              "BR-19"
+            ],
+            "task": "Admin approvals: admin.staff_recoveries_list and admin.staff_recovery_get (ADM; requester, roles, request time, IP country, password_forgotten; no codes), admin.staff_recovery_approve (fresh aal3, reason, verification_method and note; refused for the requester, for an ADM under post-recovery restriction, and twice by the same ADM) and admin.staff_recovery_reject (any ADM, reason; ends the request). Two distinct approvals move the request to approved. Also listed in admin.work_summary when S21 builds it."
+          },
+          {
+            "id": "S16b.T5",
+            "items": [
+              "BR-19"
+            ],
+            "task": "Completion: auth.staff_recovery_status (by handle) and auth.staff_recovery_complete: a new password first when password_forgotten (the normal password rules), then a new device-bound key registered and proven at once (aal3). Then in one transaction: old keys, sessions and refresh tokens revoked, a new recovery-code set issued and shown once, restricted_until = now + 72 h, the account email and every ADM notified, audit entries for every step."
+          },
+          {
+            "id": "S16b.T6",
+            "items": [
+              "BR-19"
+            ],
+            "task": "Post-recovery restriction: STAFF_RECOVERY_RESTRICTED on four-eyes approve, platform role grant and revoke, admin.staff_enable and admin.staff_recovery_approve while restricted_until is in the future; admin.staff_me carries restricted_until."
+          },
+          {
+            "id": "S16b.T7",
+            "task": "Tests: the full happy path (lost key, and forgotten password); no enumeration (unknown, disabled and wrong-details accounts give identical answers); rate limits; expiry at 24 h; one rejection ends the request; self-approval and double approval refused; a restricted ADM cannot approve; synced key refused at completion; sessions revoked after completion."
+          }
+        ],
+        "contract_changes": "Additive: auth.staff_recovery_* on the auth host (refused for clients other than cp-web-admin), admin.staff_recover* on admin-api, StaffMe.restricted_until, problem code STAFF_RECOVERY_RESTRICTED.",
+        "console_impact": "\"Lost my security key\" pages under /id (start, email code, waiting for approvals, new password if needed, new key, new codes); a \"Recovery requests\" queue for ADMs (next to Pending approvals) with the out-of-band check fields; a restriction banner for 72 hours after recovery. The AC11 runbook replaces the lost-key SQL with this flow and the break-glass command.",
+        "pwa_impact": "None.",
+        "acceptance_criteria": [
+          "Recovery completes only after two different ADMs approve with a fresh aal3.",
+          "A signed-out caller cannot tell whether an email belongs to a staff account.",
+          "Nothing can be approved from an email link.",
+          "After completion the old keys and every old session are gone and a new code set exists.",
+          "A recovered account cannot approve or grant anything for 72 hours."
+        ],
+        "split_point": "After T4: T5-T6 can move to S25 only if S25 has room; otherwise finish S16b in a second session before S17."
       },
       {
         "id": "S17",
@@ -3096,13 +3201,15 @@
           "contract 1.4.0 freeze",
           "R-23 (backend half)",
           "R-21 / R-05 deploy.md text",
-          "carry-overs from earlier split points"
+          "carry-overs from earlier split points",
+          "R-11 (integration-test settings, from S16)",
+          "R-15 (dev:staff prune, from S16)"
         ],
         "priority_mix": "Closure.",
         "load": {
-          "points": 6,
+          "points": 7.5,
           "rating": "light (plus any carry-over)",
-          "breakdown": "freeze and checks 3, deploy kit 1.5, plans and logs 1.5"
+          "breakdown": "freeze and checks 3, deploy kit 1.5, plans and logs 1.5, R-11 1, R-15 0.5"
         },
         "why_this_stage": "PD-03 runs the whole test once after the plan is complete; this stage makes the backend ready for that run and hands the refinement back to the console and PWA plans. It also absorbs tasks moved at split points, so it is planned light.",
         "depends_on": [
@@ -3123,6 +3230,22 @@
           },
           {
             "id": "S25.T4",
+            "items": [
+              "R-11"
+            ],
+            "task": "Integration-test settings (strict auth, client keys, env) in a git-ignored backend/.env.test or a small script, so console and PWA test:int run against one strict backend with one command; README \"Integration tests\" updated.",
+            "moved_from": "S16.T5"
+          },
+          {
+            "id": "S25.T5",
+            "items": [
+              "R-15"
+            ],
+            "task": "pnpm dev:staff prune --domain staff.carpals.test --prefix e2e- (refused unless CARPAL_ENV=dev).",
+            "moved_from": "S16.T6"
+          },
+          {
+            "id": "S25.T6",
             "task": "Logs: backend dev_plan.json stage reports; next_iteration NI-02 done, NI-04 done except DI-05; risk_control_plan; every plan block here done or deferred by the owner; meta.status closed."
           }
         ],
@@ -3147,7 +3270,10 @@
         "id": "DQ-02",
         "before": "S15",
         "question": "Which policy documents (terms, privacy, community guidelines, others?), per region or global, and how re-consent behaves in the PWA (blocking or a notice).",
-        "default": "Terms, privacy and community guidelines per region; re-consent blocks use of the app for terms and privacy, a notice for guidelines."
+        "default": "Terms, privacy and community guidelines per region; re-consent blocks use of the app for terms and privacy, a notice for guidelines.",
+        "status": "answered",
+        "answer": "Defaults approved (owner, 2026-11-13): terms, privacy and community guidelines per region; re-consent blocks use of the app for terms and privacy, a notice for guidelines.",
+        "applied": "S15 (in development) builds on these defaults."
       },
       {
         "id": "DQ-03",
@@ -3157,9 +3283,22 @@
       },
       {
         "id": "DQ-04",
-        "before": "S16",
+        "before": "S16a (recovery codes) and S16b (recovery flow)",
         "question": "Lost-key reset design (your research on the 2026-11-09 risk review): ADM reset with four-eyes and re-enrolment by password + emailed code, or something stronger (e.g. an in-person check, a waiting period)?",
-        "default": "As in BR-19 raw_text."
+        "default": "As in BR-19 raw_text.",
+        "status": "answered",
+        "answer": "Recommended process approved (owner, 2026-11-13), replacing both the default (ADM-initiated reset with four-eyes) and the owner's first proposal (requester names two approvers, approvers type 128-character paper codes through an emailed 10-minute link).",
+        "decision": {
+          "recovery_codes": "Every staff account holds its own 10 single-use recovery codes: 20 characters each from Crockford base32 (no ambiguous characters, no symbols, so they can be typed on any keyboard layout), shown in groups of four (about 100 bits). Shown once when the first passkey is enrolled (and to existing staff at their next sign-in), written or printed by the staff member, stored sealed and apart from the security keys. Stored as keyed hashes (HMAC-SHA-256 with a server pepper), compared in constant time. Can be replaced after a fresh aal3 sign-in; the new set cancels the old sheet.",
+          "requester_proof": "Lost key: email + password + one of the account's own recovery codes + a one-time code sent to the staff email. Forgotten password as well: email + recovery code + emailed code, and the requester sets a new password at the end. The requester never names approvers. The answer is the same whether or not the account exists, is disabled or the details are wrong; attempts are rate-limited per account and per IP; one open request per account; disabled accounts cannot recover.",
+          "notification": "Creating a request notifies the account's email (\"a recovery was requested for your account; if this was not you, tell an administrator\") and every other active ADM (in-app and email). The email only links to the console; no approval is possible from a link.",
+          "approvals": "Two different ADMs, neither the requester, each signed in to the console with their passkey and a fresh aal3 (within 5 minutes), approve with a reason and the out-of-band check they made (call to a known number, in person, video call, other + note). Any one ADM can reject, which ends the request. Approvers under post-recovery restriction cannot approve. The whole request expires after 24 hours.",
+          "completion": "After two approvals the requester (same browser, holding the request handle) registers a new device-bound key (security key or Windows Hello; synced passkeys refused with PASSKEY_NOT_DEVICE_BOUND) and proves it at once (aal3). The password stays unless the request said it was forgotten. Then: old keys and all sessions and refresh tokens revoked, a new recovery-code set issued (the old sheet is void), the account email and every ADM notified, everything audited.",
+          "restriction_after_recovery": "For 72 hours the recovered account cannot approve four-eyes changes, grant or revoke roles, enable staff, or approve another recovery (STAFF_RECOVERY_RESTRICTED).",
+          "roles": "The same flow for every staff role (ADM, MOD, CRV, SUP), always with two ADM approvers (see DQ-15).",
+          "break_glass": "When fewer than two other ADMs are active, a documented server procedure (a staff CLI run on the server shell, with a reason, audited as actor system, all ADMs notified) disables the account's keys so the next sign-in enrols again. This replaces the \"SQL on the server\" fallback of R-08.",
+          "replaces": "The planned admin.staff_passkeys_reset (ADM resets another member's keys with four-eyes) is dropped: a suspected compromise is handled by admin.staff_disable (S13), and the member comes back through recovery after re-enabling (4EYES, DQ-10)."
+        }
       },
       {
         "id": "DQ-05",
@@ -3184,9 +3323,10 @@
         "before": "S13",
         "question": "PD-03 reading: lite-mode unit and integration tests inside each stage are allowed; only the strict cross-component test run waits for the end.",
         "default": "Yes.",
-        "status": "default_applied",
+        "status": "answered",
         "applied": "Applied in S13: lite-mode unit, integration and contract-sweep tests ran inside the stage; no strict cross-component run.",
-        "owner_confirmation": "pending"
+        "owner_confirmation": "confirmed 2026-11-13",
+        "answer": "Confirmed (owner, 2026-11-13): lite-mode unit, integration and contract-sweep tests run inside each stage; only the strict cross-component test run waits until the whole plan is complete."
       },
       {
         "id": "DQ-09",
@@ -3209,10 +3349,10 @@
       {
         "id": "DQ-11",
         "raised_in": "S13",
-        "before": "S16 (staff security stage)",
+        "before": "S16a (staff security stage)",
         "status": "open",
         "question": "When a staff member is disabled, what happens to the four-eyes changes they requested that are still pending? Today they stay pending and a second admin can still approve them (the approval records the disabled requester as initiator).",
-        "default": "Recommended: disable rejects (or expires) the member's pending requests with the reason \"requester disabled\" in the same transaction; build it in S16 next to the other staff security work (about 0.5 point)."
+        "default": "Recommended: disable rejects (or expires) the member's pending requests with the reason \"requester disabled\" in the same transaction; build it in S16a next to the other staff security work (about 0.5 point)."
       },
       {
         "id": "DQ-12",
@@ -3240,6 +3380,23 @@
         "owner_confirmation": "pending",
         "question": "Should a case about a user unlock that user's own private files (vehicle photos, avatar) through admin.media_download_url?",
         "default": "No (built in S14): a file is reachable when it is the case target, is attached to a subject record (a reported post, review evidence) or belongs to a subject organization (verification documents). A user's own files are not, and DSR exports never through their owner."
+      },
+      {
+        "id": "DQ-15",
+        "raised_in": "DQ-04 analysis (2026-11-13)",
+        "before": "S16b",
+        "status": "default_applied",
+        "owner_confirmation": "pending",
+        "question": "Recovery of a MOD, CRV or SUP account: two ADM approvals like an ADM account, or one ADM approval (lower privilege)?",
+        "default": "Two ADM approvals for every role (one flow, one rule)."
+      },
+      {
+        "id": "DQ-16",
+        "raised_in": "DQ-04 analysis (2026-11-13)",
+        "before": "pilot (R-05) and AC11 runbook",
+        "status": "open",
+        "question": "Recovery of an ADM needs two other active ADMs, so with the two ADMs of R-05 an ADM can only recover through the server procedure (break glass). Plan three ADM accounts for the pilot?",
+        "default": "Three ADM accounts, so recovery works without server access; with two, the break-glass procedure is the ADM recovery path."
       }
     ],
     "intake_rules": [
@@ -3270,7 +3427,7 @@
         {
           "stage": "AC11",
           "resume_after": "AC10 (backend: none required to build)",
-          "why": "The deploy kit, runbook and security pass can be written after AC10. The runbook's lost-key section and the security pass on purposes are final only after S16 and S14; the pilot E2E green criterion waits for the whole-plan test run (PD-03)."
+          "why": "The deploy kit, runbook and security pass can be written after AC10. The runbook's lost-key section and the security pass on purposes are final only after S16a/S16b (recovery flow and break glass) and S14; the pilot E2E green criterion waits for the whole-plan test run (PD-03)."
         },
         {
           "stage": "AC13",
@@ -3294,7 +3451,8 @@
         "AC12",
         "S14",
         "S15",
-        "S16",
+        "S16a",
+        "S16b",
         "AC11",
         "S17",
         "S18",
@@ -3311,18 +3469,19 @@
         "whole-plan test run (PD-03)"
       ],
       "status_2026_11_12": "S13 done: AC10 and AC12 can resume with real operations. Catch-up list: S13.report.notes_for_next.",
-      "status_2026_11_13": "S14 done: the organization search row and the purpose binding are in place (console regenerated and fixed in S14); AC10 can offer suspension durations. Catch-up list: S13.report.notes_for_next and S14.report.notes_for_next."
+      "status_2026_11_13": "S14 done: the organization search row and the purpose binding are in place (console regenerated and fixed in S14); AC10 can offer suspension durations. Catch-up list: S13.report.notes_for_next and S14.report.notes_for_next.",
+      "console_work_from_dq04": "New console work from DQ-04 (for the admin console plan, not yet in frontend/admin-console/dev-plan.json): recovery codes shown once after enrolment, a \"Security keys and recovery codes\" page (after S16a), the \"Lost my security key\" pages under /id, the ADM \"Recovery requests\" queue and the post-recovery banner (after S16b), and the AC11 runbook text."
     },
     "pilot_prep_checklist_non_code": [
       {
         "r_item": "R-05",
         "owner": "user",
-        "item": "Name the pilot staff: at least two ADM, one MOD, one CRV."
+        "item": "Name the pilot staff: three ADM (recommended, DQ-16; two is the minimum but then ADM recovery needs the server break-glass procedure), one MOD, one CRV."
       },
       {
         "r_item": "R-07",
         "owner": "user",
-        "item": "Two FIDO2 security keys per staff member (or Windows Hello on managed PCs); the second is registered as a backup once S16 is done."
+        "item": "Two FIDO2 security keys per staff member (or Windows Hello on managed PCs); the second is registered as a backup once S16a is done."
       },
       {
         "r_item": "R-19",
@@ -3342,6 +3501,10 @@
       {
         "item": "Final legal texts (EN and FA) for S15 seed or for the first publish in the console.",
         "owner": "user"
+      },
+      {
+        "owner": "user",
+        "item": "Recovery-code sheets (from S16a): each staff member writes or prints their codes, stores the sheet sealed and apart from their security keys, and knows that the sheet is replaced after a recovery or a regeneration. Agree a known phone number per staff member for the approvers' out-of-band check."
       }
     ],
     "handed_off_follow_ups": {
