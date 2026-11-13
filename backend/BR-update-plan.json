@@ -32,10 +32,10 @@
     },
     "counts": {
       "recommendations": 35,
-      "todo": 21,
+      "todo": 20,
       "r_item_actions_for_backend": 12,
       "unlinked_open_doc_issues": 4,
-      "stages": 14,
+      "stages": 15,
       "by_priority": {
         "P0": 4,
         "P1": 7,
@@ -45,30 +45,33 @@
         "closed": 6
       },
       "by_priority_note": "Recommendations only. mixed = BR-35 (part 1 row P0, part 2 P1, parts 1-filters and 3 P2). R-items are planned in r_item_actions_for_backend and are not counted here.",
-      "done_in_refinement": 6,
+      "done_in_refinement": 7,
       "partly_done": 2,
       "counts_note": "todo, done_in_refinement and partly_done follow the recommendation status; by_priority keeps the planning view of 2026-11-12."
     },
     "status": "in_progress",
-    "status_note": "Prioritised and staged from the Admin Console items (2026-11-12). S13 done on 2026-11-12 (contract 1.4.0 opened), S14 done on 2026-11-13 (purpose bound to the record). PWA items and the backend next_iteration items are not merged yet; they join through action_plan.intake_rules. Stages run as backend S13-S25 and are logged in backend/dev_plan.json when started.",
+    "status_note": "Prioritised and staged from the Admin Console items (2026-11-12). S13 done on 2026-11-12 (contract 1.4.0 opened), S14 done on 2026-11-13 (purpose bound to the record). PWA items and the backend next_iteration items are not merged yet; they join through action_plan.intake_rules. Stages run as backend S13-S25 and are logged in backend/dev_plan.json when started. S15 done on 2026-11-13 (versioned legal texts and acceptance).",
     "last_updated": "2026-11-13",
     "progress": {
       "as_of": "2026-11-13",
       "stages_done": [
         "S13",
-        "S14"
-      ],
-      "stages_in_progress": [
+        "S14",
         "S15"
       ],
-      "next_stage": "S15 is in development (DQ-02 answered; DQ-03 still pending for the DI-01 text). Then S16a and S16b (DQ-04 answered; DQ-11 and DQ-16 open).",
-      "contract": "Docs/40 1.4.0 open (421 operations, 473 routes; 420 served, auth.social_start deferred; 52 error codes). Frozen at S25.",
-      "summary": "S14 done: purpose bound to the record (RCP-01 mitigated, R-03 closed), StaffOrgSearchRow, timed suspensions lifted automatically. BR-09 and BR-07 done, BR-35 part 1 row done. Open decisions: DQ-11 (before S16), DQ-13 and DQ-14 (defaults applied), plus owner confirmations of DQ-01, DQ-08, DQ-09, DQ-10, DQ-12."
+      "stages_in_progress": [],
+      "next_stage": "S15b (consent texts; needs DQ-19), then S16a (DQ-04 and DQ-11 answered) and S16b. The console can resume AC10 and AC12 at any time; A-POL-01 waits for AC14.",
+      "contract": "Docs/40 1.4.0 open (428 operations, 480 routes; 427 served, auth.social_start deferred; 53 error codes). Frozen at S25.",
+      "summary": "S15 done: versioned legal texts with four-eyes publish, effective date and re-consent (BR-12), the public text in force, acceptance at sign-up and from the prompt. Next, S15b adds the consent texts (DQ-18). Open decisions: DQ-19 (before S15b), DQ-03 (reworded; DI-01 in S25), DQ-16; defaults applied and awaiting confirmation: DQ-01, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15."
     },
     "decisions_from_owner_2026_11_13": [
       "DQ-04 answered: the recommended staff recovery process (own recovery codes, requester proof, two ADM approvals in the console with an out-of-band check, 72-hour restriction, break glass). S16 split into S16a and S16b; R-11 and R-15 moved to S25.",
       "DQ-02 answered: defaults approved (S15 builds on them).",
-      "DQ-08 confirmed: lite-mode tests inside each stage; the strict cross-component run waits until the plan is complete."
+      "DQ-08 confirmed: lite-mode tests inside each stage; the strict cross-component run waits until the plan is complete.",
+      "DQ-11 answered: default (disabling a staff member rejects their pending four-eyes requests); built in S16a.T7.",
+      "DQ-17 answered: the PWA block is enough; the server only reports re-consent.",
+      "DQ-18 answered: yes, consent texts become versioned documents (yearly revisions expected as AI governance rules change per country); new stage S15b and new question DQ-19.",
+      "DQ-03 not answered: the owner asked what the console is separate from; the question was reworded."
     ]
   },
   "recommendations": [
@@ -139,7 +142,9 @@
           {
             "id": "DI-12",
             "issue": "Docs/40 §6.2 says the /v1/auth/* endpoints 'are used only by the hosted sign-in UI on id.carpals.ir'. In practice each BFF serves the hosted sign-in on its own origin through an /id proxy (the PWA since P2, the console from AC3), which is also why no per-client sign-in URL is needed (BR-02).",
-            "action": "Reword the §6.2 sentence at the next contract change (no field changes, so no version of its own): 'used only by a hosted sign-in UI, served by the client's BFF under /id on its own origin or on the auth host'."
+            "action": "Reword the §6.2 sentence at the next contract change (no field changes, so no version of its own): 'used only by a hosted sign-in UI, served by the client's BFF under /id on its own origin or on the auth host'.",
+            "status": "done",
+            "done_in": "S15: Docs/40 §6.2 reworded (no field change)."
           }
         ],
         "deviations": [
@@ -514,7 +519,7 @@
       },
       "priority": "must",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "Policies and consent texts with versions (A-POL-01): list, draft, publish with effective date and re-consent flag (4EYES).",
       "source_notes": {},
@@ -530,9 +535,12 @@
         "priority": "P0",
         "complexity": "L",
         "stage": [
-          "S15"
+          "S15",
+          "S15b"
         ],
-        "why": "Legal texts are a go-live item (PWA NI-P13-12, owner rule \"legal first\"). New entity with versions, four-eyes publish and a public read the PWA needs for (re-)consent."
+        "why": "Legal texts are a go-live item (PWA NI-P13-12, owner rule \"legal first\"). New entity with versions, four-eyes publish and a public read the PWA needs for (re-)consent.",
+        "done_in": "S15 (2026-11-13)",
+        "done_note": "Policy documents and versions with four-eyes publish, effective date and re-consent flag; policy.current, policy.accept, Me.policy_reconsent; sign-up records the versions in force. Console screen A-POL-01 in AC14; PWA prompt is a PWA follow-up. Consent texts as documents follow in S15b (DQ-18)."
       }
     },
     {
@@ -1820,9 +1828,9 @@
       "action": "After the user confirms GD-01: change the Docs/02 §1.4 row to 'Admin console (separate app, frontend/admin-console)' and the frontend/README sentence.",
       "plan": {
         "stage": [
-          "S15"
+          "S25"
         ],
-        "note": "Text change after DQ-03 (confirm GD-01)."
+        "note": "Moved from S15 (split point): text change after DQ-03 (confirm GD-01), still unanswered on 2026-11-13."
       }
     },
     {
@@ -1851,8 +1859,9 @@
         "stage": [
           "S15"
         ],
-        "note": "Docs/23 A-AUTH-01 reword in the S15 docs pass."
-      }
+        "note": "Done in S15: Docs/23 A-AUTH-01 reworded (also without the network gate, OQ-02)."
+      },
+      "status": "done"
     }
   ],
   "prioritisation": {
@@ -1935,6 +1944,7 @@
       "S13",
       "S14",
       "S15",
+      "S15b",
       "S16a",
       "S16b",
       "S17",
@@ -1947,7 +1957,7 @@
       "S24",
       "S25"
     ],
-    "total_load_points": 128.5,
+    "total_load_points": 134.0,
     "principles": [
       "Order: first the reads that unblock the console (S13), then the pilot blockers (privacy S14, legal S15, staff keys S16a/S16b), then pilot-operations completeness (S17-S19), then Should items (S20-S24), then closure (S25).",
       "One stage = one working session that fits a 5-hour token window. Target load <= 11 points (backend S12 was about 9, S11 about 11). Security-sensitive or cross-module stages are planned lighter (S16a, S16b, S22, S23).",
@@ -2433,7 +2443,7 @@
       {
         "id": "S15",
         "title": "Policies and consent texts (legal go-live), docs alignment",
-        "status": "in_progress",
+        "status": "done",
         "items": [
           "BR-12",
           "DI-12 (from BR-02)",
@@ -2464,28 +2474,32 @@
             "items": [
               "BR-12"
             ],
-            "task": "Docs/52 and migration: policy documents (key per DQ-02, region) and policy versions (texts per locale with EN and FA required, status draft|scheduled|published|superseded, effective_at, requires_reconsent, published_by, approved_by)."
+            "task": "Docs/52 and migration: policy documents (key per DQ-02, region) and policy versions (texts per locale with EN and FA required, status draft|scheduled|published|superseded, effective_at, requires_reconsent, published_by, approved_by).",
+            "status": "done"
           },
           {
             "id": "S15.T2",
             "items": [
               "BR-12"
             ],
-            "task": "Admin operations: admin.policies_list, admin.policy_version_create (draft), admin.policy_version_update (draft only, If-Match), admin.policy_version_publish (4EYES RSN AUD; effective_at not in the past; requires_reconsent). Published versions are read-only."
+            "task": "Admin operations: admin.policies_list, admin.policy_version_create (draft), admin.policy_version_update (draft only, If-Match), admin.policy_version_publish (4EYES RSN AUD; effective_at not in the past; requires_reconsent). Published versions are read-only.",
+            "status": "done"
           },
           {
             "id": "S15.T3",
             "items": [
               "BR-12"
             ],
-            "task": "Api host: policy.current (public: the effective version per key and locale) and the consent link: acceptance records the policy version; the user state carries the policy keys that need re-consent once a requires_reconsent version becomes effective; an accept operation records it."
+            "task": "Api host: policy.current (public: the effective version per key and locale) and the consent link: acceptance records the policy version; the user state carries the policy keys that need re-consent once a requires_reconsent version becomes effective; an accept operation records it.",
+            "status": "done"
           },
           {
             "id": "S15.T4",
             "items": [
               "BR-12"
             ],
-            "task": "Seed version 1 of each document (placeholder texts unless the owner provides the final ones)."
+            "task": "Seed version 1 of each document (placeholder texts unless the owner provides the final ones).",
+            "status": "done"
           },
           {
             "id": "S15.T5",
@@ -2494,7 +2508,9 @@
               "DI-15",
               "DI-01"
             ],
-            "task": "Docs/40 §6.2 sentence (hosted sign-in served by the client's BFF under /id); Docs/23 A-AUTH-01 (email + password, then a device-bound key; no authenticator app, no SSO; generic disabled-account error); Docs/02 §1.4 row and the frontend/README sentence (console is a separate app) after DQ-03."
+            "task": "Docs/40 §6.2 sentence (hosted sign-in served by the client's BFF under /id); Docs/23 A-AUTH-01 (email + password, then a device-bound key; no authenticator app, no SSO; generic disabled-account error); Docs/02 §1.4 row and the frontend/README sentence (console is a separate app) after DQ-03.",
+            "status": "partly_done",
+            "status_note": "DI-12 (Docs/40 §6.2) and DI-15 (Docs/23 A-AUTH-01) done; DI-01 (Docs/02 §1.4, frontend/README) waits for DQ-03 and moved to S25 by the split point."
           }
         ],
         "contract_changes": "Additive: admin policy operations, policy.current, the accept operation and the re-consent field.",
@@ -2507,7 +2523,244 @@
           "A user who accepted an older version is flagged for re-consent when a requires_reconsent version becomes effective, and the flag clears after acceptance."
         ],
         "split_point": "T5 can move to S25.",
-        "started_at": "2026-11-13"
+        "started_at": "2026-11-13",
+        "completed_at": "2026-11-13",
+        "closes_backend_items": [
+          "PWA NI-P13-12 (backend half: versioned texts, public read, acceptance)"
+        ],
+        "report": {
+          "started_at": "2026-11-13",
+          "completed_at": "2026-11-13",
+          "note_on_naming": "Requested as \"the first stage BR-03\": BR-03 is a recommendation closed in AC2 (backend S12), and S13 and S14 were done, so this was read as the next stage of this plan, S15 (the same reading as \"stage BR-02\" → S14).",
+          "summary": "Legal texts are versioned per region (identity.policy_documents, policy_versions, policy_acceptances; migration 0104): terms, privacy and community guidelines (DQ-02 as approved), titles and Markdown texts in EN and FA, drafts edited by an administrator and published by two (four-eyes) with an effective date and a re-consent flag; a published version is read-only (API and trigger). The api host serves the text in force (policy.current, public, by locale) with the version scheduled next, lists the policies a user must accept again (Me.policy_reconsent: blocking for terms and privacy, a notice for the guidelines) and records acceptances (policy.accept). Sign-up must send the versions in force and records their acceptance. Version 1.0 of each text is seeded with placeholders for ir-pilot. Every acceptance criterion is met; DI-12 and DI-15 are reworded; DI-01 waits for DQ-03 (moved to S25).",
+          "acceptance_criteria": [
+            {
+              "criterion": "Publishing needs a second ADM.",
+              "met": true,
+              "evidence": "s15.int.test.ts: admin.policy_version_publish answers 202 PendingChange and nothing changes (still draft, policy.current unchanged); the requester's own approval is 403 SELF_APPROVAL_FORBIDDEN; a second ADM's approval publishes it (published_by and approved_by recorded, the previous version superseded)."
+            },
+            {
+              "criterion": "A published version cannot be edited.",
+              "met": true,
+              "evidence": "s15.int.test.ts: admin.policy_version_update → 409 INVALID_TRANSITION(not_draft), a second publish → 409; a direct UPDATE of the texts, even as the system actor, fails in the trigger policy_versions_immutable."
+            },
+            {
+              "criterion": "policy.current returns the effective version per locale.",
+              "met": true,
+              "evidence": "s15.int.test.ts: fa texts with Content-Language fa, en fallback for another language, 404 for an unknown key; a scheduled version is announced in upcoming, not served, and is served from its effective_at before the worker runs (the rule identity.policy_in_force then settles the stored status)."
+            },
+            {
+              "criterion": "A user who accepted an older version is flagged for re-consent when a requires_reconsent version becomes effective, and the flag clears after acceptance.",
+              "met": true,
+              "evidence": "s15.int.test.ts: guidelines (notice) flag only the older account; terms (blocking) flag every account; policy.accept with the old version → 409 POLICY_VERSION_OUTDATED, with the version in force → the flag clears, UserAccount.terms_version follows; a later version without re-consent asks nobody new and the prompt names the version in force; sign-up with an outdated terms version → 409, with the current one → acceptances recorded (source signup); the DSR export lists the acceptances."
+            }
+          ],
+          "ops_added": [
+            "policy.current (GET /v1/policies/{policy_key}, PUB, cacheable 5 min)",
+            "policy.accept (POST {me}/policy-acceptances, USR IDEM AUD)",
+            "admin.policies_list (GET {adm}/policies)",
+            "admin.policy_version_get (GET {adm}/policy-versions/{version_id})",
+            "admin.policy_version_create (POST {adm}/policies/{policy_key}/versions, body up to 256 KiB)",
+            "admin.policy_version_update (PATCH {adm}/policy-versions/{version_id}, ETAG, body up to 256 KiB)",
+            "admin.policy_version_publish (POST {adm}/policy-versions/{version_id}/publish, 4EYES)"
+          ],
+          "ops_changed": [
+            "auth.signup: terms_version and privacy_policy_version must be the versions in force (409 POLICY_VERSION_OUTDATED); records the acceptances",
+            "me.get, me.update, me.phone_change_verify: Me.policy_reconsent"
+          ],
+          "contract": "Docs/40 1.4.0 (still open): §4.4 POLICY_VERSION_OUTDATED, §6.1 PolicyKey, PolicyText, PolicyReconsent, PolicyAcceptance and Me.policy_reconsent, §6.2 auth.signup and the DI-12 sentence, new §6.7, §23.1 policy types, §23.5 five operations, Appendix D four S15 rows. 428 operations, 480 routes (427 served; auth.social_start deferred), 53 error codes.",
+          "files_created": [
+            "backend/modules/identity/application/policy-texts.ts",
+            "backend/modules/identity/application/policy-ops.ts",
+            "backend/apps/testing/s15.int.test.ts",
+            "database/migrations/0104_s15_policy_texts.sql"
+          ],
+          "files_changed": [
+            "Docs/40.API contract.md, Docs/43.db_setup.sql, Docs/42.db schema.md, Docs/52.MVP Data Dictionary.md, Docs/23.Admin_WebUI_screens.md (A-AUTH-01, A-POL-01 note)",
+            "backend/modules/identity/{identity.module.ts (executor, PolicyVersionRule), identity-admin.module.ts, identity-account.module.ts, api/projections.ts (Me.policy_reconsent), application/common.ts (MeReader), application/auth-ops.ts (sign-up), application/dsr-worker.ts (export section)}",
+            "backend/libs/http-pipeline/{pipeline.ts (BODY_LIMITS), problem.ts (POLICY_VERSION_OUTDATED en/fa)}",
+            "backend/tools/contract/{generate.ts (policy_key path type), parse-operations.ts (policy ops → identity)}",
+            "backend/libs/contract/generated/*, backend/libs/db/generated/db.ts, backend/libs/contract/contract.test.ts (428/480)",
+            "backend/apps/testing/contract/{resolvers/identity.ts, generated/identity.contract.int.test.ts}",
+            "shared/api-contracts/{openapi.yaml, generated/*}",
+            "pwa/src/server/bff/allowlist.test.ts (174 consumer routes)",
+            "frontend/admin-console: src/lib/api/generated/*, tools/contract/generate.test.ts and src/server/bff/allowlist.test.ts (75 admin operations)"
+          ],
+          "tests": {
+            "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 512 modules), typecheck, format:check: pass",
+            "backend_unit": "292 passed (42 files), including the registry pin (428 operations, 480 routes)",
+            "backend_contract": "contract:check up to date (1.4.0, 428 operations, 53 error codes); contract sweep suites up to date (17 modules); openapi:check: 480 operations on 384 paths match router and registry; contract:coverage 427/428 served (auth.social_start deferred), 0 unexplained 501s",
+            "backend_sweeps": "identity sweep 73 passed, including the 7 new operations (anonymous policy.current, policy.accept, the five admin policy operations; sweep drafts deleted at close, the publish request rejected by a second admin)",
+            "backend_s15": "7 passed (apps/testing/s15.int.test.ts): the three documents with 1.0 in force; locales required, unique labels, If-Match; a 100 KB EN+FA text accepted, over 256 KiB refused (413) and 64 KiB still the limit elsewhere; four-eyes publish (no change before approval, self-approval refused, published_by/approved_by, previous superseded); read-only (API 409 and the trigger); past effective date refused; a scheduled version announced, a second schedule refused, in force at its time before the worker runs, settled by the rule; policy.current by locale with en fallback and no-store for signed-in callers; re-consent notice vs blocking, 409 for an old version, flag cleared, account terms_version updated, later version without re-consent; sign-up 409 with an outdated version and acceptances recorded with the current one; DSR export section",
+            "backend_integration_full": "815 tests in 54 files: 810 passed in the full run, 5 failed; 3 fixed and re-run green (routes.int.test.ts needed a sample value for the policy_key path parameter; the baseline table count 104 → 107). The remaining 2 are local-database state, the same as S13 and S14: the baseline hash (Docs/43 changed and the local database was migrated with 0104, not reset; passes after pnpm db:reset) and the seed count of non-fixture accounts (94, expected 2: console E2E and BFF test accounts in the shared dev database, R-15).",
+            "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck pass; 691 unit tests passed (76 files) after the allowlist pin 172 → 174 consumer routes",
+            "admin_console": "contract:generate (75 admin-api operations), typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files) after the pins 70 → 75",
+            "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08 confirmed)."
+          },
+          "deviations": [
+            {
+              "id": "S15-D1",
+              "task": "S15.T2",
+              "item": "BR-12",
+              "deviation": "A fifth admin operation, admin.policy_version_get, besides the four of the stage text: the list carries no texts (up to 60,000 characters per locale each), and the console needs one version's texts to edit a draft or review it before approving.",
+              "impact": "Additive; one more console call in A-POL-01."
+            },
+            {
+              "id": "S15-D2",
+              "task": "S15.T2",
+              "item": "BR-12",
+              "deviation": "admin.policy_version_create and _update accept bodies up to 256 KiB (SEC-IN-1 \"unless the operation says otherwise\"; BODY_LIMITS in libs/http-pipeline): a legal text in EN and FA is about 80-100 KB. Every other operation keeps 64 KiB (tested). The console BFF still caps every request at 64 KiB (frontend/admin-console src/server/bff/config.ts MAX_BODY_BYTES).",
+              "impact": "Console AC14 must allow 256 KiB for these two operations, or long texts fail in the BFF with 413."
+            },
+            {
+              "id": "S15-D3",
+              "task": "S15.T1",
+              "item": "BR-12",
+              "deviation": "The version label is policy_version (Str<1,20>, like ConsentRecord.policy_version and the account's terms_version); version stays the If-Match integer as on every other admin type. Status is stored and also decided by the clock: reads take the newest non-draft version whose effective_at has passed, and a new worker rule identity.policy_in_force (every 5 minutes; not in the stage text) settles the stored status and audits each version that came into force.",
+              "impact": "policy.current switches exactly at effective_at; the console's status labels come from the server (StaffPolicyVersionSummary.status), never from the stored column alone."
+            },
+            {
+              "id": "S15-D4",
+              "task": "S15.T2",
+              "item": "BR-12",
+              "deviation": "effective_at is checked at the request (not more than 60 s in the past, clock skew), but a four-eyes approval can come up to 72 h later: an approval after effective_at brings the version into force at approval time (effective_at = approval time) instead of refusing it. A document has at most one scheduled version (409 INVALID_TRANSITION(scheduled_exists), unique index).",
+              "impact": "The published effective date can be later than requested; it is never earlier than the publication."
+            },
+            {
+              "id": "S15-D5",
+              "task": "S15.T3",
+              "item": "BR-12",
+              "deviation": "auth.signup is strict: when the region has a version in force, terms_version and privacy_policy_version must equal it (new error 409 POLICY_VERSION_OUTDATED, checked before the email so it reveals nothing), and the acceptances are recorded (source signup). The stage text only asked that acceptance records the version.",
+              "impact": "The PWA must send the versions policy.current returns. Until its follow-up lands it sends CARPAL_PWA_TERMS_VERSION / CARPAL_PWA_PRIVACY_VERSION (default 1.0 = the seeded label); publishing a new terms or privacy version before then breaks PWA sign-up (see notes_for_next)."
+            },
+            {
+              "id": "S15-D6",
+              "task": "S15.T3",
+              "item": "BR-12",
+              "deviation": "Re-consent rule: a document is listed when a requires_reconsent version is in force and the user accepted neither it nor a later version; for blocking documents always, for the notice document only when the account is older than that version (a new member never saw the old guidelines). The entry names the version in force, which can be later than the one that required re-consent.",
+              "impact": "Me.policy_reconsent can be answered with one policy.accept per entry."
+            },
+            {
+              "id": "S15-D7",
+              "task": "S15.T3",
+              "item": "BR-12",
+              "deviation": "Blocking is reported, not enforced: the api host lists blocking policies in Me.policy_reconsent but does not refuse other calls; the PWA blocks (DQ-02 \"re-consent blocks use of the app\" read as client behaviour). See DQ-17.",
+              "impact": "A client that ignores Me.policy_reconsent keeps working; acceptable while the PWA is the only consumer client."
+            },
+            {
+              "id": "S15-D8",
+              "task": "S15.T1",
+              "item": "BR-12",
+              "deviation": "Only the three documents of DQ-02. The consent texts that A-POL-01 also lists (AI personalization, marketing, review invitations, showcase, data sharing with providers, vendor fitment context) are not versioned documents; ConsentRecord.policy_version stays a free label. Docs/23 A-POL-01 has a note. See DQ-18.",
+              "impact": "Consent texts stay in the PWA's dictionary until DQ-18 is decided."
+            },
+            {
+              "id": "S15-D9",
+              "task": "S15.T3",
+              "item": "BR-12",
+              "deviation": "Acceptances are part of the DSR export (section policy_acceptances) and are kept on erasure as evidence of the acceptance (the account they point to is anonymized). No event is emitted on publish (audit only: policy.version_created, _updated, _published, _in_force, policy.accepted); telling users about a new version is the PWA prompt, or S17 notification rules.",
+              "impact": "Retention of acceptances can be added to the retention policies later if counsel asks."
+            },
+            {
+              "id": "S15-D10",
+              "task": "S15.T4",
+              "item": "BR-12",
+              "deviation": "Seed: short EN and FA placeholder texts as version 1.0 of the three documents of ir-pilot, in force from install (Docs/43 and migration 0104). The drafts in Docs/Privacy Policy.md and Docs/User Agreement.md were not seeded: English only, with [LEGAL ENTITY NAME] and [DOMAIN] placeholders. A region without seeded texts gets its document with the first draft; admin.policies_list always lists the three keys.",
+              "impact": "The final texts are published through the console (owner item in pilot_prep_checklist_non_code)."
+            },
+            {
+              "id": "S15-D11",
+              "task": "S15.T2",
+              "item": "BR-12",
+              "deviation": "Contract tooling: the path parameter policy_key is typed PolicyKey through the generator's table of non-Id path parameters (like currency), and the §23 policy operations belong to the identity module (moduleFor), so their sweep runs in the identity suite. Sweep drafts use the community guidelines and are deleted at close; s15.int.test.ts deletes every version it publishes, so the seeded 1.0 texts are back in force afterwards.",
+              "impact": "None for clients."
+            },
+            {
+              "id": "S15-D12",
+              "task": "S15.T5",
+              "item": "DI-01, DI-15",
+              "deviation": "DI-01 not reworded: DQ-03 is still unanswered, so Docs/02 §1.4 and the frontend/README sentence moved to S25 (the stage's split point). DI-15 also removed the network-gate state from A-AUTH-01 (owner OQ-02: passkey only, no network gate).",
+              "impact": "S25 carries DI-01."
+            }
+          ],
+          "notes_for_next": [
+            "PWA (follow-up S15): take the sign-up texts from policy.current and send their policy_version as terms_version and privacy_policy_version (instead of CARPAL_PWA_TERMS_VERSION / CARPAL_PWA_PRIVACY_VERSION); on 409 POLICY_VERSION_OUTDATED reload the text; read Me.policy_reconsent after sign-in and on app start: a blocking dialog for terms and privacy, a one-time notice for the guidelines, both answered with policy.accept; render the body as Markdown without HTML. Reconcile pwa legal:check and the bundled legal texts with the backend texts.",
+            "Admin console (AC14, A-POL-01): the five admin.policy* operations; allow 256 KiB bodies for policy_version_create and _update in the BFF (S15-D2); add admin.policy_version_publish (and admin.staff_enable from S13) to FOUR_EYES_OPS in src/components/admin/op-label.ts; show the status the server returns; warn that a version approved after its effective date comes into force at approval (S15-D4).",
+            "Owner: publish the final EN and FA texts before go-live as a new version (e.g. 1.1, no re-consent while nobody uses the app). Do it after the PWA follow-up, or set CARPAL_PWA_TERMS_VERSION / CARPAL_PWA_PRIVACY_VERSION to the new labels at the same time, because sign-up now refuses a version that is not in force (S15-D5).",
+            "Local databases: pnpm db:setup in backend/ applies migration 0104; tools/db/baseline.int.test.ts passes only after pnpm db:reset (Docs/43 changed).",
+            "Next backend stage: S16a (DQ-04 answered; DQ-11 still open)."
+          ],
+          "open_after_stage": [
+            "Owner: DQ-03 (confirm GD-01, for DI-01 in S25); DQ-17 and DQ-18 (raised in S15, defaults applied); confirm the earlier defaults (DQ-01, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14); DQ-11 before S16a.",
+            "Nothing committed (commit only when the owner asks)."
+          ]
+        }
+      },
+      {
+        "id": "S15b",
+        "title": "Consent texts as versioned documents; re-consent of granted consents",
+        "status": "not_started",
+        "items": [
+          "DQ-18 (consent texts of A-POL-01)",
+          "BR-12 (consent text part)"
+        ],
+        "priority_mix": "P1: legal go-live of the consent texts (owner rule \"legal first\").",
+        "load": {
+          "points": 5.5,
+          "rating": "light",
+          "breakdown": "consent documents and seed 1, grant paths bound to the text in force 1.5, re-consent of granted consents 1.5, pause option per DQ-19 1, tests and docs 0.5"
+        },
+        "why_this_stage": "DQ-18 (2026-11-13): consent texts are revised about once a year as AI governance rules change per country, so they need the same versions, four-eyes publish and re-consent as the policies. It reuses the S15 tables and operations (identity), and the PWA prompts and A-POL-01 should be built once for policies and consents, so it runs right after S15 and before the PWA follow-up. S16a is security work kept light, so the item gets its own small stage (intake rule: a new stage before S25).",
+        "depends_on": [
+          "S15",
+          "DQ-19"
+        ],
+        "context_to_read": [
+          "backend/BR-update-plan.json S15.report",
+          "Docs/52 ConsentRecord, PolicyDocument, PolicyVersion",
+          "backend modules/identity/application/{policy-texts.ts, policy-ops.ts, consent-ops.ts}",
+          "backend libs/consent-gate"
+        ],
+        "tasks": [
+          {
+            "id": "S15b.T1",
+            "items": [
+              "DQ-18"
+            ],
+            "task": "Docs/52, Docs/43 and migration: one consent-text document per ConsentType and region (PolicyKey extended, reconsent mode consent), placeholder 1.0 seeded for ir-pilot; ConsentRecord.policy_version_id (the published text a grant refers to)."
+          },
+          {
+            "id": "S15b.T2",
+            "items": [
+              "DQ-18"
+            ],
+            "task": "consents.grant, org.consents_grant, consents.request_respond and the grants made by appointments (share_history) and inquiries (share_vehicle_context) require the policy_version in force of that consent type (409 POLICY_VERSION_OUTDATED) when the region has one, and store its id."
+          },
+          {
+            "id": "S15b.T3",
+            "items": [
+              "DQ-18",
+              "DQ-19"
+            ],
+            "task": "Re-consent of granted consents: when a consent text version with requires_reconsent comes into force, active consents granted under an older version are listed (Me.policy_reconsent entries with mode consent and the consent type; ConsentRecord.reconsent_required on user and organization consents, so organization owners see it in org.consents_list). Confirming re-grants under the new version; otherwise the person withdraws. Per DQ-19, a version can pause those consents in the consent gate until they are confirmed."
+          },
+          {
+            "id": "S15b.T4",
+            "items": [
+              "DQ-18"
+            ],
+            "task": "policy.current and the admin policy operations serve the consent documents; tests (a grant under an old text refused, re-consent listed and cleared, a paused consent blocks the gate, an organization consent); Docs/40 Appendix D rows; Docs/23 A-POL-01 note updated."
+          }
+        ],
+        "contract_changes": "Additive: PolicyKey gains the consent types; reconsent mode consent; ConsentRecord.policy_version_id and reconsent_required; the publish input gains the DQ-19 choice if (c) is chosen.",
+        "console_impact": "A-POL-01 lists the consent texts next to the policies (AC14), with the DQ-19 choice when publishing.",
+        "pwa_impact": "Consent switches and prompts show the text from policy.current and send its version; the re-consent prompt also covers consents (built together with the S15 follow-up).",
+        "acceptance_criteria": [
+          "A consent can only be granted under the consent text in force.",
+          "A consent text version that requires re-consent lists every consent granted under an older text, for users and organization owners, and the entry clears when the consent is confirmed or withdrawn.",
+          "Per DQ-19, a paused consent is treated as not granted by the consent gate until confirmed."
+        ],
+        "split_point": "The pause option (DQ-19 b or c) can move to S25."
       },
       {
         "id": "S16a",
@@ -2515,7 +2768,7 @@
         "status": "not_started",
         "items": [
           "BR-19 (self-service keys, recovery codes, break glass)",
-          "DQ-11 (if confirmed)"
+          "DQ-11 (answered)"
         ],
         "closes_r_items": [],
         "priority_mix": "P0: BR-19.",
@@ -2584,7 +2837,7 @@
             "items": [
               "DQ-11"
             ],
-            "task": "If DQ-11 is confirmed: admin.staff_disable rejects the member's pending four-eyes requests with the reason \"requester disabled\" in the same transaction."
+            "task": "DQ-11 (answered): admin.staff_disable rejects the member's pending four-eyes requests with the reason \"requester disabled\" in the same transaction."
           }
         ],
         "contract_changes": "Additive: admin staff passkey and recovery-code operations; Me/StaffMe gains recovery_codes_remaining; auth.passkey_enrol response gains the code set; problem codes STEP_UP_REQUIRED (if not present) and LAST_PASSKEY.",
@@ -3203,7 +3456,8 @@
           "R-21 / R-05 deploy.md text",
           "carry-overs from earlier split points",
           "R-11 (integration-test settings, from S16)",
-          "R-15 (dev:staff prune, from S16)"
+          "R-15 (dev:staff prune, from S16)",
+          "DI-01 (from S15, after DQ-03)"
         ],
         "priority_mix": "Closure.",
         "load": {
@@ -3277,9 +3531,12 @@
       },
       {
         "id": "DQ-03",
-        "before": "S15",
-        "question": "Confirm GD-01 (the console is a separate app) so Docs/02 §1.4 and frontend/README can be reworded (DI-01).",
-        "default": "Confirmed: it is built that way."
+        "before": "S25 (DI-01)",
+        "question": "Should the admin console stay its own application (frontend/admin-console, served at admin.carpals.ir with its own BFF and staff-only sign-in), separate from the business web app at web.carpals.ir (frontend/: the provider, parts seller and fleet pages)? Docs/02 §1.4 still says admin.carpals.ir opens \"Admin pages of the web app\" (frontend/), and frontend/README says the business portals may ship as one app. The console was built as a separate app (GD-01) because staff sign in differently (device-bound key, aal3, client cp-web-admin) and SEC-ADM-1 asks for a private admin entry point.",
+        "default": "Yes, keep it separate (as built). Docs/02 §1.4 then reads \"Admin console (separate app, frontend/admin-console)\" and frontend/README says the admin console is not one of the business portals.",
+        "status": "open",
+        "note": "S15 left DI-01 for S25; answer before S25.",
+        "clarified": "2026-11-13: the owner asked \"separate from what?\"; reworded to name the business web app at web.carpals.ir."
       },
       {
         "id": "DQ-04",
@@ -3350,9 +3607,11 @@
         "id": "DQ-11",
         "raised_in": "S13",
         "before": "S16a (staff security stage)",
-        "status": "open",
+        "status": "answered",
         "question": "When a staff member is disabled, what happens to the four-eyes changes they requested that are still pending? Today they stay pending and a second admin can still approve them (the approval records the disabled requester as initiator).",
-        "default": "Recommended: disable rejects (or expires) the member's pending requests with the reason \"requester disabled\" in the same transaction; build it in S16a next to the other staff security work (about 0.5 point)."
+        "default": "Recommended: disable rejects (or expires) the member's pending requests with the reason \"requester disabled\" in the same transaction; build it in S16a next to the other staff security work (about 0.5 point).",
+        "answer": "Default approved (owner, 2026-11-13): disabling a staff member rejects their pending four-eyes requests with the reason \"requester disabled\" in the same transaction.",
+        "applied": "S16a.T7 builds it."
       },
       {
         "id": "DQ-12",
@@ -3397,6 +3656,34 @@
         "status": "open",
         "question": "Recovery of an ADM needs two other active ADMs, so with the two ADMs of R-05 an ADM can only recover through the server procedure (break glass). Plan three ADM accounts for the pilot?",
         "default": "Three ADM accounts, so recovery works without server access; with two, the break-glass procedure is the ADM recovery path."
+      },
+      {
+        "id": "DQ-17",
+        "raised_in": "S15",
+        "before": "PWA re-consent follow-up (and before a second consumer client ships)",
+        "status": "answered",
+        "question": "Blocking re-consent (terms, privacy): should the server enforce it (for example the api host answers 403 with a new code on writes until the user accepts), or is the PWA's blocking dialog enough?",
+        "default": "Built in S15: the server reports (Me.policy_reconsent) and the PWA blocks. Recommended for the pilot, where the PWA is the only consumer client. Server enforcement (about 1.5 points: a check in the pipeline for USR writes, an allowlist for policy.accept, me.get, sign-out and DSR) belongs before the mobile app or the business portal ships.",
+        "answer": "The PWA block is enough (owner, 2026-11-13): the server reports Me.policy_reconsent and does not refuse other calls.",
+        "applied": "As built in S15 (S15-D7). Revisit only if another consumer client (mobile app, business portal) ships without the prompt."
+      },
+      {
+        "id": "DQ-18",
+        "raised_in": "S15",
+        "before": "AC14 (A-POL-01) or the PWA follow-up",
+        "status": "answered",
+        "question": "Should the consent texts that A-POL-01 lists (AI personalization, marketing, review invitations, showcase, data sharing with providers, vendor fitment context, location) also be versioned documents, so that ConsentRecord.policy_version names a published text?",
+        "default": "Not in S15 (DQ-02 named three documents). Adding them later is about 2 points: extend PolicyKey and the CHECK, a notice-style mode without re-consent, and the PWA shows the consent text from policy.current next to each consent switch.",
+        "answer": "Yes (owner, 2026-11-13): consent texts become versioned documents too. Revisions are expected about once a year, driven by changing AI governance rules in different countries (texts are per region).",
+        "applied": "Planned as stage S15b (consent texts as versioned documents, re-consent of granted consents). DQ-19 decides what a consent does while its re-consent is pending."
+      },
+      {
+        "id": "DQ-19",
+        "raised_in": "DQ-18 answer (2026-11-13)",
+        "before": "S15b",
+        "status": "open",
+        "question": "When a new consent text that requires re-consent comes into force (for example new AI rules in a country), what happens to the consents users and organizations granted under the old text until they answer? (a) The consent stays in effect and the person is asked to confirm or withdraw it. (b) The consent is paused (the consent gate treats it as not granted, so the AI feature or the data sharing stops) until it is confirmed again. (c) The administrator chooses (a) or (b) per version when publishing.",
+        "default": "(c), with (a) preselected in the console: some revisions only clarify wording, while a new legal basis may require stopping the processing until people agree again. (c) costs about 1 point more than (a) alone."
       }
     ],
     "intake_rules": [
@@ -3451,6 +3738,7 @@
         "AC12",
         "S14",
         "S15",
+        "S15b",
         "S16a",
         "S16b",
         "AC11",
@@ -3470,7 +3758,8 @@
       ],
       "status_2026_11_12": "S13 done: AC10 and AC12 can resume with real operations. Catch-up list: S13.report.notes_for_next.",
       "status_2026_11_13": "S14 done: the organization search row and the purpose binding are in place (console regenerated and fixed in S14); AC10 can offer suspension durations. Catch-up list: S13.report.notes_for_next and S14.report.notes_for_next.",
-      "console_work_from_dq04": "New console work from DQ-04 (for the admin console plan, not yet in frontend/admin-console/dev-plan.json): recovery codes shown once after enrolment, a \"Security keys and recovery codes\" page (after S16a), the \"Lost my security key\" pages under /id, the ADM \"Recovery requests\" queue and the post-recovery banner (after S16b), and the AC11 runbook text."
+      "console_work_from_dq04": "New console work from DQ-04 (for the admin console plan, not yet in frontend/admin-console/dev-plan.json): recovery codes shown once after enrolment, a \"Security keys and recovery codes\" page (after S16a), the \"Lost my security key\" pages under /id, the ADM \"Recovery requests\" queue and the post-recovery banner (after S16b), and the AC11 runbook text.",
+      "status_2026_11_13_s15": "S15 done: A-POL-01 is buildable in AC14 (five admin.policy* operations; the BFF must allow 256 KiB for the two text writes, S15-D2). No catch-up needed for AC10/AC12."
     },
     "pilot_prep_checklist_non_code": [
       {
@@ -3509,7 +3798,8 @@
     ],
     "handed_off_follow_ups": {
       "pwa": [
-        "S15: show policy texts and the re-consent prompt",
+        "S15 (done): sign-up texts from policy.current and their policy_version sent at sign-up; Me.policy_reconsent prompt (blocking for terms and privacy, notice for guidelines) answered with policy.accept; handle 409 POLICY_VERSION_OUTDATED; Markdown without HTML (S15.report.notes_for_next).",
+        "S15b: consent switches show the consent text from policy.current and send its version; the re-consent prompt also lists consents (mode consent); build it together with the S15 follow-up.",
         "S19: \"more information requested\" and resubmit for the business",
         "S20: dispute message thread for the parties; author edit after an edit request",
         "S24: in-app support tickets",
@@ -3556,6 +3846,28 @@
           "Answer DQ-13 and DQ-14 before AC10 builds A-USER; DQ-11 before S16.",
           "Next backend stage: S15 (legal go-live: policies and consent texts), which needs DQ-02 and DQ-03 answered first.",
           "Local developers: pnpm db:setup in backend/ (migration 0103); pnpm db:reset if the baseline test must pass locally."
+        ]
+      },
+      {
+        "date": "2026-11-13",
+        "stage": "S15",
+        "status": "done",
+        "summary": "S15 done: versioned policy texts per region (terms, privacy, community guidelines; EN and FA; four-eyes publish with effective date and re-consent flag; read-only once published), policy.current, policy.accept, Me.policy_reconsent, sign-up bound to the versions in force, placeholder 1.0 seeded (migration 0104). BR-12 done; DI-12 and DI-15 reworded; DI-01 moved to S25 (DQ-03 open). Contract 1.4.0: 428 operations, 53 error codes.",
+        "recommendations": [
+          "Plan the PWA follow-up next to the final legal texts: publish the final EN/FA texts only together with the PWA change (or the env labels), because sign-up now refuses versions that are not in force.",
+          "Answer DQ-03 (DI-01 text) before S25, and DQ-17 / DQ-18 before the PWA re-consent work and AC14.",
+          "Console AC14: raise the BFF body limit for the two policy text writes (S15-D2).",
+          "Local developers: pnpm db:setup in backend/ (migration 0104); pnpm db:reset if the baseline test must pass locally."
+        ]
+      },
+      {
+        "date": "2026-11-13",
+        "stage": "decisions",
+        "status": "recorded",
+        "summary": "Owner answers after S15: DQ-11 default, DQ-17 the PWA block is enough, DQ-18 yes (new stage S15b, 5.5 points; new DQ-19). DQ-03 reworded after the owner asked what the console is separate from.",
+        "recommendations": [
+          "Answer DQ-19 before S15b and DQ-03 before S25.",
+          "Run S15b before the PWA re-consent follow-up so the PWA builds one prompt for policies and consents."
         ]
       }
     ]

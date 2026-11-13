@@ -278,7 +278,8 @@ export class AdminPolicyVersionPublishHandler implements OperationHandler {
     const s = staffOf(ctx);
     const b = ctx.body;
     // Not in the past (a minute of clock skew between the console and the server is tolerated).
-    if (new Date(b.effective_at).getTime() < Date.now() - 60_000) throw ApiError.validation([{ pointer: '/effective_at', code: 'in_past' }]);
+    if (new Date(b.effective_at).getTime() < Date.now() - 60_000)
+      throw ApiError.validation([{ pointer: '/effective_at', code: 'in_past' }]);
     const body = await ctx.tx(async (scope) => {
       const { v, key } = await versionWithKey(scope, ctx.params.version_id!);
       if (v.status !== 'draft') throw new ApiError('INVALID_TRANSITION', { detail: 'not_draft' });

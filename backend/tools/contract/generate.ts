@@ -30,6 +30,7 @@ const UNTYPED_PATH_PARAMS: Record<string, string> = {
   key: 'Str<1,80>',
   dashboard_key: 'DashboardKey',
   currency: 'Currency',
+  policy_key: 'PolicyKey',
 };
 
 export const CONTRACT_DOC = join(docsDir, '40.API contract.md');

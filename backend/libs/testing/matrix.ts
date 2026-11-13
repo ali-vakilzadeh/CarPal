@@ -152,6 +152,7 @@ const SAMPLE_PATH_VALUES: Record<string, string> = {
   flow_type: 'individual',
   slug: 'sample-org',
   currency: 'IRR',
+  policy_key: 'terms',
   report_type: 'costs',
   role: 'platform_moderator',
   key: 'map.enabled',

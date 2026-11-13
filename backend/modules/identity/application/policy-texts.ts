@@ -110,7 +110,7 @@ export async function settleStatuses(
     UPDATE identity.policy_versions v
        SET status = CASE WHEN v.id = f.id THEN 'published' ELSE 'superseded' END
       FROM f
-     WHERE v.document_id = f.document_id AND v.status IN ('scheduled', 'published') AND v.effective_at <= now()
+     WHERE v.document_id = f.document_id AND v.status IN ('scheduled', 'published', 'superseded') AND v.effective_at <= now()
        AND v.status <> CASE WHEN v.id = f.id THEN 'published' ELSE 'superseded' END
  RETURNING v.id, v.document_id, v.status, v.policy_version`.execute(scope.db);
   return rows;
@@ -157,11 +157,7 @@ export async function reconsentFor(scope: TxScope, userId: string, region: strin
  * auth.signup: the terms and privacy versions sent must be the ones in force (409 POLICY_VERSION_OUTDATED). A key
  * without a version in force in this region accepts any label (nothing to record). Returns the versions to record.
  */
-export async function signupVersions(
-  scope: TxScope,
-  region: string,
-  sent: { terms: string; privacy: string },
-): Promise<string[]> {
+export async function signupVersions(scope: TxScope, region: string, sent: { terms: string; privacy: string }): Promise<string[]> {
   const ids: string[] = [];
   for (const key of ['terms', 'privacy'] as const) {
     const doc = await findDocument(scope, region, key);
@@ -243,7 +239,13 @@ export function toStaffSummary(
 }
 
 /** 40 StaffPolicyVersion (with every locale's texts and the If-Match version). */
-export function toStaffVersion(key: string, v: PolicyVersionRow, inForceId: string | undefined, names: Map<string, string>, locale: Locale) {
+export function toStaffVersion(
+  key: string,
+  v: PolicyVersionRow,
+  inForceId: string | undefined,
+  names: Map<string, string>,
+  locale: Locale,
+) {
   return {
     ...toStaffSummary(key, v, inForceId, names, locale),
     title_translations: v.title_translations,
