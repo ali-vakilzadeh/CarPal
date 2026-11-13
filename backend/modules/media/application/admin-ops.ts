@@ -12,7 +12,14 @@ import { Operation, type OperationContext, type OperationHandler, type Operation
 import type { Infra } from '#libs/infra/index.js';
 import { InjectInfra } from '#libs/runtime/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
-import { ModerationTargets, retentionCutoff, RetentionHandlers, staffOf, type ContentAction } from '#modules/admin/interface/admin.js';
+import {
+  ModerationTargets,
+  PurposeBindings,
+  retentionCutoff,
+  RetentionHandlers,
+  staffOf,
+  type ContentAction,
+} from '#modules/admin/interface/admin.js';
 import { PersonalDataRegistry } from '#modules/identity/interface/identity.js';
 import { displayKeyOf, keys } from '../infrastructure/assets.js';
 
@@ -40,7 +47,7 @@ export class AdminMediaDownloadUrlHandler implements OperationHandler {
         action: 'media.staff_download',
         entityType: 'media_asset',
         entityId: a.id,
-        next: `${a.purpose} ${ctx.body.variant}`,
+        next: `${a.purpose} ${ctx.body.variant}${s.bound ? `; subject ${s.bound}` : ''}`,
         accessPurpose: s.purpose,
       });
       const url = await this.infra.storage.presignGet(key, { expiresInMs: URL_TTL_MS, disposition: 'attachment' });
@@ -95,9 +102,36 @@ export class MediaAdminRegistrations implements OnModuleInit {
     @Optional() private readonly targets?: ModerationTargets,
     @Optional() private readonly retention?: RetentionHandlers,
     @Optional() private readonly personal?: PersonalDataRegistry,
+    @Optional() private readonly bindings?: PurposeBindings,
   ) {}
 
   onModuleInit(): void {
+    // S14 (BR-09): a file is about itself, the records it is attached to, and the organization that owns it
+    // (verification documents). A user's own files are reached only through a record they are attached to, and a
+    // system_export file (a DSR bundle, a fleet export) never through its owner.
+    this.bindings?.register('admin.media_download_url', async (scope, params) => {
+      const id = params.media_id;
+      if (!id) return [];
+      const a = await scope.db
+        .selectFrom('media.media_assets')
+        .select(['owner_type', 'owner_id', 'purpose'])
+        .where('id', '=', id)
+        .where('deleted_at', 'is', null)
+        .executeTakeFirst();
+      if (!a) return [];
+      const attached = await scope.db
+        .selectFrom('media.media_attachments')
+        .select(['attached_to_type', 'attached_to_id'])
+        .where('media_asset_id', '=', id)
+        .where('deleted_at', 'is', null)
+        .limit(50)
+        .execute();
+      return [
+        { type: 'media_asset', id },
+        ...attached.map((x) => ({ type: x.attached_to_type, id: x.attached_to_id })),
+        ...(a.owner_type === 'organization' && a.purpose !== 'system_export' ? [{ type: 'organization', id: a.owner_id }] : []),
+      ];
+    });
     this.targets?.register('media_asset', {
       exists: async (scope, id) =>
         !!(await scope.db

@@ -2,8 +2,8 @@
   "meta": {
     "title": "CarPal admin console (WP15 UI, WP20 admin part; frontend/admin-console/) — build plan and stage log",
     "created": "2026-11-08",
-    "last_updated": "2026-11-10",
-    "status": "in_progress",
+    "last_updated": "2026-11-12",
+    "status": "partial_on_hold",
     "owner": "ali-vakilzadeh",
     "purpose": "Build the internal staff console that operates the platform: Path 2 review approvals, moderation, disputes, verification, privacy requests, plans, flags and the AI kill switch, the USD exchange rate, taxonomy, audit, AI/MCP oversight and analytics. Without it the pilot cannot run without direct API or database work (backend S11 open_after_stage, NI-08).",
     "sources_of_truth": [
@@ -28,16 +28,11 @@
         "AC4",
         "AC5"
       ],
-      "next": "Run `pnpm e2e` in strict mode with CARPAL_ADMIN_CLIENT_PRIVATE_JWKS (closes AC6-AC9); then AC10 (users, staff roles, privacy requests; BR-20 first) and the contract 1.4.0 backend stage (BR-18, BR-21, BR-31, BR-34 and what else is ready). OQ-15 still open (SLA working days); BR-19 waits for the user's research.",
+      "next": "ON HOLD (2026-11-12): wait for the finalized backend plan (backend/BR-update-plan.json). Then AC10-AC12, the backend refinement, AC13-AC15 as decided. Full test run only when the whole plan is complete (PD-03).",
       "decisions_needed_now": [
-        "BR-19 (staff passkey management and lost-key reset): the user is researching the risk review of 2026-11-09 before it is scheduled.",
-        "BR-21 and BR-22 (new in AC5, could join contract 1.4.0 with BR-18 before AC9): a list of the caller's own four-eyes requests with their outcome, and a queue summary read for My work and the navigation counts. Neither blocks AC6.",
-        "BR-20 (needed by AC10): no admin-plane read of the job admin.dsr_export starts (DI-14).",
-        "OQ-02 (needed by AC11): access gate for admin.<DOMAIN>.",
-        "OQ-15 (new, needed before the pilot): SLA working days — Friday-only weekend as built, or Thursday and Friday; and whether official holidays should pause SLA timers.",
-        "BR-30 (new, docs): the meaning of \"upheld\" for a business objection to a review (today it publishes the review); the console names the outcomes by their effect meanwhile.",
-        "BR-31 (new in AC8, high): a list of badges (and the Verified Business badges waiting for approval); proposed for contract 1.4.0 before AC9 (R-22).",
-        "BR-35 (new in AC9, medium): a narrower organization search row with the Docs/23 filters, \"request more info\" for verification checks, and an organization profile correction — for AC14 or earlier if the pilot needs request-more-info."
+        "BR-19: lost-key reset design waits for the user's research (now part of the backend refinement).",
+        "BR-30 / DI-24: meaning of \"upheld\" for a business objection (docs decision, part of the backend refinement).",
+        "R-07, R-05, R-19, R-21, R-24: non-code pilot preparations (security keys, staff names, real IRR rate, region tile host); no deadline before AC11."
       ],
       "stages_partial": [
         "AC6",
@@ -59,7 +54,18 @@
         "after_stage": "AC15",
         "meaning": "Every Must screen of Docs/23 exists (or is recorded as a contract gap the user deferred), E2E, a11y, RTL and security checks are green, and the shared BFF extraction for the business web app is planned."
       }
-    ]
+    ],
+    "hold": {
+      "since": "2026-11-12",
+      "by": "user",
+      "reason": "Admin Console is held after AC9 (AC1-AC5 done, AC6-AC9 built) until the backend recommendations plan is finalized. This file is a partial plan: AC10-AC15 are not started and may change once the BR plan is final.",
+      "resume_when": "backend/BR-update-plan.json is finalized into a comprehensive plan, and the owner decides how it affects AC10-AC13 (see PD-02: AC10 needs BR-20 and BR-10, AC12 needs BR-18).",
+      "open_points_to_revisit": [
+        "Whether the backend refinement (at least BR-20, BR-10, BR-18) runs before AC10, instead of building AC10 and AC12 with workarounds.",
+        "Milestone M1 wording under PD-03 (deploy kit built vs real deployment).",
+        "GD-15 and AC11: ADMIN_GATE default none, because OQ-02 is passkey only."
+      ]
+    }
   },
   "environment": {
     "checked_on": "2026-11-09",
@@ -519,7 +525,8 @@
       "request": "Lift timed suspensions automatically (backend DI-66: suspended_until column and a job).",
       "source": "backend NI-04",
       "status": "open",
-      "note_ac8": "AC8 suspends without an end date (D-52): suspend_until is accepted by the backend but never lifted."
+      "note_ac8": "AC8 suspends without an end date (D-52): suspend_until is accepted by the backend but never lifted.",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-08",
@@ -528,7 +535,8 @@
       "request": "Organization merge re-pointing registry (backend DI-67). Until done, AC9 hides Merge.",
       "source": "backend NI-04",
       "status": "open",
-      "note_ac8": "AC8 does not offer merge_duplicate on organization cases either (D-51)."
+      "note_ac8": "AC8 does not offer merge_duplicate on organization cases either (D-51).",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-09",
@@ -536,7 +544,8 @@
       "priority": "high",
       "request": "Bind staff access purposes to the record being read (backend NI-02, SEC-ADM-5). The console already sends the purpose of the work item it came from (GD-10).",
       "source": "backend NI-02, RCP-01",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-10",
@@ -544,7 +553,8 @@
       "priority": "must",
       "request": "Staff directory: admin.staff_list (staff, roles, MFA status, last sign-in, status) and admin.staff_disable for A-STAFF-01.",
       "source": "DI-10",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-11",
@@ -552,7 +562,8 @@
       "priority": "must",
       "request": "Notification templates and rules (A-NOTIF-01): list templates per event, channel and locale with missing-translation flags; edit rules (invitation delay, reminders 0-3, quiet hours, digest).",
       "source": "DI-10",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-12",
@@ -560,7 +571,8 @@
       "priority": "must",
       "request": "Policies and consent texts with versions (A-POL-01): list, draft, publish with effective date and re-consent flag (4EYES).",
       "source": "DI-10; needed for the legal texts go-live item (PWA NI-P13-12)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-13",
@@ -568,7 +580,8 @@
       "priority": "should",
       "request": "Support tickets for A-SUP-01 (today 'Contact support' is an email address).",
       "source": "DI-10",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-14",
@@ -576,7 +589,8 @@
       "priority": "must_with_ai",
       "request": "AI output review decisions (mark ok / wrong with category, add to evaluation set) and triage safety review queues (A-AI-02, A-AI-03).",
       "source": "DI-10",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-15",
@@ -585,7 +599,8 @@
       "request": "Moderation actions reduce_weight, edit_request (with highlighted spans) and apply_redaction (boxes → redacted copy).",
       "source": "DI-05",
       "status": "open",
-      "note_ac8": "Add \"downgrade fitment\" (confirmed → likely/uncertain) for A-INV-01 (DI-27)."
+      "note_ac8": "Add \"downgrade fitment\" (confirmed → likely/uncertain) for A-INV-01 (DI-27).",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-16",
@@ -593,7 +608,8 @@
       "priority": "should",
       "request": "Extended staff reads for user and organization tabs (vehicles summary, appointments, consents history, sessions, capabilities/badges with rule evaluation, portfolio with consent, inventory quality, members, plan history), each PURP.",
       "source": "DI-06, DI-07",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-17",
@@ -601,7 +617,8 @@
       "priority": "should",
       "request": "System health metrics for the dashboard (import failures, notification delivery failures, media scan failures).",
       "source": "DI-09",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-18",
@@ -609,7 +626,8 @@
       "priority": "high",
       "request": "The console cannot call the api host (it refuses cp-web-admin tokens). Serve on admin-api what the console still needs from it: the taxonomy tree (taxonomy.snapshot / node reads, for A-TAX-01) and the region settings the map needs (map style, location threshold; part of config.client). Option decided by OQ-13 (answered 2026-11-09: admin-api reads, contract 1.4.0).",
       "source": "AC2 finding, GD-07, DI-13",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-19",
@@ -618,7 +636,8 @@
       "request": "Staff passkey management on admin-api: list own passkeys, add a second (backup) device-bound key with a fresh aal3 re-authentication, remove one (never the last); and an ADM reset of another staff member's passkeys with a reason and four-eyes (the next sign-in then enrols again with password + emailed code). Today me.webauthn_register_options and me.mfa_remove are on the api host, which refuses admin tokens.",
       "source": "AC2 (SEC-ADM-2, lost-key recovery)",
       "status": "open",
-      "interim": "Operator runbook in AC11.T3: disable the staff member's webauthn methods in SQL; the next sign-in enrols again."
+      "interim": "Operator runbook in AC11.T3: disable the staff member's webauthn methods in SQL; the next sign-in enrols again.",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-20",
@@ -626,7 +645,8 @@
       "priority": "high",
       "request": "A staff read of the background job a staff operation started: GET /v1/admin/jobs/{job_id} (admin.job_get, STF of the starting operation, only jobs started from the admin plane), or the export job's state and download carried by the DSR view. Needed for admin.dsr_export (A-DSR-02) and later ASYNC admin operations.",
       "source": "AC3 (DI-14)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-21",
@@ -634,7 +654,8 @@
       "priority": "medium",
       "request": "Let the requester see their own four-eyes changes and the outcome: admin.four_eyes_list q: mine=true (requested_by = caller, all statuses, with decided_by_display, decided_at and the decision reason in PendingChange), or a separate admin.four_eyes_mine. Optionally a notification to the requester when the change is approved, rejected or expires (today the requester learns it only from the audit log, which only ADM can read).",
       "source": "AC5 (DI-17)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-22",
@@ -642,7 +663,8 @@
       "priority": "low",
       "request": "A queue summary read for My work and the navigation counts: GET /v1/admin/work-summary (admin.work_summary, STF(any staff), aggregates only) returning per queue the caller may see: open count, oldest created_at and the SLA-relevant timestamps (or counts per SLA state). Today the console pages each list (up to 2 pages of 100 per status, 13 calls for a MOD) every minute and shows '200+' beyond.",
       "source": "AC5 (DI-17, D-32)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-23",
@@ -650,7 +672,8 @@
       "priority": "low",
       "request": "Plan in admin.plans_list carries status: 'active'|'inactive' (and is_default_for_audience), so A-PLAN-01 shows which plans are offered and which plan a trial falls back to.",
       "source": "AC6 (DI-18)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-24",
@@ -658,7 +681,8 @@
       "priority": "medium",
       "request": "admin.subscriptions_list (GET {adm}/subscriptions, STF(ADM)): q plan_key, status (trial|active|expired|cancelled), subscriber_type, trial_ends_before, cursor, limit ≤ 100; items: subscriber (type, id, display name), plan_key, status, trial_ends_at, expires_at, overrides, assigned_by_display, started_at. Also the open subscription change requests (subscription.change_request) with the organization, for a \"requests to handle\" queue.",
       "source": "AC6 (DI-20; Docs/23 A-PLAN-01 Assignments)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-25",
@@ -666,7 +690,8 @@
       "priority": "low",
       "request": "admin.retention_create (POST {adm}/retention-policies, STF(ADM) 4EYES RSN AUD) and admin.retention_dry_run (POST {adm}/retention-policies/{policy_id}/dry-run → { affected: Int, by_status?: … }, STF(ADM)) for Docs/23 A-RET-01.",
       "source": "AC6 (DI-20)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-26",
@@ -674,7 +699,8 @@
       "priority": "low",
       "request": "id in FeatureFlag and ExchangeRate (the audit entity ids), or admin.audit_search by entity key, for the per-record history; and a staff notification (in-app, ADM) when ai.automation.kill_switch is turned on or off (Docs/23 A-FLAG-01 \"broadcast to the dashboard and AI governance staff\").",
       "source": "AC6 (DI-19)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-27",
@@ -683,7 +709,8 @@
       "request": "admin.cases_list q: source (user_report | ai_flag | system_rule | admin), and in ModerationCase a short target summary (excerpt ≤ 120, rating for reviews); a typed target snapshot per target type in admin.case_get (ReviewSnapshot: subject_organization_id, overall_rating, title, body, status, confirmation_path, verified_status, created_at, …); later the suspicious-pattern and automatic-check-failed tabs of A-REV-01 when their signals exist.",
       "source": "AC7 (DI-21)",
       "status": "open",
-      "note_ac8": "AC8: the Content views (reported, AI flagged, held by a rule, unsafe advice, consent) narrow the loaded cases on the client (D-49); BR-32 adds the reason filter, BR-33 the content snapshots."
+      "note_ac8": "AC8: the Content views (reported, AI flagged, held by a rule, unsafe advice, consent) narrow the loaded cases on the client (D-49); BR-32 adds the reason filter, BR-33 the content snapshots.",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-28",
@@ -691,7 +718,8 @@
       "priority": "medium",
       "request": "Disputes: a message thread per party (staff templated messages, the party's replies and added evidence), admin reads of the dispute targets the console cannot show (moderation action with its decider, service record, badge), and a staff \"withdraw on request\" (status withdrawn with the raiser's request as the reason).",
       "source": "AC7 (DI-23)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-29",
@@ -699,7 +727,8 @@
       "priority": "low",
       "request": "StaffReviewApprovalView: stage and business_answered_at (the reviewer timer's start), and fraud signals when SEC-BF-1 has a source; a read of one's own decided approvals and disputes (history) without a live purpose.",
       "source": "AC7 (DI-25)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-30",
@@ -707,7 +736,8 @@
       "priority": "medium",
       "request": "Settle the meaning of resolved_upheld / resolved_rejected for review_approval_objection in Docs/40 §23.4 and Docs/52 Dispute (today upheld = the review is published as disputed, the opposite of upholding the objection), or give objections their own outcomes (publish_disputed / reject_review).",
       "source": "AC7 (DI-24)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-31",
@@ -715,7 +745,8 @@
       "priority": "high",
       "request": "Badges on the admin plane: admin.badges_list (GET {adm}/badges, STF(ADM, MOD); q status pending_approval|active|revoked|expired, organization_id, badge_type, cursor, limit ≤ 100; items ProviderBadge & { organization: OrgSummary }), or the badges in StaffOrgView (part of BR-16) plus a \"badges waiting for approval\" queue for My work. Without it a Verified Business badge awarded pending_approval cannot be found in the console.",
       "source": "AC8 (DI-26)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-32",
@@ -723,7 +754,8 @@
       "priority": "medium",
       "request": "Enforce the Docs/23 A-CON-01 severity floor (unsafe_advice, non_consensual_media, privacy at least high) wherever a case is opened (report_triage open_case, AI flags, rules), and add q reason (ModerationReason, several allowed) to admin.cases_list next to BR-27's source, for the Unsafe advice / Consent tabs of A-CON-01 and the tabs of A-INV-01.",
       "source": "AC8 (DI-27, DI-29)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-33",
@@ -731,7 +763,8 @@
       "priority": "medium",
       "request": "Typed target snapshots for content (with BR-27): the author (display name, role member/provider/vendor, the organization card when posted for an organization) and a short author history (published, removed, warnings) for posts, comments, questions, answers and files; for a showcase item its consent record (customer display, scope, granted_at) and media ids; for a fitment row the listing name; and an admin read of the comments or answers around a reported comment or answer (PURP case).",
       "source": "AC8 (DI-28)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-34",
@@ -739,7 +772,8 @@
       "priority": "low",
       "request": "A read of open assist sessions: GET {adm}/assist-sessions?mine=true&status=active (admin.assist_sessions_list, STF(ADM, SUP)) → { items: { assist_session_id, organization: OrgSummary, flow_type, expires_at }[] }, so the console can show the banner after a reload and on another device.",
       "source": "AC9 (D-62, DI-08)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     },
     {
       "id": "BR-35",
@@ -747,7 +781,8 @@
       "priority": "medium",
       "request": "Organizations and verification on the admin plane: (1) admin.orgs_search returns a list row without contact data or exact points (name, type, city, plan, statuses, members, open cases, trust, created) and filters city, plan_key, has_open_cases, location_issue (far_apart or open wrong-location report) and possible_duplicate; (2) admin.verification_decide decision \"info_requested\" with missing items and a message (status stays pending, the SLA pauses), and assignee / AI pre-check / registration number, owner and call-back result in the queue item; (3) an organization profile correction (admin.org_correct, RSN AUD, the organization notified) and its history.",
       "source": "AC9 (DI-30, DI-31, DI-32)",
-      "status": "open"
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
     }
   ],
   "open_questions": [
@@ -767,8 +802,9 @@
       "default_if_unanswered": "IP allowlist in nginx (ADMIN_GATE=ip_allowlist) plus aal3 passkeys; revisit after the UI exists.",
       "owner": "user",
       "needed_by": "AC11",
-      "answer": null,
-      "status": "open"
+      "answer": "Passkey only: no IP allowlist or VPN gate (user, 2026-11-12).",
+      "status": "answered",
+      "applied": "ADMIN_GATE default changes to none; GD-15 and AC11 follow."
     },
     {
       "id": "OQ-03",
@@ -776,8 +812,8 @@
       "default_if_unanswered": "GD-09 mapping.",
       "owner": "user",
       "needed_by": "AC4",
-      "answer": null,
-      "status": "open",
+      "answer": "Default approved (user, 2026-11-12).",
+      "status": "answered",
       "applied_default": "AC4 (2026-11-09): the navigation and the no-permission state use the four contract roles through the generated role table (GD-09 mapping); role names shown: Platform admin, Moderator, Support, Community reviewer."
     },
     {
@@ -786,8 +822,8 @@
       "default_if_unanswered": "Contract tags only; the server enforces them.",
       "owner": "user",
       "needed_by": "AC5",
-      "answer": null,
-      "status": "open",
+      "answer": "Default approved (user, 2026-11-12).",
+      "status": "answered",
       "applied_default": "AC5 (2026-11-10): contract tags only. The console recognises the ten 4EYES operations of contract 1.3.0 (src/components/admin/op-label.ts: role grant, org merge, plan change, taxonomy merge, review to approval path, flag change, exchange rate, retention, account data deletion, MCP client change) and treats any 202 PendingChange as four-eyes, whatever the map says; the server enforces the list. Docs/23 §7.3 extras (vendor suspension, policy publishing) are not four-eyes in the console."
     },
     {
@@ -796,8 +832,8 @@
       "default_if_unanswered": "Use the Docs/23 §6 proposals from a console config file; timers computed from created_at (or due_at where the contract gives one).",
       "owner": "user",
       "needed_by": "AC5",
-      "answer": null,
-      "status": "open",
+      "answer": "Default approved (user, 2026-11-12).",
+      "status": "answered",
       "applied_default": "AC5 (2026-11-10): Docs/23 §6 proposals in src/lib/config/sla.ts: verification 2 working days; review approvals 2 working days after the business answer or deadline (the view has no answer time: the deadline when passed, else review.updated_at); reports and cases 4 h for unsafe_advice, non_consensual_media and privacy (and critical cases), 48 h otherwise and for inventory; disputes 5 working days (the first response target of 2 days is not measurable: no first-response time in the contract); privacy requests the contract's due_at; four-eyes changes their expires_at. Amber at 75 % of the window, red past the target. Working days skip Friday in the staff member's time zone; holidays are unknown (OQ-15)."
     },
     {
@@ -806,8 +842,8 @@
       "default_if_unanswered": "The staff member's me.locale; fa if unknown.",
       "owner": "user",
       "needed_by": "AC1",
-      "answer": null,
-      "status": "open",
+      "answer": "Default approved (user, 2026-11-12).",
+      "status": "answered",
       "applied_default": "AC1 (2026-11-09): cpa_locale cookie, then Accept-Language, then CARPAL_ADMIN_DEFAULT_LOCALE=fa. me.locale joins in AC4 once staff can sign in. Changing the default is one environment variable.",
       "applied_ac4": "Since AC4 the BFF callback sets cpa_locale from admin.staff_me locale at sign-in when the browser has no language choice yet; the avatar menu switches it."
     },
@@ -817,8 +853,9 @@
       "default_if_unanswered": "Must: BR-10 staff directory, BR-11 notification templates/rules, BR-12 policy texts. With the AI build: BR-14. Should (only if time allows): BR-13, BR-15, BR-16, BR-17.",
       "owner": "user",
       "needed_by": "AC14",
-      "answer": null,
-      "status": "open"
+      "answer": "All BR items go into one backend refinement, not scheduled yet (user, 2026-11-12).",
+      "status": "answered",
+      "applied": "AC14 shrinks to the screens that depend on the refinement; backend work is collected in backend/BR-update-plan.json."
     },
     {
       "id": "OQ-08",
@@ -826,8 +863,8 @@
       "default_if_unanswered": "No (passkeys only).",
       "owner": "user",
       "needed_by": "AC4",
-      "answer": null,
-      "status": "open",
+      "answer": "Default approved (user, 2026-11-12).",
+      "status": "answered",
       "applied_default": "AC4 (2026-11-09): no SSO button; staff sign in with work email + password and a device-bound security key (GD-04)."
     },
     {
@@ -836,8 +873,8 @@
       "default_if_unanswered": "After M1. Shops are the supply side of the pilot; the remaining admin stages can follow or run in between.",
       "owner": "user",
       "needed_by": "AC11",
-      "answer": null,
-      "status": "open"
+      "answer": "Business web app starts at AC11 (user, 2026-11-12).",
+      "status": "answered"
     },
     {
       "id": "OQ-10",
@@ -901,8 +938,9 @@
       "default_if_unanswered": "Friday only, no holidays (src/lib/config/sla.ts WEEKEND_DAYS = [5]); a holiday list can be added to the same file later (dates per year).",
       "owner": "user",
       "needed_by": "pilot (AC11)",
-      "answer": null,
-      "status": "open"
+      "answer": "Default approved: Friday only, no holidays (user, 2026-11-12).",
+      "status": "answered",
+      "applied": "Stays as built in src/lib/config/sla.ts."
     }
   ],
   "screen_coverage": [
@@ -3934,6 +3972,277 @@
       "id": "R-25",
       "raised_in": "AC9",
       "text": "Decide whether the pilot needs \"request more info\" for verification (BR-35 part 2): today staff must reject with what to fix, which restarts the business's submission and its SLA."
+    }
+  ],
+  "decisions_2026_11_12": {
+    "date": "2026-11-12",
+    "by": "user",
+    "items": [
+      {
+        "id": "PD-01",
+        "decision": "A stage that is built counts as done; signed-in E2E is not required for it. The whole console is tested once, after the whole plan is executed.",
+        "affects": [
+          "AC6",
+          "AC7",
+          "AC8",
+          "AC9"
+        ]
+      },
+      {
+        "id": "PD-02",
+        "decision": "Continue AC10-AC12 now. AC13 runs after the backend refinement (contract 1.4.0 and more) is done. The backend refinement is collected in backend/BR-update-plan.json and scheduled later.",
+        "note": "AC10 needs BR-20 (and BR-10 for staff roles) and AC12 needs BR-18 (taxonomy reads); until the refinement lands they are built with the same workarounds as AC8/AC9 (typed ids, no job read, no tree) or as placeholders."
+      },
+      {
+        "id": "PD-03",
+        "decision": "No part of backend, admin console or PWA goes to a test run until the whole plan is complete. Strict pnpm e2e / test:int runs (R-10, R-13, R-20) wait for that."
+      }
+    ]
+  },
+  "r_item_actions": [
+    {
+      "r_item": "R-01",
+      "component": [
+        "admin-console",
+        "pwa",
+        "portal(future)"
+      ],
+      "status": "deferred",
+      "action": "When cp-web-portal starts, extract the BFF core, typed client and design-system kit into shared packages instead of a third copy.",
+      "when": "at start of cp-web-portal (AC11 per OQ-09)"
+    },
+    {
+      "r_item": "R-02",
+      "component": [
+        "docs"
+      ],
+      "status": "closed_by_decision",
+      "action": "Staff permission matrix (DI-02) and four-eyes list (OQ-04) are settled by the approved defaults OQ-03 and OQ-04. No further action."
+    },
+    {
+      "r_item": "R-03",
+      "component": [
+        "backend"
+      ],
+      "status": "todo",
+      "action": "Bind staff access purposes to the record being read (BR-09 / backend NI-02) before real staff use the console with real data.",
+      "br": [
+        "BR-09"
+      ]
+    },
+    {
+      "r_item": "R-04",
+      "component": [
+        "repo-tooling"
+      ],
+      "status": "todo",
+      "action": "Add a small root script (or CI job) that runs pwa and admin-console checks in order: pwa contract:generate, admin-console contract:generate, pnpm check in both.",
+      "when": "any time; before the full test run"
+    },
+    {
+      "r_item": "R-05",
+      "component": [
+        "ops",
+        "backend"
+      ],
+      "status": "todo",
+      "action": "Plan pilot staff accounts: at least two ADM, one MOD, one CRV (backend staff:bootstrap covers creation). Decide who they are.",
+      "when": "before pilot"
+    },
+    {
+      "r_item": "R-06",
+      "component": [
+        "admin-console"
+      ],
+      "status": "done",
+      "action": "Allowlist built from ADMIN_OPERATIONS. Done in AC3."
+    },
+    {
+      "r_item": "R-07",
+      "component": [
+        "ops"
+      ],
+      "status": "todo",
+      "action": "Order FIDO2 security keys (two per staff member, USB-C/NFC) or confirm Windows Hello on managed staff PCs. Synced phone passkeys are refused.",
+      "when": "before pilot"
+    },
+    {
+      "r_item": "R-08",
+      "component": [
+        "backend"
+      ],
+      "status": "todo",
+      "action": "Build BR-19 (staff passkey management, ADM reset with four-eyes) so a spare key can be registered and a lost key needs no server SQL.",
+      "br": [
+        "BR-19"
+      ]
+    },
+    {
+      "r_item": "R-09",
+      "component": [
+        "backend"
+      ],
+      "status": "todo",
+      "action": "Build BR-18 as admin-api reads (taxonomy tree, region map settings) in contract 1.4.0.",
+      "br": [
+        "BR-18"
+      ]
+    },
+    {
+      "r_item": "R-10",
+      "component": [
+        "pwa"
+      ],
+      "status": "deferred_to_full_test_run",
+      "action": "Run PWA pnpm test:int and pnpm e2e against the backend at the newest contract (it was only unit-checked after 1.3.0). Runs only in the full test run after the whole plan is complete."
+    },
+    {
+      "r_item": "R-11",
+      "component": [
+        "backend",
+        "pwa",
+        "admin-console"
+      ],
+      "status": "todo",
+      "action": "Put the integration-test settings (strict auth, client keys, env) into backend/.env or a small script so pnpm test:int of the console and of the PWA run against one strict backend without hand-set variables.",
+      "when": "before the full test run"
+    },
+    {
+      "r_item": "R-12",
+      "component": [
+        "admin-console",
+        "pwa",
+        "portal(future)"
+      ],
+      "status": "deferred",
+      "action": "Same as R-01: extract the three BFF copies into one shared package."
+    },
+    {
+      "r_item": "R-13",
+      "component": [
+        "pwa"
+      ],
+      "status": "deferred_to_full_test_run",
+      "action": "Check the PWA notFound() pages in the production build under the enforced Trusted Types CSP; if the page is blank (as in the console, D-26), render the not-found state in the page or give the error shell a policy."
+    },
+    {
+      "r_item": "R-14",
+      "component": [
+        "admin-console",
+        "ops"
+      ],
+      "status": "todo",
+      "action": "Write the pilot staff onboarding note (first sign-in = password + emailed code + security key in one go; mailbox open, key at hand; synced phone passkeys refused) into the AC11 runbook.",
+      "when": "AC11"
+    },
+    {
+      "r_item": "R-15",
+      "component": [
+        "backend"
+      ],
+      "status": "todo",
+      "action": "Add dev-only `pnpm dev:staff prune --domain staff.carpals.test --prefix e2e-` to keep the dev staff list readable after E2E runs."
+    },
+    {
+      "r_item": "R-16",
+      "component": [
+        "backend"
+      ],
+      "status": "todo",
+      "action": "Bundle BR-21 (own four-eyes requests with outcome) and BR-22 (queue summary) into the contract 1.4.0 backend stage. BR-21 matters most for the pilot.",
+      "br": [
+        "BR-21",
+        "BR-22"
+      ]
+    },
+    {
+      "r_item": "R-17",
+      "component": [
+        "admin-console"
+      ],
+      "status": "todo",
+      "action": "Add a lint rule that forbids useApiMutation outside src/components/admin so later screens always use useAdminAction.",
+      "when": "before AC10"
+    },
+    {
+      "r_item": "R-18",
+      "component": [
+        "admin-console"
+      ],
+      "status": "closed_by_decision",
+      "action": "Weekend days/holidays: OQ-15 default approved (Friday only, no holidays). No further action."
+    },
+    {
+      "r_item": "R-19",
+      "component": [
+        "ops",
+        "admin-console"
+      ],
+      "status": "todo",
+      "action": "Agree who checks Pending approvals daily (a four-eyes change waits up to 72 h for the second ADM); put it in the AC11 runbook.",
+      "when": "AC11"
+    },
+    {
+      "r_item": "R-20",
+      "component": [
+        "admin-console"
+      ],
+      "status": "deferred_to_full_test_run",
+      "action": "Run pnpm e2e in strict mode with the client key (closes AC6-AC9). Per decision 2026-11-12 nothing is run until the whole plan is complete; optionally keep the key in a git-ignored local file the E2E command sources."
+    },
+    {
+      "r_item": "R-21",
+      "component": [
+        "ops",
+        "admin-console",
+        "backend"
+      ],
+      "status": "todo",
+      "action": "Before the pilot set the real IRR rate in the console with two ADM accounts ready (the placeholder 1,000,000 makes the first change over 20 % and four-eyes). Put it in the AC11 runbook and backend deploy.md Exchange rate section.",
+      "when": "AC11 / pilot"
+    },
+    {
+      "r_item": "R-22",
+      "component": [
+        "backend"
+      ],
+      "status": "todo",
+      "action": "Build BR-31 (badge list on admin-api) in the contract 1.4.0 stage.",
+      "br": [
+        "BR-31"
+      ]
+    },
+    {
+      "r_item": "R-23",
+      "component": [
+        "admin-console",
+        "backend"
+      ],
+      "status": "todo",
+      "action": "AC11 deploy kit: set CARPAL_STORAGE_URL and CARPAL_ADMIN_PUBLIC_WEB_URL in the console env file (admin-console). Check that the storage host serves display copies without Cross-Origin-Resource-Policy: same-origin (backend/storage deploy).",
+      "when": "AC11"
+    },
+    {
+      "r_item": "R-24",
+      "component": [
+        "backend",
+        "pwa",
+        "admin-console"
+      ],
+      "status": "todo",
+      "action": "Publish the region tile host (WP1/WP8, backend/infra), then set CARPAL_ADMIN_MAP_STYLE_URL in the console env and the style URL in the PWA.",
+      "when": "before pilot"
+    },
+    {
+      "r_item": "R-25",
+      "component": [
+        "backend"
+      ],
+      "status": "todo",
+      "action": "\"Request more info\" for verification (BR-35 part 2) is included, because all BRs go into the backend refinement.",
+      "br": [
+        "BR-35"
+      ]
     }
   ]
 }

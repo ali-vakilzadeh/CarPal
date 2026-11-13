@@ -23,7 +23,19 @@ export interface AccessPurpose {
   id: string;
   /** Header value as sent, e.g. "case:0190…" (written to audit access_purpose). */
   value: string;
+  /**
+   * The subject of the purpose item the request's record was bound to, e.g. "user:0190…" (backend S14, BR-09):
+   * named in the pii.read audit entry. Null when the operation limits its own results to the item's subjects.
+   */
+  bound?: string | null;
 }
+
+/**
+ * Outcome of the purpose check (SEC-ADM-5): the item is open in the caller's queue and the record of the request is
+ * one of the item's subjects (ok); the item is not in the queue (404 NOT_FOUND); or the item is, but the record is
+ * not about it (403 PURPOSE_RECORD_MISMATCH).
+ */
+export type PurposeVerdict = { status: 'ok'; bound: string | null } | { status: 'not_in_queue' } | { status: 'record_mismatch' };
 
 export abstract class MembershipDirectory {
   /** Active organization memberships of a user (status = active). */
@@ -42,6 +54,9 @@ export abstract class DriverAssignments {
 }
 
 export abstract class PurposeVerifier {
-  /** The referenced item is assigned to the staff member or open in their queue (SEC-ADM-5). */
-  abstract verify(staffUserId: string, purpose: AccessPurpose, opId: string): Promise<boolean>;
+  /**
+   * The referenced item is assigned to the staff member or open in their queue, and the record the operation reads
+   * or changes (from its path parameters) is a subject of that item (SEC-ADM-5).
+   */
+  abstract verify(staffUserId: string, purpose: AccessPurpose, opId: string, params: Record<string, string>): Promise<PurposeVerdict>;
 }

@@ -637,6 +637,7 @@ CREATE TABLE identity.user_accounts (
   avatar_media_id           uuid,
   status                    core.user_status NOT NULL DEFAULT 'pending_verification',
   self_deactivated_at       timestamptz,
+  suspended_until           timestamptz,             -- end of a timed suspension (meaningful only while suspended)
   email_verified_at         timestamptz,
   phone_verified_at         timestamptz,
   mfa_enabled               boolean NOT NULL DEFAULT false,
@@ -654,6 +655,8 @@ CREATE UNIQUE INDEX user_accounts_email_uq ON identity.user_accounts (email)
   WHERE deleted_at IS NULL AND status <> 'deleted';
 CREATE UNIQUE INDEX user_accounts_phone_uq ON identity.user_accounts (phone)
   WHERE phone IS NOT NULL AND deleted_at IS NULL AND status <> 'deleted';
+CREATE INDEX user_accounts_suspended_until_idx ON identity.user_accounts (suspended_until)
+  WHERE suspended_until IS NOT NULL;   -- identity.suspension_expiry (backend S14)
 COMMENT ON TABLE identity.user_accounts IS '52 UserAccount. Sessions live in Redis, not here.';
 
 CREATE TABLE identity.authentication_methods (
@@ -3830,12 +3833,14 @@ CREATE TABLE admin.pending_admin_changes (
   decided_by         uuid,
   decision_reason    text CHECK (char_length(decision_reason) BETWEEN 3 AND 500),
   decided_at         timestamptz,
+  job_id             uuid,                                       -- background job an approved ASYNC change started (backend S13)
   expires_at         timestamptz NOT NULL DEFAULT now() + interval '72 hours',
   status             text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected','expired')),
   CONSTRAINT pending_admin_changes_four_eyes CHECK (decided_by IS DISTINCT FROM requested_by),
   CHECK (status NOT IN ('approved','rejected') OR (decided_by IS NOT NULL AND decided_at IS NOT NULL AND decision_reason IS NOT NULL))
 );
 CREATE INDEX pending_admin_changes_queue_idx ON admin.pending_admin_changes (status, expires_at);
+CREATE INDEX pending_admin_changes_requester_idx ON admin.pending_admin_changes (requested_by, id DESC);
 COMMENT ON TABLE admin.pending_admin_changes IS '52 PendingAdminChange — four-eyes (40 SEC-ADM-6)';
 
 CREATE TABLE admin.assist_sessions (

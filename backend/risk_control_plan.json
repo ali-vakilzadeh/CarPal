@@ -41,7 +41,7 @@
       "id": "RCP-01",
       "title": "Staff access purpose is not bound to the record being read (SEC-ADM-5)",
       "category": "authorization / privacy (admin plane)",
-      "status": "open",
+      "status": "mitigated",
       "owner": "Backend lead; admin-plane module owner",
       "source": "S9b deviations (purpose binding checked per queue item, not per record); recommendations_for_next_stages.S9 hardening list after S8; user decision 2026-10-24 to track it here.",
       "rules": ["40 SEC-ADM-5", "40 SEC-LOG-4", "40 1.3 CarPal-Access-Purpose"],
@@ -75,8 +75,18 @@
         "admin.users_search accepts any criteria under any valid purpose.",
         "No detective control reviews pii.read entries whose record is unrelated to the purpose."
       ],
-      "inherent": { "likelihood": 3, "impact": 4, "rating": 12, "band": "high" },
-      "residual_after_treatment": { "likelihood": 1, "impact": 4, "rating": 4, "band": "low" },
+      "inherent": {
+        "likelihood": 3,
+        "impact": 4,
+        "rating": 12,
+        "band": "high"
+      },
+      "residual_after_treatment": {
+        "likelihood": 1,
+        "impact": 4,
+        "rating": 4,
+        "band": "low"
+      },
       "treatment": {
         "strategy": "reduce",
         "actions": [
@@ -85,52 +95,72 @@
             "action": "Purpose subjects: each PurposeQueues kind also returns the subjects of its item (case: target record, its author and organization; dispute: the parties, the review and the organization; dsr: the requesting user and their organizations; verification: the organization; approval: the review, its author and the organization).",
             "owner": "admin module",
             "target": "next iteration, first hardening stage",
-            "status": "not_started",
-            "acceptance": "Unit tests per kind: subjects of a fixture item are exactly the expected ids."
+            "status": "done",
+            "acceptance": "Unit tests per kind: subjects of a fixture item are exactly the expected ids.",
+            "done": "S14 2026-11-13: PurposeQueues register each kind with its subjects; s14.int.test.ts asserts the exact subjects of case, dsr, verification and dispute fixtures (approval through the sweep)."
           },
           {
             "id": "RCP-01.A2",
             "action": "Record binding: every PURP operation resolves the subject of its request (path user_id/org_id/review_id/request_id, media owner, search criteria) and the verifier admits the purpose only when that subject is among the item's subjects; otherwise 404 NOT_FOUND (no oracle). admin.users_search under a purpose is limited to the item's subjects.",
             "owner": "admin module + owning modules' admin read ports",
             "target": "next iteration, first hardening stage",
-            "status": "not_started",
-            "acceptance": "Integration test of the scenario above: user B under case C -> 404; user A under case C -> 200 with pii.read naming C."
+            "status": "done",
+            "acceptance": "Integration test of the scenario above: user B under case C -> 404; user A under case C -> 200 with pii.read naming C.",
+            "done": "S14 2026-11-13: PurposeBindings per PURP operation; the verifier admits a purpose only for a subject of its item. Deviation: a mismatch answers 403 PURPOSE_RECORD_MISMATCH, not 404 (owner-approved stage text; a missing record gets the same 403, no oracle). admin.users_search is limited to the item's users; admin.case_action targets are bound too. Scenario test: user B under case C → 403, user A → 200 with pii.read naming C and user A."
           },
           {
             "id": "RCP-01.A3",
             "action": "Contract: reword SEC-ADM-5 to 'a purpose about the record being read' and record a doc issue; regenerate the contract and the OpenAPI file.",
             "owner": "backend lead",
             "target": "with A2",
-            "status": "not_started",
-            "acceptance": "pnpm contract:check and pnpm openapi:check green with the new wording."
+            "status": "done",
+            "acceptance": "pnpm contract:check and pnpm openapi:check green with the new wording.",
+            "done": "S14 2026-11-13: SEC-ADM-5, §0.4 PURP and §1.3 reworded, PURPOSE_RECORD_MISMATCH in §4.4 and on the 13 record-bound operations; contract:check and openapi:check green."
           },
           {
             "id": "RCP-01.A4",
             "action": "Sweep: the contract runner's admin mechanics send each PURP route with a valid purpose of an unrelated open item (another subject) and expect 404, next to the existing missing/foreign-purpose checks.",
             "owner": "testing (L22)",
             "target": "with A2",
-            "status": "not_started",
-            "acceptance": "Generated suites fail when any PURP route accepts an unrelated purpose."
+            "status": "done",
+            "acceptance": "Generated suites fail when any PURP route accepts an unrelated purpose.",
+            "done": "S14 2026-11-13: runner.ts sends every PURP route with an unrelated open case's purpose and expects 403 PURPOSE_RECORD_MISMATCH (or no result for the scoped search)."
           },
           {
             "id": "RCP-01.A5",
             "action": "Interim detective control until A2 ships: a periodic audit query lists pii.read entries whose record is not a subject of the named purpose item; the security owner reviews the list weekly once staff use the admin plane.",
             "owner": "security owner",
             "target": "before the pilot gives staff production access",
-            "status": "not_started",
-            "acceptance": "Query documented in backend/README.md (admin plane) and run once against seeded data."
+            "status": "superseded",
+            "acceptance": "Query documented in backend/README.md (admin plane) and run once against seeded data.",
+            "done": "S14 2026-11-13: not built; A2 shipped before staff got production access, which is what A5 was bridging."
           }
         ]
       },
       "decision_needed": null,
-      "review_date": "Start of the next iteration",
+      "review_date": "Whole-plan test run after S25 (PD-03)",
       "history": [
         {
           "date": "2026-10-18",
           "note": "Found and documented in S9b (deviations_log): purpose binding is per queue item, not per record; kept for the next iteration."
         },
-        { "date": "2026-10-24", "note": "User decision: track as a risk in risk_control_plan.json (RCP-01) with a treatment plan." }
-      ]
+        {
+          "date": "2026-10-24",
+          "note": "User decision: track as a risk in risk_control_plan.json (RCP-01) with a treatment plan."
+        },
+        {
+          "date": "2026-11-13",
+          "note": "Treated in backend S14 (BR-update-plan.json BR-09, NI-02): A1-A4 done, A5 superseded; status mitigated."
+        }
+      ],
+      "residual_current": {
+        "likelihood": 1,
+        "impact": 4,
+        "rating": 4,
+        "band": "low",
+        "as_of": "2026-11-13",
+        "note": "Remaining: a staff member can still read the subjects of any open, unassigned item of their queue (by design: queues are shared); every read is audited with the purpose and the bound subject."
+      }
     },
     {
       "id": "RCP-02",

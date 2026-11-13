@@ -5,7 +5,7 @@
 import { Injectable } from '@nestjs/common';
 import { sql } from 'kysely';
 import { writeAudit } from '#libs/audit/index.js';
-import type { AccessPurpose, PurposeVerifier } from '#libs/authz/index.js';
+import type { AccessPurpose, PurposeVerdict, PurposeVerifier } from '#libs/authz/index.js';
 import { ApiError } from '#libs/contract/index.js';
 import { registerConstraintErrors } from '#libs/db/index.js';
 import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
@@ -14,9 +14,13 @@ import {
   FourEyes,
   ModerationIntake,
   ModerationLog,
+  PurposeBindings,
   PurposeQueues,
+  PurposeSubjects,
   StaffNames,
+  subjectKey,
   type AutomatedFlag,
+  type SubjectRef,
   type ModerationActionRecord,
   type PendingChangeRequest,
   type PendingChangeView,
@@ -67,7 +71,7 @@ export class DbFourEyes extends FourEyes {
       reason: r.reason,
       next: `${r.opId} pending (change ${row.id})`,
     });
-    return toPendingChange(row, await this.names.name(scope, staffUserId, locale));
+    return toPendingChange(row, await this.names.names(scope, [staffUserId], locale));
   }
 }
 
@@ -167,24 +171,65 @@ async function count(q: Promise<{ n: string | number | bigint } | undefined>): P
   return Number((await q)?.n ?? 0);
 }
 
+/** The subjects of a purpose item: the item itself first, then what its queue names (backend S14). */
+async function subjectsOf(queues: PurposeQueues, scope: TxScope, purpose: Pick<AccessPurpose, 'kind' | 'id'>): Promise<SubjectRef[]> {
+  const queue = queues.get(purpose.kind);
+  const own: SubjectRef = { type: purpose.kind, id: purpose.id };
+  if (!queue) return [own];
+  const seen = new Set([subjectKey(own)]);
+  const out = [own];
+  for (const s of await queue.subjects(scope, purpose.id))
+    if (s.id && !seen.has(subjectKey(s))) {
+      seen.add(subjectKey(s));
+      out.push(s);
+    }
+  return out;
+}
+
 /**
  * SEC-ADM-5: a purpose header must name an open item in the staff member's
- * queue. Each kind is resolved by the module that owns the queue (PurposeQueues);
- * an unregistered kind fails closed.
+ * queue (else 404), and the record of the request must be one of that item's
+ * subjects (else 403 PURPOSE_RECORD_MISMATCH; backend S14, BR-09, RCP-01).
+ * Each kind is resolved by the module that owns the queue (PurposeQueues), each
+ * operation's record by PurposeBindings; an unregistered kind or operation fails
+ * closed.
  */
 @Injectable()
 export class QueuePurposeVerifier implements PurposeVerifier {
   constructor(
     private readonly tx: TxRunner,
     private readonly queues: PurposeQueues,
+    private readonly bindings: PurposeBindings,
   ) {}
 
-  async verify(staffUserId: string, purpose: AccessPurpose, opId: string): Promise<boolean> {
-    const resolver = this.queues.get(purpose.kind);
-    if (!resolver) return false;
-    return this.tx.run({ actorType: 'staff', userId: staffUserId }, (scope) => resolver(scope, staffUserId, purpose.id, opId), {
-      readOnly: true,
-    });
+  async verify(staffUserId: string, purpose: AccessPurpose, opId: string, params: Record<string, string>): Promise<PurposeVerdict> {
+    const queue = this.queues.get(purpose.kind);
+    if (!queue) return { status: 'not_in_queue' };
+    const binding = this.bindings.get(opId);
+    return this.tx.run(
+      { actorType: 'staff', userId: staffUserId },
+      async (scope): Promise<PurposeVerdict> => {
+        if (!(await queue.open(scope, staffUserId, purpose.id, opId))) return { status: 'not_in_queue' };
+        if (!binding) return { status: 'record_mismatch' };
+        const records = await binding(scope, params);
+        if (records === 'scoped') return { status: 'ok', bound: null };
+        const subjects = new Set((await subjectsOf(this.queues, scope, purpose)).map(subjectKey));
+        const hit = records.map(subjectKey).find((k) => subjects.has(k));
+        return hit ? { status: 'ok', bound: hit } : { status: 'record_mismatch' };
+      },
+      { readOnly: true },
+    );
+  }
+}
+
+@Injectable()
+export class DbPurposeSubjects extends PurposeSubjects {
+  constructor(private readonly queues: PurposeQueues) {
+    super();
+  }
+
+  of(scope: TxScope, purpose: AccessPurpose): Promise<SubjectRef[]> {
+    return subjectsOf(this.queues, scope, purpose);
   }
 }
 

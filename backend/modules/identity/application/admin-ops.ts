@@ -17,7 +17,7 @@ import { Operation, type OperationContext, type OperationHandler, type Operation
 import { acceptedJob, JobService } from '#libs/jobs/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
-import { auditStaffRead, FourEyes, headerReasonOf, ModerationLog, staffOf } from '#modules/admin/interface/admin.js';
+import { auditStaffRead, FourEyes, headerReasonOf, ModerationLog, PurposeSubjects, staffOf } from '#modules/admin/interface/admin.js';
 import { SubscriptionReader } from '#modules/billing/interface/billing.js';
 import { OrgCards } from '#modules/organization/interface/org-cards.js';
 import { TrustAdmin } from '#modules/trust/interface/trust.js';
@@ -80,6 +80,7 @@ export class StaffUserViews {
       subscription,
       trusted_user: u.trusted_user,
       counts: { reviews: counts.reviews, reports_against: reports, open_disputes: counts.openDisputes },
+      suspended_until: u.status === 'suspended' ? isoOrNull(u.suspended_until) : null,
     };
   }
 }
@@ -130,7 +131,10 @@ type UserSearch = { email?: string; phone?: string; name?: string; user_id?: str
 @Injectable()
 @Operation('admin.users_search')
 export class AdminUsersSearchHandler implements OperationHandler {
-  constructor(private readonly views: StaffUserViews) {}
+  constructor(
+    private readonly views: StaffUserViews,
+    private readonly subjects: PurposeSubjects,
+  ) {}
 
   async handle(ctx: OperationContext<UserSearch>): Promise<OperationResult> {
     const s = staffOf(ctx);
@@ -143,15 +147,21 @@ export class AdminUsersSearchHandler implements OperationHandler {
           : [{ pointer: `/${given[1]}`, code: 'conditional_forbidden' }],
       );
     const body = await ctx.tx(async (scope) => {
-      let q = scope.db.selectFrom('identity.user_accounts').selectAll().where('deleted_at', 'is', null);
-      if (b.email) q = q.where('email', '=', normalizeEmail(b.email));
-      else if (b.phone) q = q.where('phone', '=', b.phone);
-      else if (b.user_id) q = q.where('id', '=', b.user_id);
-      else q = q.where('full_name', 'ilike', `%${b.name!.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
-      const rows = await q.orderBy('id').limit(20).execute();
+      // S14 (BR-09, SEC-ADM-5): a search under a purpose finds only the users the purpose item is about; anyone else
+      // is not found (an empty page, the same answer as an unknown identifier).
+      const subjectUsers = (await this.subjects.of(scope, ctx.access.purpose!)).filter((x) => x.type === 'user').map((x) => x.id);
+      let rows: UserRow[] = [];
+      if (subjectUsers.length > 0) {
+        let q = scope.db.selectFrom('identity.user_accounts').selectAll().where('deleted_at', 'is', null).where('id', 'in', subjectUsers);
+        if (b.email) q = q.where('email', '=', normalizeEmail(b.email));
+        else if (b.phone) q = q.where('phone', '=', b.phone);
+        else if (b.user_id) q = q.where('id', '=', b.user_id);
+        else q = q.where('full_name', 'ilike', `%${b.name!.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
+        rows = await q.orderBy('id').limit(20).execute();
+      }
       // SEC-LOG-4: every user shown is a staff read of personal data; an empty search is audited too.
       if (rows.length === 0) await auditStaffRead(scope, s, 'user_search', ctx.access.purpose!.id, `search by ${given[0]}`);
-      for (const r of rows) await auditStaffRead(scope, s, 'user', r.id, `account view (search by ${given[0]})`);
+      for (const r of rows) await auditStaffRead(scope, s, 'user', r.id, `account view (search by ${given[0]})`, `user:${r.id}`);
       const items = [];
       for (const r of rows) items.push(await this.views.view(scope, r));
       return ctx.page(items, null);
@@ -196,8 +206,14 @@ export class DbAccountAdmin extends AccountAdmin {
     if (status === 'active' && !u.email_verified_at && !u.phone_verified_at)
       throw new ApiError('INVALID_TRANSITION', { detail: 'no verified contact' });
     // A staff decision replaces the owner's own deactivation: the account no longer comes back through a sign-in.
-    if (u.status !== status || u.self_deactivated_at)
-      await scope.db.updateTable('identity.user_accounts').set({ status, self_deactivated_at: null }).where('id', '=', u.id).execute();
+    // A timed suspension stores its end (S14, BR-07: identity.suspension_expiry lifts it); any other change clears it.
+    const until = status === 'suspended' && o.suspendUntil ? new Date(o.suspendUntil) : null;
+    if (u.status !== status || u.self_deactivated_at || (u.suspended_until?.getTime() ?? null) !== (until?.getTime() ?? null))
+      await scope.db
+        .updateTable('identity.user_accounts')
+        .set({ status, self_deactivated_at: null, suspended_until: until })
+        .where('id', '=', u.id)
+        .execute();
     await writeAudit(scope, {
       action: 'user.status_changed',
       entityType: 'user',
@@ -565,7 +581,7 @@ export class AdminDsrExportHandler implements OperationHandler {
       });
       return row;
     });
-    return acceptedJob(job);
+    return acceptedJob(job, 'admin');
   }
 }
 

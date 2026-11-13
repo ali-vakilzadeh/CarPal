@@ -13065,6 +13065,134 @@
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffMe"
       }
     },
+    "admin.staff_list": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "platform_admin",
+              "platform_moderator",
+              "platform_support",
+              "platform_community_reviewer"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "disabled"
+            ]
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffMember"
+            }
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "admin.staff_disable": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "user_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffMember"
+      }
+    },
+    "admin.staff_enable": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "user_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PendingChange"
+      }
+    },
     "admin.users_search": {
       "query": {
         "type": "object",
@@ -13312,7 +13440,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffOrgView"
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffOrgSearchRow"
             }
           },
           "next_cursor": {
@@ -13956,6 +14084,75 @@
       },
       "response": {
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PendingChange"
+      }
+    },
+    "admin.taxonomy_snapshot": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "https://schemas.carpal.app/contract/v1#/$defs/TaxonomyType"
+          },
+          "parent_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive",
+              "deprecated",
+              "merged"
+            ]
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "default": 500
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffTaxonomyNode"
+            }
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "additionalProperties": false
       }
     },
     "admin.taxonomy_node_create": {
@@ -14948,6 +15145,192 @@
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffDispute"
       }
     },
+    "admin.badges_list": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_approval",
+              "active",
+              "revoked",
+              "expired"
+            ]
+          },
+          "organization_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "badge_type": {
+            "$ref": "https://schemas.carpal.app/contract/v1#/$defs/BadgeType"
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "created_at": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "badge_type": {
+                  "$ref": "https://schemas.carpal.app/contract/v1#/$defs/BadgeType"
+                },
+                "scope_taxonomy_node_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                  },
+                  "maxItems": 3
+                },
+                "rule_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60,
+                  "pattern": "^[^\\r\\n]*$"
+                },
+                "rule_version": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20,
+                  "pattern": "^[^\\r\\n]*$"
+                },
+                "evaluation_snapshot": {
+                  "type": "object",
+                  "x-server-schema": "BadgeEvaluation"
+                },
+                "requires_admin_approval": {
+                  "type": "boolean"
+                },
+                "awarded_at": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+                },
+                "last_evaluated_at": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+                },
+                "expires_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "visibility": {
+                  "type": "string",
+                  "enum": [
+                    "public",
+                    "private"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending_approval",
+                    "active",
+                    "revoked",
+                    "expired"
+                  ]
+                },
+                "revoked_reason": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500,
+                      "pattern": "^[^\\r\\n]*$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "organization": {
+                  "$ref": "https://schemas.carpal.app/contract/v1#/$defs/OrgSummary"
+                }
+              },
+              "required": [
+                "id",
+                "created_at",
+                "updated_at",
+                "version",
+                "badge_type",
+                "scope_taxonomy_node_ids",
+                "rule_key",
+                "rule_version",
+                "evaluation_snapshot",
+                "requires_admin_approval",
+                "awarded_at",
+                "last_evaluated_at",
+                "expires_at",
+                "visibility",
+                "status",
+                "revoked_reason",
+                "organization"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      }
+    },
     "admin.badge_approve": {
       "query": {
         "type": "object",
@@ -15209,6 +15592,17 @@
         "202": {
           "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PendingChange"
         }
+      }
+    },
+    "admin.region_settings": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/RegionSettings"
       }
     },
     "admin.retention_list": {
@@ -15687,6 +16081,22 @@
           "reason"
         ],
         "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/Job"
+      }
+    },
+    "admin.job_get": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "job_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
       },
       "response": {
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/Job"
@@ -16260,6 +16670,10 @@
               "rejected",
               "expired"
             ]
+          },
+          "mine": {
+            "type": "boolean",
+            "default": false
           },
           "cursor": {
             "type": "string",

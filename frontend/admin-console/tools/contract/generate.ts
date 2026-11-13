@@ -23,7 +23,7 @@ export const PATHS = {
 };
 
 /** The contract version this plan was written against; a new version is a reviewed change (meta.sources_of_truth). */
-export const EXPECTED_CONTRACT = '1.3.0';
+export const EXPECTED_CONTRACT = '1.4.0';
 
 /**
  * GD-07: api-host reads the console may forward besides the admin plane. AC2 (BR-04, backend S12, 2026-11-09) found

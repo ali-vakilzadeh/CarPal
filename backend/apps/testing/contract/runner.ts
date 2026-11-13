@@ -7,6 +7,8 @@
 //                          (CARPAL_VALIDATE_RESPONSES: status, closed schema,
 //                          AUD audit entry, PII read-audit for staff)
 //   2. admin mechanics     PURP without / with a foreign purpose → 400 / 404,
+//                          with an unrelated open item's purpose → 403
+//                          PURPOSE_RECORD_MISMATCH (a search: no result),
 //                          RSN DELETE without CarPal-Reason → 422, 4EYES → 202
 //                          PendingChange (pending)
 //   3. BFLA (insiders)     on organization routes, colleagues of the owner
@@ -38,6 +40,7 @@ import { routeMatrix, TEST_CLIENT, type TestRequest, type TestResponse } from '#
 import type { TestApp } from '../test-app.js';
 import { Harness, type BolaSpec, type Caller, type Case, type Json, type Resolvers } from './harness.js';
 import { projectionViolations } from './projection.js';
+import { openCase } from '../s8-support.js';
 
 export type RouteRef = readonly [opId: string, method: string, path: string];
 
@@ -56,6 +59,9 @@ interface Stats {
 }
 
 const has = (route: Route, tag: string) => route.security.tags.some((t) => t.tag === tag);
+
+/** PURP operations that limit their results to the purpose item's subjects instead of refusing (S14). */
+const SCOPED_PURPOSE_OPS = new Set(['admin.users_search']);
 
 const ID_PATTERN = '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
 
@@ -179,9 +185,19 @@ async function runRoute(h: Harness, op: Operation, route: Route, c: Case, stats:
     if (has(route, 'PURP')) {
       const missing = await send(build(op, route, c, c.as, { headers: { 'carpal-access-purpose': undefined } }));
       const foreign = await send(build(op, route, c, c.as, { headers: { 'carpal-access-purpose': `case:${uuidv7()}` } }));
-      stats.admin += 2;
+      // S14 (BR-09, RCP-01.A4): a purpose of an open, unassigned case about someone else (in every caller's queue)
+      // must not admit the owner's record: 403 PURPOSE_RECORD_MISMATCH, or no result for a search scoped to subjects.
+      const unrelated = await openCase(h.api);
+      const other = await send(build(op, route, c, c.as, { headers: { 'carpal-access-purpose': `case:${unrelated}` } }));
+      stats.admin += 3;
       if (missing.status !== 400) problems.push(`PURP without purpose: ${brief(missing)} (want 400)`);
       if (foreign.status !== 404) problems.push(`PURP with a purpose outside the caller's queue: ${brief(foreign)} (want 404)`);
+      if (SCOPED_PURPOSE_OPS.has(op.opId)) {
+        const items = (other.body as { items?: unknown[] } | undefined)?.items;
+        if (other.status !== 200 || !Array.isArray(items) || items.length !== 0)
+          problems.push(`PURP with an unrelated purpose: ${brief(other)} (want 200 and no item: results limited to its subjects)`);
+      } else if (other.status !== 403 || code(other) !== 'PURPOSE_RECORD_MISMATCH')
+        problems.push(`PURP with an unrelated purpose: ${brief(other)} (want 403 PURPOSE_RECORD_MISMATCH)`);
     }
     if (has(route, 'RSN') && route.method === 'DELETE') {
       const res = await send(build(op, route, c, c.as, { headers: { 'carpal-reason': undefined } }));

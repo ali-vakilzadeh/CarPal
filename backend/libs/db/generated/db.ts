@@ -158,6 +158,7 @@ export interface AdminPendingAdminChanges {
   deletion_reason: string | null;
   expires_at: Generated<Timestamp>;
   id: Generated<string>;
+  job_id: string | null;
   op_id: string;
   reason: string;
   request_payload: Json;
@@ -1191,6 +1192,7 @@ export interface IdentityUserAccounts {
   privacy_policy_version: string;
   self_deactivated_at: Timestamp | null;
   status: Generated<string>;
+  suspended_until: Timestamp | null;
   terms_accepted_at: Generated<Timestamp>;
   terms_version: string;
   timezone: Generated<string>;

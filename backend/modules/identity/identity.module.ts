@@ -19,6 +19,7 @@ import { FourEyesExecutors, ModerationTargets, PurposeQueues, retentionCutoff, R
 import { MetricGauges } from '#modules/analytics/interface/analytics.js';
 import { UsageCounters } from '#modules/billing/interface/billing.js';
 import { DbAccountAdmin, grantPlatformRole, startDeletion } from './application/admin-ops.js';
+import { enableStaff } from './application/staff-ops.js';
 import {
   DsrDeadlineRule,
   DsrDeletionConsumer,
@@ -26,6 +27,7 @@ import {
   identityPersonalData,
   VehicleTransferConsentConsumer,
 } from './application/dsr-worker.js';
+import { SuspensionExpiryRule } from './application/suspension-rule.js';
 
 export { DSR_EXPORT_QUEUE } from './application/admin-ops.js';
 export { DsrExporter };
@@ -120,20 +122,30 @@ export class IdentityAdminRegistrations implements OnModuleInit {
       ),
     );
     this.personal.register('identity', identityPersonalData);
-    this.purposes?.register('dsr', async (scope, staffUserId, id) => {
-      const d = await scope.db
-        .selectFrom('identity.data_subject_requests')
-        .select(['status', 'handled_by'])
-        .where('id', '=', id)
-        .where('deleted_at', 'is', null)
-        .executeTakeFirst();
-      // DSRs form one shared queue of admins and support (52 DataSubjectRequest.handled_by records who acted last).
-      return !!d && !['completed', 'rejected'].includes(d.status);
+    this.purposes?.register('dsr', {
+      open: async (scope, _staffUserId, id) => {
+        const d = await scope.db
+          .selectFrom('identity.data_subject_requests')
+          .select(['status', 'handled_by'])
+          .where('id', '=', id)
+          .where('deleted_at', 'is', null)
+          .executeTakeFirst();
+        // DSRs form one shared queue of admins and support (52 DataSubjectRequest.handled_by records who acted last).
+        return !!d && !['completed', 'rejected'].includes(d.status);
+      },
+      // S14 (BR-09): a request is about its requester only (not their organizations, not the export file).
+      subjects: async (scope, id) => {
+        const d = await scope.db.selectFrom('identity.data_subject_requests').select('user_id').where('id', '=', id).executeTakeFirst();
+        return d ? [{ type: 'user', id: d.user_id }] : [];
+      },
     });
     this.executors?.register('admin.platform_role_grant', async (scope, c) =>
       grantPlatformRole(scope, this.authorizer, String(c.payload.user_id), String(c.payload.role), c.reason),
     );
     this.executors?.register('admin.dsr_execute_deletion', async (scope, c) => startDeletion(scope, c.targetId, c.approvedBy));
+    this.executors?.register('admin.staff_enable', async (scope, c) =>
+      enableStaff(scope, this.authorizer, String(c.payload.user_id), c.reason),
+    );
     this.targets?.register('user', {
       // The user_cards definer: any signed-in user can report an account they met, never reading it.
       exists: async (scope, id) => {
@@ -216,6 +228,12 @@ export class IdentityAdminRegistrations implements OnModuleInit {
 })
 export class IdentityModule {}
 
-/** Identity work on the worker deployable: the W8 DSR export bundle (hosted by workers/export-jobs) and the daily DSR deadline alert (W15). */
-@Module({ providers: [DsrExporter, DsrDeadlineRule], exports: [DsrExporter, DsrDeadlineRule] })
+/**
+ * Identity work on the worker deployable: the W8 DSR export bundle (hosted by workers/export-jobs), the daily DSR
+ * deadline alert and the 5-minute lift of timed suspensions (W15, backend S14).
+ */
+@Module({
+  providers: [DsrExporter, DsrDeadlineRule, SuspensionExpiryRule],
+  exports: [DsrExporter, DsrDeadlineRule, SuspensionExpiryRule],
+})
 export class IdentityWorkerModule {}

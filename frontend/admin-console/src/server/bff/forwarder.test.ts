@@ -73,7 +73,7 @@ describe('forwarder: what reaches admin-api and what comes back', () => {
         headers: {
           'content-type': 'application/json',
           etag: '"v3"',
-          'carpal-contract': '1.3.0',
+          'carpal-contract': '1.4.0',
           'carpal-request-id': 'r-1',
           'set-cookie': 'upstream=1',
           'dpop-nonce': 'n1',
@@ -107,7 +107,7 @@ describe('forwarder: what reaches admin-api and what comes back', () => {
     expect(t.backend.boundTo.get(token)).toBeTruthy();
 
     expect(res.headers.get('etag')).toBe('"v3"');
-    expect(res.headers.get('carpal-contract')).toBe('1.3.0');
+    expect(res.headers.get('carpal-contract')).toBe('1.4.0');
     for (const h of ['set-cookie', 'dpop-nonce', 'server', 'x-powered-by']) expect(res.headers.get(h), h).toBeNull();
     expect(res.headers.get('cache-control')).toBe('no-store');
     expect(res.headers.get('x-content-type-options')).toBe('nosniff');

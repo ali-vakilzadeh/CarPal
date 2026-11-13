@@ -28,6 +28,10 @@ function change(id: string, o: Partial<PendingChange> = {}): PendingChange {
     reason: 'planned_change: yearly review',
     status: 'pending',
     expires_at: soon(70),
+    decided_by_display: null,
+    decided_at: null,
+    decision_reason: null,
+    job_id: null,
     ...o,
   };
 }

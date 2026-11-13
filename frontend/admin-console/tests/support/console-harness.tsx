@@ -6,6 +6,8 @@ import { render } from '@testing-library/react';
 import axe from 'axe-core';
 import type { ReactNode } from 'react';
 import { vi } from 'vitest';
+import type { StaffOrgSearchRow, StaffOrgView } from '@carpal/api-contracts';
+import { headOf } from '@/features/orgs/org-logic';
 import { ShortcutProvider } from '@/features/shell/shortcuts';
 import { StepUpProvider } from '@/features/shell/step-up';
 import { createApiClient, type Transport, type TransportRequest } from '@/lib/api/client';
@@ -65,6 +67,14 @@ export function scriptedTransport(handlers: Partial<Record<AdminOperationId, Han
 }
 
 export const page = <T,>(items: T[], next: string | null = null) => Response.json({ items, next_cursor: next });
+
+/** The admin.orgs_search row of a full organization view (backend S14: no contact data, no points). */
+export const searchRow = (o: StaffOrgView): StaffOrgSearchRow => ({
+  ...headOf(o),
+  member_count: o.member_count,
+  trust_score: o.trust_score,
+  created_at: o.created_at,
+});
 export const problem = (status: number, code: string, headers: Record<string, string> = {}) =>
   Response.json(
     { code, title: code, request_id: 'req-1' },

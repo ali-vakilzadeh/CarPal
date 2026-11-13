@@ -584,6 +584,49 @@ export class DisputeResolveHandler implements OperationHandler {
   }
 }
 
+type BadgesQuery = { status?: string; organization_id?: string; badge_type?: string; limit: number };
+
+/**
+ * admin.badges_list (contract 1.4.0, admin console BR-31): badges with their organization, e.g. the Verified
+ * Business badges waiting for approval (54 §4: the trust worker awards them pending_approval). Newest first.
+ */
+@Injectable()
+@Operation('admin.badges_list')
+export class BadgesListHandler implements OperationHandler {
+  constructor(private readonly orgs: OrgCards) {}
+
+  async handle(ctx: OperationContext<undefined, BadgesQuery>): Promise<OperationResult> {
+    staffOf(ctx);
+    const q = ctx.query;
+    const after = afterId(ctx);
+    const body = await ctx.tx(
+      async (scope) => {
+        let b = scope.db.selectFrom('trust.provider_badges').selectAll().where('deleted_at', 'is', null);
+        if (q.status) b = b.where('status', '=', q.status);
+        if (q.organization_id) b = b.where('provider_organization_id', '=', q.organization_id);
+        if (q.badge_type) b = b.where('badge_type', '=', q.badge_type);
+        if (after) b = b.where('id', '<', after);
+        const rows = (await b
+          .orderBy('id', 'desc')
+          .limit(q.limit + 1)
+          .execute()) as BadgeRow[];
+        const cards = await this.orgs.cards(
+          scope,
+          rows.map((r) => r.provider_organization_id),
+        );
+        // A badge whose organization card is gone (deleted organization) is not listed.
+        const items = rows.slice(0, q.limit).flatMap((r) => {
+          const card = cards.get(r.provider_organization_id);
+          return card ? [{ ...toBadge(r), organization: toOrgSummary(card) }] : [];
+        });
+        return ctx.page(items, rows.length > q.limit ? { id: rows[q.limit - 1]!.id } : null);
+      },
+      { readOnly: true },
+    );
+    return { body };
+  }
+}
+
 @Injectable()
 @Operation('admin.badge_approve')
 export class BadgeApproveHandler implements OperationHandler {

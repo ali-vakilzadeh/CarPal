@@ -1,5 +1,6 @@
 // Contract sweep resolvers: taxonomy (40 §11) and its administration (40 §23.3).
 import { sql } from 'kysely';
+import { expect } from 'vitest';
 import { REASON } from '../../s8-support.js';
 import { ok, type Actor, type Harness, type Resolvers } from '../harness.js';
 
@@ -75,6 +76,11 @@ export const resolvers: Resolvers = {
     const [from, into] = [await tempNode(h, as), await tempNode(h, as)];
     return { as, params: { node_id: from.id }, body: { into_node_id: into.id, reason: REASON } };
   },
+  'admin.taxonomy_snapshot': async (h) => ({
+    as: await h.staff('platform_moderator'),
+    query: { type: 'service_system', limit: 20 },
+    check: (res) => expect((res.body.items as Record<string, unknown>[])[0]).toHaveProperty('name_translations'),
+  }),
   'admin.synonyms_list': async (h) => ({ as: await h.staff('platform_moderator'), params: { node_id: h.n.system } }),
   'admin.synonym_create': async (h) => {
     const as = await admin(h);

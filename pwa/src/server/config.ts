@@ -53,7 +53,7 @@ export function fallbackConfig(locale: Locale, file: RegionFile = region): Clien
   return {
     min_supported_version: '0.0.0',
     latest_version: '0.0.0',
-    contract_version: '1.3.0',
+    contract_version: '1.4.0',
     i18n: { version: 'bundled', base_url: '' },
     taxonomy_version: '',
     flags: [],

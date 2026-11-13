@@ -10,6 +10,7 @@ import type {
   MembershipDirectory,
   OrganizationDirectory,
   OrganizationInfo,
+  PurposeVerdict,
   PurposeVerifier,
 } from './ports.js';
 
@@ -20,8 +21,8 @@ export class NoDriverAssignments implements DriverAssignments {
 }
 
 export class WellFormedPurposeVerifier implements PurposeVerifier {
-  async verify(_staffUserId: string, _purpose: AccessPurpose): Promise<boolean> {
-    return true;
+  async verify(_staffUserId: string, _purpose: AccessPurpose): Promise<PurposeVerdict> {
+    return { status: 'ok', bound: null };
   }
 }
 

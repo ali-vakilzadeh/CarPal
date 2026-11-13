@@ -21,18 +21,27 @@ export function pendingStatus(row: Pick<PendingChangeRow, 'status' | 'expires_at
   return row.status as PendingChangeView['status'];
 }
 
-export function toPendingChange(row: PendingChangeRow, requestedBy: string): PendingChangeView {
+/** 40 PendingChange: staff by display name only; `names` resolves the requester and the decider. */
+export function toPendingChange(row: PendingChangeRow, names: ReadonlyMap<string, string>): PendingChangeView {
   return {
     change_id: row.id,
     op_id: row.op_id,
     summary: row.summary,
-    requested_by_display: requestedBy,
+    requested_by_display: names.get(row.requested_by)!,
     requested_at: iso(row.created_at),
     reason: row.reason,
     status: pendingStatus(row),
     expires_at: iso(row.expires_at),
+    decided_by_display: row.decided_by ? (names.get(row.decided_by) ?? null) : null,
+    decided_at: isoOrNull(row.decided_at),
+    decision_reason: row.decision_reason,
+    job_id: row.job_id,
   };
 }
+
+/** Staff whose display names a pending change shows. */
+export const pendingChangeStaff = (row: Pick<PendingChangeRow, 'requested_by' | 'decided_by'>): string[] =>
+  row.decided_by ? [row.requested_by, row.decided_by] : [row.requested_by];
 
 export function toCase(row: CaseRow, o: { assignee: string | null; reportCount: number }) {
   return {

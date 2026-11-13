@@ -134,7 +134,7 @@ describe('BFF against the live backend', () => {
     expect(res.status).toBe(200);
     const body = await json(res);
     expect(body).toHaveProperty('flags');
-    expect(res.headers.get('carpal-contract')).toBe('1.3.0');
+    expect(res.headers.get('carpal-contract')).toBe('1.4.0');
     expect(browser.cookies.get('__Host-cp_sid')).toBeTruthy();
   });
 

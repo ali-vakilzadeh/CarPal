@@ -51,6 +51,28 @@ describe('projection rules over every response schema (40 Appendix C.4)', () => 
     expect(hits).toEqual([]);
   });
 
+  it('admin.orgs_search rows carry no contact data and no location point (S14, SEC-ADM-5, DI-31)', () => {
+    // Read without a purpose: what a staff queue may see of any organization. Contact data and points are org_get (PURP PII).
+    const PRIVATE = new Set([
+      'contact_email',
+      'contact_phone',
+      'email',
+      'phone',
+      'latitude',
+      'longitude',
+      'pin',
+      'locations',
+      'address_line_1',
+    ]);
+    expect(registry.operations.find((o) => o.opId === 'admin.orgs_search')!.sec).not.toContain('PURP');
+    expect(
+      reachable('admin.orgs_search')
+        .filter((p) => PRIVATE.has(p.name))
+        .map((p) => p.path),
+    ).toEqual([]);
+    expect(reachable('admin.orgs_search').map((p) => p.name)).toEqual(expect.arrayContaining(['city', 'plan_key', 'member_count']));
+  });
+
   it('only vehicles.vin_reveal can return a full VIN (SEC-OUT-2)', () => {
     const hits = registry.operations
       .filter((o) => !VIN_OPERATIONS.has(o.opId) && reachable(o.opId).some((p) => p.name === 'vin'))

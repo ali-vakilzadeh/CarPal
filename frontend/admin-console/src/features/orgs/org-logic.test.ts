@@ -1,12 +1,13 @@
 // AC9 unit tests of the organization rules: status changes the backend accepts, assist flows per type, the work items
 // an organization opens for, links, the pin verdict and the location correction body.
 import { describe, expect, it } from 'vitest';
-import type { Location, OrganizationVerification } from '@carpal/api-contracts';
+import type { Location, OrganizationVerification, StaffOrgView } from '@carpal/api-contracts';
 import {
   assistFlows,
   correctionBody,
   draftOf,
   farLocations,
+  headOf,
   orgHref,
   parseCoord,
   pinOf,
@@ -79,13 +80,30 @@ describe('organization rules (AC9)', () => {
   });
 
   it('opens an organization for its pending verifications, oldest first', () => {
-    const items = verificationPurposes({
+    // The full view's checks reduce to the pending ones, as the search row carries them (backend S14).
+    const head = headOf({
+      id: id(21),
+      name: 'Asa Auto',
+      organization_type: 'provider',
+      slug: null,
+      status: 'active',
+      verification_status: 'pending',
+      merged_into_organization_id: null,
+      primary_location_id: null,
+      contact_email: 'owner@asa-auto.ir',
+      locations: [],
+      subscription: { plan: { plan_key: 'provider_basic' } },
+      open_cases: 0,
       verifications: [
         check({ id: id(62), created_at: '2026-11-05T00:00:00Z', verification_type: 'location' }),
         check({ id: id(63), status: 'verified' }),
         check({ id: id(61), created_at: '2026-11-03T00:00:00Z' }),
       ],
-    });
+    } as unknown as StaffOrgView);
+    expect(head.pending_verifications.map((v) => v.id)).toEqual([id(62), id(61)]);
+    expect(head).toMatchObject({ plan_key: 'provider_basic', city: null });
+    expect(head).not.toHaveProperty('contact_email');
+    const items = verificationPurposes(head);
     expect(items.map((i) => i.purpose)).toEqual([`verification:${id(61)}`, `verification:${id(62)}`]);
     expect(orgHref(id(21), items[0]!.purpose, 'locations')).toBe(
       `/orgs/${id(21)}?tab=locations&purpose=${encodeURIComponent(`verification:${id(61)}`)}`,

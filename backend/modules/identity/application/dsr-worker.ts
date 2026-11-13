@@ -267,7 +267,7 @@ export const identityPersonalData: PersonalDataHandler = {
              SET full_name = 'Deleted user', display_name = NULL, phone = NULL, phone_verified_at = NULL,
                  country = NULL, avatar_media_id = NULL, self_deactivated_at = NULL,
                  email = ${`deleted-${userId}@deleted.carpal.invalid`}, preferred_contact_channel = NULL,
-                 status = 'deleted', mfa_enabled = false, anonymized_at = coalesce(anonymized_at, now()),
+                 status = 'deleted', suspended_until = NULL, mfa_enabled = false, anonymized_at = coalesce(anonymized_at, now()),
                  deleted_at = coalesce(deleted_at, now()), deletion_reason = 'data subject request'
            WHERE id = ${userId}::uuid`.execute(scope.db),
     );

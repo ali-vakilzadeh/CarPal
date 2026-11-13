@@ -2,13 +2,13 @@
 // Organizations (AC9.T1, Docs/23 A-ORG-01, Docs/40 admin.orgs_search). Staff find an organization by name (part of
 // it), slug or id, filtered by status, verification and type; the saved views of Docs/23 that the contract can serve
 // are links ("Pending verification", "Suspended"); "Possible duplicates" and "Location issues" need filters the search
-// does not have (DI-31). The search answers full StaffOrgView rows without a purpose, but the list shows only what a
-// queue needs — never contact data or exact points (GD-10, DI-31). A row opens the organization page with the
+// does not have (DI-31). The search answers narrow StaffOrgSearchRow rows without a purpose (backend S14, BR-35 part 1):
+// no contact data and no exact points, only what a queue needs (GD-10, DI-31). A row opens the organization page with the
 // organization's oldest pending verification as its purpose when it has one; otherwise the page asks for a work item.
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useId, useMemo, useState, type FormEvent } from 'react';
-import type { StaffOrgView } from '@carpal/api-contracts';
+import type { StaffOrgSearchRow, StaffOrgView } from '@carpal/api-contracts';
 import { DataTable, useCursorPaging, useUrlFilters, type Column, type FilterDef } from '@/components/admin';
 import { Button } from '@/components/ds/button';
 import { TextField } from '@/components/ds/text-field';
@@ -18,7 +18,7 @@ import { Bidi } from '@/lib/format/bidi';
 import { useFormat } from '@/lib/format/client';
 import { useT } from '@/lib/i18n/client';
 import { isId } from '../moderation/case-logic';
-import { label, ORG_STATUSES, ORG_TYPES, orgCity, orgHref, VERIFICATION_STATUSES, verificationPurposes } from './org-logic';
+import { label, ORG_STATUSES, ORG_TYPES, orgHref, VERIFICATION_STATUSES, verificationPurposes } from './org-logic';
 
 const PAGE_SIZE = 50;
 const SEARCH_IN = ['name', 'slug', 'id'] as const;
@@ -109,13 +109,13 @@ export function OrgsPage() {
     body: { ...body, limit: PAGE_SIZE, ...(paging.cursor ? { cursor: paging.cursor } : {}) },
   });
 
-  const open = (o: StaffOrgView) => router.push(orgHref(o.id, verificationPurposes(o)[0]?.purpose ?? null));
+  const open = (o: StaffOrgSearchRow) => router.push(orgHref(o.id, verificationPurposes(o)[0]?.purpose ?? null));
 
-  const columns: Column<StaffOrgView>[] = [
+  const columns: Column<StaffOrgSearchRow>[] = [
     { id: 'name', header: t('admin.orgs.col.name'), pinned: true, cell: (o) => <Bidi>{o.name}</Bidi> },
     { id: 'type', header: t('admin.orgs.col.type'), cell: (o) => label(ORG_TYPES, 'admin.orgs.type', o.organization_type, t) },
-    { id: 'city', header: t('admin.orgs.col.city'), cell: (o) => <Bidi>{orgCity(o) ?? '—'}</Bidi> },
-    { id: 'plan', header: t('admin.orgs.col.plan'), cell: (o) => planLabel(o.subscription.plan.plan_key, t) },
+    { id: 'city', header: t('admin.orgs.col.city'), cell: (o) => <Bidi>{o.city ?? '—'}</Bidi> },
+    { id: 'plan', header: t('admin.orgs.col.plan'), cell: (o) => (o.plan_key ? planLabel(o.plan_key, t) : '—') },
     {
       id: 'verification',
       header: t('admin.orgs.col.verification'),

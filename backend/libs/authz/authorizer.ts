@@ -213,9 +213,13 @@ export class Authorizer {
             throw new ApiError('MALFORMED_REQUEST', { detail: 'CarPal-Access-Purpose missing or malformed' });
           const purpose: AccessPurpose = { kind: m[1] as AccessPurpose['kind'], id: m[2]!, value: input.purposeHeader! };
           const staff = input.principal as UserPrincipal;
-          if (!(await this.o.purposes.verify(staff.userId, purpose, input.opId)))
-            throw new ApiError('NOT_FOUND', { detail: 'purpose not in the caller queue' });
-          grant.purpose = purpose;
+          const verdict = await this.o.purposes.verify(staff.userId, purpose, input.opId, input.params);
+          if (verdict.status === 'not_in_queue') throw new ApiError('NOT_FOUND', { detail: 'purpose not in the caller queue' });
+          // The caller already knows the item is theirs; a record that does not exist and one about something else
+          // get the same answer, so the refusal says nothing about the record (backend S14, BR-09).
+          if (verdict.status === 'record_mismatch')
+            throw new ApiError('PURPOSE_RECORD_MISMATCH', { detail: 'the record is not a subject of the purpose item' });
+          grant.purpose = { ...purpose, bound: verdict.bound };
           break;
         }
         case 'ATT':

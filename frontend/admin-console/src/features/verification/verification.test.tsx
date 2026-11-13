@@ -5,7 +5,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Location, StaffOrgView } from '@carpal/api-contracts';
-import { axeViolations, page, renderConsole, scriptedTransport } from '../../../tests/support/console-harness';
+import { axeViolations, page, renderConsole, scriptedTransport, searchRow } from '../../../tests/support/console-harness';
 import { nav, resetNav } from '../../../tests/support/navigation-mock';
 import type { Locale } from '@/lib/i18n/locales';
 import type { QueueItem } from './verification-logic';
@@ -146,7 +146,7 @@ describe('Verification queue and review (AC9.T4)', () => {
         decided = true;
         return Response.json({ ...item(), status: 'verified', reviewed_at: ago(0) });
       },
-      'admin.orgs_search': () => page([org({ verification_status: 'verified' })]),
+      'admin.orgs_search': () => page([searchRow(org({ verification_status: 'verified' }))]),
     });
     renderConsole(<VerificationPage />, { transport, roles: ['ADM'] });
     const checklist = await screen.findByTestId('checklist');
@@ -206,7 +206,7 @@ describe('Verification queue and review (AC9.T4)', () => {
       'admin.verifications_queue': () => page([item()]),
       'admin.org_get': () => Response.json(org()),
       'admin.verification_decide': () => Response.json({ ...item(), status: 'rejected', rejection_reason: 'Upload a readable licence' }),
-      'admin.orgs_search': () => page([org({ verification_status: 'rejected' })]),
+      'admin.orgs_search': () => page([searchRow(org({ verification_status: 'rejected' }))]),
     });
     renderConsole(<VerificationPage />, { transport, roles: ['MOD'] });
     fireEvent.click(await screen.findByRole('button', { name: 'Reject' }));

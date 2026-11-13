@@ -12,6 +12,7 @@ import { CARPAL_CONFIG } from '#libs/runtime/index.js';
 import { SafetyCheck, SafetyLexicon } from '#libs/safety-check/index.js';
 import { FourEyesExecutors } from '#modules/admin/interface/admin.js';
 import {
+  AdminTaxonomySnapshotHandler,
   MappingsListHandler,
   MappingUpsertHandler,
   repointTaxonomy,
@@ -48,7 +49,10 @@ export class TaxonomyAdminRegistrations implements OnModuleInit {
 
   onModuleInit(): void {
     this.references.register('taxonomy', repointTaxonomy);
-    this.executors?.register('admin.taxonomy_merge', async (scope, c) => void (await startTaxonomyMerge(scope, this.jobs, c)));
+    // The merge job's id becomes PendingChange.job_id (contract 1.4.0), read through admin.job_get.
+    this.executors?.register('admin.taxonomy_merge', async (scope, c) => ({
+      jobId: (await startTaxonomyMerge(scope, this.jobs, c)).body.id,
+    }));
   }
 }
 
@@ -74,6 +78,7 @@ export class TaxonomyAdminRegistrations implements OnModuleInit {
     TaxonomyAdminRegistrations,
     TaxonomyMerger,
     // admin-api host (§23.3); other hosts skip them.
+    AdminTaxonomySnapshotHandler,
     TaxonomyNodeCreateHandler,
     TaxonomyNodeUpdateHandler,
     TaxonomyMergeHandler,

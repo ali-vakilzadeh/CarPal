@@ -1,0 +1,188 @@
+{
+  "meta": {
+    "title": "PWA update plan - refinement proposals collected from other components",
+    "created": "2026-11-12",
+    "status": "partial_collecting",
+    "status_note": "Proposal only. Collected from the Admin Console plan (on hold after AC9); to be converted into a comprehensive PWA plan later. Nothing here is scheduled or built.",
+    "format": "Machine-readable. raw_text is the source recommendation verbatim; proposal is a first, unreviewed suggestion.",
+    "decisions_from_owner_2026_11_12": [
+      "No part of backend, admin console or PWA goes to a test run until the whole plan is complete (PD-03). Test-related items below therefore wait for the full test run.",
+      "The business web app (cp-web-portal) starts at AC11 (OQ-09), which triggers the shared-package extraction."
+    ],
+    "sibling_file": "backend/BR-update-plan.json",
+    "counts": {
+      "items": 6
+    }
+  },
+  "items": [
+    {
+      "id": "R-01",
+      "action_id": "PWA-R-01",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "raised_in": null
+      },
+      "status": "proposed",
+      "raw_text": "When the business web app (cp-web-portal) starts, extract the BFF core (session, oauth, dpop, private_key_jwt, forwarder, csrf), the typed client and the design-system kit from pwa/ and frontend/admin-console/ into shared packages instead of making a third copy.",
+      "type": "refactor",
+      "components": [
+        "pwa",
+        "admin-console",
+        "portal(future)"
+      ],
+      "trigger": "start of cp-web-portal (AC11 per OQ-09)",
+      "test_run_required": false,
+      "proposal": "Extract the framework-free BFF core out of pwa/src/server/bff (session store port, oauth client, dpop, private_key_jwt signer, forwarder with registry allowlist, csrf, http/header hygiene, auth-proxy, redis), the typed client (src/lib/api) and the ported design-system kit (src/components/ds) into shared packages under shared/, consumed by pwa, admin-console and cp-web-portal. Keep per-app config, session lifetimes, cookies, callback checks and allowlist source outside the shared core.",
+      "known_pwa_context": [
+        "pwa/src/server/bff/{allowlist,auth-proxy,config,crypto,csrf,endpoints,forwarder,http}.ts and oauth/",
+        "The admin console copy carries provenance headers that point back to these files."
+      ],
+      "open_questions": [
+        "Package manager layout: shared/ is not a pnpm workspace today (each app has its own lockfile, GD-01 of the console).",
+        "Versioning and release of the shared packages.",
+        "Order: extract from pwa first, or from the console (which has the aal3 and purpose/reason additions)?"
+      ],
+      "depends_on": [
+        "PWA-R-12 (same work)"
+      ]
+    },
+    {
+      "id": "R-10",
+      "action_id": "PWA-R-10",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "raised_in": "AC2"
+      },
+      "status": "proposed",
+      "raw_text": "At the next PWA stage run its pnpm test:int and pnpm e2e once against the backend at contract 1.3.0 (AC2 changed only generated types, three version strings and one template list in pwa/, checked by its unit tests, lint and contract:check).",
+      "type": "test",
+      "components": [
+        "pwa"
+      ],
+      "trigger": "full test run (after the whole plan is complete)",
+      "test_run_required": true,
+      "proposal": "Run pnpm test:int and pnpm e2e once against the strict backend at the newest contract version (1.4.0 or later, after the backend refinement), and fix whatever the contract changes since 1.2.0/1.3.0 broke. After 1.3.0 the PWA was only checked by unit tests, lint and contract:check.",
+      "known_pwa_context": [
+        "pwa/package.json: test:int = vitest run --project integration; e2e = pnpm build && playwright test",
+        "Integration tests: src/server/bff/bff.int.test.ts, hosted-signin.int.test.ts"
+      ],
+      "depends_on": [
+        "PWA-R-11",
+        "backend refinement finished"
+      ]
+    },
+    {
+      "id": "R-11",
+      "action_id": "PWA-R-11",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "raised_in": "AC3"
+      },
+      "status": "proposed",
+      "raw_text": "Put the integration-test settings of README \"Integration tests\" into backend/.env (or a small script) so pnpm test:int of the console and of the PWA run against one strict backend without hand-set variables; the console test creates one ADM account per run in the dev database (bff-int-…@staff.carpals.test), harmless but visible in `pnpm dev:staff list`.",
+      "type": "tooling",
+      "components": [
+        "backend",
+        "pwa",
+        "admin-console"
+      ],
+      "trigger": "before the full test run",
+      "test_run_required": false,
+      "proposal": "Define one source for the integration-test environment (strict auth flag, client keys, ports) so pwa and admin-console tests run against one strict backend without hand-set variables: either documented keys in backend/.env (with backend/.env.example entries) or a small script that exports them. The PWA side needs its test:int and e2e commands to read that source.",
+      "known_pwa_context": [
+        "backend/.env.example exists",
+        "pwa/.env.example exists"
+      ],
+      "open_questions": [
+        "Keep secrets (client private keys) in a git-ignored local file the commands source (also R-20 of the console)?",
+        "Script location: backend/tools, a root script, or per app?"
+      ],
+      "related": [
+        "R-04 (root script that runs both apps checks)"
+      ]
+    },
+    {
+      "id": "R-12",
+      "action_id": "PWA-R-12",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "raised_in": "AC3"
+      },
+      "status": "proposed",
+      "raw_text": "Three BFF copies now share most code (PWA, console, later the portal): extract them when cp-web-portal starts (R-01). The console copy differs in config, session lifetimes and cookies, the aal3/staff checks of the callback, the allowlist source and the purpose/reason headers; everything else (crypto, csrf, http, dpop, token client, redis, auth proxy) is the same.",
+      "type": "refactor",
+      "components": [
+        "pwa",
+        "admin-console",
+        "portal(future)"
+      ],
+      "trigger": "start of cp-web-portal (AC11 per OQ-09)",
+      "test_run_required": false,
+      "proposal": "Same work as R-01, seen from the BFF side: the three BFF copies differ only in config, session lifetimes and cookies, the aal3/staff checks of the callback, the allowlist source and the purpose/reason headers. Track as one extraction task with R-01; the PWA keeps its guest/anonymous token handling and cp-ssr as app-level code.",
+      "depends_on": [
+        "PWA-R-01"
+      ]
+    },
+    {
+      "id": "R-13",
+      "action_id": "PWA-R-13",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "raised_in": "AC4"
+      },
+      "status": "proposed",
+      "raw_text": "PWA: check its notFound() pages in the production build (pnpm e2e on :3100). The PWA's P3 note says the not-found body is drawn on the client; under the enforced Trusted Types CSP the console found that draw blocked (blank page, D-26). If the PWA shows the same, render the not-found state in the page there too, or give the error shell a policy.",
+      "type": "bug_check",
+      "components": [
+        "pwa"
+      ],
+      "trigger": "full test run (production build, port 3100)",
+      "test_run_required": true,
+      "proposal": "In the production build with the enforced Trusted Types CSP, open a not-found route and check the page is not blank. If it is, render the not-found body in the page itself (server-rendered) or give the error shell a Trusted Types policy, as the console did.",
+      "known_pwa_context": [
+        "pwa/src/app/global-not-found.tsx and pwa/src/app/l/not-found.tsx",
+        "CSP / Trusted Types: pwa/src/server/security-headers.ts, pwa/src/proxy.ts",
+        "Related console deviation D-26: No-permission and not-found are states the console page renders inside the shell (status 200), not forbidden()/notFound() (403/404): in Next.js 16.4.3 either one thrown by a page escapes the server render, the response is an empty <html id=\"__next_error__\"> shell drawn on the client, and the enforced Trusted Types CSP blocks that draw (no 'default' policy without the root layout's head): a blank page. The server still refuses every call the role may not make."
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R-24",
+      "action_id": "PWA-R-24",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "raised_in": "AC9"
+      },
+      "status": "proposed",
+      "raw_text": "Publish the region tile host (WP1/WP8) before the pilot and set CARPAL_ADMIN_MAP_STYLE_URL in the console (and the PWA's style URL): without a basemap, staff correcting a pin see the pins on a blank map and must rely on the typed coordinates and the distance.",
+      "type": "config",
+      "components": [
+        "backend",
+        "pwa",
+        "admin-console"
+      ],
+      "trigger": "before the pilot",
+      "test_run_required": false,
+      "proposal": "After the region tile host is published (WP1/WP8, backend/infra), set the PWA map style URL (CARPAL_PWA_MAP_STYLE_URL, deploy env) and the console one (CARPAL_ADMIN_MAP_STYLE_URL). Check the PWA CSP picks up the tile origins and that region config (map.style_url, map.tiles_url) matches. Without it the PWA falls back to the built-in style without a basemap.",
+      "known_pwa_context": [
+        "pwa/src/server/map-config.ts (mapTileOrigins, style choice)",
+        "pwa/src/features/map/style.ts (built-in fallback)",
+        "pwa/src/server/env.ts: CARPAL_PWA_MAP_STYLE_URL; pwa/.env.example line 24",
+        "Region config still points at cdn.carpal.app (backend NI-22, Go-live item in the console handoff notes)"
+      ],
+      "open_questions": [
+        "Final tile host name and who publishes it.",
+        "Should the PWA read the style only from region config and drop the env override?"
+      ],
+      "related": [
+        "backend NI-22 (region-config CDN host)"
+      ]
+    }
+  ]
+}

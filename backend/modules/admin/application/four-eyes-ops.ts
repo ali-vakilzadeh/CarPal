@@ -5,13 +5,15 @@
 // registered executor in the approver's transaction, so the change and its
 // approval commit together; the audit entry names the original requester as
 // initiator and the caller as approver. Moderators decide moderation changes
-// only (required_role platform_moderator).
+// only (required_role platform_moderator). Contract 1.4.0 (admin console
+// BR-21): mine=true lists the caller's own requests with the decision, and an
+// executor that starts a background job records it as job_id (admin.job_get).
 import { Injectable } from '@nestjs/common';
 import { sql } from 'kysely';
 import { writeAudit } from '#libs/audit/index.js';
 import { ApiError } from '#libs/contract/index.js';
 import { Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
-import { pendingStatus, toPendingChange, type PendingChangeRow } from '../api/projections.js';
+import { pendingChangeStaff, pendingStatus, toPendingChange, type PendingChangeRow } from '../api/projections.js';
 import { FourEyesExecutors, StaffNames, staffOf, type Staff } from '../interface/admin.js';
 import { afterId, pageOf } from './common.js';
 
@@ -22,20 +24,25 @@ const isAdmin = (s: Staff) => s.roles.includes('platform_admin');
 export class FourEyesListHandler implements OperationHandler {
   constructor(private readonly names: StaffNames) {}
 
-  async handle(ctx: OperationContext<undefined, { status?: string; limit: number }>): Promise<OperationResult> {
+  async handle(ctx: OperationContext<undefined, { status?: string; mine?: boolean; limit: number }>): Promise<OperationResult> {
     const s = staffOf(ctx);
-    const status = ctx.query.status ?? 'pending';
+    const mine = ctx.query.mine === true;
+    // Default: what the caller may decide now; with mine=true, every one of their own requests.
+    const status = ctx.query.status ?? (mine ? undefined : 'pending');
     const after = afterId(ctx);
     const body = await ctx.tx(
       async (scope) => {
-        // Never the caller's own changes; moderators see moderation changes only.
-        let q = scope.db
-          .selectFrom('admin.pending_admin_changes')
-          .selectAll()
-          .where('requested_by', '<>', s.userId)
-          .where('deleted_at', 'is', null);
-        if (!isAdmin(s)) q = q.where('required_role', '=', 'platform_moderator');
-        if (status === 'pending') q = q.where('status', '=', 'pending').where('expires_at', '>', new Date());
+        let q = scope.db.selectFrom('admin.pending_admin_changes').selectAll().where('deleted_at', 'is', null);
+        // mine=true: only the caller's own requests (any required role: they filed them). Otherwise never the
+        // caller's own changes, and moderators see moderation changes only.
+        if (mine) q = q.where('requested_by', '=', s.userId);
+        else {
+          q = q.where('requested_by', '<>', s.userId);
+          if (!isAdmin(s)) q = q.where('required_role', '=', 'platform_moderator');
+        }
+        if (status === undefined) {
+          // every status
+        } else if (status === 'pending') q = q.where('status', '=', 'pending').where('expires_at', '>', new Date());
         else if (status === 'expired')
           q = q.where((eb) =>
             eb.or([eb('status', '=', 'expired'), eb.and([eb('status', '=', 'pending'), eb('expires_at', '<=', new Date())])]),
@@ -46,15 +53,11 @@ export class FourEyesListHandler implements OperationHandler {
           .orderBy('id', 'desc')
           .limit(ctx.query.limit + 1)
           .execute();
-        const names = await this.names.names(
-          scope,
-          rows.map((r) => r.requested_by),
-          ctx.locale,
-        );
+        const names = await this.names.names(scope, rows.flatMap(pendingChangeStaff), ctx.locale);
         return pageOf(
           ctx,
           rows,
-          rows.map((r) => toPendingChange(r, names.get(r.requested_by)!)),
+          rows.map((r) => toPendingChange(r, names)),
         );
       },
       { readOnly: true },
@@ -88,10 +91,11 @@ export class FourEyesDecideHandler implements OperationHandler {
       const status = pendingStatus(c);
       if (status === 'expired') throw new ApiError('INVALID_TRANSITION', { detail: 'expired' });
       if (status !== 'pending') throw new ApiError('INVALID_TRANSITION', { detail: status });
+      let jobId: string | null = null;
       if (b.decision === 'approve') {
         const executor = this.executors.get(c.op_id);
         if (!executor) throw new ApiError('INTERNAL', { detail: `no four-eyes executor for ${c.op_id}` });
-        await executor(scope, {
+        const outcome = await executor(scope, {
           id: c.id,
           opId: c.op_id,
           targetType: c.target_entity_type,
@@ -103,6 +107,7 @@ export class FourEyesDecideHandler implements OperationHandler {
           decisionReason: b.reason,
           requestId: ctx.requestId,
         });
+        if (outcome && typeof outcome.jobId === 'string') jobId = outcome.jobId;
       }
       const row = (await scope.db
         .updateTable('admin.pending_admin_changes')
@@ -111,6 +116,7 @@ export class FourEyesDecideHandler implements OperationHandler {
           decided_by: s.userId,
           decision_reason: b.reason,
           decided_at: sql<Date>`now()`,
+          job_id: jobId,
         })
         .where('id', '=', c.id)
         .returningAll()
@@ -123,7 +129,7 @@ export class FourEyesDecideHandler implements OperationHandler {
         previous: `${c.op_id} requested by ${c.requested_by}: ${c.reason}`.slice(0, 2000),
         next: `${row.status} by ${s.userId} (change ${c.id})`,
       });
-      return toPendingChange(row, await this.names.name(scope, c.requested_by, ctx.locale));
+      return toPendingChange(row, await this.names.names(scope, pendingChangeStaff(row), ctx.locale));
     });
     return { body };
   }

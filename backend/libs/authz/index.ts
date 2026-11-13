@@ -10,5 +10,6 @@ export {
   type Membership,
   type OrganizationInfo,
   type PurposeKind,
+  type PurposeVerdict,
 } from './ports.js';
 export { EmptyDirectory, InMemoryDirectory, NoDriverAssignments, WellFormedPurposeVerifier } from './stubs.js';

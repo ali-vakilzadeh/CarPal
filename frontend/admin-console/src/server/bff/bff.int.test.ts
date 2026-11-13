@@ -203,7 +203,7 @@ describe('admin BFF against the live backend', () => {
     const res = await browser.fetch('/api/v1/admin/flags', { headers: { 'accept-language': 'en' } });
     expect(res.status, await res.clone().text()).toBe(200);
     expect(res.headers.get('cache-control')).toBe('no-store');
-    expect(res.headers.get('carpal-contract')).toBe('1.3.0');
+    expect(res.headers.get('carpal-contract')).toBe('1.4.0');
     const body = (await res.json()) as { items?: unknown[] };
     expect(Array.isArray(body.items)).toBe(true);
     const sent = upstream.filter((c) => c.url.startsWith(`${ADMIN_API}/v1/admin/flags`)).at(-1)!;

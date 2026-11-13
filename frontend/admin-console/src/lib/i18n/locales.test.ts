@@ -35,6 +35,6 @@ describe('locales (GD-05)', () => {
   it('translates shared and admin keys in both languages', () => {
     expect(getTranslator('en')('admin.env.label')).toBe('Environment');
     expect(getTranslator('fa')('common.language.label')).toBe('زبان');
-    expect(getTranslator('en')('admin.console.contractLine', { version: '1.3.0', n: 63 })).toBe('Admin contract 1.3.0: 63 operations');
+    expect(getTranslator('en')('admin.console.contractLine', { version: '1.4.0', n: 70 })).toBe('Admin contract 1.4.0: 70 operations');
   });
 });

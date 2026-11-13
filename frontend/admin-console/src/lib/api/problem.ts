@@ -69,6 +69,11 @@ export class ApiProblem extends Error {
     return this.code === 'VERSION_MISMATCH' || this.code === 'PRECONDITION_REQUIRED';
   }
 
+  /** 403: the work item (purpose) is the caller's, but this record is not one of its subjects (backend S14, SEC-ADM-5). */
+  get purposeMismatch(): boolean {
+    return this.code === 'PURPOSE_RECORD_MISMATCH';
+  }
+
   /** A purpose-bound read (PURP) was opened without a work item (GD-10). */
   get purposeRequired(): boolean {
     return this.code === 'PURPOSE_REQUIRED';

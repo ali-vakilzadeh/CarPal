@@ -6,7 +6,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Location, OrganizationVerification, StaffOrgView } from '@carpal/api-contracts';
-import { axeViolations, page, renderConsole, scriptedTransport } from '../../../tests/support/console-harness';
+import { axeViolations, page, renderConsole, scriptedTransport, searchRow } from '../../../tests/support/console-harness';
 import { nav, resetNav } from '../../../tests/support/navigation-mock';
 import type { Locale } from '@/lib/i18n/locales';
 import { AssistBanner, assistStore } from './assist';
@@ -120,7 +120,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('Organizations list (AC9.T1)', () => {
   it('lists organizations without contact data and opens one for its pending verification', async () => {
-    const { transport, calls } = scriptedTransport({ 'admin.orgs_search': () => page([org()]) });
+    const { transport, calls } = scriptedTransport({ 'admin.orgs_search': () => page([searchRow(org())]) });
     renderConsole(<OrgsPage />, { transport, roles: ['MOD'] });
     const table = await screen.findByRole('table', { name: 'Organizations' });
     const row = (await within(table).findByRole('button', { name: 'Asa Auto' })).closest('tr')!;
@@ -154,7 +154,7 @@ describe('Organizations list (AC9.T1)', () => {
 describe('Organization page (AC9.T2, T5)', () => {
   it('without a purpose shows the header from the search and the work items to open it for', async () => {
     resetNav(`/orgs/${ORG}`);
-    const { transport, calls } = scriptedTransport({ 'admin.orgs_search': () => page([org()]) });
+    const { transport, calls } = scriptedTransport({ 'admin.orgs_search': () => page([searchRow(org())]) });
     renderConsole(<OrgPage orgId={ORG} mapStyleUrl={null} publicWeb="https://pwa.carpals.ir" />, { transport, roles: ['MOD'] });
     expect(await screen.findByRole('heading', { name: 'Asa Auto', level: 1 })).toBeInTheDocument();
     expect(calls.some((c) => c.opId === 'admin.org_get')).toBe(false);
@@ -207,7 +207,7 @@ describe('Organization page (AC9.T2, T5)', () => {
     resetNav(`/orgs/${ORG}?purpose=verification:${V1}`);
     const { transport } = scriptedTransport({
       'admin.org_get': () => Response.json({ code: 'NOT_FOUND' }, { status: 404, headers: { 'content-type': 'application/problem+json' } }),
-      'admin.orgs_search': () => page([org({ verifications: [] })]),
+      'admin.orgs_search': () => page([searchRow(org({ verifications: [] }))]),
     });
     renderConsole(<OrgPage orgId={ORG} mapStyleUrl={null} />, { transport, roles: ['MOD'] });
     expect(await screen.findByText('That work item is closed or taken by someone else')).toBeInTheDocument();
@@ -218,7 +218,7 @@ describe('Organization page (AC9.T2, T5)', () => {
     resetNav(`/orgs/${ORG}`);
     let status = 'active';
     const { transport, calls } = scriptedTransport({
-      'admin.orgs_search': () => page([org({ status: status as StaffOrgView['status'] })]),
+      'admin.orgs_search': () => page([searchRow(org({ status: status as StaffOrgView['status'] }))]),
       'admin.org_status': (_r, body) => {
         status = String(body!.status);
         return Response.json(org({ status: 'suspended' }));
@@ -244,7 +244,7 @@ describe('Organization page (AC9.T2, T5)', () => {
     resetNav(`/orgs/${ORG}`);
     const until = new Date(Date.now() + 4 * 3_600_000).toISOString();
     const { transport, calls } = scriptedTransport({
-      'admin.orgs_search': () => page([org({ organization_type: 'hybrid_provider_vendor' })]),
+      'admin.orgs_search': () => page([searchRow(org({ organization_type: 'hybrid_provider_vendor' }))]),
       'admin.assist_session_start': () => Response.json({ assist_session_id: id(81), expires_at: until }, { status: 201 }),
       'admin.assist_session_end': () => Response.json({ ok: true }),
     });
@@ -352,7 +352,7 @@ describe('Organization a11y (AC9.T6)', () => {
     });
 
   it('has no axe violations on the list (fa)', async () => {
-    const { transport } = scriptedTransport({ 'admin.orgs_search': () => page([org()]) });
+    const { transport } = scriptedTransport({ 'admin.orgs_search': () => page([searchRow(org())]) });
     const { container } = renderConsole(<OrgsPage />, { transport, roles: ['MOD'], locale: 'fa' });
     await screen.findByRole('table');
     await screen.findByText('Asa Auto');

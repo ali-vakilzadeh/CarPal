@@ -165,8 +165,26 @@ describe('Authorizer', () => {
       code: 'NOT_FOUND',
     });
     await expect(check('admin.user_get', user(), { user_id: uuidv7() }, { purpose })).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    purposes = { verify: async () => false };
+    purposes = { verify: async () => ({ status: 'not_in_queue' }) };
     await expect(check('admin.user_get', staff, { user_id: uuidv7() }, { purpose })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    // Backend S14 (BR-09): the item is in the queue, but the record is not one of its subjects.
+    const seen: Record<string, string>[] = [];
+    purposes = {
+      verify: async (_u, _p, _op, params) => {
+        seen.push(params);
+        return { status: 'record_mismatch' };
+      },
+    };
+    const userId = uuidv7();
+    await expect(check('admin.user_get', staff, { user_id: userId }, { purpose })).rejects.toMatchObject({
+      code: 'PURPOSE_RECORD_MISMATCH',
+      status: 403,
+    });
+    expect(seen).toEqual([{ user_id: userId }]);
+    purposes = { verify: async () => ({ status: 'ok', bound: `user:${userId}` }) };
+    expect(await check('admin.user_get', staff, { user_id: userId }, { purpose })).toMatchObject({
+      purpose: { kind: 'case', value: purpose, bound: `user:${userId}` },
+    });
 
     const owner = user({ acr: 'aal1' });
     await expect(check('vehicles.vin_reveal', owner, { vehicle_id: uuidv7() }, { scope: 'me' })).rejects.toMatchObject({

@@ -12,7 +12,8 @@ import { ApiError } from '#libs/contract/index.js';
 import { FlagService, KILL_SWITCH } from '#libs/flags/index.js';
 import { created, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
-import { ExchangeRates } from '#libs/region-config/index.js';
+import { toJobView } from '#libs/jobs/index.js';
+import { ExchangeRates, RegionConfigService } from '#libs/region-config/index.js';
 import { InjectConfig } from '#libs/runtime/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { OrgCards } from '#modules/organization/interface/org-cards.js';
@@ -447,5 +448,54 @@ export class AssistSessionEndHandler implements OperationHandler {
       return { ok: true as const };
     });
     return { body };
+  }
+}
+
+/**
+ * Background jobs an admin-plane operation starts, and the staff roles that may start them (contract 1.4.0,
+ * admin console BR-20). A kind is listed only when no api-host operation starts it, so admin.job_get can never
+ * reveal a job of a user or an organization.
+ */
+export const ADMIN_JOB_KINDS: Readonly<Record<string, { module: string; roles: readonly string[] }>> = {
+  data_export: { module: 'identity', roles: ['platform_admin', 'platform_support'] }, // admin.dsr_export
+  taxonomy_merge: { module: 'taxonomy', roles: ['platform_admin'] }, // approved admin.taxonomy_merge
+};
+
+/** admin.job_get: the state of a job an admin-plane operation started (no input or personal data). */
+@Injectable()
+@Operation('admin.job_get')
+export class AdminJobGetHandler implements OperationHandler {
+  async handle(ctx: OperationContext): Promise<OperationResult> {
+    const s = staffOf(ctx);
+    const row = await ctx.tx(
+      (scope) => scope.db.selectFrom('core.background_jobs').selectAll().where('id', '=', ctx.params.job_id!).executeTakeFirst(),
+      { readOnly: true },
+    );
+    const kind = row ? ADMIN_JOB_KINDS[row.kind] : undefined;
+    // Jobs of the api host, and kinds the caller's roles cannot start, do not exist for the caller.
+    if (!row || !kind || row.owning_module !== kind.module || !kind.roles.some((r) => s.roles.includes(r))) throw new ApiError('NOT_FOUND');
+    return { body: toJobView(row) };
+  }
+}
+
+/** admin.region_settings: config.client's region part and the pin check threshold for the console (BR-18). */
+@Injectable()
+@Operation('admin.region_settings')
+export class AdminRegionSettingsHandler implements OperationHandler {
+  constructor(
+    @InjectConfig() private readonly config: CarpalConfig,
+    private readonly region: RegionConfigService,
+    private readonly rates: ExchangeRates,
+  ) {}
+
+  async handle(ctx: OperationContext): Promise<OperationResult> {
+    staffOf(ctx);
+    return {
+      body: {
+        region: { ...this.region.forLocale(ctx.locale), exchange_rates: await this.rates.all() },
+        location_check_threshold_m: this.config.geo.locationCheckThresholdM,
+      },
+      contentLanguage: ctx.locale,
+    };
   }
 }

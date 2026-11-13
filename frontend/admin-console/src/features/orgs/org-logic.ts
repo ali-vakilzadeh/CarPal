@@ -4,7 +4,7 @@
 // (admin.assist_session_start), the purpose an organization can be read for (SEC-ADM-5: an open work item — a
 // pending verification or an open case; the backend refuses anything else), the public profile link, the
 // pin-versus-address verdict of a location and the fields a location correction sends.
-import type { Location, OrgStatus, OrgType, StaffOrgView, VerificationStatus } from '@carpal/api-contracts';
+import type { Location, OrgStatus, OrgType, StaffOrgSearchRow, StaffOrgView, VerificationStatus } from '@carpal/api-contracts';
 import type { AccessPurpose } from '@/lib/api/client';
 import { purposeOf } from '@/lib/api/client';
 import type { GeoPoint } from '@/lib/config/geo';
@@ -61,10 +61,47 @@ export function assistFlows(type: string, status: string): FlowType[] {
 
 // ---------------------------------------------------------------- purposes (GD-10, SEC-ADM-5)
 
+/**
+ * What the organization header and the work-item chooser show: a search row (admin.orgs_search, no purpose: no contact
+ * data or points, backend S14 / BR-35) or the same facts taken from the full view (admin.org_get with a purpose).
+ */
+export type OrgHead = Pick<
+  StaffOrgSearchRow,
+  | 'id'
+  | 'name'
+  | 'organization_type'
+  | 'slug'
+  | 'status'
+  | 'verification_status'
+  | 'merged_into_organization_id'
+  | 'city'
+  | 'plan_key'
+  | 'open_cases'
+  | 'pending_verifications'
+>;
+
+/** The header facts of a full view. */
+export function headOf(o: StaffOrgView): OrgHead {
+  return {
+    id: o.id,
+    name: o.name,
+    organization_type: o.organization_type,
+    slug: o.slug,
+    status: o.status,
+    verification_status: o.verification_status,
+    merged_into_organization_id: o.merged_into_organization_id,
+    city: orgCity(o),
+    plan_key: o.subscription.plan.plan_key,
+    open_cases: o.open_cases,
+    pending_verifications: o.verifications
+      .filter((v) => v.status === 'pending')
+      .map((v) => ({ id: v.id, verification_type: v.verification_type, created_at: v.created_at })),
+  };
+}
+
 /** The work items an organization can be opened for: its pending verifications, oldest first. */
-export function verificationPurposes(org: Pick<StaffOrgView, 'verifications'>): { purpose: AccessPurpose; type: string; at: string }[] {
-  return org.verifications
-    .filter((v) => v.status === 'pending')
+export function verificationPurposes(org: Pick<OrgHead, 'pending_verifications'>): { purpose: AccessPurpose; type: string; at: string }[] {
+  return [...org.pending_verifications]
     .sort((a, b) => a.created_at.localeCompare(b.created_at))
     .map((v) => ({ purpose: purposeOf('verification', v.id), type: v.verification_type, at: v.created_at }));
 }

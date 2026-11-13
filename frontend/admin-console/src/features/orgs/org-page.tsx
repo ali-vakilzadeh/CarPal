@@ -3,7 +3,7 @@
 // (SEC-ADM-5): the backend accepts a purpose only while its item is open — a pending verification of the organization
 // or an open moderation case (assigned to nobody or to the caller) — so the page takes ?purpose= from the queue it was
 // opened from. Without one (or once the item is closed) the header comes from the organization search, which needs no
-// purpose and is shown without contact data, and the page lists the organization's pending verifications to open it
+// purpose and carries no contact data or points (StaffOrgSearchRow, backend S14), and the page lists the organization's pending verifications to open it
 // for. Header: name, type, status chips (organization, verification), plan, city, View public profile, and by role
 // Suspend / Reactivate, Assist onboarding, Change plan (a link to the AC6 form) and the Audit trail (ADM). Tabs:
 // Profile, Locations (map, correction), Verification (history, the badge approval), Plan; the other Docs/23 tabs are
@@ -30,11 +30,12 @@ import {
   MISSING_TABS,
   ORG_TABS,
   ORG_TYPES,
-  orgCity,
+  headOf,
   orgHref,
   publicProfileHref,
   VERIFICATION_STATUSES,
   verificationPurposes,
+  type OrgHead,
   type OrgTab,
 } from './org-logic';
 import { OrgStatusChips } from './orgs-page';
@@ -55,7 +56,7 @@ export function OrgPage({ orgId, publicWeb, mapStyleUrl }: OrgPageProps) {
   const needSummary = !purpose || detail.isError;
   const summary = useApiQuery('admin.orgs_search', { body: { organization_id: orgId, limit: 1 } }, { enabled: needSummary });
   const org = detail.data ?? null;
-  const head: StaffOrgView | null = org ?? summary.data?.items[0] ?? null;
+  const head: OrgHead | null = org ? headOf(org) : (summary.data?.items[0] ?? null);
 
   const refresh = () => {
     if (purpose) void detail.refetch();
@@ -92,13 +93,13 @@ export function OrgPage({ orgId, publicWeb, mapStyleUrl }: OrgPageProps) {
   );
 }
 
-function OrgHeader({ org, publicWeb, onChanged }: { org: StaffOrgView; publicWeb?: string; onChanged: () => void }) {
+function OrgHeader({ org, publicWeb, onChanged }: { org: OrgHead; publicWeb?: string; onChanged: () => void }) {
   const t = useT();
   const locale = useLocale();
   const session = useSession();
   const roles = session.data?.staff?.roles ?? [];
   const href = publicProfileHref(org, publicWeb, locale);
-  const city = orgCity(org);
+  const city = org.city;
   return (
     <header className="adm-org-head">
       <p className="adm-muted">
@@ -110,7 +111,7 @@ function OrgHeader({ org, publicWeb, onChanged }: { org: StaffOrgView; publicWeb
       <p className="adm-org-meta">
         <span>{label(ORG_TYPES, 'admin.orgs.type', org.organization_type, t)}</span>
         <OrgStatusChips org={org} />
-        <span>{t('admin.orgs.planIs', { plan: planLabel(org.subscription.plan.plan_key, t) })}</span>
+        {org.plan_key ? <span>{t('admin.orgs.planIs', { plan: planLabel(org.plan_key, t) })}</span> : null}
         {city ? (
           <span>
             <Icon name="pin" size={16} /> <Bidi>{city}</Bidi>
@@ -144,7 +145,7 @@ function OrgHeader({ org, publicWeb, onChanged }: { org: StaffOrgView; publicWeb
 }
 
 /** No purpose (or a closed one): the organization's pending verifications to open it for, and the queues. */
-function ChooseWorkItem({ org, closed }: { org: StaffOrgView; closed: boolean }) {
+function ChooseWorkItem({ org, closed }: { org: OrgHead; closed: boolean }) {
   const t = useT();
   const f = useFormat();
   const items = verificationPurposes(org);

@@ -30,6 +30,10 @@ const pending: PendingChange = {
   reason: 'planned_change',
   status: 'pending',
   expires_at: new Date(Date.now() + 72 * 3_600_000).toISOString(),
+  decided_by_display: null,
+  decided_at: null,
+  decision_reason: null,
+  job_id: null,
 };
 
 beforeEach(() => resetNav('/rates'));

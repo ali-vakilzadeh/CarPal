@@ -1,7 +1,7 @@
 // admin module (41 §2.1 M15; 40 §22 reports.create, §23; SEC-ADM). Four Nest
 // modules share this folder:
 //   AdminModule        (global, every deployable) the admin registries
-//                      (FourEyesExecutors, PurposeQueues, ModerationTargets,
+//                      (FourEyesExecutors, PurposeQueues, PurposeBindings, ModerationTargets,
 //                      RetentionHandlers), FourEyes, ModerationLog, the
 //                      purpose verifier of the authorizer (SEC-ADM-5) and the
 //                      flag and rate cache listener (feature_flag.changed, exchange_rate.changed).
@@ -54,17 +54,33 @@ import {
   ExchangeRatesListHandler,
   ExchangeRateUpdateHandler,
 } from './application/platform-ops.js';
-import { RetentionListHandler, RetentionUpdateHandler } from './application/platform-ops.js';
-import { DbFourEyes, DbModerationIntake, DbModerationLog, QueuePurposeVerifier } from './infrastructure/admin-services.js';
+import {
+  AdminJobGetHandler,
+  AdminRegionSettingsHandler,
+  RetentionListHandler,
+  RetentionUpdateHandler,
+} from './application/platform-ops.js';
+import {
+  DbFourEyes,
+  DbModerationIntake,
+  DbModerationLog,
+  DbPurposeSubjects,
+  QueuePurposeVerifier,
+} from './infrastructure/admin-services.js';
 import {
   FourEyes,
   FourEyesExecutors,
   ModerationIntake,
   ModerationLog,
   ModerationTargets,
+  pathRecord,
+  PurposeBindings,
   PurposeQueues,
+  PurposeSubjects,
   RetentionHandlers,
   StaffNames,
+  type RecordBinding,
+  type SubjectRef,
 } from './interface/admin.js';
 
 const OPEN_CASE = ['open', 'investigating', 'escalated'];
@@ -73,6 +89,8 @@ const OPEN_CASE = ['open', 'investigating', 'escalated'];
 export class AdminRegistrations implements OnModuleInit {
   constructor(
     private readonly purposes: PurposeQueues,
+    private readonly bindings: PurposeBindings,
+    private readonly targets: ModerationTargets,
     private readonly executors: FourEyesExecutors,
     private readonly retention: RetentionHandlers,
     private readonly flags: FlagService,
@@ -101,16 +119,64 @@ export class AdminRegistrations implements OnModuleInit {
         ).rows[0]!.n,
       ),
     );
-    // case:<id> — an open moderation case assigned to the caller or to nobody (SEC-ADM-5).
-    this.purposes.register('case', async (scope, staffUserId, id) => {
-      const c = await scope.db
-        .selectFrom('admin.moderation_cases')
-        .select(['status', 'assigned_to'])
-        .where('id', '=', id)
-        .where('deleted_at', 'is', null)
-        .executeTakeFirst();
-      return !!c && OPEN_CASE.includes(c.status) && (c.assigned_to === null || c.assigned_to === staffUserId);
+    // case:<id> — an open moderation case assigned to the caller or to nobody (SEC-ADM-5). Its subjects (S14,
+    // BR-09): the target, the target's author and organization (as the owning module names them) and the reporters.
+    this.purposes.register('case', {
+      open: async (scope, staffUserId, id) => {
+        const c = await scope.db
+          .selectFrom('admin.moderation_cases')
+          .select(['status', 'assigned_to'])
+          .where('id', '=', id)
+          .where('deleted_at', 'is', null)
+          .executeTakeFirst();
+        return !!c && OPEN_CASE.includes(c.status) && (c.assigned_to === null || c.assigned_to === staffUserId);
+      },
+      subjects: async (scope, id) => {
+        const c = await scope.db
+          .selectFrom('admin.moderation_cases')
+          .select(['target_entity_type', 'target_entity_id'])
+          .where('id', '=', id)
+          .executeTakeFirst();
+        if (!c) return [];
+        const out: SubjectRef[] = [{ type: c.target_entity_type, id: c.target_entity_id }];
+        const handler = this.targets.get(c.target_entity_type);
+        const [author, org] = await Promise.all([
+          handler?.author?.(scope, c.target_entity_id) ?? null,
+          handler?.subjectOrganization?.(scope, c.target_entity_id) ?? null,
+        ]);
+        if (author) out.push({ type: 'user', id: author });
+        if (org) out.push({ type: 'organization', id: org });
+        const reporters = await scope.db
+          .selectFrom('admin.content_reports')
+          .select('reporter_user_id')
+          .distinct()
+          .where('moderation_case_id', '=', id)
+          .where('deleted_at', 'is', null)
+          .limit(200)
+          .execute();
+        for (const r of reporters) out.push({ type: 'user', id: r.reporter_user_id });
+        return out;
+      },
     });
+    // The record of each PURP operation (S14, BR-09): a path parameter here; admin.media_download_url is bound by the
+    // media module (a file is about its attachments and owning organization), admin.users_search scopes its results.
+    const recordBindings: [string, RecordBinding][] = [
+      ['admin.case_get', pathRecord('case', 'case_id')],
+      ['admin.case_action', pathRecord('case', 'case_id')],
+      ['admin.dispute_get', pathRecord('dispute', 'dispute_id')],
+      ['admin.dispute_resolve', pathRecord('dispute', 'dispute_id')],
+      ['admin.dsr_update', pathRecord('dsr', 'request_id')],
+      ['admin.dsr_export', pathRecord('dsr', 'request_id')],
+      ['admin.dsr_execute_deletion', pathRecord('dsr', 'request_id')],
+      ['admin.verification_decide', pathRecord('verification', 'verification_id')],
+      // Reading a review under its approval item or a dispute about it; deciding only under the approval item.
+      ['admin.review_approval_get', pathRecord('review', 'review_id')],
+      ['admin.review_approval_decide', pathRecord('approval', 'review_id')],
+      ['admin.user_get', pathRecord('user', 'user_id')],
+      ['admin.org_get', pathRecord('organization', 'org_id')],
+      ['admin.users_search', async () => 'scoped'],
+    ];
+    for (const [opId, binding] of recordBindings) this.bindings.register(opId, binding);
     this.executors.register('admin.flag_update', async (scope, change) => {
       const row = await scope.db
         .selectFrom('admin.feature_flags')
@@ -180,6 +246,8 @@ export class FlagCacheListener implements OnApplicationBootstrap, OnApplicationS
   providers: [
     { provide: FourEyesExecutors, useFactory: () => new FourEyesExecutors() },
     { provide: PurposeQueues, useFactory: () => new PurposeQueues() },
+    { provide: PurposeBindings, useFactory: () => new PurposeBindings() },
+    { provide: PurposeSubjects, useClass: DbPurposeSubjects },
     { provide: ModerationTargets, useFactory: () => new ModerationTargets() },
     { provide: RetentionHandlers, useFactory: () => new RetentionHandlers() },
     StaffNames,
@@ -193,6 +261,8 @@ export class FlagCacheListener implements OnApplicationBootstrap, OnApplicationS
   exports: [
     FourEyesExecutors,
     PurposeQueues,
+    PurposeBindings,
+    PurposeSubjects,
     ModerationTargets,
     RetentionHandlers,
     StaffNames,
@@ -222,6 +292,8 @@ export class AdminModule {}
     ExchangeRateUpdateHandler,
     RetentionListHandler,
     RetentionUpdateHandler,
+    AdminJobGetHandler,
+    AdminRegionSettingsHandler,
     AssistSessionStartHandler,
     AssistSessionEndHandler,
   ],

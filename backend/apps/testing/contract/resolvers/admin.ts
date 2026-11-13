@@ -96,6 +96,46 @@ export const resolvers: Resolvers = {
     return { as: mod, params: { case_id: c.caseId }, body: { status: 'dismissed', resolution: 'No breach found', reason: REASON } };
   },
   'admin.staff_me': async (h) => ({ as: await h.staff('platform_community_reviewer') }),
+  // Contract 1.4.0 (backend S13): staff directory, region settings, badges and admin jobs.
+  'admin.staff_list': async (h) => {
+    await h.fx.staff('platform_moderator');
+    return {
+      as: await h.staff('platform_admin'),
+      query: { status: 'active', limit: 10 },
+      check: (res) => expect((res.body.items as Json[])[0]).toHaveProperty('email_masked'),
+    };
+  },
+  'admin.staff_disable': async (h) => {
+    const target = await h.fx.staff('platform_support');
+    return {
+      as: await h.staff('platform_admin'),
+      params: { user_id: target.id },
+      body: { reason: REASON },
+      check: (res) => expect(res.body).toMatchObject({ status: 'disabled', platform_roles: ['platform_support'] }),
+    };
+  },
+  'admin.staff_enable': async (h) => {
+    const target = await h.fx.staff('platform_support');
+    const as = await h.staff('platform_admin');
+    ok(await as.c.post(`/v1/admin/staff/${target.id}/disable`, { reason: REASON }), 'disable');
+    return { as, params: { user_id: target.id }, body: { reason: REASON }, check: (res) => h.rejectChange(res.body.change_id as string) };
+  },
+  'admin.badges_list': async (h) => ({ as: await h.staff('platform_moderator'), query: { status: 'pending_approval', limit: 10 } }),
+  'admin.region_settings': async (h) => ({
+    as: await h.staff('platform_community_reviewer'),
+    check: (res) => expect(res.body.location_check_threshold_m).toBeGreaterThan(0),
+  }),
+  'admin.job_get': async (h) => {
+    const as = await h.staff('platform_support');
+    const id = h.newId();
+    await h.sys((db) =>
+      db
+        .insertInto('core.background_jobs')
+        .values({ id, kind: 'data_export', owner_user_id: as.user.id, owning_module: 'identity', status: 'running', progress: 40 })
+        .execute(),
+    );
+    return { as, params: { job_id: id }, check: (res) => expect(res.body).toMatchObject({ kind: 'data_export', progress: 40 }) };
+  },
   'admin.flags_list': async (h) => ({ as: await h.staff('platform_admin'), query: { flag_type: 'release', limit: 100 } }),
   'admin.flag_update': async (h) => {
     const as = await h.staff('platform_admin');

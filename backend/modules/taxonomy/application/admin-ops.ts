@@ -17,6 +17,7 @@ import type { Locale } from '#libs/i18n/index.js';
 import { acceptedJob, JobService, type JobContext, type JobOutcome } from '#libs/jobs/index.js';
 import type { Logger } from '#libs/observability/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
+import { RegionConfigService } from '#libs/region-config/index.js';
 import { InjectLogger } from '#libs/runtime/index.js';
 import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
 import { FourEyes, headerReasonOf, staffOf } from '#modules/admin/interface/admin.js';
@@ -231,7 +232,7 @@ export async function startTaxonomyMerge(
     inputSummary: { node_id: change.targetId, into_node_id: change.payload.into_node_id },
     queue: TAXONOMY_MERGE_QUEUE,
   });
-  return acceptedJob(row);
+  return acceptedJob(row, 'admin');
 }
 
 /** The merge job: every module re-points, then the node becomes merged and taxonomy.node.merged is published. */
@@ -323,6 +324,54 @@ function toSynonym(r: SynonymRow) {
 }
 
 type Position = { id?: string } | undefined;
+
+type StaffSnapshotQuery = { type: string; parent_id?: string; status?: string; limit: number };
+
+/**
+ * admin.taxonomy_snapshot (contract 1.4.0, admin console BR-18): the staff taxonomy tree. Unlike the public
+ * taxonomy.snapshot it reads the table (every status, merged nodes included), carries the labels in every locale
+ * with the enabled locales still missing a name, and the version for admin.taxonomy_node_update. Ordered by id;
+ * the console orders siblings by sort_order.
+ */
+@Injectable()
+@Operation('admin.taxonomy_snapshot')
+export class AdminTaxonomySnapshotHandler implements OperationHandler {
+  constructor(private readonly region: RegionConfigService) {}
+
+  async handle(ctx: OperationContext<undefined, StaffSnapshotQuery>): Promise<OperationResult> {
+    staffOf(ctx);
+    const q = ctx.query;
+    const after = (ctx.cursor as Position)?.id;
+    const locales = this.region.locales;
+    const body = await ctx.tx(
+      async (scope) => {
+        let n = scope.db.selectFrom('taxonomy.taxonomy_nodes').selectAll().where('type', '=', q.type).where('deleted_at', 'is', null);
+        if (q.parent_id) n = n.where('parent_id', '=', q.parent_id);
+        if (q.status) n = n.where('status', '=', q.status);
+        if (after) n = n.where('id', '>', after);
+        const rows = await n
+          .orderBy('id')
+          .limit(q.limit + 1)
+          .execute();
+        const page = rows.slice(0, q.limit);
+        const items = page.map((row) => {
+          const names = (row.name_translations as Record<string, string> | null) ?? {};
+          const { version, ...node } = nodeView(row, ctx.locale);
+          return {
+            ...node,
+            name_translations: names,
+            description_translations: (row.description_translations as Record<string, string> | null) ?? null,
+            missing_locales: locales.filter((l) => !names[l]?.trim()),
+            version,
+          };
+        });
+        return ctx.page(items, rows.length > q.limit ? { id: page.at(-1)!.id } : null);
+      },
+      { readOnly: true },
+    );
+    return { body, contentLanguage: ctx.locale };
+  }
+}
 
 @Injectable()
 @Operation('admin.synonyms_list')

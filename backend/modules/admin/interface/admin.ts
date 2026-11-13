@@ -7,7 +7,11 @@
 //                       staff member approves (admin.four_eyes_decide).
 //   PurposeQueues       CarPal-Access-Purpose binding (SEC-ADM-5): each kind
 //                       (case, dispute, dsr, verification, approval) is
-//                       resolved by the module that owns the queue item.
+//                       resolved by the module that owns the queue item,
+//                       which also names the item's subjects (backend S14).
+//   PurposeBindings     the record each PURP operation reads or changes, so
+//                       the purpose is admitted only for a subject of its
+//                       item (PurposeSubjects reads the subjects in handlers).
 //   ModerationTargets   content owners plug their records into reports and
 //                       moderation cases (existence, snapshot, hide/remove/
 //                       restore/approve, owning organization).
@@ -29,11 +33,18 @@ export interface Staff {
   roles: string[];
   /** CarPal-Access-Purpose of PURP operations ("case:<id>" …), else null. */
   purpose: string | null;
+  /** The purpose item's subject the request's record was bound to ("user:<id>" …), named in pii.read entries (S14). */
+  bound: string | null;
 }
 
 export function staffOf(ctx: OperationContext): Staff {
   if (ctx.principal.kind !== 'staff') throw new ApiError('NOT_FOUND');
-  return { userId: ctx.principal.userId, roles: ctx.access.platformRoles, purpose: ctx.access.purpose?.value ?? null };
+  return {
+    userId: ctx.principal.userId,
+    roles: ctx.access.platformRoles,
+    purpose: ctx.access.purpose?.value ?? null,
+    bound: ctx.access.purpose?.bound ?? null,
+  };
 }
 
 /**
@@ -59,8 +70,9 @@ export function headerReasonOf(ctx: OperationContext): string {
 
 /**
  * SEC-LOG-4 / SEC-ADM-5: a staff read of private data writes a pii.read audit
- * entry with the access purpose (the pipeline refuses a staff PII response
- * without an audit entry).
+ * entry with the access purpose and the purpose item's subject the record was
+ * bound to (the pipeline refuses a staff PII response without an audit entry).
+ * `bound` overrides the request's binding (a search names each subject found).
  */
 export async function auditStaffRead(
   scope: TxScope,
@@ -68,9 +80,11 @@ export async function auditStaffRead(
   entityType: string,
   entityId: string,
   fieldsGroup: string,
+  bound: string | null = staff.bound,
 ): Promise<void> {
   if (!staff.purpose) throw new ApiError('MALFORMED_REQUEST', { detail: 'CarPal-Access-Purpose required' });
-  await auditPiiRead(scope, { entityType, entityId, accessPurpose: staff.purpose, fieldsGroup });
+  const group = bound ? `${fieldsGroup}; subject ${bound}` : fieldsGroup;
+  await auditPiiRead(scope, { entityType, entityId, accessPurpose: staff.purpose, fieldsGroup: group });
 }
 
 /** 40 §23.1 PendingChange. */
@@ -83,6 +97,12 @@ export interface PendingChangeView {
   reason: string;
   status: 'pending' | 'approved' | 'rejected' | 'expired';
   expires_at: string;
+  /** Contract 1.4.0 (admin console BR-21): the decision, once decided. */
+  decided_by_display: string | null;
+  decided_at: string | null;
+  decision_reason: string | null;
+  /** Contract 1.4.0: the background job an approved ASYNC change started (admin.job_get). */
+  job_id: string | null;
 }
 
 export interface PendingChangeRequest {
@@ -112,7 +132,9 @@ export interface ApprovedChange {
   requestId: string;
 }
 
-export type FourEyesExecutor = (scope: TxScope, change: ApprovedChange) => Promise<void>;
+/** What an executor may report: the background job an ASYNC change started (stored as PendingChange.job_id). */
+export type FourEyesOutcome = { jobId: string } | void;
+export type FourEyesExecutor = (scope: TxScope, change: ApprovedChange) => Promise<FourEyesOutcome>;
 
 export abstract class FourEyes {
   /**
@@ -143,17 +165,82 @@ export class FourEyesExecutors {
  */
 export type PurposeResolver = (scope: TxScope, staffUserId: string, id: string, opId: string) => Promise<boolean>;
 
+/**
+ * A record a purpose can be about (backend S14, BR-09): `type` is a 52 entity
+ * name as used by moderation targets and media attachments ('user',
+ * 'organization', 'review', 'media_asset' …) or a purpose kind for the item
+ * itself ('case', 'dispute', 'dsr', 'verification', 'approval').
+ */
+export interface SubjectRef {
+  type: string;
+  id: string;
+}
+
+export const subjectKey = (s: SubjectRef): string => `${s.type}:${s.id}`;
+
+/**
+ * The records a purpose item is about (its subjects), besides the item itself,
+ * which is always a subject. Runs in the same read-only staff transaction as
+ * the queue check. Example: a case about a post names the post, its author,
+ * its organization and the reporters.
+ */
+export type SubjectResolver = (scope: TxScope, id: string) => Promise<SubjectRef[]>;
+
+export interface PurposeQueue {
+  open: PurposeResolver;
+  subjects: SubjectResolver;
+}
+
 export class PurposeQueues {
-  readonly #resolvers = new Map<PurposeKind, PurposeResolver>();
+  readonly #queues = new Map<PurposeKind, PurposeQueue>();
 
-  register(kind: PurposeKind, resolver: PurposeResolver): void {
-    if (this.#resolvers.has(kind)) throw new Error(`purpose queue ${kind} registered twice`);
-    this.#resolvers.set(kind, resolver);
+  register(kind: PurposeKind, queue: PurposeQueue): void {
+    if (this.#queues.has(kind)) throw new Error(`purpose queue ${kind} registered twice`);
+    this.#queues.set(kind, queue);
   }
 
-  get(kind: PurposeKind): PurposeResolver | undefined {
-    return this.#resolvers.get(kind);
+  get(kind: PurposeKind): PurposeQueue | undefined {
+    return this.#queues.get(kind);
   }
+}
+
+/**
+ * The record a PURP operation reads or changes, from its path parameters (and a
+ * lookup where the record is a file): any of the returned refs that is a subject
+ * of the purpose item admits the purpose. An empty list (the record does not
+ * exist) is refused like an unrelated record. `'scoped'`: the operation limits
+ * its own results to the item's subjects (admin.users_search, PurposeSubjects).
+ */
+export type RecordBinding = (scope: TxScope, params: Record<string, string>) => Promise<SubjectRef[] | 'scoped'>;
+
+/** One binding per PURP operation; an operation without one refuses every purpose (fail closed). */
+export class PurposeBindings {
+  readonly #bindings = new Map<string, RecordBinding>();
+
+  register(opId: string, binding: RecordBinding): void {
+    if (this.#bindings.has(opId)) throw new Error(`purpose binding ${opId} registered twice`);
+    this.#bindings.set(opId, binding);
+  }
+
+  get(opId: string): RecordBinding | undefined {
+    return this.#bindings.get(opId);
+  }
+
+  opIds(): string[] {
+    return [...this.#bindings.keys()];
+  }
+}
+
+/** The binding of an operation whose record is a path parameter, e.g. pathRecord('user', 'user_id'). */
+export const pathRecord =
+  (type: string, param: string): RecordBinding =>
+  async (_scope, params) =>
+    params[param] ? [{ type, id: params[param] }] : [];
+
+/** The subjects of the request's purpose item, for handlers that scope their results or check a body reference. */
+export abstract class PurposeSubjects {
+  /** Every subject of the item, the item itself first. */
+  abstract of(scope: TxScope, purpose: AccessPurpose): Promise<SubjectRef[]>;
 }
 
 /** Content and account types a report or moderation case can target (40 ReportTargetType + badge). */

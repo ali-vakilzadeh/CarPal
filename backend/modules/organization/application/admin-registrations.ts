@@ -139,14 +139,30 @@ export class OrganizationAdminRegistrations implements OnModuleInit {
         into,
       ),
     );
-    this.purposes?.register('verification', async (scope, staffUserId, id) => {
-      const v = await scope.db
-        .selectFrom('organization.organization_verifications')
-        .select(['status', 'reviewed_by'])
-        .where('id', '=', id)
-        .where('deleted_at', 'is', null)
-        .executeTakeFirst();
-      return !!v && v.status === 'pending' && (v.reviewed_by === null || v.reviewed_by === staffUserId);
+    this.purposes?.register('verification', {
+      open: async (scope, staffUserId, id) => {
+        const v = await scope.db
+          .selectFrom('organization.organization_verifications')
+          .select(['status', 'reviewed_by'])
+          .where('id', '=', id)
+          .where('deleted_at', 'is', null)
+          .executeTakeFirst();
+        return !!v && v.status === 'pending' && (v.reviewed_by === null || v.reviewed_by === staffUserId);
+      },
+      // S14 (BR-09): the organization, the member who submitted the check and the documents it submitted.
+      subjects: async (scope, id) => {
+        const v = await scope.db
+          .selectFrom('organization.organization_verifications')
+          .select(['organization_id', 'created_by', 'submitted_document_ids'])
+          .where('id', '=', id)
+          .executeTakeFirst();
+        if (!v) return [];
+        return [
+          { type: 'organization', id: v.organization_id },
+          ...(v.created_by ? [{ type: 'user', id: v.created_by }] : []),
+          ...v.submitted_document_ids.map((m) => ({ type: 'media_asset', id: m })),
+        ];
+      },
     });
     this.executors?.register('admin.org_merge', async (scope, c) =>
       mergeOrganization(scope, this.authorizer, c.targetId, String(c.payload.into_organization_id), c.reason),

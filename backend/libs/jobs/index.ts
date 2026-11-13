@@ -56,9 +56,12 @@ export function toJobView(row: JobRow): JobView {
   return view;
 }
 
-/** The `202 Job` response of an ASYNC operation, with Location (40 §1.4). */
-export function acceptedJob(row: JobRow): { status: 202; body: JobView; headers: Record<string, string> } {
-  return { status: 202, body: toJobView(row), headers: { location: `/v1/jobs/${row.id}` } };
+/**
+ * The `202 Job` response of an ASYNC operation, with Location (40 §1.4): jobs.get on the api host, or
+ * admin.job_get (`/v1/admin/jobs/{id}`) for a job started on the admin plane (contract 1.4.0).
+ */
+export function acceptedJob(row: JobRow, plane: 'api' | 'admin' = 'api'): { status: 202; body: JobView; headers: Record<string, string> } {
+  return { status: 202, body: toJobView(row), headers: { location: `${plane === 'admin' ? '/v1/admin' : '/v1'}/jobs/${row.id}` } };
 }
 
 export interface CreateJob {

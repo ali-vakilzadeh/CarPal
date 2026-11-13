@@ -41,6 +41,7 @@ export const ERROR_CODES = {
   PAYLOAD_TOO_LARGE: { status: 413, meaning: "", common: true },
   PRECONDITION_REQUIRED: { status: 428, meaning: "", common: true },
   PUBLISH_REQUIREMENTS_UNMET: { status: 409, meaning: "Publish rules not met (52 §21); body lists missing requirements", common: false },
+  PURPOSE_RECORD_MISMATCH: { status: 403, meaning: "The access purpose names an item in the caller's queue, but the record of the request is not one of its subjects (SEC-ADM-5)", common: false },
   RATE_LIMITED: { status: 429, meaning: "", common: true },
   READ_ONLY_FIELD: { status: 422, meaning: "", common: true },
   REFERENCE_NOT_FOUND: { status: 422, meaning: "", common: true },

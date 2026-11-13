@@ -25,12 +25,12 @@ describe('admin contract generation (AC1.T2)', () => {
     expect(contractProblems(registry())).toEqual([]);
   });
 
-  it('selects the 63 admin-api operations of contract 1.3.0 and no api reads (AC2: the api host refuses admin tokens)', () => {
+  it('selects the 70 admin-api operations of contract 1.4.0 and no api reads (AC2: the api host refuses admin tokens)', () => {
     const ops = selectOperations(registry());
-    expect([...ops.values()].filter((o) => o.plane === 'admin')).toHaveLength(63);
+    expect([...ops.values()].filter((o) => o.plane === 'admin')).toHaveLength(70);
     expect(API_READS).toEqual([]);
     expect([...ops.values()].filter((o) => o.plane === 'api-read')).toHaveLength(0);
-    expect(ADMIN_CONTRACT).toMatchObject({ version: '1.3.0', adminOperationCount: 63, apiReadCount: 0 });
+    expect(ADMIN_CONTRACT).toMatchObject({ version: '1.4.0', adminOperationCount: 70, apiReadCount: 0 });
     for (const op of ops.values()) if (op.plane === 'admin') expect(op.host).toBe('admin-api');
   });
 
@@ -70,7 +70,7 @@ describe('admin contract generation (AC1.T2)', () => {
     for (const [name, content] of generateFiles(registry())) writeFileSync(join(out, name), content);
     expect(staleFiles(generateFiles(changed), out)).toEqual(['operations.ts', 'roles.ts']);
     // A new Docs/40 version also fails: the shared contract and the expected version no longer match.
-    const bumped = { ...registry(), contractVersion: '1.3.0', sourceSha256: '0'.repeat(64) };
+    const bumped = { ...registry(), contractVersion: '1.5.0', sourceSha256: '0'.repeat(64) };
     expect(contractProblems(bumped, { ...PATHS, out }).length).toBeGreaterThanOrEqual(2);
   });
 

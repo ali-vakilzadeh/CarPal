@@ -539,7 +539,7 @@ describe('contract 1.2.0 (lite)', () => {
     it('config.client serves the base currency, the display currencies and the rate', async () => {
       const res = await api.request<Json>({ path: '/v1/config/client', token: await api.fixtures.anonymousToken() });
       expect(res.status, res.text).toBe(200);
-      expect(res.body.contract_version).toBe('1.3.0'); // the server's current version (contract 1.3.0 since S12)
+      expect(res.body.contract_version).toBe('1.4.0'); // the server's current version (contract 1.4.0 since S13)
       expect(res.body.region).toMatchObject({ currency: 'USD', display_currencies: ['IRR', 'USD'] });
       const irr = res.body.region.exchange_rates.find((r: Json) => r.currency === 'IRR');
       expect(Number(irr.per_usd)).toBeGreaterThan(0);

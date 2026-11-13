@@ -52,6 +52,10 @@ const CHANGE: PendingChange = {
   reason: 'planned_change: yearly review',
   status: 'pending',
   expires_at: '2026-11-12T08:00:00Z',
+  decided_by_display: null,
+  decided_at: null,
+  decision_reason: null,
+  job_id: null,
 };
 
 beforeEach(() => {
@@ -178,6 +182,14 @@ describe('useAdminAction (AC5.T2/T4)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Go' }));
     expect(await screen.findByText('Someone else must decide this')).toBeInTheDocument();
     expect(screen.getByText(/You requested this change yourself/)).toBeInTheDocument();
+  });
+
+  it('explains PURPOSE_RECORD_MISMATCH as a record outside the work item (backend S14)', async () => {
+    const { transport } = scriptedTransport({ 'admin.four_eyes_decide': () => problem(403, 'PURPOSE_RECORD_MISMATCH') });
+    renderConsole(<Action reason="planned_change" />, { transport });
+    fireEvent.click(screen.getByRole('button', { name: 'Go' }));
+    expect(await screen.findByText(/This record is not part of the work item you opened it from/)).toBeInTheDocument();
+    expect(screen.queryByText('Your role does not allow this action.')).toBeNull();
   });
 
   it('STEP_UP_REQUIRED opens the security-key confirmation and saves the action for one replay', async () => {

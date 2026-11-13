@@ -12,11 +12,11 @@ describe('generated contract', () => {
     }
   });
 
-  it('declares 414 operations and 466 routes (S12: staff passkey enrolment, admin.staff_me, contract 1.3.0)', () => {
+  it('declares 421 operations and 473 routes (S13: admin console reads and staff directory, contract 1.4.0)', () => {
     const r = loadRegistry();
-    expect(r.operationCount).toBe(414);
-    expect(OPERATION_IDS).toHaveLength(414);
-    expect(r.routeCount).toBe(466);
+    expect(r.operationCount).toBe(421);
+    expect(OPERATION_IDS).toHaveLength(421);
+    expect(r.routeCount).toBe(473);
     for (const op of r.operations) {
       expect(op.routes.length, op.opId).toBeGreaterThan(0);
       for (const route of op.routes) {

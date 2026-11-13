@@ -55,6 +55,10 @@ const TITLES: Record<ErrorCode, [en: string, fa: string]> = {
   REFERENCE_NOT_FOUND: ['A referenced item was not found.', 'مورد ارجاع‌شده پیدا نشد.'],
   REVIEW_NOT_ALLOWED: ['You cannot review this.', 'شما نمی‌توانید برای این مورد نظر ثبت کنید.'],
   SELF_APPROVAL_FORBIDDEN: ['A different person must approve this.', 'این مورد باید توسط فرد دیگری تأیید شود.'],
+  PURPOSE_RECORD_MISMATCH: [
+    'This record is not part of the work item you opened it for.',
+    'این مورد به کاری که برای آن باز شده است مربوط نیست.',
+  ],
   STEP_UP_REQUIRED: ['Please confirm it is you to continue.', 'برای ادامه، هویت خود را دوباره تأیید کنید.'],
   TAXONOMY_MISMATCH: ['The selected categories do not fit together.', 'دسته‌های انتخاب‌شده با هم سازگار نیستند.'],
   UNAUTHENTICATED: ['Please sign in.', 'لطفاً وارد شوید.'],

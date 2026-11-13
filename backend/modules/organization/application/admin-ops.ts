@@ -12,7 +12,7 @@ import { sql } from 'kysely';
 import { writeAudit } from '#libs/audit/index.js';
 import { Authorizer } from '#libs/authz/index.js';
 import { ApiError } from '#libs/contract/index.js';
-import { Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
+import { iso, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { auditStaffRead, FourEyes, ModerationLog, staffOf, type Staff } from '#modules/admin/interface/admin.js';
@@ -86,6 +86,61 @@ export class StaffOrgViews {
   }
 }
 
+/**
+ * 40 StaffOrgSearchRow (backend S14, admin console BR-35 part 1, DI-31): what a staff queue needs to find an
+ * organization, without a purpose. No contact data and no location points: those are admin.org_get (PURP PII).
+ */
+@Injectable()
+export class StaffOrgSearchRows {
+  constructor(
+    private readonly subscriptions: SubscriptionReader,
+    private readonly members: OrgMemberships,
+    private readonly moderation: ModerationLog,
+  ) {}
+
+  async row(scope: TxScope, o: OrgRow) {
+    const [locations, pending, subscription, memberCount, openCases] = await Promise.all([
+      scope.db
+        .selectFrom('organization.organization_locations')
+        .select(['id', 'city', 'status'])
+        .where('organization_id', '=', o.id)
+        .where('deleted_at', 'is', null)
+        .orderBy('id')
+        .limit(50)
+        .execute(),
+      scope.db
+        .selectFrom('organization.organization_verifications')
+        .select(['id', 'verification_type', 'created_at'])
+        .where('organization_id', '=', o.id)
+        .where('status', '=', 'pending')
+        .where('deleted_at', 'is', null)
+        .orderBy('created_at')
+        .limit(10)
+        .execute(),
+      this.subscriptions.staffSubscription(scope, { type: 'organization', id: o.id }),
+      this.members.countActive(scope, o.id, ORG_ROLES),
+      this.moderation.openCases(scope, 'organization', o.id),
+    ]);
+    const primary = locations.find((l) => l.id === o.primary_location_id) ?? locations.find((l) => l.status !== 'inactive');
+    return {
+      id: o.id,
+      name: o.name,
+      organization_type: o.organization_type,
+      slug: o.slug,
+      status: o.status,
+      verification_status: o.verification_status,
+      merged_into_organization_id: o.merged_into_organization_id,
+      city: primary?.city ?? null,
+      plan_key: (subscription as { plan?: { plan_key?: string } } | null)?.plan?.plan_key ?? null,
+      member_count: memberCount,
+      open_cases: openCases,
+      trust_score: o.trust_score,
+      pending_verifications: pending.map((v) => ({ id: v.id, verification_type: v.verification_type, created_at: iso(v.created_at) })),
+      created_at: iso(o.created_at),
+    };
+  }
+}
+
 type OrgSearch = {
   name?: string;
   slug?: string;
@@ -99,10 +154,10 @@ type OrgSearch = {
 @Injectable()
 @Operation('admin.orgs_search')
 export class AdminOrgsSearchHandler implements OperationHandler {
-  constructor(private readonly views: StaffOrgViews) {}
+  constructor(private readonly rows: StaffOrgSearchRows) {}
 
   async handle(ctx: OperationContext<OrgSearch>): Promise<OperationResult> {
-    const s = staffOf(ctx);
+    staffOf(ctx);
     const b = ctx.body;
     const limit = b.limit ?? 20;
     const after = afterId(ctx);
@@ -122,7 +177,7 @@ export class AdminOrgsSearchHandler implements OperationHandler {
           .execute();
         const page = rows.slice(0, limit);
         const items = [];
-        for (const o of page) items.push(await this.views.view(scope, o, s));
+        for (const o of page) items.push(await this.rows.row(scope, o));
         return ctx.page(items, rows.length > limit ? { id: page.at(-1)!.id } : null);
       },
       { readOnly: true },

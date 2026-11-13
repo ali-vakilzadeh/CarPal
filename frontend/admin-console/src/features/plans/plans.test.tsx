@@ -5,7 +5,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PendingChange, Plan, StaffOrgView, Subscription } from '@carpal/api-contracts';
-import { axeViolations, page, renderConsole, scriptedTransport } from '../../../tests/support/console-harness';
+import { axeViolations, page, renderConsole, scriptedTransport, searchRow } from '../../../tests/support/console-harness';
 import { resetNav } from '../../../tests/support/navigation-mock';
 import type { Locale } from '@/lib/i18n/locales';
 import { audiencesOf, changedEntitlements, dayIn, draftsOf, endOfDayIso, parseSubscriberParam } from './plan-logic';
@@ -55,6 +55,10 @@ const pending: PendingChange = {
   reason: 'planned_change',
   status: 'pending',
   expires_at: new Date(Date.now() + 72 * 3_600_000).toISOString(),
+  decided_by_display: null,
+  decided_at: null,
+  decision_reason: null,
+  job_id: null,
 };
 
 function org(o: Partial<StaffOrgView> = {}): StaffOrgView {
@@ -64,6 +68,10 @@ function org(o: Partial<StaffOrgView> = {}): StaffOrgView {
     organization_type: 'fleet',
     status: 'active',
     subscription: { plan: free, status: 'active' } as Subscription,
+    locations: [],
+    verifications: [],
+    member_count: 4,
+    open_cases: 0,
     ...o,
   } as StaffOrgView;
 }
@@ -163,7 +171,7 @@ describe('Plans & entitlements page (AC6.T3/T4)', () => {
   it('assigns a trial to an organization found by name, with an override', async () => {
     const { transport, calls } = scriptedTransport({
       'admin.plans_list': () => page([free, fleet20, providerBasic]),
-      'admin.orgs_search': () => page([org()]),
+      'admin.orgs_search': () => page([searchRow(org())]),
       'admin.subscription_assign': () => Response.json(subscription()),
     });
     renderConsole(<PlansPage />, { transport, roles: ['ADM'] });
@@ -247,7 +255,7 @@ describe('Plans & entitlements page (AC6.T3/T4)', () => {
       resetNav(`/plans?plan=${fleet20.id}`);
       const { transport } = scriptedTransport({
         'admin.plans_list': () => page([free, fleet20]),
-        'admin.orgs_search': () => page([org()]),
+        'admin.orgs_search': () => page([searchRow(org())]),
       });
       renderConsole(<PlansPage />, { transport, roles: ['ADM'], locale });
       await screen.findByTestId('plan-editor');

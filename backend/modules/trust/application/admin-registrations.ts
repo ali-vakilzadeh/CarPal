@@ -1,5 +1,5 @@
 // Trust's plug-ins for the admin plane (S8): the purpose queues it owns
-// (dispute:<id>, approval:<review id>), the four-eyes executor of
+// (dispute:<id>, approval:<review id>) with their subjects (S14), the four-eyes executor of
 // admin.review_move_to_approval_path, its moderation targets (review,
 // review_response, badge) and its part of data subject requests (authored
 // reviews and raised disputes; erasure keeps reviews under "former member").
@@ -7,8 +7,17 @@ import { Injectable, Optional, type OnModuleInit } from '@nestjs/common';
 import { sql } from 'kysely';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
-import { FourEyesExecutors, ModerationTargets, PurposeQueues, type ContentAction } from '#modules/admin/interface/admin.js';
+import {
+  FourEyesExecutors,
+  ModerationLog,
+  ModerationTargets,
+  PurposeQueues,
+  type ContentAction,
+  type SubjectRef,
+} from '#modules/admin/interface/admin.js';
 import { MetricGauges } from '#modules/analytics/interface/analytics.js';
+import { AppointmentFacts } from '#modules/appointment/interface/appointments.js';
+import { VehicleCards } from '#modules/vehicle/interface/vehicles.js';
 import { PersonalDataRegistry } from '#modules/identity/interface/identity.js';
 import { repointColumns, TaxonomyReferences } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { moveToApprovalPath } from './admin-ops.js';
@@ -114,7 +123,48 @@ export class TrustAdminRegistrations implements OnModuleInit {
     @Optional() private readonly personal?: PersonalDataRegistry,
     @Optional() private readonly taxonomyRefs?: TaxonomyReferences,
     @Optional() private readonly gauges?: MetricGauges,
+    @Optional() private readonly appointments?: AppointmentFacts,
+    @Optional() private readonly vehicles?: VehicleCards,
+    @Optional() private readonly moderation?: ModerationLog,
   ) {}
+
+  /** The parties of a dispute target, as disputes.create checks them (S14 purpose subjects). */
+  async #targetParties(scope: TxScope, type: string, id: string): Promise<SubjectRef[]> {
+    const out: SubjectRef[] = [];
+    const user = (u: string | null | undefined) => u && out.push({ type: 'user', id: u });
+    const org = (o: string | null | undefined) => o && out.push({ type: 'organization', id: o });
+    if (type === 'review') {
+      const r = await scope.db
+        .selectFrom('trust.reviews')
+        .select(['author_user_id', 'subject_organization_id'])
+        .where('id', '=', id)
+        .executeTakeFirst();
+      user(r?.author_user_id);
+      org(r?.subject_organization_id);
+    } else if (type === 'badge') {
+      const b = await scope.db
+        .selectFrom('trust.provider_badges')
+        .select('provider_organization_id')
+        .where('id', '=', id)
+        .executeTakeFirst();
+      org(b?.provider_organization_id);
+    } else if (type === 'appointment') {
+      const a = (await this.appointments?.visits(scope, [id]))?.get(id);
+      user(a?.requesterUserId);
+      org(a?.requesterOrgId);
+      org(a?.providerOrgId);
+    } else if (type === 'service_record') {
+      const p = await this.vehicles?.serviceRecordParties(scope, id);
+      if (p) (p.ownerType === 'user' ? user : org)(p.ownerId);
+      org(p?.providerOrgId);
+    } else if (type === 'moderation_action') {
+      const [affects, action] = await Promise.all([this.moderation?.affects(scope, id), this.moderation?.get(scope, id)]);
+      user(affects?.userId);
+      org(affects?.organizationId);
+      if (action) out.push({ type: action.targetType, id: action.targetId });
+    }
+    return out;
+  }
 
   onModuleInit(): void {
     this.gauges?.register('gauge.review_approvals_pending', async (scope) =>
@@ -138,23 +188,57 @@ export class TrustAdminRegistrations implements OnModuleInit {
         into,
       ),
     );
-    this.purposes?.register('dispute', async (scope, staffUserId, id) => {
-      const d = await scope.db
-        .selectFrom('trust.disputes')
-        .select(['status', 'assigned_to'])
-        .where('id', '=', id)
-        .where('deleted_at', 'is', null)
-        .executeTakeFirst();
-      return !!d && ['open', 'in_mediation'].includes(d.status) && (d.assigned_to === null || d.assigned_to === staffUserId);
+    this.purposes?.register('dispute', {
+      open: async (scope, staffUserId, id) => {
+        const d = await scope.db
+          .selectFrom('trust.disputes')
+          .select(['status', 'assigned_to'])
+          .where('id', '=', id)
+          .where('deleted_at', 'is', null)
+          .executeTakeFirst();
+        return !!d && ['open', 'in_mediation'].includes(d.status) && (d.assigned_to === null || d.assigned_to === staffUserId);
+      },
+      // S14 (BR-09): the raiser, the raising organization, the target and the target's parties.
+      subjects: async (scope, id) => {
+        const d = await scope.db
+          .selectFrom('trust.disputes')
+          .select(['raised_by_user_id', 'raised_by_organization_id', 'target_entity_type', 'target_entity_id'])
+          .where('id', '=', id)
+          .executeTakeFirst();
+        if (!d) return [];
+        const out: SubjectRef[] = [
+          { type: 'user', id: d.raised_by_user_id },
+          ...(d.raised_by_organization_id ? [{ type: 'organization', id: d.raised_by_organization_id }] : []),
+          { type: d.target_entity_type, id: d.target_entity_id },
+        ];
+        return [...out, ...(await this.#targetParties(scope, d.target_entity_type, d.target_entity_id))];
+      },
     });
-    this.purposes?.register('approval', async (scope, _staffUserId, id) => {
-      const r = await scope.db
-        .selectFrom('trust.reviews')
-        .select(['status', 'confirmation_path'])
-        .where('id', '=', id)
-        .where('deleted_at', 'is', null)
-        .executeTakeFirst();
-      return !!r && r.confirmation_path === 'approval_based' && r.status === 'pending_approval';
+    // approval:<review id>: the review, its author and the reviewed organization.
+    this.purposes?.register('approval', {
+      open: async (scope, _staffUserId, id) => {
+        const r = await scope.db
+          .selectFrom('trust.reviews')
+          .select(['status', 'confirmation_path'])
+          .where('id', '=', id)
+          .where('deleted_at', 'is', null)
+          .executeTakeFirst();
+        return !!r && r.confirmation_path === 'approval_based' && r.status === 'pending_approval';
+      },
+      subjects: async (scope, id) => {
+        const r = await scope.db
+          .selectFrom('trust.reviews')
+          .select(['author_user_id', 'subject_organization_id'])
+          .where('id', '=', id)
+          .executeTakeFirst();
+        return r
+          ? [
+              { type: 'review', id },
+              { type: 'user', id: r.author_user_id },
+              { type: 'organization', id: r.subject_organization_id },
+            ]
+          : [];
+      },
     });
     this.executors?.register('admin.review_move_to_approval_path', async (scope, c) => moveToApprovalPath(scope, c.targetId, c.reason));
 

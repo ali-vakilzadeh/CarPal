@@ -361,6 +361,10 @@ describe('Reviews: review cases (AC7.T1/T3)', () => {
       reason: 'visit_evidence_invalid: shop confirmed no visit',
       status: 'pending',
       expires_at: ago(-72),
+      decided_by_display: null,
+      decided_at: null,
+      decision_reason: null,
+      job_id: null,
     };
     const { transport, calls } = scriptedTransport({
       'admin.cases_list': () => page([modCase()]),

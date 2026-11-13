@@ -23,8 +23,10 @@ import {
   FourEyes,
   ModerationLog,
   ModerationTargets,
+  PurposeSubjects,
   StaffNames,
   staffOf,
+  subjectKey,
   type ContentAction,
   type ModerationTargetHandler,
 } from '../interface/admin.js';
@@ -43,6 +45,9 @@ const DEDICATED: Record<string, string> = {
   assist_onboarding: 'admin.assist_session_start',
 };
 const PENALTY_TTL_MS = 365 * 86_400_000;
+
+/** 403 PURPOSE_RECORD_MISMATCH: a record outside the case's subjects (S14, BR-09). */
+const mismatch = (what: 'target' | 'badge') => new ApiError('PURPOSE_RECORD_MISMATCH', { detail: `${what} is not a subject of the case` });
 
 type ReportCreate = { target_type: string; target_id: string; reason: string; details?: string };
 
@@ -360,6 +365,7 @@ export class CaseActionHandler implements OperationHandler {
     private readonly trust: TrustAdmin,
     private readonly fourEyes: FourEyes,
     private readonly names: StaffNames,
+    private readonly subjects: PurposeSubjects,
   ) {}
 
   async handle(ctx: OperationContext<ActionInput>): Promise<OperationResult> {
@@ -374,13 +380,21 @@ export class CaseActionHandler implements OperationHandler {
       if (!OPEN_CASE.includes(c.status)) throw new ApiError('INVALID_TRANSITION', { detail: `case ${c.status}` });
       const target = b.target ?? { type: c.target_entity_type, id: c.target_entity_id };
       const handler = this.targets.get(target.type);
-      if (!handler || !(await handler.exists(scope, target.id))) throw notFoundAt('/target/id');
-      const subjectOrg = target.type === 'organization' ? target.id : ((await handler.subjectOrganization?.(scope, target.id)) ?? null);
-      const author = target.type === 'user' ? target.id : ((await handler.author?.(scope, target.id)) ?? null);
+      // S14 (BR-09, SEC-ADM-5): an action under a case acts on the case's subjects only: the target itself, or a
+      // record whose organization or author is a subject. A missing record gets the same answer (no oracle).
+      const subjects = new Set((await this.subjects.of(scope, ctx.access.purpose!)).map(subjectKey));
+      const direct = subjects.has(subjectKey(target));
+      const exists = !!handler && (await handler.exists(scope, target.id));
+      if (!direct && !exists) throw mismatch('target');
+      if (!exists) throw notFoundAt('/target/id');
+      const subjectOrg = target.type === 'organization' ? target.id : ((await handler!.subjectOrganization?.(scope, target.id)) ?? null);
+      const author = target.type === 'user' ? target.id : ((await handler!.author?.(scope, target.id)) ?? null);
+      if (!direct && !(subjectOrg && subjects.has(`organization:${subjectOrg}`)) && !(author && subjects.has(`user:${author}`)))
+        throw mismatch('target');
       // Separation of duties: staff never act on their own account or content.
       if (author === s.userId) throw new ApiError('SELF_APPROVAL_FORBIDDEN', { detail: 'own account or content' });
       const params: Record<string, unknown> = { ...(b.params ?? {}), ...(subjectOrg ? { subject_organization_id: subjectOrg } : {}) };
-      await this.apply(scope, ctx, s.userId, b, target, handler, { subjectOrg, author, params, fake: c.reason === 'fake' });
+      await this.apply(scope, ctx, s.userId, b, target, handler!, { subjectOrg, author, params, fake: c.reason === 'fake', subjects });
       const id = await this.log.record(scope, {
         caseId: c.id,
         targetType: target.type,
@@ -425,7 +439,7 @@ export class CaseActionHandler implements OperationHandler {
     b: ActionInput,
     target: { type: string; id: string },
     handler: ModerationTargetHandler,
-    o: { subjectOrg: string | null; author: string | null; params: Record<string, unknown>; fake: boolean },
+    o: { subjectOrg: string | null; author: string | null; params: Record<string, unknown>; fake: boolean; subjects: Set<string> },
   ): Promise<void> {
     const a = b.action_type;
     if ((CONTENT_ACTIONS as string[]).includes(a)) {
@@ -457,6 +471,8 @@ export class CaseActionHandler implements OperationHandler {
         if (!badgeId) failIf([{ pointer: '/params/badge_id', code: 'conditional_required' }]);
         const r = await this.trust.revokeBadge(scope, badgeId!, b.reason);
         if (!r) throw notFoundAt('/params/badge_id');
+        // The badge must belong to an organization the case is about (the revocation rolls back otherwise).
+        if (!o.subjects.has(`badge:${badgeId}`) && !o.subjects.has(`organization:${r.organizationId}`)) throw mismatch('badge');
         o.params.badge_id = badgeId;
         o.params.subject_organization_id = r.organizationId;
         return;

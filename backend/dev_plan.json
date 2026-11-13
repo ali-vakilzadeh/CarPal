@@ -2,11 +2,11 @@
   "meta": {
     "title": "CarPal backend — scratch build plan and stage log",
     "created": "2026-10-10",
-    "last_updated": "2026-11-09",
+    "last_updated": "2026-11-13",
     "status": "scratch_build_done",
     "progress": {
-      "as_of": "2026-11-09",
-      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list. S10 is DONE (2026-10-26): contract 1.1.0 served — search.session_get (406/407 operations served), search facets, the soonest sort with next_available_slot, search.page limit and the map.pins changes; the 1.1.0 text was corrected before use (DI-74). Next: the next_iteration list; the PWA continues with P7 and adopts 1.1.0 in P14. 2026-11-04: plan aligned with the closed PWA scratch build (pwa/dev_plan.json P1-P14, meta.status scratch_build_done). Rule GD-43: where the two plans disagree, the newer PWA decision wins and the backend follows. The PWA's pilot blockers that need the backend are now stage S11 'Pilot readiness: PWA integration 2' (strict auth for the BFF clients by DPoP + private_key_jwt, contract 1.2.0 for the profile and settings fields of PWA DI-55, USD prices with an admin-set exchange rate, the carpals.ir production setup). Backend-owned PWA follow-ups that do not block the pilot are NI-19..NI-22. Next: S11, then the next_iteration list. S11 is DONE in code (2026-11-05): strict auth for the BFF clients (DPoP-bound tokens + private_key_jwt, CARPAL_OAUTH_CLIENT_JWKS, no mTLS), contract 1.2.0 (411 operations, 410 served; me.deactivate, auth.reactivate, admin.exchange_rates_list, admin.exchange_rate_update, the profile and settings fields of PWA DI-55), USD as the base currency with an admin rate served by config.client, the carpals.ir deploy kit with strict mode on by default. The first server deployment (S11.T4 c) is still to be done by the user: see S11.report.open_after_stage. Next: the deployment, then the next_iteration list. 2026-11-09: S12 'Admin console prerequisites' is DONE in code (frontend/admin-console/dev-plan.json AC2): contract 1.3.0 (414 operations, 413 served; auth.passkey_enrol_options, auth.passkey_enrol, admin.staff_me, AuthNext 'enrol_passkey', error PASSKEY_NOT_DEVICE_BOUND), cp-web-admin DPoP-bound with private_key_jwt, the staff passkey enrolment inside the cp-web-admin sign-in, the first-run staff bootstrap (pnpm staff:bootstrap, deploy/staff-bootstrap.sh) and dev:staff, the admin key pair in its own file. Next: the admin console builds its BFF (AC3), then the next_iteration list.",
+      "as_of": "2026-11-13",
+      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list. S10 is DONE (2026-10-26): contract 1.1.0 served — search.session_get (406/407 operations served), search facets, the soonest sort with next_available_slot, search.page limit and the map.pins changes; the 1.1.0 text was corrected before use (DI-74). Next: the next_iteration list; the PWA continues with P7 and adopts 1.1.0 in P14. 2026-11-04: plan aligned with the closed PWA scratch build (pwa/dev_plan.json P1-P14, meta.status scratch_build_done). Rule GD-43: where the two plans disagree, the newer PWA decision wins and the backend follows. The PWA's pilot blockers that need the backend are now stage S11 'Pilot readiness: PWA integration 2' (strict auth for the BFF clients by DPoP + private_key_jwt, contract 1.2.0 for the profile and settings fields of PWA DI-55, USD prices with an admin-set exchange rate, the carpals.ir production setup). Backend-owned PWA follow-ups that do not block the pilot are NI-19..NI-22. Next: S11, then the next_iteration list. S11 is DONE in code (2026-11-05): strict auth for the BFF clients (DPoP-bound tokens + private_key_jwt, CARPAL_OAUTH_CLIENT_JWKS, no mTLS), contract 1.2.0 (411 operations, 410 served; me.deactivate, auth.reactivate, admin.exchange_rates_list, admin.exchange_rate_update, the profile and settings fields of PWA DI-55), USD as the base currency with an admin rate served by config.client, the carpals.ir deploy kit with strict mode on by default. The first server deployment (S11.T4 c) is still to be done by the user: see S11.report.open_after_stage. Next: the deployment, then the next_iteration list. 2026-11-09: S12 'Admin console prerequisites' is DONE in code (frontend/admin-console/dev-plan.json AC2): contract 1.3.0 (414 operations, 413 served; auth.passkey_enrol_options, auth.passkey_enrol, admin.staff_me, AuthNext 'enrol_passkey', error PASSKEY_NOT_DEVICE_BOUND), cp-web-admin DPoP-bound with private_key_jwt, the staff passkey enrolment inside the cp-web-admin sign-in, the first-run staff bootstrap (pnpm staff:bootstrap, deploy/staff-bootstrap.sh) and dev:staff, the admin key pair in its own file. Next: the admin console builds its BFF (AC3), then the next_iteration list. 2026-11-12: S13 'Admin console unblockers' is DONE in code (backend/BR-update-plan.json, the first stage of the admin console refinement S13-S25): contract 1.4.0 opened (421 operations, 420 served; admin.job_get, admin.staff_list, admin.staff_disable, admin.staff_enable, admin.taxonomy_snapshot, admin.region_settings, admin.badges_list; admin.four_eyes_list mine=true; PendingChange decision fields and job_id with migration 0102). Next: S14 of BR-update-plan.json (purpose bound to the record, NI-02), while the console resumes AC10 and AC12. 2026-11-13: S14 'Staff access to personal data, and suspension correctness' is DONE in code (BR-update-plan.json S14): staff access purposes bound to the record on every PURP operation (403 PURPOSE_RECORD_MISMATCH, scoped user search, case actions bound; RCP-01 mitigated, NI-02 done), admin.orgs_search answers StaffOrgSearchRow without contact data or points (console regenerated), timed suspensions lifted by the scheduler (suspended_until, migration 0103, DI-66 closed). Next: S15 of BR-update-plan.json, while the console resumes AC10 and AC12.",
       "stages": [
         {
           "stage": "S1",
@@ -1108,7 +1108,8 @@
       "id": "DI-66",
       "issue": "40 admin.user_status suspend_until has no rule that lifts the suspension, and 52 UserAccount has no suspended_until column.",
       "action": "S8 records it on the moderation action only. Suggest a column or a W15 rule reading moderation actions.",
-      "status": "open"
+      "status": "closed",
+      "resolution": "S14 (2026-11-13): UserAccount.suspended_until (migration 0103, Docs/43, Docs/52), written by admin.user_status and case_action suspend_account; the W15 rule identity.suspension_expiry lifts it every 5 minutes; StaffUserView.suspended_until."
     },
     {
       "id": "DI-67",
@@ -3721,6 +3722,257 @@
           "Nothing committed (commit only when the user asks)."
         ]
       }
+    },
+    {
+      "id": "S13",
+      "title": "Admin console unblockers (contract 1.4.0 opens: admin job read, staff directory, taxonomy tree and region settings, badge list, own four-eyes requests)",
+      "status": "done",
+      "depends_on": [
+        "S12"
+      ],
+      "plan": "backend/BR-update-plan.json action_plan.stages S13 (the refinement plan of the admin console requests BR-xx; stages S13-S25).",
+      "goal": "Serve on admin-api the reads the remaining admin console stages need (AC10: BR-20, BR-10; AC12: BR-18) and the two pilot reads whose absence forced the weakest console workarounds (BR-31 badges, BR-21 own four-eyes requests).",
+      "scope": {
+        "contract_sections": [
+          "§23.1 PendingChange, StaffMember, StaffTaxonomyNode, RegionSettings",
+          "§23.2 admin.staff_list, staff_disable, staff_enable",
+          "§23.3 admin.taxonomy_snapshot",
+          "§23.4 admin.badges_list",
+          "§23.5 admin.region_settings, admin.job_get, admin.four_eyes_list",
+          "Appendix D \"Contract 1.4.0\""
+        ],
+        "modules": [
+          "admin",
+          "identity",
+          "taxonomy",
+          "trust",
+          "libs/jobs"
+        ],
+        "ops_target": 7,
+        "ops_note": "7 new operations; changed: admin.four_eyes_list (q mine), PendingChange fields, admin.dsr_export Location. Registry after S13: 421 operations, 473 routes."
+      },
+      "tasks": [
+        {
+          "id": "S13.T1",
+          "status": "done",
+          "title": "Docs/40 1.4.0 with the Appendix D section \"Contract 1.4.0\" that later stages append to; backend test pins (pipeline, platform-ops, s11), PWA pins (config.ts, fallback-config.ts, bff.int.test.ts) and the console generator (EXPECTED_CONTRACT) moved to 1.4.0; shared/api-contracts and the console contract regenerated."
+        },
+        {
+          "id": "S13.T2",
+          "status": "done",
+          "title": "admin.job_get; DSR view check: DataSubjectRequest.export_available already says when the export is ready, but not the progress or a failure, so the job read was built (the default). No download link (S13-D1). PendingChange.job_id for approved ASYNC changes (S13-D2)."
+        },
+        {
+          "id": "S13.T3",
+          "status": "done",
+          "title": "admin.staff_list, admin.staff_disable, admin.staff_enable (4EYES, S13-D3); disabled = suspended platform memberships (S13-D4)."
+        },
+        {
+          "id": "S13.T4",
+          "status": "done",
+          "title": "admin.taxonomy_snapshot, admin.region_settings."
+        },
+        {
+          "id": "S13.T5",
+          "status": "done",
+          "title": "admin.badges_list."
+        },
+        {
+          "id": "S13.T6",
+          "status": "done",
+          "title": "admin.four_eyes_list mine; PendingChange decision fields and job_id."
+        },
+        {
+          "id": "S13.T7",
+          "status": "done",
+          "title": "Sweep resolvers for the 7 operations, apps/testing/s13.int.test.ts, all checks green (see report.tests); logged as backend S13 in backend/dev_plan.json."
+        }
+      ],
+      "deliverables": [
+        "contract 1.4.0 (Docs/40, libs/contract/generated, shared/api-contracts)",
+        "modules/identity/application/staff-ops.ts",
+        "migration 0102_s13_pending_change_job.sql",
+        "apps/testing/s13.int.test.ts, sweep resolvers"
+      ],
+      "report": {
+        "started_at": "2026-11-12",
+        "completed_at": "2026-11-12",
+        "summary": "Contract 1.4.0 is additive for every client. All S13 acceptance criteria of BR-update-plan.json are met; details, deviations S13-D1..D8 and decisions DQ-10..DQ-12 are in backend/BR-update-plan.json action_plan.stages S13.report.",
+        "ops_implemented": [
+          "admin.job_get",
+          "admin.staff_list",
+          "admin.staff_disable",
+          "admin.staff_enable",
+          "admin.taxonomy_snapshot",
+          "admin.region_settings",
+          "admin.badges_list"
+        ],
+        "ops_changed": [
+          "admin.four_eyes_list: q mine (own requests, every status by default)",
+          "PendingChange (every 4EYES 202 answer, four_eyes_list, four_eyes_decide): decided_by_display, decided_at, decision_reason, job_id",
+          "admin.dsr_export: Location /v1/admin/jobs/{job_id} (was /v1/jobs/{job_id}, a route the console cannot call)"
+        ],
+        "files_created": [
+          "backend/modules/identity/application/staff-ops.ts",
+          "backend/apps/testing/s13.int.test.ts",
+          "database/migrations/0102_s13_pending_change_job.sql"
+        ],
+        "files_changed": [
+          "Docs/40.API contract.md (1.4.0: header, §23.1 types, §23.2-§23.5 operations, Appendix D \"Contract 1.4.0\")",
+          "Docs/43.db_setup.sql, Docs/52.MVP Data Dictionary.md (PendingAdminChange.job_id, requester index)",
+          "backend/libs/contract/generated/*, libs/contract/contract.test.ts (421 operations, 473 routes), libs/db/generated/db.ts",
+          "backend/libs/jobs/index.ts (acceptedJob plane)",
+          "backend/modules/admin/{admin.module.ts, api/projections.ts, application/four-eyes-ops.ts, application/platform-ops.ts, infrastructure/admin-services.ts, interface/admin.ts}",
+          "backend/modules/identity/{application/admin-ops.ts, identity-admin.module.ts, identity.module.ts}",
+          "backend/modules/taxonomy/{application/admin-ops.ts, taxonomy.module.ts}",
+          "backend/modules/trust/{application/admin-ops.ts, trust-admin.module.ts}",
+          "backend/apps/testing/contract/generated/{admin,taxonomy}.contract.int.test.ts, apps/testing/contract/resolvers/{admin,taxonomy}.ts",
+          "backend/apps/testing/{pipeline,platform-ops,s11}.int.test.ts (contract 1.4.0)",
+          "backend/.prettierignore (BR-update-plan.json kept in its JSON layout)",
+          "shared/api-contracts/{openapi.yaml, generated/*} (from pwa/ pnpm contract:generate)",
+          "pwa/src/server/config.ts, pwa/tests/support/fallback-config.ts, pwa/src/server/bff/bff.int.test.ts (1.4.0 pins)",
+          "frontend/admin-console: tools/contract/generate.ts (EXPECTED_CONTRACT 1.4.0), src/lib/api/generated/* (70 admin-api operations), tests pinned to the count and version, seven PendingChange test fixtures"
+        ],
+        "tests": {
+          "unit": "291 passed (42 files)",
+          "integration": "792 tests in 52 files: 790 passed, 2 failed, both in tools/db/baseline.int.test.ts and both local-database state, not S13: (1) the baseline hash, because Docs/43 changed and the local database was migrated (0102), not reset (the known S11/S12 note; passes after pnpm db:reset); (2) the seed count of non-fixture accounts (94, expected 2): 92 are admin console E2E and BFF test accounts (e2e-*@staff.carpals.test, bff-int-*@staff.carpals.test) created 2026-11-09/10 in the shared dev database (R-15, dev:staff prune is S16.T6). Every other suite passed, including s13 (10), the admin, identity and taxonomy sweeps and every suite pinned to the contract version.",
+          "s13": "10 passed (apps/testing/s13.int.test.ts)",
+          "contract": "contract:check up to date (1.4.0, 421 operations); openapi:check matches router and registry (473 operations); contract:coverage --strict 420/421 served, 0 unexplained",
+          "static": "lint (eslint + dependency-cruiser), typecheck and format pass"
+        },
+        "deviations": [
+          "S13-D1: admin.job_get carries no signed download link for a finished DSR export. A staff member does not need the user's whole data bundle to complete the request: the user downloads it (dsr.export_download), staff see export_available on the request and the job state here. A link would hand every SUP the full personal data of the requester through a non-PURP read.",
+          "S13-D2: Added PendingChange.job_id with migration 0102 (admin.pending_admin_changes.job_id and a requester index), not in the stage text. An approved ASYNC four-eyes change (admin.taxonomy_merge today, admin.org_merge in S22) starts its job inside four_eyes_decide, whose answer is a PendingChange, so without the field the console could not find the merge job that admin_console_resume says AC12 reads with admin.job_get.",
+          "S13-D3: admin.staff_enable is 4EYES (a second admin approves), while admin.staff_disable is immediate. DQ-09 approved the operation but not its tags; enabling gives platform roles back, and a platform role grant is 4EYES, while removal never waits (admin.platform_role_revoke).",
+          "S13-D4: Disabled is a state of the platform role memberships (status suspended), not a new column: disable suspends every active platform_* membership and ends all sessions; enable sets them active again. The user account and its business memberships are untouched, so the person can still use the consumer app.",
+          "S13-D5: StaffMember.last_sign_in_at is user_accounts.last_active_at, which every sign-in on any client sets (not only the console).",
+          "S13-D6: The last-active-admin refusal (409 INVALID_TRANSITION last_admin) can only be reached by a race: the caller is an active admin and cannot disable themselves, so another active admin always exists. The handler locks every active admin row in id order first, so two admins disabling each other run one after the other and the second is refused; s13.int.test.ts proves it with the two as the only admins.",
+          "S13-D7: admin.taxonomy_snapshot reads the table (every status, merged included; status filter optional) ordered by id with a keyset cursor, not by sort_order like taxonomy.snapshot. missing_locales compares with the region's enabled locales; with the pilot's en and fa it is always empty today because the database requires both names.",
+          "S13-D8: admin.region_settings returns the whole RegionConfig of config.client (with exchange rates) plus location_check_threshold_m, rather than a narrower map-only type: one source of truth, no personal data, and the console gets cities and calendar defaults too."
+        ],
+        "notes_for_next": [
+          "Admin console (AC10 catch-up, admin_console_resume): badge list instead of typed ids (D-53), own four-eyes requests from admin.four_eyes_list?mine=true (D-31), admin.region_settings for the map threshold and style (D-58, D-59; CARPAL_ADMIN_MAP_STYLE_URL can become a fallback), assigning a case to a colleague from admin.staff_list (D-50), admin.job_get for the DSR export (D-19; follow the Location header), the staff directory screen (A-STAFF-01) with disable and four-eyes enable.",
+          "Admin console op-label: add admin.staff_enable to FOUR_EYES_OPS and its i18n name (today a pending enable shows \"Unknown (admin.staff_enable)\"; tests pass).",
+          "AC12: admin.taxonomy_snapshot for the tree (If-Match from version); an approved merge answers PendingChange.job_id, followed with admin.job_get.",
+          "S14 builds on S13: the purpose binding (BR-09) is independent of the new reads (none of them is PURP), and admin.staff_list is not personal data beyond the masked email (ADM only).",
+          "Local databases: Docs/43 changed (job_id), so `pnpm db:status` reports the baseline as changed; `pnpm db:setup` applied 0102 here. tools/db/baseline.int.test.ts passes only after `pnpm db:reset` (the known local baseline-hash note from S11/S12)."
+        ],
+        "open_after_stage": [
+          "Owner decisions DQ-10..DQ-12 and confirmation of DQ-01, DQ-08, DQ-09 (BR-update-plan.json).",
+          "Nothing committed (commit only when the user asks)."
+        ]
+      }
+    },
+    {
+      "id": "S14",
+      "title": "Staff access to personal data, and suspension correctness (purpose bound to the record, narrow organization search row, timed suspensions lifted)",
+      "status": "done",
+      "depends_on": [
+        "S13"
+      ],
+      "plan": "backend/BR-update-plan.json action_plan.stages S14 (admin console refinement S13-S25).",
+      "goal": "Close the two admin-plane privacy defects before real staff use real data (R-03: BR-09 / RCP-01 / NI-02, and the BR-35 search row / DI-31) and make timed suspensions end (BR-07 / DI-66).",
+      "scope": {
+        "contract_sections": [
+          "§0.4 PURP, §1.3 CarPal-Access-Purpose (subjects), §2.14 SEC-ADM-5, §4.4 PURPOSE_RECORD_MISMATCH",
+          "§23.1 StaffOrgSearchRow, StaffUserView.suspended_until",
+          "§23.2 admin.users_search, user_get, user_status, orgs_search, org_get, verification_decide; §23.4 review approvals, cases, disputes; §23.5 DSR operations, media_download_url",
+          "Appendix D \"Contract 1.4.0\" (three S14 rows)"
+        ],
+        "modules": [
+          "libs/authz",
+          "admin",
+          "identity",
+          "organization",
+          "trust",
+          "media",
+          "apps/testing"
+        ],
+        "ops_target": 0,
+        "ops_note": "No new operations; 15 changed (the 14 PURP operations and admin.orgs_search). Registry after S14: 421 operations, 473 routes, 52 error codes."
+      },
+      "tasks": [
+        {
+          "id": "S14.T1",
+          "status": "done",
+          "title": "PurposeVerdict in libs/authz (404 not in queue, 403 PURPOSE_RECORD_MISMATCH); subjects per queue kind (case, dispute, dsr, verification, approval); PurposeBindings per PURP operation (path record, media lookup, users_search scoped); PurposeSubjects for handlers; case_action body binding; bound subject in pii.read (S14-D1..D5, D8)."
+        },
+        {
+          "id": "S14.T2",
+          "status": "done",
+          "title": "Docs/40 SEC-ADM-5, §0.4, §1.3, §4.4 and err lines; sweep mismatch probe on every PURP route; risk_control_plan RCP-01 mitigated (A5 superseded, S14-D9)."
+        },
+        {
+          "id": "S14.T3",
+          "status": "done",
+          "title": "admin.orgs_search answers StaffOrgSearchRow (no contact data, no points; S14-D6); console regenerated and fixed (OrgHead, assign form, tests, kit message S14-D10)."
+        },
+        {
+          "id": "S14.T4",
+          "status": "done",
+          "title": "Migration 0103 suspended_until (Docs/43, Docs/52), admin.user_status and case_action write it, StaffUserView.suspended_until, scheduler rule identity.suspension_expiry (S14-D7); DI-66 closed."
+        }
+      ],
+      "deliverables": [
+        "contract 1.4.0 additions (Docs/40, libs/contract/generated, shared/api-contracts, console generated contract)",
+        "modules/identity/application/suspension-rule.ts",
+        "migration 0103_s14_suspended_until.sql",
+        "apps/testing/s14.int.test.ts, sweep mismatch probe"
+      ],
+      "report": {
+        "started_at": "2026-11-13",
+        "completed_at": "2026-11-13",
+        "summary": "Staff access purposes are bound to the record (RCP-01 mitigated): every PURP operation names its record, every queue kind names its subjects, and a purpose admits only a subject of its item (403 PURPOSE_RECORD_MISMATCH otherwise; a user search finds only the item's users; a moderation action under a case acts only on the case's subjects). admin.orgs_search answers a narrow StaffOrgSearchRow without contact data or points (breaking for the console only, regenerated and fixed). A timed suspension is stored (suspended_until, migration 0103) and lifted by the scheduler rule identity.suspension_expiry. Every acceptance criterion is met. Details, deviations S14-D1..D10 and decisions DQ-13, DQ-14 are in backend/BR-update-plan.json action_plan.stages S14.report.",
+        "ops_implemented": [],
+        "ops_changed": [
+          "13 record-bound PURP operations: 403 PURPOSE_RECORD_MISMATCH",
+          "admin.users_search scoped to the item's users; admin.case_action targets bound",
+          "admin.orgs_search → Page<StaffOrgSearchRow>",
+          "StaffUserView.suspended_until; timed suspensions lifted"
+        ],
+        "files_created": [
+          "backend/modules/identity/application/suspension-rule.ts",
+          "backend/apps/testing/s14.int.test.ts",
+          "database/migrations/0103_s14_suspended_until.sql"
+        ],
+        "files_changed": [
+          "See backend/BR-update-plan.json action_plan.stages S14.report.files_changed."
+        ],
+        "tests": {
+          "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 509 modules), typecheck, format:check: pass",
+          "backend_unit": "292 passed (42 files), including the authz PURPOSE_RECORD_MISMATCH case and the static check that admin.orgs_search cannot carry contact fields or points",
+          "backend_contract": "contract:check up to date (1.4.0, 421 operations, 52 error codes); contract sweep suites up to date (17 modules); openapi:check: 473 operations on 378 paths match router and registry",
+          "backend_sweeps": "admin, identity, organization, trust and media sweeps: 212 passed. The runner now sends every PURP route with the purpose of an open, unassigned case about someone else: 403 PURPOSE_RECORD_MISMATCH on the 13 record-bound operations, 200 with no item for admin.users_search",
+          "backend_s14": "9 passed (apps/testing/s14.int.test.ts): all 14 PURP operations have a binding; the RCP-01 scenario (B under a case about A: 403, nothing logged; A: 200 with pii.read naming the case and user A; an unknown user: the same 403); another case under this case: 403, an unknown item: 404; the scoped user search; subjects per kind (case with reporter, dsr, verification, dispute) and their HTTP effect (reporter and submitter readable, others 403, unknown file 403, the disputed review admitted and another review refused); case_action on another user or an unknown one: 403, on the case target: 201; the search row without contact data or points; the suspension stored, not lifted early, lifted after its end with an audit entry (actor system) and the reactivation event, cleared by a later status change",
+          "backend_integration_full": "801 tests in 53 files: 799 passed, 2 failed, both in tools/db/baseline.int.test.ts and both local-database state, the same two as S13: (1) the baseline hash, because Docs/43 changed (suspended_until) and the local database was migrated (0103), not reset; passes after pnpm db:reset; (2) the seed count of non-fixture accounts (94, expected 2): admin console E2E and BFF test accounts in the shared dev database (R-15, dev:staff prune is S16.T6). Every other suite passed, including s14 (9), every contract sweep with the new mismatch probe, and the older admin, moderation, privacy, organization, trust and media suites under the new binding.",
+          "pwa": "contract:check up to date (shared/api-contracts regenerated); typecheck pass",
+          "admin_console": "contract:check up to date (1.4.0, 70 admin-api operations, StaffOrgSearchRow); typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files)",
+          "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08 default)."
+        },
+        "deviations": [
+          "S14-D1: A record outside the purpose item answers 403 PURPOSE_RECORD_MISMATCH (the stage text), not 404 NOT_FOUND as risk_control_plan RCP-01.A2 (2026-10-24) proposed. An item that is not open in the caller's queue still answers 404. No existence oracle: a record that does not exist and an unrelated one get the same 403, because the binding compares ids (or, for a file, finds no subject) before any handler reads the record.",
+          "S14-D2: admin.users_search is not refused under an unrelated purpose: a search has no single record, so it finds only the users the purpose item is about (its user subjects) and answers an empty page for anyone else, the same answer as an unknown identifier (RCP-01.A2 \"limited to the item's subjects\"). The other 13 PURP operations refuse with 403.",
+          "S14-D3: admin.case_action binds its body too (not in the stage text): an explicit target must be a subject of the case, or a record whose organization or author is a subject; a revoked badge must be the target or belong to a subject organization (otherwise 403 PURPOSE_RECORD_MISMATCH and the revocation rolls back). Before, any open case let a moderator suspend, warn or penalise any account or organization. merge_duplicate's merge_into_id (the surviving organization) is not bound: it is a destination, and the merge is 4EYES.",
+          "S14-D4: admin.media_download_url binding: a file is about itself, the records it is attached to (media_attachments) and the organization that owns it, never a system_export file through its owner. A user's own private files (vehicle photos, avatar) are reachable only through a subject record they are attached to. Verification subjects include the submitted documents.",
+          "S14-D5: Subjects per kind: case = target, its author and organization (ModerationTargets handlers) and the reporters; dispute = raiser, raising organization, target and the target's parties as disputes.create checks them (review author and organization; appointment requester, requester organization and provider; badge organization; service record owner and provider; moderation action affected party and target); dsr = the requester only (RCP-01.A1 also named their organizations, the stage text did not: the narrower set was kept); verification = organization, submitter (created_by, there is no submitter column) and submitted documents; approval = the review, its author and the reviewed organization; and always the item itself. Members of a subject organization are not subjects (DQ-13).",
+          "S14-D6: StaffOrgSearchRow carries, beyond the listed fields, id, slug, merged_into_organization_id and pending_verifications (id, type, created_at; at most 10) so the console can still open an organization for its pending verification (A-ORG-01 to A-ORG-02) and show a merged organization. Verification ids are not personal data. \"Trust level\" is trust_score (no trust-level enum exists). member_count and open_cases as before.",
+          "S14-D7: suspended_until has no CHECK tying it to status = suspended: other writers (DSR deletion, first verification) change status without knowing the column, and a CHECK would make a timed-suspended user's deletion fail. Staff status changes clear it, the DSR deletion clears it, and the rule only lifts rows still suspended. The lift returns the account to active, or pending_verification without a verified contact; every 5 minutes, 200 accounts per run. The event is moderation.action.taken reactivate_account on aggregate user_account without a moderation_actions row (actor_user_id is NOT NULL there): notification, trust and search consumers treat it like a staff reactivation. StaffUserView.suspended_until is new (not in the stage text) so staff can see the end.",
+          "S14-D8: pii.read entries name the bound subject inside new_state_summary (\"account view; subject user:<id>\"), and media.staff_download likewise; no new audit column. A user search names each user it returned as its own subject.",
+          "S14-D9: RCP-01.A5 (an interim weekly query of pii.read entries whose record is not a subject) was not built: it was meant only until A2 ships, and A2 ships in this stage.",
+          "S14-D10: Console: a dedicated kit message for PURPOSE_RECORD_MISMATCH (\"This record is not part of the work item you opened it from …\", en and fa) instead of the generic 403 text the plan named; admin.plans.assign.currentPlan lost its status variable."
+        ],
+        "notes_for_next": [
+          "Admin console (AC10 and the catch-up): open user and organization pages only from a work item about them; a record outside the item answers 403 PURPOSE_RECORD_MISMATCH (the kit explains it). A-USER search is \"find within this work item\": admin.users_search returns only the item's users. Suspension durations can be offered now (D-52 can go): the end is StaffUserView.suspended_until and the scheduler lifts it.",
+          "Admin console: the organization list and the header without a purpose use StaffOrgSearchRow (already regenerated and fixed in this stage: OrgHead, searchRow test helper). A badge revoked from a case must belong to the case's organization.",
+          "Answer DQ-13 (members of a subject organization) and DQ-14 (a user's private files under a case about the user) before AC10 builds A-USER; both run on the recorded defaults (no).",
+          "Local databases: Docs/43 changed (suspended_until), so pnpm db:setup applies migration 0103; tools/db/baseline.int.test.ts passes only after pnpm db:reset (the known local baseline-hash note).",
+          "Next backend stage: S15 (policies and consent texts; DI-12 wording; DQ-02 and DQ-03 first)."
+        ],
+        "open_after_stage": [
+          "Owner: DQ-13, DQ-14 (BR-update-plan.json); DQ-11 before S16.",
+          "Nothing committed (commit only when the owner asks)."
+        ]
+      }
     }
   ],
   "coverage_summary": {
@@ -4710,6 +4962,96 @@
       "stage": "S11",
       "date": "2026-11-05",
       "deviation": "Deploy templates default to CARPAL_STRICT_AUTH=1 on both sides, with CARPAL_ENV=staging."
+    },
+    {
+      "stage": "S13",
+      "date": "2026-11-12",
+      "deviation": "admin.job_get carries no signed download link for a finished DSR export. A staff member does not need the user's whole data bundle to complete the request: the user downloads it (dsr.export_download), staff see export_available on the request and the job state here. A link would hand every SUP the full personal data of the requester through a non-PURP read."
+    },
+    {
+      "stage": "S13",
+      "date": "2026-11-12",
+      "deviation": "Added PendingChange.job_id with migration 0102 (admin.pending_admin_changes.job_id and a requester index), not in the stage text. An approved ASYNC four-eyes change (admin.taxonomy_merge today, admin.org_merge in S22) starts its job inside four_eyes_decide, whose answer is a PendingChange, so without the field the console could not find the merge job that admin_console_resume says AC12 reads with admin.job_get."
+    },
+    {
+      "stage": "S13",
+      "date": "2026-11-12",
+      "deviation": "admin.staff_enable is 4EYES (a second admin approves), while admin.staff_disable is immediate. DQ-09 approved the operation but not its tags; enabling gives platform roles back, and a platform role grant is 4EYES, while removal never waits (admin.platform_role_revoke)."
+    },
+    {
+      "stage": "S13",
+      "date": "2026-11-12",
+      "deviation": "Disabled is a state of the platform role memberships (status suspended), not a new column: disable suspends every active platform_* membership and ends all sessions; enable sets them active again. The user account and its business memberships are untouched, so the person can still use the consumer app."
+    },
+    {
+      "stage": "S13",
+      "date": "2026-11-12",
+      "deviation": "StaffMember.last_sign_in_at is user_accounts.last_active_at, which every sign-in on any client sets (not only the console)."
+    },
+    {
+      "stage": "S13",
+      "date": "2026-11-12",
+      "deviation": "The last-active-admin refusal (409 INVALID_TRANSITION last_admin) can only be reached by a race: the caller is an active admin and cannot disable themselves, so another active admin always exists. The handler locks every active admin row in id order first, so two admins disabling each other run one after the other and the second is refused; s13.int.test.ts proves it with the two as the only admins."
+    },
+    {
+      "stage": "S13",
+      "date": "2026-11-12",
+      "deviation": "admin.taxonomy_snapshot reads the table (every status, merged included; status filter optional) ordered by id with a keyset cursor, not by sort_order like taxonomy.snapshot. missing_locales compares with the region's enabled locales; with the pilot's en and fa it is always empty today because the database requires both names."
+    },
+    {
+      "stage": "S13",
+      "date": "2026-11-12",
+      "deviation": "admin.region_settings returns the whole RegionConfig of config.client (with exchange rates) plus location_check_threshold_m, rather than a narrower map-only type: one source of truth, no personal data, and the console gets cities and calendar defaults too."
+    },
+    {
+      "stage": "S14",
+      "date": "2026-11-13",
+      "deviation": "S14-D1 (BR-09): A record outside the purpose item answers 403 PURPOSE_RECORD_MISMATCH (the stage text), not 404 NOT_FOUND as risk_control_plan RCP-01.A2 (2026-10-24) proposed. An item that is not open in the caller's queue still answers 404. No existence oracle: a record that does not exist and an unrelated one get the same 403, because the binding compares ids (or, for a file, finds no subject) before any handler reads the record."
+    },
+    {
+      "stage": "S14",
+      "date": "2026-11-13",
+      "deviation": "S14-D2 (BR-09): admin.users_search is not refused under an unrelated purpose: a search has no single record, so it finds only the users the purpose item is about (its user subjects) and answers an empty page for anyone else, the same answer as an unknown identifier (RCP-01.A2 \"limited to the item's subjects\"). The other 13 PURP operations refuse with 403."
+    },
+    {
+      "stage": "S14",
+      "date": "2026-11-13",
+      "deviation": "S14-D3 (BR-09): admin.case_action binds its body too (not in the stage text): an explicit target must be a subject of the case, or a record whose organization or author is a subject; a revoked badge must be the target or belong to a subject organization (otherwise 403 PURPOSE_RECORD_MISMATCH and the revocation rolls back). Before, any open case let a moderator suspend, warn or penalise any account or organization. merge_duplicate's merge_into_id (the surviving organization) is not bound: it is a destination, and the merge is 4EYES."
+    },
+    {
+      "stage": "S14",
+      "date": "2026-11-13",
+      "deviation": "S14-D4 (BR-09): admin.media_download_url binding: a file is about itself, the records it is attached to (media_attachments) and the organization that owns it, never a system_export file through its owner. A user's own private files (vehicle photos, avatar) are reachable only through a subject record they are attached to. Verification subjects include the submitted documents."
+    },
+    {
+      "stage": "S14",
+      "date": "2026-11-13",
+      "deviation": "S14-D5 (BR-09): Subjects per kind: case = target, its author and organization (ModerationTargets handlers) and the reporters; dispute = raiser, raising organization, target and the target's parties as disputes.create checks them (review author and organization; appointment requester, requester organization and provider; badge organization; service record owner and provider; moderation action affected party and target); dsr = the requester only (RCP-01.A1 also named their organizations, the stage text did not: the narrower set was kept); verification = organization, submitter (created_by, there is no submitter column) and submitted documents; approval = the review, its author and the reviewed organization; and always the item itself. Members of a subject organization are not subjects (DQ-13)."
+    },
+    {
+      "stage": "S14",
+      "date": "2026-11-13",
+      "deviation": "S14-D6 (BR-35): StaffOrgSearchRow carries, beyond the listed fields, id, slug, merged_into_organization_id and pending_verifications (id, type, created_at; at most 10) so the console can still open an organization for its pending verification (A-ORG-01 to A-ORG-02) and show a merged organization. Verification ids are not personal data. \"Trust level\" is trust_score (no trust-level enum exists). member_count and open_cases as before."
+    },
+    {
+      "stage": "S14",
+      "date": "2026-11-13",
+      "deviation": "S14-D7 (BR-07): suspended_until has no CHECK tying it to status = suspended: other writers (DSR deletion, first verification) change status without knowing the column, and a CHECK would make a timed-suspended user's deletion fail. Staff status changes clear it, the DSR deletion clears it, and the rule only lifts rows still suspended. The lift returns the account to active, or pending_verification without a verified contact; every 5 minutes, 200 accounts per run. The event is moderation.action.taken reactivate_account on aggregate user_account without a moderation_actions row (actor_user_id is NOT NULL there): notification, trust and search consumers treat it like a staff reactivation. StaffUserView.suspended_until is new (not in the stage text) so staff can see the end."
+    },
+    {
+      "stage": "S14",
+      "date": "2026-11-13",
+      "deviation": "S14-D8 (BR-09): pii.read entries name the bound subject inside new_state_summary (\"account view; subject user:<id>\"), and media.staff_download likewise; no new audit column. A user search names each user it returned as its own subject."
+    },
+    {
+      "stage": "S14",
+      "date": "2026-11-13",
+      "deviation": "S14-D9 (BR-09): RCP-01.A5 (an interim weekly query of pii.read entries whose record is not a subject) was not built: it was meant only until A2 ships, and A2 ships in this stage."
+    },
+    {
+      "stage": "S14",
+      "date": "2026-11-13",
+      "deviation": "S14-D10 (BR-09, BR-35): Console: a dedicated kit message for PURPOSE_RECORD_MISMATCH (\"This record is not part of the work item you opened it from …\", en and fa) instead of the generic 403 text the plan named; admin.plans.assign.currentPlan lost its status variable."
     }
   ],
   "handoff_notes": [
@@ -4827,6 +5169,11 @@
       "date": "2026-11-05",
       "from": "S11",
       "note": "S11 is done in code. For the PWA: contract 1.2.0 is served; strict mode needs CARPAL_OAUTH_CLIENT_JWKS here and CARPAL_PWA_CLIENT_PRIVATE_JWKS there (gen-client-keys.mjs); auth.reactivate is the confirmation of AuthNext reactivate; config.client carries base currency, display_currencies and exchange_rates. Adopted the same day (PWA stage P15). Joint run: Strict mode (CARPAL_STRICT_AUTH=1 on both sides, signed in, 2026-11-05): first full pnpm e2e run 86 passed, 9 failed, 5 did not run, 5 skipped; after updating tests for the new behaviour and one journey race, those 9 and the 5 journey steps passed when re-run on their own, so no single uninterrupted all-green strict run exists yet. Lite: pnpm test:int 13 passed; full run 97 passed, 1 failed (journey Ch. 3 stayed on onboarding after a re-login, cause not found, passed alone every time), 1 did not run, 6 skipped."
+    },
+    {
+      "date": "2026-11-12",
+      "from": "S13",
+      "note": "For the admin console: contract 1.4.0 is generated in frontend/admin-console (70 admin-api operations). New reads: admin.job_get (follow the Location of admin.dsr_export; PendingChange.job_id of an approved taxonomy merge), admin.staff_list / staff_disable / staff_enable (4EYES), admin.taxonomy_snapshot, admin.region_settings, admin.badges_list, admin.four_eyes_list?mine=true. Catch-up list in BR-update-plan.json S13.report.notes_for_next. For the PWA: version pins only (1.4.0); nothing to build."
     }
   ],
   "open_questions": [
@@ -5177,7 +5524,8 @@
           "RCP-01",
           "deviations S8 #95, S9b #138"
         ],
-        "status": "not_started"
+        "status": "done",
+        "done_in": "S14 (2026-11-13, BR-update-plan.json BR-09): purpose bound to the record on every PURP operation; RCP-01 mitigated."
       },
       {
         "id": "NI-03",
@@ -5209,7 +5557,9 @@
           "deviations S8 #97, #99, #100"
         ],
         "status": "not_started",
-        "note_2026_11_09": "S12 done: staff WebAuthn sign-in through the hosted UI end to end, including the first passkey (contract 1.3.0). DI-66, DI-67 and DI-05 remain (admin console BR-07, BR-08, DI-08)."
+        "note_2026_11_09": "S12 done: staff WebAuthn sign-in through the hosted UI end to end, including the first passkey (contract 1.3.0). DI-66, DI-67 and DI-05 remain (admin console BR-07, BR-08, DI-08).",
+        "note_2026_11_12": "Admin console refinement S13 done (BR-update-plan.json); DI-66 is S14, DI-67 is S22, DI-05 stays out.",
+        "note_2026_11_13": "S14 done: DI-66 closed (timed suspensions lifted by identity.suspension_expiry). DI-67 is S22, DI-05 stays out."
       },
       {
         "id": "NI-05",

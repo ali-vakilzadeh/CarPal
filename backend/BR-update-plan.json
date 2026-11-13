@@ -1,0 +1,3400 @@
+{
+  "meta": {
+    "title": "Backend update plan - recommendations collected from components",
+    "created": "2026-11-12",
+    "format": "Machine-readable. Every entry keeps the source text verbatim in raw_text. Prioritised and staged on 2026-11-12: each entry has a plan block (priority, complexity, stage); the stages are in action_plan.",
+    "purpose": "Collect every backend recommendation raised by the Admin Console plan (BR-xx, plus backend-affecting R-items). The PWA and other components will add theirs; a comprehensive backend refinement plan is built after all are collected.",
+    "sources": [
+      {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "as_of": "2026-11-10",
+        "progress_at_collection": "AC1-AC5 done, AC6-AC9 built (signed-in E2E not run)"
+      }
+    ],
+    "pending_sources": [
+      "pwa",
+      "backend own dev_plan / risk_control_plan",
+      "cp-web-portal (future)"
+    ],
+    "decisions_from_owner_2026_11_12": [
+      "All BR items will be integrated in one backend refinement; it is not scheduled yet and more recommendations may arrive before the last Admin Console stage.",
+      "Admin Console continues through AC12; AC13 runs after the backend refinement is done.",
+      "No part of backend, admin console or PWA goes to a test run until the whole plan is complete.",
+      "OQ-07: treat all BR items as in scope. OQ-15, OQ-03, OQ-04, OQ-05, OQ-06, OQ-08 default approved. OQ-02: passkey only (no network gate). OQ-09: portal starts at AC11."
+    ],
+    "schema": {
+      "recommendations": "Admin Console backend requests (BR-xx), verbatim.",
+      "r_item_actions_for_backend": "Admin Console R-items whose action lands (partly) on the backend; br lists the BR ids they point to.",
+      "unlinked_open_doc_issues": "Open doc issues that name no BR; kept raw for the later analysis.",
+      "plan": "Per entry: priority (P0-P3, see prioritisation.scale), complexity (S, M, L, XL, see prioritisation.complexity_scale), stage (action_plan stage ids), why.",
+      "action_plan": "Stages S13-S25 in run order, with items, justification, tasks, load, contract and client impact, acceptance criteria and gates."
+    },
+    "counts": {
+      "recommendations": 35,
+      "todo": 21,
+      "r_item_actions_for_backend": 12,
+      "unlinked_open_doc_issues": 4,
+      "stages": 13,
+      "by_priority": {
+        "P0": 4,
+        "P1": 7,
+        "P2": 16,
+        "P3": 1,
+        "mixed": 1,
+        "closed": 6
+      },
+      "by_priority_note": "Recommendations only. mixed = BR-35 (part 1 row P0, part 2 P1, parts 1-filters and 3 P2). R-items are planned in r_item_actions_for_backend and are not counted here.",
+      "done_in_refinement": 6,
+      "partly_done": 2,
+      "counts_note": "todo, done_in_refinement and partly_done follow the recommendation status; by_priority keeps the planning view of 2026-11-12."
+    },
+    "status": "in_progress",
+    "status_note": "Prioritised and staged from the Admin Console items (2026-11-12). S13 done on 2026-11-12 (contract 1.4.0 opened), S14 done on 2026-11-13 (purpose bound to the record). PWA items and the backend next_iteration items are not merged yet; they join through action_plan.intake_rules. Stages run as backend S13-S25 and are logged in backend/dev_plan.json when started.",
+    "last_updated": "2026-11-13",
+    "progress": {
+      "as_of": "2026-11-13",
+      "stages_done": [
+        "S13",
+        "S14"
+      ],
+      "stages_in_progress": [],
+      "next_stage": "S15 (backend; needs DQ-02 and DQ-03). By action_plan.admin_console_resume.suggested_interleaving the console resumes AC10 (with the catch-up patch) and AC12 first.",
+      "contract": "Docs/40 1.4.0 open (421 operations, 473 routes; 420 served, auth.social_start deferred; 52 error codes). Frozen at S25.",
+      "summary": "S14 done: purpose bound to the record (RCP-01 mitigated, R-03 closed), StaffOrgSearchRow, timed suspensions lifted automatically. BR-09 and BR-07 done, BR-35 part 1 row done. Open decisions: DQ-11 (before S16), DQ-13 and DQ-14 (defaults applied), plus owner confirmations of DQ-01, DQ-08, DQ-09, DQ-10, DQ-12."
+    }
+  },
+  "recommendations": [
+    {
+      "id": "BR-01",
+      "action_id": "BRU-01",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "backend dev_plan GD-06 amendment 2026-11-04, NI-08",
+        "stage_needed": "AC2"
+      },
+      "priority": "blocker",
+      "status_in_source": "done",
+      "status": "done",
+      "in_scope_of_backend_refinement": false,
+      "raw_text": "Register cp-web-admin like cp-web-consumer: DPoP-bound tokens (binding 'dpop') and private_key_jwt client authentication with a registered public key (backend/deploy/gen-client-keys.mjs gains the admin client).",
+      "source_notes": {
+        "note_ac2": "Done in AC2 (backend S12.T1): binding dpop + private_key_jwt; key pair in its own file (gen-client-keys.mjs --admin) so the PWA never holds it; strict mode only warns without it."
+      },
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [],
+        "deviations": [
+          {
+            "id": "D-11",
+            "stage": "AC2",
+            "summary": "Strict mode warns instead of refusing to start without the cp-web-admin key."
+          },
+          {
+            "id": "D-12",
+            "stage": "AC2",
+            "summary": "The cp-web-admin key pair has its own file (the PWA reads its key file whole)."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "closed",
+        "complexity": null,
+        "stage": null,
+        "why": "Done in backend S12 (AC2)."
+      }
+    },
+    {
+      "id": "BR-02",
+      "action_id": "BRU-02",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "GD-04",
+        "stage_needed": "AC2"
+      },
+      "priority": "blocker",
+      "status_in_source": "closed_not_needed",
+      "status": "closed_not_needed",
+      "in_scope_of_backend_refinement": false,
+      "raw_text": "Sign-in URL per client (e.g. CARPAL_SIGNIN_URLS JSON map, default CARPAL_SIGNIN_URL) so cp-web-admin interactions go to the console's /id/signin.",
+      "source_notes": {
+        "note_ac2": "Not needed (AC2, backend S12.T2): authorize sends every client to <issuer>/signin and the console serves it through its /id proxy like the PWA. The S12 test asserts the redirect."
+      },
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-12",
+            "issue": "Docs/40 §6.2 says the /v1/auth/* endpoints 'are used only by the hosted sign-in UI on id.carpals.ir'. In practice each BFF serves the hosted sign-in on its own origin through an /id proxy (the PWA since P2, the console from AC3), which is also why no per-client sign-in URL is needed (BR-02).",
+            "action": "Reword the §6.2 sentence at the next contract change (no field changes, so no version of its own): 'used only by a hosted sign-in UI, served by the client's BFF under /id on its own origin or on the auth host'."
+          }
+        ],
+        "deviations": [
+          {
+            "id": "D-09",
+            "stage": "AC2",
+            "summary": "BR-02 not built: the /id proxy serves <issuer>/signin."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "closed",
+        "complexity": null,
+        "stage": null,
+        "why": "Closed not needed (AC2); the DI-12 wording fix is in S15."
+      }
+    },
+    {
+      "id": "BR-03",
+      "action_id": "BRU-03",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "backend NI-04, backend dev_plan line 4853",
+        "stage_needed": "AC2"
+      },
+      "priority": "blocker",
+      "status_in_source": "done",
+      "status": "done",
+      "in_scope_of_backend_refinement": false,
+      "raw_text": "Staff WebAuthn sign-in at aal3 end to end through a hosted UI, including the first-time passkey enrolment path for a staff account that has none (password + email code → restricted session that can only register a passkey → sign in again at aal3).",
+      "source_notes": {
+        "note_ac2": "Done in AC2 (backend S12.T3): auth.passkey_enrol_options and auth.passkey_enrol (contract 1.3.0) after password + emailed code; synced passkeys refused (PASSKEY_NOT_DEVICE_BOUND); the new passkey is proven in the same interaction (aal3)."
+      },
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [],
+        "deviations": [
+          {
+            "id": "D-10",
+            "stage": "AC2",
+            "summary": "The new passkey is proven in the same interaction instead of a second full sign-in."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "closed",
+        "complexity": null,
+        "stage": null,
+        "why": "Done in backend S12 (AC2)."
+      }
+    },
+    {
+      "id": "BR-04",
+      "action_id": "BRU-04",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "GD-07, GD-09",
+        "stage_needed": "AC2"
+      },
+      "priority": "blocker",
+      "status_in_source": "done",
+      "status": "done",
+      "in_scope_of_backend_refinement": false,
+      "raw_text": "The console must learn the signed-in staff member's platform roles and display name: confirm that me.get accepts the cp-web-admin token (memberships carry platform_* roles), or add admin.staff_me on admin-api.",
+      "source_notes": {
+        "note_ac2": "Done in AC2 (backend S12.T4): me.get is refused for a cp-web-admin token (api audience), so admin.staff_me was added (GET /v1/admin/me, every staff role)."
+      },
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "closed",
+        "complexity": null,
+        "stage": null,
+        "why": "Done in backend S12 (AC2)."
+      }
+    },
+    {
+      "id": "BR-05",
+      "action_id": "BRU-05",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "PWA DI-18 precedent",
+        "stage_needed": "AC2"
+      },
+      "priority": "blocker",
+      "status_in_source": "done",
+      "status": "done",
+      "in_scope_of_backend_refinement": false,
+      "raw_text": "Dev-only tool `pnpm dev:staff create --email --name --roles ADM,MOD,…` (refused unless CARPAL_ENV=dev, like dev:flags) and a seed of one staff user per role for E2E.",
+      "source_notes": {
+        "note_ac2": "Done in AC2 (backend S12.T5): pnpm staff:bootstrap (first run, any environment, idempotent; dev accounts adm1, adm2, mod1, crv1, sup1) and pnpm dev:staff create|list.",
+        "note_ac1": "Seed a second ADM as well: ADM-only four-eyes changes need two ADMs (OQ-10, R-05)."
+      },
+      "related": {
+        "r_items": [],
+        "open_questions": [
+          "OQ-10"
+        ],
+        "doc_issues": [],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "closed",
+        "complexity": null,
+        "stage": null,
+        "why": "Done in backend S12 (AC2)."
+      }
+    },
+    {
+      "id": "BR-06",
+      "action_id": "BRU-06",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "GD-13, GD-15",
+        "stage_needed": "AC2"
+      },
+      "priority": "blocker",
+      "status_in_source": "done",
+      "status": "done",
+      "in_scope_of_backend_refinement": false,
+      "raw_text": "Dev redirect URI https://localhost:3200/bff/oauth/callback (and :3300) for cp-web-admin and the dev WebAuthn origins, documented in backend/.env.example; production values from ADMIN_HOST in backend/deploy.",
+      "source_notes": {
+        "note_ac2": "Done in AC2 (backend S12.T6): dev redirect URIs and WebAuthn origins documented in backend/.env.example; ADMIN_CONSOLE_HOST in the backend deploy kit for the production redirect URI and WebAuthn origin."
+      },
+      "related": {
+        "r_items": [],
+        "open_questions": [
+          "OQ-11"
+        ],
+        "doc_issues": [],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "closed",
+        "complexity": null,
+        "stage": null,
+        "why": "Done in backend S12 (AC2)."
+      }
+    },
+    {
+      "id": "BR-07",
+      "action_id": "BRU-07",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "backend NI-04",
+        "stage_needed": "before AC10"
+      },
+      "priority": "high",
+      "status_in_source": "open",
+      "status": "done",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Lift timed suspensions automatically (backend DI-66: suspended_until column and a job).",
+      "source_notes": {
+        "note_ac8": "AC8 suspends without an end date (D-52): suspend_until is accepted by the backend but never lifted."
+      },
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [],
+        "deviations": [
+          {
+            "id": "D-52",
+            "stage": "AC8",
+            "summary": "Suspension has no end date in the console: the backend stores suspend_until but nothing lifts it (BR-07)."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "P1",
+        "complexity": "M",
+        "stage": [
+          "S14"
+        ],
+        "why": "A timed suspension is stored but never ends: wrong account state for a real user. The console avoids it today by not offering an end date (D-52), so it is not P0. AC10 suspends for 7 days in its E2E."
+      },
+      "done_in": {
+        "stage": "S14",
+        "date": "2026-11-13",
+        "note": "suspended_until (migration 0103), StaffUserView.suspended_until, scheduler rule identity.suspension_expiry (every 5 min). DI-66 closed. Deviation S14-D7."
+      }
+    },
+    {
+      "id": "BR-08",
+      "action_id": "BRU-08",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "backend NI-04",
+        "stage_needed": "before AC9 (merge)"
+      },
+      "priority": "medium",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Organization merge re-pointing registry (backend DI-67). Until done, AC9 hides Merge.",
+      "source_notes": {
+        "note_ac8": "AC8 does not offer merge_duplicate on organization cases either (D-51)."
+      },
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [],
+        "deviations": [
+          {
+            "id": "D-51",
+            "stage": "AC8",
+            "summary": "merge_duplicate is not offered on organization cases until BR-08 (organization merge re-pointing) is done, as planned for AC9."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "XL",
+        "stage": [
+          "S22"
+        ],
+        "why": "Merge is hidden in the console until built (D-51); duplicates can be handled by status change meanwhile. Cross-module re-pointing with conflict rules for every module that references an organization: the most invasive item of the plan."
+      }
+    },
+    {
+      "id": "BR-09",
+      "action_id": "BRU-09",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "backend NI-02, RCP-01",
+        "stage_needed": "before AC11"
+      },
+      "priority": "high",
+      "status_in_source": "open",
+      "status": "done",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Bind staff access purposes to the record being read (backend NI-02, SEC-ADM-5). The console already sends the purpose of the work item it came from (GD-10).",
+      "source_notes": {},
+      "related": {
+        "r_items": [
+          "R-03"
+        ],
+        "open_questions": [],
+        "doc_issues": [],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P0",
+        "complexity": "L",
+        "stage": [
+          "S14"
+        ],
+        "why": "Privacy defect (RCP-01): any open purpose unlocks PII of any record. R-03: must be closed before real staff use real data. Cross-cutting rule over 14 PURP operations plus a sweep check."
+      },
+      "done_in": {
+        "stage": "S14",
+        "date": "2026-11-13",
+        "note": "Purpose bound to the record on all 14 PURP operations (403 PURPOSE_RECORD_MISMATCH; users_search scoped; case_action targets bound). Deviations S14-D1..D5, D8."
+      }
+    },
+    {
+      "id": "BR-10",
+      "action_id": "BRU-10",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "DI-10",
+        "stage_needed": "AC14"
+      },
+      "priority": "must",
+      "status_in_source": "open",
+      "status": "done",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Staff directory: admin.staff_list (staff, roles, MFA status, last sign-in, status) and admin.staff_disable for A-STAFF-01.",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [
+          "OQ-07"
+        ],
+        "doc_issues": [
+          {
+            "id": "DI-10",
+            "issue": "Docs/23 lists A-NOTIF-01, A-POL-01, A-STAFF-01 (list), A-SUP-01, the A-AI-02 decisions and A-AI-03 as Must or Should, but Docs/40 §23 has no operations for them.",
+            "action": "Recorded as BR-10..BR-14; built in AC14 after OQ-07."
+          }
+        ],
+        "deviations": [
+          {
+            "id": "D-50",
+            "stage": "AC8",
+            "summary": "\"Take this case\" assigns the case to the caller with the fixed reason \"taking_case\" (the button is the reason; no dialog), and the case is not taken automatically on open (opening a list item would claim it). Assigning to another moderator is not offered: no staff list (BR-10)."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "P1",
+        "complexity": "M",
+        "stage": [
+          "S13"
+        ],
+        "why": "AC10 (staff roles) and case assignment to another moderator (D-50) need a staff list; a staff account cannot be disabled without SQL.",
+        "done": {
+          "stage": "S13",
+          "date": "2026-11-12",
+          "result": "admin.staff_list (directory fields for ADM, name and roles of active colleagues for other staff), admin.staff_disable (immediate: platform roles suspended, sessions ended; never self, never the last admin) and admin.staff_enable (4EYES)."
+        }
+      }
+    },
+    {
+      "id": "BR-11",
+      "action_id": "BRU-11",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "DI-10",
+        "stage_needed": "AC14"
+      },
+      "priority": "must",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Notification templates and rules (A-NOTIF-01): list templates per event, channel and locale with missing-translation flags; edit rules (invitation delay, reminders 0-3, quiet hours, digest).",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [
+          "OQ-07"
+        ],
+        "doc_issues": [],
+        "deviations": [
+          {
+            "id": "D-25",
+            "stage": "AC4",
+            "summary": "Navigation: the Docs/23 §3.1 sections without operations in contract 1.3.0 (Featured placements, Notifications & templates, Policies & consent texts, Support) are not listed (GD-08); 'MCP & Audit' is two sections (MCP clients, Audit log); Pending approvals and Exchange rates are added. 20 sections in four groups (work, records, oversight, settings)."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "P1",
+        "complexity": "L",
+        "stage": [
+          "S17"
+        ],
+        "why": "Docs/23 Must (A-NOTIF-01). The pilot can run on the code templates, but invitation delay, reminders and quiet hours cannot be tuned without a deploy. New data model in the notification module."
+      }
+    },
+    {
+      "id": "BR-12",
+      "action_id": "BRU-12",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "DI-10; needed for the legal texts go-live item (PWA NI-P13-12)",
+        "stage_needed": "AC14"
+      },
+      "priority": "must",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Policies and consent texts with versions (A-POL-01): list, draft, publish with effective date and re-consent flag (4EYES).",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [
+          "OQ-07"
+        ],
+        "doc_issues": [],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P0",
+        "complexity": "L",
+        "stage": [
+          "S15"
+        ],
+        "why": "Legal texts are a go-live item (PWA NI-P13-12, owner rule \"legal first\"). New entity with versions, four-eyes publish and a public read the PWA needs for (re-)consent."
+      }
+    },
+    {
+      "id": "BR-13",
+      "action_id": "BRU-13",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "DI-10",
+        "stage_needed": "AC14"
+      },
+      "priority": "should",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Support tickets for A-SUP-01 (today 'Contact support' is an email address).",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [
+          "OQ-07"
+        ],
+        "doc_issues": [],
+        "deviations": [
+          {
+            "id": "D-25",
+            "stage": "AC4",
+            "summary": "Navigation: the Docs/23 §3.1 sections without operations in contract 1.3.0 (Featured placements, Notifications & templates, Policies & consent texts, Support) are not listed (GD-08); 'MCP & Audit' is two sections (MCP clients, Audit log); Pending approvals and Exchange rates are added. 20 sections in four groups (work, records, oversight, settings)."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "L",
+        "stage": [
+          "S24"
+        ],
+        "why": "Docs/23 Should. \"Contact support\" by email works for the pilot. New entity on both planes."
+      }
+    },
+    {
+      "id": "BR-14",
+      "action_id": "BRU-14",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "DI-10",
+        "stage_needed": "AC14 or with Stage 5 AI"
+      },
+      "priority": "must_with_ai",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "AI output review decisions (mark ok / wrong with category, add to evaluation set) and triage safety review queues (A-AI-02, A-AI-03).",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [
+          "OQ-07"
+        ],
+        "doc_issues": [
+          {
+            "id": "DI-10",
+            "issue": "Docs/23 lists A-NOTIF-01, A-POL-01, A-STAFF-01 (list), A-SUP-01, the A-AI-02 decisions and A-AI-03 as Must or Should, but Docs/40 §23 has no operations for them.",
+            "action": "Recorded as BR-10..BR-14; built in AC14 after OQ-07."
+          }
+        ],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P3",
+        "complexity": "M",
+        "stage": [
+          "S24"
+        ],
+        "why": "Tied to the AI build (must_with_ai). Insights exist in lite mode, so the decision store can be built; its value grows with the real AI workers (backend NI-09, NI-10)."
+      }
+    },
+    {
+      "id": "BR-15",
+      "action_id": "BRU-15",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "DI-05",
+        "stage_needed": "AC14"
+      },
+      "priority": "should",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Moderation actions reduce_weight, edit_request (with highlighted spans) and apply_redaction (boxes → redacted copy).",
+      "source_notes": {
+        "note_ac8": "Add \"downgrade fitment\" (confirmed → likely/uncertain) for A-INV-01 (DI-27)."
+      },
+      "related": {
+        "r_items": [],
+        "open_questions": [
+          "OQ-07"
+        ],
+        "doc_issues": [
+          {
+            "id": "DI-05",
+            "issue": "Docs/23 actions with no ModerationActionType in Docs/40: 'Reduce weight', 'Edit request' with highlighted text (A-REV-02), 'Apply redaction' with boxes (A-CON-02).",
+            "action": "Not shown until BR-15 (AC14). request_changes and apply_trust_penalty cover part of it."
+          },
+          {
+            "id": "DI-22",
+            "issue": "Docs/23 A-REV-02 lists Hide (kept for review) and Remove as separate actions and an Edit request. The backend's review target applies hide and remove the same way (status removed; there is no hidden review status) and refuses request_changes for reviews.",
+            "action": "AC7 offers Remove (and Restore) only, with the effect said in the dialog; Edit request and Reduce weight stay with BR-15."
+          },
+          {
+            "id": "DI-27",
+            "issue": "Docs/23 A-INV-01 actions \"Downgrade fitment (confirmed → likely/uncertain)\" and \"Suspend vendor (T&S lead, four-eyes)\", and A-CON-01 tabs Counterfeit / Wrong fitment / Prohibited / Duplicate / Vendor data: the backend's fitment target only rejects and restores a row (no confidence change), vendor suspension is admin.org_status (not four-eyes in contract 1.3.0, OQ-04), and the case list cannot filter by reason.",
+            "action": "AC8 offers reject / restore for fitment rows and shows the reason column; vendor status is changed on the organization page (AC9). Fitment downgrade joins BR-15; the reason filter is BR-32."
+          }
+        ],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "L",
+        "stage": [
+          "S20",
+          "S22"
+        ],
+        "why": "Docs/23 Should; request_changes and apply_trust_penalty cover part of it today. Split: reduce_weight, edit_request and fitment downgrade with the trust stage (S20); apply_redaction needs the media worker and goes with the other data-rewriting work (S22)."
+      }
+    },
+    {
+      "id": "BR-16",
+      "action_id": "BRU-16",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "DI-06, DI-07",
+        "stage_needed": "AC14"
+      },
+      "priority": "should",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Extended staff reads for user and organization tabs (vehicles summary, appointments, consents history, sessions, capabilities/badges with rule evaluation, portfolio with consent, inventory quality, members, plan history), each PURP.",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [
+          "OQ-07"
+        ],
+        "doc_issues": [
+          {
+            "id": "DI-06",
+            "issue": "Docs/23 A-ORG-02 tabs Capabilities & badges, Reviews, Portfolio, Inventory, Members, Plan history, Cases need reads that StaffOrgView does not carry.",
+            "action": "AC9 shows what StaffOrgView has (profile, locations, verifications, subscription, counts) and links to the public profile; the rest is BR-16."
+          },
+          {
+            "id": "DI-07",
+            "issue": "Docs/23 A-USR-02 tabs Vehicles, Appointments, Consents, Privacy requests, Sessions & devices need reads that StaffUserView does not carry.",
+            "action": "AC10 shows StaffUserView (memberships, subscription, counts, verification marks); Force sign-out uses admin.user_sessions_revoke; the rest is BR-16."
+          }
+        ],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "L",
+        "stage": [
+          "S23"
+        ],
+        "why": "Should. Nine read areas across many modules; each needs a staff projection and PURP. The console shows the core views meanwhile."
+      }
+    },
+    {
+      "id": "BR-17",
+      "action_id": "BRU-17",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "DI-09",
+        "stage_needed": "AC13/AC14"
+      },
+      "priority": "should",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "System health metrics for the dashboard (import failures, notification delivery failures, media scan failures).",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [
+          "OQ-07"
+        ],
+        "doc_issues": [
+          {
+            "id": "DI-09",
+            "issue": "Docs/23 A-DASH-01 System widget (import, notification delivery, media scan failures) and parts of A-NOTIF-01 delivery health have no DashboardKey.",
+            "action": "Dashboard uses the 11 contract keys and queue counts; system metrics are BR-17."
+          }
+        ],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "M",
+        "stage": [
+          "S21"
+        ],
+        "why": "Should. Dashboard widget for AC13; aggregates over existing tables."
+      }
+    },
+    {
+      "id": "BR-18",
+      "action_id": "BRU-18",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC2 finding, GD-07, DI-13",
+        "stage_needed": "before AC9 (map settings) and AC12 (taxonomy tree)"
+      },
+      "priority": "high",
+      "status_in_source": "open",
+      "status": "done",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "The console cannot call the api host (it refuses cp-web-admin tokens). Serve on admin-api what the console still needs from it: the taxonomy tree (taxonomy.snapshot / node reads, for A-TAX-01) and the region settings the map needs (map style, location threshold; part of config.client). Option decided by OQ-13 (answered 2026-11-09: admin-api reads, contract 1.4.0).",
+      "source_notes": {},
+      "related": {
+        "r_items": [
+          "R-09",
+          "R-16"
+        ],
+        "open_questions": [
+          "OQ-13"
+        ],
+        "doc_issues": [
+          {
+            "id": "DI-13",
+            "issue": "GD-07 assumed the api host might accept the cp-web-admin token for a few reads. It cannot: SEC-AU-2 validates the audience of the host, and PUB still needs a token. Docs/23 screens that show taxonomy trees (A-TAX-01) and maps with region settings (A-ORG-02 Locations) need data the admin plane does not serve.",
+            "action": "GD-07 amended (no api reads). BR-18 and OQ-13 decide how the console gets those reads."
+          }
+        ],
+        "deviations": [
+          {
+            "id": "D-14",
+            "stage": "AC2",
+            "summary": "GD-07 api reads removed: the api host refuses admin tokens."
+          },
+          {
+            "id": "D-36",
+            "stage": "AC6",
+            "summary": "The E2E reads config.client on the api host itself, as an anonymous cp-mobile app (tests/e2e/public-api.ts: the anonymous grant with a proof of work in strict mode, a fresh PoW on the DPoP-nonce retry, DPoP proofs naming the public URLs), because the console cannot reach the api host (BR-18). The kill switch is checked through config.client (every ai_feature flag evaluates off), not through an AI operation: those need a signed-in user on the api host; backend ai.int.test and pipeline.int.test prove the 503 AI_UNAVAILABLE."
+          },
+          {
+            "id": "D-58",
+            "stage": "AC9",
+            "summary": "The Locations tab shows the backend's default pin threshold (300 m, CARPAL_LOCATION_CHECK_THRESHOLD_M) because StaffOrgView has no threshold; the verification review shows the real one (PinCheck.threshold_m). The verdict itself is always the server's. BR-18 (region settings on the admin plane) would remove the default."
+          },
+          {
+            "id": "D-59",
+            "stage": "AC9",
+            "summary": "The map style comes from the console's environment (CARPAL_ADMIN_MAP_STYLE_URL, origin added to img-src and connect-src), not from region settings read at run time (BR-18 not built; R-09). Unset — the pilot today, its tile URLs are placeholders — the map uses a built-in style without a basemap; centre and zoom defaults come from shared/region-config."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "P1",
+        "complexity": "M",
+        "stage": [
+          "S13"
+        ],
+        "why": "AC12 (taxonomy tree) cannot be built without it, and AC9 uses a hard-coded threshold and map style (D-58, D-59). Two additive reads, OQ-13 answered.",
+        "done": {
+          "stage": "S13",
+          "date": "2026-11-12",
+          "result": "admin.taxonomy_snapshot (StaffTaxonomyNode: every status, labels in every locale, missing_locales, version) and admin.region_settings (RegionConfig + location_check_threshold_m). SEC-AU-2 unchanged (OQ-13)."
+        }
+      }
+    },
+    {
+      "id": "BR-19",
+      "action_id": "BRU-19",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC2 (SEC-ADM-2, lost-key recovery)",
+        "stage_needed": "before the pilot (AC10 or AC11)"
+      },
+      "priority": "high",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Staff passkey management on admin-api: list own passkeys, add a second (backup) device-bound key with a fresh aal3 re-authentication, remove one (never the last); and an ADM reset of another staff member's passkeys with a reason and four-eyes (the next sign-in then enrols again with password + emailed code). Today me.webauthn_register_options and me.mfa_remove are on the api host, which refuses admin tokens.",
+      "source_notes": {},
+      "related": {
+        "r_items": [
+          "R-08"
+        ],
+        "open_questions": [
+          "OQ-14"
+        ],
+        "doc_issues": [],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P0",
+        "complexity": "L",
+        "stage": [
+          "S16"
+        ],
+        "why": "With one device-bound key per person, a lost key locks a staff member out and needs SQL on the server (R-08); OQ-14 plans two keys each, which needs \"add a backup key\". Security-sensitive WebAuthn code. The ADM reset design waits for the owner (DQ-04)."
+      }
+    },
+    {
+      "id": "BR-20",
+      "action_id": "BRU-20",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC3 (DI-14)",
+        "stage_needed": "before AC10"
+      },
+      "priority": "high",
+      "status_in_source": "open",
+      "status": "done",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "A staff read of the background job a staff operation started: GET /v1/admin/jobs/{job_id} (admin.job_get, STF of the starting operation, only jobs started from the admin plane), or the export job's state and download carried by the DSR view. Needed for admin.dsr_export (A-DSR-02) and later ASYNC admin operations.",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-14",
+            "issue": "admin.dsr_export (ASYNC) answers 202 with a Job, but contract 1.3.0 has no job read on the admin plane: jobs.get is on the api host (USR/ORG principals), which refuses cp-web-admin tokens. A-DSR-02 cannot show the export's progress or its download unless the DSR record itself carries them.",
+            "action": "BR-20. Check in AC10 whether admin.dsr_queue / the DSR view already carries the export state and download; if not, the backend adds an admin job read."
+          }
+        ],
+        "deviations": [
+          {
+            "id": "D-19",
+            "stage": "AC3",
+            "summary": "The ASYNC helper is a generic pollUntil(): contract 1.3.0 has no admin-plane job read (DI-14, BR-20)."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "P0",
+        "complexity": "S",
+        "stage": [
+          "S13"
+        ],
+        "why": "A-DSR-02 cannot show or hand over a data export (DI-14); privacy requests have legal deadlines. Needed by AC10.",
+        "done": {
+          "stage": "S13",
+          "date": "2026-11-12",
+          "result": "admin.job_get for jobs started on the admin plane (data_export: ADM, SUP; taxonomy_merge: ADM); everything else is 404. admin.dsr_export answers Location /v1/admin/jobs/{id}. No download link (deviation S13-D1, DQ-12)."
+        }
+      }
+    },
+    {
+      "id": "BR-21",
+      "action_id": "BRU-21",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC5 (DI-17)",
+        "stage_needed": "contract 1.4.0 (with BR-18, before AC9)"
+      },
+      "priority": "medium",
+      "status_in_source": "open",
+      "status": "partly_done",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Let the requester see their own four-eyes changes and the outcome: admin.four_eyes_list q: mine=true (requested_by = caller, all statuses, with decided_by_display, decided_at and the decision reason in PendingChange), or a separate admin.four_eyes_mine. Optionally a notification to the requester when the change is approved, rejected or expires (today the requester learns it only from the audit log, which only ADM can read).",
+      "source_notes": {},
+      "related": {
+        "r_items": [
+          "R-16"
+        ],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-17",
+            "issue": "Docs/23 §3.3 'Four-eyes request: the first staff member submits; a second … approves or rejects from Pending approvals' and the plan's AC5.T4 'own requests shown as Waiting for someone else': admin.four_eyes_list returns only changes the caller may decide, never their own, and no operation lists one's own requests or tells the requester the outcome. Docs/23 A-DASH-01 asks for queue counts; no operation returns counts.",
+            "action": "AC5 shows own requests made in the current tab (memory only, D-31) and computes counts by paging the lists (D-32). BR-21 (own requests with outcome) and BR-22 (queue summary) ask the backend for the missing reads."
+          }
+        ],
+        "deviations": [
+          {
+            "id": "D-31",
+            "stage": "AC5",
+            "summary": "'Your requests' on Pending approvals lists only the four-eyes changes this staff member filed in the current tab (from the 202 answers, in the in-memory query cache, cleared with it, GD-12): the contract has no list of one's own requests (DI-17, BR-21). A deep link to an own change (/approvals?change=<id>) says it is not in the list and why; the server refuses a self-decision with SELF_APPROVAL_FORBIDDEN, which the kit explains."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "P1",
+        "complexity": "M",
+        "stage": [
+          "S13",
+          "S17"
+        ],
+        "why": "R-16: matters most for the pilot; a requester never learns the outcome (only ADM can read the audit log). List part with the console unblockers (S13); the outcome notification with the other staff notices (S17).",
+        "done": {
+          "stage": "S13",
+          "date": "2026-11-12",
+          "part": "list",
+          "result": "admin.four_eyes_list q mine=true (own requests, every status unless status is given) and PendingChange.decided_by_display, decided_at, decision_reason, job_id.",
+          "remaining": "Outcome notification to the requester: S17.T4."
+        }
+      }
+    },
+    {
+      "id": "BR-22",
+      "action_id": "BRU-22",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC5 (DI-17, D-32)",
+        "stage_needed": "contract 1.4.0 or AC13"
+      },
+      "priority": "low",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "A queue summary read for My work and the navigation counts: GET /v1/admin/work-summary (admin.work_summary, STF(any staff), aggregates only) returning per queue the caller may see: open count, oldest created_at and the SLA-relevant timestamps (or counts per SLA state). Today the console pages each list (up to 2 pages of 100 per status, 13 calls for a MOD) every minute and shows '200+' beyond.",
+      "source_notes": {},
+      "related": {
+        "r_items": [
+          "R-16"
+        ],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-17",
+            "issue": "Docs/23 §3.3 'Four-eyes request: the first staff member submits; a second … approves or rejects from Pending approvals' and the plan's AC5.T4 'own requests shown as Waiting for someone else': admin.four_eyes_list returns only changes the caller may decide, never their own, and no operation lists one's own requests or tells the requester the outcome. Docs/23 A-DASH-01 asks for queue counts; no operation returns counts.",
+            "action": "AC5 shows own requests made in the current tab (memory only, D-31) and computes counts by paging the lists (D-32). BR-21 (own requests with outcome) and BR-22 (queue summary) ask the backend for the missing reads."
+          }
+        ],
+        "deviations": [
+          {
+            "id": "D-32",
+            "stage": "AC5",
+            "summary": "Queue counts on My work are computed in the browser from the list operations: per open status at most 2 pages of 100 (SEC-ADM-7), '200+' beyond, oldest age and SLA state among the items read; refreshed every 60 s (src/lib/work/queues.ts). Open statuses: verifications pending; review approvals awaiting_reviewer; reports open; cases open, investigating, escalated; disputes open, in_mediation; privacy requests received, verifying_identity, in_progress; four-eyes pending."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "M",
+        "stage": [
+          "S21"
+        ],
+        "why": "The console pages every list each minute (D-32), which works at pilot volumes. Built after the queue-changing stages so it counts the final set of queues."
+      }
+    },
+    {
+      "id": "BR-23",
+      "action_id": "BRU-23",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC6 (DI-18)",
+        "stage_needed": "contract 1.4.0 (AC14)"
+      },
+      "priority": "low",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Plan in admin.plans_list carries status: 'active'|'inactive' (and is_default_for_audience), so A-PLAN-01 shows which plans are offered and which plan a trial falls back to.",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-18",
+            "issue": "Docs/40 §10.1 Plan has no status, yet admin.plans_list lists inactive plans too and admin.plan_update can set status active|inactive. A-PLAN-01 cannot show which plans are offered.",
+            "action": "AC6 offers \"Plan status: No change / Active / Inactive\" with a hint that the list does not show it (D-42). BR-23 adds status to the admin read."
+          }
+        ],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "S",
+        "stage": [
+          "S21"
+        ],
+        "why": "One field; the console hints that the list does not show it (D-42)."
+      }
+    },
+    {
+      "id": "BR-24",
+      "action_id": "BRU-24",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC6 (DI-20; Docs/23 A-PLAN-01 Assignments)",
+        "stage_needed": "contract 1.4.0 (AC14)"
+      },
+      "priority": "medium",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "admin.subscriptions_list (GET {adm}/subscriptions, STF(ADM)): q plan_key, status (trial|active|expired|cancelled), subscriber_type, trial_ends_before, cursor, limit ≤ 100; items: subscriber (type, id, display name), plan_key, status, trial_ends_at, expires_at, overrides, assigned_by_display, started_at. Also the open subscription change requests (subscription.change_request) with the organization, for a \"requests to handle\" queue.",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-20",
+            "issue": "Docs/23 A-PLAN-01 \"Assignments\" lists organizations and individuals with their plan, trial end and overrides, and A-RET-01 asks for add and a dry run. Contract 1.3.0 has no list of subscriptions (only one per organization in StaffOrgView and per user in StaffUserView), no retention create and no dry run.",
+            "action": "AC6 builds the assignment form (no list) and says on the retention screen that add and dry run are not available. BR-24 and BR-25."
+          }
+        ],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "M",
+        "stage": [
+          "S21"
+        ],
+        "why": "A-PLAN-01 Assignments list; the assignment form works without it."
+      }
+    },
+    {
+      "id": "BR-25",
+      "action_id": "BRU-25",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC6 (DI-20)",
+        "stage_needed": "contract 1.4.0 (AC14)"
+      },
+      "priority": "low",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "admin.retention_create (POST {adm}/retention-policies, STF(ADM) 4EYES RSN AUD) and admin.retention_dry_run (POST {adm}/retention-policies/{policy_id}/dry-run → { affected: Int, by_status?: … }, STF(ADM)) for Docs/23 A-RET-01.",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-20",
+            "issue": "Docs/23 A-PLAN-01 \"Assignments\" lists organizations and individuals with their plan, trial end and overrides, and A-RET-01 asks for add and a dry run. Contract 1.3.0 has no list of subscriptions (only one per organization in StaffOrgView and per user in StaffUserView), no retention create and no dry run.",
+            "action": "AC6 builds the assignment form (no list) and says on the retention screen that add and dry run are not available. BR-24 and BR-25."
+          }
+        ],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "M",
+        "stage": [
+          "S21"
+        ],
+        "why": "A-RET-01 add and dry run; editing existing policies works."
+      }
+    },
+    {
+      "id": "BR-26",
+      "action_id": "BRU-26",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC6 (DI-19)",
+        "stage_needed": "contract 1.4.0 (with AC13)"
+      },
+      "priority": "low",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "id in FeatureFlag and ExchangeRate (the audit entity ids), or admin.audit_search by entity key, for the per-record history; and a staff notification (in-app, ADM) when ai.automation.kill_switch is turned on or off (Docs/23 A-FLAG-01 \"broadcast to the dashboard and AI governance staff\").",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-19",
+            "issue": "FeatureFlag and ExchangeRate (Docs/40 §23.1) carry no id, but the audit log records them by id (entity feature_flag / exchange_rate). The console cannot open a flag's or a rate's history (AuditDrawer needs entity_id). Docs/23 A-FLAG-01 also says turning the kill switch on is \"broadcast to the dashboard and AI governance staff\": no operation or notification does that (the event feature_flag.changed has no staff consumer).",
+            "action": "AC6 shows \"last changed by / when\" from the record only. BR-26 asks for the ids (or an audit search by key) and a staff notice for the kill switch."
+          }
+        ],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "S",
+        "stage": [
+          "S21",
+          "S17"
+        ],
+        "why": "Ids for per-record history (S21) and the kill-switch staff notice (S17, with the other staff notices)."
+      }
+    },
+    {
+      "id": "BR-27",
+      "action_id": "BRU-27",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC7 (DI-21)",
+        "stage_needed": "contract 1.4.0 (AC14) or with AC8"
+      },
+      "priority": "medium",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "admin.cases_list q: source (user_report | ai_flag | system_rule | admin), and in ModerationCase a short target summary (excerpt ≤ 120, rating for reviews); a typed target snapshot per target type in admin.case_get (ReviewSnapshot: subject_organization_id, overall_rating, title, body, status, confirmation_path, verified_status, created_at, …); later the suspicious-pattern and automatic-check-failed tabs of A-REV-01 when their signals exist.",
+      "source_notes": {
+        "note_ac8": "AC8: the Content views (reported, AI flagged, held by a rule, unsafe advice, consent) narrow the loaded cases on the client (D-49); BR-32 adds the reason filter, BR-33 the content snapshots."
+      },
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-21",
+            "issue": "Docs/23 A-REV-01 has tabs Reported / AI flagged / Suspicious pattern and columns review excerpt, rating and author for review cases. Contract 1.3.0 admin.cases_list filters by status, severity, case_type and assignee only (no source), and ModerationCase carries no excerpt; admin.case_get returns the target as Json<TargetSnapshot> whose only typed fields are type, id and available (the review fields are the backend's choice).",
+            "action": "AC7 shows one list of review cases with a Source column (D-47) and reads the review from the snapshot defensively (reviewSnapshot; unknown shapes show the target chip). BR-27."
+          }
+        ],
+        "deviations": [
+          {
+            "id": "D-47",
+            "stage": "AC7",
+            "summary": "A-REV-01 tabs: Awaiting approval and Review cases (Reported, AI flagged and rule cases in one list with a Source column, DI-21); \"Disputed by the business\" links to Disputes filtered to objections; Suspicious pattern and Pending automatic check failed are not built (no data, BR-27)."
+          },
+          {
+            "id": "D-49",
+            "stage": "AC8",
+            "summary": "Case queues of several types read admin.cases_list once per type (up to 50 each, no paging until a type is chosen with ?type=); the Docs/23 A-CON-01 tabs are views that narrow the loaded cases on the client, because the list filters one case type and no source or reason (BR-27, BR-32)."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "M",
+        "stage": [
+          "S18"
+        ],
+        "why": "The console narrows cases on the client (D-47, D-49); fine at pilot volumes, wasteful later."
+      }
+    },
+    {
+      "id": "BR-28",
+      "action_id": "BRU-28",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC7 (DI-23)",
+        "stage_needed": "contract 1.4.0 (AC14)"
+      },
+      "priority": "medium",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Disputes: a message thread per party (staff templated messages, the party's replies and added evidence), admin reads of the dispute targets the console cannot show (moderation action with its decider, service record, badge), and a staff \"withdraw on request\" (status withdrawn with the raiser's request as the reason).",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-23",
+            "issue": "Docs/23 A-DSP-01 asks for a message thread with each party, the original decision of an appeal (with its decision-maker), evidence from both sides for every target and \"Withdraw on request\". Contract 1.3.0 has no dispute messages, no admin read of a moderation action, a service record or a badge, and dispute_resolve cannot set withdrawn.",
+            "action": "AC7 shows the statement, the target chip, and for Path 2 reviews the review with the business answer and the author's evidence (admin.review_approval_get under the dispute purpose); the screen says what is not available. BR-28."
+          }
+        ],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "L",
+        "stage": [
+          "S20"
+        ],
+        "why": "Disputes are decidable today on statement and target; messages need a new entity on both planes."
+      }
+    },
+    {
+      "id": "BR-29",
+      "action_id": "BRU-29",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC7 (DI-25)",
+        "stage_needed": "contract 1.4.0"
+      },
+      "priority": "low",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "StaffReviewApprovalView: stage and business_answered_at (the reviewer timer's start), and fraud signals when SEC-BF-1 has a source; a read of one's own decided approvals and disputes (history) without a live purpose.",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-25",
+            "issue": "StaffReviewApprovalView has no stage and no time of the business answer (the 2-working-day timer starts then, Docs/23 §6); fraud_signals is always empty (backend S7 deviation); and the approval and dispute purposes end with the decision, so a reviewer cannot re-open what they just decided.",
+            "action": "The console derives the stage like the backend filter, starts the timer at the deadline or the review's last change (as My work, AC5), shows \"No fraud signals reported\", and keeps the decision's answer on screen (D-48). BR-29."
+          }
+        ],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "M",
+        "stage": [
+          "S18"
+        ],
+        "why": "The console derives stage and timer start (D-48); exact values and own history are refinements."
+      }
+    },
+    {
+      "id": "BR-30",
+      "action_id": "BRU-30",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC7 (DI-24)",
+        "stage_needed": "docs (WP0) / contract 1.4.0"
+      },
+      "priority": "medium",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Settle the meaning of resolved_upheld / resolved_rejected for review_approval_objection in Docs/40 §23.4 and Docs/52 Dispute (today upheld = the review is published as disputed, the opposite of upholding the objection), or give objections their own outcomes (publish_disputed / reject_review).",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-24",
+            "issue": "For review_approval_objection the backend's resolved_upheld publishes the review (\"Disputed by the business\", Docs/02 WP9 \"if upheld it shows Disputed by the business\") and resolved_rejected rejects it, so \"upheld\" upholds the review, not the objection the business raised; for every other dispute type upheld means the raiser's claim is accepted. A staff member reading \"Uphold\" on a business objection would expect the opposite effect.",
+            "action": "AC7 names the two outcomes of an objection by their effect (D-44) and shows the effect of every outcome before the decision. BR-30 asks to settle the wording in Docs/40 / Docs/52."
+          }
+        ],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "S",
+        "stage": [
+          "S20"
+        ],
+        "why": "Wording risk; the console names outcomes by effect (D-44), so no wrong decision is likely. Needs the owner decision DQ-06 first."
+      }
+    },
+    {
+      "id": "BR-31",
+      "action_id": "BRU-31",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC8 (DI-26)",
+        "stage_needed": "contract 1.4.0 (with BR-18, before AC9) — before the pilot"
+      },
+      "priority": "high",
+      "status_in_source": "open",
+      "status": "done",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Badges on the admin plane: admin.badges_list (GET {adm}/badges, STF(ADM, MOD); q status pending_approval|active|revoked|expired, organization_id, badge_type, cursor, limit ≤ 100; items ProviderBadge & { organization: OrgSummary }), or the badges in StaffOrgView (part of BR-16) plus a \"badges waiting for approval\" queue for My work. Without it a Verified Business badge awarded pending_approval cannot be found in the console.",
+      "source_notes": {},
+      "related": {
+        "r_items": [
+          "R-22"
+        ],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-26",
+            "issue": "Docs/23 A-ORG-02 \"Capabilities & badges\" and the Verified Business approval (54 §4: the trust worker awards it pending_approval) need the badges of an organization and the badges waiting for approval. Contract 1.3.0 has admin.badge_approve and revoke_badge by badge id, but no read that lists badges (StaffOrgView carries none; ProviderBadge has no organization).",
+            "action": "AC8 approves and revokes by a badge id the staff member enters (D-53); BR-31 asks for the list."
+          }
+        ],
+        "deviations": [
+          {
+            "id": "D-53",
+            "stage": "AC8",
+            "summary": "Badges are approved and revoked by a badge id the staff member enters (from a badge challenge, the verification or the audit log): no read lists badges (DI-26, BR-31)."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "P1",
+        "complexity": "S",
+        "stage": [
+          "S13"
+        ],
+        "why": "R-22: the Verified Business badge waiting for approval cannot be found in the console (D-53). One read.",
+        "done": {
+          "stage": "S13",
+          "date": "2026-11-12",
+          "result": "admin.badges_list (q status, organization_id, badge_type; items ProviderBadge & { organization: OrgSummary }, newest first)."
+        }
+      }
+    },
+    {
+      "id": "BR-32",
+      "action_id": "BRU-32",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC8 (DI-27, DI-29)",
+        "stage_needed": "contract 1.4.0 (with BR-27)"
+      },
+      "priority": "medium",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Enforce the Docs/23 A-CON-01 severity floor (unsafe_advice, non_consensual_media, privacy at least high) wherever a case is opened (report_triage open_case, AI flags, rules), and add q reason (ModerationReason, several allowed) to admin.cases_list next to BR-27's source, for the Unsafe advice / Consent tabs of A-CON-01 and the tabs of A-INV-01.",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-27",
+            "issue": "Docs/23 A-INV-01 actions \"Downgrade fitment (confirmed → likely/uncertain)\" and \"Suspend vendor (T&S lead, four-eyes)\", and A-CON-01 tabs Counterfeit / Wrong fitment / Prohibited / Duplicate / Vendor data: the backend's fitment target only rejects and restores a row (no confidence change), vendor suspension is admin.org_status (not four-eyes in contract 1.3.0, OQ-04), and the case list cannot filter by reason.",
+            "action": "AC8 offers reject / restore for fitment rows and shows the reason column; vendor status is changed on the organization page (AC9). Fitment downgrade joins BR-15; the reason filter is BR-32."
+          },
+          {
+            "id": "DI-29",
+            "issue": "Docs/23 A-CON-01 \"unsafe_advice, non_consensual_media and privacy cases are at least high\": the backend opens cases with the severity it is given (admin.report_triage open_case) or its own (AI flags, rules) and does not enforce the floor.",
+            "action": "The console proposes high and offers nothing lower in triage (D-57) and sorts these reasons first whatever their severity; BR-32 asks the backend to enforce it."
+          }
+        ],
+        "deviations": [
+          {
+            "id": "D-49",
+            "stage": "AC8",
+            "summary": "Case queues of several types read admin.cases_list once per type (up to 50 each, no paging until a type is chosen with ?type=); the Docs/23 A-CON-01 tabs are views that narrow the loaded cases on the client, because the list filters one case type and no source or reason (BR-27, BR-32)."
+          },
+          {
+            "id": "D-57",
+            "stage": "AC8",
+            "summary": "Triage proposes high for unsafe advice, media without consent and private data and offers nothing lower (Docs/23 A-CON-01); the backend does not enforce it (DI-29, BR-32)."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "P1",
+        "complexity": "M",
+        "stage": [
+          "S18"
+        ],
+        "why": "The severity floor for unsafe advice, non-consensual media and privacy is a safety rule; AI flags and rules open cases without the console, so only the server can enforce it (DI-29). The reason filter is P2 and rides along."
+      }
+    },
+    {
+      "id": "BR-33",
+      "action_id": "BRU-33",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC8 (DI-28)",
+        "stage_needed": "contract 1.4.0 (AC14)"
+      },
+      "priority": "medium",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Typed target snapshots for content (with BR-27): the author (display name, role member/provider/vendor, the organization card when posted for an organization) and a short author history (published, removed, warnings) for posts, comments, questions, answers and files; for a showcase item its consent record (customer display, scope, granted_at) and media ids; for a fitment row the listing name; and an admin read of the comments or answers around a reported comment or answer (PURP case).",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-28",
+            "issue": "Docs/23 A-CON-01 \"author (role badge)\" and A-CON-02 \"consent record for showcases (customer, scope, date)\", \"author history\", \"the whole post with its comments\": the target snapshots of admin.case_get carry the record's own fields only (a post has no author or organization, a showcase item only its consent status, no media ids), and the admin plane has no read of a post's comments.",
+            "action": "AC8 shows what the snapshot has (text, state, owner organization where present, consent status) and a public link for published posts and open questions. BR-33."
+          }
+        ],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "L",
+        "stage": [
+          "S18"
+        ],
+        "why": "Moderators see the record without its author or context (DI-28); public links help meanwhile. Same snapshot builders as BR-27."
+      }
+    },
+    {
+      "id": "BR-34",
+      "action_id": "BRU-34",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC9 (D-62, DI-08)",
+        "stage_needed": "contract 1.4.0"
+      },
+      "priority": "low",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "A read of open assist sessions: GET {adm}/assist-sessions?mine=true&status=active (admin.assist_sessions_list, STF(ADM, SUP)) → { items: { assist_session_id, organization: OrgSummary, flow_type, expires_at }[] }, so the console can show the banner after a reload and on another device.",
+      "source_notes": {},
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [],
+        "deviations": [
+          {
+            "id": "D-62",
+            "stage": "AC9",
+            "summary": "Open assist sessions are kept in memory for the staff member who started them (no read of open sessions in the contract, and GD-12 forbids Web Storage for responses): a reload forgets the banner; the session still expires after 4 hours. BR-34."
+          }
+        ]
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "S",
+        "stage": [
+          "S19"
+        ],
+        "why": "A reload forgets the assist banner (D-62); the session still expires after 4 h."
+      }
+    },
+    {
+      "id": "BR-35",
+      "action_id": "BRU-35",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC9 (DI-30, DI-31, DI-32)",
+        "stage_needed": "contract 1.4.0 (AC14)"
+      },
+      "priority": "medium",
+      "status_in_source": "open",
+      "status": "partly_done",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Organizations and verification on the admin plane: (1) admin.orgs_search returns a list row without contact data or exact points (name, type, city, plan, statuses, members, open cases, trust, created) and filters city, plan_key, has_open_cases, location_issue (far_apart or open wrong-location report) and possible_duplicate; (2) admin.verification_decide decision \"info_requested\" with missing items and a message (status stays pending, the SLA pauses), and assignee / AI pre-check / registration number, owner and call-back result in the queue item; (3) an organization profile correction (admin.org_correct, RSN AUD, the organization notified) and its history.",
+      "source_notes": {},
+      "related": {
+        "r_items": [
+          "R-25"
+        ],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-30",
+            "issue": "Docs/23 A-VER-02 \"Request more info (choose missing items; message template; status stays pending, SLA pauses)\" and the A-VER-01 columns AI pre-check, assignee and request types certification / location change / wrong-location report: admin.verification_decide knows verified and rejected only, OrganizationVerification has no assignee or pre-check, and certifications are not a verification type in contract 1.3.0. The submitted data lacks registration number, owner and call-back result.",
+            "action": "The console offers Approve and Reject only and says so (no dead buttons, GD-08); BR-35 asks for the rest."
+          },
+          {
+            "id": "DI-31",
+            "issue": "admin.orgs_search is not PURP but returns full StaffOrgView rows (contact email and phone, exact location points), while admin.org_get with the same view is PURP PII. Docs/23 A-ORG-01 also asks for city, plan, rating, possible duplicate and location issue filters and the saved views \"Possible duplicates\" and \"Location issues\", which OrgSearch lacks.",
+            "action": "The list and the header show no contact data or points from the search (GD-10); BR-35 asks for a narrower search row and the filters."
+          },
+          {
+            "id": "DI-32",
+            "issue": "Docs/23 A-ORG-02 Profile \"Staff can correct obvious data errors (e.g. wrong city) with a reason; changes are audited and the organization is notified\" and \"with edit history\": the admin plane has no organization profile correction or history read (only locations, admin.location_correct).",
+            "action": "The Profile tab is read-only and says so; part of BR-35."
+          }
+        ],
+        "deviations": []
+      },
+      "plan": {
+        "priority": "mixed",
+        "complexity": "L",
+        "stage": [
+          "S14",
+          "S19"
+        ],
+        "why": "Split by part: (1, row) admin.orgs_search returns contact data and exact points without a purpose (DI-31): a privacy defect, P0, in S14 with BR-09. (1, filters), (2) request more info (P1, R-25: rejecting restarts the business submission and its SLA) and (3) profile correction with history (P2) in S19.",
+        "parts": [
+          {
+            "part": "1-row",
+            "priority": "P0",
+            "complexity": "S",
+            "stage": "S14"
+          },
+          {
+            "part": "1-filters",
+            "priority": "P2",
+            "complexity": "M",
+            "stage": "S19"
+          },
+          {
+            "part": "2",
+            "priority": "P1",
+            "complexity": "M",
+            "stage": "S19"
+          },
+          {
+            "part": "3",
+            "priority": "P2",
+            "complexity": "M",
+            "stage": "S19"
+          }
+        ]
+      },
+      "done_in": {
+        "stage": "S14",
+        "date": "2026-11-13",
+        "part": "1-row",
+        "note": "admin.orgs_search answers StaffOrgSearchRow (no contact data, no points). Part 1 filters, parts 2 and 3 remain for S19. Deviation S14-D6."
+      }
+    }
+  ],
+  "r_item_actions_for_backend": [
+    {
+      "r_item": "R-03",
+      "component": [
+        "backend"
+      ],
+      "status": "done",
+      "action": "Bind staff access purposes to the record being read (BR-09 / backend NI-02) before real staff use the console with real data.",
+      "br": [
+        "BR-09"
+      ],
+      "raw_text": "Run backend NI-02 (purpose bound to the record, BR-09) before real staff use the console with real user data.",
+      "raised_in": null,
+      "plan": {
+        "stage": [
+          "S14"
+        ],
+        "note": "Closed by BR-09."
+      },
+      "done_in": {
+        "stage": "S14",
+        "date": "2026-11-13",
+        "note": "Closed by BR-09: a purpose admits only records its work item is about."
+      }
+    },
+    {
+      "r_item": "R-05",
+      "component": [
+        "ops",
+        "backend"
+      ],
+      "status": "todo",
+      "action": "Plan pilot staff accounts: at least two ADM, one MOD, one CRV (backend staff:bootstrap covers creation). Decide who they are.",
+      "when": "before pilot",
+      "raw_text": "Plan the pilot's staff accounts before AC6 (OQ-10): two ADM accounts are needed for any ADM-only four-eyes change (kill switch off, a rate change over 20 %, plans, retention, role grants), plus at least one MOD and one CRV. The first ADM comes from the AC11.T3 runbook; the second must be granted by four-eyes, so create both before the four-eyes rule matters (backend bootstrap or the dev tool in dev).",
+      "raised_in": "AC1",
+      "plan": {
+        "stage": null,
+        "note": "Owner preparation (pilot_prep_checklist). S25 updates deploy.md for two ADM accounts at bootstrap."
+      }
+    },
+    {
+      "r_item": "R-08",
+      "component": [
+        "backend"
+      ],
+      "status": "todo",
+      "action": "Build BR-19 (staff passkey management, ADM reset with four-eyes) so a spare key can be registered and a lost key needs no server SQL.",
+      "br": [
+        "BR-19"
+      ],
+      "raw_text": "Build BR-19 (staff passkey management, ADM reset with four-eyes) before the pilot, so a spare key can be registered and a lost key does not need SQL on the server.",
+      "raised_in": "AC2",
+      "plan": {
+        "stage": [
+          "S16"
+        ],
+        "note": "Closed by BR-19."
+      }
+    },
+    {
+      "r_item": "R-09",
+      "component": [
+        "backend"
+      ],
+      "status": "done",
+      "action": "Build BR-18 as admin-api reads (taxonomy tree, region map settings) in contract 1.4.0.",
+      "br": [
+        "BR-18"
+      ],
+      "raw_text": "Decide OQ-13 before AC9 and build BR-18 as a small backend stage with it (admin-api reads for the taxonomy tree and region map settings, contract 1.4.0 together with any AC14 items that are ready).",
+      "raised_in": "AC2",
+      "plan": {
+        "stage": [
+          "S13"
+        ],
+        "note": "Closed by BR-18.",
+        "done": {
+          "stage": "S13",
+          "date": "2026-11-12"
+        }
+      }
+    },
+    {
+      "r_item": "R-11",
+      "component": [
+        "backend",
+        "pwa",
+        "admin-console"
+      ],
+      "status": "todo",
+      "action": "Put the integration-test settings (strict auth, client keys, env) into backend/.env or a small script so pnpm test:int of the console and of the PWA run against one strict backend without hand-set variables.",
+      "when": "before the full test run",
+      "raw_text": "Put the integration-test settings of README \"Integration tests\" into backend/.env (or a small script) so pnpm test:int of the console and of the PWA run against one strict backend without hand-set variables; the console test creates one ADM account per run in the dev database (bff-int-…@staff.carpals.test), harmless but visible in `pnpm dev:staff list`.",
+      "raised_in": "AC3",
+      "plan": {
+        "stage": [
+          "S16"
+        ],
+        "note": "Must land before the whole-plan test run."
+      }
+    },
+    {
+      "r_item": "R-15",
+      "component": [
+        "backend"
+      ],
+      "status": "todo",
+      "action": "Add dev-only `pnpm dev:staff prune --domain staff.carpals.test --prefix e2e-` to keep the dev staff list readable after E2E runs.",
+      "raw_text": "E2E accounts pile up in the dev database (bff-int-… and e2e-…@staff.carpals.test, one per test). A backend `pnpm dev:staff prune --domain staff.carpals.test --prefix e2e-` (dev only) would keep `pnpm dev:staff list` readable.",
+      "raised_in": "AC4",
+      "plan": {
+        "stage": [
+          "S16"
+        ],
+        "note": "Dev tooling next to BR-19 test helpers."
+      }
+    },
+    {
+      "r_item": "R-16",
+      "component": [
+        "backend"
+      ],
+      "status": "partly_done",
+      "action": "Bundle BR-21 (own four-eyes requests with outcome) and BR-22 (queue summary) into the contract 1.4.0 backend stage. BR-21 matters most for the pilot.",
+      "br": [
+        "BR-21",
+        "BR-22"
+      ],
+      "raw_text": "Bundle BR-21 (own four-eyes requests with outcome) and BR-22 (queue summary) into the contract 1.4.0 backend stage planned with BR-18 before AC9; BR-21 matters most for the pilot, because a requester otherwise learns the outcome only from the audit log (ADM only) or by trying again.",
+      "raised_in": "AC5",
+      "plan": {
+        "stage": [
+          "S13",
+          "S17",
+          "S21"
+        ],
+        "note": "BR-21 list in S13, its notification in S17, BR-22 in S21.",
+        "done": {
+          "stage": "S13",
+          "date": "2026-11-12",
+          "part": "BR-21 list",
+          "remaining": "BR-21 notification (S17), BR-22 (S21)"
+        }
+      }
+    },
+    {
+      "r_item": "R-21",
+      "component": [
+        "ops",
+        "admin-console",
+        "backend"
+      ],
+      "status": "todo",
+      "action": "Before the pilot set the real IRR rate in the console with two ADM accounts ready (the placeholder 1,000,000 makes the first change over 20 % and four-eyes). Put it in the AC11 runbook and backend deploy.md Exchange rate section.",
+      "when": "AC11 / pilot",
+      "raw_text": "Before the pilot, set the real IRR rate in the console with two ADM accounts ready: the placeholder 1,000,000 is far from the market rate, so the first change is over 20 % and needs the second admin (deploy.md \"Exchange rate\").",
+      "raised_in": "AC6",
+      "plan": {
+        "stage": [
+          "S25"
+        ],
+        "note": "Owner sets the rate (pilot_prep_checklist); S25 checks the deploy.md \"Exchange rate\" text."
+      }
+    },
+    {
+      "r_item": "R-22",
+      "component": [
+        "backend"
+      ],
+      "status": "done",
+      "action": "Build BR-31 (badge list on admin-api) in the contract 1.4.0 stage.",
+      "br": [
+        "BR-31"
+      ],
+      "raw_text": "Build BR-31 (badge list) with the contract 1.4.0 stage before AC9: the Verified Business badge is the pilot's most visible trust mark, and without a list the badge waiting for approval cannot be found in the console.",
+      "raised_in": "AC8",
+      "plan": {
+        "stage": [
+          "S13"
+        ],
+        "note": "Closed by BR-31.",
+        "done": {
+          "stage": "S13",
+          "date": "2026-11-12"
+        }
+      }
+    },
+    {
+      "r_item": "R-23",
+      "component": [
+        "admin-console",
+        "backend"
+      ],
+      "status": "todo",
+      "action": "AC11 deploy kit: set CARPAL_STORAGE_URL and CARPAL_ADMIN_PUBLIC_WEB_URL in the console env file (admin-console). Check that the storage host serves display copies without Cross-Origin-Resource-Policy: same-origin (backend/storage deploy).",
+      "when": "AC11",
+      "raw_text": "AC11 deploy kit: set CARPAL_STORAGE_URL (https storage host of signed links) and CARPAL_ADMIN_PUBLIC_WEB_URL (https://pwa.<DOMAIN>) in the console's env file, and check that the storage host serves display copies without Cross-Origin-Resource-Policy: same-origin (an <img> from admin.<DOMAIN> would be blocked).",
+      "raised_in": "AC8",
+      "plan": {
+        "stage": [
+          "S25"
+        ],
+        "note": "Backend half (storage host must not send Cross-Origin-Resource-Policy: same-origin on display copies) checked in S25; console env is AC11."
+      }
+    },
+    {
+      "r_item": "R-24",
+      "component": [
+        "backend",
+        "pwa",
+        "admin-console"
+      ],
+      "status": "todo",
+      "action": "Publish the region tile host (WP1/WP8, backend/infra), then set CARPAL_ADMIN_MAP_STYLE_URL in the console env and the style URL in the PWA.",
+      "when": "before pilot",
+      "raw_text": "Publish the region tile host (WP1/WP8) before the pilot and set CARPAL_ADMIN_MAP_STYLE_URL in the console (and the PWA's style URL): without a basemap, staff correcting a pin see the pins on a blank map and must rely on the typed coordinates and the distance.",
+      "raised_in": "AC9",
+      "plan": {
+        "stage": null,
+        "note": "Infra (WP1/WP8 tile host), outside this refinement; pilot_prep_checklist."
+      }
+    },
+    {
+      "r_item": "R-25",
+      "component": [
+        "backend"
+      ],
+      "status": "todo",
+      "action": "\"Request more info\" for verification (BR-35 part 2) is included, because all BRs go into the backend refinement.",
+      "br": [
+        "BR-35"
+      ],
+      "raw_text": "Decide whether the pilot needs \"request more info\" for verification (BR-35 part 2): today staff must reject with what to fix, which restarts the business's submission and its SLA.",
+      "raised_in": "AC9",
+      "plan": {
+        "stage": [
+          "S19"
+        ],
+        "note": "Closed by BR-35 part 2."
+      }
+    }
+  ],
+  "unlinked_open_doc_issues": [
+    {
+      "id": "DI-01",
+      "issue": "Docs/02 §1.4 says admin.carpals.ir opens 'Admin pages of the web app'; frontend/README says the portals may ship as one app. GD-01 makes the console a separate app, because cp-web-admin is a separate client with aal3 and SEC-ADM-1 asks for a private entry point.",
+      "action": "After the user confirms GD-01: change the Docs/02 §1.4 row to 'Admin console (separate app, frontend/admin-console)' and the frontend/README sentence.",
+      "plan": {
+        "stage": [
+          "S15"
+        ],
+        "note": "Text change after DQ-03 (confirm GD-01)."
+      }
+    },
+    {
+      "id": "DI-08",
+      "issue": "Docs/23 'Assist onboarding' opens the business wizard on behalf of an owner; backend DI-05 leaves the {adm}/assist/{id}/… routes undefined and the wizard lives in the business web app, which does not exist yet.",
+      "action": "AC9 builds start/end of an assist session only; the assisted wizard waits for backend DI-05 and the business web app.",
+      "plan": {
+        "stage": null,
+        "note": "Deferred: the assisted wizard waits for backend DI-05 ({adm}/assist/... routes) and the business web app. Not in this refinement."
+      }
+    },
+    {
+      "id": "DI-11",
+      "issue": "shared/i18n/package.json and the PWA's i18n:check describe the shared dictionary as the PWA's. The console now reads two of its namespaces (common, format) but keeps its own text in an 'admin' namespace inside the console (deviation D-01). A key renamed or removed in shared/i18n fails only the console's own check, not the PWA's.",
+      "action": "Recommendation R-04: run the console's `pnpm i18n:check` (or its whole `pnpm check`) whenever shared/ changes, and mention the console in shared/i18n/package.json 'description' at the next PWA stage that touches shared/i18n.",
+      "plan": {
+        "stage": null,
+        "note": "Not backend: handed to the next PWA stage that touches shared/i18n (and R-04 root check script)."
+      }
+    },
+    {
+      "id": "DI-15",
+      "issue": "Docs/23 A-AUTH-01 asks for 'MFA required (authenticator app or security key)', a company SSO button and separate states for 'account disabled'. The contract allows staff WebAuthn only (SEC-AU-9, SEC-ADM-2: device-bound), has no SSO (OQ-08) and answers disabled staff accounts with the same INVALID_CREDENTIALS as a wrong password (SEC-AU-11).",
+      "action": "Reword Docs/23 A-AUTH-01 at the next docs pass: email + password, then a device-bound security key (first-time enrolment with an emailed code); no authenticator app, no SSO; 'account disabled' is covered by the generic sign-in error that names it (D-24).",
+      "plan": {
+        "stage": [
+          "S15"
+        ],
+        "note": "Docs/23 A-AUTH-01 reword in the S15 docs pass."
+      }
+    }
+  ],
+  "prioritisation": {
+    "date": "2026-11-12",
+    "scale": {
+      "P0": "Pilot blocker: a security or privacy defect, a legal obligation, or a state staff cannot get out of without SQL on the server.",
+      "P1": "Pilot operations: a pilot flow or a Docs/23 Must screen cannot be done in the console, or a server-side safety rule is missing; a console workaround may exist but is weak.",
+      "P2": "Completeness and efficiency: Docs/23 Should items, extra filters and context, aggregates; the console has a working workaround.",
+      "P3": "Tied to a later feature (the AI build)."
+    },
+    "complexity_scale": {
+      "S": "~1 point: one read operation, or a field or filter on an existing operation.",
+      "M": "~2-3 points: two or three operations, or one rule plus a scheduler job, or a new column with a migration.",
+      "L": "~4-6 points: a new entity with its operations, or a rule that cuts across many operations.",
+      "XL": "6+ points: a cross-module rewrite with per-module conflict rules.",
+      "note": "Points are relative effort per the backend definition of done (Docs/40 text, registry and codegen, handler, projection, sweep resolver, happy-path + authz-negative + rule tests). Reference: backend S12 (3 new operations, 2 changed, staff tooling, contract bump) is about 9 points."
+    },
+    "method": [
+      "Closed items (BR-01..BR-06) are kept for history only.",
+      "Each open item is rated by what goes wrong without it at the pilot, not by its source label (blocker/high/must/should): the source labels described when the console needed it.",
+      "Items whose parts differ in risk are split (BR-35 row vs filters vs more-info vs correction; BR-15 actions vs redaction; BR-21 list vs notification; BR-26 ids vs notice).",
+      "Console workarounds already built (deviations D-xx) lower the priority only when they are safe; they never lower a server-side safety or privacy rule."
+    ],
+    "summary": {
+      "P0": [
+        "BR-09 purpose bound to the record",
+        "BR-35 part 1 row (orgs_search leaks contact data and points without a purpose)",
+        "BR-12 policies and consent texts",
+        "BR-19 staff passkey management and lost-key reset",
+        "BR-20 admin job read (DSR export)"
+      ],
+      "P1": [
+        "BR-07 timed suspensions lifted",
+        "BR-10 staff directory",
+        "BR-11 notification templates and rules",
+        "BR-18 taxonomy and region reads on admin-api",
+        "BR-21 own four-eyes requests with outcome",
+        "BR-31 badge list",
+        "BR-32 severity floor (+ reason filter)",
+        "BR-35 part 2 request more info",
+        "R-11 integration-test settings (before the whole-plan test run)"
+      ],
+      "P2": [
+        "BR-08",
+        "BR-13",
+        "BR-15",
+        "BR-16",
+        "BR-17",
+        "BR-22",
+        "BR-23",
+        "BR-24",
+        "BR-25",
+        "BR-26",
+        "BR-27",
+        "BR-28",
+        "BR-29",
+        "BR-30",
+        "BR-33",
+        "BR-34",
+        "BR-35 parts 1-filters and 3",
+        "R-15"
+      ],
+      "P3": [
+        "BR-14 AI review decisions"
+      ]
+    },
+    "findings": [
+      "BR-35 part 1 is a privacy defect, not a missing feature: admin.orgs_search is not PURP but returns StaffOrgView rows with contact email, phone and exact points, while admin.org_get with the same view is PURP PII (DI-31). It is raised to P0 and fixed with BR-09.",
+      "BR-09 and BR-35 (1) together decide what staff can see without a justified purpose; both must be closed before real staff use real data (R-03).",
+      "BR-20 is small but P0: privacy requests have deadlines and the export cannot be shown or handed over from the console today (DI-14).",
+      "BR-32 is P1 although the console already offers only \"high\" in triage (D-57): AI flags and rules open cases without passing through the console, so only the server can enforce the floor.",
+      "BR-30 is a docs decision first; the console already shows the effect of each outcome (D-44), so it is not urgent.",
+      "BR-07 and BR-08 close backend DI-66 and DI-67 (backend NI-04). Backend DI-05 (assist routes) is the remaining NI-04 part and is out of scope (DI-08).",
+      "BR-14 depends on the AI build only for its value, not for its data: ai_mcp.ai_insights exists, so a review-decision table can be added now."
+    ]
+  },
+  "action_plan": {
+    "created": "2026-11-12",
+    "run_order": [
+      "S13",
+      "S14",
+      "S15",
+      "S16",
+      "S17",
+      "S18",
+      "S19",
+      "S20",
+      "S21",
+      "S22",
+      "S23",
+      "S24",
+      "S25"
+    ],
+    "total_load_points": 119,
+    "principles": [
+      "Order: first the reads that unblock the console (S13), then the pilot blockers (privacy S14, legal S15, staff keys S16), then pilot-operations completeness (S17-S19), then Should items (S20-S24), then closure (S25).",
+      "One stage = one working session that fits a 5-hour token window. Target load <= 11 points (backend S12 was about 9, S11 about 11). Security-sensitive or cross-module stages are planned lighter (S16, S22, S23).",
+      "A stage groups items by module and contract area so the session reads one set of docs and code (backend conventions.context_budget: read only the listed ranges, lean on the generated registry, copy patterns from finished modules).",
+      "Every stage follows the backend definition of done per operation and ends with contract:check and openapi:check green and the console contract regenerated, so the tree is never left with a half-updated registry.",
+      "If a session runs long, stop at the stage's split_point and move the rest to S25 or the named later stage; never split inside a task.",
+      "Stage-level unit and integration tests in lite mode stay part of each stage (they are development, not the test run). The strict cross-component runs (console and PWA E2E and test:int, R-10, R-13, R-20) wait for the whole-plan test run after S25 (PD-03). DQ-08 asks the owner to confirm this reading."
+    ],
+    "contract_versioning": {
+      "approach": "S13 opens contract 1.4.0; S14-S24 append to it (a changelog line per stage in Docs/40); S25 freezes it. Nothing is deployed or test-run before S25 (PD-03), so intermediate minor versions would only churn the PWA pins and the pinned backend tests.",
+      "breaking_for_console": [
+        "S14: narrower admin.orgs_search row",
+        "S19: VerificationDecision info_requested",
+        "S20: new ModerationActionType and DisputeStatus values (and outcomes if DQ-06 chooses new ones)"
+      ],
+      "note": "admin-api has one client (the console), so these are handled by regenerating the console contract in the same session. The api-host additions (S15, S19, S20, S24) are additive for the PWA.",
+      "decision": "DQ-01"
+    },
+    "stages": [
+      {
+        "id": "S13",
+        "title": "Admin console unblockers (contract 1.4.0 opens)",
+        "status": "done",
+        "items": [
+          "BR-20",
+          "BR-10",
+          "BR-18",
+          "BR-31",
+          "BR-21 (list part)"
+        ],
+        "closes_r_items": [
+          "R-09",
+          "R-22",
+          "R-16 (part)"
+        ],
+        "priority_mix": "P0: BR-20. P1: BR-10, BR-18, BR-31, BR-21.",
+        "load": {
+          "points": 11,
+          "rating": "full",
+          "breakdown": "BR-20 2, BR-10 3, BR-18 2, BR-31 1.5, BR-21 list 1.5, contract 1.4.0 opening 1"
+        },
+        "why_this_stage": "These are the reads the remaining console stages need (AC10: BR-20, BR-10; AC12: BR-18) plus the two pilot reads whose absence forced the weakest workarounds (badge ids typed by hand, D-53; own four-eyes requests in memory only, D-31). Building them first lets AC10-AC12 use real operations instead of the PD-02 workarounds, so no console code is written twice. All are additive admin-api reads or one small write in modules S12 already touched (identity admin-ops, admin four-eyes-ops, trust admin-ops, taxonomy), so the context cost per point is low.",
+        "depends_on": [],
+        "context_to_read": [
+          "Docs/40 §23 (admin plane conventions) and the blocks of the touched operations",
+          "backend/libs/contract/generated (registry) instead of re-reading Docs/40",
+          "backend dev_plan.json S12 report (how 1.3.0 was added)"
+        ],
+        "tasks": [
+          {
+            "id": "S13.T1",
+            "task": "Open contract 1.4.0: Docs/40 version and a changelog section \"Admin console refinement\" that every later stage appends to; bump the CarPal-Contract pins in backend tests (pipeline, platform-ops, s11, s12), the PWA pins and regenerate the console contract.",
+            "status": "done",
+            "result": "Docs/40 1.4.0 with the Appendix D section \"Contract 1.4.0\" that later stages append to; backend test pins (pipeline, platform-ops, s11), PWA pins (config.ts, fallback-config.ts, bff.int.test.ts) and the console generator (EXPECTED_CONTRACT) moved to 1.4.0; shared/api-contracts and the console contract regenerated."
+          },
+          {
+            "id": "S13.T2",
+            "items": [
+              "BR-20"
+            ],
+            "task": "admin.job_get (GET /v1/admin/jobs/{job_id}): STF of the operation that started the job, only jobs started from the admin plane (started_by staff, plane admin), Job with progress, and for dsr_export a short-lived signed download link. First check whether the DSR view can carry the export state (DI-14); the job read is the default because later ASYNC admin operations (taxonomy merge, org merge) need it too.",
+            "status": "done",
+            "result": "admin.job_get; DSR view check: DataSubjectRequest.export_available already says when the export is ready, but not the progress or a failure, so the job read was built (the default). No download link (S13-D1). PendingChange.job_id for approved ASYNC changes (S13-D2)."
+          },
+          {
+            "id": "S13.T3",
+            "items": [
+              "BR-10"
+            ],
+            "task": "admin.staff_list (GET {adm}/staff; q role, status, cursor, limit <= 100). ADM rows: id, display name, masked email, platform roles, passkey count, last_sign_in_at, status. Rows for MOD/CRV/SUP callers carry only id, display name and roles, so a case can be assigned to another moderator (D-50). admin.staff_disable and admin.staff_enable (RSN AUD; disable revokes sessions; refuses self and the last active ADM). staff_enable is added as the inverse (DQ-09).",
+            "status": "done",
+            "result": "admin.staff_list, admin.staff_disable, admin.staff_enable (4EYES, S13-D3); disabled = suspended platform memberships (S13-D4)."
+          },
+          {
+            "id": "S13.T4",
+            "items": [
+              "BR-18"
+            ],
+            "task": "admin.taxonomy_snapshot (the taxonomy.snapshot payload plus deprecated nodes and missing-translation flags) and admin.region_settings (map style URL, tile hosts, location check threshold, default centre and zoom: the region part of config.client). SEC-AU-2 unchanged (OQ-13).",
+            "status": "done",
+            "result": "admin.taxonomy_snapshot, admin.region_settings."
+          },
+          {
+            "id": "S13.T5",
+            "items": [
+              "BR-31"
+            ],
+            "task": "admin.badges_list (GET {adm}/badges, STF(ADM, MOD); q status, organization_id, badge_type, cursor, limit <= 100; items ProviderBadge & { organization: OrgSummary }).",
+            "status": "done",
+            "result": "admin.badges_list."
+          },
+          {
+            "id": "S13.T6",
+            "items": [
+              "BR-21"
+            ],
+            "task": "admin.four_eyes_list q mine=true: the caller's own requests in every status; PendingChange gains decided_by_display, decided_at and decision_reason.",
+            "status": "done",
+            "result": "admin.four_eyes_list mine; PendingChange decision fields and job_id."
+          },
+          {
+            "id": "S13.T7",
+            "task": "Tests per the definition of done, sweep resolvers, contract:check, openapi:check; log as backend S13 in backend/dev_plan.json; set the plan blocks here to done.",
+            "status": "done",
+            "result": "Sweep resolvers for the 7 operations, apps/testing/s13.int.test.ts, all checks green (see report.tests); logged as backend S13 in backend/dev_plan.json."
+          }
+        ],
+        "contract_changes": "Additive only (new admin operations and fields).",
+        "console_impact": "Regenerate the contract. AC10 and AC12 use the new reads directly. Catch-up for AC5/AC8/AC9 workarounds (D-31, D-50, D-53, D-58, D-59) is listed in admin_console_resume.",
+        "pwa_impact": "Contract pin bump only.",
+        "acceptance_criteria": [
+          "Every new operation has a happy-path and an authorization-negative integration test.",
+          "staff_disable refuses self and the last active ADM.",
+          "job_get refuses jobs started on the api host.",
+          "contract:check and openapi:check green in the backend; console contract:check green after regeneration."
+        ],
+        "split_point": "If the session runs long, T6 moves to S17 (it is independent).",
+        "report": {
+          "started_at": "2026-11-12",
+          "completed_at": "2026-11-12",
+          "summary": "Contract 1.4.0 opened (additive for every client; the admin plane gains 7 operations, 63 to 70). The console can now follow a DSR export, list and disable staff, read the taxonomy tree and the region settings, find badges waiting for approval, and see its own four-eyes requests with the outcome. Every acceptance criterion is met.",
+          "acceptance_criteria": [
+            {
+              "criterion": "Every new operation has a happy-path and an authorization-negative integration test.",
+              "met": true,
+              "evidence": "Contract sweep (admin and taxonomy suites: happy path, schema conformance, unknown-field/query negatives, BFLA across staff roles via routes.int.test.ts) plus apps/testing/s13.int.test.ts (role refusals per operation)."
+            },
+            {
+              "criterion": "staff_disable refuses self and the last active ADM.",
+              "met": true,
+              "evidence": "s13.int.test.ts: self → 403 SELF_APPROVAL_FORBIDDEN; two admins disabling each other as the only admins → one 200, the other refused, exactly one stays active (S13-D6)."
+            },
+            {
+              "criterion": "job_get refuses jobs started on the api host.",
+              "met": true,
+              "evidence": "s13.int.test.ts: a fleet_export job and a data_export row of another module → 404; a moderator → 404; support cannot read a merge job."
+            },
+            {
+              "criterion": "contract:check and openapi:check green in the backend; console contract:check green after regeneration.",
+              "met": true,
+              "evidence": "See tests."
+            }
+          ],
+          "ops_added": [
+            "admin.job_get (GET {adm}/jobs/{job_id}, STF(ADM, SUP))",
+            "admin.staff_list (GET {adm}/staff, STF(ADM, MOD, SUP, CRV))",
+            "admin.staff_disable (POST {adm}/staff/{user_id}/disable, STF(ADM) RSN AUD)",
+            "admin.staff_enable (POST {adm}/staff/{user_id}/enable, STF(ADM) 4EYES RSN AUD)",
+            "admin.taxonomy_snapshot (GET {adm}/taxonomy/nodes, STF(ADM, MOD))",
+            "admin.region_settings (GET {adm}/region, STF(ADM, MOD, SUP, CRV))",
+            "admin.badges_list (GET {adm}/badges, STF(ADM, MOD))"
+          ],
+          "ops_changed": [
+            "admin.four_eyes_list: q mine (own requests, every status by default)",
+            "PendingChange (every 4EYES 202 answer, four_eyes_list, four_eyes_decide): decided_by_display, decided_at, decision_reason, job_id",
+            "admin.dsr_export: Location /v1/admin/jobs/{job_id} (was /v1/jobs/{job_id}, a route the console cannot call)"
+          ],
+          "files_created": [
+            "backend/modules/identity/application/staff-ops.ts",
+            "backend/apps/testing/s13.int.test.ts",
+            "database/migrations/0102_s13_pending_change_job.sql"
+          ],
+          "files_changed": [
+            "Docs/40.API contract.md (1.4.0: header, §23.1 types, §23.2-§23.5 operations, Appendix D \"Contract 1.4.0\")",
+            "Docs/43.db_setup.sql, Docs/52.MVP Data Dictionary.md (PendingAdminChange.job_id, requester index)",
+            "backend/libs/contract/generated/*, libs/contract/contract.test.ts (421 operations, 473 routes), libs/db/generated/db.ts",
+            "backend/libs/jobs/index.ts (acceptedJob plane)",
+            "backend/modules/admin/{admin.module.ts, api/projections.ts, application/four-eyes-ops.ts, application/platform-ops.ts, infrastructure/admin-services.ts, interface/admin.ts}",
+            "backend/modules/identity/{application/admin-ops.ts, identity-admin.module.ts, identity.module.ts}",
+            "backend/modules/taxonomy/{application/admin-ops.ts, taxonomy.module.ts}",
+            "backend/modules/trust/{application/admin-ops.ts, trust-admin.module.ts}",
+            "backend/apps/testing/contract/generated/{admin,taxonomy}.contract.int.test.ts, apps/testing/contract/resolvers/{admin,taxonomy}.ts",
+            "backend/apps/testing/{pipeline,platform-ops,s11}.int.test.ts (contract 1.4.0)",
+            "backend/.prettierignore (BR-update-plan.json kept in its JSON layout)",
+            "shared/api-contracts/{openapi.yaml, generated/*} (from pwa/ pnpm contract:generate)",
+            "pwa/src/server/config.ts, pwa/tests/support/fallback-config.ts, pwa/src/server/bff/bff.int.test.ts (1.4.0 pins)",
+            "frontend/admin-console: tools/contract/generate.ts (EXPECTED_CONTRACT 1.4.0), src/lib/api/generated/* (70 admin-api operations), tests pinned to the count and version, seven PendingChange test fixtures"
+          ],
+          "tests": {
+            "backend_static": "pnpm lint (eslint + dependency-cruiser), typecheck, format: pass",
+            "backend_unit": "291 passed (42 files)",
+            "backend_contract": "contract:check up to date (1.4.0, 421 operations); contract sweep suites up to date (17 modules); openapi:check: 473 operations on 378 paths match router and registry; contract:coverage --strict 420/421 served, 0 unexplained 501",
+            "backend_s13": "10 passed (apps/testing/s13.int.test.ts)",
+            "backend_sweeps": "admin, taxonomy and identity sweeps: 107 passed",
+            "backend_integration_full": "792 tests in 52 files: 790 passed, 2 failed, both in tools/db/baseline.int.test.ts and both local-database state, not S13: (1) the baseline hash, because Docs/43 changed and the local database was migrated (0102), not reset (the known S11/S12 note; passes after pnpm db:reset); (2) the seed count of non-fixture accounts (94, expected 2): 92 are admin console E2E and BFF test accounts (e2e-*@staff.carpals.test, bff-int-*@staff.carpals.test) created 2026-11-09/10 in the shared dev database (R-15, dev:staff prune is S16.T6). Every other suite passed, including s13 (10), the admin, identity and taxonomy sweeps and every suite pinned to the contract version.",
+            "pwa": "contract:check up to date; typecheck pass; 691 unit tests passed (76 files)",
+            "admin_console": "contract:check up to date (1.4.0, 70 admin-api operations); typecheck, lint and i18n:check pass; 429 unit tests passed (44 files)",
+            "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08 default)."
+          },
+          "deviations": [
+            {
+              "id": "S13-D1",
+              "task": "S13.T2",
+              "item": "BR-20",
+              "deviation": "admin.job_get carries no signed download link for a finished DSR export. A staff member does not need the user's whole data bundle to complete the request: the user downloads it (dsr.export_download), staff see export_available on the request and the job state here. A link would hand every SUP the full personal data of the requester through a non-PURP read.",
+              "impact": "A-DSR-02 shows progress and \"export ready\"; it never offers a download. If the owner wants staff to download, it must be a PURP dsr read with its own audit (see DQ-12)."
+            },
+            {
+              "id": "S13-D2",
+              "task": "S13.T2/T6",
+              "item": "BR-20, BR-21",
+              "deviation": "Added PendingChange.job_id with migration 0102 (admin.pending_admin_changes.job_id and a requester index), not in the stage text. An approved ASYNC four-eyes change (admin.taxonomy_merge today, admin.org_merge in S22) starts its job inside four_eyes_decide, whose answer is a PendingChange, so without the field the console could not find the merge job that admin_console_resume says AC12 reads with admin.job_get.",
+              "impact": "One schema change; Docs/43 and Docs/52 updated. Local databases need pnpm db:setup (migration) — a fresh pnpm db:reset gives the same result."
+            },
+            {
+              "id": "S13-D3",
+              "task": "S13.T3",
+              "item": "BR-10",
+              "deviation": "admin.staff_enable is 4EYES (a second admin approves), while admin.staff_disable is immediate. DQ-09 approved the operation but not its tags; enabling gives platform roles back, and a platform role grant is 4EYES, while removal never waits (admin.platform_role_revoke).",
+              "impact": "Re-enabling a staff member needs two admins (R-05 already plans two). See DQ-10."
+            },
+            {
+              "id": "S13-D4",
+              "task": "S13.T3",
+              "item": "BR-10",
+              "deviation": "Disabled is a state of the platform role memberships (status suspended), not a new column: disable suspends every active platform_* membership and ends all sessions; enable sets them active again. The user account and its business memberships are untouched, so the person can still use the consumer app.",
+              "impact": "No migration. A disabled staff member fails at the cp-web-admin token (no platform role), cannot enrol a passkey, and the authorizer cache is dropped at once."
+            },
+            {
+              "id": "S13-D5",
+              "task": "S13.T3",
+              "item": "BR-10",
+              "deviation": "StaffMember.last_sign_in_at is user_accounts.last_active_at, which every sign-in on any client sets (not only the console).",
+              "impact": "A staff member who also uses the PWA shows their last sign-in anywhere. A console-only value would need its own column (not requested)."
+            },
+            {
+              "id": "S13-D6",
+              "task": "S13.T3",
+              "item": "BR-10",
+              "deviation": "The last-active-admin refusal (409 INVALID_TRANSITION last_admin) can only be reached by a race: the caller is an active admin and cannot disable themselves, so another active admin always exists. The handler locks every active admin row in id order first, so two admins disabling each other run one after the other and the second is refused; s13.int.test.ts proves it with the two as the only admins.",
+              "impact": "None; documented so nobody expects the 409 in normal use."
+            },
+            {
+              "id": "S13-D7",
+              "task": "S13.T4",
+              "item": "BR-18",
+              "deviation": "admin.taxonomy_snapshot reads the table (every status, merged included; status filter optional) ordered by id with a keyset cursor, not by sort_order like taxonomy.snapshot. missing_locales compares with the region's enabled locales; with the pilot's en and fa it is always empty today because the database requires both names.",
+              "impact": "The console orders siblings by sort_order itself. The flag becomes useful when a third locale is enabled."
+            },
+            {
+              "id": "S13-D8",
+              "task": "S13.T4",
+              "item": "BR-18",
+              "deviation": "admin.region_settings returns the whole RegionConfig of config.client (with exchange rates) plus location_check_threshold_m, rather than a narrower map-only type: one source of truth, no personal data, and the console gets cities and calendar defaults too.",
+              "impact": "None."
+            }
+          ],
+          "notes_for_next": [
+            "Admin console (AC10 catch-up, admin_console_resume): badge list instead of typed ids (D-53), own four-eyes requests from admin.four_eyes_list?mine=true (D-31), admin.region_settings for the map threshold and style (D-58, D-59; CARPAL_ADMIN_MAP_STYLE_URL can become a fallback), assigning a case to a colleague from admin.staff_list (D-50), admin.job_get for the DSR export (D-19; follow the Location header), the staff directory screen (A-STAFF-01) with disable and four-eyes enable.",
+            "Admin console op-label: add admin.staff_enable to FOUR_EYES_OPS and its i18n name (today a pending enable shows \"Unknown (admin.staff_enable)\"; tests pass).",
+            "AC12: admin.taxonomy_snapshot for the tree (If-Match from version); an approved merge answers PendingChange.job_id, followed with admin.job_get.",
+            "S14 builds on S13: the purpose binding (BR-09) is independent of the new reads (none of them is PURP), and admin.staff_list is not personal data beyond the masked email (ADM only).",
+            "Local databases: Docs/43 changed (job_id), so `pnpm db:status` reports the baseline as changed; `pnpm db:setup` applied 0102 here. tools/db/baseline.int.test.ts passes only after `pnpm db:reset` (the known local baseline-hash note from S11/S12)."
+          ],
+          "open_after_stage": [
+            "Owner: confirm the defaults applied in S13 (DQ-01, DQ-08, DQ-09) and answer the new DQ-10..DQ-12.",
+            "Nothing committed (commit only when the owner asks)."
+          ]
+        }
+      },
+      {
+        "id": "S14",
+        "title": "Staff access to personal data, and suspension correctness",
+        "status": "done",
+        "items": [
+          "BR-09",
+          "BR-35 (part 1, row)",
+          "BR-07"
+        ],
+        "closes_r_items": [
+          "R-03"
+        ],
+        "closes_backend_items": [
+          "RCP-01",
+          "NI-02",
+          "DI-66 (part of NI-04)"
+        ],
+        "priority_mix": "P0: BR-09, BR-35 row. P1: BR-07.",
+        "load": {
+          "points": 10,
+          "rating": "full",
+          "breakdown": "BR-09 6 (cross-cutting, 14 operations + sweep), BR-35 row 1.5, BR-07 2.5"
+        },
+        "why_this_stage": "The two admin-plane privacy defects are fixed together because they change the same pieces (QueuePurposeVerifier/PurposeQueues, PURP tagging, staff projections) and together define what a staff member can see without a justified purpose. Both must be closed before real staff use real data (R-03). BR-07 joins because it sits next to user status in identity admin-ops and is a correctness defect on user accounts. BR-09 is the heaviest single change of the plan, so the stage carries little else.",
+        "depends_on": [
+          "S13"
+        ],
+        "context_to_read": [
+          "backend/risk_control_plan.json RCP-01 (scenario and affected operations)",
+          "Docs/40 §1.3 CarPal-Access-Purpose, SEC-ADM-5, SEC-LOG-4",
+          "backend dev_plan.json deviations S8 #95, S9b #138",
+          "backend DI-66"
+        ],
+        "tasks": [
+          {
+            "id": "S14.T1",
+            "items": [
+              "BR-09"
+            ],
+            "task": "Purpose subjects per queue kind (case: target, its owner/author and the reporter; dispute: parties and target; dsr: requester; verification: organization and submitter; approval: review author and subject organization), a subject resolver per kind, and a record-binding check on every PURP operation in RCP-01 (14). A mismatch answers 403 PURPOSE_RECORD_MISMATCH; pii.read audit entries name the bound subject."
+          },
+          {
+            "id": "S14.T2",
+            "items": [
+              "BR-09"
+            ],
+            "task": "Docs/40 SEC-ADM-5 and §1.3 wording; sweep check: a purpose naming another record is refused for every PURP operation; risk_control_plan RCP-01 to mitigated."
+          },
+          {
+            "id": "S14.T3",
+            "items": [
+              "BR-35"
+            ],
+            "task": "admin.orgs_search returns StaffOrgSearchRow (name, type, city, plan_key, statuses, member count, open case count, trust level, created_at): no contact data, no exact points. Breaking for the console only: regenerate its contract and fix the AC9 list in the same session if it is a type-level change (the list already shows no contact data, DI-31)."
+          },
+          {
+            "id": "S14.T4",
+            "items": [
+              "BR-07"
+            ],
+            "task": "Migration: suspended_until on the user account (Docs/52); admin.user_status writes it; a scheduler rule (like workers/scheduler/jobs-expiry.rule.ts) lifts expired suspensions with actor system, writes the audit entry and emits the reactivation event; DI-66 closed."
+          }
+        ],
+        "contract_changes": "New problem code PURPOSE_RECORD_MISMATCH; narrowed orgs_search row (breaking for the console, which is the only client of admin-api).",
+        "console_impact": "Regenerate; AC9 organization list type fix; the kit shows PURPOSE_RECORD_MISMATCH like other 403s. The console already sends the purpose of the work item it came from (GD-10).",
+        "pwa_impact": "None.",
+        "acceptance_criteria": [
+          "The RCP-01 scenario (case about user A, read of user B under that case) is refused with 403.",
+          "The sweep probes the mismatch on every PURP operation.",
+          "orgs_search rows carry no contact field or point (sweep projection check).",
+          "A suspension whose end has passed is lifted at the next scheduler run."
+        ],
+        "split_point": "None: T1-T2 must land together. If needed, T4 (BR-07) moves to S19.",
+        "report": {
+          "started_at": "2026-11-13",
+          "completed_at": "2026-11-13",
+          "note_on_naming": "Requested as \"stage BR-02\": BR-02 is a recommendation closed as not needed (AC2), so this was read as the second stage of this plan, S14 (S13 being the first and done).",
+          "summary": "Staff access purposes are bound to the record (RCP-01 mitigated): every PURP operation names its record, every queue kind names its subjects, and a purpose admits only a subject of its item (403 PURPOSE_RECORD_MISMATCH otherwise; a user search finds only the item's users; a moderation action under a case acts only on the case's subjects). admin.orgs_search answers a narrow StaffOrgSearchRow without contact data or points (breaking for the console only, regenerated and fixed). A timed suspension is stored (suspended_until, migration 0103) and lifted by the scheduler rule identity.suspension_expiry. Every acceptance criterion is met.",
+          "acceptance_criteria": [
+            {
+              "criterion": "The RCP-01 scenario (case about user A, read of user B under that case) is refused with 403.",
+              "met": true,
+              "evidence": "s14.int.test.ts: admin.user_get B under case:C → 403 PURPOSE_RECORD_MISMATCH, no pii.read written for B; A → 200 with pii.read \"account view; subject user:A\" and access_purpose case:C."
+            },
+            {
+              "criterion": "The sweep probes the mismatch on every PURP operation.",
+              "met": true,
+              "evidence": "apps/testing/contract/runner.ts admin mechanics: an unrelated open case's purpose on every PURP route → 403 PURPOSE_RECORD_MISMATCH (13 operations) or an empty page (admin.users_search); admin, identity, organization, trust and media sweeps green. s14.int.test.ts also asserts that all 14 PURP operations have a binding (fail closed otherwise)."
+            },
+            {
+              "criterion": "orgs_search rows carry no contact field or point (sweep projection check).",
+              "met": true,
+              "evidence": "contract-sweep.test.ts: no contact_email, contact_phone, email, phone, latitude, longitude, pin, locations or address field reachable from the admin.orgs_search response schema (closed schemas); s14.int.test.ts: the row has city, plan and counts, and the response text holds neither the contact email nor the point."
+            },
+            {
+              "criterion": "A suspension whose end has passed is lifted at the next scheduler run.",
+              "met": true,
+              "evidence": "s14.int.test.ts: not lifted before its end; after it, SuspensionExpiryRule.run() → status active, suspended_until null, audit user.status_changed (actor system), moderation.action.taken reactivate_account in the outbox."
+            }
+          ],
+          "ops_changed": [
+            "13 record-bound PURP operations (admin.user_get, org_get, verification_decide, review_approval_get, review_approval_decide, case_get, case_action, dispute_get, dispute_resolve, dsr_update, dsr_export, dsr_execute_deletion, media_download_url): err 403 PURPOSE_RECORD_MISMATCH",
+            "admin.users_search: finds only the purpose item's users",
+            "admin.case_action: target and revoked badge bound to the case's subjects",
+            "admin.orgs_search: Page<StaffOrgSearchRow> (was Page<StaffOrgView>; breaking for the console only)",
+            "StaffUserView.suspended_until; admin.user_status and case_action suspend_account with suspend_until are lifted automatically"
+          ],
+          "contract": "Docs/40 1.4.0 (still open): §0.4 PURP, §1.3 subjects, SEC-ADM-5, §4.4 PURPOSE_RECORD_MISMATCH, §23.1 StaffOrgSearchRow and StaffUserView.suspended_until, §23.2/§23.4/§23.5 err lines and texts, Appendix D three S14 rows. 421 operations, 52 error codes.",
+          "files_created": [
+            "backend/modules/identity/application/suspension-rule.ts",
+            "backend/apps/testing/s14.int.test.ts",
+            "database/migrations/0103_s14_suspended_until.sql"
+          ],
+          "files_changed": [
+            "Docs/40.API contract.md, Docs/43.db_setup.sql, Docs/52.MVP Data Dictionary.md",
+            "backend/libs/authz/{ports.ts, authorizer.ts, stubs.ts, index.ts, authz.test.ts} (PurposeVerdict; 403 PURPOSE_RECORD_MISMATCH)",
+            "backend/libs/http-pipeline/problem.ts (en/fa title), backend/libs/contract/generated/*, backend/libs/db/generated/db.ts",
+            "backend/modules/admin/{interface/admin.ts (SubjectRef, PurposeQueue with subjects, PurposeBindings, pathRecord, PurposeSubjects, Staff.bound), infrastructure/admin-services.ts (QueuePurposeVerifier, DbPurposeSubjects), admin.module.ts (case subjects, record bindings), application/moderation-ops.ts (case_action binding)}",
+            "backend/modules/identity/{identity.module.ts (dsr subjects, SuspensionExpiryRule), application/admin-ops.ts (scoped users_search, suspended_until), application/dsr-worker.ts (deletion clears suspended_until)}",
+            "backend/modules/organization/{application/admin-registrations.ts (verification subjects), application/admin-ops.ts (StaffOrgSearchRows), organization-admin.module.ts}",
+            "backend/modules/trust/application/admin-registrations.ts (dispute and approval subjects)",
+            "backend/modules/media/application/admin-ops.ts (media_download_url binding, bound subject in the audit entry)",
+            "backend/apps/testing/contract/{runner.ts (mismatch probe), contract-sweep.test.ts (search-row projection check)}",
+            "shared/api-contracts/{openapi.yaml, generated/*}",
+            "frontend/admin-console: src/lib/api/generated/*, features/orgs/{org-logic.ts (OrgHead, headOf), org-page.tsx, orgs-page.tsx, org-logic.test.ts, orgs.test.tsx}, features/plans/{assign-form.tsx, plans.test.tsx}, features/verification/verification.test.tsx, components/admin/{four-eyes-banner.tsx, kit.test.tsx}, lib/api/problem.ts, lib/i18n/locales/{en,fa}.json, tests/support/console-harness.tsx (searchRow)"
+          ],
+          "tests": {
+            "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 509 modules), typecheck, format:check: pass",
+            "backend_unit": "292 passed (42 files), including the authz PURPOSE_RECORD_MISMATCH case and the static check that admin.orgs_search cannot carry contact fields or points",
+            "backend_contract": "contract:check up to date (1.4.0, 421 operations, 52 error codes); contract sweep suites up to date (17 modules); openapi:check: 473 operations on 378 paths match router and registry",
+            "backend_sweeps": "admin, identity, organization, trust and media sweeps: 212 passed. The runner now sends every PURP route with the purpose of an open, unassigned case about someone else: 403 PURPOSE_RECORD_MISMATCH on the 13 record-bound operations, 200 with no item for admin.users_search",
+            "backend_s14": "9 passed (apps/testing/s14.int.test.ts): all 14 PURP operations have a binding; the RCP-01 scenario (B under a case about A: 403, nothing logged; A: 200 with pii.read naming the case and user A; an unknown user: the same 403); another case under this case: 403, an unknown item: 404; the scoped user search; subjects per kind (case with reporter, dsr, verification, dispute) and their HTTP effect (reporter and submitter readable, others 403, unknown file 403, the disputed review admitted and another review refused); case_action on another user or an unknown one: 403, on the case target: 201; the search row without contact data or points; the suspension stored, not lifted early, lifted after its end with an audit entry (actor system) and the reactivation event, cleared by a later status change",
+            "backend_integration_full": "801 tests in 53 files: 799 passed, 2 failed, both in tools/db/baseline.int.test.ts and both local-database state, the same two as S13: (1) the baseline hash, because Docs/43 changed (suspended_until) and the local database was migrated (0103), not reset; passes after pnpm db:reset; (2) the seed count of non-fixture accounts (94, expected 2): admin console E2E and BFF test accounts in the shared dev database (R-15, dev:staff prune is S16.T6). Every other suite passed, including s14 (9), every contract sweep with the new mismatch probe, and the older admin, moderation, privacy, organization, trust and media suites under the new binding.",
+            "pwa": "contract:check up to date (shared/api-contracts regenerated); typecheck pass",
+            "admin_console": "contract:check up to date (1.4.0, 70 admin-api operations, StaffOrgSearchRow); typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files)",
+            "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08 default)."
+          },
+          "deviations": [
+            {
+              "id": "S14-D1",
+              "task": "S14.T1",
+              "item": "BR-09",
+              "deviation": "A record outside the purpose item answers 403 PURPOSE_RECORD_MISMATCH (the stage text), not 404 NOT_FOUND as risk_control_plan RCP-01.A2 (2026-10-24) proposed. An item that is not open in the caller's queue still answers 404. No existence oracle: a record that does not exist and an unrelated one get the same 403, because the binding compares ids (or, for a file, finds no subject) before any handler reads the record.",
+              "impact": "The console can tell \"wrong work item\" from \"not found\" (kit message added). RCP-01.A2 is closed with this wording."
+            },
+            {
+              "id": "S14-D2",
+              "task": "S14.T1",
+              "item": "BR-09",
+              "deviation": "admin.users_search is not refused under an unrelated purpose: a search has no single record, so it finds only the users the purpose item is about (its user subjects) and answers an empty page for anyone else, the same answer as an unknown identifier (RCP-01.A2 \"limited to the item's subjects\"). The other 13 PURP operations refuse with 403.",
+              "impact": "The sweep expects 200 with no item for this operation. A-USER search in the console (AC10) is \"find within this work item\", not a global lookup."
+            },
+            {
+              "id": "S14-D3",
+              "task": "S14.T1",
+              "item": "BR-09",
+              "deviation": "admin.case_action binds its body too (not in the stage text): an explicit target must be a subject of the case, or a record whose organization or author is a subject; a revoked badge must be the target or belong to a subject organization (otherwise 403 PURPOSE_RECORD_MISMATCH and the revocation rolls back). Before, any open case let a moderator suspend, warn or penalise any account or organization. merge_duplicate's merge_into_id (the surviving organization) is not bound: it is a destination, and the merge is 4EYES.",
+              "impact": "The console's badge revoke from a case works for badges of the case's organization only."
+            },
+            {
+              "id": "S14-D4",
+              "task": "S14.T1",
+              "item": "BR-09",
+              "deviation": "admin.media_download_url binding: a file is about itself, the records it is attached to (media_attachments) and the organization that owns it, never a system_export file through its owner. A user's own private files (vehicle photos, avatar) are reachable only through a subject record they are attached to. Verification subjects include the submitted documents.",
+              "impact": "Verification documents, review evidence and files of a case target stay reachable; a user's private files are not unlocked by a case about that user (DQ-14), and DSR export bundles stay out of staff reach (S13-D1)."
+            },
+            {
+              "id": "S14-D5",
+              "task": "S14.T1",
+              "item": "BR-09",
+              "deviation": "Subjects per kind: case = target, its author and organization (ModerationTargets handlers) and the reporters; dispute = raiser, raising organization, target and the target's parties as disputes.create checks them (review author and organization; appointment requester, requester organization and provider; badge organization; service record owner and provider; moderation action affected party and target); dsr = the requester only (RCP-01.A1 also named their organizations, the stage text did not: the narrower set was kept); verification = organization, submitter (created_by, there is no submitter column) and submitted documents; approval = the review, its author and the reviewed organization; and always the item itself. Members of a subject organization are not subjects (DQ-13).",
+              "impact": "review_approval_get admits the disputed review under its dispute (the console's DisputedReview panel); review_approval_decide only under the approval item. A service-record dispute's parties depend on staff read access to vehicle_service_records; if RLS hides the row they are simply missing (fail closed), not verified with a fixture."
+            },
+            {
+              "id": "S14-D6",
+              "task": "S14.T3",
+              "item": "BR-35",
+              "deviation": "StaffOrgSearchRow carries, beyond the listed fields, id, slug, merged_into_organization_id and pending_verifications (id, type, created_at; at most 10) so the console can still open an organization for its pending verification (A-ORG-01 to A-ORG-02) and show a merged organization. Verification ids are not personal data. \"Trust level\" is trust_score (no trust-level enum exists). member_count and open_cases as before.",
+              "impact": "Console: OrgHead type (search row or full view), the assign form shows the plan without the subscription status (the row has none)."
+            },
+            {
+              "id": "S14-D7",
+              "task": "S14.T4",
+              "item": "BR-07",
+              "deviation": "suspended_until has no CHECK tying it to status = suspended: other writers (DSR deletion, first verification) change status without knowing the column, and a CHECK would make a timed-suspended user's deletion fail. Staff status changes clear it, the DSR deletion clears it, and the rule only lifts rows still suspended. The lift returns the account to active, or pending_verification without a verified contact; every 5 minutes, 200 accounts per run. The event is moderation.action.taken reactivate_account on aggregate user_account without a moderation_actions row (actor_user_id is NOT NULL there): notification, trust and search consumers treat it like a staff reactivation. StaffUserView.suspended_until is new (not in the stage text) so staff can see the end.",
+              "impact": "The console can offer suspension durations (D-52) and show the end on the user view."
+            },
+            {
+              "id": "S14-D8",
+              "task": "S14.T1",
+              "item": "BR-09",
+              "deviation": "pii.read entries name the bound subject inside new_state_summary (\"account view; subject user:<id>\"), and media.staff_download likewise; no new audit column. A user search names each user it returned as its own subject.",
+              "impact": "Audit search shows why a record was readable; no schema change."
+            },
+            {
+              "id": "S14-D9",
+              "task": "S14.T2",
+              "item": "BR-09",
+              "deviation": "RCP-01.A5 (an interim weekly query of pii.read entries whose record is not a subject) was not built: it was meant only until A2 ships, and A2 ships in this stage.",
+              "impact": "None; RCP-01 records it as superseded."
+            },
+            {
+              "id": "S14-D10",
+              "task": "S14.T3",
+              "item": "BR-09, BR-35",
+              "deviation": "Console: a dedicated kit message for PURPOSE_RECORD_MISMATCH (\"This record is not part of the work item you opened it from …\", en and fa) instead of the generic 403 text the plan named; admin.plans.assign.currentPlan lost its status variable.",
+              "impact": "One kit test added (430 console tests)."
+            }
+          ],
+          "notes_for_next": [
+            "Admin console (AC10 and the catch-up): open user and organization pages only from a work item about them; a record outside the item answers 403 PURPOSE_RECORD_MISMATCH (the kit explains it). A-USER search is \"find within this work item\": admin.users_search returns only the item's users. Suspension durations can be offered now (D-52 can go): the end is StaffUserView.suspended_until and the scheduler lifts it.",
+            "Admin console: the organization list and the header without a purpose use StaffOrgSearchRow (already regenerated and fixed in this stage: OrgHead, searchRow test helper). A badge revoked from a case must belong to the case's organization.",
+            "Answer DQ-13 (members of a subject organization) and DQ-14 (a user's private files under a case about the user) before AC10 builds A-USER; both run on the recorded defaults (no).",
+            "Local databases: Docs/43 changed (suspended_until), so pnpm db:setup applies migration 0103; tools/db/baseline.int.test.ts passes only after pnpm db:reset (the known local baseline-hash note).",
+            "Next backend stage: S15 (policies and consent texts; DI-12 wording; DQ-02 and DQ-03 first)."
+          ],
+          "open_after_stage": [
+            "Owner: answer DQ-13 and DQ-14 (raised in S14, defaults applied) and confirm the earlier defaults (DQ-01, DQ-08, DQ-09, DQ-10, DQ-12); DQ-11 is still open before S16.",
+            "Nothing committed (commit only when the owner asks)."
+          ]
+        }
+      },
+      {
+        "id": "S15",
+        "title": "Policies and consent texts (legal go-live), docs alignment",
+        "status": "not_started",
+        "items": [
+          "BR-12",
+          "DI-12 (from BR-02)",
+          "DI-15",
+          "DI-01"
+        ],
+        "priority_mix": "P0: BR-12. Docs: text only.",
+        "load": {
+          "points": 8,
+          "rating": "medium",
+          "breakdown": "BR-12 6.5 (new entity, admin ops, public read, consent link), docs 1.5"
+        },
+        "why_this_stage": "Legal texts are a go-live item (PWA NI-P13-12; owner rule \"legal first\"). BR-12 is a new data model (policy documents and versions) with a four-eyes publish, an effective date and a re-consent flag, plus a public read the PWA needs; it touches admin-api, the api host and identity consent records, so it gets its own session. The doc rewordings ride along because they are text-only and no other stage edits those sections.",
+        "depends_on": [
+          "S13",
+          "DQ-02",
+          "DQ-03 (for DI-01 only)"
+        ],
+        "context_to_read": [
+          "Docs/23 A-POL-01",
+          "Docs/52 ConsentRecord",
+          "backend modules/identity/application/consent-ops.ts",
+          "PWA NI-P13-12 (legal texts go-live item)"
+        ],
+        "tasks": [
+          {
+            "id": "S15.T1",
+            "items": [
+              "BR-12"
+            ],
+            "task": "Docs/52 and migration: policy documents (key per DQ-02, region) and policy versions (texts per locale with EN and FA required, status draft|scheduled|published|superseded, effective_at, requires_reconsent, published_by, approved_by)."
+          },
+          {
+            "id": "S15.T2",
+            "items": [
+              "BR-12"
+            ],
+            "task": "Admin operations: admin.policies_list, admin.policy_version_create (draft), admin.policy_version_update (draft only, If-Match), admin.policy_version_publish (4EYES RSN AUD; effective_at not in the past; requires_reconsent). Published versions are read-only."
+          },
+          {
+            "id": "S15.T3",
+            "items": [
+              "BR-12"
+            ],
+            "task": "Api host: policy.current (public: the effective version per key and locale) and the consent link: acceptance records the policy version; the user state carries the policy keys that need re-consent once a requires_reconsent version becomes effective; an accept operation records it."
+          },
+          {
+            "id": "S15.T4",
+            "items": [
+              "BR-12"
+            ],
+            "task": "Seed version 1 of each document (placeholder texts unless the owner provides the final ones)."
+          },
+          {
+            "id": "S15.T5",
+            "items": [
+              "DI-12",
+              "DI-15",
+              "DI-01"
+            ],
+            "task": "Docs/40 §6.2 sentence (hosted sign-in served by the client's BFF under /id); Docs/23 A-AUTH-01 (email + password, then a device-bound key; no authenticator app, no SSO; generic disabled-account error); Docs/02 §1.4 row and the frontend/README sentence (console is a separate app) after DQ-03."
+          }
+        ],
+        "contract_changes": "Additive: admin policy operations, policy.current, the accept operation and the re-consent field.",
+        "console_impact": "A-POL-01 screen becomes buildable (AC14).",
+        "pwa_impact": "Follow-up for the PWA plan: show the current texts from policy.current and a re-consent prompt (behaviour per DQ-02).",
+        "acceptance_criteria": [
+          "Publishing needs a second ADM.",
+          "A published version cannot be edited.",
+          "policy.current returns the effective version per locale.",
+          "A user who accepted an older version is flagged for re-consent when a requires_reconsent version becomes effective, and the flag clears after acceptance."
+        ],
+        "split_point": "T5 can move to S25."
+      },
+      {
+        "id": "S16",
+        "title": "Staff passkeys, and test tooling",
+        "status": "not_started",
+        "items": [
+          "BR-19",
+          "R-11",
+          "R-15"
+        ],
+        "closes_r_items": [
+          "R-08",
+          "R-11",
+          "R-15"
+        ],
+        "priority_mix": "P0: BR-19. P1: R-11. P2: R-15.",
+        "load": {
+          "points": 7.5,
+          "rating": "light (security-sensitive)",
+          "breakdown": "BR-19 6, R-11 1, R-15 0.5"
+        },
+        "why_this_stage": "Staff sign in only with device-bound keys (SEC-ADM-2). With one key a lost key means SQL on the server (R-08), and OQ-14 plans two keys per staff member, which needs \"add a backup key\". BR-19 is WebAuthn and aal3 step-up code in identity (webauthn.ts, mfa-service.ts, the S12 enrolment path) where a mistake locks staff out or lets an attacker in, so the stage is kept light. The two tooling items are small, live next to the staff test helpers (tools/db/staff*), and R-11 must exist before the whole-plan test run.",
+        "depends_on": [
+          "S13 (staff list for the reset target)",
+          "DQ-04 for T4"
+        ],
+        "gate": "If the owner's lost-key research (DQ-04) is not finished, build T1-T3, T5, T6 and move T4 to S25.",
+        "context_to_read": [
+          "Docs/40 SEC-ADM-2, SEC-AU-9",
+          "backend modules/identity/application/{webauthn.ts, mfa-service.ts, auth-server.ts}",
+          "backend dev_plan.json S12 report (passkey enrolment)"
+        ],
+        "tasks": [
+          {
+            "id": "S16.T1",
+            "items": [
+              "BR-19"
+            ],
+            "task": "admin.staff_passkeys_list (own keys: label, created_at, last_used_at, device-bound, authenticator label)."
+          },
+          {
+            "id": "S16.T2",
+            "items": [
+              "BR-19"
+            ],
+            "task": "admin.staff_passkey_register_options and admin.staff_passkey_register: a backup key after a fresh aal3 re-authentication (auth_time within 5 minutes, else STEP_UP_REQUIRED); device-bound only (PASSKEY_NOT_DEVICE_BOUND); notice identity.staff_passkey_added."
+          },
+          {
+            "id": "S16.T3",
+            "items": [
+              "BR-19"
+            ],
+            "task": "admin.staff_passkey_remove: own key, fresh aal3, never the last key (LAST_PASSKEY); a removal notice."
+          },
+          {
+            "id": "S16.T4",
+            "items": [
+              "BR-19"
+            ],
+            "task": "admin.staff_passkeys_reset (ADM, another staff member, 4EYES RSN AUD): disables that member's keys and sessions; the next sign-in enrols again with password + emailed code (the S12 path). Design per DQ-04."
+          },
+          {
+            "id": "S16.T5",
+            "items": [
+              "R-11"
+            ],
+            "task": "Integration-test settings (strict auth, client keys, env) in a git-ignored backend/.env.test or a small script, so console and PWA test:int run against one strict backend with one command; README \"Integration tests\" updated."
+          },
+          {
+            "id": "S16.T6",
+            "items": [
+              "R-15"
+            ],
+            "task": "pnpm dev:staff prune --domain staff.carpals.test --prefix e2e- (refused unless CARPAL_ENV=dev)."
+          }
+        ],
+        "contract_changes": "Additive: staff passkey operations on admin-api; problem codes STEP_UP_REQUIRED (if not present) and LAST_PASSKEY.",
+        "console_impact": "A \"Security keys\" page for the signed-in staff member and a reset action on the staff list become buildable; the AC11 runbook lost-key section no longer needs SQL.",
+        "pwa_impact": "None.",
+        "acceptance_criteria": [
+          "A backup key needs a fresh aal3.",
+          "The last key cannot be removed.",
+          "A reset needs a second ADM and forces enrolment at the next sign-in.",
+          "Synced passkeys stay refused.",
+          "dev:staff prune is refused outside dev."
+        ]
+      },
+      {
+        "id": "S17",
+        "title": "Notification templates and rules; staff notices",
+        "status": "not_started",
+        "items": [
+          "BR-11",
+          "BR-21 (notification part)",
+          "BR-26 (kill-switch notice part)"
+        ],
+        "closes_r_items": [
+          "R-16 (part)"
+        ],
+        "priority_mix": "P1: BR-11, BR-21. P2: BR-26 notice.",
+        "load": {
+          "points": 9,
+          "rating": "medium",
+          "breakdown": "BR-11 7, BR-21 notice 1, BR-26 notice 1"
+        },
+        "why_this_stage": "A-NOTIF-01 is a Docs/23 Must. Templates are code today (modules/notification/domain/templates.ts) and the delivery rules are spread over settings; making them listable with missing-translation flags and the rules editable is a new data model inside the notification module. The two staff notices (four-eyes outcome to the requester, kill switch to ADM and AI governance staff) are new templates and consumers in the same module, so they are cheapest here.",
+        "depends_on": [
+          "S13",
+          "DQ-05"
+        ],
+        "context_to_read": [
+          "Docs/23 A-NOTIF-01",
+          "backend modules/notification/domain/{templates.ts, routing.ts, preferences.ts}",
+          "workers/notification-dispatch"
+        ],
+        "tasks": [
+          {
+            "id": "S17.T1",
+            "items": [
+              "BR-11"
+            ],
+            "task": "Docs/52 and migration: template overrides (event, channel, locale, subject, body, version) on top of the code templates (which stay the fallback), and notification rules (invitation delay, reminders 0-3, quiet hours default, digest)."
+          },
+          {
+            "id": "S17.T2",
+            "items": [
+              "BR-11"
+            ],
+            "task": "admin.notif_templates_list (event x channel x locale, source code|override, missing-translation flags), admin.notif_template_update (If-Match RSN AUD; placeholders validated against the event payload), admin.notif_template_reset (back to the code default), admin.notif_template_preview (sample payload). Critical alerts are marked \"Always delivered\" and cannot be switched off."
+          },
+          {
+            "id": "S17.T3",
+            "items": [
+              "BR-11"
+            ],
+            "task": "admin.notif_rules_get and admin.notif_rules_update (If-Match RSN AUD); notification-dispatch and the invitation flow read the rules."
+          },
+          {
+            "id": "S17.T4",
+            "items": [
+              "BR-21",
+              "BR-26"
+            ],
+            "task": "Staff notices (in-app): four-eyes decided/expired to the requester; ai.automation.kill_switch changed to ADM and AI governance staff (Docs/23 A-FLAG-01)."
+          }
+        ],
+        "contract_changes": "Additive: notification admin operations; new notification event types for staff.",
+        "console_impact": "A-NOTIF-01 buildable (AC14); \"Your requests\" can rely on the notice and the S13 list.",
+        "pwa_impact": "None (texts change only if staff override them).",
+        "acceptance_criteria": [
+          "Missing translations are flagged per locale.",
+          "A template with an unknown placeholder is refused.",
+          "Reset returns the code default.",
+          "The requester receives the four-eyes outcome."
+        ]
+      },
+      {
+        "id": "S18",
+        "title": "Moderation queues and content context",
+        "status": "not_started",
+        "items": [
+          "BR-32",
+          "BR-27",
+          "BR-33",
+          "BR-29"
+        ],
+        "priority_mix": "P1: BR-32 floor. P2: BR-27, BR-33, BR-29, BR-32 filter.",
+        "load": {
+          "points": 11,
+          "rating": "full",
+          "breakdown": "BR-32 2, BR-27 3, BR-33 4, BR-29 2"
+        },
+        "why_this_stage": "All four change the case and approval reads in modules/admin (moderation-ops, projections) and the target snapshot builders, plus the trust review-approval view. Doing them together means one pass over TargetSnapshot per target type. The BR-32 severity floor is a server-side safety rule (AI flags and rules open cases without the console), which is why the stage starts with it.",
+        "depends_on": [
+          "S14 (purpose binding decides what a case purpose may read: the new snapshots and the context read must follow it)"
+        ],
+        "context_to_read": [
+          "Docs/23 A-REV-01, A-CON-01, A-CON-02, A-INV-01",
+          "backend modules/admin/application/moderation-ops.ts, modules/admin/api/projections.ts, modules/trust/application/admin-ops.ts"
+        ],
+        "tasks": [
+          {
+            "id": "S18.T1",
+            "items": [
+              "BR-32"
+            ],
+            "task": "Severity floor: unsafe_advice, non_consensual_media and privacy cases are at least high wherever a case opens (report_triage open_case, AI flags, rules); a migration raises open cases below the floor."
+          },
+          {
+            "id": "S18.T2",
+            "items": [
+              "BR-27",
+              "BR-32"
+            ],
+            "task": "admin.cases_list q source (several) and reason (several); ModerationCase.target_summary (excerpt <= 120 characters, rating for reviews)."
+          },
+          {
+            "id": "S18.T3",
+            "items": [
+              "BR-27",
+              "BR-33"
+            ],
+            "task": "Typed TargetSnapshot per target type (review, post, comment, question, answer, file, showcase item, fitment row, organization, user, AI output): an author block (display name, role, organization card when posted for an organization) and author history counts (published, removed, warnings); showcase consent record (customer display, scope, granted_at) and media ids; fitment listing name."
+          },
+          {
+            "id": "S18.T4",
+            "items": [
+              "BR-33"
+            ],
+            "task": "admin.case_context: the comments or answers around a reported comment or answer (PURP case, bound per S14)."
+          },
+          {
+            "id": "S18.T5",
+            "items": [
+              "BR-29"
+            ],
+            "task": "StaffReviewApprovalView.stage and business_answered_at; admin.my_decisions_list: the caller's decided approvals and disputes of the last 30 days as summaries (no PII beyond the decision record), without a live purpose."
+          }
+        ],
+        "contract_changes": "Additive filters and fields; TargetSnapshot becomes a typed union (the console reads it defensively today, so this is compatible).",
+        "console_impact": "Remove client-side narrowing (D-47, D-49), show author and context (DI-28), exact timers (D-48).",
+        "pwa_impact": "None.",
+        "acceptance_criteria": [
+          "No case of the three reasons can be opened below high, by any path.",
+          "Every target type has a typed snapshot covered by the sweep projection check.",
+          "case_context is refused under a purpose for another record."
+        ],
+        "split_point": "After T3: T4 and T5 can move to S19."
+      },
+      {
+        "id": "S19",
+        "title": "Verification and organization records",
+        "status": "not_started",
+        "items": [
+          "BR-35 (part 1 filters, part 2, part 3)",
+          "BR-34"
+        ],
+        "closes_r_items": [
+          "R-25"
+        ],
+        "priority_mix": "P1: BR-35 part 2. P2: the rest.",
+        "load": {
+          "points": 8.5,
+          "rating": "medium",
+          "breakdown": "filters 2, request more info 3, correction + history 2.5, assist list 1"
+        },
+        "why_this_stage": "All four parts live in the organization and verification code and its admin surfaces. \"Request more info\" protects the 2-working-day verification promise: today staff must reject, which restarts the business submission and its SLA (R-25). The assist-session read is small and in the same module.",
+        "depends_on": [
+          "S14 (search row)",
+          "S18 (wrong-location reports use the case reason filter)"
+        ],
+        "context_to_read": [
+          "Docs/23 A-ORG-01, A-ORG-02, A-VER-01, A-VER-02",
+          "backend modules/organization, the verification operations, admin.assist_session_start/end"
+        ],
+        "tasks": [
+          {
+            "id": "S19.T1",
+            "items": [
+              "BR-35"
+            ],
+            "task": "admin.orgs_search filters: city, plan_key, has_open_cases, location_issue (pin check far_apart or an open wrong-location report), possible_duplicate (same normalised name in the same city, or the same phone)."
+          },
+          {
+            "id": "S19.T2",
+            "items": [
+              "BR-35"
+            ],
+            "task": "admin.verification_decide decision info_requested (missing items, message template key and text; status stays pending; the SLA pauses until the business resubmits; the business is notified) with the business-side resubmit operation on the api host; queue item gains assignee, AI pre-check (when present), registration number, owner and call-back result; admin.verification_assign."
+          },
+          {
+            "id": "S19.T3",
+            "items": [
+              "BR-35"
+            ],
+            "task": "admin.org_correct (named profile fields, RSN AUD, the organization notified) and admin.org_history (profile changes with actor and reason, PURP)."
+          },
+          {
+            "id": "S19.T4",
+            "items": [
+              "BR-34"
+            ],
+            "task": "admin.assist_sessions_list (q mine, status; STF(ADM, SUP))."
+          }
+        ],
+        "contract_changes": "Additive; VerificationDecision gains info_requested (new enum value: the console must handle it).",
+        "console_impact": "A-ORG-01 filters and saved views, Request more info on A-VER-02, profile correction, assist banner after reload (D-62).",
+        "pwa_impact": "Follow-up for the PWA / business flows: show \"more information requested\" and let the business resubmit.",
+        "acceptance_criteria": [
+          "An info_requested verification stays pending and its SLA clock pauses until resubmission.",
+          "A correction writes an audit entry with the reason and notifies the organization."
+        ]
+      },
+      {
+        "id": "S20",
+        "title": "Disputes and review/inventory moderation actions",
+        "status": "not_started",
+        "items": [
+          "BR-28",
+          "BR-30",
+          "BR-15 (reduce_weight, edit_request, fitment downgrade)"
+        ],
+        "priority_mix": "P2.",
+        "load": {
+          "points": 10.5,
+          "rating": "full",
+          "breakdown": "BR-28 6, BR-30 1.5, BR-15 part 3"
+        },
+        "why_this_stage": "Disputes and reviews are the trust module (dispute-ops, review-workflow, trust-scorer). The message thread needs a new entity on both planes; BR-30 settles the outcome wording in the same Docs/40 §23.4 block; reduce_weight and edit_request act on reviews in the same module, and fitment downgrade reuses the case-action path.",
+        "depends_on": [
+          "S18",
+          "DQ-06"
+        ],
+        "context_to_read": [
+          "Docs/23 A-DSP-01, A-REV-02, A-INV-01",
+          "Docs/40 §23.4, Docs/52 Dispute",
+          "backend modules/trust/application/{dispute-ops.ts, review-workflow.ts, trust-scorer.ts}"
+        ],
+        "tasks": [
+          {
+            "id": "S20.T1",
+            "items": [
+              "BR-28"
+            ],
+            "task": "Dispute messages entity; admin.dispute_message_post (templated, RSN AUD) and admin.dispute_messages_list (PURP dispute); party side on the api host: list, reply and add evidence."
+          },
+          {
+            "id": "S20.T2",
+            "items": [
+              "BR-28"
+            ],
+            "task": "Dispute target snapshots for a moderation action (with its decider display), a service record and a badge; dispute_resolve accepts withdrawn (the raiser's request as the reason)."
+          },
+          {
+            "id": "S20.T3",
+            "items": [
+              "BR-30"
+            ],
+            "task": "Apply DQ-06: by default Docs/40 §23.4 and Docs/52 define resolved_upheld / resolved_rejected for review_approval_objection by their effect (no enum change); otherwise add publish_disputed / reject_review."
+          },
+          {
+            "id": "S20.T4",
+            "items": [
+              "BR-15"
+            ],
+            "task": "case_action types reduce_weight (a weight factor 0-1 the trust scorer applies), edit_request (highlighted spans and a message; the author edits and the review is checked again), and fitment downgrade (confirmed to likely or uncertain)."
+          }
+        ],
+        "contract_changes": "Additive operations; new ModerationActionType and DisputeStatus values (the console must handle them).",
+        "console_impact": "A-DSP-01 thread and withdraw, A-REV-02 Edit request and Reduce weight, A-INV-01 downgrade.",
+        "pwa_impact": "Follow-up for the PWA: dispute message thread for the parties; the author's edit after an edit request.",
+        "acceptance_criteria": [
+          "Only parties and staff with the dispute purpose read the thread.",
+          "reduce_weight changes the trust score in the next scoring run.",
+          "Withdrawn needs a reason."
+        ]
+      },
+      {
+        "id": "S21",
+        "title": "Platform settings, billing reads and dashboard aggregates",
+        "status": "not_started",
+        "items": [
+          "BR-23",
+          "BR-24",
+          "BR-25",
+          "BR-26 (ids part)",
+          "BR-17",
+          "BR-22"
+        ],
+        "closes_r_items": [
+          "R-16 (rest)"
+        ],
+        "priority_mix": "P2.",
+        "load": {
+          "points": 11.5,
+          "rating": "full (many small items)",
+          "breakdown": "BR-23 0.5, BR-24 2.5, BR-25 2, BR-26 ids 1, BR-17 3, BR-22 2.5"
+        },
+        "why_this_stage": "Small additive reads in admin platform-ops and billing, plus the two aggregates the AC13 dashboard needs (BR-17, BR-22). BR-22 is built after S18 and S19 so it counts the final set of queues (badges, info-requested verifications, reason-based case views) instead of being changed again.",
+        "depends_on": [
+          "S18",
+          "S19"
+        ],
+        "context_to_read": [
+          "Docs/23 A-PLAN-01, A-RET-01, A-FLAG-01, A-DASH-01",
+          "backend modules/admin/application/platform-ops.ts, modules/billing"
+        ],
+        "tasks": [
+          {
+            "id": "S21.T1",
+            "items": [
+              "BR-23"
+            ],
+            "task": "Plan.status and is_default_for_audience in admin.plans_list."
+          },
+          {
+            "id": "S21.T2",
+            "items": [
+              "BR-24"
+            ],
+            "task": "admin.subscriptions_list (q plan_key, status, subscriber_type, trial_ends_before; items as in raw_text) and the open subscription change requests as a queue."
+          },
+          {
+            "id": "S21.T3",
+            "items": [
+              "BR-25"
+            ],
+            "task": "admin.retention_create (4EYES RSN AUD) and admin.retention_dry_run (affected count, by status)."
+          },
+          {
+            "id": "S21.T4",
+            "items": [
+              "BR-26"
+            ],
+            "task": "id in FeatureFlag and ExchangeRate (the audit entity ids)."
+          },
+          {
+            "id": "S21.T5",
+            "items": [
+              "BR-17"
+            ],
+            "task": "admin.system_health: import job failures, notification delivery failures and media scan failures per window, with the last failure time (from core.background_jobs, notification deliveries and media)."
+          },
+          {
+            "id": "S21.T6",
+            "items": [
+              "BR-22"
+            ],
+            "task": "admin.work_summary (STF any staff, aggregates only): per queue the caller may see, open count, oldest created_at and counts per SLA state."
+          }
+        ],
+        "contract_changes": "Additive.",
+        "console_impact": "Remove D-32 paging for counts and D-42 hint; per-record history for flags and rates; AC13 dashboard widgets.",
+        "pwa_impact": "None.",
+        "acceptance_criteria": [
+          "work_summary returns only queues the caller's roles may read.",
+          "retention_create needs a second ADM; dry run changes nothing."
+        ],
+        "split_point": "T5 and T6 can move to S23."
+      },
+      {
+        "id": "S22",
+        "title": "Organization merge and media redaction (data-rewriting operations)",
+        "status": "not_started",
+        "items": [
+          "BR-08",
+          "BR-15 (apply_redaction)"
+        ],
+        "closes_backend_items": [
+          "DI-67 (part of NI-04)"
+        ],
+        "priority_mix": "P2.",
+        "load": {
+          "points": 9,
+          "rating": "medium (high risk)",
+          "breakdown": "BR-08 6, apply_redaction 3"
+        },
+        "why_this_stage": "Both change or derive data irreversibly across modules and need conflict and failure tests; they are kept apart from read-heavy stages so a session can concentrate on correctness. BR-08 needs an OrganizationReferences registry like TaxonomyReferences with a re-point and conflict rule per module (memberships, locations, profiles, reviews, appointments, inventory, subscriptions, badges, cases ...). apply_redaction needs the media-processor worker to make a redacted copy.",
+        "depends_on": [
+          "S13 (job read for the ASYNC merge)",
+          "S18 (snapshots)"
+        ],
+        "context_to_read": [
+          "backend DI-67, the TaxonomyReferences registry and taxonomy merge job",
+          "Docs/40 admin.org_merge",
+          "workers/media-processor"
+        ],
+        "tasks": [
+          {
+            "id": "S22.T1",
+            "items": [
+              "BR-08"
+            ],
+            "task": "OrganizationReferences registry: every module registers its organization references with a re-point rule and a unique-key conflict rule (keep target, keep source, merge, refuse)."
+          },
+          {
+            "id": "S22.T2",
+            "items": [
+              "BR-08"
+            ],
+            "task": "admin.org_merge runs the registry in a job (4EYES as today, ASYNC, read by admin.job_get); admin.org_merge_preview lists counts and conflicts per module."
+          },
+          {
+            "id": "S22.T3",
+            "items": [
+              "BR-15"
+            ],
+            "task": "case_action apply_redaction: boxes on an image, the media worker writes a redacted copy that replaces the public one; the original keeps restricted access under retention."
+          }
+        ],
+        "contract_changes": "Additive (preview operation, new action type).",
+        "console_impact": "Merge on AC9/AC8 (D-51), Apply redaction on A-CON-02.",
+        "pwa_impact": "None (public media url changes to the redacted copy).",
+        "acceptance_criteria": [
+          "After a merge no reference points at the merged organization; conflicts follow the registered rule.",
+          "A merge failing half-way leaves no partial re-pointing.",
+          "The public URL serves only the redacted copy."
+        ]
+      },
+      {
+        "id": "S23",
+        "title": "Extended staff reads for users and organizations",
+        "status": "not_started",
+        "items": [
+          "BR-16"
+        ],
+        "priority_mix": "P2.",
+        "load": {
+          "points": 7,
+          "rating": "light (many modules)",
+          "breakdown": "nine small PURP reads across seven modules"
+        },
+        "why_this_stage": "Nine read areas across vehicle, appointment, identity, trust, organization, billing and inventory. Each is a read, but each needs its own staff projection and PII decision and touches a different module, so the session reads one module at a time and carries nothing else.",
+        "depends_on": [
+          "S14 (purpose binding)",
+          "S13 (badges list)"
+        ],
+        "context_to_read": [
+          "Docs/23 A-USR-02, A-ORG-02 tab lists",
+          "each module's existing projections"
+        ],
+        "tasks": [
+          {
+            "id": "S23.T1",
+            "items": [
+              "BR-16"
+            ],
+            "task": "User tabs (PURP): admin.user_vehicles (summary), admin.user_appointments, admin.user_consents (history), admin.user_sessions (devices)."
+          },
+          {
+            "id": "S23.T2",
+            "items": [
+              "BR-16"
+            ],
+            "task": "Organization tabs (PURP): admin.org_capabilities (capabilities and badges with the rule evaluation), admin.org_portfolio (with consent), admin.org_inventory_quality, admin.org_members, admin.org_plan_history."
+          }
+        ],
+        "contract_changes": "Additive.",
+        "console_impact": "A-USR-02 and A-ORG-02 tabs (DI-06, DI-07).",
+        "pwa_impact": "None.",
+        "acceptance_criteria": [
+          "Every read is PURP and bound per S14.",
+          "Sweep projection checks cover each new view."
+        ]
+      },
+      {
+        "id": "S24",
+        "title": "Support tickets and AI review decisions",
+        "status": "not_started",
+        "items": [
+          "BR-13",
+          "BR-14"
+        ],
+        "priority_mix": "P2: BR-13. P3: BR-14.",
+        "load": {
+          "points": 10,
+          "rating": "full",
+          "breakdown": "BR-13 6, BR-14 4"
+        },
+        "why_this_stage": "Both are new staff work queues with their own entity, and both are the lowest-priority items (Should, and with the AI build). They come last so the pilot-relevant work is never waiting on them, and they can be cut or moved without touching the rest.",
+        "depends_on": [
+          "S17 (notifications for ticket replies)",
+          "DQ-07"
+        ],
+        "context_to_read": [
+          "Docs/23 A-SUP-01, A-AI-02, A-AI-03",
+          "Docs/43 ai_mcp.ai_insights"
+        ],
+        "tasks": [
+          {
+            "id": "S24.T1",
+            "items": [
+              "BR-13"
+            ],
+            "task": "Support tickets and messages entity; api host: create, list own, read, reply; admin: tickets list (queue with SLA), get (PURP), assign, reply (templates), close."
+          },
+          {
+            "id": "S24.T2",
+            "items": [
+              "BR-14"
+            ],
+            "task": "AI insight reviews: admin.ai_insight_review (ok or wrong with a category, note, add to the evaluation set), admin.ai_safety_queue (insights with safety flags awaiting triage, A-AI-03), admin.ai_eval_set_list."
+          }
+        ],
+        "contract_changes": "Additive.",
+        "console_impact": "A-SUP-01, A-AI-02 decisions, A-AI-03.",
+        "pwa_impact": "Follow-up for the PWA: in-app support requests instead of the email address.",
+        "acceptance_criteria": [
+          "A user reads only their own tickets.",
+          "A reviewed insight records the reviewer and the verdict in the audit log."
+        ]
+      },
+      {
+        "id": "S25",
+        "title": "Refinement closure: contract freeze and readiness for the whole-plan test run",
+        "status": "not_started",
+        "items": [
+          "contract 1.4.0 freeze",
+          "R-23 (backend half)",
+          "R-21 / R-05 deploy.md text",
+          "carry-overs from earlier split points"
+        ],
+        "priority_mix": "Closure.",
+        "load": {
+          "points": 6,
+          "rating": "light (plus any carry-over)",
+          "breakdown": "freeze and checks 3, deploy kit 1.5, plans and logs 1.5"
+        },
+        "why_this_stage": "PD-03 runs the whole test once after the plan is complete; this stage makes the backend ready for that run and hands the refinement back to the console and PWA plans. It also absorbs tasks moved at split points, so it is planned light.",
+        "depends_on": [
+          "S13-S24"
+        ],
+        "tasks": [
+          {
+            "id": "S25.T1",
+            "task": "Freeze contract 1.4.0: Docs/40 changelog final, openapi:check, contract:coverage --strict with zero unexplained 501, full lite integration suite and contract sweep."
+          },
+          {
+            "id": "S25.T2",
+            "task": "Regenerate the console contract and bump the PWA pins; console and PWA contract:check green (R-04 root script if the PWA plan has not added it)."
+          },
+          {
+            "id": "S25.T3",
+            "task": "Deploy kit: new migrations in the update script; the storage host does not send Cross-Origin-Resource-Policy: same-origin on display copies (R-23); deploy.md \"Exchange rate\" and staff bootstrap with two ADM accounts (R-21, R-05)."
+          },
+          {
+            "id": "S25.T4",
+            "task": "Logs: backend dev_plan.json stage reports; next_iteration NI-02 done, NI-04 done except DI-05; risk_control_plan; every plan block here done or deferred by the owner; meta.status closed."
+          }
+        ],
+        "acceptance_criteria": [
+          "Every BR is done or explicitly deferred by the owner.",
+          "contract:check green in backend, console and PWA at the frozen 1.4.0.",
+          "The strict whole-plan test run can start without hand-set variables (R-11)."
+        ]
+      }
+    ],
+    "decisions_needed": [
+      {
+        "id": "DQ-01",
+        "before": "S13",
+        "question": "Contract versioning: one 1.4.0 that grows until S25, or a minor version per stage?",
+        "default": "One 1.4.0, frozen in S25.",
+        "status": "default_applied",
+        "applied": "Applied in S13: one 1.4.0 that grows until S25 (Docs/40 Appendix D \"Contract 1.4.0\", one table that every stage appends to).",
+        "owner_confirmation": "pending"
+      },
+      {
+        "id": "DQ-02",
+        "before": "S15",
+        "question": "Which policy documents (terms, privacy, community guidelines, others?), per region or global, and how re-consent behaves in the PWA (blocking or a notice).",
+        "default": "Terms, privacy and community guidelines per region; re-consent blocks use of the app for terms and privacy, a notice for guidelines."
+      },
+      {
+        "id": "DQ-03",
+        "before": "S15",
+        "question": "Confirm GD-01 (the console is a separate app) so Docs/02 §1.4 and frontend/README can be reworded (DI-01).",
+        "default": "Confirmed: it is built that way."
+      },
+      {
+        "id": "DQ-04",
+        "before": "S16",
+        "question": "Lost-key reset design (your research on the 2026-11-09 risk review): ADM reset with four-eyes and re-enrolment by password + emailed code, or something stronger (e.g. an in-person check, a waiting period)?",
+        "default": "As in BR-19 raw_text."
+      },
+      {
+        "id": "DQ-05",
+        "before": "S17",
+        "question": "Notification templates: editable overrides per locale (code templates as fallback), or read-only list with only the rules editable?",
+        "default": "Editable overrides; critical alerts locked."
+      },
+      {
+        "id": "DQ-06",
+        "before": "S20",
+        "question": "BR-30: define the existing objection outcomes by their effect in the docs, or add new outcomes (publish_disputed / reject_review)?",
+        "default": "Docs only; the console already labels by effect (D-44)."
+      },
+      {
+        "id": "DQ-07",
+        "before": "S24",
+        "question": "Support tickets scope: in-app tickets from the PWA plus a staff inbox, or also email intake?",
+        "default": "In-app only; email intake later."
+      },
+      {
+        "id": "DQ-08",
+        "before": "S13",
+        "question": "PD-03 reading: lite-mode unit and integration tests inside each stage are allowed; only the strict cross-component test run waits for the end.",
+        "default": "Yes.",
+        "status": "default_applied",
+        "applied": "Applied in S13: lite-mode unit, integration and contract-sweep tests ran inside the stage; no strict cross-component run.",
+        "owner_confirmation": "pending"
+      },
+      {
+        "id": "DQ-09",
+        "before": "S13",
+        "question": "BR-10 additions: admin.staff_enable (inverse of disable) and a narrow staff list for MOD/CRV/SUP so cases can be assigned to another moderator.",
+        "default": "Yes to both.",
+        "status": "default_applied",
+        "applied": "Applied in S13: admin.staff_enable exists (as 4EYES, see DQ-10) and MOD/SUP/CRV get a narrow list of active colleagues.",
+        "owner_confirmation": "pending"
+      },
+      {
+        "id": "DQ-10",
+        "raised_in": "S13",
+        "before": "AC10 (console staff directory)",
+        "status": "default_applied",
+        "owner_confirmation": "pending",
+        "question": "Should re-enabling a disabled staff member need a second admin (4EYES, like a role grant), or be immediate like disabling?",
+        "default": "4EYES (built in S13): enabling gives platform roles back, and granting a platform role already needs two admins; disabling stays immediate so a compromised account can be stopped at once."
+      },
+      {
+        "id": "DQ-11",
+        "raised_in": "S13",
+        "before": "S16 (staff security stage)",
+        "status": "open",
+        "question": "When a staff member is disabled, what happens to the four-eyes changes they requested that are still pending? Today they stay pending and a second admin can still approve them (the approval records the disabled requester as initiator).",
+        "default": "Recommended: disable rejects (or expires) the member's pending requests with the reason \"requester disabled\" in the same transaction; build it in S16 next to the other staff security work (about 0.5 point)."
+      },
+      {
+        "id": "DQ-12",
+        "raised_in": "S13",
+        "before": "AC10 (A-DSR-02)",
+        "status": "default_applied",
+        "owner_confirmation": "pending",
+        "question": "Should staff be able to download a user's data export (the plan text of S13.T2 offered a signed link in the job read)?",
+        "default": "No (built in S13): the user downloads their own export; staff see progress and export_available. If staff must hand the file over (e.g. by email on request), add a PURP dsr download with a pii.read audit instead of a link in the non-PURP job read."
+      },
+      {
+        "id": "DQ-13",
+        "raised_in": "S14",
+        "before": "AC10 (A-USER) or S23 (extended staff reads)",
+        "status": "default_applied",
+        "owner_confirmation": "pending",
+        "question": "Should the members of an organization a work item is about (e.g. the owner of an organization under an impersonation case) also be subjects, so staff can open their user accounts under that item?",
+        "default": "No (built in S14): only the people the item names (author, reporters, raiser, submitter, requester). If staff need the owner, add \"active owners and managers of a subject organization\" as subjects of case and verification items (about 0.5 point, S19 or S23)."
+      },
+      {
+        "id": "DQ-14",
+        "raised_in": "S14",
+        "before": "AC10",
+        "status": "default_applied",
+        "owner_confirmation": "pending",
+        "question": "Should a case about a user unlock that user's own private files (vehicle photos, avatar) through admin.media_download_url?",
+        "default": "No (built in S14): a file is reachable when it is the case target, is attached to a subject record (a reported post, review evidence) or belongs to a subject organization (verification documents). A user's own files are not, and DSR exports never through their owner."
+      }
+    ],
+    "intake_rules": [
+      "New items (PWA, backend next_iteration NI-xx, cp-web-portal) get the same entry shape (id, origin, raw_text) and a plan block.",
+      "An item joins an unstarted stage of the same module only if that stage stays at or below 11 points; otherwise a new stage is inserted before S25 (closure stays last).",
+      "A new P0 item is placed in the next unstarted stage, moving that stage's lowest-priority task to a later stage if needed.",
+      "Done stages are not reopened; follow-ups go to a later stage.",
+      "Already covered from backend next_iteration: NI-02 (S14), NI-04 DI-66 (S14) and DI-67 (S22). NI-04 DI-05 (assist routes) stays out (DI-08)."
+    ],
+    "admin_console_resume": {
+      "summary": "Run S13 first (one session). After S13 the console can resume AC10 and AC12 with real operations instead of the PD-02 workarounds. AC11 follows AC10; AC13 waits for the refinement (owner decision); AC14 becomes console-only.",
+      "by_console_stage": [
+        {
+          "stage": "AC10",
+          "resume_after": "S13",
+          "why": "Needs BR-20 (DSR export job) and BR-10 (staff list, disable). The Suspend duration field can be built at once; BR-07 (S14) makes the end date take effect, so AC10 offers durations only after S14, or builds them hidden behind a flag until then."
+        },
+        {
+          "stage": "AC12",
+          "resume_after": "S13",
+          "why": "Needs BR-18 (admin.taxonomy_snapshot). The merge job progress uses admin.job_get from S13."
+        },
+        {
+          "stage": "AC9/AC8/AC5 catch-up",
+          "resume_after": "S13 (and S14)",
+          "why": "Small console patch, best done as the first task of AC10: badges list instead of typed ids (D-53), own four-eyes requests (D-31), region settings instead of env/default (D-58, D-59), assign to another moderator (D-50); after S14 the narrowed organization search row."
+        },
+        {
+          "stage": "AC11",
+          "resume_after": "AC10 (backend: none required to build)",
+          "why": "The deploy kit, runbook and security pass can be written after AC10. The runbook's lost-key section and the security pass on purposes are final only after S16 and S14; the pilot E2E green criterion waits for the whole-plan test run (PD-03)."
+        },
+        {
+          "stage": "AC13",
+          "resume_after": "S25 (owner decision PD-02)",
+          "why": "Technically buildable after S21 (BR-17 system health, BR-22 work summary, BR-26 ids); A-AI-02 decisions need S24 (BR-14)."
+        },
+        {
+          "stage": "AC14",
+          "resume_after": "S25",
+          "why": "Its backend task (AC14.T1, contract 1.4.0 as backend S13) is replaced by S13-S24. AC14 becomes console-only: the new screens (A-STAFF-01, A-NOTIF-01, A-POL-01, A-SUP-01, A-AI-02/03, extended tabs, moderation actions) and removal of the remaining workarounds. Parts can start as soon as their backend stage is done (e.g. A-POL-01 after S15)."
+        },
+        {
+          "stage": "AC15",
+          "resume_after": "AC12, AC13, AC14",
+          "why": "Unchanged."
+        }
+      ],
+      "suggested_interleaving": [
+        "S13",
+        "AC10 (with the catch-up patch)",
+        "AC12",
+        "S14",
+        "S15",
+        "S16",
+        "AC11",
+        "S17",
+        "S18",
+        "S19",
+        "S20",
+        "S21",
+        "S22",
+        "S23",
+        "S24",
+        "S25",
+        "AC13",
+        "AC14",
+        "AC15",
+        "whole-plan test run (PD-03)"
+      ],
+      "status_2026_11_12": "S13 done: AC10 and AC12 can resume with real operations. Catch-up list: S13.report.notes_for_next.",
+      "status_2026_11_13": "S14 done: the organization search row and the purpose binding are in place (console regenerated and fixed in S14); AC10 can offer suspension durations. Catch-up list: S13.report.notes_for_next and S14.report.notes_for_next."
+    },
+    "pilot_prep_checklist_non_code": [
+      {
+        "r_item": "R-05",
+        "owner": "user",
+        "item": "Name the pilot staff: at least two ADM, one MOD, one CRV."
+      },
+      {
+        "r_item": "R-07",
+        "owner": "user",
+        "item": "Two FIDO2 security keys per staff member (or Windows Hello on managed PCs); the second is registered as a backup once S16 is done."
+      },
+      {
+        "r_item": "R-19",
+        "owner": "user",
+        "item": "Agree who checks Pending approvals daily (four-eyes changes wait up to 72 h)."
+      },
+      {
+        "r_item": "R-21",
+        "owner": "user",
+        "item": "Set the real IRR rate in the console with two ADM accounts ready (the first change is over 20 %)."
+      },
+      {
+        "r_item": "R-24",
+        "owner": "user / infra",
+        "item": "Publish the region tile host (WP1/WP8) and set the map style URLs in the console and the PWA."
+      },
+      {
+        "item": "Final legal texts (EN and FA) for S15 seed or for the first publish in the console.",
+        "owner": "user"
+      }
+    ],
+    "handed_off_follow_ups": {
+      "pwa": [
+        "S15: show policy texts and the re-consent prompt",
+        "S19: \"more information requested\" and resubmit for the business",
+        "S20: dispute message thread for the parties; author edit after an edit request",
+        "S24: in-app support tickets",
+        "DI-11: mention the console in shared/i18n/package.json at the next PWA stage touching shared/i18n"
+      ],
+      "admin_console": [
+        "See admin_console_resume."
+      ]
+    },
+    "deferred_out_of_scope": [
+      {
+        "id": "DI-08",
+        "reason": "Assisted onboarding wizard needs backend DI-05 ({adm}/assist/... routes) and the business web app."
+      },
+      {
+        "id": "BR-27 (suspicious-pattern and automatic-check-failed tabs)",
+        "reason": "No signal source yet (backend NI-05, SEC-BF-1)."
+      },
+      {
+        "id": "BR-29 (fraud signals)",
+        "reason": "Same: needs SEC-BF-1 signals (backend NI-05)."
+      }
+    ],
+    "progress_log": [
+      {
+        "date": "2026-11-12",
+        "stage": "S13",
+        "status": "done",
+        "summary": "S13 done: admin.job_get, the staff directory (staff_list, staff_disable, four-eyes staff_enable), admin.taxonomy_snapshot, admin.region_settings, admin.badges_list, admin.four_eyes_list mine=true with the decision fields and PendingChange.job_id. BR-10, BR-18, BR-20, BR-31 done; BR-21 list part done (its notification is S17).",
+        "recommendations": [
+          "Run the console catch-up next (AC10 first task): remove the D-31, D-50, D-53, D-58, D-59 and D-19 workarounds with the S13 reads; add admin.staff_enable to the console op-label list.",
+          "Answer DQ-11 before S16 and DQ-10/DQ-12 before AC10; until then S13 runs on the recorded defaults.",
+          "Keep S14 next on the backend side: BR-09 and the BR-35 search row are the two P0 privacy defects left before real staff use real data (R-03).",
+          "Local developers: run `pnpm db:setup` in backend/ (migration 0102); `pnpm db:reset` if the baseline test must pass locally."
+        ]
+      },
+      {
+        "date": "2026-11-13",
+        "stage": "S14",
+        "status": "done",
+        "summary": "S14 done: purpose bound to the record on every PURP operation (403 PURPOSE_RECORD_MISMATCH, scoped user search, case actions bound), narrow organization search row (breaking for the console, regenerated and fixed), timed suspensions lifted by the scheduler. BR-09, BR-07 and R-03 done; BR-35 part 1 row done (the rest is S19); RCP-01 mitigated; backend NI-02 and DI-66 closed.",
+        "recommendations": [
+          "Resume the console with AC10 (catch-up patch first): design A-USER around the work item (users_search is scoped; other users answer 403) and offer suspension durations (D-52 can go).",
+          "Answer DQ-13 and DQ-14 before AC10 builds A-USER; DQ-11 before S16.",
+          "Next backend stage: S15 (legal go-live: policies and consent texts), which needs DQ-02 and DQ-03 answered first.",
+          "Local developers: pnpm db:setup in backend/ (migration 0103); pnpm db:reset if the baseline test must pass locally."
+        ]
+      }
+    ]
+  }
+}

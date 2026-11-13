@@ -10,6 +10,7 @@ import {
   AdminOrgStatusHandler,
   AdminVerificationDecideHandler,
   AdminVerificationsQueueHandler,
+  StaffOrgSearchRows,
   StaffOrgViews,
 } from './application/admin-ops.js';
 import { LocationChecker } from './application/location-ops.js';
@@ -17,6 +18,7 @@ import { LocationChecker } from './application/location-ops.js';
 @Module({
   providers: [
     LocationChecker,
+    StaffOrgSearchRows,
     StaffOrgViews,
     AdminOrgsSearchHandler,
     AdminOrgGetHandler,

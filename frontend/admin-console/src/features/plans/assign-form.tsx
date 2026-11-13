@@ -229,10 +229,7 @@ export function AssignForm({ plans }: { plans: readonly Plan[] | undefined }) {
                         </label>
                         <p className="pwa-text-caption">
                           {t(`admin.plans.assign.orgTypes.${o.organization_type}` as MessageKey)} ·{' '}
-                          {t('admin.plans.assign.currentPlan', {
-                            plan: planLabel(o.subscription.plan.plan_key, t),
-                            status: t(`admin.plans.subStatus.${o.subscription.status}` as MessageKey),
-                          })}
+                          {t('admin.plans.assign.currentPlan', { plan: o.plan_key ? planLabel(o.plan_key, t) : '—' })}
                         </p>
                       </div>
                     </div>

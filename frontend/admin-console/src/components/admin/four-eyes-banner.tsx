@@ -42,6 +42,7 @@ export function problemText(p: ApiProblem, t: Translate): string {
   if (p.code === 'INVALID_TRANSITION') return t('admin.kit.problem.invalidTransition');
   if (p.preconditionFailed) return t('admin.kit.problem.changed');
   if (p.code === 'DUPLICATE') return t('admin.kit.problem.duplicate');
+  if (p.purposeMismatch) return t('admin.kit.problem.purposeMismatch');
   if (p.purposeRequired) return t('admin.kit.problem.purpose');
   if (p.status === 403) return t('admin.kit.problem.forbidden');
   if (p.status === 404) return t('admin.kit.problem.notFound');
