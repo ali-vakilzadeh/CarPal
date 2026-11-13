@@ -33,6 +33,7 @@ import { SuspensionExpiryRule } from './application/suspension-rule.js';
 export { DSR_EXPORT_QUEUE } from './application/admin-ops.js';
 export { DsrExporter };
 import { MfaService } from './application/mfa-service.js';
+import { StaffBreakGlassConsumer, StaffRecoveryCodes } from './application/staff-security.js';
 import { PowAttestationVerifier } from './infrastructure/attestation.js';
 import { AuthState } from './infrastructure/auth-state.js';
 import { DbAccountFacts, DbConsentChecker, DbConsentGrants, DbUserCards } from './infrastructure/directory.js';
@@ -202,12 +203,14 @@ export class IdentityAdminRegistrations implements OnModuleInit {
     { provide: AttestationVerifierPort, useClass: PowAttestationVerifier },
     IdentityMessages,
     MfaService,
+    StaffRecoveryCodes,
     IdentityUsageRegistration,
     { provide: PersonalDataRegistry, useFactory: () => new PersonalDataRegistry() },
     { provide: AccountAdmin, useClass: DbAccountAdmin },
     IdentityAdminRegistrations,
     DsrDeletionConsumer,
     VehicleTransferConsentConsumer,
+    StaffBreakGlassConsumer,
   ],
   exports: [
     MembershipDirectory,
@@ -224,6 +227,7 @@ export class IdentityAdminRegistrations implements OnModuleInit {
     AttestationVerifierPort,
     IdentityMessages,
     MfaService,
+    StaffRecoveryCodes,
     PersonalDataRegistry,
     AccountAdmin,
   ],

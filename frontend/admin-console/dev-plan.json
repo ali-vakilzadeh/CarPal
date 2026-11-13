@@ -2,7 +2,7 @@
   "meta": {
     "title": "CarPal admin console (WP15 UI, WP20 admin part; frontend/admin-console/) — build plan and stage log",
     "created": "2026-11-08",
-    "last_updated": "2026-11-12",
+    "last_updated": "2026-11-13",
     "status": "partial_on_hold",
     "owner": "ali-vakilzadeh",
     "purpose": "Build the internal staff console that operates the platform: Path 2 review approvals, moderation, disputes, verification, privacy requests, plans, flags and the AI kill switch, the USD exchange rate, taxonomy, audit, AI/MCP oversight and analytics. Without it the pilot cannot run without direct API or database work (backend S11 open_after_stage, NI-08).",
@@ -89,7 +89,8 @@
       "id": "GD-01",
       "decision": "The console is its own Next.js app in frontend/admin-console/ (App Router, TypeScript strict, ESM, Tailwind CSS v4), its own pnpm package (@carpal/admin-console) with its own lockfile, no root workspace. Versions match the PWA so code and fixes move between them: next 16.4.3, react/react-dom 19.3.1, tailwindcss 4.3.3, @tanstack/react-query 5.104.5, zod 4.6.7, i18next 26.4.3, react-i18next 17.0.16, jose 6.2.12, @simplewebauthn/browser 14.0.0, maplibre-gl 6.14.0 (AC9 only), @playwright/test 1.64.1, @axe-core/playwright 4.14.0. Later minor updates are recorded in the stage report.",
       "reason": "The admin plane has its own OAuth client (cp-web-admin, aal3, audience admin-api) and must stay reachable only through a gate (SEC-ADM-1; the gate itself is still open, Docs/02 §15). A separate deployable keeps every gate option possible and never ships admin code or routes from the public web.<DOMAIN> origin. Docs/02 §1.4 says admin pages are part of the web app: see DI-01.",
-      "stage": "plan"
+      "stage": "plan",
+      "confirmed_2026_11_13": "Confirmed by the owner (backend DQ-03): the console stays its own app, completely separate from the public Web UI, and only monitors and controls the social network. DI-01 is resolved."
     },
     {
       "id": "GD-02",
@@ -251,7 +252,8 @@
       "id": "DI-01",
       "issue": "Docs/02 §1.4 says admin.carpals.ir opens 'Admin pages of the web app'; frontend/README says the portals may ship as one app. GD-01 makes the console a separate app, because cp-web-admin is a separate client with aal3 and SEC-ADM-1 asks for a private entry point.",
       "action": "After the user confirms GD-01: change the Docs/02 §1.4 row to 'Admin console (separate app, frontend/admin-console)' and the frontend/README sentence.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-13 (owner decision DQ-03, applied with backend S16a): Docs/02 §1.1, §1.3, §1.4, §4, WP20 and §15, frontend/README, this README, Docs/23 (new §0), Docs/90, Docs/01, Docs/41 D4, Docs/22, 11, 55, 56, landing/deploy/deploy.md and the WP checklist notes say the console is a separate app that monitors and controls the social network."
     },
     {
       "id": "DI-02",
@@ -293,7 +295,8 @@
       "id": "DI-08",
       "issue": "Docs/23 'Assist onboarding' opens the business wizard on behalf of an owner; backend DI-05 leaves the {adm}/assist/{id}/… routes undefined and the wizard lives in the business web app, which does not exist yet.",
       "action": "AC9 builds start/end of an assist session only; the assisted wizard waits for backend DI-05 and the business web app.",
-      "status": "open"
+      "status": "open",
+      "dq03": "Under DQ-03 assisted onboarding is business work and moves to the public Web UI (Docs/23 §0 row 1); the AC9 start/end/banner stays until the move is planned."
     },
     {
       "id": "DI-09",
@@ -4244,5 +4247,66 @@
         "BR-35"
       ]
     }
-  ]
+  ],
+  "decisions_2026_11_13": {
+    "date": "2026-11-13",
+    "by": "user",
+    "items": [
+      {
+        "id": "DQ-03",
+        "decision": "The admin console is completely separate from the public Web UI (the business web app at web.<DOMAIN> and fleet.<DOMAIN> for service providers, parts sellers and fleet managers). Its only purpose is to monitor and control the social network. Every document is updated to say so (backend/BR-update-plan.json DQ-03).",
+        "affects": [
+          "GD-01",
+          "DI-01",
+          "DI-08",
+          "AC6",
+          "AC9",
+          "AC14"
+        ]
+      },
+      {
+        "id": "DQ-19",
+        "decision": "(c) The administrator chooses, each time a consent text version that requires re-consent is published, whether the consents granted under the old text stay in effect until confirmed (a) or are paused until confirmed (b).",
+        "affects": [
+          "AC14 (A-POL-01 publish dialog: the choice, with (a) preselected)"
+        ]
+      }
+    ]
+  },
+  "dq03_scope_review": {
+    "status": "reported to the owner 2026-11-13; move plan pending",
+    "source": "Docs/23.Admin_WebUI_screens.md §0",
+    "does_not_match": [
+      {
+        "part": "Assist sessions (concierge onboarding)",
+        "built": "AC9: src/features/orgs/assist.tsx (start, end, banner on every page)",
+        "backend": "admin.assist_session_start, admin.assist_session_end; BR-34 (S19); DI-05 assisted routes undefined",
+        "proposed_home": "public Web UI: a staff-assisted mode of the business onboarding wizard"
+      },
+      {
+        "part": "Plan assignment, trials and entitlement overrides",
+        "built": "AC6: src/features/plans/assign-form.tsx; Change plan link from the organization page (AC9)",
+        "backend": "admin.subscription_assign; BR-24 (S21)",
+        "proposed_home": "public Web UI: the business chooses its plan or trial (needs that self-service flow first; manual assignment is the MVP billing path today)",
+        "open_question": "whether the plan catalog (admin.plans_list, admin.plan_update) stays in the console as a platform rule"
+      },
+      {
+        "part": "Featured placements (A-FEAT-01)",
+        "built": "no (Later, flag off)",
+        "backend": "none",
+        "proposed_home": "public Web UI; the console keeps eligibility and stopping placements of suspended organizations"
+      },
+      {
+        "part": "Support inbox (A-SUP-01)",
+        "built": "no (AC14 plan)",
+        "backend": "BR-13 (S24)",
+        "proposed_home": "decide: triage only in the console, or a separate help-desk tool"
+      }
+    ],
+    "borderline_kept": [
+      "Staff corrections of public business data (location pin and address, AC9; admin.location_correct): data-quality control",
+      "Reset onboarding and resend verification (A-USR-02, AC10): account control",
+      "Platform-wide analytics of providers, vendors and fleets (A-ANL-01, A-DASH-01): monitoring"
+    ]
+  }
 }

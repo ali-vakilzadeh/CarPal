@@ -276,7 +276,11 @@ export const resolvers: Resolvers = {
       as: none,
       headers: { cookie: ia.cookie },
       body: { interaction_id: ia.id, attestation: new SoftAuthenticator('carpals.ir', 'https://admin.carpals.ir').register(options) },
-      check: (res) => expect(res.body).toEqual({ next: 'mfa', mfa_methods: ['webauthn'] }),
+      check: (res) => {
+        // S16a: the first key comes with the staff recovery codes, shown once.
+        expect(res.body).toMatchObject({ next: 'mfa', mfa_methods: ['webauthn'] });
+        expect(res.body.recovery_codes).toHaveLength(10);
+      },
     };
   },
   'auth.social_start': async (h) => {

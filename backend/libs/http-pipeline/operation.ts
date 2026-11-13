@@ -80,8 +80,8 @@ export interface OperationContext<B = unknown, Q = Record<string, unknown>> {
   tx<T>(fn: (scope: TxScope) => Promise<T>, options?: TxOptions): Promise<T>;
   /** ORG(by target) and USR | ORG(ANY): authorizes an organization resolved from the target record. */
   authorizeOrg(orgId: string, groups: string[]): Promise<{ id: string; type: OrgType; role: string; matchedGroups: string[] }>;
-  /** Conditional AAL2/AAL3 (e.g. "AAL3(suspend_account, …)"). */
-  requireAssurance(level: 'aal2' | 'aal3'): void;
+  /** Conditional AAL2/AAL3 (e.g. "AAL3(suspend_account, …)"); maxAgeSeconds narrows the 10-minute window (SEC-ADM-2: 5 min). */
+  requireAssurance(level: 'aal2' | 'aal3', maxAgeSeconds?: number): void;
   /** Feature flag for the caller (qualified FLAG tags such as "FLAG(x: email)"). */
   flagEnabled(key: string): Promise<boolean>;
   /** Request-dependent rate-limit windows (account, destination, author, subject, bytes). */

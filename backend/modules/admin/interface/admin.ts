@@ -143,6 +143,13 @@ export abstract class FourEyes {
    * pending change for the same operation and target is 409 DUPLICATE.
    */
   abstract request(scope: TxScope, staffUserId: string, r: PendingChangeRequest, locale: string): Promise<PendingChangeView>;
+
+  /**
+   * Rejects every pending change a staff member requested, in the caller's transaction, with `reason` as the decision
+   * reason and `decidedBy` as the decider (backend S16a, DQ-11: disabling a member ends their requests). Returns the
+   * number rejected.
+   */
+  abstract rejectRequestsOf(scope: TxScope, requesterUserId: string, decidedBy: string, reason: string): Promise<number>;
 }
 
 /** Executors of approved changes by operation id (registered in onModuleInit; an unknown op cannot be approved). */

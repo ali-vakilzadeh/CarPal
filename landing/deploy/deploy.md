@@ -24,7 +24,7 @@ Contents: [How it fits together](#how-it-fits-together) · [On cPanel](#on-cpane
 | `fleet.<DOMAIN>` | fleet owners                        | "coming soon" on the pages; the address shows the coming-soon page      |
 | Android app      | car owners                          | no link yet; added when the app is published                            |
 
-The admin pages are not publicised, so the landing site never links to them. The full plan is in `Docs/02.Detailed project plan.md`, §1.4 and WP22.
+The admin console is a separate staff app (owner decision DQ-03) and is not publicised, so the landing site never links to it. The full plan is in `Docs/02.Detailed project plan.md`, §1.4 and WP22.
 
 ## On cPanel
 

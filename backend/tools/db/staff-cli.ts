@@ -1,4 +1,4 @@
-// pnpm staff:bootstrap [--file <spec.json>] | pnpm dev:staff create … | pnpm dev:staff list
+// pnpm staff:bootstrap [--file <spec.json>] | pnpm dev:staff create … | pnpm dev:staff list | pnpm staff:break-glass …
 // See staff.ts. Connects as carpal_worker with the role passwords of the environment (backend/.env in dev; on a
 // server deploy/staff-bootstrap.sh loads /carpal/config/backend.env first).
 import { readFileSync } from 'node:fs';
@@ -6,7 +6,17 @@ import { loadConfig } from '#libs/config/index.js';
 import { CryptoServices } from '#libs/crypto/index.js';
 import { Database } from '#libs/db/index.js';
 import { TxRunner } from '#libs/tenancy/index.js';
-import { assertDev, bootstrapStaff, DEV_STAFF, listStaff, parseSpec, parseStaffArgs, shortfall, type StaffResult } from './staff.js';
+import {
+  assertDev,
+  bootstrapStaff,
+  breakGlassStaff,
+  DEV_STAFF,
+  listStaff,
+  parseSpec,
+  parseStaffArgs,
+  shortfall,
+  type StaffResult,
+} from './staff.js';
 
 function print(results: readonly StaffResult[]): void {
   for (const r of results)
@@ -27,6 +37,17 @@ async function main(): Promise<void> {
   try {
     if (command.kind === 'list') {
       for (const s of await listStaff(deps)) console.log(`${s.email}  ${s.roles.join(',')}  passkeys: ${s.passkeys}`);
+      return;
+    }
+    if (command.kind === 'break-glass') {
+      const r = await breakGlassStaff(deps, command.email, command.reason);
+      console.log(`break glass: ${r.email} (${r.roles.join(',')}): ${r.keys} security keys and ${r.codes} open recovery codes disabled.`);
+      console.log('Audited as actor system (action staff.break_glass) with your reason.');
+      console.log("The running backend now ends the account's sessions and emails the account and every other active");
+      console.log('administrator (event staff.break_glass; if the backend is stopped, at its next start).');
+      console.log('Next console sign-in: email + password, then the code sent to the email, then a new device-bound key.');
+      console.log('The new key comes with a new sheet of recovery codes; the old sheet is void.');
+      if (r.otherAdmins < 2) console.log(`Note: ${r.otherAdmins} other active administrator(s); an ADM recovery needs two (DQ-16).`);
       return;
     }
     if (command.kind === 'create') {

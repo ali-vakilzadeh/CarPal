@@ -4,8 +4,20 @@
 // rejected again by a second admin so no pending change outlives the sweep.
 import { sql } from 'kysely';
 import { expect } from 'vitest';
+import { SoftAuthenticator } from '#libs/testing/webauthn.js';
 import { purpose, REASON } from '../../s8-support.js';
 import { ok, type Actor, type Harness, type Json, type Resolvers } from '../harness.js';
+
+/** A device-bound key registered by the staff member themselves (backend S16a). */
+async function addKey(as: Actor, label: string): Promise<Json> {
+  const options = ok(await as.c.post('/v1/admin/me/passkeys/options', { label }), 'passkey options');
+  return ok(
+    await as.c.post('/v1/admin/me/passkeys', {
+      attestation: new SoftAuthenticator('carpals.ir', 'https://admin.carpals.ir').register(options),
+    }),
+    'passkey register',
+  );
+}
 
 /** A report about a new user and the moderation case opened from it. */
 async function userCase(h: Harness, mod: Actor): Promise<{ target: Actor; reportId: string; caseId: string }> {
@@ -120,6 +132,32 @@ export const resolvers: Resolvers = {
     ok(await as.c.post(`/v1/admin/staff/${target.id}/disable`, { reason: REASON }), 'disable');
     return { as, params: { user_id: target.id }, body: { reason: REASON }, check: (res) => h.rejectChange(res.body.change_id as string) };
   },
+  // Contract 1.4.0 (backend S16a): the caller's own keys and recovery codes.
+  'admin.staff_passkeys_list': async (h) => {
+    const as = await h.staff('platform_support');
+    await addKey(as, 'Desk key');
+    return { as, check: (res) => expect(res.body.passkeys).toHaveLength(1) };
+  },
+  'admin.staff_passkey_register_options': async (h) => ({ as: await h.staff('platform_moderator'), body: { label: 'Backup key' } }),
+  'admin.staff_passkey_register': async (h) => {
+    const as = await h.staff('platform_community_reviewer');
+    const options = ok(await as.c.post('/v1/admin/me/passkeys/options', { label: 'Backup key' }), 'passkey options');
+    return {
+      as,
+      body: { attestation: new SoftAuthenticator('carpals.ir', 'https://admin.carpals.ir').register(options) },
+      check: (res) => expect(res.body).toMatchObject({ label: 'Backup key', device_bound: true }),
+    };
+  },
+  'admin.staff_passkey_remove': async (h) => {
+    const as = await h.staff('platform_moderator');
+    const first = await addKey(as, 'Old key');
+    await addKey(as, 'New key');
+    return { as, params: { method_id: first.id as string } };
+  },
+  'admin.staff_recovery_codes_regenerate': async (h) => ({
+    as: await h.staff('platform_admin'),
+    check: (res) => expect(res.body.recovery_codes).toHaveLength(10),
+  }),
   'admin.badges_list': async (h) => ({ as: await h.staff('platform_moderator'), query: { status: 'pending_approval', limit: 10 } }),
   'admin.region_settings': async (h) => ({
     as: await h.staff('platform_community_reviewer'),

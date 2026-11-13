@@ -26,6 +26,7 @@ import { toDataSubjectRequest, toMembership, toOnboarding } from '../api/project
 import { normalizeEmail, type UserRow } from '../infrastructure/accounts.js';
 import { AccountAdmin, UserCards } from '../interface/identity.js';
 import { DsrViews } from './privacy-ops.js';
+import { StaffRecoveryCodes } from './staff-security.js';
 
 export const DSR_EXPORT_QUEUE = 'identity.dsr_export';
 const PLATFORM_ROLES = ['platform_admin', 'platform_moderator', 'platform_support', 'platform_community_reviewer'];
@@ -100,7 +101,10 @@ async function loadUser(scope: TxScope, id: string, lock = false): Promise<UserR
 @Injectable()
 @Operation('admin.staff_me')
 export class AdminStaffMeHandler implements OperationHandler {
-  constructor(private readonly sessions: SessionStore) {}
+  constructor(
+    private readonly sessions: SessionStore,
+    private readonly recoveryCodes: StaffRecoveryCodes,
+  ) {}
 
   async handle(ctx: OperationContext): Promise<OperationResult> {
     const s = staffOf(ctx);
@@ -108,7 +112,10 @@ export class AdminStaffMeHandler implements OperationHandler {
     const principal = ctx.principal;
     const session = await this.sessions.get(principal.sessionId);
     if (!session) throw new ApiError('UNAUTHENTICATED', { detail: 'session revoked or unknown' });
-    const u = await ctx.tx((scope) => loadUser(scope, s.userId), { readOnly: true });
+    const { u, remaining } = await ctx.tx(
+      async (scope) => ({ u: await loadUser(scope, s.userId), remaining: await this.recoveryCodes.remaining(scope, s.userId) }),
+      { readOnly: true },
+    );
     const absoluteMs = CLIENTS['cp-web-admin'].sessionAbsoluteMs;
     return {
       body: {
@@ -121,6 +128,8 @@ export class AdminStaffMeHandler implements OperationHandler {
         acr: 'aal3',
         auth_time: iso(new Date(principal.authTime * 1000)),
         session_expires_at: iso(new Date(Date.parse(session.createdAt) + absoluteMs)),
+        // S16a (DQ-04): 0 for staff enrolled before recovery codes existed, so the console asks them to create a set.
+        recovery_codes_remaining: remaining,
       },
     };
   }

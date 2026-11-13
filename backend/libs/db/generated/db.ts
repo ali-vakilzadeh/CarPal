@@ -1221,6 +1221,22 @@ export interface IdentityRoleMemberships {
   version: Generated<number>;
 }
 
+export interface IdentityStaffRecoveryCodes {
+  code_hash: string;
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  id: Generated<string>;
+  revoked_at: Timestamp | null;
+  set_id: string;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  used_at: Timestamp | null;
+  user_id: string;
+  version: Generated<number>;
+}
+
 export interface IdentityUserAccounts {
   anonymized_at: Timestamp | null;
   avatar_media_id: string | null;
@@ -2441,6 +2457,7 @@ export interface DB {
   "identity.policy_documents": IdentityPolicyDocuments;
   "identity.policy_versions": IdentityPolicyVersions;
   "identity.role_memberships": IdentityRoleMemberships;
+  "identity.staff_recovery_codes": IdentityStaffRecoveryCodes;
   "identity.user_accounts": IdentityUserAccounts;
   "identity.user_preferences": IdentityUserPreferences;
   "identity.verification_tokens": IdentityVerificationTokens;

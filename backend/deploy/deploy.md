@@ -335,6 +335,16 @@ sudo bash /carpal/backend/src/backend/deploy/staff-bootstrap.sh
 
 It creates the accounts that do not exist and prints a one-time password for each (hand them over on a separate channel); accounts that exist are reported and never changed, so it is safe to run again. The admin console's setup script runs it on its first install. On the first console sign-in a staff member enters the email and that password, then the code sent to the email (until real email exists, NI-07, it is in `/carpal/data/outbox-mail.jsonl`), then registers a **device-bound** passkey: a security key, or a platform passkey that is not synced (Windows Hello; synced iCloud or Google passkeys are refused, SEC-ADM-2). After that every sign-in is password + passkey at `aal3`. Later role changes go through the console (`admin.platform_role_grant`, four eyes).
 
+**Recovery codes and backup keys (S16a).** The first key comes with a sheet of 10 recovery codes (`XXXX-XXXX-XXXX-XXXX-XXXX`), shown once: the staff member writes or prints it and keeps it sealed, apart from the keys. Staff who enrolled before S16a have none; the console asks them to create a set. In the console each staff member can add a backup key (plan two keys per person, OQ-14), remove a key (never the last one) and create a new sheet (the old one stops working). Each of these needs a sign-in within the last 5 minutes.
+
+**Lost security key, fewer than two other admins (break glass).** A lost key normally comes back through the console's recovery flow, which two other ADMs approve (backend S16b). When fewer than two other ADMs are active, or the console cannot be used, the server operator resets the account's keys from the server shell, as root:
+
+```bash
+sudo bash /carpal/backend/src/backend/deploy/staff-break-glass.sh <staff email> "<who asked, how you checked it was them>"
+```
+
+It disables every security key and the open recovery codes of that account, writes an audit entry as actor `system` with your reason (action `staff.break_glass`), and the running backend then ends the account's sessions and emails the account and every other active ADM (event `staff.break_glass`; if the backend is stopped, at its next start). The next console sign-in asks for the password, a code sent to the account's email and a new device-bound key, and shows a new sheet of recovery codes. Check the person's identity out of band first (a call to a known number, in person), because the command trusts whoever can reach the account's email and password. It refuses unknown accounts and accounts without an active platform role (a disabled staff member is enabled in the console first, four eyes). This replaces the earlier "SQL on the server" fallback (R-08).
+
 The baseline also seeds a bootstrap admin (`CARPAL_ADMIN_EMAIL`) without a password. Either leave it unused, or give it a password with a password reset (the reset link goes to the PWA's `/l/pr` page) and it enrols a passkey on its first console sign-in like the others. Listing its address in `staff-bootstrap.json` only reports it as existing.
 
 ## Backups, restore and rollback

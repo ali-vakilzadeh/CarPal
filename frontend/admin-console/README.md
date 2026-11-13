@@ -1,9 +1,15 @@
 # CarPal admin console
 
-Internal staff console of CarPal (WP15 UI, WP20 admin part): Path 2 review approvals, moderation, disputes,
-verification, privacy requests, plans, flags and the AI kill switch, the USD exchange rate, taxonomy, audit, AI/MCP
-oversight and analytics. It is its own Next.js app with its own BFF for the `cp-web-admin` OAuth client (aal3,
-audience `admin-api`) and is served only on `admin.<DOMAIN>` behind an access gate.
+Internal staff console of CarPal (WP15 UI): Path 2 review approvals, moderation, disputes, verification, privacy
+requests, plans, flags and the AI kill switch, the USD exchange rate, taxonomy, audit, AI/MCP oversight and analytics.
+It is its own Next.js app with its own BFF for the `cp-web-admin` OAuth client (aal3, audience `admin-api`) and is
+served only on `admin.<DOMAIN>` behind an access gate.
+
+**Scope (owner decision DQ-03, 2026-11-13).** The console is completely separate from the public Web UI (the business
+web app for service providers, parts sellers and fleet managers, `web.<DOMAIN>`), and its only purpose is to monitor
+and control the social network. Work done for a business or on its behalf belongs to the Web UI. Built parts that do
+not fit yet (assist sessions, plan assignment) are listed in `Docs/23.Admin_WebUI_screens.md` §0 and stay as they
+are until their move is planned.
 
 The build plan and stage log is [dev-plan.json](dev-plan.json). Sources of truth: `Docs/40.API contract.md`
 (contract 1.3.0, §23 admin plane) for operations and security rules, `Docs/23.Admin_WebUI_screens.md` for screens.

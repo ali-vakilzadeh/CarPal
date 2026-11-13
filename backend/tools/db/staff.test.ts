@@ -13,6 +13,14 @@ describe('staff tool (backend S12, admin console OQ-10 / BR-05)', () => {
       spec: { email: 'a@b.test', name: 'Ann', roles: ['ADM', 'CRV'] },
     });
     expect(parseStaffArgs(['list'])).toEqual({ kind: 'list' });
+    expect(parseStaffArgs(['break-glass', '--email', ' Adm1@Staff.Test ', '--reason', 'lost key, one other ADM'])).toEqual({
+      kind: 'break-glass',
+      email: 'adm1@staff.test',
+      reason: 'lost key, one other ADM',
+    });
+    expect(() => parseStaffArgs(['break-glass', '--email', 'adm1@staff.test'])).toThrow(/--reason/);
+    expect(() => parseStaffArgs(['break-glass', '--email', 'not-an-email', '--reason', 'lost key'])).toThrow(/--email/);
+    expect(() => parseStaffArgs(['break-glass', '--email', 'a@b.test', '--reason', 'x'])).toThrow(/3-500/);
     expect(() => parseStaffArgs([])).toThrow(/Usage/);
     expect(() => parseStaffArgs(['bootstrap', '--force', 'yes'])).toThrow(/Unknown option --force/);
     expect(() => parseStaffArgs(['create', '--email'])).toThrow(/pairs/);

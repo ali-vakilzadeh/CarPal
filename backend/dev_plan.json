@@ -6,7 +6,7 @@
     "status": "scratch_build_done",
     "progress": {
       "as_of": "2026-11-13",
-      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list. S10 is DONE (2026-10-26): contract 1.1.0 served — search.session_get (406/407 operations served), search facets, the soonest sort with next_available_slot, search.page limit and the map.pins changes; the 1.1.0 text was corrected before use (DI-74). Next: the next_iteration list; the PWA continues with P7 and adopts 1.1.0 in P14. 2026-11-04: plan aligned with the closed PWA scratch build (pwa/dev_plan.json P1-P14, meta.status scratch_build_done). Rule GD-43: where the two plans disagree, the newer PWA decision wins and the backend follows. The PWA's pilot blockers that need the backend are now stage S11 'Pilot readiness: PWA integration 2' (strict auth for the BFF clients by DPoP + private_key_jwt, contract 1.2.0 for the profile and settings fields of PWA DI-55, USD prices with an admin-set exchange rate, the carpals.ir production setup). Backend-owned PWA follow-ups that do not block the pilot are NI-19..NI-22. Next: S11, then the next_iteration list. S11 is DONE in code (2026-11-05): strict auth for the BFF clients (DPoP-bound tokens + private_key_jwt, CARPAL_OAUTH_CLIENT_JWKS, no mTLS), contract 1.2.0 (411 operations, 410 served; me.deactivate, auth.reactivate, admin.exchange_rates_list, admin.exchange_rate_update, the profile and settings fields of PWA DI-55), USD as the base currency with an admin rate served by config.client, the carpals.ir deploy kit with strict mode on by default. The first server deployment (S11.T4 c) is still to be done by the user: see S11.report.open_after_stage. Next: the deployment, then the next_iteration list. 2026-11-09: S12 'Admin console prerequisites' is DONE in code (frontend/admin-console/dev-plan.json AC2): contract 1.3.0 (414 operations, 413 served; auth.passkey_enrol_options, auth.passkey_enrol, admin.staff_me, AuthNext 'enrol_passkey', error PASSKEY_NOT_DEVICE_BOUND), cp-web-admin DPoP-bound with private_key_jwt, the staff passkey enrolment inside the cp-web-admin sign-in, the first-run staff bootstrap (pnpm staff:bootstrap, deploy/staff-bootstrap.sh) and dev:staff, the admin key pair in its own file. Next: the admin console builds its BFF (AC3), then the next_iteration list. 2026-11-12: S13 'Admin console unblockers' is DONE in code (backend/BR-update-plan.json, the first stage of the admin console refinement S13-S25): contract 1.4.0 opened (421 operations, 420 served; admin.job_get, admin.staff_list, admin.staff_disable, admin.staff_enable, admin.taxonomy_snapshot, admin.region_settings, admin.badges_list; admin.four_eyes_list mine=true; PendingChange decision fields and job_id with migration 0102). Next: S14 of BR-update-plan.json (purpose bound to the record, NI-02), while the console resumes AC10 and AC12. 2026-11-13: S14 'Staff access to personal data, and suspension correctness' is DONE in code (BR-update-plan.json S14): staff access purposes bound to the record on every PURP operation (403 PURPOSE_RECORD_MISMATCH, scoped user search, case actions bound; RCP-01 mitigated, NI-02 done), admin.orgs_search answers StaffOrgSearchRow without contact data or points (console regenerated), timed suspensions lifted by the scheduler (suspended_until, migration 0103, DI-66 closed). Next: S15 of BR-update-plan.json, while the console resumes AC10 and AC12. 2026-11-13: S15 'Policies and consent texts' is DONE in code (BR-update-plan.json S15): versioned legal texts per region with four-eyes publish, effective date and re-consent flag (migration 0104), policy.current, policy.accept, Me.policy_reconsent, sign-up bound to the versions in force; contract 1.4.0 at 428 operations. Next: S16a of BR-update-plan.json.",
+      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list. S10 is DONE (2026-10-26): contract 1.1.0 served — search.session_get (406/407 operations served), search facets, the soonest sort with next_available_slot, search.page limit and the map.pins changes; the 1.1.0 text was corrected before use (DI-74). Next: the next_iteration list; the PWA continues with P7 and adopts 1.1.0 in P14. 2026-11-04: plan aligned with the closed PWA scratch build (pwa/dev_plan.json P1-P14, meta.status scratch_build_done). Rule GD-43: where the two plans disagree, the newer PWA decision wins and the backend follows. The PWA's pilot blockers that need the backend are now stage S11 'Pilot readiness: PWA integration 2' (strict auth for the BFF clients by DPoP + private_key_jwt, contract 1.2.0 for the profile and settings fields of PWA DI-55, USD prices with an admin-set exchange rate, the carpals.ir production setup). Backend-owned PWA follow-ups that do not block the pilot are NI-19..NI-22. Next: S11, then the next_iteration list. S11 is DONE in code (2026-11-05): strict auth for the BFF clients (DPoP-bound tokens + private_key_jwt, CARPAL_OAUTH_CLIENT_JWKS, no mTLS), contract 1.2.0 (411 operations, 410 served; me.deactivate, auth.reactivate, admin.exchange_rates_list, admin.exchange_rate_update, the profile and settings fields of PWA DI-55), USD as the base currency with an admin rate served by config.client, the carpals.ir deploy kit with strict mode on by default. The first server deployment (S11.T4 c) is still to be done by the user: see S11.report.open_after_stage. Next: the deployment, then the next_iteration list. 2026-11-09: S12 'Admin console prerequisites' is DONE in code (frontend/admin-console/dev-plan.json AC2): contract 1.3.0 (414 operations, 413 served; auth.passkey_enrol_options, auth.passkey_enrol, admin.staff_me, AuthNext 'enrol_passkey', error PASSKEY_NOT_DEVICE_BOUND), cp-web-admin DPoP-bound with private_key_jwt, the staff passkey enrolment inside the cp-web-admin sign-in, the first-run staff bootstrap (pnpm staff:bootstrap, deploy/staff-bootstrap.sh) and dev:staff, the admin key pair in its own file. Next: the admin console builds its BFF (AC3), then the next_iteration list. 2026-11-12: S13 'Admin console unblockers' is DONE in code (backend/BR-update-plan.json, the first stage of the admin console refinement S13-S25): contract 1.4.0 opened (421 operations, 420 served; admin.job_get, admin.staff_list, admin.staff_disable, admin.staff_enable, admin.taxonomy_snapshot, admin.region_settings, admin.badges_list; admin.four_eyes_list mine=true; PendingChange decision fields and job_id with migration 0102). Next: S14 of BR-update-plan.json (purpose bound to the record, NI-02), while the console resumes AC10 and AC12. 2026-11-13: S14 'Staff access to personal data, and suspension correctness' is DONE in code (BR-update-plan.json S14): staff access purposes bound to the record on every PURP operation (403 PURPOSE_RECORD_MISMATCH, scoped user search, case actions bound; RCP-01 mitigated, NI-02 done), admin.orgs_search answers StaffOrgSearchRow without contact data or points (console regenerated), timed suspensions lifted by the scheduler (suspended_until, migration 0103, DI-66 closed). Next: S15 of BR-update-plan.json, while the console resumes AC10 and AC12. 2026-11-13: S15 'Policies and consent texts' is DONE in code (BR-update-plan.json S15): versioned legal texts per region with four-eyes publish, effective date and re-consent flag (migration 0104), policy.current, policy.accept, Me.policy_reconsent, sign-up bound to the versions in force; contract 1.4.0 at 428 operations. Next: S16a of BR-update-plan.json. 2026-11-13: S16a 'Staff passkeys and recovery codes' is DONE in code (BR-update-plan.json S16a): staff recovery codes (migration 0105), the caller's own keys on the admin plane (five admin.staff_* operations, fresh aal3 within 5 minutes, LAST_PASSKEY), break glass (pnpm staff:break-glass, deploy/staff-break-glass.sh) and DQ-11; contract 1.4.0 at 433 operations. Next: S15b, then S16b of BR-update-plan.json.",
       "stages": [
         {
           "stage": "S1",
@@ -4071,6 +4071,117 @@
           "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck pass; 691 unit tests passed (76 files) after the allowlist pin 172 → 174 consumer routes",
           "admin_console": "contract:generate (75 admin-api operations), typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files) after the pins 70 → 75",
           "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08 confirmed)."
+        }
+      }
+    },
+    {
+      "id": "S16a",
+      "title": "Staff passkeys (self-service) and recovery codes; break glass; disable ends pending four-eyes requests",
+      "status": "done",
+      "depends_on": [
+        "S13",
+        "S12"
+      ],
+      "plan": "backend/BR-update-plan.json action_plan.stages S16a (admin console refinement S13-S25).",
+      "goal": "A lost staff key no longer needs SQL on the server: every staff account holds its own recovery codes (for the S16b recovery flow) and a backup key it registers itself; when too few admins can approve a recovery, an operator resets the keys from the server shell (admin console BR-19, R-08; owner decisions DQ-04, DQ-11).",
+      "scope": {
+        "contract_sections": [
+          "§2.14 SEC-ADM-2 (codes, backup key, break glass)",
+          "§4.4 LAST_PASSKEY",
+          "§6.1 AuthNext.recovery_codes; §6.2 auth.passkey_enrol",
+          "§23 intro (own keys AUD without RSN); §23.1 StaffMe.recovery_codes_remaining, StaffPasskey",
+          "§23.2 admin.staff_passkeys_list, staff_passkey_register_options, staff_passkey_register, staff_passkey_remove, staff_recovery_codes_regenerate; admin.staff_disable (DQ-11)",
+          "Appendix D \"Contract 1.4.0\" (three S16a rows)"
+        ],
+        "modules": [
+          "identity",
+          "admin",
+          "notification",
+          "libs/crypto",
+          "libs/http-pipeline",
+          "tools/db",
+          "apps/testing"
+        ],
+        "ops_target": 5,
+        "ops_note": "5 new admin-api operations; changed: auth.passkey_enrol, admin.staff_me, admin.staff_disable. Registry after S16a: 433 operations, 485 routes, 54 error codes; 432 served (auth.social_start deferred)."
+      },
+      "tasks": [
+        {
+          "id": "S16a.T1",
+          "status": "done",
+          "title": "Docs/52 StaffRecoveryCode, Docs/42, Docs/43 and migration 0105: identity.staff_recovery_codes (keyed hashes, set, used, revoked; no carpal_api grant); code format and Crockford reading (S16a-D1, D2)."
+        },
+        {
+          "id": "S16a.T2",
+          "status": "done",
+          "title": "auth.passkey_enrol returns the first set once (AuthNext.recovery_codes); admin.staff_me recovery_codes_remaining; admin.staff_recovery_codes_regenerate (fresh aal3 5 min, voids the old set, email, audit without codes)."
+        },
+        {
+          "id": "S16a.T3",
+          "status": "done",
+          "title": "admin.staff_passkeys_list (StaffPasskey: label, dates, device-bound, aaguid; S16a-D5)."
+        },
+        {
+          "id": "S16a.T4",
+          "status": "done",
+          "title": "admin.staff_passkey_register_options and admin.staff_passkey_register: backup key after a fresh aal3, device-bound only, at most 10 keys, other sessions end, email."
+        },
+        {
+          "id": "S16a.T5",
+          "status": "done",
+          "title": "admin.staff_passkey_remove: own key, fresh aal3, never the last device-bound key (409 LAST_PASSKEY), other sessions end, email."
+        },
+        {
+          "id": "S16a.T6",
+          "status": "done",
+          "title": "Break glass: pnpm staff:break-glass --email --reason and deploy/staff-break-glass.sh; audit as system; event staff.break_glass ends the sessions and emails the account and every other ADM in the running backend (S16a-D6); deploy.md runbook."
+        },
+        {
+          "id": "S16a.T7",
+          "status": "done",
+          "title": "DQ-11: admin.staff_disable rejects the member's pending four-eyes requests (\"requester disabled\") in the same transaction (FourEyes.rejectRequestsOf)."
+        }
+      ],
+      "deliverables": [
+        "contract 1.4.0 additions (Docs/40, libs/contract/generated, shared/api-contracts, console generated contract)",
+        "modules/identity/application/staff-security.ts",
+        "migration 0105_s16a_staff_recovery_codes.sql",
+        "tools/db staff:break-glass, deploy/staff-break-glass.sh",
+        "apps/testing/s16a.int.test.ts, admin sweep resolvers for the 5 operations"
+      ],
+      "report": {
+        "started_at": "2026-11-13",
+        "completed_at": "2026-11-13",
+        "summary": "Staff recovery codes (10 per account, shown once at the first enrolment and on regeneration, keyed hashes only, single use, a new set voids the old one), the caller's own keys on the admin plane (list, backup key, remove, never the last device-bound one; fresh aal3 within 5 minutes; synced passkeys refused), break glass from the server shell, and disable ends the member's pending four-eyes requests (DQ-11). Every acceptance criterion is met. Details and deviations S16a-D1..D7 are in backend/BR-update-plan.json action_plan.stages S16a.report. Run before S15b at the owner's request.",
+        "ops_implemented": [
+          "admin.staff_passkeys_list",
+          "admin.staff_passkey_register_options",
+          "admin.staff_passkey_register",
+          "admin.staff_passkey_remove",
+          "admin.staff_recovery_codes_regenerate"
+        ],
+        "ops_changed": [
+          "auth.passkey_enrol: AuthNext.recovery_codes",
+          "admin.staff_me: recovery_codes_remaining",
+          "admin.staff_disable: rejects pending four-eyes requests (DQ-11)"
+        ],
+        "files_created": [
+          "backend/modules/identity/application/staff-security.ts",
+          "backend/apps/testing/s16a.int.test.ts",
+          "backend/deploy/staff-break-glass.sh",
+          "database/migrations/0105_s16a_staff_recovery_codes.sql"
+        ],
+        "files_changed": [
+          "See backend/BR-update-plan.json action_plan.stages S16a.report.files_changed."
+        ],
+        "tests": {
+          "backend_static": "pnpm lint (513 modules, no violations), typecheck, format:check: pass",
+          "backend_unit": "294 passed (42 files), registry pin 433 operations / 485 routes",
+          "backend_contract": "contract:check, contract sweep suites (17 modules), openapi:check (485 operations on 388 paths), contract:coverage 432/433 with 0 unexplained 501s",
+          "backend_sweeps": "admin and identity sweeps 104 passed",
+          "backend_s16a": "9 passed",
+          "backend_integration_full": "829 tests in 55 files: 824 passed in the full run, 5 failed; 3 fixed and re-run green (apps/testing/s12.int.test.ts compared the auth.passkey_enrol answer exactly; it now also expects the 10 recovery codes: 7 passed). The remaining 2 are local-database state, the same as S13-S15: the baseline hash (Docs/43 changed and the local database was migrated with 0105, not reset; passes after pnpm db:reset) and the seed count of non-fixture accounts (94, expected 2: console E2E and BFF test accounts in the shared dev database, R-15).",
+          "clients": "PWA 691 unit tests and typecheck; admin console 430 tests, typecheck, lint, i18n:check (80 admin operations)"
         }
       }
     }

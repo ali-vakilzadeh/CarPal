@@ -8,6 +8,9 @@
 //
 // create / list: development helpers (create refuses outside dev; list is read-only and runs anywhere).
 //
+// break-glass: resets one staff account's security keys and recovery codes from the server shell, with a reason
+// (backend S16a, DQ-04; deploy.md "Lost security key, fewer than two other admins").
+//
 // New accounts are active with a verified email (the bootstrap is the operator's statement that the address is
 // right), a password and the platform roles. They have no passkey: the first sign-in on the console asks for the
 // password, a code sent to that email and a device-bound passkey (contract 1.3.0, auth.passkey_enrol). Rows are
@@ -17,6 +20,7 @@ import { z } from 'zod';
 import { writeAudit } from '#libs/audit/index.js';
 import { uuidv7, type CryptoServices } from '#libs/crypto/index.js';
 import type { TxRunner, TxScope } from '#libs/tenancy/index.js';
+import { breakGlass, StaffRecoveryCodes } from '#modules/identity/application/staff-security.js';
 import type { CarpalEnv } from './config.js';
 
 /** The contract's role codes (40 §0.5) and their 52 RoleMembership.role values. */
@@ -88,7 +92,11 @@ export function shortfall(specs: readonly { roles: readonly string[] }[]): strin
     .map(({ code, have }) => `${code}: ${have} of ${MINIMUM[code]}`);
 }
 
-export type StaffCommand = { kind: 'bootstrap'; file?: string } | { kind: 'create'; spec: StaffSpec } | { kind: 'list' };
+export type StaffCommand =
+  | { kind: 'bootstrap'; file?: string }
+  | { kind: 'create'; spec: StaffSpec }
+  | { kind: 'list' }
+  | { kind: 'break-glass'; email: string; reason: string };
 
 const USAGE = [
   'Usage:',
@@ -96,6 +104,8 @@ const USAGE = [
   '                                              without --file: the development accounts, dev only)',
   '  pnpm dev:staff create --email <e> --name <n> --roles ADM,MOD,SUP,CRV [--locale fa|en] [--password <p>]   (dev only)',
   '  pnpm dev:staff list                         staff accounts and their roles',
+  "  pnpm staff:break-glass --email <e> --reason <text>   reset a staff account's security keys and recovery codes",
+  '                                              (any environment, on the server shell; DQ-04, deploy.md)',
 ].join('\n');
 
 export function parseStaffArgs(argv: readonly string[]): StaffCommand {
@@ -135,6 +145,14 @@ export function parseStaffArgs(argv: readonly string[]): StaffCommand {
     case 'list':
       only();
       return { kind: 'list' };
+    case 'break-glass': {
+      only('email', 'reason');
+      const email = (flags.get('email') ?? '').trim().toLowerCase();
+      const reason = (flags.get('reason') ?? '').trim();
+      if (!z.email().max(254).safeParse(email).success) throw new Error(`break-glass needs --email <staff email>\n${USAGE}`);
+      if (reason.length < 3 || reason.length > 500) throw new Error(`break-glass needs --reason of 3-500 characters\n${USAGE}`);
+      return { kind: 'break-glass', email, reason };
+    }
     default:
       throw new Error(USAGE);
   }
@@ -260,6 +278,53 @@ export async function listStaff(deps: Pick<StaffDeps, 'tx'>): Promise<{ email: s
     },
     { readOnly: true },
   );
+}
+
+export interface BreakGlassResult {
+  email: string;
+  roles: RoleCode[];
+  /** WebAuthn credentials and open recovery codes disabled. */
+  keys: number;
+  codes: number;
+  /** Other active administrators: they get the notice; under two, an ADM cannot recover through the console (DQ-16). */
+  otherAdmins: number;
+}
+
+/**
+ * Break glass (backend S16a, DQ-04; replaces the "SQL on the server" fallback of R-08): when a staff member lost their
+ * security key and fewer than two other administrators can approve a recovery, an operator on the server shell
+ * disables the account's keys and recovery codes, with a reason, audited as actor system. The next console sign-in
+ * enrols a key again with the password and a code sent to the account's email. The running backend ends the
+ * account's sessions and tells the account and every other active administrator (event staff.break_glass).
+ * Refused for an unknown account and for an account without an active platform role (disabled staff come back
+ * through admin.staff_enable first).
+ */
+export async function breakGlassStaff(deps: Pick<StaffDeps, 'tx' | 'crypto'>, email: string, reason: string): Promise<BreakGlassResult> {
+  return deps.tx.run({ actorType: 'system' }, async (scope) => {
+    const user = await scope.db
+      .selectFrom('identity.user_accounts')
+      .select(['id'])
+      .where('email', '=', email.trim().toLowerCase())
+      .where('deleted_at', 'is', null)
+      .where('status', '<>', 'deleted')
+      .forUpdate()
+      .executeTakeFirst();
+    if (!user) throw new Error(`no account with the email ${email}`);
+    const roles = await rolesOf(scope, user.id);
+    if (roles.length === 0)
+      throw new Error(`${email} has no active platform role (not staff, or disabled: enable it in the console first)`);
+    const done = await breakGlass(scope, new StaffRecoveryCodes(deps.crypto), user.id, reason);
+    const others = await scope.db
+      .selectFrom('identity.role_memberships')
+      .select((eb) => eb.fn.count<string>('user_id').distinct().as('n'))
+      .where('organization_id', 'is', null)
+      .where('role', '=', 'platform_admin')
+      .where('status', '=', 'active')
+      .where('deleted_at', 'is', null)
+      .where('user_id', '<>', user.id)
+      .executeTakeFirstOrThrow();
+    return { email, roles, ...done, otherAdmins: Number(others.n) };
+  });
 }
 
 export function assertDev(env: CarpalEnv, what: string): void {

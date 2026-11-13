@@ -1,7 +1,8 @@
 // Staff directory on the admin plane (contract 1.4.0, 40 §23.2; admin console
 // BR-10, A-STAFF-01). Staff are user accounts with platform_* role
 // memberships (52 RoleMembership, organization_id null). Disabling a staff
-// member suspends every platform role at once and ends their sessions; the
+// member suspends every platform role at once, ends their sessions and rejects
+// the four-eyes changes they asked for that are still pending (DQ-11); the
 // account and any business membership stay as they are, so the person keeps
 // using the consumer app. Enabling gives the suspended roles back and, like a
 // role grant, waits for a second administrator (4EYES). The platform always
@@ -134,6 +135,9 @@ export class AdminStaffListHandler implements OperationHandler {
   }
 }
 
+/** DQ-11: the decision reason of the four-eyes requests a disable ends. */
+export const REQUESTER_DISABLED = 'requester disabled';
+
 @Injectable()
 @Operation('admin.staff_disable')
 export class AdminStaffDisableHandler implements OperationHandler {
@@ -141,6 +145,7 @@ export class AdminStaffDisableHandler implements OperationHandler {
     private readonly names: StaffNames,
     private readonly sessions: SessionStore,
     private readonly authorizer: Authorizer,
+    private readonly fourEyes: FourEyes,
   ) {}
 
   async handle(ctx: OperationContext<{ reason: string }>): Promise<OperationResult> {
@@ -193,6 +198,8 @@ export class AdminStaffDisableHandler implements OperationHandler {
         previous: byRoleOrder(active.map((m) => m.role)).join(', '),
         next: 'disabled',
       });
+      // DQ-11 (backend S16a): the member's pending four-eyes requests end with them, in the same transaction.
+      await this.fourEyes.rejectRequestsOf(scope, userId, s.userId, REQUESTER_DISABLED);
       scope.afterCommit(async () => {
         await this.sessions.revokeAll(userId);
         await this.authorizer.invalidateUser(userId);

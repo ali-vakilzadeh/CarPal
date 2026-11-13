@@ -16,7 +16,8 @@ export type HmacPurpose =
   | 'log-pseudonym' // pseudonymous user id in access logs (SEC-LOG-1)
   | 'anon-key' // RLS anon_key from an anonymous device key
   | 'storage-url' // lite object storage signed URLs
-  | 'idempotency'; // principal keys of idempotency records
+  | 'idempotency' // principal keys of idempotency records
+  | 'staff-recovery-code'; // staff recovery codes (backend S16a, DQ-04)
 
 const PKCS8_ED25519_PREFIX = Buffer.from('302e020100300506032b657004220420', 'hex');
 

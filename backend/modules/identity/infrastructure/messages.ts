@@ -18,6 +18,10 @@ export type MailTemplate =
   | 'identity.password_changed'
   | 'identity.security_alert'
   | 'identity.staff_passkey_added'
+  | 'identity.staff_passkey_removed'
+  | 'identity.staff_recovery_codes_created'
+  | 'identity.staff_break_glass_account'
+  | 'identity.staff_break_glass_admins'
   | 'identity.consent_request';
 
 @Injectable()

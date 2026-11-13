@@ -32,7 +32,7 @@
     },
     "counts": {
       "recommendations": 35,
-      "todo": 20,
+      "todo": 19,
       "r_item_actions_for_backend": 12,
       "unlinked_open_doc_issues": 4,
       "stages": 15,
@@ -46,23 +46,24 @@
       },
       "by_priority_note": "Recommendations only. mixed = BR-35 (part 1 row P0, part 2 P1, parts 1-filters and 3 P2). R-items are planned in r_item_actions_for_backend and are not counted here.",
       "done_in_refinement": 7,
-      "partly_done": 2,
+      "partly_done": 3,
       "counts_note": "todo, done_in_refinement and partly_done follow the recommendation status; by_priority keeps the planning view of 2026-11-12."
     },
     "status": "in_progress",
-    "status_note": "Prioritised and staged from the Admin Console items (2026-11-12). S13 done on 2026-11-12 (contract 1.4.0 opened), S14 done on 2026-11-13 (purpose bound to the record). PWA items and the backend next_iteration items are not merged yet; they join through action_plan.intake_rules. Stages run as backend S13-S25 and are logged in backend/dev_plan.json when started. S15 done on 2026-11-13 (versioned legal texts and acceptance).",
+    "status_note": "Prioritised and staged from the Admin Console items (2026-11-12). S13 done on 2026-11-12 (contract 1.4.0 opened), S14 done on 2026-11-13 (purpose bound to the record). PWA items and the backend next_iteration items are not merged yet; they join through action_plan.intake_rules. Stages run as backend S13-S25 and are logged in backend/dev_plan.json when started. S15 done on 2026-11-13 (versioned legal texts and acceptance). S16a done on 2026-11-13 (staff recovery codes, own keys, break glass).",
     "last_updated": "2026-11-13",
     "progress": {
       "as_of": "2026-11-13",
       "stages_done": [
         "S13",
         "S14",
-        "S15"
+        "S15",
+        "S16a"
       ],
       "stages_in_progress": [],
-      "next_stage": "S15b (consent texts; needs DQ-19), then S16a (DQ-04 and DQ-11 answered) and S16b. The console can resume AC10 and AC12 at any time; A-POL-01 waits for AC14.",
-      "contract": "Docs/40 1.4.0 open (428 operations, 480 routes; 427 served, auth.social_start deferred; 53 error codes). Frozen at S25.",
-      "summary": "S15 done: versioned legal texts with four-eyes publish, effective date and re-consent (BR-12), the public text in force, acceptance at sign-up and from the prompt. Next, S15b adds the consent texts (DQ-18). Open decisions: DQ-19 (before S15b), DQ-03 (reworded; DI-01 in S25), DQ-16; defaults applied and awaiting confirmation: DQ-01, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15."
+      "next_stage": "S15b (consent texts; DQ-19 answered: c), then S16b (recovery flow). The console can resume AC10 and AC12 at any time; A-POL-01 and the Security keys page wait for AC14.",
+      "contract": "Docs/40 1.4.0 open (433 operations, 485 routes; 432 served, auth.social_start deferred; 54 error codes). Frozen at S25.",
+      "summary": "S16a done: staff recovery codes, own keys on the admin plane, break glass, DQ-11. Next, S15b adds the consent texts (DQ-19 c), then S16b the recovery flow. Open decisions: DQ-16, DQ-20 (new, from DQ-03); defaults applied and awaiting confirmation: DQ-01, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15."
     },
     "decisions_from_owner_2026_11_13": [
       "DQ-04 answered: the recommended staff recovery process (own recovery codes, requester proof, two ADM approvals in the console with an out-of-band check, 72-hour restriction, break glass). S16 split into S16a and S16b; R-11 and R-15 moved to S25.",
@@ -71,7 +72,10 @@
       "DQ-11 answered: default (disabling a staff member rejects their pending four-eyes requests); built in S16a.T7.",
       "DQ-17 answered: the PWA block is enough; the server only reports re-consent.",
       "DQ-18 answered: yes, consent texts become versioned documents (yearly revisions expected as AI governance rules change per country); new stage S15b and new question DQ-19.",
-      "DQ-03 not answered: the owner asked what the console is separate from; the question was reworded."
+      "DQ-03 not answered: the owner asked what the console is separate from; the question was reworded.",
+      "DQ-19 answered: (c) the administrator picks (a) keep or (b) pause each time a consent text version that requires re-consent is published.",
+      "DQ-03 answered: the admin console is completely separate from the public Web UI (fleet managers, service providers, parts sellers); its only purpose is to monitor and control the social network. Documents updated; the parts that do not match are reported (DQ-20).",
+      "S16a run at the owner's request (\"stage 16a\") before S15b."
     ]
   },
   "recommendations": [
@@ -579,7 +583,8 @@
         "stage": [
           "S24"
         ],
-        "why": "Docs/23 Should. \"Contact support\" by email works for the pilot. New entity on both planes."
+        "why": "Docs/23 Should. \"Contact support\" by email works for the pilot. New entity on both planes.",
+        "dq03": "DQ-03: the support inbox is customer service (Docs/23 §0 row 4); DQ-20 decides whether the console keeps triage only."
       }
     },
     {
@@ -836,7 +841,7 @@
       },
       "priority": "high",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "partly_done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "Staff passkey management on admin-api: list own passkeys, add a second (backup) device-bound key with a fresh aal3 re-authentication, remove one (never the last); and an ADM reset of another staff member's passkeys with a reason and four-eyes (the next sign-in then enrols again with password + emailed code). Today me.webauthn_register_options and me.mfa_remove are on the api host, which refuses admin tokens.",
       "source_notes": {},
@@ -858,7 +863,14 @@
           "S16b"
         ],
         "why": "With one device-bound key per person, a lost key locks a staff member out and needs SQL on the server (R-08); OQ-14 plans two keys each, which needs \"add a backup key\". Design decided in DQ-04 (2026-11-13): own recovery codes, requester proof (password + code + emailed code), two ADM approvals in the console with an out-of-band check, 72-hour restriction, break glass on the server. Split into S16a (signed-in part) and S16b (recovery flow).",
-        "decision": "DQ-04"
+        "decision": "DQ-04",
+        "done": {
+          "stage": "S16a",
+          "date": "2026-11-13",
+          "part": "signed-in half and break glass",
+          "result": "Staff recovery codes (10 per account, Crockford base32, keyed hashes, single use) issued with the first passkey and by admin.staff_recovery_codes_regenerate; own keys listed, added (backup) and removed, never the last device-bound one (LAST_PASSKEY), each after a fresh aal3 within 5 minutes; StaffMe.recovery_codes_remaining; break glass from the server shell (pnpm staff:break-glass, deploy/staff-break-glass.sh).",
+          "remaining": "The recovery flow with two ADM approvals: S16b."
+        }
       }
     },
     {
@@ -1041,7 +1053,8 @@
         "stage": [
           "S21"
         ],
-        "why": "One field; the console hints that the list does not show it (D-42)."
+        "why": "One field; the console hints that the list does not show it (D-42).",
+        "dq03": "DQ-03: plan catalog status; stays if the plan catalog stays in the console as a platform rule (DQ-20)."
       }
     },
     {
@@ -1078,7 +1091,8 @@
         "stage": [
           "S21"
         ],
-        "why": "A-PLAN-01 Assignments list; the assignment form works without it."
+        "why": "A-PLAN-01 Assignments list; the assignment form works without it.",
+        "dq03": "DQ-03: the subscriptions list serves plan assignment, commercial work (Docs/23 §0 row 2); held until the DQ-20 move plan."
       }
     },
     {
@@ -1491,7 +1505,8 @@
         "stage": [
           "S19"
         ],
-        "why": "A reload forgets the assist banner (D-62); the session still expires after 4 h."
+        "why": "A reload forgets the assist banner (D-62); the session still expires after 4 h.",
+        "dq03": "DQ-03: assist sessions are business work (Docs/23 §0 row 1); held until the DQ-20 move plan."
       }
     },
     {
@@ -1623,7 +1638,7 @@
       "component": [
         "backend"
       ],
-      "status": "todo",
+      "status": "partly_done",
       "action": "Build BR-19 (staff passkey management, ADM reset with four-eyes) so a spare key can be registered and a lost key needs no server SQL.",
       "br": [
         "BR-19"
@@ -1636,7 +1651,10 @@
           "S16b"
         ],
         "note": "Break glass replaces the SQL in S16a; the full recovery flow closes it in S16b."
-      }
+      },
+      "done_in": [
+        "S16a (break glass replaces the SQL; backup keys)"
+      ]
     },
     {
       "r_item": "R-09",
@@ -1830,7 +1848,12 @@
         "stage": [
           "S25"
         ],
-        "note": "Moved from S15 (split point): text change after DQ-03 (confirm GD-01), still unanswered on 2026-11-13."
+        "note": "Moved from S15 (split point): text change after DQ-03 (confirm GD-01), still unanswered on 2026-11-13.",
+        "done": {
+          "stage": "S16a",
+          "date": "2026-11-13",
+          "result": "Texts changed after DQ-03: Docs/02 §1.4 row 'Admin console (a separate app ...)' and frontend/README; see DQ-03.applied."
+        }
       }
     },
     {
@@ -2713,7 +2736,7 @@
         "why_this_stage": "DQ-18 (2026-11-13): consent texts are revised about once a year as AI governance rules change per country, so they need the same versions, four-eyes publish and re-consent as the policies. It reuses the S15 tables and operations (identity), and the PWA prompts and A-POL-01 should be built once for policies and consents, so it runs right after S15 and before the PWA follow-up. S16a is security work kept light, so the item gets its own small stage (intake rule: a new stage before S25).",
         "depends_on": [
           "S15",
-          "DQ-19"
+          "DQ-19 (answered: c)"
         ],
         "context_to_read": [
           "backend/BR-update-plan.json S15.report",
@@ -2742,7 +2765,7 @@
               "DQ-18",
               "DQ-19"
             ],
-            "task": "Re-consent of granted consents: when a consent text version with requires_reconsent comes into force, active consents granted under an older version are listed (Me.policy_reconsent entries with mode consent and the consent type; ConsentRecord.reconsent_required on user and organization consents, so organization owners see it in org.consents_list). Confirming re-grants under the new version; otherwise the person withdraws. Per DQ-19, a version can pause those consents in the consent gate until they are confirmed."
+            "task": "Re-consent of granted consents: when a consent text version with requires_reconsent comes into force, active consents granted under an older version are listed (Me.policy_reconsent entries with mode consent and the consent type; ConsentRecord.reconsent_required on user and organization consents, so organization owners see it in org.consents_list). Confirming re-grants under the new version; otherwise the person withdraws. Per DQ-19 (c, answered 2026-11-13): the publish input carries the administrator's choice for that version, keep (a: the consents stay in effect until confirmed or withdrawn, the console's preselection) or pause (b: the consent gate treats them as not granted until confirmed)."
           },
           {
             "id": "S15b.T4",
@@ -2752,7 +2775,7 @@
             "task": "policy.current and the admin policy operations serve the consent documents; tests (a grant under an old text refused, re-consent listed and cleared, a paused consent blocks the gate, an organization consent); Docs/40 Appendix D rows; Docs/23 A-POL-01 note updated."
           }
         ],
-        "contract_changes": "Additive: PolicyKey gains the consent types; reconsent mode consent; ConsentRecord.policy_version_id and reconsent_required; the publish input gains the DQ-19 choice if (c) is chosen.",
+        "contract_changes": "Additive: PolicyKey gains the consent types; reconsent mode consent; ConsentRecord.policy_version_id and reconsent_required; the publish input of a consent text version gains the DQ-19 choice (keep | pause).",
         "console_impact": "A-POL-01 lists the consent texts next to the policies (AC14), with the DQ-19 choice when publishing.",
         "pwa_impact": "Consent switches and prompts show the text from policy.current and send its version; the re-consent prompt also covers consents (built together with the S15 follow-up).",
         "acceptance_criteria": [
@@ -2760,12 +2783,12 @@
           "A consent text version that requires re-consent lists every consent granted under an older text, for users and organization owners, and the entry clears when the consent is confirmed or withdrawn.",
           "Per DQ-19, a paused consent is treated as not granted by the consent gate until confirmed."
         ],
-        "split_point": "The pause option (DQ-19 b or c) can move to S25."
+        "split_point": "The pause option (DQ-19 b) can move to S25; the choice in the publish input stays in S15b."
       },
       {
         "id": "S16a",
         "title": "Staff passkeys (self-service) and recovery codes",
-        "status": "not_started",
+        "status": "done",
         "items": [
           "BR-19 (self-service keys, recovery codes, break glass)",
           "DQ-11 (answered)"
@@ -2851,7 +2874,154 @@
           "Synced passkeys stay refused.",
           "Break glass writes an audit entry with the reason and notifies every ADM."
         ],
-        "split_point": "T6 (break glass) and T7 can move to S16b."
+        "split_point": "T6 (break glass) and T7 can move to S16b.",
+        "report": {
+          "started_at": "2026-11-13",
+          "completed_at": "2026-11-13",
+          "note_on_order": "Run at the owner's request before S15b, which is still not started (it needed DQ-19, answered the same day). S16a does not depend on S15b.",
+          "summary": "Staff accounts now have their own recovery codes and manage their own keys on the admin plane. The first passkey enrolment (auth.passkey_enrol) returns 10 recovery codes once (AuthNext.recovery_codes); only keyed hashes are stored (identity.staff_recovery_codes, migration 0105), a code is single use and a new set voids the old one. admin.staff_me reports recovery_codes_remaining (0 for staff enrolled before S16a). Five new admin-api operations: admin.staff_passkeys_list, admin.staff_passkey_register_options, admin.staff_passkey_register, admin.staff_passkey_remove and admin.staff_recovery_codes_regenerate; the writes need a sign-in at aal3 within the last 5 minutes, synced passkeys stay refused, the last device-bound key cannot be removed (new error LAST_PASSKEY), and every change ends the other sessions and tells the account by email. Break glass: pnpm staff:break-glass (and deploy/staff-break-glass.sh) disables an account's keys and recovery codes with a reason, audited as actor system; the running backend then ends its sessions and emails the account and every other active ADM. DQ-11: disabling a staff member rejects their pending four-eyes requests in the same transaction. Every acceptance criterion is met. Also recorded: the owner's answers DQ-19 (c) and DQ-03 (documents updated; mismatches reported; DQ-20 opened).",
+          "acceptance_criteria": [
+            {
+              "criterion": "A code set is shown once and only its keyed hashes are stored.",
+              "met": true,
+              "evidence": "s16a.int.test.ts: auth.passkey_enrol returns 10 distinct codes matching the Crockford pattern; the 10 stored rows hold 64-hex HMACs and neither form of any code; regenerate returns a new set once and its audit entries contain none of the codes."
+            },
+            {
+              "criterion": "A used code cannot be used again; regeneration voids the old set.",
+              "met": true,
+              "evidence": "s16a.int.test.ts: StaffRecoveryCodes.use accepts a code typed in lower case with spaces once, refuses it the second time, refuses another account's code and a malformed one; after a new set an unused old code is refused and a new one accepted; regenerate leaves 10 revoked rows and 10 open ones."
+            },
+            {
+              "criterion": "A backup key and regeneration need a fresh aal3.",
+              "met": true,
+              "evidence": "s16a.int.test.ts: a session that signed in 400 s ago gets 401 STEP_UP_REQUIRED with max_age=300 on regenerate, register options and remove; reading the own key list needs no step-up."
+            },
+            {
+              "criterion": "The last key cannot be removed.",
+              "met": true,
+              "evidence": "s16a.int.test.ts: with two keys one is removed (email identity.staff_passkey_removed); the last answers 409 LAST_PASSKEY; another staff member's key id answers 404."
+            },
+            {
+              "criterion": "Synced passkeys stay refused.",
+              "met": true,
+              "evidence": "s16a.int.test.ts: a synced (backup-eligible) credential answers 422 PASSKEY_NOT_DEVICE_BOUND and nothing is stored."
+            },
+            {
+              "criterion": "Break glass writes an audit entry with the reason and notifies every ADM.",
+              "met": true,
+              "evidence": "s16a.int.test.ts: breakGlassStaff refuses an unknown account and a non-staff account; for a staff account it disables 1 key and 10 codes, writes staff.break_glass as actor system with the reason and publishes staff.break_glass; the worker's relay delivers it, the account's session answers 401, the account and another ADM get their emails (the account not the ADM one), and the next sign-in enrols a key again with a new set of codes."
+            }
+          ],
+          "ops_added": [
+            "admin.staff_passkeys_list (GET {adm}/me/passkeys)",
+            "admin.staff_passkey_register_options (POST {adm}/me/passkeys/options, AAL3, fresh 5 min)",
+            "admin.staff_passkey_register (POST {adm}/me/passkeys, AAL3 AUD, 201 StaffPasskey)",
+            "admin.staff_passkey_remove (DELETE {adm}/me/passkeys/{method_id}, AAL3 AUD)",
+            "admin.staff_recovery_codes_regenerate (POST {adm}/me/recovery-codes, AAL3 AUD)"
+          ],
+          "ops_changed": [
+            "auth.passkey_enrol: AuthNext.recovery_codes (the first set, once)",
+            "admin.staff_me: StaffMe.recovery_codes_remaining",
+            "admin.staff_disable: rejects the member's pending four-eyes requests (\"requester disabled\", DQ-11)"
+          ],
+          "contract": "Docs/40 1.4.0 (still open): SEC-ADM-2 names the recovery codes, the backup key and break glass; §4.4 LAST_PASSKEY; §6.1 AuthNext.recovery_codes; §6.2 auth.passkey_enrol; §23 intro (own keys are AUD without RSN); §23.1 StaffMe.recovery_codes_remaining, StaffPasskey; §23.2 five operations and the admin.staff_disable sentence; Appendix D three S16a rows. 433 operations, 485 routes (432 served; auth.social_start deferred), 54 error codes.",
+          "files_created": [
+            "backend/modules/identity/application/staff-security.ts",
+            "backend/apps/testing/s16a.int.test.ts",
+            "backend/deploy/staff-break-glass.sh",
+            "database/migrations/0105_s16a_staff_recovery_codes.sql"
+          ],
+          "files_changed": [
+            "Docs/40.API contract.md, Docs/43.db_setup.sql, Docs/42.db schema.md, Docs/52.MVP Data Dictionary.md (StaffRecoveryCode)",
+            "backend/modules/identity/{identity.module.ts (StaffRecoveryCodes, StaffBreakGlassConsumer), identity-admin.module.ts, application/auth-ops.ts (codes at enrolment), application/admin-ops.ts (staff_me), application/staff-ops.ts (DQ-11), domain/credentials.ts (code format), infrastructure/messages.ts}",
+            "backend/modules/admin/{interface/admin.ts (FourEyes.rejectRequestsOf), infrastructure/admin-services.ts}",
+            "backend/modules/notification/domain/templates.ts (four EN/FA staff templates)",
+            "backend/libs/crypto/keys.ts (HMAC purpose staff-recovery-code), libs/http-pipeline/{operation.ts, pipeline.ts (requireAssurance max age), problem.ts (LAST_PASSKEY en/fa)}",
+            "backend/tools/db/{staff.ts, staff-cli.ts, staff.test.ts, baseline.int.test.ts (108 tables)}, backend/package.json (staff:break-glass)",
+            "backend/libs/contract/generated/*, libs/contract/contract.test.ts (433/485), libs/db/generated/db.ts",
+            "backend/apps/testing/contract/{resolvers/admin.ts (5 operations), resolvers/identity.ts (enrolment check), generated/admin.contract.int.test.ts}",
+            "backend/modules/identity/domain/credentials.test.ts, backend/deploy/deploy.md (recovery codes, break glass runbook)",
+            "shared/api-contracts/{openapi.yaml, generated/*}",
+            "pwa/src/features/notifications/catalog.ts (four staff-only message keys)",
+            "frontend/admin-console: src/lib/api/generated/*, tools/contract/generate.test.ts and src/server/bff/allowlist.test.ts (80 admin operations)",
+            "backend/apps/testing/s12.int.test.ts (the enrolment answer now carries the recovery codes)"
+          ],
+          "tests": {
+            "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 513 modules), typecheck, format:check: pass",
+            "backend_unit": "294 passed (42 files), including the registry pin (433 operations, 485 routes), the staff code format and the break-glass CLI parsing",
+            "backend_contract": "contract:check up to date (1.4.0, 433 operations, 54 error codes); contract sweep suites up to date (17 modules); openapi:check: 485 operations on 388 paths match router and registry; contract:coverage 432/433 served (auth.social_start deferred), 0 unexplained 501s",
+            "backend_sweeps": "admin and identity sweeps 104 passed, including the 5 new operations and the enrolment answer with its codes",
+            "backend_s16a": "9 passed (apps/testing/s16a.int.test.ts)",
+            "backend_integration_full": "829 tests in 55 files: 824 passed in the full run, 5 failed; 3 fixed and re-run green (apps/testing/s12.int.test.ts compared the auth.passkey_enrol answer exactly; it now also expects the 10 recovery codes: 7 passed). The remaining 2 are local-database state, the same as S13-S15: the baseline hash (Docs/43 changed and the local database was migrated with 0105, not reset; passes after pnpm db:reset) and the seed count of non-fixture accounts (94, expected 2: console E2E and BFF test accounts in the shared dev database, R-15).",
+            "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck pass; 691 unit tests passed (76 files)",
+            "admin_console": "contract:generate (80 admin-api operations), typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files) after the pins 75 → 80",
+            "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
+          },
+          "deviations": [
+            {
+              "id": "S16a-D1",
+              "task": "S16a.T1",
+              "item": "BR-19",
+              "deviation": "The keyed hash uses an HMAC key derived from the master secret (HKDF purpose staff-recovery-code, libs/crypto keys.ts) instead of a new CARPAL_RECOVERY_CODE_PEPPER variable: every other key and pepper of the backend is derived the same way (40 §2.17), and a separate variable would add a secret to back up without adding protection (whoever holds the master secret holds every key).",
+              "impact": "None for clients. Replacing the master secret voids every staff recovery code (staff then create a new set)."
+            },
+            {
+              "id": "S16a-D2",
+              "task": "S16a.T1",
+              "item": "BR-19",
+              "deviation": "Staff codes live in their own table (identity.staff_recovery_codes) and not as authentication_methods rows of type recovery_code: those are consumer MFA codes accepted by auth.mfa_verify and replaced by me.recovery_codes_regenerate; staff codes are never a sign-in factor. The format is XXXX-XXXX-XXXX-XXXX-XXXX; input is read the Crockford way (case, spaces, hyphens, O as 0, I and L as 1).",
+              "impact": "S16b uses StaffRecoveryCodes.use; consumer recovery codes are unchanged."
+            },
+            {
+              "id": "S16a-D3",
+              "task": "S16a.T2-T5",
+              "item": "BR-19",
+              "deviation": "The caller's own key and code operations are AUD without RSN (written in the §23 intro): they change only the caller's own credentials, so the audit entry records a fixed reason instead of asking for one.",
+              "impact": "The console asks for no reason on the Security keys page."
+            },
+            {
+              "id": "S16a-D4",
+              "task": "S16a.T2-T5",
+              "item": "BR-19",
+              "deviation": "The 5-minute window is enforced by the handlers (ctx.requireAssurance('aal3', 300); the pipeline's requireAssurance gained an optional max age), and the routes also carry the AAL3 tag (10 minutes by §0.4). The STEP_UP_REQUIRED challenge says max_age=300. The older AAL3 operations (admin.case_action conditions, one §23.5 operation) still use 10 minutes although SEC-ADM-2 says 5.",
+              "impact": "Console: re-authenticate when the challenge asks; aligning the older AAL3 operations to 5 minutes is listed for S25."
+            },
+            {
+              "id": "S16a-D5",
+              "task": "S16a.T3",
+              "item": "BR-19",
+              "deviation": "StaffPasskey has no authenticator name: with attestation none the AAGUID is the authenticator's unverified claim and the backend keeps no AAGUID-to-model table, so the list returns the raw aaguid (null when the key gave none) and the label the staff member typed.",
+              "impact": "The console names keys by their label."
+            },
+            {
+              "id": "S16a-D6",
+              "task": "S16a.T6",
+              "item": "BR-19",
+              "deviation": "Break glass ends the sessions through an outbox event (staff.break_glass, consumer identity.staff_break_glass in the running backend), because in lite mode sessions live in the server process, which a CLI cannot reach. It also voids the open recovery codes (the next enrolment issues a new set), refuses accounts without an active platform role, and also emails the account. ADMs are told by email only; the in-app staff notice comes with the staff notices of S17. A deploy wrapper deploy/staff-break-glass.sh runs it with the server environment.",
+              "impact": "If the backend is stopped, the sessions end and the emails go at its next start (a restart ends every lite session anyway)."
+            },
+            {
+              "id": "S16a-D7",
+              "task": "S16a.T2, T4",
+              "item": "BR-19",
+              "deviation": "admin.staff_recovery_codes_regenerate is not IDEM (an idempotency record would keep the codes in plain text). At most 10 keys per account (409 INVALID_TRANSITION(passkey_limit)). Adding or removing a key ends the caller's other sessions (SEC-AU-4) and emails the account; regenerating emails the account. Every auth.passkey_enrol issues a set, so a re-enrolment after break glass also gets new codes.",
+              "impact": "None beyond the console texts."
+            }
+          ],
+          "notes_for_next": [
+            "Admin console (AC14, or a small catch-up after AC10): after auth.passkey_enrol show AuthNext.recovery_codes once (print and \"I have stored them\"; never in browser storage, GD-12; the BFF must not log the body); a \"Security keys and recovery codes\" page on the five new operations (list, add a backup key, remove, new codes) with the 5-minute re-authentication (STEP_UP_REQUIRED max_age=300 → /bff/reauth) and the LAST_PASSKEY and passkey_limit messages; a prompt when StaffMe.recovery_codes_remaining is 0. The console contract is regenerated (80 operations).",
+            "AC11 runbook: the lost-key section uses deploy/staff-break-glass.sh (backend deploy.md \"Lost security key, fewer than two other admins\") until S16b's recovery flow exists.",
+            "S25: align the older AAL3 admin operations to the 5-minute window of SEC-ADM-2 (S16a-D4), or record the owner's choice.",
+            "S17: the in-app staff notice for break glass (S16a-D6).",
+            "Owner: DQ-16 (three ADM accounts for the pilot; with two, break glass is the only ADM recovery); DQ-20 (move plan for the console parts that do not match DQ-03).",
+            "Local databases: pnpm db:setup in backend/ applies migration 0105; tools/db/baseline.int.test.ts passes only after pnpm db:reset (Docs/43 changed).",
+            "Next backend stage: S15b (DQ-19 answered: c), then S16b."
+          ],
+          "open_after_stage": [
+            "Owner: DQ-16, DQ-20; confirm the earlier defaults (DQ-01, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15).",
+            "Nothing committed (commit only when the owner asks)."
+          ]
+        }
       },
       {
         "id": "S16b",
@@ -3457,7 +3627,7 @@
           "carry-overs from earlier split points",
           "R-11 (integration-test settings, from S16)",
           "R-15 (dev:staff prune, from S16)",
-          "DI-01 (from S15, after DQ-03)"
+          "DI-01 (done early in S16a after DQ-03)"
         ],
         "priority_mix": "Closure.",
         "load": {
@@ -3534,9 +3704,22 @@
         "before": "S25 (DI-01)",
         "question": "Should the admin console stay its own application (frontend/admin-console, served at admin.carpals.ir with its own BFF and staff-only sign-in), separate from the business web app at web.carpals.ir (frontend/: the provider, parts seller and fleet pages)? Docs/02 §1.4 still says admin.carpals.ir opens \"Admin pages of the web app\" (frontend/), and frontend/README says the business portals may ship as one app. The console was built as a separate app (GD-01) because staff sign in differently (device-bound key, aal3, client cp-web-admin) and SEC-ADM-1 asks for a private admin entry point.",
         "default": "Yes, keep it separate (as built). Docs/02 §1.4 then reads \"Admin console (separate app, frontend/admin-console)\" and frontend/README says the admin console is not one of the business portals.",
-        "status": "open",
+        "status": "answered",
         "note": "S15 left DI-01 for S25; answer before S25.",
-        "clarified": "2026-11-13: the owner asked \"separate from what?\"; reworded to name the business web app at web.carpals.ir."
+        "clarified": "2026-11-13: the owner asked \"separate from what?\"; reworded to name the business web app at web.carpals.ir.",
+        "answer": "Owner, 2026-11-13: The admin console is completely separate from the public Web UI (the business web app at web.carpals.ir and fleet.carpals.ir, which fleet managers, service providers and parts sellers use). Its only purpose is to monitor and control the social network. Every document is updated to say so, and the console parts that do not match are reported so that their move to the public Web UI can be planned.",
+        "applied": "2026-11-13 with S16a (documents only, no code change): Docs/02 §1.1, §1.3, §1.4, §4, WP20 and §15; frontend/README.md; frontend/admin-console/README.md and dev-plan.json (GD-01 confirmed, DI-01 resolved, decisions_2026_11_13, dq03_scope_review); Docs/23 new §0 (scope and the parts that do not match) with notes on A-USR-02, A-ORG-02, A-PLAN-01, A-FEAT-01, A-SUP-01, §2 Commercial admin and §7; Docs/90 §2 legend, §3.5, §9; Docs/01 and its copy README.md (Module M, Admin Console); Docs/41 D4; Docs/22, 11, 55, 56; landing/deploy/deploy.md; CarPal_WP_Checklist.xml WP20 notes. DI-01 (S25) is done.",
+        "mismatches_reported": [
+          "Assist onboarding / assist sessions (A-USR-02; admin.assist_session_start, _end; DI-05 assisted routes; BR-34 in S19; console AC9 assist.tsx)",
+          "Plan assignment, trials and entitlement overrides (A-PLAN-01 Assignments, A-ORG-02 Change plan, the Commercial admin role; admin.subscription_assign; BR-24 in S21; console AC6 assign-form.tsx); open: whether the plan catalog (admin.plans_list, admin.plan_update) stays",
+          "Featured placements (A-FEAT-01, Later, not built)",
+          "Support inbox (A-SUP-01, not built; BR-13 in S24): triage only in the console, or a separate help-desk tool"
+        ],
+        "borderline_kept": [
+          "Staff corrections of public business data (admin.location_correct; A-ORG-02 Profile and Locations; console AC9)",
+          "Reset onboarding and resend verification (A-USR-02)",
+          "Platform-wide analytics of providers, vendors and fleets (A-ANL-01, A-DASH-01)"
+        ]
       },
       {
         "id": "DQ-04",
@@ -3681,9 +3864,19 @@
         "id": "DQ-19",
         "raised_in": "DQ-18 answer (2026-11-13)",
         "before": "S15b",
-        "status": "open",
+        "status": "answered",
         "question": "When a new consent text that requires re-consent comes into force (for example new AI rules in a country), what happens to the consents users and organizations granted under the old text until they answer? (a) The consent stays in effect and the person is asked to confirm or withdraw it. (b) The consent is paused (the consent gate treats it as not granted, so the AI feature or the data sharing stops) until it is confirmed again. (c) The administrator chooses (a) or (b) per version when publishing.",
-        "default": "(c), with (a) preselected in the console: some revisions only clarify wording, while a new legal basis may require stopping the processing until people agree again. (c) costs about 1 point more than (a) alone."
+        "default": "(c), with (a) preselected in the console: some revisions only clarify wording, while a new legal basis may require stopping the processing until people agree again. (c) costs about 1 point more than (a) alone.",
+        "answer": "(c), owner 2026-11-13: the administrator chooses (a) or (b) each time they publish a consent text version that requires re-consent; the console preselects (a).",
+        "applied": "S15b.T3 builds both behaviours and the choice in the publish input (about 1 point, already in the S15b load); Docs/23 A-POL-01 describes the dialog."
+      },
+      {
+        "id": "DQ-20",
+        "raised_in": "DQ-03 answer (2026-11-13)",
+        "before": "S19 (BR-34), S21 (BR-24), S24 (BR-13) and AC14",
+        "status": "open",
+        "question": "Move plan for the admin console parts that do not match DQ-03 (Docs/23 §0): assist onboarding, plan assignment / trials / overrides, featured placements, the support inbox. Where does each go in the public Web UI (WP20, not built yet), what stays in the console as control, and what happens to the backlog items BR-34 (assist sessions read), BR-24 (subscriptions list) and BR-13 (support tickets) meanwhile?",
+        "default": "Until the move plan exists: build nothing new for those parts (BR-34 and BR-24 wait; BR-13 keeps its user-side half), keep what AC6 and AC9 built, and keep the plan catalog (admin.plans_list, admin.plan_update) and the location corrections in the console as control."
       }
     ],
     "intake_rules": [
@@ -3759,7 +3952,8 @@
       "status_2026_11_12": "S13 done: AC10 and AC12 can resume with real operations. Catch-up list: S13.report.notes_for_next.",
       "status_2026_11_13": "S14 done: the organization search row and the purpose binding are in place (console regenerated and fixed in S14); AC10 can offer suspension durations. Catch-up list: S13.report.notes_for_next and S14.report.notes_for_next.",
       "console_work_from_dq04": "New console work from DQ-04 (for the admin console plan, not yet in frontend/admin-console/dev-plan.json): recovery codes shown once after enrolment, a \"Security keys and recovery codes\" page (after S16a), the \"Lost my security key\" pages under /id, the ADM \"Recovery requests\" queue and the post-recovery banner (after S16b), and the AC11 runbook text.",
-      "status_2026_11_13_s15": "S15 done: A-POL-01 is buildable in AC14 (five admin.policy* operations; the BFF must allow 256 KiB for the two text writes, S15-D2). No catch-up needed for AC10/AC12."
+      "status_2026_11_13_s15": "S15 done: A-POL-01 is buildable in AC14 (five admin.policy* operations; the BFF must allow 256 KiB for the two text writes, S15-D2). No catch-up needed for AC10/AC12.",
+      "status_2026_11_13_s16a": "S16a done: new console work (not yet in frontend/admin-console/dev-plan.json stages): the recovery codes shown once after enrolment, a Security keys and recovery codes page (five admin.staff_* operations), a prompt for recovery_codes_remaining = 0; AC11's runbook uses the break-glass script. DQ-03 answered: the console only monitors and controls the social network; the parts that do not match are in Docs/23 §0 and dev-plan.json dq03_scope_review (move plan DQ-20)."
     },
     "pilot_prep_checklist_non_code": [
       {
@@ -3868,6 +4062,27 @@
         "recommendations": [
           "Answer DQ-19 before S15b and DQ-03 before S25.",
           "Run S15b before the PWA re-consent follow-up so the PWA builds one prompt for policies and consents."
+        ]
+      },
+      {
+        "date": "2026-11-13",
+        "stage": "S16a",
+        "status": "done",
+        "summary": "S16a done: staff recovery codes (shown once at the first enrolment and on regeneration, keyed hashes, single use), own keys on the admin plane (list, backup key, remove, never the last; fresh aal3 within 5 minutes), break glass from the server shell, and disable ends the member's pending four-eyes requests (DQ-11). BR-19 partly done (S16b left), R-08 partly done. Contract 1.4.0: 433 operations, 54 error codes.",
+        "recommendations": [
+          "Run S15b next (DQ-19 answered: c), then S16b.",
+          "Console: recovery codes after enrolment and the Security keys page (S16a.report.notes_for_next).",
+          "Owner: DQ-16 and DQ-20.",
+          "Local developers: pnpm db:setup in backend/ (migration 0105); pnpm db:reset if the baseline test must pass locally."
+        ]
+      },
+      {
+        "date": "2026-11-13",
+        "stage": "decisions",
+        "status": "recorded",
+        "summary": "Owner answers with S16a: DQ-19 (c) the administrator chooses keep or pause per consent text version; DQ-03 the admin console is completely separate from the public Web UI and only monitors and controls the social network (documents updated, DI-01 done early). New DQ-20: move plan for the console parts that do not match (assist onboarding, plan assignment, featured placements, support inbox).",
+        "recommendations": [
+          "Answer DQ-20 before S19 (BR-34), S21 (BR-24) and S24 (BR-13)."
         ]
       }
     ]

@@ -98,7 +98,9 @@ async function enrolAndComplete(auth: TestApp, s: Signin, user: TestUser, key: S
   });
   const enrolled = await s.post('/v1/auth/passkey-enrolment', { attestation: key.register(options.body) });
   expect(enrolled.status, enrolled.text).toBe(200);
-  expect(enrolled.body).toEqual({ next: 'mfa', mfa_methods: ['webauthn'] });
+  // S16a: the first key comes with the staff recovery codes, shown once.
+  expect(enrolled.body).toMatchObject({ next: 'mfa', mfa_methods: ['webauthn'] });
+  expect(enrolled.body.recovery_codes).toHaveLength(10);
   const o = await s.post('/v1/auth/webauthn/options', { purpose: 'mfa' });
   const ok = await s.post('/v1/auth/mfa/verify', { method: 'webauthn', assertion: key.assert(o.body) });
   expect(ok.status, ok.text).toBe(200);
@@ -274,7 +276,7 @@ describe('S12 enrolment rules and the staff bootstrap (lite)', () => {
     const hw = new SoftAuthenticator('carpals.ir', ORIGIN);
     const o2 = await s.post('/v1/auth/passkey-enrolment/options', { code });
     expect(o2.status, o2.text).toBe(200);
-    expect((await s.post('/v1/auth/passkey-enrolment', { attestation: hw.register(o2.body) })).body).toEqual({
+    expect((await s.post('/v1/auth/passkey-enrolment', { attestation: hw.register(o2.body) })).body).toMatchObject({
       next: 'mfa',
       mfa_methods: ['webauthn'],
     });

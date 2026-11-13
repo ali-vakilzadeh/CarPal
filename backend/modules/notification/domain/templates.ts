@@ -95,6 +95,46 @@ export const TEMPLATES: Catalog = {
       text: 'یک کلید عبور به حساب کارکنان شما افزوده شد و نشست‌های دیگرتان بسته شدند. اگر شما نبودید، همین حالا به یک مدیر پلتفرم خبر دهید.',
     },
   },
+  'identity.staff_passkey_removed': {
+    en: {
+      subject: 'A security key was removed from your CarPal staff account',
+      text: 'A security key was removed from your staff account and your other sessions were signed out. If this was not you, tell a platform admin now.',
+    },
+    fa: {
+      subject: 'یک کلید امنیتی از حساب کارکنان کارپال شما حذف شد',
+      text: 'یک کلید امنیتی از حساب کارکنان شما حذف شد و نشست‌های دیگرتان بسته شدند. اگر شما نبودید، همین حالا به یک مدیر پلتفرم خبر دهید.',
+    },
+  },
+  'identity.staff_recovery_codes_created': {
+    en: {
+      subject: 'New recovery codes for your CarPal staff account',
+      text: 'A new set of recovery codes was created for your staff account. The previous sheet no longer works: destroy it. If this was not you, tell a platform admin now.',
+    },
+    fa: {
+      subject: 'کدهای بازیابی تازه برای حساب کارکنان کارپال شما',
+      text: 'مجموعه تازه‌ای از کدهای بازیابی برای حساب کارکنان شما ساخته شد. برگه قبلی دیگر کار نمی‌کند؛ آن را از بین ببرید. اگر شما نبودید، همین حالا به یک مدیر پلتفرم خبر دهید.',
+    },
+  },
+  'identity.staff_break_glass_account': {
+    en: {
+      subject: 'The security keys of your CarPal staff account were reset',
+      text: 'An operator reset the security keys and recovery codes of your staff account from the server, and every session was signed out. Your next sign-in asks for your password, a code sent to this email and a new security key. If you did not ask for this, tell a platform admin now.',
+    },
+    fa: {
+      subject: 'کلیدهای امنیتی حساب کارکنان کارپال شما بازنشانی شد',
+      text: 'یک اپراتور کلیدهای امنیتی و کدهای بازیابی حساب کارکنان شما را از روی سرور بازنشانی کرد و همه نشست‌ها بسته شدند. ورود بعدی گذرواژه، کدی که به این ایمیل فرستاده می‌شود و یک کلید امنیتی تازه می‌خواهد. اگر شما این را نخواسته‌اید، همین حالا به یک مدیر پلتفرم خبر دهید.',
+    },
+  },
+  'identity.staff_break_glass_admins': {
+    en: {
+      subject: 'Break glass: staff security keys reset from the server',
+      text: 'The security keys and recovery codes of {staff_name} were reset with the server break-glass procedure. The reason is in the audit log (action staff.break_glass). If nobody expected this, disable the account in the admin console and investigate.',
+    },
+    fa: {
+      subject: 'شکستن شیشه: بازنشانی کلیدهای امنیتی یک کارمند از روی سرور',
+      text: 'کلیدهای امنیتی و کدهای بازیابی {staff_name} با روال اضطراری سرور بازنشانی شد. دلیل آن در گزارش ممیزی (اقدام staff.break_glass) ثبت شده است. اگر کسی انتظار این را نداشت، حساب را در کنسول مدیریت غیرفعال و موضوع را بررسی کنید.',
+    },
+  },
   'identity.consent_request': {
     en: {
       subject: '{organization_name} asks for your permission',

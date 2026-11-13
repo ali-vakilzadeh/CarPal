@@ -984,6 +984,25 @@ CREATE TABLE identity.policy_acceptances (
 CREATE INDEX policy_acceptances_version_idx ON identity.policy_acceptances (policy_version_id);
 COMMENT ON TABLE identity.policy_acceptances IS '52 PolicyAcceptance — a user accepted one policy version (kept after erasure as evidence)';
 
+-- Staff recovery codes (backend S16a, DQ-04): used only to ask for an account recovery, never as a sign-in factor, so
+-- apart from the consumer MFA recovery codes in authentication_methods. Keyed hashes only; a new set voids the old one.
+CREATE TABLE identity.staff_recovery_codes (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  user_id    uuid NOT NULL REFERENCES identity.user_accounts (id),
+  set_id     uuid NOT NULL,
+  code_hash  text NOT NULL CHECK (code_hash ~ '^[0-9a-f]{64}$'),
+  used_at    timestamptz,
+  revoked_at timestamptz,
+  CHECK (used_at IS NULL OR revoked_at IS NULL OR used_at <= revoked_at)
+);
+CREATE INDEX staff_recovery_codes_open_idx ON identity.staff_recovery_codes (user_id)
+  WHERE used_at IS NULL AND revoked_at IS NULL AND deleted_at IS NULL;
+COMMENT ON TABLE identity.staff_recovery_codes IS
+  '52 StaffRecoveryCode — keyed hashes of a staff account''s single-use recovery codes (backend S16a, DQ-04)';
+
 -- Every new account gets its preferences and the implicit individual role (52 §4).
 CREATE FUNCTION identity.tg_user_bootstrap() RETURNS trigger
 LANGUAGE plpgsql
@@ -4929,6 +4948,7 @@ GRANT SELECT, INSERT ON analytics.audit_logs TO carpal_admin_api;
 GRANT DELETE ON community.reactions TO carpal_api;                 -- reactions.delete removes the row
 -- The public API never reads pseudonym keys, MCP registry internals or access logs.
 REVOKE ALL ON analytics.actor_pseudonyms FROM carpal_api, carpal_admin_api;
+REVOKE ALL ON identity.staff_recovery_codes FROM carpal_api;      -- staff recovery codes: auth host and admin plane only
 REVOKE INSERT, UPDATE ON ai_mcp.mcp_clients, ai_mcp.mcp_access_logs, ai_mcp.embeddings FROM carpal_api;
 
 -- Auth server: identity only, plus audit and outbox.

@@ -59,6 +59,11 @@ export const MESSAGE_ONLY_TEMPLATE_KEYS = [
   'identity.password_changed',
   'identity.security_alert',
   'identity.staff_passkey_added', // staff only (backend S12, contract 1.3.0): never reaches the consumer PWA
+  // Staff only (backend S16a, contract 1.4.0): own keys, recovery codes and the server break-glass reset.
+  'identity.staff_passkey_removed',
+  'identity.staff_recovery_codes_created',
+  'identity.staff_break_glass_account',
+  'identity.staff_break_glass_admins',
   'identity.consent_request',
   'organization.member_invitation',
   'appointment.check_in_link',

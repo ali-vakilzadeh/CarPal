@@ -73,6 +73,28 @@ export class DbFourEyes extends FourEyes {
     });
     return toPendingChange(row, await this.names.names(scope, [staffUserId], locale));
   }
+
+  async rejectRequestsOf(scope: TxScope, requesterUserId: string, decidedBy: string, reason: string): Promise<number> {
+    const rows = await scope.db
+      .updateTable('admin.pending_admin_changes')
+      .set({ status: 'rejected', decided_by: decidedBy, decision_reason: reason, decided_at: sql<Date>`now()` })
+      .where('requested_by', '=', requesterUserId)
+      .where('status', '=', 'pending')
+      .where('expires_at', '>', new Date())
+      .where('deleted_at', 'is', null)
+      .returning(['id', 'op_id', 'target_entity_type', 'target_entity_id', 'reason'])
+      .execute();
+    for (const c of rows)
+      await writeAudit(scope, {
+        action: 'admin.four_eyes_rejected',
+        entityType: c.target_entity_type,
+        entityId: c.target_entity_id,
+        reason,
+        previous: `${c.op_id} requested by ${requesterUserId}: ${c.reason}`.slice(0, 2000),
+        next: `rejected by ${decidedBy} (change ${c.id})`,
+      });
+    return rows.length;
+  }
 }
 
 @Injectable()

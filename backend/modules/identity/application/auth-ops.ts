@@ -42,6 +42,7 @@ import {
 import { OTP_MAX_ATTEMPTS, OTP_RESEND_MS, OTP_TTL_MS } from '../infrastructure/auth-state.js';
 import { IdentityMessages } from '../infrastructure/messages.js';
 import { AuthServer, completePasskeySignin, isDeviceBoundPasskey, type AuthNext } from './auth-server.js';
+import { StaffRecoveryCodes } from './staff-security.js';
 import { CHALLENGE_TTL_MS, WebAuthnService } from './webauthn.js';
 import { withMinLatency } from './common.js';
 import { recordAcceptances, signupVersions } from './policy-texts.js';
@@ -728,8 +729,9 @@ export class PasskeyEnrolOptionsHandler implements OperationHandler {
 
 /**
  * auth.passkey_enrol: verifies the attestation against the pending challenge, refuses a credential synced across
- * devices (nothing is stored), activates the method, ends the account's other sessions (SEC-AU-4), tells the account by
- * email and continues with a fresh mfa ceremony: the new passkey signs in at once (aal3).
+ * devices (nothing is stored), activates the method, issues the account's staff recovery codes (returned once, S16a),
+ * ends the account's other sessions (SEC-AU-4), tells the account by email and continues with a fresh mfa ceremony:
+ * the new passkey signs in at once (aal3).
  */
 @Injectable()
 @Operation('auth.passkey_enrol')
@@ -739,6 +741,7 @@ export class PasskeyEnrolHandler implements OperationHandler {
     private readonly webauthn: WebAuthnService,
     private readonly sessions: SessionStore,
     private readonly messages: IdentityMessages,
+    private readonly recoveryCodes: StaffRecoveryCodes,
     @InjectLogger() private readonly log: Logger,
   ) {}
 
@@ -748,7 +751,7 @@ export class PasskeyEnrolHandler implements OperationHandler {
     const methodId = i.enrol?.methodId;
     if (!userId || !methodId || i.clientId !== 'cp-web-admin') throw new ApiError('INVALID_CREDENTIALS');
     await ctx.rateLimit('auth.signin', 'account', userId);
-    const user = await ctx.tx(async (scope) => {
+    const { user, codes } = await ctx.tx(async (scope) => {
       const pending = (await methods(scope, userId, ['webauthn'], true)).find((m) => m.id === methodId && m.status === 'pending');
       if (!pending) throw new ApiError('CODE_INVALID', { detail: 'no pending passkey' });
       await this.webauthn.confirmRegistration(scope, pending, ctx.body.attestation);
@@ -762,12 +765,21 @@ export class PasskeyEnrolHandler implements OperationHandler {
         .execute();
       await scope.db.updateTable('identity.user_accounts').set({ mfa_enabled: true }).where('id', '=', userId).execute();
       await writeAudit(scope, { action: 'user.mfa_enabled', entityType: 'authentication_method', entityId: methodId, next: 'webauthn' });
-      return getUser(scope, userId);
+      // S16a (DQ-04): the first key comes with the account's recovery codes, shown once; a new set voids an old one
+      // (a re-enrolment after the break-glass reset).
+      const issued = await this.recoveryCodes.issue(scope, userId);
+      await writeAudit(scope, {
+        action: 'staff.recovery_codes_issued',
+        entityType: 'user_account',
+        entityId: userId,
+        next: `${issued.length} codes with the first passkey`,
+      });
+      return { user: await getUser(scope, userId), codes: issued };
     });
     await this.sessions.revokeAll(userId);
     if (user) await this.messages.email(user.email, 'identity.staff_passkey_added', user.locale);
     this.log.info({ security_event: 'staff_passkey_enrolled', client_id: i.clientId }, 'staff passkey enrolled');
-    return { body: await this.auth.afterEnrolment(i) };
+    return { body: { ...(await this.auth.afterEnrolment(i)), recovery_codes: codes } };
   }
 }
 

@@ -100,6 +100,32 @@ export function newRecoveryCodes(n = 10): string[] {
 /** Recovery codes are compared without the dash and case-insensitively. */
 export const normalizeRecoveryCode = (code: string): string => code.replace(/[\s-]/g, '').toLowerCase();
 
+// ------------------------------------------------------------------ staff recovery codes (backend S16a, DQ-04)
+
+/** Crockford base32: no I, L, O or U, no symbols, so a code can be typed on any keyboard layout. */
+const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+export const STAFF_RECOVERY_CODE_COUNT = 10;
+export const STAFF_RECOVERY_CODE_LENGTH = 20;
+
+/** Ten staff recovery codes "XXXX-XXXX-XXXX-XXXX-XXXX": 20 Crockford base32 characters each (100 bits). */
+export function newStaffRecoveryCodes(n = STAFF_RECOVERY_CODE_COUNT): string[] {
+  return Array.from({ length: n }, () => {
+    const raw = Array.from({ length: STAFF_RECOVERY_CODE_LENGTH }, () => CROCKFORD[randomInt(0, 32)]).join('');
+    return raw.match(/.{4}/g)!.join('-');
+  });
+}
+
+/**
+ * The canonical form of a typed staff recovery code: spaces and hyphens dropped, upper case, and the Crockford
+ * reading of look-alike letters (O as 0, I and L as 1). Null when the result is not 20 Crockford characters.
+ */
+export function normalizeStaffRecoveryCode(code: string): string | null {
+  const c = code.replace(/[\s-]/g, '').toUpperCase().replace(/O/g, '0').replace(/[IL]/g, '1');
+  if (c.length !== STAFF_RECOVERY_CODE_LENGTH) return null;
+  for (const ch of c) if (!CROCKFORD.includes(ch)) return null;
+  return c;
+}
+
 export function constantTimeEqual(a: string, b: string): boolean {
   const x = Buffer.from(a);
   const y = Buffer.from(b);

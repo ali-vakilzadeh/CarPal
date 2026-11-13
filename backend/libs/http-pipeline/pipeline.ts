@@ -500,7 +500,7 @@ export class HttpPipeline {
           options,
         ),
       authorizeOrg: (orgId, groups) => d.authorizer.authorizeOrg(p, orgId, groups),
-      requireAssurance: (level) => d.authenticator.requireAssurance(p, level),
+      requireAssurance: (level, maxAgeSeconds) => d.authenticator.requireAssurance(p, level, maxAgeSeconds),
       flagEnabled: (key) => d.flags.isEnabled(key, a.flagCtx),
       rateLimit: async (bucket, scope, key, cost) => {
         Object.assign(x.extraHeaders, (await d.rateLimiter.consume(bucket, scope, key, cost)).headers);

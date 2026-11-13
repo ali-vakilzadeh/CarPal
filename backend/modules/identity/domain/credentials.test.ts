@@ -8,7 +8,9 @@ import {
   leadingZeroBits,
   newOtpCode,
   newRecoveryCodes,
+  newStaffRecoveryCodes,
   normalizeRecoveryCode,
+  normalizeStaffRecoveryCode,
   otpauthUri,
   pkceMatches,
   solvePow,
@@ -62,6 +64,26 @@ describe('codes', () => {
     expect(normalizeRecoveryCode(' ABCDE-fghij ')).toBe('abcdefghij');
     expect(constantTimeEqual('123456', '123456')).toBe(true);
     expect(constantTimeEqual('123456', '1234567')).toBe(false);
+  });
+
+  it('staff recovery codes (S16a, DQ-04): ten distinct codes of 20 Crockford base32 characters in groups of four', () => {
+    const codes = newStaffRecoveryCodes();
+    expect(codes).toHaveLength(10);
+    expect(new Set(codes).size).toBe(10);
+    for (const c of codes) {
+      expect(c).toMatch(/^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){4}$/);
+      expect(normalizeStaffRecoveryCode(c)).toBe(c.replace(/-/g, ''));
+    }
+  });
+
+  it('staff recovery codes are read the Crockford way: case, spaces, hyphens and look-alike letters', () => {
+    expect(normalizeStaffRecoveryCode(' abcd-efgh jkmn-pqrs-tvwx ')).toBe('ABCDEFGHJKMNPQRSTVWX');
+    expect(normalizeStaffRecoveryCode('O0Il-1111-2222-3333-4444')).toBe('00111111222233334444');
+    // U is not in the alphabet; wrong lengths are refused.
+    expect(normalizeStaffRecoveryCode('UUUU-1111-2222-3333-4444')).toBeNull();
+    expect(normalizeStaffRecoveryCode('1111-2222-3333-4444')).toBeNull();
+    expect(normalizeStaffRecoveryCode('1111-2222-3333-4444-55555')).toBeNull();
+    expect(normalizeStaffRecoveryCode('')).toBeNull();
   });
 });
 

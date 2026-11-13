@@ -29,6 +29,10 @@ const TITLES: Record<ErrorCode, [en: string, fa: string]> = {
   INVALID_CREDENTIALS: ['The sign-in details are not correct.', 'اطلاعات ورود درست نیست.'],
   INVALID_TRANSITION: ['This action is not possible in the current state.', 'این کار در وضعیت فعلی ممکن نیست.'],
   INVENTORY_LIMIT_REACHED: ['Your plan’s inventory limit is reached.', 'به سقف اقلام موجودی طرح خود رسیده‌اید.'],
+  LAST_PASSKEY: [
+    'Your account must keep at least one security key. Add another key before removing this one.',
+    'حساب شما باید دست‌کم یک کلید امنیتی داشته باشد. پیش از حذف این کلید، کلید دیگری بیفزایید.',
+  ],
   LINK_EXPIRED: ['This link has expired.', 'این پیوند منقضی شده است.'],
   LINK_RECIPIENT_MISMATCH: ['This link is meant for another account.', 'این پیوند برای حساب دیگری است.'],
   LINK_USED: ['This link has already been used.', 'این پیوند قبلاً استفاده شده است.'],

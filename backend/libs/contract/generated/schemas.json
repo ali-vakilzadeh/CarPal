@@ -2177,12 +2177,23 @@
             ]
           },
           "maxItems": 2
+        },
+        "recovery_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 24,
+            "maxLength": 24,
+            "pattern": "^[^\\r\\n]*$"
+          },
+          "maxItems": 10
         }
       },
       "required": [
         "next"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "C: only in the auth.passkey_enrol answer, once (staff recovery codes, SEC-ADM-2)"
     },
     "AvailabilityRule": {
       "type": "object",
@@ -19890,7 +19901,13 @@
         },
         "session_expires_at": {
           "type": "string",
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+          "description": "display_name falls back to full_name"
+        },
+        "recovery_codes_remaining": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
         }
       },
       "required": [
@@ -19902,10 +19919,11 @@
         "platform_roles",
         "acr",
         "auth_time",
-        "session_expires_at"
+        "session_expires_at",
+        "recovery_codes_remaining"
       ],
       "additionalProperties": false,
-      "description": "display_name falls back to full_name"
+      "description": "unused recovery codes; 0: ask the member to create a set"
     },
     "StaffMember": {
       "type": "object",
@@ -20334,6 +20352,63 @@
         "open_cases"
       ],
       "additionalProperties": false
+    },
+    "StaffPasskey": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "last_used_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "device_bound": {
+          "type": "boolean",
+          "description": "false only for a key added outside the admin plane; it cannot sign in to the console"
+        },
+        "aaguid": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "created_at",
+        "last_used_at",
+        "device_bound",
+        "aaguid"
+      ],
+      "additionalProperties": false,
+      "description": "the authenticator's model id as it claims it (attestation none, unverified); null when it gave none"
     },
     "StaffPolicyDocument": {
       "type": "object",
