@@ -8759,6 +8759,14 @@
         "subscription": {
           "$ref": "#/$defs/SubscriptionSummary",
           "description": "§10"
+        },
+        "policy_reconsent": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PolicyReconsent"
+          },
+          "maxItems": 10,
+          "description": "§6.7: policies to accept again; empty when none"
         }
       },
       "required": [
@@ -8782,7 +8790,8 @@
         "last_active_at",
         "preference",
         "memberships",
-        "subscription"
+        "subscription",
+        "policy_reconsent"
       ],
       "additionalProperties": false
     },
@@ -11745,6 +11754,297 @@
         "max_users",
         "trial_days",
         "entitlements"
+      ],
+      "additionalProperties": false
+    },
+    "PolicyAcceptance": {
+      "type": "object",
+      "properties": {
+        "policy_key": {
+          "$ref": "#/$defs/PolicyKey"
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "accepted_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "policy_key",
+        "policy_version",
+        "accepted_at"
+      ],
+      "additionalProperties": false
+    },
+    "PolicyKey": {
+      "type": "string",
+      "enum": [
+        "terms",
+        "privacy",
+        "community_guidelines"
+      ],
+      "description": "one document per key and region (52 PolicyDocument)"
+    },
+    "PolicyReconsent": {
+      "type": "object",
+      "properties": {
+        "policy_key": {
+          "$ref": "#/$defs/PolicyKey"
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "the version in force, to accept"
+        },
+        "effective_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "blocking",
+            "notice"
+          ]
+        }
+      },
+      "required": [
+        "policy_key",
+        "policy_version",
+        "effective_at",
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "PolicyText": {
+      "type": "object",
+      "properties": {
+        "policy_key": {
+          "$ref": "#/$defs/PolicyKey"
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "title": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "locale": {
+              "type": "string",
+              "enum": [
+                "en",
+                "fa"
+              ],
+              "x-locale-config": true
+            }
+          },
+          "required": [
+            "text",
+            "locale"
+          ],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "locale": {
+              "type": "string",
+              "enum": [
+                "en",
+                "fa"
+              ],
+              "x-locale-config": true
+            }
+          },
+          "required": [
+            "text",
+            "locale"
+          ],
+          "additionalProperties": false,
+          "description": "body: Markdown (CommonMark without HTML); render as text, never as HTML"
+        },
+        "change_summary": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "locale": {
+                  "type": "string",
+                  "enum": [
+                    "en",
+                    "fa"
+                  ],
+                  "x-locale-config": true
+                }
+              },
+              "required": [
+                "text",
+                "locale"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effective_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "requires_reconsent": {
+          "type": "boolean"
+        },
+        "reconsent_mode": {
+          "type": "string",
+          "enum": [
+            "blocking",
+            "notice"
+          ],
+          "description": "blocking: accept before further use; notice: show once"
+        },
+        "upcoming": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "policy_version": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20,
+                  "pattern": "^[^\\r\\n]*$"
+                },
+                "effective_at": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+                },
+                "requires_reconsent": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "policy_version",
+                "effective_at",
+                "requires_reconsent"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "policy_key",
+        "policy_version",
+        "title",
+        "body",
+        "change_summary",
+        "effective_at",
+        "requires_reconsent",
+        "reconsent_mode",
+        "upcoming"
+      ],
+      "additionalProperties": false,
+      "description": "scheduled next version"
+    },
+    "PolicyVersionStatus": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "scheduled",
+        "published",
+        "superseded"
+      ],
+      "description": "scheduled: published, effective_at still ahead"
+    },
+    "PolicyVersionWrite": {
+      "type": "object",
+      "properties": {
+        "policy_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "label users accept, e.g. '1.1'; unique per document"
+        },
+        "title_translations": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "en",
+              "fa"
+            ]
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "minProperties": 1
+        },
+        "body_translations": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "en",
+              "fa"
+            ]
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60000
+          },
+          "minProperties": 1,
+          "description": "all enabled locales"
+        },
+        "change_summary_translations": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "en",
+              "fa"
+            ]
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "minProperties": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "required": [
+        "policy_version",
+        "title_translations",
+        "body_translations",
+        "reason"
       ],
       "additionalProperties": false
     },
@@ -20032,6 +20332,369 @@
         "subscription",
         "member_count",
         "open_cases"
+      ],
+      "additionalProperties": false
+    },
+    "StaffPolicyDocument": {
+      "type": "object",
+      "properties": {
+        "policy_key": {
+          "$ref": "#/$defs/PolicyKey"
+        },
+        "region_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "reconsent_mode": {
+          "type": "string",
+          "enum": [
+            "blocking",
+            "notice"
+          ]
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StaffPolicyVersionSummary"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "policy_key",
+        "region_key",
+        "reconsent_mode",
+        "versions"
+      ],
+      "additionalProperties": false,
+      "description": "newest first; the version in force has status published"
+    },
+    "StaffPolicyVersion": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "policy_key": {
+          "$ref": "#/$defs/PolicyKey"
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "status": {
+          "$ref": "#/$defs/PolicyVersionStatus"
+        },
+        "title": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "locale": {
+              "type": "string",
+              "enum": [
+                "en",
+                "fa"
+              ],
+              "x-locale-config": true
+            }
+          },
+          "required": [
+            "text",
+            "locale"
+          ],
+          "additionalProperties": false
+        },
+        "effective_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requires_reconsent": {
+          "type": "boolean"
+        },
+        "locales": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "en",
+              "fa"
+            ],
+            "x-locale-config": true
+          },
+          "maxItems": 10
+        },
+        "created_by_display": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "published_by_display": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the administrator who asked to publish (null: seeded)"
+        },
+        "approved_by_display": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "title_translations": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "en",
+              "fa"
+            ]
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "minProperties": 1
+        },
+        "body_translations": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "en",
+              "fa"
+            ]
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60000
+          },
+          "minProperties": 1,
+          "description": "Markdown (CommonMark without HTML)"
+        },
+        "change_summary_translations": {
+          "anyOf": [
+            {
+              "type": "object",
+              "propertyNames": {
+                "enum": [
+                  "en",
+                  "fa"
+                ]
+              },
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "minProperties": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      },
+      "required": [
+        "id",
+        "policy_key",
+        "policy_version",
+        "status",
+        "title",
+        "effective_at",
+        "requires_reconsent",
+        "locales",
+        "created_by_display",
+        "created_at",
+        "published_by_display",
+        "approved_by_display",
+        "published_at",
+        "title_translations",
+        "body_translations",
+        "change_summary_translations",
+        "version"
+      ],
+      "additionalProperties": false,
+      "description": "If-Match of admin.policy_version_update"
+    },
+    "StaffPolicyVersionSummary": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "policy_key": {
+          "$ref": "#/$defs/PolicyKey"
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "status": {
+          "$ref": "#/$defs/PolicyVersionStatus"
+        },
+        "title": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "locale": {
+              "type": "string",
+              "enum": [
+                "en",
+                "fa"
+              ],
+              "x-locale-config": true
+            }
+          },
+          "required": [
+            "text",
+            "locale"
+          ],
+          "additionalProperties": false
+        },
+        "effective_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requires_reconsent": {
+          "type": "boolean"
+        },
+        "locales": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "en",
+              "fa"
+            ],
+            "x-locale-config": true
+          },
+          "maxItems": 10
+        },
+        "created_by_display": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "published_by_display": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the administrator who asked to publish (null: seeded)"
+        },
+        "approved_by_display": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "policy_key",
+        "policy_version",
+        "status",
+        "title",
+        "effective_at",
+        "requires_reconsent",
+        "locales",
+        "created_by_display",
+        "created_at",
+        "published_by_display",
+        "approved_by_display",
+        "published_at"
       ],
       "additionalProperties": false
     },

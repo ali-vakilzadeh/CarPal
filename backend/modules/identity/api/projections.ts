@@ -8,6 +8,7 @@ import { iso, isoOrNull, meta } from '#libs/http-pipeline/index.js';
 import type { SubscriptionSummary } from '#modules/billing/interface/billing.js';
 import { toOrgSummary, type OrgCard } from '#modules/organization/interface/org-cards.js';
 import type { MembershipRow, MethodRow, PreferenceRow, UserRow } from '../infrastructure/accounts.js';
+import type { PolicyReconsentView } from '../application/policy-texts.js';
 
 type ConsentRow = Selectable<DB['identity.consent_records']>;
 type DsrRow = Selectable<DB['identity.data_subject_requests']>;
@@ -57,6 +58,7 @@ export function toMe(
   memberships: ReturnType<typeof toMembership>[],
   subscription: SubscriptionSummary,
   avatarUrl: string | null,
+  policyReconsent: PolicyReconsentView[],
 ) {
   return {
     ...meta(u),
@@ -77,6 +79,7 @@ export function toMe(
     preference: toPreference(pref),
     memberships,
     subscription,
+    policy_reconsent: policyReconsent,
   };
 }
 

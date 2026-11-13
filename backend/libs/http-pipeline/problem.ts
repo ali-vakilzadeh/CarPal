@@ -48,6 +48,10 @@ const TITLES: Record<ErrorCode, [en: string, fa: string]> = {
     'Staff need a security key or a passkey kept on this device only; a passkey synced across devices cannot be used.',
     'کارکنان به کلید امنیتی یا کلید عبوری نیاز دارند که فقط روی همین دستگاه بماند؛ کلید عبورِ همگام‌شده میان دستگاه‌ها پذیرفته نیست.',
   ],
+  POLICY_VERSION_OUTDATED: [
+    'This text has been updated. Please read the current version and accept it again.',
+    'این متن به‌روز شده است. لطفاً نسخه کنونی را بخوانید و دوباره بپذیرید.',
+  ],
   PRECONDITION_REQUIRED: ['An If-Match header is required.', 'سرآیند If-Match لازم است.'],
   PUBLISH_REQUIREMENTS_UNMET: ['Some requirements for publishing are missing.', 'برخی شرایط انتشار کامل نیست.'],
   RATE_LIMITED: ['Too many requests. Please wait a moment.', 'درخواست‌ها بیش از حد است. لطفاً کمی صبر کنید.'],

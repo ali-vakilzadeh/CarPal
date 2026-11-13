@@ -1677,6 +1677,68 @@
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/OnboardingProgress"
       }
     },
+    "policy.current": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "policy_key": {
+          "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PolicyKey"
+        }
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PolicyText"
+      }
+    },
+    "policy.accept": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "type": "object",
+        "properties": {
+          "policy_key": {
+            "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PolicyKey"
+          },
+          "policy_version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "policy_key",
+          "policy_version"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "acceptance": {
+            "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PolicyAcceptance"
+          },
+          "policy_reconsent": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PolicyReconsent"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "acceptance",
+          "policy_reconsent"
+        ],
+        "additionalProperties": false
+      }
+    },
     "org.create": {
       "query": {
         "type": "object",
@@ -15736,6 +15798,195 @@
           "action",
           "legal_basis",
           "status",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PendingChange"
+      }
+    },
+    "admin.policies_list": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffPolicyDocument"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "admin.policy_version_get": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "version_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffPolicyVersion"
+      }
+    },
+    "admin.policy_version_create": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "policy_key": {
+          "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PolicyKey"
+        }
+      },
+      "input": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PolicyVersionWrite"
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffPolicyVersion"
+      }
+    },
+    "admin.policy_version_update": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "version_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "type": "object",
+        "properties": {
+          "policy_version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "pattern": "^[^\\r\\n]*$",
+            "description": "label users accept, e.g. '1.1'; unique per document"
+          },
+          "title_translations": {
+            "type": "object",
+            "propertyNames": {
+              "enum": [
+                "en",
+                "fa"
+              ]
+            },
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "minProperties": 1
+          },
+          "body_translations": {
+            "type": "object",
+            "propertyNames": {
+              "enum": [
+                "en",
+                "fa"
+              ]
+            },
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60000
+            },
+            "minProperties": 1,
+            "description": "all enabled locales"
+          },
+          "change_summary_translations": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "en",
+                    "fa"
+                  ]
+                },
+                "additionalProperties": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "minProperties": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffPolicyVersion"
+      }
+    },
+    "admin.policy_version_publish": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "version_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "type": "object",
+        "properties": {
+          "effective_at": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+          },
+          "requires_reconsent": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "effective_at",
+          "requires_reconsent",
           "reason"
         ],
         "additionalProperties": false

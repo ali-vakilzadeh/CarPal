@@ -49,11 +49,14 @@ import {
   SessionsListHandler,
   SessionsRevokeAllHandler,
 } from './application/security-ops.js';
+import { PolicyAcceptHandler, PolicyCurrentHandler } from './application/policy-ops.js';
 import { WebAuthnService } from './application/webauthn.js';
 
 @Module({
   providers: [
     MeReader,
+    PolicyCurrentHandler,
+    PolicyAcceptHandler,
     MeDeactivateHandler,
     ConsentViews,
     ConsentWriter,

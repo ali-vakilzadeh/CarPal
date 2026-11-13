@@ -132,6 +132,23 @@ async function dsr(
   return { as, id };
 }
 
+function policyWrite(label: string) {
+  return {
+    policy_version: label,
+    title_translations: { en: 'Community Guidelines', fa: 'رهنمودهای انجمن' },
+    body_translations: { en: '# Be kind\n\nSweep draft.', fa: '# مهربان باشید\n\nپیش‌نویس آزمون.' },
+    reason: REASON,
+  };
+}
+
+/** A draft of the community guidelines, deleted when the sweep closes. */
+async function policyDraft(h: Harness, as: Actor): Promise<string> {
+  const label = `sw-${h.newId().slice(-12)}`;
+  const id = ok(await as.c.post('/v1/admin/policies/community_guidelines/versions', policyWrite(label)), 'policy draft').id as string;
+  h.onClose(() => h.sys((db) => db.deleteFrom('identity.policy_versions').where('id', '=', id).execute()));
+  return id;
+}
+
 export const resolvers: Resolvers = {
   // ------------------------------------------------------------ §6.2 authorization server
   'auth.discovery': async () => ({ as: none, client: null }),
@@ -448,6 +465,20 @@ export const resolvers: Resolvers = {
     version: 1,
     body: { current_step: 'add_vehicle', completed_step: 'profile' },
   }),
+  'policy.current': async (h) => ({
+    as: await h.anonymous(),
+    params: { policy_key: 'terms' },
+    check: (res) => expect(res.body).toMatchObject({ policy_key: 'terms', reconsent_mode: 'blocking' }),
+  }),
+  'policy.accept': async (h) => {
+    const as = await h.user();
+    const current = ok(await as.c.get('/v1/policies/community_guidelines'), 'policy.current');
+    return {
+      as,
+      body: { policy_key: 'community_guidelines', policy_version: current.policy_version },
+      check: (res) => expect(res.body.acceptance).toMatchObject({ policy_key: 'community_guidelines' }),
+    };
+  },
   'onboarding.accept_terms': async (h) => {
     const as = await h.user();
     const staff = await h.fx.staff('platform_support');
@@ -511,6 +542,40 @@ export const resolvers: Resolvers = {
       as: await h.staff('platform_support'),
       params: { user_id: target.user.id, flow_type: 'individual' },
       body: { reason: REASON },
+    };
+  },
+  // Policy texts (backend S15): the pilot region's seeded documents; sweep drafts go to the community guidelines (no
+  // effect on sign-up) and are deleted at close; a publish request is rejected again by a second admin.
+  'admin.policies_list': async (h) => ({
+    as: await h.staff('platform_admin'),
+    check: (res) => expect((res.body.items as Json[]).map((d) => d.policy_key)).toEqual(['terms', 'privacy', 'community_guidelines']),
+  }),
+  'admin.policy_version_get': async (h) => {
+    const as = await h.staff('platform_admin');
+    return { as, params: { version_id: await policyDraft(h, as) } };
+  },
+  'admin.policy_version_create': async (h) => {
+    const as = await h.staff('platform_admin');
+    const label = `sw-${h.newId().slice(-12)}`;
+    h.onClose(() => h.sys((db) => db.deleteFrom('identity.policy_versions').where('policy_version', '=', label).execute()));
+    return { as, params: { policy_key: 'community_guidelines' }, body: policyWrite(label) };
+  },
+  'admin.policy_version_update': async (h) => {
+    const as = await h.staff('platform_admin');
+    return {
+      as,
+      params: { version_id: await policyDraft(h, as) },
+      version: 1,
+      body: { change_summary_translations: { en: 'Clearer wording', fa: 'نگارش روشن‌تر' }, reason: REASON },
+    };
+  },
+  'admin.policy_version_publish': async (h) => {
+    const as = await h.staff('platform_admin');
+    return {
+      as,
+      params: { version_id: await policyDraft(h, as) },
+      body: { effective_at: new Date(Date.now() + 30 * 86_400_000).toISOString(), requires_reconsent: false, reason: REASON },
+      check: (res) => h.rejectChange(res.body.change_id as string),
     };
   },
   'admin.dsr_queue': async (h) => {

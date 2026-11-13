@@ -50,6 +50,15 @@ import type { ContractValidator, NodeTypeChecker } from './validation.js';
 
 export const MAX_BODY_BYTES = 64 * 1024;
 
+/**
+ * SEC-IN-1 "unless the operation says otherwise": operations whose contract text allows a larger body. Policy
+ * versions carry a whole legal text in every enabled locale (40 §23.5, backend S15); admin-api only.
+ */
+export const BODY_LIMITS: Readonly<Record<string, number>> = {
+  'admin.policy_version_create': 256 * 1024,
+  'admin.policy_version_update': 256 * 1024,
+};
+
 export interface PipelineDeps {
   host: Exclude<Host, 'storage'>;
   config: CarpalConfig;
@@ -236,7 +245,7 @@ export class HttpPipeline {
     // CarPal-Client is required everywhere except token-less GETs (discovery documents, the hosted sign-in redirect, health).
     if (!x.client && !(tokenless && method === 'GET')) throw new ApiError('MALFORMED_REQUEST', { detail: 'CarPal-Client required' });
     const timezone = parseTimezone(header(req, 'carpal-timezone'));
-    const rawBody = await readBody(req, MAX_BODY_BYTES);
+    const rawBody = await readBody(req, BODY_LIMITS[op.opId] ?? MAX_BODY_BYTES);
     const body = this.#parseBody(req, method, op.inputEncoding, rawBody);
 
     // 4. Authentication

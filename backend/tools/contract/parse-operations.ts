@@ -98,7 +98,7 @@ export function moduleFor(opId: string, h1: Section): string {
   if (h1.number === '21') return 'ai-mcp';
   if (h1.number === '22') return { events: 'analytics', reports: 'admin' }[prefix] ?? 'platform';
   if (h1.number === '23') {
-    if (/^(users_search|user_|platform_role_|onboarding_reset|dsr_)/.test(name)) return 'identity';
+    if (/^(users_search|user_|platform_role_|onboarding_reset|dsr_|policies_list|policy_version_)/.test(name)) return 'identity';
     if (/^(orgs_search|org_|verifications_queue|verification_decide|location_correct)/.test(name)) return 'organization';
     if (/^(subscription_assign|plans_list|plan_update)$/.test(name)) return 'billing';
     if (/^(taxonomy_|synonym|mapping)/.test(name)) return 'taxonomy';

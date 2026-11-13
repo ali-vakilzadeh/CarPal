@@ -19,6 +19,7 @@ import { FourEyesExecutors, ModerationTargets, PurposeQueues, retentionCutoff, R
 import { MetricGauges } from '#modules/analytics/interface/analytics.js';
 import { UsageCounters } from '#modules/billing/interface/billing.js';
 import { DbAccountAdmin, grantPlatformRole, startDeletion } from './application/admin-ops.js';
+import { PolicyVersionRule, publishPolicyVersion } from './application/policy-ops.js';
 import { enableStaff } from './application/staff-ops.js';
 import {
   DsrDeadlineRule,
@@ -146,6 +147,7 @@ export class IdentityAdminRegistrations implements OnModuleInit {
     this.executors?.register('admin.staff_enable', async (scope, c) =>
       enableStaff(scope, this.authorizer, String(c.payload.user_id), c.reason),
     );
+    this.executors?.register('admin.policy_version_publish', async (scope, c) => publishPolicyVersion(scope, c));
     this.targets?.register('user', {
       // The user_cards definer: any signed-in user can report an account they met, never reading it.
       exists: async (scope, id) => {
@@ -230,10 +232,11 @@ export class IdentityModule {}
 
 /**
  * Identity work on the worker deployable: the W8 DSR export bundle (hosted by workers/export-jobs), the daily DSR
- * deadline alert and the 5-minute lift of timed suspensions (W15, backend S14).
+ * deadline alert, the 5-minute lift of timed suspensions (W15, backend S14) and policy versions coming into force
+ * (W15, backend S15).
  */
 @Module({
-  providers: [DsrExporter, DsrDeadlineRule, SuspensionExpiryRule],
-  exports: [DsrExporter, DsrDeadlineRule, SuspensionExpiryRule],
+  providers: [DsrExporter, DsrDeadlineRule, SuspensionExpiryRule, PolicyVersionRule],
+  exports: [DsrExporter, DsrDeadlineRule, SuspensionExpiryRule, PolicyVersionRule],
 })
 export class IdentityWorkerModule {}

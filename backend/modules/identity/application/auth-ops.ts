@@ -44,6 +44,7 @@ import { IdentityMessages } from '../infrastructure/messages.js';
 import { AuthServer, completePasskeySignin, isDeviceBoundPasskey, type AuthNext } from './auth-server.js';
 import { CHALLENGE_TTL_MS, WebAuthnService } from './webauthn.js';
 import { withMinLatency } from './common.js';
+import { recordAcceptances, signupVersions } from './policy-texts.js';
 import { MfaService } from './mfa-service.js';
 
 const ALLOWED_SCOPES = new Set(['openid', 'offline_access', 'profile', 'email']);
@@ -418,6 +419,7 @@ export class SignupHandler implements OperationHandler {
     private readonly crypto: CryptoServices,
     private readonly links: LinkTokens,
     private readonly messages: IdentityMessages,
+    private readonly region: RegionConfigService,
   ) {}
 
   async handle(ctx: OperationContext<SignupBody>): Promise<OperationResult> {
@@ -429,6 +431,8 @@ export class SignupHandler implements OperationHandler {
     await withMinLatency(this.auth.config.auth.minLatencyMs, async () => {
       const hash = b.password !== undefined ? await this.crypto.passwords.hash(b.password) : null;
       const outcome = await ctx.tx(async (scope) => {
+        // 40 §6.7: the versions shown must be the ones in force (checked before the email, so it reveals nothing).
+        const accepted = await signupVersions(scope, this.region.regionKey, { terms: b.terms_version, privacy: b.privacy_policy_version });
         if (await findAccount(scope, { email })) return { exists: true as const };
         // A phone already used by another account is not stored (it would reveal that account).
         const phone = b.phone && !(await findAccount(scope, { phone: b.phone })) ? b.phone : null;
@@ -446,6 +450,7 @@ export class SignupHandler implements OperationHandler {
             privacy_policy_version: b.privacy_policy_version,
           })
           .execute();
+        await recordAcceptances(scope, id, accepted, 'signup');
         if (hash)
           await scope.db
             .insertInto('identity.authentication_methods')

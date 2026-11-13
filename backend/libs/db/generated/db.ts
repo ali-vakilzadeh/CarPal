@@ -1149,6 +1149,57 @@ export interface IdentityOnboardingProgress {
   version: Generated<number>;
 }
 
+export interface IdentityPolicyAcceptances {
+  accepted_at: Generated<Timestamp>;
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  id: Generated<string>;
+  policy_version_id: string;
+  source: string;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  user_id: string;
+  version: Generated<number>;
+}
+
+export interface IdentityPolicyDocuments {
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  id: Generated<string>;
+  policy_key: string;
+  reconsent_mode: string;
+  region_key: string;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  version: Generated<number>;
+}
+
+export interface IdentityPolicyVersions {
+  approved_by: string | null;
+  body_translations: Json;
+  change_summary_translations: Json | null;
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  document_id: string;
+  effective_at: Timestamp | null;
+  id: Generated<string>;
+  policy_version: string;
+  published_at: Timestamp | null;
+  published_by: string | null;
+  requires_reconsent: Generated<boolean>;
+  status: Generated<string>;
+  title_translations: Json;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  version: Generated<number>;
+}
+
 export interface IdentityRoleMemberships {
   created_at: Generated<Timestamp>;
   created_by: Generated<string | null>;
@@ -2386,6 +2437,9 @@ export interface DB {
   "identity.consent_requests": IdentityConsentRequests;
   "identity.data_subject_requests": IdentityDataSubjectRequests;
   "identity.onboarding_progress": IdentityOnboardingProgress;
+  "identity.policy_acceptances": IdentityPolicyAcceptances;
+  "identity.policy_documents": IdentityPolicyDocuments;
+  "identity.policy_versions": IdentityPolicyVersions;
   "identity.role_memberships": IdentityRoleMemberships;
   "identity.user_accounts": IdentityUserAccounts;
   "identity.user_preferences": IdentityUserPreferences;

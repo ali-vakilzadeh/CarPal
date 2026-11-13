@@ -5,12 +5,14 @@ import type { UserPrincipal } from '#libs/auth/index.js';
 import { ApiError } from '#libs/contract/index.js';
 import type { OperationContext } from '#libs/http-pipeline/index.js';
 import { isTimezone } from '#libs/i18n/index.js';
+import { RegionConfigService } from '#libs/region-config/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { SubscriptionReader } from '#modules/billing/interface/billing.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { OrgCards } from '#modules/organization/interface/org-cards.js';
 import { toMe, toMembership } from '../api/projections.js';
 import { getPreferences, getUser, type MembershipRow } from '../infrastructure/accounts.js';
+import { reconsentFor } from './policy-texts.js';
 
 /** The signed-in user of a USR operation. */
 export function caller(ctx: OperationContext): UserPrincipal {
@@ -46,6 +48,7 @@ export class MeReader {
     private readonly orgCards: OrgCards,
     private readonly subscriptions: SubscriptionReader,
     private readonly media: MediaService,
+    private readonly region: RegionConfigService,
   ) {}
 
   async membershipViews(scope: TxScope, rows: MembershipRow[]) {
@@ -76,6 +79,7 @@ export class MeReader {
       await this.membershipViews(scope, memberships),
       await this.subscriptions.summaryForUser(scope, userId),
       avatar ?? null,
+      await reconsentFor(scope, userId, this.region.regionKey),
     );
   }
 }

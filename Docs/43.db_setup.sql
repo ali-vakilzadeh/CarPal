@@ -901,6 +901,89 @@ CREATE TABLE identity.onboarding_progress (
 CREATE UNIQUE INDEX onboarding_progress_flow_uq ON identity.onboarding_progress (user_id, flow_type, organization_id) NULLS NOT DISTINCT;
 COMMENT ON TABLE identity.onboarding_progress IS '52 OnboardingProgress (MVP Module A)';
 
+-- Policies and consent texts (backend S15, admin console BR-12, A-POL-01): one document per key and region, its
+-- versions (EN and FA texts, four-eyes publish with an effective date and a re-consent flag) and the users'
+-- acceptances of a version. The version in force is the newest non-draft one whose effective_at has passed.
+CREATE TABLE identity.policy_documents (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  policy_key     text NOT NULL CHECK (policy_key IN ('terms','privacy','community_guidelines')),
+  region_key     text NOT NULL CHECK (char_length(region_key) BETWEEN 1 AND 40),
+  reconsent_mode text NOT NULL CHECK (reconsent_mode IN ('blocking','notice')),
+  UNIQUE (policy_key, region_key)
+);
+COMMENT ON TABLE identity.policy_documents IS '52 PolicyDocument — one per policy key and region';
+
+CREATE TABLE identity.policy_versions (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  document_id                 uuid NOT NULL REFERENCES identity.policy_documents (id),
+  policy_version              text NOT NULL CHECK (char_length(policy_version) BETWEEN 1 AND 20),
+  title_translations          jsonb NOT NULL CHECK (jsonb_typeof(title_translations) = 'object'),
+  body_translations           jsonb NOT NULL CHECK (jsonb_typeof(body_translations) = 'object'),
+  change_summary_translations jsonb CHECK (change_summary_translations IS NULL OR jsonb_typeof(change_summary_translations) = 'object'),
+  status                      text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','scheduled','published','superseded')),
+  effective_at                timestamptz,
+  requires_reconsent          boolean NOT NULL DEFAULT false,
+  published_by                uuid,                              -- the administrator who asked to publish (null: seeded)
+  approved_by                 uuid,                              -- the second administrator (null: seeded)
+  published_at                timestamptz,
+  UNIQUE (document_id, policy_version),
+  CHECK ((status = 'draft') = (effective_at IS NULL)),
+  CHECK ((status = 'draft') = (published_at IS NULL))
+);
+CREATE UNIQUE INDEX policy_versions_scheduled_uq ON identity.policy_versions (document_id) WHERE status = 'scheduled';
+CREATE INDEX policy_versions_effective_idx ON identity.policy_versions (document_id, effective_at DESC) WHERE status <> 'draft';
+COMMENT ON TABLE identity.policy_versions IS '52 PolicyVersion — texts read-only once published (trigger)';
+
+-- A published version keeps its texts, dates and approvers; only its status moves on (scheduled → published →
+-- superseded). Only the system deletes one (test clean-up); the API never does.
+CREATE FUNCTION identity.tg_policy_version_immutable() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog
+AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF OLD.status <> 'draft' AND NOT core.is_system() THEN
+      RAISE EXCEPTION 'published policy versions are not deleted' USING ERRCODE = '42501';
+    END IF;
+    RETURN OLD;
+  END IF;
+  IF OLD.status <> 'draft' AND (
+       NEW.status = 'draft'
+       OR (NEW.document_id, NEW.policy_version, NEW.title_translations, NEW.body_translations,
+           NEW.change_summary_translations, NEW.effective_at, NEW.requires_reconsent, NEW.published_by,
+           NEW.approved_by, NEW.published_at)
+          IS DISTINCT FROM
+          (OLD.document_id, OLD.policy_version, OLD.title_translations, OLD.body_translations,
+           OLD.change_summary_translations, OLD.effective_at, OLD.requires_reconsent, OLD.published_by,
+           OLD.approved_by, OLD.published_at)) THEN
+    RAISE EXCEPTION 'published policy versions are read-only' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END
+$$;
+CREATE TRIGGER policy_versions_immutable BEFORE UPDATE OR DELETE ON identity.policy_versions
+  FOR EACH ROW EXECUTE FUNCTION identity.tg_policy_version_immutable();
+
+CREATE TABLE identity.policy_acceptances (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  user_id           uuid NOT NULL REFERENCES identity.user_accounts (id),
+  policy_version_id uuid NOT NULL REFERENCES identity.policy_versions (id),
+  accepted_at       timestamptz NOT NULL DEFAULT now(),
+  source            text NOT NULL CHECK (source IN ('signup','prompt')),
+  UNIQUE (user_id, policy_version_id)
+);
+CREATE INDEX policy_acceptances_version_idx ON identity.policy_acceptances (policy_version_id);
+COMMENT ON TABLE identity.policy_acceptances IS '52 PolicyAcceptance — a user accepted one policy version (kept after erasure as evidence)';
+
 -- Every new account gets its preferences and the implicit individual role (52 §4).
 CREATE FUNCTION identity.tg_user_bootstrap() RETURNS trigger
 LANGUAGE plpgsql
@@ -4275,6 +4358,10 @@ CREATE POLICY party_all ON identity.consent_requests FOR ALL
   WITH CHECK (subject_user_id = core.me() OR requested_by_organization_id = core.my_org());
 CREATE POLICY self_all ON identity.data_subject_requests FOR ALL USING (user_id = core.me()) WITH CHECK (user_id = core.me());
 CREATE POLICY self_all ON identity.onboarding_progress FOR ALL USING (user_id = core.me()) WITH CHECK (user_id = core.me());
+-- Policy texts are public once published (40 policy.current); drafts are staff-only. Acceptances are the user's own.
+CREATE POLICY read_all ON identity.policy_documents FOR SELECT USING (true);
+CREATE POLICY read_published ON identity.policy_versions FOR SELECT USING (status <> 'draft');
+CREATE POLICY self_all ON identity.policy_acceptances FOR ALL USING (user_id = core.me()) WITH CHECK (user_id = core.me());
 
 -- organization -----------------------------------------------------------------
 -- org.create: the application generates the id, switches the context to it,
@@ -5023,6 +5110,27 @@ SELECT core.system_actor_id(), 'user', u.id, p.id, 'active', 'manual', core.syst
 -- PLACEHOLDER rate: a platform admin must set the real USD → IRR rate before go-live (admin.exchange_rate_update).
 INSERT INTO admin.exchange_rates (currency, per_usd, reason)
 VALUES ('IRR', 1000000.0000, 'Placeholder seed: set the real rate before go-live');
+
+-- PLACEHOLDER texts (backend S15, BR-12): version 1.0 of each policy of the pilot region, in force from install time.
+-- The final EN and FA texts are published before go-live through the admin console (admin.policy_version_publish).
+-- Terms and privacy are re-accepted before further use when a version requires it; the guidelines show a notice.
+INSERT INTO identity.policy_documents (created_by, policy_key, region_key, reconsent_mode)
+VALUES (core.system_actor_id(), 'terms', 'ir-pilot', 'blocking'),
+       (core.system_actor_id(), 'privacy', 'ir-pilot', 'blocking'),
+       (core.system_actor_id(), 'community_guidelines', 'ir-pilot', 'notice');
+INSERT INTO identity.policy_versions (created_by, document_id, policy_version, title_translations, body_translations,
+                                      status, effective_at, published_at)
+SELECT core.system_actor_id(), d.id, '1.0',
+       jsonb_build_object('en', t.title_en, 'fa', t.title_fa),
+       jsonb_build_object('en', 'Placeholder text. The final ' || t.title_en || ', version 1.0, will be published here before launch.',
+                          'fa', 'متن موقت. متن نهایی ' || t.title_fa || '، نسخه 1.0، پیش از راه‌اندازی در اینجا منتشر می‌شود.'),
+       'published', now(), now()
+  FROM identity.policy_documents d
+  JOIN (VALUES ('terms', 'Terms of Use', 'شرایط استفاده'),
+               ('privacy', 'Privacy Policy', 'سیاست حفظ حریم خصوصی'),
+               ('community_guidelines', 'Community Guidelines', 'رهنمودهای انجمن')) AS t (policy_key, title_en, title_fa)
+    ON t.policy_key = d.policy_key
+ WHERE d.region_key = 'ir-pilot';
 
 INSERT INTO admin.feature_flags (created_by, key, description, flag_type, enabled, environment)
 SELECT core.system_actor_id(), f.key, f.description, f.flag_type,

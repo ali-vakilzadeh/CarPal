@@ -139,7 +139,7 @@ export const identityPersonalData: PersonalDataHandler = {
     const u = await scope.db.selectFrom('identity.user_accounts').selectAll().where('id', '=', userId).executeTakeFirst();
     if (!u) return [];
     const pref = await scope.db.selectFrom('identity.user_preferences').selectAll().where('user_id', '=', userId).executeTakeFirst();
-    const [memberships, consents, requests] = await Promise.all([
+    const [memberships, consents, requests, acceptances] = await Promise.all([
       scope.db
         .selectFrom('identity.role_memberships')
         .select(['id', 'organization_id', 'role', 'status', 'joined_at'])
@@ -155,6 +155,14 @@ export const identityPersonalData: PersonalDataHandler = {
         .selectFrom('identity.data_subject_requests')
         .select(['id', 'request_type', 'status', 'requested_at', 'completed_at'])
         .where('user_id', '=', userId)
+        .execute(),
+      // Backend S15: the policy versions the user accepted (kept after erasure as evidence of the acceptance).
+      scope.db
+        .selectFrom('identity.policy_acceptances as a')
+        .innerJoin('identity.policy_versions as v', 'v.id', 'a.policy_version_id')
+        .innerJoin('identity.policy_documents as d', 'd.id', 'v.document_id')
+        .select(['a.id', 'd.policy_key', 'd.region_key', 'v.policy_version', 'a.accepted_at', 'a.source'])
+        .where('a.user_id', '=', userId)
         .execute(),
     ]);
     return [
@@ -221,6 +229,19 @@ export const identityPersonalData: PersonalDataHandler = {
             granted_at: value(c.granted_at),
             withdrawn_at: value(c.withdrawn_at),
             policy_version: c.policy_version,
+          },
+        })),
+      },
+      {
+        section: 'policy_acceptances',
+        records: acceptances.map((a) => ({
+          id: a.id,
+          fields: {
+            policy_key: a.policy_key,
+            region_key: a.region_key,
+            policy_version: a.policy_version,
+            accepted_at: value(a.accepted_at),
+            source: a.source,
           },
         })),
       },

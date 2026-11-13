@@ -39,6 +39,7 @@ export const ERROR_CODES = {
   OVERLOADED: { status: 503, meaning: "Load shedding; wait `retry_after_ms` before retrying (SEC-RL-2)", common: true },
   PASSKEY_NOT_DEVICE_BOUND: { status: 422, meaning: "Staff need a device-bound WebAuthn credential; a passkey synced across devices was refused (SEC-ADM-2)", common: false },
   PAYLOAD_TOO_LARGE: { status: 413, meaning: "", common: true },
+  POLICY_VERSION_OUTDATED: { status: 409, meaning: "The policy version sent is not the one in force for the region (`policy.current`); reload the text and accept again", common: false },
   PRECONDITION_REQUIRED: { status: 428, meaning: "", common: true },
   PUBLISH_REQUIREMENTS_UNMET: { status: 409, meaning: "Publish rules not met (52 §21); body lists missing requirements", common: false },
   PURPOSE_RECORD_MISMATCH: { status: 403, meaning: "The access purpose names an item in the caller's queue, but the record of the request is not one of its subjects (SEC-ADM-5)", common: false },

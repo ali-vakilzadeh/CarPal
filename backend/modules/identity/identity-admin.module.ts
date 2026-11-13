@@ -1,5 +1,5 @@
 // Identity operations on the admin-api host (40 §23.2 users and the staff
-// directory, §23.5 data subject requests). Needs IdentityModule, AdminModule, BillingModule,
+// directory, §23.5 data subject requests and policy texts). Needs IdentityModule, AdminModule, BillingModule,
 // OrganizationModule and TrustModule (global) in the same application.
 import { Module } from '@nestjs/common';
 import {
@@ -17,6 +17,14 @@ import {
   AdminUserStatusHandler,
   StaffUserViews,
 } from './application/admin-ops.js';
+import {
+  AdminPoliciesListHandler,
+  AdminPolicyVersionCreateHandler,
+  AdminPolicyVersionGetHandler,
+  AdminPolicyVersionPublishHandler,
+  AdminPolicyVersionUpdateHandler,
+  PolicyStaffViews,
+} from './application/policy-ops.js';
 import { DsrViews } from './application/privacy-ops.js';
 import { AdminStaffDisableHandler, AdminStaffEnableHandler, AdminStaffListHandler } from './application/staff-ops.js';
 
@@ -39,6 +47,12 @@ import { AdminStaffDisableHandler, AdminStaffEnableHandler, AdminStaffListHandle
     AdminDsrUpdateHandler,
     AdminDsrExportHandler,
     AdminDsrExecuteDeletionHandler,
+    PolicyStaffViews,
+    AdminPoliciesListHandler,
+    AdminPolicyVersionGetHandler,
+    AdminPolicyVersionCreateHandler,
+    AdminPolicyVersionUpdateHandler,
+    AdminPolicyVersionPublishHandler,
   ],
 })
 export class IdentityAdminModule {}
