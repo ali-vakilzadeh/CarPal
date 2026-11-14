@@ -284,7 +284,7 @@ export const resolvers: Resolvers = {
     const body: Json = { inventory_item_id: pv.itemId, quantity: 2, message: 'Do these fit my car?', content_locale: 'en' };
     if (!route.pathParams.includes('org_id')) {
       const car = ok(await as.c.post('/v1/me/vehicles', vehicleBody(h.n, { license_plate: '99B999-11' })), 'vehicle');
-      body.share_vehicle_context = { vehicle_id: car.id, policy_version: '2026-10' };
+      body.share_vehicle_context = { vehicle_id: car.id, policy_version: '1.0' };
     }
     return { as, body, bodyRefs: !route.pathParams.includes('org_id'), check: (res) => expect(res.text).not.toContain('99B999') };
   },

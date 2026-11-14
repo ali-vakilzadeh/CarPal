@@ -777,6 +777,9 @@ CREATE TABLE identity.consent_records (
   granted_to_type   text CHECK (granted_to_type IN ('organization','platform','mcp_client')),
   granted_to_id     uuid,
   policy_version    text NOT NULL CHECK (char_length(policy_version) BETWEEN 1 AND 20),
+  -- The published consent text the grant refers to (backend S15b; FK added after identity.policy_versions). Null:
+  -- granted before consent texts were versioned, or in a region without a text of this consent type.
+  policy_version_id uuid,
   granted           boolean NOT NULL,
   granted_at        timestamptz,
   withdrawn_at      timestamptz,
@@ -809,11 +812,11 @@ BEGIN
     RETURN OLD;
   END IF;
   IF (NEW.subject_type, NEW.subject_id, NEW.consent_type, NEW.scope_entity_type, NEW.scope_entity_id,
-      NEW.granted_to_type, NEW.granted_to_id, NEW.policy_version, NEW.granted, NEW.granted_at,
+      NEW.granted_to_type, NEW.granted_to_id, NEW.policy_version, NEW.policy_version_id, NEW.granted, NEW.granted_at,
       NEW.expires_at, NEW.source)
      IS DISTINCT FROM
      (OLD.subject_type, OLD.subject_id, OLD.consent_type, OLD.scope_entity_type, OLD.scope_entity_id,
-      OLD.granted_to_type, OLD.granted_to_id, OLD.policy_version, OLD.granted, OLD.granted_at,
+      OLD.granted_to_type, OLD.granted_to_id, OLD.policy_version, OLD.policy_version_id, OLD.granted, OLD.granted_at,
       OLD.expires_at, OLD.source)
      OR (OLD.withdrawn_at IS NOT NULL AND NEW.withdrawn_at IS DISTINCT FROM OLD.withdrawn_at) THEN
     RAISE EXCEPTION 'consent records are immutable except a single withdrawal' USING ERRCODE = '42501';
@@ -904,15 +907,23 @@ COMMENT ON TABLE identity.onboarding_progress IS '52 OnboardingProgress (MVP Mod
 -- Policies and consent texts (backend S15, admin console BR-12, A-POL-01): one document per key and region, its
 -- versions (EN and FA texts, four-eyes publish with an effective date and a re-consent flag) and the users'
 -- acceptances of a version. The version in force is the newest non-draft one whose effective_at has passed.
+-- Backend S15b (owner decision DQ-18): every consent type has its own consent-text document (reconsent_mode consent);
+-- a consent records the text it was granted under, and confirmations under later texts are kept apart.
 CREATE TABLE identity.policy_documents (
   id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
   created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
   updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
   deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
-  policy_key     text NOT NULL CHECK (policy_key IN ('terms','privacy','community_guidelines')),
+  policy_key     text NOT NULL CHECK (policy_key IN ('terms','privacy','community_guidelines',
+                   'vehicle_data_sharing','service_history_sharing','vendor_fitment_context','photo_publishing',
+                   'showcase_publishing','ai_personalization','review_invitations','fleet_driver_data_visibility',
+                   'fleet_data_ai_use','provider_analytics_ai_use','vendor_inventory_ai_use','location_usage','marketing')),
   region_key     text NOT NULL CHECK (char_length(region_key) BETWEEN 1 AND 40),
-  reconsent_mode text NOT NULL CHECK (reconsent_mode IN ('blocking','notice')),
-  UNIQUE (policy_key, region_key)
+  reconsent_mode text NOT NULL CHECK (reconsent_mode IN ('blocking','notice','consent')),
+  UNIQUE (policy_key, region_key),
+  -- Consent texts (one per core.consent_type) and only they use the consent mode.
+  CONSTRAINT policy_documents_consent_mode
+    CHECK ((reconsent_mode = 'consent') = (policy_key NOT IN ('terms','privacy','community_guidelines')))
 );
 COMMENT ON TABLE identity.policy_documents IS '52 PolicyDocument — one per policy key and region';
 
@@ -932,9 +943,14 @@ CREATE TABLE identity.policy_versions (
   published_by                uuid,                              -- the administrator who asked to publish (null: seeded)
   approved_by                 uuid,                              -- the second administrator (null: seeded)
   published_at                timestamptz,
+  -- Consent texts that require re-consent (S15b, DQ-19): keep (consents under older texts stay in effect until
+  -- confirmed or withdrawn) or pause (the consent gate treats them as not granted until confirmed).
+  reconsent_action            text,
   UNIQUE (document_id, policy_version),
   CHECK ((status = 'draft') = (effective_at IS NULL)),
-  CHECK ((status = 'draft') = (published_at IS NULL))
+  CHECK ((status = 'draft') = (published_at IS NULL)),
+  CONSTRAINT policy_versions_reconsent_action
+    CHECK (reconsent_action IS NULL OR (requires_reconsent AND reconsent_action IN ('keep','pause')))
 );
 CREATE UNIQUE INDEX policy_versions_scheduled_uq ON identity.policy_versions (document_id) WHERE status = 'scheduled';
 CREATE INDEX policy_versions_effective_idx ON identity.policy_versions (document_id, effective_at DESC) WHERE status <> 'draft';
@@ -957,11 +973,11 @@ BEGIN
        NEW.status = 'draft'
        OR (NEW.document_id, NEW.policy_version, NEW.title_translations, NEW.body_translations,
            NEW.change_summary_translations, NEW.effective_at, NEW.requires_reconsent, NEW.published_by,
-           NEW.approved_by, NEW.published_at)
+           NEW.approved_by, NEW.published_at, NEW.reconsent_action)
           IS DISTINCT FROM
           (OLD.document_id, OLD.policy_version, OLD.title_translations, OLD.body_translations,
            OLD.change_summary_translations, OLD.effective_at, OLD.requires_reconsent, OLD.published_by,
-           OLD.approved_by, OLD.published_at)) THEN
+           OLD.approved_by, OLD.published_at, OLD.reconsent_action)) THEN
     RAISE EXCEPTION 'published policy versions are read-only' USING ERRCODE = '42501';
   END IF;
   RETURN NEW;
@@ -983,6 +999,40 @@ CREATE TABLE identity.policy_acceptances (
 );
 CREATE INDEX policy_acceptances_version_idx ON identity.policy_acceptances (policy_version_id);
 COMMENT ON TABLE identity.policy_acceptances IS '52 PolicyAcceptance — a user accepted one policy version (kept after erasure as evidence)';
+
+ALTER TABLE identity.consent_records
+  ADD CONSTRAINT consent_records_policy_version_id_fkey FOREIGN KEY (policy_version_id) REFERENCES identity.policy_versions (id);
+
+-- A consent confirmed under a later consent text (backend S15b, DQ-18/DQ-19): the consent record keeps the text it was
+-- granted under; each confirmation is a row here, so the text a consent stands on is the newest of the two.
+CREATE TABLE identity.consent_confirmations (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  consent_id        uuid NOT NULL REFERENCES identity.consent_records (id),
+  policy_version_id uuid NOT NULL REFERENCES identity.policy_versions (id),
+  confirmed_at      timestamptz NOT NULL DEFAULT now(),
+  confirmed_by      uuid NOT NULL,                     -- the user who confirmed (the subject, or the organization's owner)
+  UNIQUE (consent_id, policy_version_id)
+);
+CREATE INDEX consent_confirmations_version_idx ON identity.consent_confirmations (policy_version_id);
+COMMENT ON TABLE identity.consent_confirmations IS '52 ConsentConfirmation — a consent confirmed under a later consent text (append-only)';
+
+-- Confirmations are evidence: never changed; only the system deletes one (test clean-up).
+CREATE FUNCTION identity.tg_consent_confirmation_immutable() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog
+AS $$
+BEGIN
+  IF NOT core.is_system() THEN
+    RAISE EXCEPTION 'consent confirmations are append-only' USING ERRCODE = '42501';
+  END IF;
+  RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+END
+$$;
+CREATE TRIGGER consent_confirmations_immutable BEFORE UPDATE OR DELETE ON identity.consent_confirmations
+  FOR EACH ROW EXECUTE FUNCTION identity.tg_consent_confirmation_immutable();
 
 -- Staff recovery codes (backend S16a, DQ-04): used only to ask for an account recovery, never as a sign-in factor, so
 -- apart from the consumer MFA recovery codes in authentication_methods. Keyed hashes only; a new set voids the old one.
@@ -1124,6 +1174,20 @@ CREATE UNIQUE INDEX organizations_slug_uq ON organization.organizations (slug) W
 CREATE INDEX organizations_type_status_idx ON organization.organizations (organization_type, status);
 COMMENT ON TABLE organization.organizations IS '52 Organization — provider, vendor, fleet or hybrid';
 
+-- Possible duplicates (admin.orgs_search, backend S19): the name without case, spaces, punctuation and zero-width
+-- joiners, with the Arabic forms of yeh, kaf and heh folded into the Persian ones; NULL when nothing is left.
+CREATE FUNCTION organization.normalized_name(p_name text) RETURNS text
+LANGUAGE sql IMMUTABLE PARALLEL SAFE
+SET search_path = pg_catalog
+AS $$
+  SELECT NULLIF(translate(regexp_replace(lower(p_name), '[[:space:][:punct:]‌‍‏ ]+', '', 'g'),
+                          'يكۀة', 'یکهه'), '')
+$$;
+CREATE INDEX organizations_normalized_name_idx ON organization.organizations (organization.normalized_name(name))
+  WHERE deleted_at IS NULL;
+CREATE INDEX organizations_contact_phone_idx ON organization.organizations (contact_phone)
+  WHERE contact_phone IS NOT NULL AND deleted_at IS NULL;
+
 CREATE TABLE organization.organization_locations (
   id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
   created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
@@ -1204,13 +1268,71 @@ CREATE TABLE organization.organization_verifications (
   reviewed_at            timestamptz,
   rejection_reason       text CHECK (char_length(rejection_reason) BETWEEN 1 AND 500),
   expires_at             timestamptz,
+  -- Backend S19 (BR-35 part 2): registration number, the reviewer working on it, the review clock and the AI pre-check.
+  registration_number    text CHECK (char_length(registration_number) BETWEEN 1 AND 60),
+  assigned_to            uuid,                                   -- xref identity: platform staff
+  assigned_at            timestamptz,
+  sla_started_at         timestamptz NOT NULL DEFAULT now(),     -- review clock start, moved forward by every pause
+  sla_paused_at          timestamptz,                            -- set while CarPal waits for the business (info requested)
+  ai_precheck            jsonb CHECK (ai_precheck IS NULL OR jsonb_typeof(ai_precheck) = 'object'),   -- none in the MVP
   CHECK (status NOT IN ('verified','rejected') OR (reviewed_by IS NOT NULL AND reviewed_at IS NOT NULL)),
-  CHECK (status <> 'rejected' OR rejection_reason IS NOT NULL)
+  CHECK (status <> 'rejected' OR rejection_reason IS NOT NULL),
+  CONSTRAINT organization_verifications_pause_pending CHECK (sla_paused_at IS NULL OR status = 'pending'),
+  CONSTRAINT organization_verifications_assignee CHECK ((assigned_to IS NULL) = (assigned_at IS NULL))
 );
 CREATE UNIQUE INDEX organization_verifications_pending_uq ON organization.organization_verifications (organization_id, verification_type)
   WHERE status = 'pending';
 CREATE INDEX organization_verifications_queue_idx ON organization.organization_verifications (status, created_at);
+CREATE INDEX organization_verifications_assignee_idx ON organization.organization_verifications (assigned_to)
+  WHERE status = 'pending' AND assigned_to IS NOT NULL;
 COMMENT ON TABLE organization.organization_verifications IS '52 OrganizationVerification (MVP §13)';
+
+-- Request more info (backend S19, BR-35 part 2, R-25): the check stays pending and its clock pauses until the
+-- business answers with organization.verification_resubmit; at most one open request per check.
+CREATE TABLE organization.verification_info_requests (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  verification_id    uuid NOT NULL REFERENCES organization.organization_verifications (id),
+  organization_id    uuid NOT NULL REFERENCES organization.organizations (id),
+  requested_by       uuid NOT NULL,                                -- xref identity: platform staff
+  missing_items      text[] NOT NULL CHECK (cardinality(missing_items) BETWEEN 1 AND 10
+                       AND missing_items <@ ARRAY['business_document','registration_number','legal_name','address_proof',
+                         'location_pin','phone_callback','owner_identity','readable_copy','other']::text[]),
+  template_key       text NOT NULL CHECK (template_key IN ('missing_documents','unreadable_documents','details_mismatch',
+                       'location_mismatch','callback_failed','other')),
+  message            text NOT NULL CHECK (char_length(message) BETWEEN 1 AND 2000),
+  status             text NOT NULL DEFAULT 'open' CHECK (status IN ('open','answered','closed')),
+  answered_at        timestamptz,
+  answered_by        uuid,                                         -- xref identity: the member who resubmitted
+  response_note      text CHECK (char_length(response_note) BETWEEN 1 AND 1000),
+  added_document_ids uuid[] NOT NULL DEFAULT '{}' CHECK (cardinality(added_document_ids) <= 10),
+  closed_at          timestamptz,
+  CHECK (status <> 'answered' OR (answered_at IS NOT NULL AND answered_by IS NOT NULL)),
+  CHECK (status <> 'closed' OR closed_at IS NOT NULL)
+);
+CREATE UNIQUE INDEX verification_info_requests_open_uq ON organization.verification_info_requests (verification_id)
+  WHERE status = 'open' AND deleted_at IS NULL;
+CREATE INDEX verification_info_requests_verification_idx ON organization.verification_info_requests (verification_id, id);
+COMMENT ON TABLE organization.verification_info_requests IS '52 VerificationInfoRequest — staff ask a business for more information on a pending check (backend S19)';
+
+-- Edit history of the organization profile (backend S19, BR-35 part 3): every org.update by a member and every
+-- admin.org_correct by staff, with the fields before and after; append-only.
+CREATE TABLE organization.organization_profile_changes (
+  id              uuid PRIMARY KEY DEFAULT core.uuid_v7(),
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  organization_id uuid NOT NULL REFERENCES organization.organizations (id),
+  actor_kind      text NOT NULL CHECK (actor_kind IN ('member','staff')),
+  actor_user_id   uuid NOT NULL,                                   -- xref identity
+  source          text NOT NULL CHECK (source IN ('org.update','admin.org_correct')),
+  changes         jsonb NOT NULL CHECK (jsonb_typeof(changes) = 'array' AND jsonb_array_length(changes) BETWEEN 1 AND 10),
+  reason          text CHECK (char_length(reason) BETWEEN 3 AND 500),
+  CHECK ((actor_kind = 'staff') = (reason IS NOT NULL)),
+  CHECK ((actor_kind = 'staff') = (source = 'admin.org_correct'))
+);
+CREATE INDEX organization_profile_changes_org_idx ON organization.organization_profile_changes (organization_id, id DESC);
+COMMENT ON TABLE organization.organization_profile_changes IS '52 OrganizationProfileChange — append-only edit history of the organization profile (backend S19)';
 
 CREATE TABLE organization.provider_profiles (
   id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
@@ -2652,6 +2774,7 @@ CREATE TABLE trust.reviews (
   reviewer_reason_code          text CHECK (char_length(reviewer_reason_code) BETWEEN 1 AND 60),
   disputed_by_business          boolean NOT NULL DEFAULT false,
   trust_weight                  numeric(4,3) CHECK (trust_weight BETWEEN 0 AND 1),          -- internal (40 SEC-OUT-1)
+  weight_factor                 numeric(4,3) NOT NULL DEFAULT 1 CHECK (weight_factor BETWEEN 0 AND 1),   -- internal: moderation reduce_weight (backend S20)
   counts_toward_core_score      boolean NOT NULL DEFAULT false,
   helpful_count                 integer NOT NULL DEFAULT 0 CHECK (helpful_count >= 0),
   report_status                 text NOT NULL DEFAULT 'none' CHECK (report_status IN ('none','reported','under_review','resolved')),
@@ -2693,6 +2816,28 @@ CREATE INDEX reviews_subject_idx ON trust.reviews (subject_organization_id, stat
 CREATE INDEX reviews_author_idx ON trust.reviews (author_user_id, created_at DESC);
 CREATE INDEX reviews_approval_queue_idx ON trust.reviews (business_confirmation_due_at) WHERE status = 'pending_approval';
 COMMENT ON TABLE trust.reviews IS '52 Review — Path 1 visit-based or Path 2 approval-based; no unverified reviews are published';
+
+CREATE TABLE trust.review_edit_requests (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  review_id          uuid NOT NULL REFERENCES trust.reviews (id),
+  moderation_case_id uuid,                          -- the case the edit_request action was taken under
+  requested_by       uuid NOT NULL,                 -- staff (never shown to the author)
+  spans              jsonb NOT NULL CHECK (jsonb_typeof(spans) = 'array' AND jsonb_array_length(spans) BETWEEN 1 AND 20),
+  message            text NOT NULL CHECK (char_length(message) BETWEEN 3 AND 1000),
+  status             text NOT NULL DEFAULT 'open' CHECK (status IN ('open','edited','closed')),
+  previous_status    core.review_status NOT NULL,   -- the review's status when the request was made
+  due_at             timestamptz NOT NULL,
+  edited_at          timestamptz,
+  closed_at          timestamptz,
+  CHECK (status <> 'edited' OR edited_at IS NOT NULL),
+  CHECK (status <> 'closed' OR closed_at IS NOT NULL)
+);
+CREATE UNIQUE INDEX review_edit_requests_live_uq ON trust.review_edit_requests (review_id)
+  WHERE status IN ('open','edited') AND deleted_at IS NULL;
+COMMENT ON TABLE trust.review_edit_requests IS '52 ReviewEditRequest — moderation edit_request: highlighted spans the author must change (backend S20)';
 
 ALTER TABLE trust.review_requests
   ADD CONSTRAINT review_requests_converted_review_fk FOREIGN KEY (converted_review_id) REFERENCES trust.reviews (id);
@@ -2798,7 +2943,11 @@ CREATE TABLE trust.disputes (
   resolution                text CHECK (char_length(resolution) <= 2000),
   resolved_at               timestamptz,
   resolved_by               uuid,                    -- the staff member who decided (backend S18: admin.my_decisions_list)
+  respondent_user_id        uuid,                    -- the other party, set when staff first write to it (backend S20)
+  respondent_organization_id uuid,
   CHECK (status NOT IN ('resolved_upheld','resolved_rejected') OR (resolution IS NOT NULL AND resolved_at IS NOT NULL)),
+  CONSTRAINT disputes_staff_withdrawal CHECK (status <> 'withdrawn' OR resolved_by IS NULL
+    OR (resolution IS NOT NULL AND resolved_at IS NOT NULL)),   -- withdrawn by staff on the raiser's request (backend S20)
   CHECK (dispute_type <> 'review_approval_objection' OR target_entity_type = 'review')
 );
 CREATE UNIQUE INDEX disputes_open_uq ON trust.disputes (raised_by_user_id, target_entity_type, target_entity_id)
@@ -2806,7 +2955,27 @@ CREATE UNIQUE INDEX disputes_open_uq ON trust.disputes (raised_by_user_id, targe
 CREATE INDEX disputes_queue_idx ON trust.disputes (status, dispute_type, created_at);
 CREATE INDEX disputes_target_idx ON trust.disputes (target_entity_type, target_entity_id);
 CREATE INDEX disputes_resolver_idx ON trust.disputes (resolved_by, resolved_at) WHERE resolved_by IS NOT NULL;
+CREATE INDEX disputes_respondent_user_idx ON trust.disputes (respondent_user_id) WHERE respondent_user_id IS NOT NULL;
+CREATE INDEX disputes_respondent_org_idx ON trust.disputes (respondent_organization_id) WHERE respondent_organization_id IS NOT NULL;
 COMMENT ON TABLE trust.disputes IS '52 Dispute — decided by a different staff member from the original decision';
+
+CREATE TABLE trust.dispute_messages (
+  id                     uuid PRIMARY KEY DEFAULT core.uuid_v7(),
+  created_at             timestamptz NOT NULL DEFAULT now(),
+  dispute_id             uuid NOT NULL REFERENCES trust.disputes (id),
+  side                   text NOT NULL CHECK (side IN ('raiser','respondent')),   -- one thread per party
+  author_kind            text NOT NULL CHECK (author_kind IN ('staff','party')),
+  author_user_id         uuid NOT NULL,
+  author_organization_id uuid,                     -- a party writing for its organization
+  template_key           text CHECK (template_key IN ('request_information','request_evidence','mediation_invitation',
+                           'status_update','withdrawal_confirmation','outcome_notice','other')),
+  body                   text NOT NULL CHECK (char_length(body) BETWEEN 1 AND 4000),
+  reply_due_at           timestamptz,
+  CHECK ((author_kind = 'staff') = (template_key IS NOT NULL)),
+  CHECK (author_kind = 'staff' OR reply_due_at IS NULL)
+);
+CREATE INDEX dispute_messages_thread_idx ON trust.dispute_messages (dispute_id, side, created_at);
+COMMENT ON TABLE trust.dispute_messages IS '52 DisputeMessage — append-only; staff templated messages and party replies, one thread per side (backend S20)';
 
 CREATE TABLE trust.trust_signals (
   id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
@@ -3736,7 +3905,7 @@ CREATE TABLE media.media_attachments (
   deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
   media_asset_id   uuid NOT NULL REFERENCES media.media_assets (id),
   attached_to_type text NOT NULL CHECK (attached_to_type IN ('vehicle','vehicle_issue','portfolio_item','post','review','question',
-                     'answer','inventory_item','appointment','provider_job_log','organization','user')),
+                     'answer','inventory_item','appointment','provider_job_log','organization','user','dispute_message')),
   attached_to_id   uuid NOT NULL,
   role             text NOT NULL CHECK (role IN ('gallery','cover','logo','avatar','before','after','evidence','issue_photo')),
   pair_group_key   text CHECK (char_length(pair_group_key) BETWEEN 1 AND 60),
@@ -3998,7 +4167,8 @@ CREATE TABLE admin.moderation_actions (
   action_type        text NOT NULL CHECK (action_type IN ('approve','hide','remove','restore','request_changes','warn_user',
                        'suspend_account','reactivate_account','verify_organization','reject_verification','merge_duplicate',
                        'revoke_badge','apply_trust_penalty','confirm_review_approval','reject_review_approval',
-                       'request_evidence','correct_location','assist_onboarding')),
+                       'request_evidence','correct_location','assist_onboarding','reduce_weight','edit_request',
+                       'downgrade_fitment','request_verification_info','correct_profile')),
   reason             text NOT NULL CHECK (char_length(reason) BETWEEN 3 AND 500),
   params             jsonb CHECK (params IS NULL OR jsonb_typeof(params) = 'object'),
   actor_user_id      uuid NOT NULL
@@ -4453,8 +4623,8 @@ DECLARE
   t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY['vehicle.vehicle_status_history','appointment.appointment_status_history',
-                           'admin.moderation_actions','analytics.audit_logs','ai_mcp.mcp_access_logs',
-                           'ai_mcp.ai_evaluation_records']
+                           'admin.moderation_actions','analytics.audit_logs','ai_mcp.mcp_access_logs','trust.dispute_messages',
+                           'ai_mcp.ai_evaluation_records','organization.organization_profile_changes']
   LOOP
     EXECUTE format('CREATE TRIGGER append_only BEFORE UPDATE OR DELETE ON %s FOR EACH ROW EXECUTE FUNCTION core.tg_append_only()', t);
     EXECUTE format('CREATE TRIGGER append_only_truncate BEFORE TRUNCATE ON %s FOR EACH STATEMENT EXECUTE FUNCTION core.tg_append_only()', t);
@@ -4496,6 +4666,12 @@ CREATE POLICY self_all ON identity.onboarding_progress FOR ALL USING (user_id = 
 CREATE POLICY read_all ON identity.policy_documents FOR SELECT USING (true);
 CREATE POLICY read_published ON identity.policy_versions FOR SELECT USING (status <> 'draft');
 CREATE POLICY self_all ON identity.policy_acceptances FOR ALL USING (user_id = core.me()) WITH CHECK (user_id = core.me());
+-- Confirmations follow the consent record they belong to (its subject reads and adds them; a grantee may read them).
+CREATE POLICY consent_all ON identity.consent_confirmations FOR ALL
+  USING (EXISTS (SELECT 1 FROM identity.consent_records c WHERE c.id = consent_id))
+  WITH CHECK (EXISTS (SELECT 1 FROM identity.consent_records c WHERE c.id = consent_id
+                        AND ((c.subject_type = 'user' AND c.subject_id = core.me())
+                             OR (c.subject_type = 'organization' AND c.subject_id = core.my_org()))));
 
 -- organization -----------------------------------------------------------------
 -- org.create: the application generates the id, switches the context to it,
@@ -4511,6 +4687,14 @@ CREATE POLICY public_read ON organization.organization_locations FOR SELECT
   USING (status = 'active' AND deleted_at IS NULL);
 CREATE POLICY member_all ON organization.organization_verifications FOR ALL
   USING (organization_id = core.my_org()) WITH CHECK (organization_id = core.my_org());
+-- Backend S19: members read CarPal's requests for more information and answer an open one (resubmit).
+CREATE POLICY member_read ON organization.verification_info_requests FOR SELECT USING (organization_id = core.my_org());
+CREATE POLICY member_answer ON organization.verification_info_requests FOR UPDATE
+  USING (organization_id = core.my_org() AND status = 'open')
+  WITH CHECK (organization_id = core.my_org() AND status = 'answered' AND answered_by = core.me());
+-- Backend S19: org.update records its own change in the profile history (staff corrections run as staff).
+CREATE POLICY member_insert ON organization.organization_profile_changes FOR INSERT
+  WITH CHECK (organization_id = core.my_org() AND actor_kind = 'member' AND actor_user_id = core.me());
 
 CREATE POLICY member_all ON organization.provider_profiles FOR ALL
   USING (organization_id = core.my_org()) WITH CHECK (organization_id = core.my_org());
@@ -4685,6 +4869,25 @@ CREATE POLICY invitee_all ON trust.review_requests FOR ALL
 CREATE POLICY raiser_all ON trust.disputes FOR ALL
   USING (raised_by_user_id = core.me() OR raised_by_organization_id = core.my_org())
   WITH CHECK (raised_by_user_id = core.me() OR raised_by_organization_id = core.my_org());
+-- The other party reads the dispute once staff have written to it (backend S20); it never changes it.
+CREATE POLICY respondent_read ON trust.disputes FOR SELECT
+  USING (respondent_user_id = core.me() OR respondent_organization_id = core.my_org());
+-- Each party reads its own thread and adds its own replies (backend S20); staff messages come from the admin plane.
+CREATE POLICY party_read ON trust.dispute_messages FOR SELECT
+  USING (EXISTS (SELECT 1 FROM trust.disputes d WHERE d.id = dispute_id AND (
+           (side = 'raiser' AND (d.raised_by_user_id = core.me() OR d.raised_by_organization_id = core.my_org()))
+        OR (side = 'respondent' AND (d.respondent_user_id = core.me() OR d.respondent_organization_id = core.my_org())))));
+CREATE POLICY party_insert ON trust.dispute_messages FOR INSERT
+  WITH CHECK (author_kind = 'party' AND author_user_id = core.me() AND EXISTS (
+    SELECT 1 FROM trust.disputes d WHERE d.id = dispute_id AND d.status IN ('open','in_mediation') AND (
+           (side = 'raiser' AND (d.raised_by_user_id = core.me() OR d.raised_by_organization_id = core.my_org()))
+        OR (side = 'respondent' AND (d.respondent_user_id = core.me() OR d.respondent_organization_id = core.my_org())))));
+-- The author reads the edit requests of their reviews and marks them edited (reviews.mine_update, backend S20).
+CREATE POLICY author_read ON trust.review_edit_requests FOR SELECT
+  USING (EXISTS (SELECT 1 FROM trust.reviews r WHERE r.id = review_id AND r.author_user_id = core.me()));
+CREATE POLICY author_update ON trust.review_edit_requests FOR UPDATE
+  USING (status = 'open' AND EXISTS (SELECT 1 FROM trust.reviews r WHERE r.id = review_id AND r.author_user_id = core.me()))
+  WITH CHECK (status = 'edited' AND EXISTS (SELECT 1 FROM trust.reviews r WHERE r.id = review_id AND r.author_user_id = core.me()));
 CREATE POLICY subject_read ON trust.trust_signals FOR SELECT
   USING (subject_type = 'organization' AND subject_id = core.my_org()
          AND signal_type NOT IN ('risk_fraud_flag','review_authenticity_score'));
@@ -4927,9 +5130,44 @@ $$;
 -- definer because the reader is usually not the subject (a provider reading a
 -- vehicle owner's consent). A consent without scope covers every record of its
 -- type; a consent without grantee covers every recipient. Never cached.
+--
+-- Consent texts (backend S15b, DQ-18/DQ-19): a consent stands on the newest text it was granted or confirmed under
+-- (identity.consent_text_at; a consent without a text reference counts from its grant). When a consent-text version
+-- that requires re-consent has come into force after that, the consent needs re-consent (identity.consent_reconsent:
+-- 'keep' or 'pause', the strongest of the versions concerned); with p_region given, a paused consent is not granted.
+-- Both helpers run as the caller (RLS applies), and as the owner inside has_consent.
+CREATE FUNCTION identity.consent_text_at(p_consent_id uuid, p_policy_version_id uuid, p_granted_at timestamptz)
+RETURNS timestamptz
+LANGUAGE sql STABLE
+SET search_path = pg_catalog
+AS $$
+  SELECT GREATEST(
+    coalesce((SELECT v.effective_at FROM identity.policy_versions v WHERE v.id = p_policy_version_id), p_granted_at),
+    (SELECT max(v.effective_at) FROM identity.consent_confirmations k
+       JOIN identity.policy_versions v ON v.id = k.policy_version_id
+      WHERE k.consent_id = p_consent_id AND k.deleted_at IS NULL))
+$$;
+COMMENT ON FUNCTION identity.consent_text_at IS 'When the consent text a consent stands on came into force (grant or latest confirmation)';
+
+CREATE FUNCTION identity.consent_reconsent(p_consent_type text, p_text_at timestamptz, p_region text)
+RETURNS text
+LANGUAGE sql STABLE
+SET search_path = pg_catalog
+AS $$
+  SELECT CASE WHEN bool_or(v.reconsent_action = 'pause') THEN 'pause' WHEN count(*) > 0 THEN 'keep' END
+    FROM identity.policy_documents d
+    JOIN identity.policy_versions v ON v.document_id = d.id
+   WHERE d.region_key = p_region AND d.policy_key = p_consent_type AND d.reconsent_mode = 'consent'
+     AND d.deleted_at IS NULL AND v.deleted_at IS NULL AND v.status <> 'draft'
+     AND v.requires_reconsent AND v.effective_at <= now()
+     AND (p_text_at IS NULL OR v.effective_at > p_text_at)
+$$;
+COMMENT ON FUNCTION identity.consent_reconsent IS 'Re-consent of a consent: null (none), keep or pause (DQ-19)';
+
 CREATE FUNCTION identity.has_consent(p_subject_type text, p_subject_id uuid, p_consent_type text,
                                      p_scope_type text DEFAULT NULL, p_scope_id uuid DEFAULT NULL,
-                                     p_grantee_type text DEFAULT NULL, p_grantee_id uuid DEFAULT NULL)
+                                     p_grantee_type text DEFAULT NULL, p_grantee_id uuid DEFAULT NULL,
+                                     p_region text DEFAULT NULL)
 RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = pg_catalog
@@ -4944,9 +5182,12 @@ AS $$
             OR (p_scope_id IS NOT NULL AND c.scope_entity_type::text = p_scope_type AND c.scope_entity_id = p_scope_id))
        AND (c.granted_to_type IS NULL
             OR (p_grantee_type IS NOT NULL AND c.granted_to_type = p_grantee_type
-                AND (c.granted_to_type = 'platform' OR c.granted_to_id = p_grantee_id))))
+                AND (c.granted_to_type = 'platform' OR c.granted_to_id = p_grantee_id)))
+       AND (p_region IS NULL
+            OR identity.consent_reconsent(p_consent_type,
+                 identity.consent_text_at(c.id, c.policy_version_id, c.granted_at), p_region) IS DISTINCT FROM 'pause'))
 $$;
-COMMENT ON FUNCTION identity.has_consent IS 'L16 consent gate: active, unexpired, matching scope and grantee (null scope/grantee = all)';
+COMMENT ON FUNCTION identity.has_consent IS 'L16 consent gate: active, unexpired, matching scope and grantee (null scope/grantee = all), not paused for re-consent in p_region';
 
 -- Consent request links (40 consents.request_view/respond, SEC-LT-5): the
 -- holder of a cn token learns only whether it is theirs and its state, so the
@@ -5082,7 +5323,8 @@ GRANT SELECT ON admin.feature_flags TO carpal_ai;
 
 -- Append-only and history tables: insert and read only, for every role.
 REVOKE UPDATE, DELETE, TRUNCATE ON vehicle.vehicle_status_history, appointment.appointment_status_history,
-  admin.moderation_actions, analytics.audit_logs, ai_mcp.mcp_access_logs, ai_mcp.ai_evaluation_records
+  admin.moderation_actions, analytics.audit_logs, ai_mcp.mcp_access_logs, ai_mcp.ai_evaluation_records, trust.dispute_messages,
+  organization.organization_profile_changes
   FROM carpal_api, carpal_admin_api, carpal_worker, carpal_auth, carpal_ai;
 
 -- Read-only reporting role: public vocabulary and plans only.
@@ -5266,6 +5508,39 @@ SELECT core.system_actor_id(), d.id, '1.0',
   JOIN (VALUES ('terms', 'Terms of Use', 'شرایط استفاده'),
                ('privacy', 'Privacy Policy', 'سیاست حفظ حریم خصوصی'),
                ('community_guidelines', 'Community Guidelines', 'رهنمودهای انجمن')) AS t (policy_key, title_en, title_fa)
+    ON t.policy_key = d.policy_key
+ WHERE d.region_key = 'ir-pilot';
+
+-- PLACEHOLDER consent texts (backend S15b, DQ-18): version 1.0 of the consent text of every consent type of the pilot
+-- region, in force from install time. Grants name the text in force (consents.grant and the other grant paths); the
+-- final EN and FA texts are published through the admin console like the policies.
+INSERT INTO identity.policy_documents (created_by, policy_key, region_key, reconsent_mode)
+SELECT core.system_actor_id(), k, 'ir-pilot', 'consent'
+  FROM unnest(ARRAY['vehicle_data_sharing','service_history_sharing','vendor_fitment_context','photo_publishing',
+                    'showcase_publishing','ai_personalization','review_invitations','fleet_driver_data_visibility',
+                    'fleet_data_ai_use','provider_analytics_ai_use','vendor_inventory_ai_use','location_usage',
+                    'marketing']) AS k;
+INSERT INTO identity.policy_versions (created_by, document_id, policy_version, title_translations, body_translations,
+                                      status, effective_at, published_at)
+SELECT core.system_actor_id(), d.id, '1.0',
+       jsonb_build_object('en', t.title_en, 'fa', t.title_fa),
+       jsonb_build_object('en', 'Placeholder text. The final consent text "' || t.title_en || '", version 1.0, will be published here before launch.',
+                          'fa', 'متن موقت. متن نهایی رضایت «' || t.title_fa || '»، نسخه 1.0، پیش از راه‌اندازی در اینجا منتشر می‌شود.'),
+       'published', now(), now()
+  FROM identity.policy_documents d
+  JOIN (VALUES ('vehicle_data_sharing', 'Sharing vehicle data with a service provider', 'اشتراک اطلاعات خودرو با ارائه‌دهنده خدمات'),
+               ('service_history_sharing', 'Sharing service history', 'اشتراک سوابق سرویس'),
+               ('vendor_fitment_context', 'Vehicle details for a parts inquiry', 'مشخصات خودرو برای استعلام قطعه'),
+               ('photo_publishing', 'Publishing photos', 'انتشار عکس‌ها'),
+               ('showcase_publishing', 'Before and after showcase', 'نمایش نمونه‌کار قبل و بعد'),
+               ('ai_personalization', 'AI personalization', 'شخصی‌سازی با هوش مصنوعی'),
+               ('review_invitations', 'Review invitations', 'دعوت به ثبت نظر'),
+               ('fleet_driver_data_visibility', 'Driver data visible to the fleet', 'نمایش اطلاعات راننده به ناوگان'),
+               ('fleet_data_ai_use', 'AI use of fleet data', 'استفاده هوش مصنوعی از داده‌های ناوگان'),
+               ('provider_analytics_ai_use', 'AI use of business analytics', 'استفاده هوش مصنوعی از تحلیل‌های کسب‌وکار'),
+               ('vendor_inventory_ai_use', 'AI use of private inventory', 'استفاده هوش مصنوعی از موجودی خصوصی'),
+               ('location_usage', 'Device location', 'موقعیت مکانی دستگاه'),
+               ('marketing', 'Marketing messages', 'پیام‌های تبلیغاتی')) AS t (policy_key, title_en, title_fa)
     ON t.policy_key = d.policy_key
  WHERE d.region_key = 'ir-pilot';
 

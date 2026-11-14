@@ -197,6 +197,46 @@ export class DbVehicleCards extends VehicleCards {
     }));
   }
 
+  async serviceRecordSnapshot(scope: TxScope, recordId: string) {
+    const r = await scope.db
+      .selectFrom('vehicle.vehicle_service_records')
+      .select([
+        'id',
+        'vehicle_id',
+        sql<string>`to_char(service_date, 'YYYY-MM-DD')`.as('service_date'),
+        'provider_organization_id',
+        'service_system_node_id',
+        'service_task_node_id',
+        'description',
+        'mileage_km',
+        'source_type',
+        'verification_status',
+        'created_by_type',
+        'status',
+        'created_at',
+      ])
+      .where('id', '=', recordId)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    return r
+      ? {
+          id: r.id,
+          vehicleId: r.vehicle_id,
+          serviceDate: r.service_date,
+          providerOrgId: r.provider_organization_id,
+          serviceSystemNodeId: r.service_system_node_id,
+          serviceTaskNodeId: r.service_task_node_id,
+          description: r.description,
+          mileageKm: r.mileage_km === null ? null : Number(r.mileage_km),
+          sourceType: r.source_type,
+          verificationStatus: r.verification_status,
+          createdByType: r.created_by_type,
+          status: r.status,
+          createdAt: r.created_at,
+        }
+      : null;
+  }
+
   async serviceRecordParties(scope: TxScope, recordId: string) {
     // RLS: the owner's records, or the provider of record's (provider_read); the vehicle owner through the definer.
     const r = await scope.db

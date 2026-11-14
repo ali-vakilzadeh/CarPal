@@ -74,7 +74,7 @@ type AppointmentCreate = {
   customer_expectations?: string;
   preferred_contact_channel?: string;
   time_windows: TimeWindowInput[];
-  share_history?: { policy_version: string };
+  share_history?: { policy_version: string; vehicle_data_policy_version?: string };
   media_ids?: string[];
   submit: boolean;
 };
@@ -339,14 +339,20 @@ export class AppointmentCreator {
     let consentId: string | null = null;
     // share_history: two consents scoped to this appointment and granted to the provider, atomically (40 AppointmentCreate).
     // Fleet vehicles have no personal consent subject: a fleet shares through the vehicle's data_sharing instead (GD-34).
+    // Each consent names its own consent text in force (backend S15b): policy_version is the service history text,
+    // vehicle_data_policy_version the vehicle data text (default: the same label).
     if (b.share_history && !r.orgId) {
+      const labels = {
+        vehicle_data_sharing: b.share_history.vehicle_data_policy_version ?? b.share_history.policy_version,
+        service_history_sharing: b.share_history.policy_version,
+      };
       for (const consentType of ['vehicle_data_sharing', 'service_history_sharing'] as const)
         consentId = await this.grants.grantScoped(scope, {
           subjectUserId: r.userId,
           consentType,
           scope: { type: 'appointment', id },
           grantee: { type: 'organization', id: provider.orgId },
-          policyVersion: b.share_history.policy_version,
+          policyVersion: labels[consentType],
         });
     }
     // GD-34: a fleet request shares the vehicle's history and documents with the provider unless the vehicle is private.

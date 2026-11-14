@@ -8,7 +8,9 @@
 // and makes W3 apply the −50 penalty with every badge revoked. Badges that
 // need staff approval (verified_business) become active here. Every decision
 // is audited, logged as a moderation action and published, so W2 and W3
-// converge.
+// converge. S20 (BR-28, BR-30): the dispute detail carries a snapshot of the
+// target and the other party; staff withdraw a dispute on the raiser's request.
+// The message threads are in dispute-messages.ts.
 import { Injectable } from '@nestjs/common';
 import { sql } from 'kysely';
 import { writeAudit } from '#libs/audit/index.js';
@@ -18,12 +20,15 @@ import { publishEvent } from '#libs/outbox/index.js';
 import type { Locale } from '#libs/i18n/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { auditStaffRead, FourEyes, ModerationLog, ModerationTargets, StaffNames, staffOf } from '#modules/admin/interface/admin.js';
+import { AppointmentFacts } from '#modules/appointment/interface/appointments.js';
 import { AccountAdmin, authorDisplayName, UserCards } from '#modules/identity/interface/identity.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { OrgCards, toOrgSummary } from '#modules/organization/interface/org-cards.js';
+import { VehicleCards } from '#modules/vehicle/interface/vehicles.js';
 import { toBadge, toDispute, type BadgeRow, type DisputeRow, type ReviewRow } from '../api/projections.js';
 import { TrustAdmin } from '../interface/trust.js';
 import { afterId, failIf, pageOf, ReviewViews } from './common.js';
+import { DisputeParties, type DisputeParty } from './dispute-messages.js';
 
 const PATH2_WEIGHT = '0.600';
 /** 52 §11, 54 §9.7: a rating is never a reason to reject. */
@@ -368,13 +373,135 @@ export function outcomeAction(disputeType: string, upheld: boolean): string | nu
   return null;
 }
 
-/** 40 StaffDispute. */
+/** 40 StaffDispute and StaffDisputeDetail. */
 @Injectable()
 export class StaffDisputeViews {
   constructor(
     private readonly names: StaffNames,
     private readonly orgs: OrgCards,
+    private readonly targets: ModerationTargets,
+    private readonly log: ModerationLog,
+    private readonly vehicles: VehicleCards,
+    private readonly appointments: AppointmentFacts,
+    private readonly parties: DisputeParties,
   ) {}
+
+  /** 40 StaffDisputeDetail (S20, BR-28): the dispute with a snapshot of its target and the other party. */
+  async detail(scope: TxScope, d: DisputeRow, locale: string) {
+    const base = (await this.many(scope, [d], locale))[0]!;
+    const [target_snapshot, respondent] = await Promise.all([this.snapshot(scope, d, locale), this.respondent(scope, d, locale)]);
+    return { ...base, target_snapshot, respondent };
+  }
+
+  private async orgSummary(scope: TxScope, id: string | null) {
+    const c = id ? (await this.orgs.cards(scope, [id])).get(id) : undefined;
+    return c ? toOrgSummary(c) : null;
+  }
+
+  /** 40 DisputeTargetSnapshot: staff only (the moderation action names its decider); never contact data or costs. */
+  private async snapshot(scope: TxScope, d: DisputeRow, locale: string): Promise<Record<string, unknown>> {
+    const id = d.target_entity_id;
+    const gone = { type: d.target_entity_type, id, available: false };
+    switch (d.target_entity_type) {
+      case 'review': {
+        const handler = this.targets.get('review');
+        const [fields, author] = await Promise.all([handler?.snapshot(scope, id, locale), handler?.authorOf?.(scope, id)]);
+        if (!fields || !author) return gone;
+        // The author block without history (the case snapshot carries it; disputes are decided on the review itself).
+        const display = await this.names.name(scope, author.userId, locale);
+        return { ...fields, author: { user_id: author.userId, display_name: display, role: 'member', organization: null, history: null } };
+      }
+      case 'moderation_action': {
+        const a = await this.log.get(scope, id);
+        if (!a) return gone;
+        return {
+          type: 'moderation_action',
+          id,
+          available: true,
+          action_type: a.actionType,
+          target: { type: a.targetType, id: a.targetId },
+          reason: a.reason,
+          moderation_case_id: a.caseId,
+          decided_by_display: await this.names.name(scope, a.actorUserId, locale),
+          created_at: a.createdAt.toISOString(),
+        };
+      }
+      case 'service_record': {
+        const r = await this.vehicles.serviceRecordSnapshot(scope, id);
+        if (!r) return gone;
+        return {
+          type: 'service_record',
+          id,
+          available: true,
+          vehicle_id: r.vehicleId,
+          service_date: r.serviceDate,
+          provider: await this.orgSummary(scope, r.providerOrgId),
+          service_system_node_id: r.serviceSystemNodeId,
+          service_task_node_id: r.serviceTaskNodeId,
+          description: r.description,
+          mileage_km: r.mileageKm,
+          source_type: r.sourceType,
+          verification_status: r.verificationStatus,
+          created_by_type: r.createdByType,
+          status: r.status,
+          created_at: r.createdAt.toISOString(),
+        };
+      }
+      case 'badge': {
+        const b = await scope.db.selectFrom('trust.provider_badges').selectAll().where('id', '=', id).executeTakeFirst();
+        const organization = b ? await this.orgSummary(scope, b.provider_organization_id) : null;
+        if (!b || !organization) return gone;
+        return {
+          type: 'badge',
+          id,
+          available: true,
+          organization,
+          badge_type: b.badge_type,
+          status: b.status,
+          rule_key: b.rule_key,
+          rule_version: b.rule_version,
+          awarded_at: b.awarded_at.toISOString(),
+          last_evaluated_at: b.last_evaluated_at.toISOString(),
+          expires_at: b.expires_at?.toISOString() ?? null,
+          revoked_reason: b.revoked_reason,
+        };
+      }
+      case 'appointment': {
+        const a = (await this.appointments.visits(scope, [id])).get(id);
+        const provider = a ? await this.orgSummary(scope, a.providerOrgId) : null;
+        if (!a || !provider) return gone;
+        return {
+          type: 'appointment',
+          id,
+          available: true,
+          provider,
+          requester_type: a.requesterType,
+          status: a.status,
+          service_system_node_id: a.serviceSystemNodeId,
+          confirmed_start_at: a.confirmedStartAt?.toISOString() ?? null,
+          completed_at: a.completedAt?.toISOString() ?? null,
+        };
+      }
+      default:
+        return gone;
+    }
+  }
+
+  /** The other party: as recorded by the first staff message to it, else as the target names it (not yet contacted). */
+  private async respondent(scope: TxScope, d: DisputeRow, locale: string) {
+    const stored: DisputeParty | null = d.respondent_user_id
+      ? { type: 'user', id: d.respondent_user_id }
+      : d.respondent_organization_id
+        ? { type: 'organization', id: d.respondent_organization_id }
+        : null;
+    const party = stored ?? (await this.parties.respondentOf(scope, d));
+    if (!party) return null;
+    const display =
+      party.type === 'user'
+        ? await this.names.name(scope, party.id, locale)
+        : [...((await this.orgSummary(scope, party.id))?.name ?? (await this.names.name(scope, party.id, locale)))].slice(0, 50).join('');
+    return { party, display, contacted: !!stored };
+  }
 
   async many(scope: TxScope, rows: DisputeRow[], locale: string) {
     const names = await this.names.names(
@@ -445,14 +572,14 @@ export class DisputeGetHandler implements OperationHandler {
     const body = await ctx.tx(async (scope) => {
       const d = await loadDispute(scope, ctx.params.dispute_id!);
       await auditStaffRead(scope, s, 'dispute', d.id, `dispute ${d.dispute_type}`);
-      return (await this.views.many(scope, [d], ctx.locale))[0]!;
+      return this.views.detail(scope, d, ctx.locale);
     });
     return { body };
   }
 }
 
 type Resolution = {
-  status: 'in_mediation' | 'resolved_upheld' | 'resolved_rejected';
+  status: 'in_mediation' | 'resolved_upheld' | 'resolved_rejected' | 'withdrawn';
   resolution?: string;
   moderator_notes?: string;
   reason: string;
@@ -471,8 +598,10 @@ export class DisputeResolveHandler implements OperationHandler {
   async handle(ctx: OperationContext<Resolution>): Promise<OperationResult> {
     const s = staffOf(ctx);
     const b = ctx.body;
-    const resolving = b.status !== 'in_mediation';
-    if (resolving && !b.resolution) failIf([{ pointer: '/resolution', code: 'conditional_required' }]);
+    // S20 (BR-28): withdrawn on the raiser's request closes the dispute without an outcome; resolution records the request.
+    const withdrawing = b.status === 'withdrawn';
+    const resolving = b.status !== 'in_mediation' && !withdrawing;
+    if ((resolving || withdrawing) && !b.resolution?.trim()) failIf([{ pointer: '/resolution', code: 'conditional_required' }]);
     const body = await ctx.tx(async (scope) => {
       const d = await loadDispute(scope, ctx.params.dispute_id!, true);
       if (!OPEN_DISPUTE.includes(d.status) || d.status === b.status) throw new ApiError('INVALID_TRANSITION', { detail: d.status });
@@ -489,8 +618,8 @@ export class DisputeResolveHandler implements OperationHandler {
           assigned_to: d.assigned_to ?? s.userId,
           ...(b.resolution !== undefined ? { resolution: b.resolution } : {}),
           ...(b.moderator_notes !== undefined ? { moderator_notes: b.moderator_notes } : {}),
-          // S18 (BR-29): the decider, for admin.my_decisions_list.
-          ...(resolving ? { resolved_at: sql<Date>`now()`, resolved_by: s.userId } : {}),
+          // S18 (BR-29): the decider, for admin.my_decisions_list (S20: also who withdrew it on request).
+          ...(resolving || withdrawing ? { resolved_at: sql<Date>`now()`, resolved_by: s.userId } : {}),
         })
         .where('id', '=', d.id)
         .returningAll()
@@ -639,7 +768,7 @@ export class MyDecisionsListHandler implements OperationHandler {
                 .selectAll()
                 .where('resolved_by', '=', s.userId)
                 .where('resolved_at', '>=', since)
-                .where('status', 'in', ['resolved_upheld', 'resolved_rejected'])
+                .where('status', 'in', ['resolved_upheld', 'resolved_rejected', 'withdrawn'])
                 .where('deleted_at', 'is', null)
                 .orderBy('resolved_at', 'desc')
                 .orderBy('id', 'desc')

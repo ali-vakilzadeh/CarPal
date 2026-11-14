@@ -277,7 +277,7 @@ export const resolvers: Resolvers = {
     ok(
       await owner.c.post('/v1/me/consents', {
         consent_type: 'vehicle_data_sharing',
-        policy_version: '2026-10',
+        policy_version: '1.0',
         scope: { type: 'vehicle', id: vehicleId },
         granted_to: { type: 'organization', id: provider.org!.id },
       }),

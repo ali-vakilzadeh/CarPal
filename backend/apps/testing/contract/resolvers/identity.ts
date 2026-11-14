@@ -461,13 +461,13 @@ export const resolvers: Resolvers = {
   // ------------------------------------------------------------ §6.4 consents
   'consents.list': async (h) => {
     const as = await h.user();
-    ok(await as.c.post('/v1/me/consents', { consent_type: 'marketing', policy_version: '2026-10' }), 'consent');
+    ok(await as.c.post('/v1/me/consents', { consent_type: 'marketing', policy_version: '1.0' }), 'consent');
     return { as, query: { active: true } };
   },
-  'consents.grant': async (h) => ({ as: await h.user(), body: { consent_type: 'marketing', policy_version: '2026-10' } }),
+  'consents.grant': async (h) => ({ as: await h.user(), body: { consent_type: 'marketing', policy_version: '1.0' } }),
   'consents.withdraw': async (h) => {
     const as = await h.user();
-    const g = ok(await as.c.post('/v1/me/consents', { consent_type: 'marketing', policy_version: '2026-10' }), 'consent');
+    const g = ok(await as.c.post('/v1/me/consents', { consent_type: 'marketing', policy_version: '1.0' }), 'consent');
     return { as, params: { consent_id: g.id as string } };
   },
   'consents.request_view': async (h) => {
@@ -483,20 +483,32 @@ export const resolvers: Resolvers = {
     const as = await h.user();
     return {
       as,
-      body: { token: await consentRequest(h, as), decision: 'grant', policy_version: '2026-10' },
+      body: { token: await consentRequest(h, as), decision: 'grant', policy_version: '1.0' },
       bola: { attackers: [await h.stranger()], expect: [403], code: 'LINK_RECIPIENT_MISMATCH', absent: LINK_SECRET },
     };
   },
   'org.consents_list': async (h) => {
     const owner = await h.member('fleet');
-    ok(await owner.c.post(`/v1/orgs/${owner.org!.id}/consents`, { consent_type: 'fleet_data_ai_use', policy_version: '1' }), 'org consent');
+    ok(
+      await owner.c.post(`/v1/orgs/${owner.org!.id}/consents`, { consent_type: 'fleet_data_ai_use', policy_version: '1.0' }),
+      'org consent',
+    );
     return { as: await h.colleague(owner, 'fleet_viewer'), check: (res) => expect(res.body.items).toHaveLength(1) };
   },
-  'org.consents_grant': async (h) => ({ as: await h.member('fleet'), body: { consent_type: 'fleet_data_ai_use', policy_version: '1' } }),
+  'org.consents_grant': async (h) => ({ as: await h.member('fleet'), body: { consent_type: 'fleet_data_ai_use', policy_version: '1.0' } }),
+  // S15b: confirming under the 1.0 text in force; the consent already stands on it, so it comes back unchanged.
+  'org.consents_confirm': async (h) => {
+    const owner = await h.member('fleet');
+    const g = ok(
+      await owner.c.post(`/v1/orgs/${owner.org!.id}/consents`, { consent_type: 'fleet_data_ai_use', policy_version: '1.0' }),
+      'org consent',
+    );
+    return { as: owner, params: { consent_id: g.id as string }, body: { policy_version: '1.0' } };
+  },
   'org.consents_withdraw': async (h) => {
     const owner = await h.member('fleet');
     const g = ok(
-      await owner.c.post(`/v1/orgs/${owner.org!.id}/consents`, { consent_type: 'fleet_data_ai_use', policy_version: '1' }),
+      await owner.c.post(`/v1/orgs/${owner.org!.id}/consents`, { consent_type: 'fleet_data_ai_use', policy_version: '1.0' }),
       'org consent',
     );
     return { as: owner, params: { consent_id: g.id as string } };
@@ -615,7 +627,12 @@ export const resolvers: Resolvers = {
   // effect on sign-up) and are deleted at close; a publish request is rejected again by a second admin.
   'admin.policies_list': async (h) => ({
     as: await h.staff('platform_admin'),
-    check: (res) => expect((res.body.items as Json[]).map((d) => d.policy_key)).toEqual(['terms', 'privacy', 'community_guidelines']),
+    // The three policies, then one consent text per consent type (S15b).
+    check: (res) => {
+      const keys = (res.body.items as Json[]).map((d) => d.policy_key);
+      expect(keys.slice(0, 3)).toEqual(['terms', 'privacy', 'community_guidelines']);
+      expect(keys).toHaveLength(16);
+    },
   }),
   'admin.policy_version_get': async (h) => {
     const as = await h.staff('platform_admin');

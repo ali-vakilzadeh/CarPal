@@ -2,6 +2,9 @@
 // are immutable except a single withdrawal (DB trigger); withdrawal takes
 // effect on the next read of shared data (the consent gate is never cached)
 // and emits consent.withdrawn for modules holding consent-gated copies.
+// Backend S15b (DQ-18/DQ-19): a grant names the consent text in force of its
+// type and records it; consents under an older text that a re-consent version
+// replaced are flagged (and paused when the version says so) until confirmed.
 import { Injectable, Optional } from '@nestjs/common';
 import { sql, type Selectable } from 'kysely';
 import { OrganizationDirectory } from '#libs/authz/index.js';
@@ -12,6 +15,7 @@ import type { DB } from '#libs/db/index.js';
 import { Operation, created, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { consumeFailure, LinkTokens } from '#libs/link-tokens/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
+import { RegionConfigService } from '#libs/region-config/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { AiReferences } from '#modules/ai-mcp/interface/ai.js';
 import { MediaService } from '#modules/media/interface/media.js';
@@ -19,6 +23,7 @@ import { OrgCards, toOrgSummary, type OrgCard } from '#modules/organization/inte
 import { toConsentRecord } from '../api/projections.js';
 import { ConsentScopes } from '../interface/identity.js';
 import { caller } from './common.js';
+import { confirmConsents, consentStates, consentTextFor } from './policy-texts.js';
 
 /** Consent types an organization grants (52 ConsentRecord, DB check). */
 const ORG_CONSENTS: ConsentType[] = ['fleet_data_ai_use', 'provider_analytics_ai_use', 'vendor_inventory_ai_use'];
@@ -70,15 +75,29 @@ async function listConsents(
   return ctx.page(await views.many(ctx, page), rows.length > ctx.query.limit ? { id: page.at(-1)!.id } : null);
 }
 
-/** 40 ConsentRecord with the grantee's business (active shares show its name, PWA DI-55). */
+/** 40 ConsentRecord with the grantee's business (active shares show its name, PWA DI-55) and the re-consent state (S15b). */
 @Injectable()
 export class ConsentViews {
-  constructor(private readonly orgCards: OrgCards) {}
+  constructor(
+    private readonly orgCards: OrgCards,
+    private readonly region: RegionConfigService,
+  ) {}
 
   async many(ctx: OperationContext, rows: ConsentRow[]) {
     const ids = rows.filter((r) => r.granted_to_type === 'organization' && r.granted_to_id).map((r) => r.granted_to_id!);
-    const cards = ids.length ? await ctx.tx((scope) => this.orgCards.cards(scope, ids), { readOnly: true }) : new Map<string, OrgCard>();
-    return rows.map((r) => toConsentRecord(r, cards));
+    const [cards, states] = await ctx.tx(
+      async (scope) =>
+        [
+          ids.length ? await this.orgCards.cards(scope, ids) : new Map<string, OrgCard>(),
+          await consentStates(
+            scope,
+            this.region.regionKey,
+            rows.map((r) => r.id),
+          ),
+        ] as const,
+      { readOnly: true },
+    );
+    return rows.map((r) => toConsentRecord(r, cards, states.get(r.id)));
   }
 
   async one(ctx: OperationContext, row: ConsentRow) {
@@ -98,11 +117,15 @@ export class ConsentWriter {
   constructor(
     private readonly scopes: ConsentScopes,
     private readonly orgs: OrganizationDirectory,
+    private readonly region: RegionConfigService,
     // Absent on the auth server (no ai-mcp module there): MCP clients cannot be named.
     @Optional() private readonly ai?: AiReferences,
   ) {}
 
-  /** Validates a ConsentGrant (C: id unless platform; SEC-AZ-4 references) and inserts the record. */
+  /**
+   * Validates a ConsentGrant (C: id unless platform; SEC-AZ-4 references; S15b: policy_version is the consent text in
+   * force of the type, 409 POLICY_VERSION_OUTDATED) and inserts the record with the text it refers to.
+   */
   async grant(scope: TxScope, subject: { type: 'user' | 'organization'; id: string }, g: ConsentGrant, actingUserId: string) {
     if (g.granted_to && g.granted_to.type !== 'platform' && !g.granted_to.id)
       throw ApiError.validation([{ pointer: '/granted_to/id', code: 'conditional_required' }]);
@@ -123,6 +146,7 @@ export class ConsentWriter {
       if (!verify || !(await verify(scope, actingUserId, g.scope.id)))
         throw ApiError.validation([{ pointer: '/scope/id', code: 'reference_not_found' }], 'REFERENCE_NOT_FOUND');
     }
+    const textId = await consentTextFor(scope, this.region.regionKey, g.consent_type, g.policy_version);
     return scope.db
       .insertInto('identity.consent_records')
       .values({
@@ -134,6 +158,7 @@ export class ConsentWriter {
         granted_to_type: g.granted_to?.type ?? null,
         granted_to_id: g.granted_to?.id ?? null,
         policy_version: g.policy_version,
+        policy_version_id: textId,
         granted: true,
         granted_at: sql`now()`,
         expires_at: g.expires_at ? new Date(g.expires_at) : null,
@@ -301,6 +326,7 @@ export class ConsentRequestRespondHandler implements OperationHandler {
   constructor(
     private readonly links: LinkTokens,
     private readonly views: ConsentViews,
+    private readonly region: RegionConfigService,
   ) {}
 
   async handle(ctx: OperationContext<{ token: string; decision: 'grant' | 'decline'; policy_version: string }>): Promise<OperationResult> {
@@ -321,6 +347,7 @@ export class ConsentRequestRespondHandler implements OperationHandler {
       if (!req) throw consumeFailure({ used_at: r.used_at });
       let record = null;
       if (ctx.body.decision === 'grant') {
+        const textId = await consentTextFor(scope, this.region.regionKey, req.consent_type as ConsentType, ctx.body.policy_version);
         record = await scope.db
           .insertInto('identity.consent_records')
           .values({
@@ -332,6 +359,7 @@ export class ConsentRequestRespondHandler implements OperationHandler {
             granted_to_type: 'organization',
             granted_to_id: req.requested_by_organization_id,
             policy_version: ctx.body.policy_version,
+            policy_version_id: textId,
             granted: true,
             granted_at: sql`now()`,
             source: 'ui',
@@ -399,6 +427,55 @@ export class OrgConsentsWithdrawHandler implements OperationHandler {
     const row = await ctx.tx((scope) =>
       this.writer.withdraw(scope, { type: 'organization', id: ctx.access.org!.id }, ctx.params.consent_id!),
     );
+    return { body: await this.views.one(ctx, row) };
+  }
+}
+
+/**
+ * S15b.T3: the organization owner confirms one organization consent under the consent text in force after a
+ * re-consent version (ConsentRecord.reconsent_required); a consent already on that text is returned unchanged.
+ */
+@Injectable()
+@Operation('org.consents_confirm')
+export class OrgConsentsConfirmHandler implements OperationHandler {
+  constructor(
+    private readonly views: ConsentViews,
+    private readonly region: RegionConfigService,
+  ) {}
+
+  async handle(ctx: OperationContext<{ policy_version: string }>): Promise<OperationResult> {
+    const { userId } = caller(ctx);
+    const orgId = ctx.access.org!.id;
+    const row = await ctx.tx(async (scope) => {
+      const c = await scope.db
+        .selectFrom('identity.consent_records')
+        .selectAll()
+        .where('id', '=', ctx.params.consent_id!)
+        .where('subject_type', '=', 'organization')
+        .where('subject_id', '=', orgId)
+        .where('deleted_at', 'is', null)
+        .forUpdate()
+        .executeTakeFirst();
+      if (!c) throw new ApiError('NOT_FOUND');
+      if (!c.granted || c.withdrawn_at || (c.expires_at && c.expires_at.getTime() <= Date.now()))
+        throw new ApiError('INVALID_TRANSITION', { detail: 'consent not active' });
+      const done = await confirmConsents(scope, this.region.regionKey, {
+        subject: { type: 'organization', id: orgId },
+        consentType: c.consent_type as ConsentType,
+        policyVersion: ctx.body.policy_version,
+        consentId: c.id,
+        by: userId,
+      });
+      // Already on the text in force: nothing changes, and the request is audited like policy.accept.
+      if (done.confirmed.length === 0)
+        await writeAudit(scope, {
+          action: 'consent.confirmed',
+          entityType: 'consent_record',
+          entityId: c.id,
+          next: `${c.consent_type} ${done.version.policy_version} (${this.region.regionKey}); already on this text`,
+        });
+      return c;
+    });
     return { body: await this.views.one(ctx, row) };
   }
 }

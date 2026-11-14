@@ -4484,6 +4484,276 @@
           "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
         }
       }
+    },
+    {
+      "id": "S15b",
+      "title": "Consent texts as versioned documents; re-consent of granted consents",
+      "status": "done",
+      "depends_on": [
+        "S15"
+      ],
+      "plan": "backend/BR-update-plan.json action_plan.stages S15b (admin console refinement S13-S25; owner decisions DQ-18, DQ-19).",
+      "goal": "Consent texts get the versions, four-eyes publish and re-consent of the S15 policies: a grant names the consent text in force, and a new text that requires re-consent asks users and organization owners to confirm their consents, which stay in effect or pause meanwhile as the administrator chose (DQ-19).",
+      "scope": {
+        "contract_sections": [
+          "§4.4 POLICY_VERSION_OUTDATED (policy or consent text)",
+          "§6.1 Me.policy_reconsent, ConsentGrant, ConsentRecord, PolicyKey, ReconsentMode, ReconsentAction, PolicyText, PolicyReconsent",
+          "§6.4 consents.grant, consents.request_respond, org.consents_grant (409), org.consents_confirm (new)",
+          "§6.7 consent texts, policy.accept",
+          "§13 InquiryCreate.share_vehicle_context; §16 AppointmentCreate.share_history",
+          "§23.1 StaffPolicyVersionSummary, StaffPolicyDocument; §23.5 admin.policies_list, admin.policy_version_publish",
+          "Appendix D \"Contract 1.4.0\" (three S15b rows)"
+        ],
+        "modules": [
+          "identity",
+          "appointment",
+          "libs/contract",
+          "apps/testing"
+        ],
+        "ops_target": 1,
+        "ops_note": "1 new operation (org.consents_confirm); changed: the five consent grant paths, policy.current, policy.accept, Me.policy_reconsent, the admin policy operations. Registry after S15b: 454 operations, 506 routes, 55 error codes; 453 served (auth.social_start deferred)."
+      },
+      "tasks": [
+        {
+          "id": "S15b.T1",
+          "status": "done",
+          "title": "Docs/52, Docs/42, Docs/43 and migration 0109: PolicyKey extended by the 13 ConsentType values (CHECK and policy_documents_consent_mode), reconsent_mode consent, policy_versions.reconsent_action (keep | pause, only with requires_reconsent), consent_records.policy_version_id (FK, part of the immutable grant), new append-only identity.consent_confirmations; placeholder 1.0 consent texts seeded for ir-pilot (S15b-D1, D2)."
+        },
+        {
+          "id": "S15b.T2",
+          "status": "done",
+          "title": "consentTextFor() in policy-texts.ts, used by ConsentWriter.grant (consents.grant, org.consents_grant), consents.request_respond and DbConsentGrants.grantScoped (appointments share_history, inquiries share_vehicle_context): 409 POLICY_VERSION_OUTDATED for another label when the region has a text in force; the record stores its id. share_history gained vehicle_data_policy_version (S15b-D5)."
+        },
+        {
+          "id": "S15b.T3",
+          "status": "done",
+          "title": "SQL identity.consent_text_at and identity.consent_reconsent decide the state at read time; Me.policy_reconsent lists user consents per type (mode consent, consent_ids, paused); policy.accept on a consent text confirms them (confirmConsents); ConsentRecord.reconsent_required, paused, confirmed_policy_version, confirmed_at for user and organization consents; new org.consents_confirm; admin.policy_version_publish reconsent_action (default keep), stored on the version; identity.has_consent takes the region and refuses paused consents (S15b-D3, D4, D6, D7, D9)."
+        },
+        {
+          "id": "S15b.T4",
+          "status": "done",
+          "title": "policy.current and the five admin policy operations serve the 13 consent documents (admin.policies_list up to 20); apps/testing/s15b.int.test.ts (6 tests); Docs/40 Appendix D three S15b rows; Docs/23 A-POL-01 note updated (S15b-D8)."
+        }
+      ],
+      "deliverables": [
+        "contract 1.4.0 additions (Docs/40, libs/contract/generated, shared/api-contracts, PWA and console generated contracts)",
+        "modules/identity/application/policy-texts.ts (consent texts, re-consent, confirmations), consent-ops.ts (OrgConsentsConfirmHandler)",
+        "migration 0109_s15b_consent_texts.sql",
+        "apps/testing/s15b.int.test.ts, the org.consents_confirm sweep resolver"
+      ],
+      "report": {
+        "started_at": "2026-11-14",
+        "completed_at": "2026-11-14",
+        "summary": "Consent texts are versioned documents: one per consent type and region (13, placeholder 1.0 seeded for ir-pilot), published like the policies. Every grant path must name the text in force (409 POLICY_VERSION_OUTDATED) and the record keeps it. A consent text version that requires re-consent lists the user's consents under older texts in Me.policy_reconsent (confirmed with policy.accept) and flags organization consents (confirmed with the new org.consents_confirm); confirmations are kept apart. Per DQ-19 the version says keep or pause, and the consent gate refuses paused consents until they are confirmed. Contract 1.4.0: 454 operations, 506 routes, 55 error codes. Migration 0109. Every acceptance criterion is met. Details and deviations S15b-D1..D10 are in backend/BR-update-plan.json (action_plan.stages S15b.report).",
+        "tests": {
+          "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 530 modules), typecheck, format:check: pass",
+          "backend_unit": "313 passed (45 files), including the registry pin (454 operations, 506 routes)",
+          "backend_contract": "contract:check up to date (1.4.0, 454 operations, 55 error codes); contract sweep suites up to date (17 modules); openapi:check: 506 operations on 408 paths; contract:coverage 453/454 served (auth.social_start deferred), 0 unexplained 501s",
+          "backend_sweeps": "identity sweep passes, including org.consents_confirm (an organization consent confirmed under the 1.0 text in force, returned unchanged) and admin.policies_list (16 documents)",
+          "backend_s15b": "6 passed (apps/testing/s15b.int.test.ts); with s15 and privacy: 21 passed in 3 files",
+          "backend_integration_full": "894 tests in 59 files (about 24 minutes): 890 passed, 4 failed. (1) tools/db/baseline.int.test.ts table count 112 -> 113 (the new identity.consent_confirmations) and (2) the identity sweep's admin.policies_list check (it pinned the three policies; now the three first and 16 in all): both fixed and re-run green with the identity sweep. (3, 4) The two local-database states known since S13: the baseline hash (Docs/43 changed; the local database was migrated with 0109, not reset; passes after pnpm db:reset) and the non-fixture account count (94, expected 2; R-15). No other suite changed its result.",
+          "database": "Fresh install check: Docs/43 plus migrations 0100-0109 installed into a scratch database pair (carpal_s15b_check, dropped afterwards); its consent functions, constraints, policies, triggers, privileges and the 16 seeded ir-pilot documents match the migrated development database. db:codegen regenerated libs/db/generated/db.ts.",
+          "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck pass after the five new ConsentRecord fields in two test fixture files; 691 unit tests passed (76 files)",
+          "admin_console": "contract:generate (95 admin-api operations), typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files); no fixture change",
+          "environment": "Node 20.10 is still the machine Node; this session used the portable Node 24.22.3 (official zip, checksum checked in an earlier session) from a session scratchpad on PATH; nothing was installed system-wide.",
+          "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
+        }
+      }
+    },
+    {
+      "id": "S20",
+      "title": "Disputes and review/inventory moderation actions: dispute message threads, target snapshots, withdrawal on request; reduce_weight, edit_request, downgrade_fitment",
+      "status": "done",
+      "depends_on": [
+        "S18"
+      ],
+      "plan": "backend/BR-update-plan.json action_plan.stages S20 (admin console refinement S13-S25).",
+      "goal": "Staff work disputes with both parties (a message thread per side with evidence), see what is disputed (moderation action with its decider, service record, badge, appointment, review) and withdraw on request; the objection outcomes are worded by effect; moderators reduce a review's weight, ask the author to edit a review, and downgrade a fitment row (admin console BR-28, BR-30, BR-15 part).",
+      "scope": {
+        "contract_sections": [
+          "§2 ModerationActionType (+3), AttachedToType dispute_message",
+          "§15.1 Review.edit_request, ReviewEditSpan, ReviewEditRequest, DisputeSide, DisputeMessageTemplate, DisputeMessage, DisputeThread, DisputeReply",
+          "§15.3 disputes.messages_list, disputes.message_post; reviews.mine_update note",
+          "§23.1 StaffDecision withdrawn, ModerationActionInput params, ModerationActionSnapshot, ServiceRecordSnapshot, BadgeSnapshot, AppointmentSnapshot, UnavailableDisputeTarget, DisputeTargetSnapshot, StaffDisputeDetail, StaffDisputeMessage, StaffDisputeMessageWrite",
+          "§23.4 admin.case_action, admin.dispute_get, admin.dispute_resolve, admin.dispute_messages_list, admin.dispute_message_post",
+          "Appendix A dispute.message.posted; Appendix D \"Contract 1.4.0\" (four S20 rows)"
+        ],
+        "modules": [
+          "trust",
+          "admin",
+          "inventory",
+          "vehicle",
+          "notification",
+          "apps/testing"
+        ],
+        "ops_target": 4,
+        "ops_note": "4 new operations (2 api host, 2 admin-api); changed: admin.case_action, admin.dispute_get, admin.dispute_resolve, admin.my_decisions_list, Review (edit_request), disputes.get. Registry after S20: 458 operations, 510 routes, 55 error codes; 457 served (auth.social_start deferred)."
+      },
+      "tasks": [
+        {
+          "id": "S20.T1",
+          "status": "done",
+          "title": "Dispute message threads: trust.dispute_messages, respondent columns, two admin and two party operations, evidence files on replies, dispute.message.posted notification (S20-D1, D2)."
+        },
+        {
+          "id": "S20.T2",
+          "status": "done",
+          "title": "admin.dispute_get StaffDisputeDetail (target snapshot, respondent); admin.dispute_resolve withdrawn with the request as resolution; StaffDecision withdrawn (S20-D3, D4)."
+        },
+        {
+          "id": "S20.T3",
+          "status": "done",
+          "title": "DQ-06 default: objection outcomes worded by effect in Docs/40 and Docs/52 (S20-D5)."
+        },
+        {
+          "id": "S20.T4",
+          "status": "done",
+          "title": "Case actions reduce_weight (Review.weight_factor, AAL3), edit_request (trust.review_edit_requests, Review.edit_request) and downgrade_fitment through ModerationTargetHandler.act (S20-D6..D9)."
+        }
+      ],
+      "deliverables": [
+        "contract 1.4.0 additions (Docs/40, libs/contract/generated, shared/api-contracts, console generated contract)",
+        "modules/trust/application/dispute-messages.ts; review and fitment target actions; StaffDisputeViews.detail",
+        "migration 0110_s20_disputes_review_actions.sql",
+        "apps/testing/s20.int.test.ts, dispute-messages.test.ts, sweep resolvers for the 4 operations"
+      ],
+      "report": {
+        "started_at": "2026-11-14",
+        "completed_at": "2026-11-14",
+        "summary": "Dispute message threads per party with evidence, dispute target snapshots and the other party, withdrawal on request; objection outcomes worded by effect (DQ-06 default); case actions reduce_weight, edit_request and downgrade_fitment. Every acceptance criterion is met. Details, deviations S20-D1..D10 and the S25 candidate (authors cannot appeal a content removal) are in backend/BR-update-plan.json action_plan.stages S20.report.",
+        "ops_implemented": [
+          "admin.dispute_messages_list",
+          "admin.dispute_message_post",
+          "disputes.messages_list",
+          "disputes.message_post"
+        ],
+        "ops_changed": [
+          "admin.case_action",
+          "admin.dispute_get",
+          "admin.dispute_resolve",
+          "admin.my_decisions_list",
+          "Review.edit_request (reviews.mine_*)",
+          "disputes.get"
+        ],
+        "files_created": [
+          "backend/modules/trust/application/dispute-messages.ts",
+          "backend/modules/trust/application/dispute-messages.test.ts",
+          "backend/apps/testing/s20.int.test.ts",
+          "database/migrations/0110_s20_disputes_review_actions.sql"
+        ],
+        "files_changed": [
+          "See backend/BR-update-plan.json action_plan.stages S20.report.files_changed."
+        ],
+        "tests": {
+          "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 533 modules), typecheck, format:check: pass",
+          "backend_unit": "317 passed (46 files), including the registry pin (458 operations, 510 routes), dispute-messages.test.ts (sideOf) and the S20 routing tests in notification-domain.test.ts (dispute.message.posted to the party only; edit_request and downgrade_fitment notified, reduce_weight silent)",
+          "backend_contract": "contract:check up to date (1.4.0, 458 operations, 55 error codes); contract sweep suites up to date (17 modules; the identity suite was stale since S15b and now includes org.consents_confirm); openapi:check: 510 operations on 410 paths; contract:coverage 457/458 served (auth.social_start deferred), 0 unexplained 501s",
+          "backend_sweeps": "trust sweep 42 passed, including the four new operations (the raising organization's thread shows CarPal and not the moderator; a party reply; the admin list and a message to the respondent under the dispute purpose, probed with an unrelated purpose)",
+          "backend_s20": "8 passed (apps/testing/s20.int.test.ts): thread access per side and purpose, evidence on replies and their download under the dispute purpose, party notification, closed disputes and appeals without a respondent, dispute_get snapshots (review, moderation action with decider, badge) and respondent, withdrawn with the request, reduce_weight and the score, edit_request round trip (hidden, author edit, back to the queue, approve) and after 7 days (remove), downgrade_fitment",
+          "backend_integration_full": "906 tests in 60 files (about 27 minutes): 902 passed, 4 failed. (1) baseline table count 113 -> 115 (the two S20 tables), pin updated. (2) s11 profile photo test timed out at 60 s under the full-run load; it passes when s11 runs alone (22 passed). (3, 4) The two local-database states known since S13: the baseline hash (Docs/43 changed; the local database was migrated with 0110, not reset; passes after pnpm db:reset) and the non-fixture account count (94, expected 2; R-15). No other suite changed its result; s14 pins 17 PURP operations.",
+          "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck, lint and i18n:check (3175 keys) pass; 691 unit tests passed (76 files) after the notification catalog (dispute.message_received, edit_request, dispute types), the allowlist pin 174 -> 176 and one Review fixture",
+          "admin_console": "contract:generate (97 admin-api operations), contract:check, typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files) after the pins 95 -> 97, the case_action step-up list (reduce_weight) and two Review fixtures",
+          "environment": "Node 20.10 is still the machine Node; this session used the portable Node 24.22.3 (official zip, checksum checked by an earlier session) from session 84fe488f's scratchpad on PATH; nothing was installed system-wide. db:codegen ran under it.",
+          "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
+        }
+      }
+    },
+    {
+      "id": "S19",
+      "title": "Verification and organization records: search filters, request more info with resubmission, verification assignment, profile corrections and history, assist sessions list",
+      "status": "done",
+      "depends_on": [
+        "S14",
+        "S18"
+      ],
+      "plan": "backend/BR-update-plan.json action_plan.stages S19 (admin console refinement S13-S25).",
+      "goal": "Staff find organizations by city, plan, open cases, location issues and possible duplicates; ask a business for more information instead of rejecting (the check stays pending and its clock pauses until the business resubmits); assign checks and see the owner, the call-back result and the clock in the queue; correct obvious profile errors with a reason and read the profile history; and restore the assist banner after a reload (admin console BR-35 parts 1-filters, 2 and 3, BR-34; R-25).",
+      "scope": {
+        "contract_sections": [
+          "§5 ModerationActionType (+2)",
+          "§7.1 VerificationSubmit.registration_number, VerificationMissingItem, VerificationInfoTemplate, VerificationInfoRequest, VerificationResubmit, OrganizationVerification.registration_number and info_request",
+          "§7.2 org.verification_resubmit",
+          "§23.1 StaffOrgSearchRow flags, OrgSearch filters, VerificationPrecheck, StaffVerificationItem, VerificationInfoRequestWrite, VerificationDecision, OrgProfileField, OrgProfileFieldChange, OrgProfileChange, OrgCorrection, AssistSessionView",
+          "§23.2 admin.orgs_search, admin.verifications_queue, admin.verification_assign, admin.verification_decide, admin.org_correct, admin.org_history, admin.assist_sessions_list",
+          "Appendix A organization.verification.info_requested, organization.profile.corrected; Appendix D \"Contract 1.4.0\" (five S19 rows)"
+        ],
+        "modules": [
+          "organization",
+          "admin",
+          "billing",
+          "notification",
+          "apps/testing"
+        ],
+        "ops_target": 5,
+        "ops_note": "5 new operations (1 api host, 4 admin-api); changed: admin.orgs_search, admin.verifications_queue, admin.verification_decide, org.verification_submit, org.update, OrganizationVerification. Registry after S19: 463 operations, 515 routes, 55 error codes; 462 served (auth.social_start deferred)."
+      },
+      "tasks": [
+        {
+          "id": "S19.T1",
+          "status": "done",
+          "title": "admin.orgs_search filters city, plan_key, has_open_cases, location_issue, possible_duplicate and the row flags (S19-D1)."
+        },
+        {
+          "id": "S19.T2",
+          "status": "done",
+          "title": "admin.verification_decide info_requested, org.verification_resubmit, the paused review clock, StaffVerificationItem and admin.verification_assign; the verification purpose follows the assignee (S19-D2..D5)."
+        },
+        {
+          "id": "S19.T3",
+          "status": "done",
+          "title": "admin.org_correct and admin.org_history over organization.organization_profile_changes, written by org.update too (S19-D6, D7)."
+        },
+        {
+          "id": "S19.T4",
+          "status": "done",
+          "title": "admin.assist_sessions_list (S19-D8)."
+        }
+      ],
+      "deliverables": [
+        "contract 1.4.0 additions (Docs/40, libs/contract/generated, shared/api-contracts, console generated contract)",
+        "modules/organization/application/admin-ops.ts (filters, StaffVerificationItems, assign, info requests, corrections, history); org-ops.ts (resubmit, history of org.update); admin AssistSessionsListHandler",
+        "migration 0111_s19_verification_org_records.sql",
+        "apps/testing/s19.int.test.ts, sweep resolvers for the 5 operations"
+      ],
+      "report": {
+        "started_at": "2026-11-14",
+        "completed_at": "2026-11-14",
+        "summary": "Organization search filters and row flags; request more info on verification checks with the business resubmission and a paused review clock; verification assignment and richer queue items; staff profile corrections with the profile history; the assist sessions list. Every acceptance criterion is met. Details, deviations S19-D1..D10 and the S25 candidate (notify a rejected verification) are in backend/BR-update-plan.json action_plan.stages S19.report.",
+        "ops_implemented": [
+          "org.verification_resubmit",
+          "admin.verification_assign",
+          "admin.org_correct",
+          "admin.org_history",
+          "admin.assist_sessions_list"
+        ],
+        "ops_changed": [
+          "admin.orgs_search",
+          "admin.verifications_queue",
+          "admin.verification_decide",
+          "org.verification_submit",
+          "org.update",
+          "OrganizationVerification"
+        ],
+        "files_created": [
+          "backend/apps/testing/s19.int.test.ts",
+          "database/migrations/0111_s19_verification_org_records.sql"
+        ],
+        "files_changed": [
+          "See backend/BR-update-plan.json action_plan.stages S19.report.files_changed."
+        ],
+        "tests": {
+          "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 533 modules), typecheck, format:check: pass",
+          "backend_unit": "318 passed (46 files), including the registry pin (463 operations, 515 routes) and the S19 routing test in notification-domain.test.ts (info request and profile correction to the owners and managers)",
+          "backend_contract": "contract:check up to date (1.4.0, 463 operations, 55 error codes); contract sweep suites up to date (17 modules); openapi:check: 515 operations on 415 paths; contract:coverage 462/463 served (auth.social_start deferred), 0 unexplained 501s",
+          "backend_sweeps": "organization and admin sweeps 113 passed, including the five new operations (a resubmission after a staff info request; assign to self; a website correction; the history under a case about the organization, probed with an unrelated purpose; my open assist sessions)",
+          "backend_s19": "9 passed (apps/testing/s19.int.test.ts): possible duplicates (normalized name in a shared city, same phone, merged excluded) and row flags, city, plan, open cases and location issue filters, batched scanning with short pages; info request round trip (pending, paused clock, business notified, resubmission resumes the clock), decision input rules and closing an unanswered request, assignment and the purpose following the assignee, registration number, call-back result and duplicate flag in the queue; profile correction (audit with reason, notification, refusals) and history under a purpose; assist sessions list (mine, active, expired, others)",
+          "backend_integration_full": "920 tests in 61 files (about 30 minutes): 916 passed, 4 failed. (1) baseline table count: the run used the old pin (115); the pin was updated to 117 (the two S19 tables) during the run and passes when rerun. (2) auth-server 'the relay delivers it to billing' timed out at 60 s under the full-run load; it passes when the file runs alone. (3, 4) The two local-database states known since S13: the baseline hash (Docs/43 changed; the local database was migrated with 0111, not reset; passes after pnpm db:reset) and the non-fixture account count (94, expected 2; R-15). No other suite changed its result; s14 pins 18 PURP operations.",
+          "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck, lint and i18n:check (3175 keys) pass; 691 unit tests passed (76 files) after the two business templates in the notification catalog; allowlist pin unchanged (the new api operation is a business route)",
+          "admin_console": "contract:generate (101 admin-api operations), contract:check, typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files) after the pins 97 -> 101 and the search row fixture (location_issue, possible_duplicate)",
+          "environment": "Node 20.10 is still the machine Node; this session used the portable Node 24.22.3 (official zip, checksum checked by an earlier session) from session 84fe488f's scratchpad on PATH; nothing was installed system-wide. db:setup (migration 0111) and db:codegen ran under it.",
+          "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
+        }
+      }
     }
   ],
   "coverage_summary": {
@@ -5613,6 +5883,56 @@
       "stage": "S18",
       "date": "2026-11-14",
       "deviation": "S18-D10 (-): OpenAPI: the hand-written TargetSnapshot server schema was removed (the contract now defines the type); the openapi test still requires the schema. Two sweep and test helpers changed: the runner joins array query values with commas (S18-D2) and s14 pins 15 PURP operations."
+    },
+    {
+      "stage": "S15b",
+      "date": "2026-11-14",
+      "deviation": "S15b-D1 (DQ-18): A consent-text document for every one of the 13 ConsentType values (also photo_publishing, fleet_driver_data_visibility and the three organization AI types), not only the seven A-POL-01 lists; each with its own text and versions. The seeded placeholder 1.0 (EN and FA titles per type) is the label the PWA already sends for every consent (its bundled privacy version), so the PWA keeps working; the backend tests moved from the labels 2026-10 and 1 to 1.0 (13 test files)."
+    },
+    {
+      "stage": "S15b",
+      "date": "2026-11-14",
+      "deviation": "S15b-D2 (DQ-18): \"Confirming re-grants under the new version\" is built as a confirmation row (identity.consent_confirmations: consent, text, confirmed_at, confirmed_by; append-only, trigger), not as a new consent record: the record keeps its id, which portfolio items, appointments, inquiries and consent requests point to, and its grant stays as evidence. ConsentRecord shows the grant text (policy_version, policy_version_id) and the latest confirmation (confirmed_policy_version, confirmed_at)."
+    },
+    {
+      "stage": "S15b",
+      "date": "2026-11-14",
+      "deviation": "S15b-D3 (DQ-18, DQ-19): ConsentRecord.reconsent_required (and paused) is derived on every read (SQL identity.consent_text_at: the newest text a consent was granted or confirmed under; identity.consent_reconsent: null, keep or pause from the re-consent versions in force after it), not a stored column. The flag and the pause start exactly at effective_at (like policy.current, S15-D3) without waiting for the worker rule. identity.has_consent gains p_region (the deployment region, passed by DbConsentChecker); the old seven-argument function is dropped."
+    },
+    {
+      "stage": "S15b",
+      "date": "2026-11-14",
+      "deviation": "S15b-D4 (DQ-18): A consent without a text reference (granted before S15b, or in a region without a text of its type) counts from its granted_at: it needs re-consent when a re-consent version comes into force after the grant. Existing records were not backfilled (their label named the privacy policy, not a consent text)."
+    },
+    {
+      "stage": "S15b",
+      "date": "2026-11-14",
+      "deviation": "S15b-D5 (DQ-18): AppointmentCreate.share_history records two consents (vehicle_data_sharing and service_history_sharing), which now have two documents: policy_version is the service_history_sharing text, and a new optional vehicle_data_policy_version the vehicle_data_sharing text (default: the same label). appointments.create and inquiries.create list 409 POLICY_VERSION_OUTDATED."
+    },
+    {
+      "stage": "S15b",
+      "date": "2026-11-14",
+      "deviation": "S15b-D6 (DQ-18): New operation org.consents_confirm (POST {org}/consents/{consent_id}/confirm, ORG(O+) AAL2 IDEM AUD), not named in the stage text: organization consents are the organization's, so they are not in the owner's Me.policy_reconsent; the owner confirms each one from org.consents_list. A user confirms all their consents of a type at once with policy.accept (which also records a PolicyAcceptance), and withdraws the ones to drop first; there is no per-record user confirm. A confirm that changes nothing (already on the text) still writes an audit entry, like policy.accept."
+    },
+    {
+      "stage": "S15b",
+      "date": "2026-11-14",
+      "deviation": "S15b-D7 (DQ-19): admin.policy_version_publish takes reconsent_action only for a consent text with requires_reconsent (422 conditional_forbidden otherwise) and defaults to keep (the console preselection); the value travels in the four-eyes payload and the summary names it, is stored on the version (read-only once published, policy_versions_immutable) and is shown in StaffPolicyVersionSummary, PolicyText and PolicyText.upcoming. A four-eyes request made before S15b carries no action (null)."
+    },
+    {
+      "stage": "S15b",
+      "date": "2026-11-14",
+      "deviation": "S15b-D8 (DQ-18): List caps raised: Me.policy_reconsent 10 to 20 entries and admin.policies_list 10 to 20 documents (16 per region now). PolicyReconsent.consent_ids (up to 100) and paused are always present (empty and false for policies), so the type stays flat; ReconsentMode (blocking, notice, consent) and ReconsentAction are named types."
+    },
+    {
+      "stage": "S15b",
+      "date": "2026-11-14",
+      "deviation": "S15b-D9 (DQ-19): A paused consent fails the gate with the existing 403 CONSENT_REQUIRED (no new error code), so every feature behind the gate stops with no module change. A pause does not switch off the preferences tied to a consent (ai_personalization, marketing, review_invitations), unlike a withdrawal: they work again as soon as the consent is confirmed. Withdrawing during re-consent is the normal withdrawal (consent.withdrawn)."
+    },
+    {
+      "stage": "S15b",
+      "date": "2026-11-14",
+      "deviation": "S15b-D10 (DQ-18): The DSR export has a new section consent_confirmations; confirmations are kept on erasure like the consent records. s15.int.test.ts now checks the first three documents of admin.policies_list and the two new PolicyReconsent fields."
     }
   ],
   "handoff_notes": [

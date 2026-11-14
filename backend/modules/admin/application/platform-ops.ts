@@ -1,4 +1,4 @@
-// Feature flags, retention policies and assisted onboarding sessions (40
+// Feature flags, retention policies and assisted onboarding sessions (with their list, backend S19) (40
 // §23.2, §23.5; 52 FeatureFlag, DataRetentionPolicy, AssistSession).
 // Turning the AI kill switch on is immediate; turning it off again, or
 // turning featured.enabled on, waits for a second admin (4EYES). Flag changes
@@ -16,7 +16,7 @@ import { toJobView } from '#libs/jobs/index.js';
 import { ExchangeRates, RegionConfigService } from '#libs/region-config/index.js';
 import { InjectConfig } from '#libs/runtime/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
-import { OrgCards } from '#modules/organization/interface/org-cards.js';
+import { OrgCards, toOrgSummary } from '#modules/organization/interface/org-cards.js';
 import { toExchangeRate, toFlag, toRetention, type ExchangeRateRow, type FlagRow } from '../api/projections.js';
 import { FourEyes, ModerationLog, StaffNames, staffOf } from '../interface/admin.js';
 import { afterId, pageOf } from './common.js';
@@ -414,6 +414,76 @@ export class AssistSessionStartHandler implements OperationHandler {
       return { assist_session_id: row.id, expires_at: row.expires_at.toISOString() };
     });
     return created(body, `/v1/admin/assist-sessions/${body.assist_session_id}`);
+  }
+}
+
+type AssistQuery = { mine?: boolean; status?: 'active' | 'ended' | 'expired'; organization_id?: string; limit: number };
+
+/**
+ * 40 admin.assist_sessions_list (backend S19, BR-34, D-62): open and past assisted sessions, newest first, so the
+ * console can show the banner of an open session after a reload or on another device. A session past its 4 hours
+ * is shown (and filtered) as expired before the hourly rule marks it.
+ */
+@Injectable()
+@Operation('admin.assist_sessions_list')
+export class AssistSessionsListHandler implements OperationHandler {
+  constructor(
+    private readonly orgs: OrgCards,
+    private readonly names: StaffNames,
+  ) {}
+
+  async handle(ctx: OperationContext<undefined, AssistQuery>): Promise<OperationResult> {
+    const s = staffOf(ctx);
+    const q = ctx.query;
+    const after = afterId(ctx);
+    const body = await ctx.tx(
+      async (scope) => {
+        const now = new Date();
+        let r = scope.db.selectFrom('admin.assist_sessions').selectAll().where('deleted_at', 'is', null);
+        if (q.mine) r = r.where('staff_user_id', '=', s.userId);
+        if (q.organization_id) r = r.where('organization_id', '=', q.organization_id);
+        if (q.status === 'active') r = r.where('status', '=', 'active').where('expires_at', '>', now);
+        if (q.status === 'ended') r = r.where('status', '=', 'ended');
+        if (q.status === 'expired')
+          r = r.where((eb) => eb.or([eb('status', '=', 'expired'), eb.and([eb('status', '=', 'active'), eb('expires_at', '<=', now)])]));
+        if (after) r = r.where('id', '<', after);
+        const rows = await r
+          .orderBy('id', 'desc')
+          .limit(q.limit + 1)
+          .execute();
+        const page = rows.slice(0, q.limit);
+        const [cards, names] = await Promise.all([
+          this.orgs.cards(
+            scope,
+            page.map((x) => x.organization_id),
+          ),
+          this.names.names(
+            scope,
+            page.map((x) => x.staff_user_id),
+            ctx.locale,
+          ),
+        ]);
+        const items = [];
+        for (const x of page) {
+          const card = cards.get(x.organization_id);
+          if (!card) continue;
+          items.push({
+            assist_session_id: x.id,
+            organization: toOrgSummary(card),
+            flow_type: x.flow_type as 'provider' | 'vendor' | 'fleet',
+            status: x.status === 'active' && x.expires_at <= now ? 'expired' : x.status,
+            staff_display: names.get(x.staff_user_id)!,
+            mine: x.staff_user_id === s.userId,
+            started_at: x.started_at.toISOString(),
+            expires_at: x.expires_at.toISOString(),
+            ended_at: x.ended_at ? x.ended_at.toISOString() : null,
+          });
+        }
+        return ctx.page(items, rows.length > q.limit ? { id: page.at(-1)!.id } : null);
+      },
+      { readOnly: true },
+    );
+    return { body };
   }
 }
 

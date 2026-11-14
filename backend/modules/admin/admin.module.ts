@@ -49,6 +49,7 @@ import {
   applyFlagChange,
   applyRetentionChange,
   AssistSessionEndHandler,
+  AssistSessionsListHandler,
   AssistSessionStartHandler,
   FlagsListHandler,
   FlagUpdateHandler,
@@ -168,6 +169,8 @@ export class AdminRegistrations implements OnModuleInit {
       ['admin.case_action', pathRecord('case', 'case_id')],
       ['admin.dispute_get', pathRecord('dispute', 'dispute_id')],
       ['admin.dispute_resolve', pathRecord('dispute', 'dispute_id')],
+      ['admin.dispute_messages_list', pathRecord('dispute', 'dispute_id')],
+      ['admin.dispute_message_post', pathRecord('dispute', 'dispute_id')],
       ['admin.dsr_update', pathRecord('dsr', 'request_id')],
       ['admin.dsr_export', pathRecord('dsr', 'request_id')],
       ['admin.dsr_execute_deletion', pathRecord('dsr', 'request_id')],
@@ -177,6 +180,7 @@ export class AdminRegistrations implements OnModuleInit {
       ['admin.review_approval_decide', pathRecord('approval', 'review_id')],
       ['admin.user_get', pathRecord('user', 'user_id')],
       ['admin.org_get', pathRecord('organization', 'org_id')],
+      ['admin.org_history', pathRecord('organization', 'org_id')],
       ['admin.users_search', async () => 'scoped'],
     ];
     for (const [opId, binding] of recordBindings) this.bindings.register(opId, binding);
@@ -301,6 +305,7 @@ export class AdminModule {}
     AdminRegionSettingsHandler,
     AssistSessionStartHandler,
     AssistSessionEndHandler,
+    AssistSessionsListHandler,
   ],
 })
 export class AdminApiModule {}

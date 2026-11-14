@@ -30,16 +30,22 @@ import {
   subjectKey,
   type ContentAction,
   type ModerationTargetHandler,
+  type TargetAction,
+  type TargetActionInput,
 } from '../interface/admin.js';
 import { CaseSnapshots } from './case-snapshots.js';
 import { afterId, exactlyOne, failIf, notFoundAt, pageOf } from './common.js';
 
 const OPEN_CASE = ['open', 'investigating', 'escalated'];
 const CONTENT_ACTIONS: ContentAction[] = ['approve', 'hide', 'remove', 'restore', 'request_changes'];
+/** Record-specific actions with parameters, applied by the owning module (backend S20, BR-15). */
+const TARGET_ACTIONS: TargetAction[] = ['reduce_weight', 'edit_request', 'downgrade_fitment'];
 /** Actions recorded by their own operations (verification, review approval, location, assisted onboarding). */
 const DEDICATED: Record<string, string> = {
   verify_organization: 'admin.verification_decide',
   reject_verification: 'admin.verification_decide',
+  request_verification_info: 'admin.verification_decide',
+  correct_profile: 'admin.org_correct',
   confirm_review_approval: 'admin.review_approval_decide',
   reject_review_approval: 'admin.review_approval_decide',
   request_evidence: 'admin.review_approval_decide',
@@ -434,7 +440,12 @@ type ActionInput = {
   action_type: string;
   target?: { type: string; id: string };
   reason: string;
-  params?: { trust_penalty_points?: number; badge_id?: string; suspend_until?: string; merge_into_id?: string };
+  params?: {
+    trust_penalty_points?: number;
+    badge_id?: string;
+    suspend_until?: string;
+    merge_into_id?: string;
+  } & TargetActionInput['params'];
 };
 
 @Injectable()
@@ -476,7 +487,14 @@ export class CaseActionHandler implements OperationHandler {
       // Separation of duties: staff never act on their own account or content.
       if (author === s.userId) throw new ApiError('SELF_APPROVAL_FORBIDDEN', { detail: 'own account or content' });
       const params: Record<string, unknown> = { ...(b.params ?? {}), ...(subjectOrg ? { subject_organization_id: subjectOrg } : {}) };
-      await this.apply(scope, ctx, s.userId, b, target, handler!, { subjectOrg, author, params, fake: c.reason === 'fake', subjects });
+      await this.apply(scope, ctx, s.userId, b, target, handler!, {
+        subjectOrg,
+        author,
+        params,
+        fake: c.reason === 'fake',
+        subjects,
+        caseId: c.id,
+      });
       const id = await this.log.record(scope, {
         caseId: c.id,
         targetType: target.type,
@@ -521,9 +539,32 @@ export class CaseActionHandler implements OperationHandler {
     b: ActionInput,
     target: { type: string; id: string },
     handler: ModerationTargetHandler,
-    o: { subjectOrg: string | null; author: string | null; params: Record<string, unknown>; fake: boolean; subjects: Set<string> },
+    o: {
+      subjectOrg: string | null;
+      author: string | null;
+      params: Record<string, unknown>;
+      fake: boolean;
+      subjects: Set<string>;
+      caseId: string;
+    },
   ): Promise<void> {
     const a = b.action_type;
+    if ((TARGET_ACTIONS as string[]).includes(a)) {
+      // S20 (BR-15): reduce_weight and edit_request on reviews, downgrade_fitment on fitment rows.
+      if (!handler.act) throw new ApiError('INVALID_TRANSITION', { detail: `${a} does not apply to this ${target.type}` });
+      const r = await handler.act(scope, target.id, a as TargetAction, {
+        staffUserId: staffId,
+        caseId: o.caseId,
+        reason: b.reason,
+        params: b.params ?? {},
+      });
+      if (!r.ok) {
+        if ('invalid' in r) failIf([r.invalid]);
+        throw new ApiError('INVALID_TRANSITION', { detail: 'transition' in r ? r.transition : a });
+      }
+      Object.assign(o.params, r.params);
+      return;
+    }
     if ((CONTENT_ACTIONS as string[]).includes(a)) {
       if (!handler.apply || !(await handler.apply(scope, target.id, a as ContentAction)))
         throw new ApiError('INVALID_TRANSITION', { detail: `${a} does not apply to this ${target.type}` });

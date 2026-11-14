@@ -61,6 +61,15 @@ export class ReviewWorkflow {
         .forUpdate()
         .executeTakeFirst();
       if (!r || r.status !== 'pending_moderation' || r.confirmation_path !== 'visit_based') return false;
+      // S20: a review under a moderator's edit request is checked by a moderator again, not published automatically.
+      const edit = await scope.db
+        .selectFrom('trust.review_edit_requests')
+        .select('id')
+        .where('review_id', '=', r.id)
+        .where('status', 'in', ['open', 'edited'])
+        .where('deleted_at', 'is', null)
+        .executeTakeFirst();
+      if (edit) return false;
       if (!autoCheck(`${r.title ?? ''}\n${r.body}`).pass) return false;
       const weight = reviewTrustWeight(r.verified_status);
       if (weight <= 0) return false;

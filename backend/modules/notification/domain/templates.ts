@@ -398,6 +398,16 @@ export const TEMPLATES: Catalog = {
       text: 'ناظران ما درباره {target_type} شما اقدامی ({action_type}) انجام دادند. می‌توانید از حساب خود اعتراض کنید.',
     },
   },
+  'dispute.message_received': {
+    en: {
+      subject: 'CarPal wrote to you about a dispute',
+      text: 'CarPal sent you a message about a dispute ({dispute_type}). Open it in your account to read it and answer.',
+    },
+    fa: {
+      subject: 'پیام کارپال درباره یک اختلاف',
+      text: 'کارپال درباره یک اختلاف ({dispute_type}) برای شما پیامی فرستاد. آن را در حساب خود باز کنید، بخوانید و پاسخ دهید.',
+    },
+  },
   'organization.verified': {
     en: { subject: 'Your business is verified', text: 'CarPal verified your business identity and location. Your profile now shows it.' },
     fa: { subject: 'کسب‌وکار شما تأیید شد', text: 'کارپال هویت و موقعیت کسب‌وکار شما را تأیید کرد و این در نمایه شما نمایش داده می‌شود.' },
@@ -408,6 +418,26 @@ export const TEMPLATES: Catalog = {
       text: 'CarPal corrected the map pin or address of one of your locations. Please review it.',
     },
     fa: { subject: 'موقعیت شما اصلاح شد', text: 'کارپال نشانگر نقشه یا نشانی یکی از شعبه‌های شما را اصلاح کرد. لطفاً آن را بررسی کنید.' },
+  },
+  'organization.verification_info_requested': {
+    en: {
+      subject: 'CarPal needs more information to verify your business',
+      text: 'To finish checking your business ({verification_type}), CarPal needs a few more details. Open Verification in your business account to see what is missing and send it.',
+    },
+    fa: {
+      subject: 'کارپال برای تأیید کسب‌وکار شما اطلاعات بیشتری لازم دارد',
+      text: 'برای پایان بررسی کسب‌وکار شما ({verification_type})، کارپال به چند مورد دیگر نیاز دارد. بخش تأیید را در حساب کسب‌وکار خود باز کنید، موارد خواسته‌شده را ببینید و بفرستید.',
+    },
+  },
+  'organization.profile_corrected': {
+    en: {
+      subject: 'CarPal corrected your business profile',
+      text: 'CarPal corrected some details of your business profile. Please review them in your business account.',
+    },
+    fa: {
+      subject: 'کارپال نمایه کسب‌وکار شما را اصلاح کرد',
+      text: 'کارپال برخی جزئیات نمایه کسب‌وکار شما را اصلاح کرد. لطفاً آن‌ها را در حساب کسب‌وکار خود بررسی کنید.',
+    },
   },
   'admin.dsr_deadline': {
     en: { subject: 'Data requests are due soon', text: '{request_count} data subject requests are due within 3 days.' },

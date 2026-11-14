@@ -29,6 +29,8 @@ export const CONSUMER_TEMPLATE_KEYS = [
   'community.followed_update',
   'media.upload_refused',
   'moderation.action_taken',
+  // backend S20: a CarPal message in the user's thread of a dispute (the thread screen is a later PWA stage).
+  'dispute.message_received',
   'ai.suggestion_ready',
 ] as const;
 
@@ -46,6 +48,9 @@ export const BUSINESS_TEMPLATE_KEYS = [
   'fleet.vehicle_data_shared',
   'organization.verified',
   'organization.location_corrected',
+  // backend S19: CarPal asks for more information on a verification check; staff corrected the business profile.
+  'organization.verification_info_requested',
+  'organization.profile_corrected',
   'admin.dsr_deadline',
   // Staff only (backend S17, contract 1.4.0): staff notices listed on the admin plane (admin.notifications_list);
   // notifications.list never returns them.
@@ -127,7 +132,27 @@ export const VALUE_PARAMS = {
     'community_event',
     'update',
   ],
-  action_type: ['approve', 'hide', 'remove', 'restore', 'request_changes', 'warn_user', 'suspend_account', 'reactivate_account'],
+  action_type: [
+    'approve',
+    'hide',
+    'remove',
+    'restore',
+    'request_changes',
+    'warn_user',
+    'suspend_account',
+    'reactivate_account',
+    'edit_request',
+  ],
+  dispute_type: [
+    'fake_review',
+    'inaccurate_review',
+    'mediation_request',
+    'badge_challenge',
+    'service_record_dispute',
+    'moderation_appeal',
+    'review_approval_objection',
+    'dispute',
+  ],
   target_type: ['review', 'review_response', 'post', 'comment', 'question', 'answer', 'portfolio_item', 'media_asset', 'user', 'content'],
   purpose: [
     'avatar',

@@ -603,6 +603,14 @@ export class ReviewsMineUpdateHandler implements OperationHandler {
         .returningAll()
         .executeTakeFirstOrThrow();
       await writeDetails(scope, r.id, b);
+      // S20: the edit answers a moderator's edit request; a moderator checks the review again (it stays hidden).
+      await scope.db
+        .updateTable('trust.review_edit_requests')
+        .set({ status: 'edited', edited_at: sql<Date>`now()` })
+        .where('review_id', '=', r.id)
+        .where('status', '=', 'open')
+        .where('deleted_at', 'is', null)
+        .execute();
       // The edit restarts the automatic checks (W4).
       await publishEvent(scope, {
         type: 'review.edited',

@@ -14,13 +14,15 @@ import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
 import { FourEyes, StaffNames, staffOf, type ApprovedChange } from '#modules/admin/interface/admin.js';
 import { caller } from './common.js';
 import {
+  confirmConsents,
   ensureDocument,
   findDocument,
+  isConsentKey,
   isPolicyKey,
   missingLocales,
   POLICY_KEYS,
-  RECONSENT_MODE,
   reconsentFor,
+  reconsentModeOf,
   recordAcceptances,
   settleStatuses,
   staffIdsOf,
@@ -31,6 +33,7 @@ import {
   versionInForce,
   type PolicyKey,
   type PolicyVersionRow,
+  type ReconsentAction,
 } from './policy-texts.js';
 
 type Translations = Record<string, string>;
@@ -70,12 +73,19 @@ function checkTexts(b: { title_translations?: unknown; body_translations?: unkno
   if (errors.length) throw ApiError.validation(errors);
 }
 
-const auditText = (v: { policy_version: string; status: string; effective_at?: Date | string | null; requires_reconsent?: boolean }) =>
+const auditText = (v: {
+  policy_version: string;
+  status: string;
+  effective_at?: Date | string | null;
+  requires_reconsent?: boolean;
+  reconsent_action?: string | null;
+}) =>
   JSON.stringify({
     policy_version: v.policy_version,
     status: v.status,
     effective_at: v.effective_at ? iso(v.effective_at) : null,
     requires_reconsent: v.requires_reconsent ?? false,
+    ...(v.reconsent_action ? { reconsent_action: v.reconsent_action } : {}),
   });
 
 // ------------------------------------------------------------------ admin plane
@@ -129,7 +139,7 @@ export class PolicyStaffViews {
       items.push({
         policy_key: key,
         region_key: this.regionKey,
-        reconsent_mode: doc?.reconsent_mode ?? RECONSENT_MODE[key],
+        reconsent_mode: doc?.reconsent_mode ?? reconsentModeOf(key),
         versions: mine.map((v) => toStaffSummary(key, v, inForce?.id, names, locale as 'en' | 'fa')),
       });
     }
@@ -254,11 +264,34 @@ export class AdminPolicyVersionUpdateHandler implements OperationHandler {
   }
 }
 
-const POLICY_TITLES: Record<PolicyKey, string> = {
+const POLICY_TITLES: Partial<Record<PolicyKey, string>> = {
   terms: 'Terms of Use',
   privacy: 'Privacy Policy',
   community_guidelines: 'Community Guidelines',
 };
+const titleOf = (key: PolicyKey) => POLICY_TITLES[key] ?? `consent text ${key}`;
+
+type PublishInput = { effective_at: string; requires_reconsent: boolean; reconsent_action?: ReconsentAction; reason: string };
+
+/**
+ * DQ-19 (S15b.T3): a consent text that requires re-consent carries keep or pause (default keep, the console's
+ * preselection); the choice is refused on legal policies and without re-consent (422 conditional_forbidden).
+ */
+function reconsentActionOf(key: PolicyKey, b: PublishInput): ReconsentAction | null {
+  const applies = isConsentKey(key) && b.requires_reconsent;
+  if (!applies && b.reconsent_action !== undefined)
+    throw ApiError.validation([{ pointer: '/reconsent_action', code: 'conditional_forbidden' }]);
+  return applies ? (b.reconsent_action ?? 'keep') : null;
+}
+
+function publishSummary(key: PolicyKey, label: string, region: string, b: PublishInput, action: ReconsentAction | null): string {
+  const head = `Publish ${titleOf(key)} ${label} (${region}) from ${b.effective_at}`;
+  if (!b.requires_reconsent) return `${head}; no re-consent`;
+  if (!action) return `${head}; every user accepts it again`;
+  return action === 'pause'
+    ? `${head}; consents under older texts are paused until confirmed`
+    : `${head}; consents under older texts stay in effect until confirmed or withdrawn`;
+}
 
 /** A document's version scheduled to come into force later (409 scheduled_exists when publishing another one). */
 async function scheduledOther(scope: TxScope, documentId: string, exceptId: string): Promise<boolean> {
@@ -274,7 +307,7 @@ export class AdminPolicyVersionPublishHandler implements OperationHandler {
     private readonly views: PolicyStaffViews,
   ) {}
 
-  async handle(ctx: OperationContext<{ effective_at: string; requires_reconsent: boolean; reason: string }>): Promise<OperationResult> {
+  async handle(ctx: OperationContext<PublishInput>): Promise<OperationResult> {
     const s = staffOf(ctx);
     const b = ctx.body;
     // Not in the past (a minute of clock skew between the console and the server is tolerated).
@@ -283,6 +316,7 @@ export class AdminPolicyVersionPublishHandler implements OperationHandler {
     const body = await ctx.tx(async (scope) => {
       const { v, key } = await versionWithKey(scope, ctx.params.version_id!);
       if (v.status !== 'draft') throw new ApiError('INVALID_TRANSITION', { detail: 'not_draft' });
+      const action = reconsentActionOf(key, b);
       checkTexts({ title_translations: v.title_translations, body_translations: v.body_translations });
       if (await scheduledOther(scope, v.document_id, v.id)) throw new ApiError('INVALID_TRANSITION', { detail: 'scheduled_exists' });
       return this.fourEyes.request(
@@ -292,10 +326,8 @@ export class AdminPolicyVersionPublishHandler implements OperationHandler {
           opId: 'admin.policy_version_publish',
           targetType: 'policy_version',
           targetId: v.id,
-          payload: { version_id: v.id, effective_at: b.effective_at, requires_reconsent: b.requires_reconsent },
-          summary:
-            `Publish ${POLICY_TITLES[key]} ${v.policy_version} (${this.views.regionKey}) from ${b.effective_at}` +
-            (b.requires_reconsent ? '; every user accepts it again' : '; no re-consent'),
+          payload: { version_id: v.id, effective_at: b.effective_at, requires_reconsent: b.requires_reconsent, reconsent_action: action },
+          summary: publishSummary(key, v.policy_version, this.views.regionKey, b, action),
           reason: b.reason,
           requiredRole: 'platform_admin',
         },
@@ -312,7 +344,13 @@ export class AdminPolicyVersionPublishHandler implements OperationHandler {
  * becomes superseded when the new one comes into force.
  */
 export async function publishPolicyVersion(scope: TxScope, change: ApprovedChange): Promise<void> {
-  const p = change.payload as { version_id: string; effective_at: string; requires_reconsent: boolean };
+  // reconsent_action is absent from requests made before S15b (legal policies only: null).
+  const p = change.payload as {
+    version_id: string;
+    effective_at: string;
+    requires_reconsent: boolean;
+    reconsent_action?: ReconsentAction | null;
+  };
   const { v, key } = await versionWithKey(scope, change.targetId, true);
   if (v.status !== 'draft') throw new ApiError('INVALID_TRANSITION', { detail: 'not_draft' });
   checkTexts({ title_translations: v.title_translations, body_translations: v.body_translations });
@@ -324,12 +362,13 @@ export async function publishPolicyVersion(scope: TxScope, change: ApprovedChang
       effective_at: sql<Date>`greatest(${p.effective_at}::timestamptz, now())`,
       status: sql<string>`CASE WHEN ${p.effective_at}::timestamptz <= now() THEN 'published' ELSE 'scheduled' END`,
       requires_reconsent: p.requires_reconsent,
+      reconsent_action: p.reconsent_action ?? null,
       published_by: change.requestedBy,
       approved_by: change.approvedBy,
       published_at: sql<Date>`now()`,
     })
     .where('id', '=', v.id)
-    .returning(['policy_version', 'status', 'effective_at', 'requires_reconsent'])
+    .returning(['policy_version', 'status', 'effective_at', 'requires_reconsent', 'reconsent_action'])
     .executeTakeFirstOrThrow();
   await settleStatuses(scope, v.document_id);
   await writeAudit(scope, {
@@ -380,6 +419,14 @@ export class PolicyAcceptHandler implements OperationHandler {
       const current = doc ? await versionInForce(scope, doc.id) : undefined;
       if (!doc || !current) throw new ApiError('NOT_FOUND');
       if (current.policy_version !== b.policy_version) throw new ApiError('POLICY_VERSION_OUTDATED', { detail: b.policy_key });
+      // A consent text (S15b): the caller's active consents of the type under older texts are confirmed under it.
+      if (isConsentKey(b.policy_key))
+        await confirmConsents(scope, region, {
+          subject: { type: 'user', id: userId },
+          consentType: b.policy_key,
+          policyVersion: b.policy_version,
+          by: userId,
+        });
       await recordAcceptances(scope, userId, [current.id], 'prompt');
       const accepted = await scope.db
         .selectFrom('identity.policy_acceptances')

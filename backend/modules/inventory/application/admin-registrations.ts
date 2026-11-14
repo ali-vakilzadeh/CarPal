@@ -3,8 +3,16 @@
 // rows (inaccurate fitment: rejected), with inventory.updated so the search
 // index follows; and its part of data subject requests (the user's stock
 // inquiries are exported; they stay with the vendor as business records).
+// S20 (BR-15): downgrade_fitment lowers a row's confidence (Docs/23 A-INV-01).
 import { Injectable, Optional, type OnModuleInit } from '@nestjs/common';
-import { excerpt, ModerationTargets, type ContentAction } from '#modules/admin/interface/admin.js';
+import {
+  excerpt,
+  ModerationTargets,
+  type ContentAction,
+  type TargetAction,
+  type TargetActionInput,
+  type TargetActionResult,
+} from '#modules/admin/interface/admin.js';
 import { PersonalDataRegistry } from '#modules/identity/interface/identity.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { inventoryUpdated } from './common.js';
@@ -59,6 +67,36 @@ async function applyToFitment(scope: TxScope, id: string, action: ContentAction)
   await scope.db.updateTable('inventory.inventory_fitment').set({ status }).where('id', '=', f.id).execute();
   await inventoryUpdated(scope, f.vendor_organization_id, [f.inventory_item_id], 'fitment');
   return true;
+}
+
+/** Fitment confidence from strongest to weakest (core.fitment_confidence). */
+const CONFIDENCE = ['confirmed', 'likely', 'uncertain'];
+
+/** downgrade_fitment (S20, BR-15): confirmed → likely or uncertain, likely → uncertain; the previous value is logged. */
+export async function downgradeFitment(
+  scope: TxScope,
+  id: string,
+  action: TargetAction,
+  input: TargetActionInput,
+): Promise<TargetActionResult> {
+  if (action !== 'downgrade_fitment') return { ok: false, transition: `${action} does not apply to a fitment row` };
+  const to = input.params.fitment_confidence;
+  if (!to) return { ok: false, invalid: { pointer: '/params/fitment_confidence', code: 'conditional_required' } };
+  const f = await scope.db
+    .selectFrom('inventory.inventory_fitment as f')
+    .innerJoin('inventory.inventory_items as i', 'i.id', 'f.inventory_item_id')
+    .select(['f.id', 'f.confidence', 'f.status', 'f.inventory_item_id', 'i.vendor_organization_id'])
+    .where('f.id', '=', id)
+    .where('f.deleted_at', 'is', null)
+    .forUpdate()
+    .executeTakeFirst();
+  if (!f) return { ok: false, transition: 'fitment row gone' };
+  if (f.status === 'rejected') return { ok: false, transition: 'fitment row rejected' };
+  if (CONFIDENCE.indexOf(to) <= CONFIDENCE.indexOf(f.confidence))
+    return { ok: false, invalid: { pointer: '/params/fitment_confidence', code: 'out_of_range' } };
+  await scope.db.updateTable('inventory.inventory_fitment').set({ confidence: to }).where('id', '=', f.id).execute();
+  await inventoryUpdated(scope, f.vendor_organization_id, [f.inventory_item_id], 'fitment');
+  return { ok: true, params: { fitment_confidence: to, previous_confidence: f.confidence } };
 }
 
 @Injectable()
@@ -167,6 +205,7 @@ export class InventoryAdminRegistrations implements OnModuleInit {
             .executeTakeFirst()
         )?.vendor_organization_id ?? null,
       apply: applyToFitment,
+      act: downgradeFitment,
     });
     this.personal?.register('inventory', {
       async export(scope, userId) {

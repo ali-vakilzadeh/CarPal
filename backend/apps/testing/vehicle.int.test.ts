@@ -321,7 +321,7 @@ describe('vehicle documents (encrypted media, consent to share)', () => {
       (
         await stranger.c.post('/v1/me/consents', {
           consent_type: 'vehicle_data_sharing',
-          policy_version: '2026-10',
+          policy_version: '1.0',
           scope: { type: 'vehicle', id: v.id },
           granted_to: { type: 'organization', id: provider.org.id },
         })

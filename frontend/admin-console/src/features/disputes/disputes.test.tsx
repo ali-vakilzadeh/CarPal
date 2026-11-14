@@ -73,6 +73,7 @@ function reviewView(): StaffReviewApprovalView {
     media: [],
     can_add_evidence: true,
     response: null,
+    edit_request: null,
   } as Review;
   return {
     review,

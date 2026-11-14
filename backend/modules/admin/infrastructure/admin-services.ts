@@ -144,7 +144,16 @@ export class DbModerationLog extends ModerationLog {
   async get(scope: TxScope, id: string) {
     const a = await scope.db
       .selectFrom('admin.moderation_actions')
-      .select(['target_entity_type', 'target_entity_id', 'action_type', 'actor_user_id', 'params'])
+      .select([
+        'target_entity_type',
+        'target_entity_id',
+        'action_type',
+        'actor_user_id',
+        'params',
+        'reason',
+        'moderation_case_id',
+        'created_at',
+      ])
       .where('id', '=', id)
       .executeTakeFirst();
     return a
@@ -154,6 +163,9 @@ export class DbModerationLog extends ModerationLog {
           actionType: a.action_type,
           actorUserId: a.actor_user_id,
           params: (a.params as Record<string, unknown> | null) ?? {},
+          reason: a.reason,
+          caseId: a.moderation_case_id,
+          createdAt: a.created_at,
         }
       : null;
   }
@@ -210,6 +222,37 @@ export class DbModerationLog extends ModerationLog {
         .where('deleted_at', 'is', null)
         .executeTakeFirst(),
     );
+  }
+
+  async withOpenCases(scope: TxScope, targetType: string, ids: readonly string[]): Promise<Set<string>> {
+    if (ids.length === 0) return new Set();
+    const rows = await scope.db
+      .selectFrom('admin.moderation_cases')
+      .select('target_entity_id')
+      .distinct()
+      .where('target_entity_type', '=', targetType)
+      .where('target_entity_id', 'in', [...ids])
+      .where('status', 'in', ['open', 'investigating', 'escalated'])
+      .where('deleted_at', 'is', null)
+      .execute();
+    return new Set(rows.map((r) => r.target_entity_id));
+  }
+
+  async withOpenReports(scope: TxScope, targets: readonly SubjectRef[], reason: string): Promise<Set<string>> {
+    if (targets.length === 0) return new Set();
+    const byType = new Map<string, string[]>();
+    for (const t of targets) byType.set(t.type, [...(byType.get(t.type) ?? []), t.id]);
+    // Triaged reports stay open while their case is: closing the case resolves or dismisses them (admin.case_close).
+    const rows = await scope.db
+      .selectFrom('admin.content_reports')
+      .select(['target_type', 'target_id'])
+      .distinct()
+      .where('reason', '=', reason as never)
+      .where('status', 'in', ['open', 'triaged'])
+      .where('deleted_at', 'is', null)
+      .where((eb) => eb.or([...byType].map(([type, ids]) => eb.and([eb('target_type', '=', type as never), eb('target_id', 'in', ids)]))))
+      .execute();
+    return new Set(rows.map((r) => `${r.target_type}:${r.target_id}`));
   }
 }
 

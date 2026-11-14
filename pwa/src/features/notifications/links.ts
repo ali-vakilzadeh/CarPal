@@ -24,6 +24,8 @@ export function notificationDestination(n: Pick<Notification, 'template_key' | '
     if (ref?.type === 'question') return href(`/questions/${enc(ref.id)}`);
     return href('/activity?tab=reports');
   }
+  // backend S20: a dispute message → My Activity, Reports & requests (the dispute thread screen comes later).
+  if (n.template_key === 'dispute.message_received') return href('/activity?tab=reports');
   if (!ref) return null;
   switch (ref.type) {
     case 'appointment':

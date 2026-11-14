@@ -130,8 +130,9 @@ export class DisputesCreateHandler implements OperationHandler {
 async function loadMine(scope: TxScope, userId: string, id: string, lock = false): Promise<DisputeRow> {
   const q = scope.db.selectFrom('trust.disputes').selectAll().where('id', '=', id).where('deleted_at', 'is', null);
   const row = await (lock ? q.forUpdate() : q).executeTakeFirst();
-  // RLS raiser_all: the raiser or the raising organization (when it is the context organization).
-  if (!row || (row.raised_by_user_id !== userId && !row.raised_by_organization_id)) throw new ApiError('NOT_FOUND');
+  // RLS raiser_all: the raiser. S20: a respondent reads the dispute row too (respondent_read) but only through its
+  // message thread (disputes.messages_list), never the raiser's statement.
+  if (!row || row.raised_by_user_id !== userId) throw new ApiError('NOT_FOUND');
   return row;
 }
 

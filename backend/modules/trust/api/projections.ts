@@ -99,6 +99,7 @@ export function toReview(
     media: MediaAttachmentView[];
     canAddEvidence: boolean;
     response: ReturnType<typeof toResponse> | null;
+    editRequest?: ReviewEditRequestRow | null;
   },
 ) {
   return {
@@ -133,6 +134,24 @@ export function toReview(
     media: x.media.slice(0, 10),
     can_add_evidence: x.canAddEvidence,
     response: x.response,
+    edit_request: x.editRequest ? toReviewEditRequest(x.editRequest) : null,
+  };
+}
+
+/** The fields of a review edit request the author sees (S20): never the staff member who asked. */
+export type ReviewEditRequestRow = Pick<
+  Selectable<DB['trust.review_edit_requests']>,
+  'spans' | 'message' | 'status' | 'created_at' | 'due_at'
+>;
+
+/** 40 ReviewEditRequest. */
+export function toReviewEditRequest(e: ReviewEditRequestRow) {
+  return {
+    spans: (e.spans as { field: 'title' | 'body'; start: number; end: number }[]).slice(0, 20),
+    message: e.message,
+    status: e.status as 'open' | 'edited',
+    requested_at: e.created_at.toISOString(),
+    due_at: e.due_at.toISOString(),
   };
 }
 

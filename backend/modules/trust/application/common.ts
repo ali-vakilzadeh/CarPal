@@ -158,6 +158,20 @@ export class ReviewViews {
   /** 40 Review: the author's view with all their tags and photos (evidence stays with CarPal staff). */
   async authorViews(scope: TxScope, rows: readonly ReviewRow[], locale: Locale, evidenceOpen: Set<string>) {
     const { subs, tags, responses } = await this.#parts(scope, rows);
+    // S20: a moderator's open or edited edit request (author RLS: their own reviews).
+    const edits = rows.length
+      ? await scope.db
+          .selectFrom('trust.review_edit_requests')
+          .select(['review_id', 'spans', 'message', 'status', 'created_at', 'due_at'])
+          .where(
+            'review_id',
+            'in',
+            rows.map((r) => r.id),
+          )
+          .where('status', 'in', ['open', 'edited'])
+          .where('deleted_at', 'is', null)
+          .execute()
+      : [];
     const media = await this.media.attachmentViews(
       scope,
       'review',
@@ -171,6 +185,7 @@ export class ReviewViews {
         tagIds: tags.filter((x) => x.review_id === r.id).map((x) => x.taxonomy_node_id),
         media: (media.get(r.id) ?? []).filter((m) => m.role !== 'evidence'),
         canAddEvidence: evidenceOpen.has(r.id),
+        editRequest: edits.find((e) => e.review_id === r.id) ?? null,
         response: (() => {
           const p = published.find((x) => x.review_id === r.id);
           return p ? views.get(p.id)! : null;

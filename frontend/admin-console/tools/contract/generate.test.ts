@@ -25,12 +25,12 @@ describe('admin contract generation (AC1.T2)', () => {
     expect(contractProblems(registry())).toEqual([]);
   });
 
-  it('selects the 95 admin-api operations of contract 1.4.0 (S18: case context and own decisions) and no api reads (AC2: the api host refuses admin tokens)', () => {
+  it('selects the 101 admin-api operations of contract 1.4.0 (S19: verification and organization records) and no api reads (AC2: the api host refuses admin tokens)', () => {
     const ops = selectOperations(registry());
-    expect([...ops.values()].filter((o) => o.plane === 'admin')).toHaveLength(95);
+    expect([...ops.values()].filter((o) => o.plane === 'admin')).toHaveLength(101);
     expect(API_READS).toEqual([]);
     expect([...ops.values()].filter((o) => o.plane === 'api-read')).toHaveLength(0);
-    expect(ADMIN_CONTRACT).toMatchObject({ version: '1.4.0', adminOperationCount: 95, apiReadCount: 0 });
+    expect(ADMIN_CONTRACT).toMatchObject({ version: '1.4.0', adminOperationCount: 101, apiReadCount: 0 });
     for (const op of ops.values()) if (op.plane === 'admin') expect(op.host).toBe('admin-api');
   });
 
@@ -43,7 +43,12 @@ describe('admin contract generation (AC1.T2)', () => {
     });
     // 4EYES and AAL3 can be conditional (Docs/40 tag composition rules).
     expect(ADMIN_OPERATIONS['admin.flag_update'].fourEyes).toEqual(['kill switch off', 'featured.enabled on']);
-    expect(ADMIN_OPERATIONS['admin.case_action'].aal3).toEqual(['suspend_account', 'apply_trust_penalty', 'merge_duplicate']);
+    expect(ADMIN_OPERATIONS['admin.case_action'].aal3).toEqual([
+      'suspend_account',
+      'apply_trust_penalty',
+      'merge_duplicate',
+      'reduce_weight',
+    ]);
     expect(ADMIN_OPERATIONS['admin.four_eyes_decide']).toMatchObject({
       roles: ['ADM', 'MOD'],
       roleQualifier: 'moderation changes only',

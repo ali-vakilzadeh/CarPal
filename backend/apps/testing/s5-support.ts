@@ -54,7 +54,7 @@ export async function grantConsent(
 ): Promise<string> {
   const res = await c.post('/v1/me/consents', {
     consent_type: type,
-    policy_version: '2026-10',
+    policy_version: '1.0',
     ...(scope ? { scope } : {}),
     ...(grantee ? { granted_to: { type: 'organization', id: grantee } } : {}),
   });

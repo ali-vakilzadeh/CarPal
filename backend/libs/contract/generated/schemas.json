@@ -1278,6 +1278,13 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 20,
+              "pattern": "^[^\\r\\n]*$",
+              "description": "creates vehicle_data_sharing + service_history_sharing consents scoped to this appointment and granted to the provider, atomically; policy_version: the service_history_sharing text in force (§6.7)"
+            },
+            "vehicle_data_policy_version": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20,
               "pattern": "^[^\\r\\n]*$"
             }
           },
@@ -1285,7 +1292,7 @@
             "policy_version"
           ],
           "additionalProperties": false,
-          "description": "creates vehicle_data_sharing + service_history_sharing consents scoped to this appointment and granted to the provider, atomically"
+          "description": "the vehicle_data_sharing text in force; default policy_version"
         },
         "media_ids": {
           "type": "array",
@@ -1436,6 +1443,80 @@
       },
       "additionalProperties": false,
       "description": "above the fleet threshold → cost_estimate approval"
+    },
+    "AppointmentSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "appointment"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "provider": {
+          "$ref": "#/$defs/OrgSummary"
+        },
+        "requester_type": {
+          "type": "string",
+          "enum": [
+            "user",
+            "fleet"
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/AppointmentStatus"
+        },
+        "service_system_node_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confirmed_start_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "provider",
+        "requester_type",
+        "status",
+        "service_system_node_id",
+        "confirmed_start_at",
+        "completed_at"
+      ],
+      "additionalProperties": false,
+      "description": "no requester contact data"
     },
     "AppointmentSource": {
       "type": "string",
@@ -2120,6 +2201,75 @@
       ],
       "additionalProperties": false
     },
+    "AssistSessionView": {
+      "type": "object",
+      "properties": {
+        "assist_session_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "organization": {
+          "$ref": "#/$defs/OrgSummary"
+        },
+        "flow_type": {
+          "type": "string",
+          "enum": [
+            "provider",
+            "vendor",
+            "fleet"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "ended",
+            "expired"
+          ],
+          "description": "active past expires_at is shown as expired"
+        },
+        "staff_display": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "mine": {
+          "type": "boolean"
+        },
+        "started_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "expires_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "ended_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "assist_session_id",
+        "organization",
+        "flow_type",
+        "status",
+        "staff_display",
+        "mine",
+        "started_at",
+        "expires_at",
+        "ended_at"
+      ],
+      "additionalProperties": false
+    },
     "AttachedToType": {
       "type": "string",
       "enum": [
@@ -2134,8 +2284,10 @@
         "appointment",
         "provider_job_log",
         "organization",
-        "user"
-      ]
+        "user",
+        "dispute_message"
+      ],
+      "description": "dispute_message: evidence (S20)"
     },
     "AttachmentRole": {
       "type": "string",
@@ -2469,6 +2621,95 @@
         "end_time",
         "slot_duration_minutes",
         "max_concurrent_appointments"
+      ],
+      "additionalProperties": false
+    },
+    "BadgeSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "badge"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "organization": {
+          "$ref": "#/$defs/OrgSummary"
+        },
+        "badge_type": {
+          "$ref": "#/$defs/BadgeType"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending_approval",
+            "active",
+            "revoked",
+            "expired"
+          ]
+        },
+        "rule_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "rule_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "awarded_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "last_evaluated_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revoked_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "organization",
+        "badge_type",
+        "status",
+        "rule_key",
+        "rule_version",
+        "awarded_at",
+        "last_evaluated_at",
+        "expires_at",
+        "revoked_reason"
       ],
       "additionalProperties": false
     },
@@ -3384,7 +3625,8 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 20,
-          "pattern": "^[^\\r\\n]*$"
+          "pattern": "^[^\\r\\n]*$",
+          "description": "the consent text in force of consent_type (policy.current), §6.7"
         },
         "scope": {
           "type": "object",
@@ -3530,7 +3772,53 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 20,
-          "pattern": "^[^\\r\\n]*$"
+          "pattern": "^[^\\r\\n]*$",
+          "description": "label of the consent text granted under"
+        },
+        "policy_version_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "that published consent text; null: granted before texts were versioned"
+        },
+        "confirmed_policy_version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "latest consent text the consent was confirmed under (§6.7), else null"
+        },
+        "confirmed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reconsent_required": {
+          "type": "boolean",
+          "description": "active, and a re-consent text came into force after its text"
+        },
+        "paused": {
+          "type": "boolean",
+          "description": "re-consent required and paused: the consent gate treats it as not granted"
         },
         "granted": {
           "type": "boolean"
@@ -3592,6 +3880,11 @@
         "granted_to_id",
         "granted_to_organization",
         "policy_version",
+        "policy_version_id",
+        "confirmed_policy_version",
+        "confirmed_at",
+        "reconsent_required",
+        "paused",
         "granted",
         "granted_at",
         "withdrawn_at",
@@ -4390,6 +4683,132 @@
       "additionalProperties": false,
       "description": "caller must be a member"
     },
+    "DisputeMessage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "side": {
+          "$ref": "#/$defs/DisputeSide"
+        },
+        "author": {
+          "type": "string",
+          "enum": [
+            "staff",
+            "party"
+          ]
+        },
+        "author_display": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "\"CarPal\" for staff messages; staff names never reach the parties"
+        },
+        "template_key": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DisputeMessageTemplate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "staff messages only"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "media": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MediaAttachmentView"
+          },
+          "maxItems": 5,
+          "description": "evidence added with a reply"
+        },
+        "reply_due_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "id",
+        "side",
+        "author",
+        "author_display",
+        "template_key",
+        "body",
+        "media",
+        "reply_due_at",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "DisputeMessageTemplate": {
+      "type": "string",
+      "enum": [
+        "request_information",
+        "request_evidence",
+        "mediation_invitation",
+        "status_update",
+        "withdrawal_confirmation",
+        "outcome_notice",
+        "other"
+      ]
+    },
+    "DisputeReply": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "≥ 1 character after trimming"
+        },
+        "media_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "maxItems": 5,
+          "description": "the caller's own clean files, purpose review_evidence or service_evidence"
+        },
+        "organization_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "required": [
+        "body"
+      ],
+      "additionalProperties": false,
+      "description": "when the party is an organization: the caller must be its owner or manager"
+    },
+    "DisputeSide": {
+      "type": "string",
+      "enum": [
+        "raiser",
+        "respondent"
+      ],
+      "description": "respondent: the other party of the target (backend S20)"
+    },
     "DisputeStatus": {
       "type": "string",
       "enum": [
@@ -4399,6 +4818,105 @@
         "resolved_rejected",
         "withdrawn"
       ]
+    },
+    "DisputeTargetSnapshot": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReviewSnapshot"
+        },
+        {
+          "$ref": "#/$defs/ModerationActionSnapshot"
+        },
+        {
+          "$ref": "#/$defs/ServiceRecordSnapshot"
+        },
+        {
+          "$ref": "#/$defs/BadgeSnapshot"
+        },
+        {
+          "$ref": "#/$defs/AppointmentSnapshot"
+        },
+        {
+          "$ref": "#/$defs/UnavailableDisputeTarget"
+        }
+      ]
+    },
+    "DisputeThread": {
+      "type": "object",
+      "properties": {
+        "dispute_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "dispute_type": {
+          "$ref": "#/$defs/DisputeType"
+        },
+        "target": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "review",
+                "service_record",
+                "badge",
+                "appointment",
+                "moderation_action"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "status": {
+          "$ref": "#/$defs/DisputeStatus"
+        },
+        "side": {
+          "$ref": "#/$defs/DisputeSide"
+        },
+        "can_reply": {
+          "type": "boolean",
+          "description": "open or in mediation"
+        },
+        "reply_due_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "of the latest staff message that set one"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DisputeMessage"
+          },
+          "maxItems": 200
+        }
+      },
+      "required": [
+        "dispute_id",
+        "dispute_type",
+        "target",
+        "status",
+        "side",
+        "can_reply",
+        "reply_due_at",
+        "items"
+      ],
+      "additionalProperties": false,
+      "description": "the caller's side only, oldest first"
     },
     "DisputeType": {
       "type": "string",
@@ -9449,8 +9967,8 @@
           "items": {
             "$ref": "#/$defs/PolicyReconsent"
           },
-          "maxItems": 10,
-          "description": "§6.7: policies to accept again; empty when none"
+          "maxItems": 20,
+          "description": "§6.7: policies to accept again and consents to confirm; empty when none"
         }
       },
       "required": [
@@ -10361,6 +10879,31 @@
             "merge_into_id": {
               "type": "string",
               "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            "weight_factor": {
+              "type": "string",
+              "pattern": "^\\d{1,1}(\\.\\d{1,3})?$",
+              "description": "reduce_weight: 0 to 1, the share of its weight a review keeps (1 restores it)"
+            },
+            "edit_spans": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ReviewEditSpan"
+              },
+              "maxItems": 20
+            },
+            "edit_message": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "description": "edit_request: both required"
+            },
+            "fitment_confidence": {
+              "type": "string",
+              "enum": [
+                "likely",
+                "uncertain"
+              ]
             }
           },
           "additionalProperties": false
@@ -10369,6 +10912,85 @@
       "required": [
         "action_type",
         "reason"
+      ],
+      "additionalProperties": false,
+      "description": "downgrade_fitment: lower than the row's confidence"
+    },
+    "ModerationActionSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "moderation_action"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "action_type": {
+          "$ref": "#/$defs/ModerationActionType"
+        },
+        "target": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "moderation_case_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decided_by_display": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "the staff member who took it: staff only, never shown to the appellant"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "action_type",
+        "target",
+        "reason",
+        "moderation_case_id",
+        "decided_by_display",
+        "created_at"
       ],
       "additionalProperties": false
     },
@@ -10392,8 +11014,14 @@
         "reject_review_approval",
         "request_evidence",
         "correct_location",
-        "assist_onboarding"
-      ]
+        "assist_onboarding",
+        "reduce_weight",
+        "edit_request",
+        "downgrade_fitment",
+        "request_verification_info",
+        "correct_profile"
+      ],
+      "description": "backend S19"
     },
     "ModerationCase": {
       "type": "object",
@@ -11681,6 +12309,30 @@
               "type": "null"
             }
           ]
+        },
+        "registration_number": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "backend S19"
+        },
+        "info_request": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VerificationInfoRequest"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -11693,9 +12345,81 @@
         "submitted_document_ids",
         "reviewed_at",
         "rejection_reason",
-        "expires_at"
+        "expires_at",
+        "registration_number",
+        "info_request"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "CarPal's latest request for more information (backend S19)"
+    },
+    "OrgCorrection": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "legal_name": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 160,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "website": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048,
+              "pattern": "^https://[^\\s@#/?]+([/?][^\\s#]*)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description_translations": {
+          "anyOf": [
+            {
+              "type": "object",
+              "propertyNames": {
+                "enum": [
+                  "en",
+                  "fa"
+                ]
+              },
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "minProperties": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "additionalProperties": false,
+      "description": "C: at least one field; never contact data or the slug"
     },
     "OrgCreate": {
       "type": "object",
@@ -11836,6 +12560,170 @@
         "joined_at"
       ],
       "additionalProperties": false
+    },
+    "OrgProfileChange": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "changed_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "actor": {
+          "type": "string",
+          "enum": [
+            "member",
+            "staff"
+          ]
+        },
+        "actor_display": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "org.update",
+            "admin.org_correct"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 500,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "staff corrections carry a reason"
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OrgProfileFieldChange"
+          },
+          "maxItems": 10
+        }
+      },
+      "required": [
+        "id",
+        "changed_at",
+        "actor",
+        "actor_display",
+        "source",
+        "reason",
+        "changes"
+      ],
+      "additionalProperties": false
+    },
+    "OrgProfileField": {
+      "type": "string",
+      "enum": [
+        "name",
+        "legal_name",
+        "contact_email",
+        "contact_phone",
+        "website",
+        "description_translations",
+        "slug"
+      ]
+    },
+    "OrgProfileFieldChange": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "$ref": "#/$defs/OrgProfileField"
+        },
+        "previous": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 2048,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "next": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 2048,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "every field but description_translations"
+        },
+        "previous_translations": {
+          "anyOf": [
+            {
+              "type": "object",
+              "propertyNames": {
+                "enum": [
+                  "en",
+                  "fa"
+                ]
+              },
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "minProperties": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "next_translations": {
+          "anyOf": [
+            {
+              "type": "object",
+              "propertyNames": {
+                "enum": [
+                  "en",
+                  "fa"
+                ]
+              },
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "minProperties": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "field",
+        "previous",
+        "next",
+        "previous_translations",
+        "next_translations"
+      ],
+      "additionalProperties": false,
+      "description": "description_translations"
     },
     "OrgReview": {
       "type": "object",
@@ -12237,6 +13125,37 @@
         },
         "organization_type": {
           "$ref": "#/$defs/OrgType"
+        },
+        "city": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "an active location in this city (case-insensitive) (S19)"
+        },
+        "plan_key": {
+          "type": "string",
+          "enum": [
+            "individual_free",
+            "fleet_20",
+            "fleet_50",
+            "fleet_100",
+            "fleet_custom",
+            "provider_basic",
+            "provider_pro",
+            "vendor_basic",
+            "vendor_pro"
+          ]
+        },
+        "has_open_cases": {
+          "type": "boolean"
+        },
+        "location_issue": {
+          "type": "boolean"
+        },
+        "possible_duplicate": {
+          "type": "boolean",
+          "description": "S19"
         },
         "cursor": {
           "type": "string",
@@ -12966,9 +13885,21 @@
       "enum": [
         "terms",
         "privacy",
-        "community_guidelines"
-      ],
-      "description": "one document per key and region (52 PolicyDocument)"
+        "community_guidelines",
+        "vehicle_data_sharing",
+        "service_history_sharing",
+        "vendor_fitment_context",
+        "photo_publishing",
+        "showcase_publishing",
+        "ai_personalization",
+        "review_invitations",
+        "fleet_driver_data_visibility",
+        "fleet_data_ai_use",
+        "provider_analytics_ai_use",
+        "vendor_inventory_ai_use",
+        "location_usage",
+        "marketing"
+      ]
     },
     "PolicyReconsent": {
       "type": "object",
@@ -12988,20 +13919,31 @@
           "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
         },
         "mode": {
-          "type": "string",
-          "enum": [
-            "blocking",
-            "notice"
-          ]
+          "$ref": "#/$defs/ReconsentMode"
+        },
+        "consent_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "maxItems": 100,
+          "description": "mode consent: the caller's consents to confirm or withdraw; else empty"
+        },
+        "paused": {
+          "type": "boolean"
         }
       },
       "required": [
         "policy_key",
         "policy_version",
         "effective_at",
-        "mode"
+        "mode",
+        "consent_ids",
+        "paused"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "mode consent: some of them are paused until confirmed; else false"
     },
     "PolicyText": {
       "type": "object",
@@ -13094,12 +14036,18 @@
           "type": "boolean"
         },
         "reconsent_mode": {
-          "type": "string",
-          "enum": [
-            "blocking",
-            "notice"
+          "$ref": "#/$defs/ReconsentMode"
+        },
+        "reconsent_action": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReconsentAction"
+            },
+            {
+              "type": "null"
+            }
           ],
-          "description": "blocking: accept before further use; notice: show once"
+          "description": "consent texts that require re-consent only"
         },
         "upcoming": {
           "anyOf": [
@@ -13118,12 +14066,23 @@
                 },
                 "requires_reconsent": {
                   "type": "boolean"
+                },
+                "reconsent_action": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/ReconsentAction"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "required": [
                 "policy_version",
                 "effective_at",
-                "requires_reconsent"
+                "requires_reconsent",
+                "reconsent_action"
               ],
               "additionalProperties": false
             },
@@ -13142,6 +14101,7 @@
         "effective_at",
         "requires_reconsent",
         "reconsent_mode",
+        "reconsent_action",
         "upcoming"
       ],
       "additionalProperties": false,
@@ -18192,6 +19152,23 @@
         "recency"
       ]
     },
+    "ReconsentAction": {
+      "type": "string",
+      "enum": [
+        "keep",
+        "pause"
+      ],
+      "description": "consent texts: consents under older texts stay in effect, or pause, until confirmed"
+    },
+    "ReconsentMode": {
+      "type": "string",
+      "enum": [
+        "blocking",
+        "notice",
+        "consent"
+      ],
+      "description": "blocking: accept before further use; notice: show once; consent: confirm the consents"
+    },
     "RedactionDecision": {
       "type": "object",
       "properties": {
@@ -19173,6 +20150,16 @@
               "type": "null"
             }
           ]
+        },
+        "edit_request": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReviewEditRequest"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -19197,9 +20184,11 @@
         "published_at",
         "media",
         "can_add_evidence",
-        "response"
+        "response",
+        "edit_request"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "a moderator's open edit request (backend S20); null otherwise"
     },
     "ReviewApprovalView": {
       "type": "object",
@@ -19501,6 +20490,76 @@
         "content_locale"
       ],
       "additionalProperties": false
+    },
+    "ReviewEditRequest": {
+      "type": "object",
+      "properties": {
+        "spans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ReviewEditSpan"
+          },
+          "maxItems": 20
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "edited"
+          ]
+        },
+        "requested_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "due_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "spans",
+        "message",
+        "status",
+        "requested_at",
+        "due_at"
+      ],
+      "additionalProperties": false,
+      "description": "the review is hidden until a moderator checks the edit; 7 days to edit"
+    },
+    "ReviewEditSpan": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "enum": [
+            "title",
+            "body"
+          ]
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5000
+        }
+      },
+      "required": [
+        "field",
+        "start",
+        "end"
+      ],
+      "additionalProperties": false,
+      "description": "characters [start, end) of the field"
     },
     "ReviewerDecision": {
       "type": "string",
@@ -20912,6 +21971,147 @@
       ],
       "additionalProperties": false
     },
+    "ServiceRecordSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "service_record"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "vehicle_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "service_date": {
+          "type": "string",
+          "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$"
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrgSummary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "service_system_node_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "service_task_node_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mileage_km": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2000000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_type": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "user_manual",
+                "provider_logged",
+                "appointment_completed",
+                "invoice_upload"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "imported_file_future",
+                "obdii_event_future"
+              ]
+            }
+          ]
+        },
+        "verification_status": {
+          "type": "string",
+          "enum": [
+            "self_reported",
+            "provider_confirmed",
+            "appointment_verified",
+            "invoice_verified",
+            "admin_verified"
+          ]
+        },
+        "created_by_type": {
+          "type": "string",
+          "enum": [
+            "user",
+            "organization",
+            "system"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "disputed",
+            "removed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "vehicle_id",
+        "service_date",
+        "provider",
+        "service_system_node_id",
+        "service_task_node_id",
+        "description",
+        "mileage_km",
+        "source_type",
+        "verification_status",
+        "created_by_type",
+        "status",
+        "created_at"
+      ],
+      "additionalProperties": false,
+      "description": "no cost, VIN or owner contact data"
+    },
     "ServiceRecordWrite": {
       "type": "object",
       "properties": {
@@ -21375,8 +22575,10 @@
             "rejected",
             "evidence_requested",
             "resolved_upheld",
-            "resolved_rejected"
-          ]
+            "resolved_rejected",
+            "withdrawn"
+          ],
+          "description": "withdrawn: on request (S20)"
         },
         "reason_code": {
           "anyOf": [
@@ -21607,6 +22809,323 @@
         "raised_by_organization",
         "assigned_to_display",
         "moderator_notes"
+      ],
+      "additionalProperties": false
+    },
+    "StaffDisputeDetail": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "updated_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "target": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "review",
+                "service_record",
+                "badge",
+                "appointment",
+                "moderation_action"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "dispute_type": {
+          "$ref": "#/$defs/DisputeType"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "status": {
+          "$ref": "#/$defs/DisputeStatus"
+        },
+        "resolution": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolved_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "raised_by_display": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "raised_by_organization": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrgSummary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assigned_to_display": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "moderator_notes": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 3000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target_snapshot": {
+          "$ref": "#/$defs/DisputeTargetSnapshot"
+        },
+        "respondent": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "party": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "user",
+                        "organization"
+                      ]
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id"
+                  ],
+                  "additionalProperties": false
+                },
+                "display": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 50,
+                  "pattern": "^[^\\r\\n]*$"
+                },
+                "contacted": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "party",
+                "display",
+                "contacted"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "created_at",
+        "updated_at",
+        "version",
+        "target",
+        "dispute_type",
+        "reason",
+        "status",
+        "resolution",
+        "resolved_at",
+        "raised_by_display",
+        "raised_by_organization",
+        "assigned_to_display",
+        "moderator_notes",
+        "target_snapshot",
+        "respondent"
+      ],
+      "additionalProperties": false
+    },
+    "StaffDisputeMessage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "side": {
+          "$ref": "#/$defs/DisputeSide"
+        },
+        "author": {
+          "type": "string",
+          "enum": [
+            "staff",
+            "party"
+          ]
+        },
+        "author_display": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "\"CarPal\" for staff messages; staff names never reach the parties"
+        },
+        "template_key": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DisputeMessageTemplate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "staff messages only"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "media": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MediaAttachmentView"
+          },
+          "maxItems": 5,
+          "description": "evidence added with a reply"
+        },
+        "reply_due_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "staff_author_display": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "side",
+        "author",
+        "author_display",
+        "template_key",
+        "body",
+        "media",
+        "reply_due_at",
+        "created_at",
+        "staff_author_display"
+      ],
+      "additionalProperties": false,
+      "description": "the staff member who wrote it"
+    },
+    "StaffDisputeMessageWrite": {
+      "type": "object",
+      "properties": {
+        "side": {
+          "$ref": "#/$defs/DisputeSide"
+        },
+        "template_key": {
+          "$ref": "#/$defs/DisputeMessageTemplate"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "reply_due_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+          "description": "future, at most 30 days ahead"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "required": [
+        "side",
+        "template_key",
+        "body",
+        "reason"
       ],
       "additionalProperties": false
     },
@@ -21904,6 +23423,14 @@
           },
           "maxItems": 10
         },
+        "location_issue": {
+          "type": "boolean",
+          "description": "an active pin far_apart from its address, or an open wrong-location report (S19)"
+        },
+        "possible_duplicate": {
+          "type": "boolean",
+          "description": "another live organization with the same normalized name in a city they share, or the same contact phone (rule-based, S19)"
+        },
         "created_at": {
           "type": "string",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
@@ -21923,6 +23450,8 @@
         "open_cases",
         "trust_score",
         "pending_verifications",
+        "location_issue",
+        "possible_duplicate",
         "created_at"
       ],
       "additionalProperties": false,
@@ -22199,11 +23728,8 @@
           "pattern": "^[^\\r\\n]*$"
         },
         "reconsent_mode": {
-          "type": "string",
-          "enum": [
-            "blocking",
-            "notice"
-          ]
+          "$ref": "#/$defs/ReconsentMode",
+          "description": "consent: a consent text"
         },
         "versions": {
           "type": "array",
@@ -22275,6 +23801,17 @@
         },
         "requires_reconsent": {
           "type": "boolean"
+        },
+        "reconsent_action": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReconsentAction"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "consent texts that require re-consent (DQ-19)"
         },
         "locales": {
           "type": "array",
@@ -22403,6 +23940,7 @@
         "title",
         "effective_at",
         "requires_reconsent",
+        "reconsent_action",
         "locales",
         "created_by_display",
         "created_at",
@@ -22470,6 +24008,17 @@
         },
         "requires_reconsent": {
           "type": "boolean"
+        },
+        "reconsent_action": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReconsentAction"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "consent texts that require re-consent (DQ-19)"
         },
         "locales": {
           "type": "array",
@@ -22540,6 +24089,7 @@
         "title",
         "effective_at",
         "requires_reconsent",
+        "reconsent_action",
         "locales",
         "created_by_display",
         "created_at",
@@ -23386,6 +24936,267 @@
       ],
       "additionalProperties": false,
       "description": "a timed suspension; lifted automatically once passed"
+    },
+    "StaffVerificationItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "updated_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "verification_type": {
+          "type": "string",
+          "enum": [
+            "business_identity",
+            "address",
+            "phone",
+            "email",
+            "location"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "verified",
+            "rejected",
+            "expired"
+          ]
+        },
+        "submitted_document_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          }
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rejection_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "registration_number": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "backend S19"
+        },
+        "info_request": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VerificationInfoRequest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "organization": {
+          "$ref": "#/$defs/OrgSummary"
+        },
+        "location_check": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PinCheck"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "wrong_location_reports": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "assignee": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "display_name": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 50,
+                  "pattern": "^[^\\r\\n]*$"
+                }
+              },
+              "required": [
+                "user_id",
+                "display_name"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assigned_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "backend S19 from here on"
+        },
+        "sla_started_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+          "description": "review clock start, moved forward by every pause (2 working days, Docs/23 §6)"
+        },
+        "sla_paused_since": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "set while CarPal waits for the business (an open info request)"
+        },
+        "ai_precheck": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VerificationPrecheck"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "null until an AI pre-check exists"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "display_name": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 50,
+                  "pattern": "^[^\\r\\n]*$"
+                }
+              },
+              "required": [
+                "user_id",
+                "display_name"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the organization's active owner; never contact data"
+        },
+        "callback_result": {
+          "type": "string",
+          "enum": [
+            "verified",
+            "pending",
+            "rejected",
+            "expired",
+            "not_requested"
+          ],
+          "description": "the organization's latest phone check"
+        },
+        "possible_duplicate": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "created_at",
+        "updated_at",
+        "version",
+        "verification_type",
+        "status",
+        "submitted_document_ids",
+        "reviewed_at",
+        "rejection_reason",
+        "expires_at",
+        "registration_number",
+        "info_request",
+        "organization",
+        "location_check",
+        "wrong_location_reports",
+        "assignee",
+        "assigned_at",
+        "sla_started_at",
+        "sla_paused_since",
+        "ai_precheck",
+        "owner",
+        "callback_result",
+        "possible_duplicate"
+      ],
+      "additionalProperties": false,
+      "description": "as StaffOrgSearchRow.possible_duplicate"
     },
     "StatusChange": {
       "type": "object",
@@ -25102,6 +26913,35 @@
         "calculated_at"
       ],
       "additionalProperties": false
+    },
+    "UnavailableDisputeTarget": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "review",
+            "service_record",
+            "badge",
+            "appointment",
+            "moderation_action"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available"
+      ],
+      "additionalProperties": false,
+      "description": "the record is gone"
     },
     "UnavailableSnapshot": {
       "type": "object",
@@ -26942,6 +28782,252 @@
         "accessories"
       ]
     },
+    "VerificationDecision": {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": [
+            "verified",
+            "rejected",
+            "info_requested"
+          ]
+        },
+        "rejection_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "info_request": {
+          "$ref": "#/$defs/VerificationInfoRequestWrite",
+          "x-conditional": "rejection_reason only for rejected, info_request only for info_requested",
+          "description": "C: rejection_reason only for rejected, info_request only for info_requested"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "required": [
+        "decision",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "VerificationInfoRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "missing_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VerificationMissingItem"
+          },
+          "maxItems": 10
+        },
+        "template_key": {
+          "$ref": "#/$defs/VerificationInfoTemplate"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "answered",
+            "closed"
+          ],
+          "description": "closed: the check was decided without an answer"
+        },
+        "requested_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "answered_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "response_note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "added_document_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "missing_items",
+        "template_key",
+        "message",
+        "status",
+        "requested_at",
+        "answered_at",
+        "response_note",
+        "added_document_ids"
+      ],
+      "additionalProperties": false,
+      "description": "never the staff member who asked"
+    },
+    "VerificationInfoRequestWrite": {
+      "type": "object",
+      "properties": {
+        "missing_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VerificationMissingItem"
+          },
+          "maxItems": 10,
+          "uniqueItems": true
+        },
+        "template_key": {
+          "$ref": "#/$defs/VerificationInfoTemplate"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "missing_items",
+        "template_key",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "VerificationInfoTemplate": {
+      "type": "string",
+      "enum": [
+        "missing_documents",
+        "unreadable_documents",
+        "details_mismatch",
+        "location_mismatch",
+        "callback_failed",
+        "other"
+      ],
+      "description": "the console fills the message text per template"
+    },
+    "VerificationMissingItem": {
+      "type": "string",
+      "enum": [
+        "business_document",
+        "registration_number",
+        "legal_name",
+        "address_proof",
+        "location_pin",
+        "phone_callback",
+        "owner_identity",
+        "readable_copy",
+        "other"
+      ],
+      "description": "backend S19"
+    },
+    "VerificationPrecheck": {
+      "type": "object",
+      "properties": {
+        "documents_readable": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name_match": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "duplicate_risk": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            null
+          ]
+        },
+        "checked_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "documents_readable",
+        "name_match",
+        "duplicate_risk",
+        "checked_at"
+      ],
+      "additionalProperties": false,
+      "description": "an AI pre-check of the documents (none in the MVP)"
+    },
+    "VerificationResubmit": {
+      "type": "object",
+      "properties": {
+        "submitted_document_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "maxItems": 10,
+          "uniqueItems": true,
+          "description": "added to the check's documents (≤ 10 in all)"
+        },
+        "registration_number": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "additionalProperties": false,
+      "description": "C: at least one member"
+    },
     "VerificationStatus": {
       "type": "string",
       "enum": [
@@ -26973,14 +29059,21 @@
             "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
           },
           "maxItems": 10,
-          "uniqueItems": true
+          "uniqueItems": true,
+          "description": "private, scanned-clean MediaAssets owned by the org"
+        },
+        "registration_number": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[^\\r\\n]*$"
         }
       },
       "required": [
         "verification_type"
       ],
       "additionalProperties": false,
-      "description": "private, scanned-clean MediaAssets owned by the org"
+      "description": "C: business_identity only (backend S19)"
     },
     "VerifiedStatus": {
       "type": "string",

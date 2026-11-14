@@ -109,8 +109,15 @@ export function toMfaMethod(m: MethodRow) {
   };
 }
 
-/** 40 ConsentRecord; `orgs` names the businesses of organization grantees. */
-export function toConsentRecord(c: ConsentRow, orgs: Map<string, OrgCard>) {
+/**
+ * 40 ConsentRecord; `orgs` names the businesses of organization grantees; `state` is the re-consent state and the
+ * latest confirmation (backend S15b; absent: none).
+ */
+export function toConsentRecord(
+  c: ConsentRow,
+  orgs: Map<string, OrgCard>,
+  state?: { reconsent: 'keep' | 'pause' | null; confirmedVersion: string | null; confirmedAt: Date | null },
+) {
   const grantee = c.granted_to_type === 'organization' && c.granted_to_id ? orgs.get(c.granted_to_id) : undefined;
   return {
     ...meta(c),
@@ -123,6 +130,11 @@ export function toConsentRecord(c: ConsentRow, orgs: Map<string, OrgCard>) {
     granted_to_id: c.granted_to_id,
     granted_to_organization: grantee ? toOrgSummary(grantee) : null,
     policy_version: c.policy_version,
+    policy_version_id: c.policy_version_id,
+    confirmed_policy_version: state?.confirmedVersion ?? null,
+    confirmed_at: isoOrNull(state?.confirmedAt ?? null),
+    reconsent_required: !!state?.reconsent,
+    paused: state?.reconsent === 'pause',
     granted: c.granted,
     granted_at: isoOrNull(c.granted_at),
     withdrawn_at: isoOrNull(c.withdrawn_at),

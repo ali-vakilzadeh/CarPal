@@ -67,8 +67,13 @@ export const ROUTED_EVENTS = [
   // S8: fleet decisions, moderation outcomes, verification and location corrections, DSR deadlines (staff)
   'fleet.approval.decided',
   'moderation.action.taken',
+  // S20: a staff message in a dispute thread (the party is told to read and answer it)
+  'dispute.message.posted',
   'organization.verified',
   'organization.location.corrected',
+  // S19: CarPal asks a business for more information on a verification check; staff corrected its profile
+  'organization.verification.info_requested',
+  'organization.profile.corrected',
   'dsr.deadline.approaching',
   // S9: an AI result the member or user asked for is ready (in-app only, OQ-13 default for AI suggestions)
   'ai.insight.generated',
@@ -429,7 +434,19 @@ export function route(e: RoutedEvent): Intent[] {
 }
 
 /** Moderation actions the affected user or organization is told about (52 Notification moderation_update). */
-const NOTIFIED_ACTIONS = ['approve', 'hide', 'remove', 'restore', 'request_changes', 'warn_user', 'suspend_account', 'reactivate_account'];
+const NOTIFIED_ACTIONS = [
+  'approve',
+  'hide',
+  'remove',
+  'restore',
+  'request_changes',
+  'warn_user',
+  'suspend_account',
+  'reactivate_account',
+  // S20 (BR-15): the author is asked to edit a review; the vendor's fitment row is downgraded. reduce_weight is silent.
+  'edit_request',
+  'downgrade_fitment',
+];
 const ORG_ADMINS = ['provider_owner', 'provider_manager', 'vendor_owner', 'fleet_owner', 'fleet_manager'];
 
 /** S8 routes: fleet decisions, moderation outcomes, verification, location corrections and staff DSR alerts. */
@@ -490,6 +507,42 @@ export function routeS8(e: RoutedEvent): Intent[] {
         },
       ];
     }
+    case 'dispute.message.posted': {
+      // Only staff messages notify (a party's reply waits in the staff queue); staff names never leave the admin plane.
+      if (p.author !== 'staff') return [];
+      const params = { dispute_type: String(p.dispute_type ?? 'dispute'), template_key: String(p.template_key ?? 'other') };
+      const reference = { type: 'dispute', id: str(p.dispute_id) ?? e.aggregateId };
+      const user = str(p.user_id);
+      const org = str(p.organization_id);
+      const base = {
+        event_type: 'moderation_update',
+        category: 'moderation' as const,
+        priority: 'normal' as const,
+        template_key: 'dispute.message_received',
+      };
+      if (user)
+        return [
+          {
+            ...base,
+            audience: { kind: 'users', ids: [user] },
+            params,
+            reference,
+            organization_context_id: null,
+            channels: ['in_app', 'email'],
+          },
+        ];
+      if (!org) return [];
+      return [
+        {
+          ...base,
+          audience: { kind: 'members', orgId: org, roles: ORG_ADMINS },
+          params,
+          reference,
+          organization_context_id: org,
+          channels: ['in_app', 'email'],
+        },
+      ];
+    }
     case 'organization.verified':
     case 'organization.location.corrected': {
       const org = str(p.organization_id) ?? e.aggregateId;
@@ -502,6 +555,28 @@ export function routeS8(e: RoutedEvent): Intent[] {
           template_key: e.type === 'organization.verified' ? 'organization.verified' : 'organization.location_corrected',
           params: {},
           reference: { type: e.type === 'organization.verified' ? 'organization' : 'organization_location', id: e.aggregateId },
+          organization_context_id: org,
+          channels: ['in_app', 'email'],
+        },
+      ];
+    }
+    case 'organization.verification.info_requested':
+    case 'organization.profile.corrected': {
+      // S19: the owners and managers read the request (org.verifications_list) or the corrected profile; never staff names.
+      const org = str(p.organization_id);
+      if (!org) return [];
+      const info = e.type === 'organization.verification.info_requested';
+      return [
+        {
+          audience: { kind: 'members', orgId: org, roles: ORG_ADMINS },
+          event_type: 'moderation_update',
+          category: 'moderation',
+          priority: 'normal',
+          template_key: info ? 'organization.verification_info_requested' : 'organization.profile_corrected',
+          params: info ? { verification_type: str(p.verification_type) ?? 'business_identity' } : {},
+          reference: info
+            ? { type: 'organization_verification', id: str(p.verification_id) ?? e.aggregateId }
+            : { type: 'organization', id: org },
           organization_context_id: org,
           channels: ['in_app', 'email'],
         },

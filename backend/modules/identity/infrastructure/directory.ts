@@ -8,6 +8,7 @@ import { writeAudit } from '#libs/audit/index.js';
 import { OrganizationDirectory } from '#libs/authz/index.js';
 import { ConsentChecker, type ConsentQuery } from '#libs/consent-gate/index.js';
 import { ApiError } from '#libs/contract/index.js';
+import { RegionConfigService } from '#libs/region-config/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import {
   AccountFacts,
@@ -17,14 +18,21 @@ import {
   type ScopedConsentGrant,
   type UserCard,
 } from '../interface/identity.js';
+import { consentTextFor } from '../application/policy-texts.js';
 
+/** The gate passes the deployment's region, so a consent paused for re-consent there is not granted (S15b, DQ-19). */
 @Injectable()
 export class DbConsentChecker extends ConsentChecker {
+  constructor(private readonly region: RegionConfigService) {
+    super();
+  }
+
   async isGranted(scope: TxScope, q: ConsentQuery): Promise<boolean> {
     const { rows } = await sql<{ ok: boolean }>`
       SELECT identity.has_consent(${q.subject.type}, ${q.subject.id}::uuid, ${q.consentType},
                                   ${q.scopeEntity?.type ?? null}, ${q.scopeEntity?.id ?? null}::uuid,
-                                  ${q.grantee?.type ?? null}, ${q.grantee?.id ?? null}::uuid) AS ok`.execute(scope.db);
+                                  ${q.grantee?.type ?? null}, ${q.grantee?.id ?? null}::uuid,
+                                  ${this.region.regionKey}) AS ok`.execute(scope.db);
     return rows[0]?.ok === true;
   }
 }
@@ -70,8 +78,11 @@ export class DbAccountFacts extends AccountFacts {
  */
 @Injectable()
 export class DbConsentGrants extends ConsentGrants {
-  // Not bound on the auth host (no organization module there); grants happen on the api host only.
-  constructor(@Optional() private readonly orgs?: OrganizationDirectory) {
+  constructor(
+    private readonly region: RegionConfigService,
+    // Not bound on the auth host (no organization module there); grants happen on the api host only.
+    @Optional() private readonly orgs?: OrganizationDirectory,
+  ) {
     super();
   }
 
@@ -79,6 +90,8 @@ export class DbConsentGrants extends ConsentGrants {
     const org = await this.orgs?.get(g.grantee.id);
     if (!org || org.status === 'merged' || org.status === 'archived')
       throw new ApiError('REFERENCE_NOT_FOUND', { detail: 'consent grantee organization unknown' });
+    // S15b: the label must be the consent text in force of the type (409 POLICY_VERSION_OUTDATED); recorded with it.
+    const textId = await consentTextFor(scope, this.region.regionKey, g.consentType, g.policyVersion);
     const row = await scope.db
       .insertInto('identity.consent_records')
       .values({
@@ -90,6 +103,7 @@ export class DbConsentGrants extends ConsentGrants {
         granted_to_type: g.grantee.type,
         granted_to_id: g.grantee.id,
         policy_version: g.policyVersion,
+        policy_version_id: textId,
         granted: true,
         granted_at: sql`now()`,
         source: 'ui',

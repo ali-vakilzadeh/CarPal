@@ -32,7 +32,7 @@ describe('consents.grant / list / withdraw', () => {
   it('records, lists and withdraws a consent; withdrawal emits consent.withdrawn and switches the preference off', async () => {
     const user = await app.fixtures.user();
     const token = await app.fixtures.token(user);
-    const g = await grant(token, { consent_type: 'ai_personalization', policy_version: '2026-10', granted_to: { type: 'platform' } });
+    const g = await grant(token, { consent_type: 'ai_personalization', policy_version: '1.0', granted_to: { type: 'platform' } });
     expect(g.status).toBe(201);
     expect(g.headers.location).toBe(`/v1/me/consents/${g.body.id}`);
     expect(g.body).toMatchObject({
@@ -86,40 +86,41 @@ describe('consents.grant / list / withdraw', () => {
     const user = await app.fixtures.user();
     const token = await app.fixtures.token(user);
     expect(
-      (await grant(token, { consent_type: 'vehicle_data_sharing', policy_version: '1', granted_to: { type: 'organization' } })).body.errors,
+      (await grant(token, { consent_type: 'vehicle_data_sharing', policy_version: '1.0', granted_to: { type: 'organization' } })).body
+        .errors,
     ).toEqual([{ pointer: '/granted_to/id', code: 'conditional_required' }]);
     expect(
       (
         await grant(token, {
           consent_type: 'vehicle_data_sharing',
-          policy_version: '1',
+          policy_version: '1.0',
           granted_to: { type: 'organization', id: uuidv7() },
         })
       ).body.code,
     ).toBe('REFERENCE_NOT_FOUND');
-    expect((await grant(token, { consent_type: 'fleet_data_ai_use', policy_version: '1' })).body.errors).toEqual([
+    expect((await grant(token, { consent_type: 'fleet_data_ai_use', policy_version: '1.0' })).body.errors).toEqual([
       { pointer: '/consent_type', code: 'enum' },
     ]);
     expect(
-      (await grant(token, { consent_type: 'photo_publishing', policy_version: '1', scope: { type: 'media_asset', id: uuidv7() } })).body
+      (await grant(token, { consent_type: 'photo_publishing', policy_version: '1.0', scope: { type: 'media_asset', id: uuidv7() } })).body
         .code,
     ).toBe('REFERENCE_NOT_FOUND');
     // Only the owner of a personal vehicle grants a consent scoped to it (SEC-AZ-4).
     const othersVehicle = await app.fixtures.vehicle(await app.fixtures.user(), n);
     expect(
-      (await grant(token, { consent_type: 'vehicle_data_sharing', policy_version: '1', scope: { type: 'vehicle', id: othersVehicle } }))
+      (await grant(token, { consent_type: 'vehicle_data_sharing', policy_version: '1.0', scope: { type: 'vehicle', id: othersVehicle } }))
         .body.code,
     ).toBe('REFERENCE_NOT_FOUND');
     const vehicleId = await app.fixtures.vehicle(user, n);
     const scoped = await grant(token, {
       consent_type: 'vehicle_data_sharing',
-      policy_version: '1',
+      policy_version: '1.0',
       scope: { type: 'vehicle', id: vehicleId },
     });
     expect(scoped.status).toBe(201);
     expect(scoped.body).toMatchObject({ scope_entity_type: 'vehicle', scope_entity_id: vehicleId });
     expect(
-      (await grant(token, { consent_type: 'marketing', policy_version: '1', expires_at: '2020-01-01T00:00:00Z' })).body.errors,
+      (await grant(token, { consent_type: 'marketing', policy_version: '1.0', expires_at: '2020-01-01T00:00:00Z' })).body.errors,
     ).toEqual([{ pointer: '/expires_at', code: 'in_past' }]);
   });
 });
@@ -145,7 +146,7 @@ describe('ConsentChecker (L16)', () => {
     expect(await ask()).toBe(false);
     const g = await grant(token, {
       consent_type: 'vehicle_data_sharing',
-      policy_version: '1',
+      policy_version: '1.0',
       scope: { type: 'vehicle', id: vehicle },
       granted_to: { type: 'organization', id: provider.id },
     });
@@ -211,7 +212,7 @@ describe('consent requests (cn links)', () => {
         method: 'POST',
         path: '/v1/consent-requests/respond',
         token: t,
-        body: { token: req.token, decision: 'grant', policy_version: '2026-10' },
+        body: { token: req.token, decision: 'grant', policy_version: '1.0' },
         headers: idem(),
       });
     const ok = await respond(token);
@@ -231,7 +232,7 @@ describe('consent requests (cn links)', () => {
       method: 'POST',
       path: '/v1/consent-requests/respond',
       token,
-      body: { token: req.token, decision: 'decline', policy_version: '1' },
+      body: { token: req.token, decision: 'decline', policy_version: '1.0' },
       headers: idem(),
     });
     expect(declined.body).toEqual({ consent: null });
@@ -256,7 +257,7 @@ describe('organization consents', () => {
       method: 'POST',
       path: `/v1/orgs/${org.id}/consents`,
       token: ownerToken,
-      body: { consent_type: 'fleet_data_ai_use', policy_version: '1' },
+      body: { consent_type: 'fleet_data_ai_use', policy_version: '1.0' },
       headers: idem(),
     });
     expect(res.status).toBe(201);
@@ -265,7 +266,7 @@ describe('organization consents', () => {
       method: 'POST',
       path: `/v1/orgs/${org.id}/consents`,
       token: ownerToken,
-      body: { consent_type: 'marketing', policy_version: '1' },
+      body: { consent_type: 'marketing', policy_version: '1.0' },
       headers: idem(),
     });
     expect(wrongType.status).toBe(422);
@@ -279,7 +280,7 @@ describe('organization consents', () => {
           method: 'POST',
           path: `/v1/orgs/${org.id}/consents`,
           token: viewerToken,
-          body: { consent_type: 'fleet_data_ai_use', policy_version: '1' },
+          body: { consent_type: 'fleet_data_ai_use', policy_version: '1.0' },
           headers: idem(),
         })
       ).status,

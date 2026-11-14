@@ -21,7 +21,7 @@ async function orgConsent(h: Harness, orgId: string, type: string): Promise<void
         subject_type: 'organization',
         subject_id: orgId,
         consent_type: type,
-        policy_version: '2026-10',
+        policy_version: '1.0',
         granted: true,
         granted_at: new Date(),
         source: 'api',

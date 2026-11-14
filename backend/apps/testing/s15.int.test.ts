@@ -100,11 +100,12 @@ const reconsentOf = async (c: Client) => {
 };
 
 describe('admin policy texts: drafts (BR-12, A-POL-01)', () => {
-  it('lists the three documents with the seeded 1.0 in force; drafts need every locale, unique labels and If-Match', async () => {
+  it('lists the three policies with the seeded 1.0 in force; drafts need every locale, unique labels and If-Match', async () => {
     const list = await a.get('/v1/admin/policies');
     expect(list.status, list.text).toBe(200);
     const items = list.body.items as Json[];
-    expect(items.map((d) => [d.policy_key, d.reconsent_mode, d.region_key])).toEqual([
+    // The three legal policies first; the consent texts (S15b) follow, checked in s15b.int.test.ts.
+    expect(items.slice(0, 3).map((d) => [d.policy_key, d.reconsent_mode, d.region_key])).toEqual([
       ['terms', 'blocking', 'ir-pilot'],
       ['privacy', 'blocking', 'ir-pilot'],
       ['community_guidelines', 'notice', 'ir-pilot'],
@@ -299,7 +300,14 @@ describe('re-consent and acceptance (Me.policy_reconsent, policy.accept, auth.si
     await publish((await draft('community_guidelines', g)).id as string, { reconsent: true });
     const young = await userClient();
     expect(await reconsentOf(old.c)).toEqual([
-      { policy_key: 'community_guidelines', policy_version: g, effective_at: expect.any(String), mode: 'notice' },
+      {
+        policy_key: 'community_guidelines',
+        policy_version: g,
+        effective_at: expect.any(String),
+        mode: 'notice',
+        consent_ids: [],
+        paused: false,
+      },
     ]);
     expect(await reconsentOf(young.c)).toEqual([]);
     const outdated = await old.c.post('/v1/me/policy-acceptances', { policy_key: 'community_guidelines', policy_version: '1.0' });
@@ -316,7 +324,7 @@ describe('re-consent and acceptance (Me.policy_reconsent, policy.accept, auth.si
     await publish((await draft('terms', t)).id as string, { reconsent: true });
     for (const u of [old, young])
       expect(await reconsentOf(u.c)).toEqual([
-        { policy_key: 'terms', policy_version: t, effective_at: expect.any(String), mode: 'blocking' },
+        { policy_key: 'terms', policy_version: t, effective_at: expect.any(String), mode: 'blocking', consent_ids: [], paused: false },
       ]);
     const ok = await old.c.post('/v1/me/policy-acceptances', { policy_key: 'terms', policy_version: t });
     expect(ok.status, ok.text).toBe(200);
@@ -337,7 +345,7 @@ describe('re-consent and acceptance (Me.policy_reconsent, policy.accept, auth.si
     await publish((await draft('terms', t2)).id as string, { reconsent: false });
     expect(await reconsentOf(old.c)).toEqual([]);
     expect(await reconsentOf(young.c)).toEqual([
-      { policy_key: 'terms', policy_version: t2, effective_at: expect.any(String), mode: 'blocking' },
+      { policy_key: 'terms', policy_version: t2, effective_at: expect.any(String), mode: 'blocking', consent_ids: [], paused: false },
     ]);
 
     // The DSR export lists the acceptances.

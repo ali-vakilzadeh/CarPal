@@ -139,7 +139,7 @@ export const identityPersonalData: PersonalDataHandler = {
     const u = await scope.db.selectFrom('identity.user_accounts').selectAll().where('id', '=', userId).executeTakeFirst();
     if (!u) return [];
     const pref = await scope.db.selectFrom('identity.user_preferences').selectAll().where('user_id', '=', userId).executeTakeFirst();
-    const [memberships, consents, requests, acceptances] = await Promise.all([
+    const [memberships, consents, requests, acceptances, confirmations] = await Promise.all([
       scope.db
         .selectFrom('identity.role_memberships')
         .select(['id', 'organization_id', 'role', 'status', 'joined_at'])
@@ -163,6 +163,15 @@ export const identityPersonalData: PersonalDataHandler = {
         .innerJoin('identity.policy_documents as d', 'd.id', 'v.document_id')
         .select(['a.id', 'd.policy_key', 'd.region_key', 'v.policy_version', 'a.accepted_at', 'a.source'])
         .where('a.user_id', '=', userId)
+        .execute(),
+      // Backend S15b: the user's consents confirmed under a later consent text (kept like the consent records).
+      scope.db
+        .selectFrom('identity.consent_confirmations as k')
+        .innerJoin('identity.consent_records as c', 'c.id', 'k.consent_id')
+        .innerJoin('identity.policy_versions as v', 'v.id', 'k.policy_version_id')
+        .select(['k.id', 'k.consent_id', 'c.consent_type', 'v.policy_version', 'k.confirmed_at'])
+        .where('c.subject_type', '=', 'user')
+        .where('c.subject_id', '=', userId)
         .execute(),
     ]);
     return [
@@ -229,6 +238,18 @@ export const identityPersonalData: PersonalDataHandler = {
             granted_at: value(c.granted_at),
             withdrawn_at: value(c.withdrawn_at),
             policy_version: c.policy_version,
+          },
+        })),
+      },
+      {
+        section: 'consent_confirmations',
+        records: confirmations.map((k) => ({
+          id: k.id,
+          fields: {
+            consent_id: k.consent_id,
+            consent_type: k.consent_type,
+            policy_version: k.policy_version,
+            confirmed_at: value(k.confirmed_at),
           },
         })),
       },

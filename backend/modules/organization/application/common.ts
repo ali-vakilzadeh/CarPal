@@ -5,6 +5,7 @@ import type { OperationContext } from '#libs/http-pipeline/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import type { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
+import { toVerification, type InfoRequestRow, type VerificationRow } from '../api/projections.js';
 
 export interface MemberAccess {
   userId: string;
@@ -83,6 +84,84 @@ export async function loadOrg(scope: TxScope, orgId: string, lock = false) {
   const row = await (lock ? q.forUpdate() : q).executeTakeFirst();
   if (!row) throw new ApiError('NOT_FOUND');
   return row;
+}
+
+/** The latest request for more information of each verification check (40 OrganizationVerification.info_request, S19). */
+export async function latestInfoRequests(scope: TxScope, verificationIds: readonly string[]): Promise<Map<string, InfoRequestRow>> {
+  if (verificationIds.length === 0) return new Map();
+  const rows = await scope.db
+    .selectFrom('organization.verification_info_requests')
+    .selectAll()
+    .distinctOn('verification_id')
+    .where('verification_id', 'in', [...verificationIds])
+    .where('deleted_at', 'is', null)
+    .orderBy('verification_id')
+    .orderBy('id', 'desc')
+    .execute();
+  return new Map(rows.map((r) => [r.verification_id, r]));
+}
+
+/** 40 OrganizationVerification of each row, with its latest request for more information. */
+export async function toVerifications(scope: TxScope, rows: readonly VerificationRow[]) {
+  const requests = await latestInfoRequests(
+    scope,
+    rows.map((r) => r.id),
+  );
+  return rows.map((r) => toVerification(r, requests.get(r.id) ?? null));
+}
+
+/** 40 OrgProfileField: the organization fields whose changes enter the profile history (backend S19). */
+export const PROFILE_FIELDS = [
+  'name',
+  'legal_name',
+  'contact_email',
+  'contact_phone',
+  'website',
+  'description_translations',
+  'slug',
+] as const;
+export type ProfileField = (typeof PROFILE_FIELDS)[number];
+type ProfileValues = Partial<Record<ProfileField, unknown>>;
+
+/** One field of a profile change as stored (organization_profile_changes.changes). */
+export interface StoredFieldChange {
+  field: ProfileField;
+  previous: unknown;
+  next: unknown;
+}
+
+const same = (a: unknown, b: unknown): boolean => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/** The fields whose value differs between two versions of the organization row (in PROFILE_FIELDS order). */
+export function profileDiff(before: ProfileValues, after: ProfileValues): StoredFieldChange[] {
+  return PROFILE_FIELDS.filter((f) => f in after && !same(before[f], after[f])).map((f) => ({
+    field: f,
+    previous: before[f] ?? null,
+    next: after[f] ?? null,
+  }));
+}
+
+/**
+ * Appends a change to the organization's profile history (52 OrganizationProfileChange, backend S19): a member's
+ * org.update in the organization context (policy member_insert), or a staff correction with its reason. No RETURNING:
+ * members may insert history but not read it.
+ */
+export async function recordProfileChange(
+  scope: TxScope,
+  c: { orgId: string; actor: 'member' | 'staff'; userId: string; changes: StoredFieldChange[]; reason?: string },
+): Promise<void> {
+  if (c.changes.length === 0) return;
+  await scope.db
+    .insertInto('organization.organization_profile_changes')
+    .values({
+      organization_id: c.orgId,
+      actor_kind: c.actor,
+      actor_user_id: c.userId,
+      source: c.actor === 'staff' ? 'admin.org_correct' : 'org.update',
+      changes: JSON.stringify(c.changes),
+      reason: c.actor === 'staff' ? (c.reason ?? null) : null,
+    })
+    .execute();
 }
 
 /** jsonb columns: arrays must be serialized (pg would send a PostgreSQL array). */

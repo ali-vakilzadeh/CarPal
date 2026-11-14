@@ -35,6 +35,23 @@ export interface SharedDocument {
   mediaAssetId: string;
 }
 
+/** The fields of ServiceRecordSnapshot the vehicle module owns (the provider card is added by the caller). */
+export interface ServiceRecordFacts {
+  id: string;
+  vehicleId: string;
+  serviceDate: string;
+  providerOrgId: string | null;
+  serviceSystemNodeId: string;
+  serviceTaskNodeId: string | null;
+  description: string | null;
+  mileageKm: number | null;
+  sourceType: string;
+  verificationStatus: string;
+  createdByType: string;
+  status: string;
+  createdAt: Date;
+}
+
 export abstract class VehicleCards {
   /** Cards of any vehicles (definer read): for providers and vendors in appointments and inquiries. */
   abstract cards(scope: TxScope, ids: readonly string[]): Promise<Map<string, VehicleCard>>;
@@ -73,6 +90,11 @@ export abstract class VehicleCards {
     scope: TxScope,
     recordId: string,
   ): Promise<{ ownerType: 'user' | 'organization'; ownerId: string; providerOrgId: string | null } | null>;
+  /**
+   * A service record under dispute as staff see it (40 ServiceRecordSnapshot, backend S20): staff context, removed
+   * records included; never the cost, the VIN or owner contact data. Null when it does not exist.
+   */
+  abstract serviceRecordSnapshot(scope: TxScope, recordId: string): Promise<ServiceRecordFacts | null>;
   /** A fleet's vehicles (fleet context or system): dashboards, reports, exports. Never the VIN, only its last four. */
   abstract fleetVehicles(scope: TxScope, orgId: string, vehicleIds?: readonly string[]): Promise<FleetVehicleRow[]>;
   /** Active service records of a fleet's vehicles with service dates in [from, to] (YYYY-MM-DD). */

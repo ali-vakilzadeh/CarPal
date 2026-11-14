@@ -98,6 +98,20 @@ async function dispute(h: Harness, p: Published): Promise<{ reviewId: string; id
   return { reviewId, id: d.id as string };
 }
 
+/** A staff message in one thread of a dispute (S20): the moderator writes under the dispute purpose. */
+async function staffMessage(h: Harness, disputeId: string, side: 'raiser' | 'respondent'): Promise<Actor> {
+  const mod = await h.staff('platform_moderator');
+  ok(
+    await mod.c.post(
+      `/v1/admin/disputes/${disputeId}/messages`,
+      { side, template_key: 'request_information', body: 'Please tell us when the work was redone.', reason: REASON },
+      purpose('dispute', disputeId),
+    ),
+    'staff message',
+  );
+  return mod;
+}
+
 export const resolvers: Resolvers = {
   'public.org_reviews': async (h) => {
     const p = await sharedProvider(h);
@@ -246,6 +260,31 @@ export const resolvers: Resolvers = {
     const d = await dispute(h, p);
     return { as: p.as, params: { dispute_id: d.id } };
   },
+  // S20 (BR-28): the raising organization's thread; staff messages show "CarPal", never the staff member.
+  'disputes.messages_list': async (h) => {
+    const p = await sharedProvider(h);
+    const d = await dispute(h, p);
+    const mod = await staffMessage(h, d.id, 'raiser');
+    return {
+      as: p.as,
+      params: { dispute_id: d.id },
+      query: { organization_id: p.id },
+      check: (res) => {
+        expect(res.body).toMatchObject({ side: 'raiser', can_reply: true });
+        expect(res.body.items).toEqual([expect.objectContaining({ author: 'staff', author_display: 'CarPal' })]);
+        expect(res.text).not.toContain(mod.user.email);
+      },
+    };
+  },
+  'disputes.message_post': async (h) => {
+    const p = await sharedProvider(h);
+    const d = await dispute(h, p);
+    return {
+      as: p.as,
+      params: { dispute_id: d.id },
+      body: { body: 'The invoice of the second visit is number 1234.', organization_id: p.id },
+    };
+  },
   'badges.list': async (h) => ({ as: (await sharedProvider(h)).as }),
   'trust_signals.list': async (h) => ({ as: (await sharedProvider(h)).as }),
   'admin.review_approvals_queue': async (h) => ({
@@ -318,6 +357,25 @@ export const resolvers: Resolvers = {
       params: { dispute_id: d.id },
       headers: purpose('dispute', d.id),
       body: { status: 'in_mediation', reason: REASON },
+    };
+  },
+  'admin.dispute_messages_list': async (h) => {
+    const d = await dispute(h, await sharedProvider(h));
+    const mod = await staffMessage(h, d.id, 'respondent');
+    return {
+      as: mod,
+      params: { dispute_id: d.id },
+      headers: purpose('dispute', d.id),
+      check: (res) => expect(res.body.items).toEqual([expect.objectContaining({ side: 'respondent', author: 'staff' })]),
+    };
+  },
+  'admin.dispute_message_post': async (h) => {
+    const d = await dispute(h, await sharedProvider(h));
+    return {
+      as: await h.staff('platform_moderator'),
+      params: { dispute_id: d.id },
+      headers: purpose('dispute', d.id),
+      body: { side: 'respondent', template_key: 'request_evidence', body: 'Please add a photo of the repair.', reason: REASON },
     };
   },
   'admin.badge_approve': async (h) => {

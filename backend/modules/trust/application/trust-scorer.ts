@@ -164,6 +164,7 @@ export class TrustScorer {
         'r.subject_type',
         'r.overall_rating',
         'r.trust_weight',
+        'r.weight_factor',
         'r.published_at',
         'r.service_system_node_id',
         'r.service_task_node_id',
@@ -181,7 +182,8 @@ export class TrustScorer {
       id: r.id,
       subjectType: r.subject_type,
       rating: Number(r.overall_rating),
-      trustWeight: Number(r.trust_weight ?? 0),
+      // S20 (BR-15): a moderator's reduce_weight keeps the review at a share of its weight.
+      trustWeight: Number(r.trust_weight ?? 0) * Number(r.weight_factor),
       date: new Date(r.published_at!),
       serviceSystemNodeId: r.service_system_node_id,
       serviceTaskNodeId: r.service_task_node_id,

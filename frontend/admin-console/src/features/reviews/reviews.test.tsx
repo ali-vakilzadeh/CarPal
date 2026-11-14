@@ -45,6 +45,7 @@ function review(id: string, o: Partial<Review> = {}): Review {
     media: [],
     can_add_evidence: true,
     response: null,
+    edit_request: null,
     ...o,
   };
 }

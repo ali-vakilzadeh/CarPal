@@ -241,7 +241,7 @@ export const resolvers: Resolvers = {
     };
   },
   'pre_visit.provider_get': async (h) => {
-    const r = await requested(h, 'me', { share_history: { policy_version: '2026-10' } });
+    const r = await requested(h, 'me', { share_history: { policy_version: '1.0' } });
     return { as: r.p.as, params: { appointment_id: r.a.id as string } };
   },
   'provider.calendar': async (h) => {

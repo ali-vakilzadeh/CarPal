@@ -59,6 +59,17 @@ export const resolvers: Resolvers = {
     const org = await h.fx.org('provider');
     return { as: await h.staff('platform_support'), params: { org_id: org.id }, body: { flow_type: 'provider', reason: REASON } };
   },
+  // S19 (BR-34): the open session survives a reload.
+  'admin.assist_sessions_list': async (h) => {
+    const as = await h.staff('platform_support');
+    const org = await h.fx.org('provider');
+    ok(await as.c.post(`/v1/admin/orgs/${org.id}/assist-sessions`, { flow_type: 'provider', reason: REASON }), 'assist session');
+    return {
+      as,
+      query: { mine: true, status: 'active' },
+      check: (res) => expect(res.body.items.length).toBeGreaterThan(0),
+    };
+  },
   'admin.assist_session_end': async (h) => {
     const as = await h.staff('platform_support');
     const org = await h.fx.org('provider');

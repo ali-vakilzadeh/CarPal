@@ -37,6 +37,11 @@ export abstract class SubscriptionReader {
   abstract staffSummaryForUser(scope: TxScope, userId: string): Promise<SubscriptionSummary>;
   /** 40 Subscription of a subscriber for staff views (StaffOrgView): the current one, else the latest; null when none exists. */
   abstract staffSubscription(scope: TxScope, subscriber: Subscriber): Promise<unknown>;
+  /**
+   * The plan key of each subscriber among `ids` for staff filters (admin.orgs_search plan_key, backend S19): the
+   * current subscription's plan, else the latest one's, as staffSubscription shows it. Subscribers without one are left out.
+   */
+  abstract staffPlanKeys(scope: TxScope, type: Subscriber['type'], ids: readonly string[]): Promise<Map<string, string>>;
 }
 
 export interface Subscriber {

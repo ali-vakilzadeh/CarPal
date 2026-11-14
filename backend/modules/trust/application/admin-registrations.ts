@@ -3,6 +3,8 @@
 // admin.review_move_to_approval_path, its moderation targets (review,
 // review_response, badge) and its part of data subject requests (authored
 // reviews and raised disputes; erasure keeps reviews under "former member").
+// S20 (BR-15): reduce_weight and edit_request on reviews; a review hidden by an
+// edit request returns to the case queue once edited or after 7 days.
 import { Injectable, Optional, type OnModuleInit } from '@nestjs/common';
 import { sql } from 'kysely';
 import { publishEvent } from '#libs/outbox/index.js';
@@ -15,6 +17,9 @@ import {
   PurposeQueues,
   type ContentAction,
   type SubjectRef,
+  type TargetAction,
+  type TargetActionInput,
+  type TargetActionResult,
 } from '#modules/admin/interface/admin.js';
 import { MetricGauges } from '#modules/analytics/interface/analytics.js';
 import { AppointmentFacts } from '#modules/appointment/interface/appointments.js';
@@ -29,7 +34,32 @@ const reviewPayload = (r: { subject_organization_id: string; author_user_id: str
   author_user_id: r.author_user_id,
 });
 
-/** Moderator actions on a review: approve a held Path 1 review, hide or remove, restore a removed one. */
+/** The review's open or edited edit request (S20), if any. */
+export async function liveEditRequest(scope: TxScope, reviewId: string, lock = false) {
+  const q = scope.db
+    .selectFrom('trust.review_edit_requests')
+    .selectAll()
+    .where('review_id', '=', reviewId)
+    .where('status', 'in', ['open', 'edited'])
+    .where('deleted_at', 'is', null);
+  return (lock ? q.forUpdate() : q).executeTakeFirst();
+}
+
+async function closeEditRequest(scope: TxScope, id: string): Promise<void> {
+  await scope.db
+    .updateTable('trust.review_edit_requests')
+    .set({ status: 'closed', closed_at: sql<Date>`now()` })
+    .where('id', '=', id)
+    .execute();
+}
+
+/** Days an author has to change a review after an edit request (Docs/23 A-REV-02). */
+const EDIT_REQUEST_DAYS = 7;
+
+/**
+ * Moderator actions on a review: approve a held Path 1 review (or a review whose edit request a moderator checked),
+ * hide or remove, restore a removed one.
+ */
 async function applyToReview(scope: TxScope, id: string, action: ContentAction): Promise<boolean> {
   const r = await scope.db
     .selectFrom('trust.reviews')
@@ -39,8 +69,21 @@ async function applyToReview(scope: TxScope, id: string, action: ContentAction):
     .forUpdate()
     .executeTakeFirst();
   if (!r) return false;
+  const edit = await liveEditRequest(scope, r.id, true);
+  if (action === 'approve' && edit && r.status === 'pending_moderation' && edit.previous_status === 'published') {
+    // S20: the edit was checked: the review is published again as it was (path, weight and verification unchanged).
+    await scope.db
+      .updateTable('trust.reviews')
+      .set({ status: 'published', counts_toward_core_score: Number(r.trust_weight ?? 0) > 0 })
+      .where('id', '=', r.id)
+      .execute();
+    await closeEditRequest(scope, edit.id);
+    await publishEvent(scope, { type: 'review.published', aggregateType: 'review', aggregateId: r.id, payload: reviewPayload(r) });
+    return true;
+  }
   if (action === 'approve') {
     if (r.status !== 'pending_moderation' || r.confirmation_path !== 'visit_based') return false;
+    if (edit) await closeEditRequest(scope, edit.id);
     await scope.db
       .updateTable('trust.reviews')
       .set({ status: 'published', published_at: sql<Date>`now()`, trust_weight: '1.000', counts_toward_core_score: true })
@@ -51,6 +94,7 @@ async function applyToReview(scope: TxScope, id: string, action: ContentAction):
   }
   if (action === 'hide' || action === 'remove') {
     if (r.status === 'removed' || r.status === 'rejected') return false;
+    if (edit) await closeEditRequest(scope, edit.id);
     await scope.db
       .updateTable('trust.reviews')
       .set({ status: 'removed', counts_toward_core_score: false, report_status: r.report_status === 'none' ? 'none' : 'resolved' })
@@ -80,6 +124,78 @@ async function applyToReview(scope: TxScope, id: string, action: ContentAction):
     return true;
   }
   return false;
+}
+
+/** Characters of a review field (Postgres char_length counts code points); -1 when the field is empty. */
+const chars = (t: string | null) => (t === null ? -1 : [...t].length);
+
+/** reduce_weight and edit_request on a review (S20, BR-15). */
+async function actOnReview(scope: TxScope, id: string, action: TargetAction, input: TargetActionInput): Promise<TargetActionResult> {
+  const r = await scope.db
+    .selectFrom('trust.reviews')
+    .selectAll()
+    .where('id', '=', id)
+    .where('deleted_at', 'is', null)
+    .forUpdate()
+    .executeTakeFirst();
+  if (!r) return { ok: false, transition: 'review gone' };
+  const p = input.params;
+  if (action === 'reduce_weight') {
+    // The scorer counts the review at trust_weight x weight_factor from its next run (54 §3); 1 restores the full weight.
+    if (p.weight_factor === undefined) return { ok: false, invalid: { pointer: '/params/weight_factor', code: 'conditional_required' } };
+    const factor = Number(p.weight_factor);
+    if (!(factor >= 0 && factor <= 1))
+      return { ok: false, invalid: { pointer: '/params/weight_factor', code: 'out_of_range', limit: '1' } };
+    if (['removed', 'rejected'].includes(r.status)) return { ok: false, transition: `review ${r.status}` };
+    await scope.db
+      .updateTable('trust.reviews')
+      .set({ weight_factor: factor.toFixed(3) })
+      .where('id', '=', r.id)
+      .execute();
+    return { ok: true, params: { weight_factor: factor.toFixed(3), previous_weight_factor: Number(r.weight_factor).toFixed(3) } };
+  }
+  if (action !== 'edit_request') return { ok: false, transition: `${action} does not apply to a review` };
+  if (!p.edit_spans?.length) return { ok: false, invalid: { pointer: '/params/edit_spans', code: 'conditional_required' } };
+  if (!p.edit_message) return { ok: false, invalid: { pointer: '/params/edit_message', code: 'conditional_required' } };
+  if ([...p.edit_message.trim()].length < 3)
+    return { ok: false, invalid: { pointer: '/params/edit_message', code: 'too_short', limit: '3' } };
+  for (const [i, span] of p.edit_spans.entries()) {
+    const len = chars(span.field === 'title' ? r.title : r.body);
+    if (span.end <= span.start) return { ok: false, invalid: { pointer: `/params/edit_spans/${i}/end`, code: 'order' } };
+    if (span.end > len) return { ok: false, invalid: { pointer: `/params/edit_spans/${i}/end`, code: 'out_of_range' } };
+  }
+  // A published review is hidden until a moderator checks the edit; one held for moderation stays held. Path 2 reviews
+  // waiting for approval are handled by the reviewer (request_evidence, reject), not by an edit request.
+  if (!['published', 'pending_moderation'].includes(r.status)) return { ok: false, transition: `review ${r.status}` };
+  if (await liveEditRequest(scope, r.id)) return { ok: false, transition: 'edit request already open' };
+  const dueAt = new Date(Date.now() + EDIT_REQUEST_DAYS * 86_400_000);
+  const req = await scope.db
+    .insertInto('trust.review_edit_requests')
+    .values({
+      review_id: r.id,
+      moderation_case_id: input.caseId,
+      requested_by: input.staffUserId,
+      spans: JSON.stringify(p.edit_spans.map((x) => ({ field: x.field, start: x.start, end: x.end }))),
+      message: p.edit_message,
+      previous_status: r.status,
+      due_at: dueAt,
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  if (r.status === 'published') {
+    await scope.db
+      .updateTable('trust.reviews')
+      .set({ status: 'pending_moderation', counts_toward_core_score: false })
+      .where('id', '=', r.id)
+      .execute();
+    await publishEvent(scope, {
+      type: 'review.removed',
+      aggregateType: 'review',
+      aggregateId: r.id,
+      payload: { ...reviewPayload(r), reason: 'edit_requested' },
+    });
+  }
+  return { ok: true, params: { edit_request_id: req.id, previous_status: r.status, due_at: dueAt.toISOString() } };
 }
 
 async function applyToResponse(scope: TxScope, id: string, action: ContentAction): Promise<boolean> {
@@ -207,10 +323,13 @@ export class TrustAdminRegistrations implements OnModuleInit {
           .where('id', '=', id)
           .executeTakeFirst();
         if (!d) return [];
+        // S20: the messages of the dispute (their evidence files are attached to them).
+        const messages = await scope.db.selectFrom('trust.dispute_messages').select('id').where('dispute_id', '=', id).limit(400).execute();
         const out: SubjectRef[] = [
           { type: 'user', id: d.raised_by_user_id },
           ...(d.raised_by_organization_id ? [{ type: 'organization', id: d.raised_by_organization_id }] : []),
           { type: d.target_entity_type, id: d.target_entity_id },
+          ...messages.map((m) => ({ type: 'dispute_message', id: m.id })),
         ];
         return [...out, ...(await this.#targetParties(scope, d.target_entity_type, d.target_entity_id))];
       },
@@ -299,15 +418,22 @@ export class TrustAdminRegistrations implements OnModuleInit {
         (await scope.db.selectFrom('trust.reviews').select('author_user_id').where('id', '=', id).executeTakeFirst())?.author_user_id ??
         null,
       apply: applyToReview,
-      // Path 1 reviews W4 held back (links, contact data): a moderator approves or removes them.
+      act: actOnReview,
+      // Path 1 reviews W4 held back (links, contact data): a moderator approves or removes them. S20: a review hidden by
+      // an edit request waits for the author until it is edited or the 7 days have passed, then comes back to a moderator.
       pending: async (scope, limit) =>
         (
           await scope.db
             .selectFrom('trust.reviews')
             .select('id')
             .where('status', '=', 'pending_moderation')
-            .where('confirmation_path', '=', 'visit_based')
-            .where('created_at', '<', new Date(Date.now() - 60_000))
+            .where(
+              sql<boolean>`((confirmation_path = 'visit_based' AND created_at < ${new Date(Date.now() - 60_000)}
+                 AND NOT EXISTS (SELECT 1 FROM trust.review_edit_requests e
+                   WHERE e.review_id = trust.reviews.id AND e.status IN ('open','edited') AND e.deleted_at IS NULL))
+               OR EXISTS (SELECT 1 FROM trust.review_edit_requests e WHERE e.review_id = trust.reviews.id
+                 AND e.deleted_at IS NULL AND (e.status = 'edited' OR (e.status = 'open' AND e.due_at < now()))))`,
+            )
             .where('deleted_at', 'is', null)
             .orderBy('id')
             .limit(limit)

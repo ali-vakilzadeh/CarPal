@@ -104,7 +104,7 @@ export function toLocation(l: LocationRow) {
 }
 
 /** 40 OrganizationVerification. */
-export function toVerification(v: VerificationRow) {
+export function toVerification(v: VerificationRow, infoRequest: InfoRequestRow | null) {
   return {
     ...meta(v),
     verification_type: v.verification_type,
@@ -113,6 +113,25 @@ export function toVerification(v: VerificationRow) {
     reviewed_at: isoOrNull(v.reviewed_at),
     rejection_reason: v.rejection_reason,
     expires_at: isoOrNull(v.expires_at),
+    registration_number: v.registration_number,
+    info_request: infoRequest ? toInfoRequest(infoRequest) : null,
+  };
+}
+
+export type InfoRequestRow = Selectable<DB['organization.verification_info_requests']>;
+
+/** 40 VerificationInfoRequest (backend S19): never the staff member who asked. */
+export function toInfoRequest(r: InfoRequestRow) {
+  return {
+    id: r.id,
+    missing_items: textArray(r.missing_items),
+    template_key: r.template_key,
+    message: r.message,
+    status: r.status,
+    requested_at: r.created_at.toISOString(),
+    answered_at: isoOrNull(r.answered_at),
+    response_note: r.response_note,
+    added_document_ids: textArray(r.added_document_ids),
   };
 }
 

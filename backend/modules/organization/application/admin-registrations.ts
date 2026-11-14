@@ -158,14 +158,16 @@ export class OrganizationAdminRegistrations implements OnModuleInit {
       ),
     );
     this.purposes?.register('verification', {
+      // SEC-ADM-5: pending and unassigned, or assigned to the caller (S19: admin.verification_assign, or the staff
+      // member who asked for more information). A check waiting for the business stays open in its assignee's queue.
       open: async (scope, staffUserId, id) => {
         const v = await scope.db
           .selectFrom('organization.organization_verifications')
-          .select(['status', 'reviewed_by'])
+          .select(['status', 'assigned_to'])
           .where('id', '=', id)
           .where('deleted_at', 'is', null)
           .executeTakeFirst();
-        return !!v && v.status === 'pending' && (v.reviewed_by === null || v.reviewed_by === staffUserId);
+        return !!v && v.status === 'pending' && (v.assigned_to === null || v.assigned_to === staffUserId);
       },
       // S14 (BR-09): the organization, the member who submitted the check and the documents it submitted.
       subjects: async (scope, id) => {

@@ -9,29 +9,45 @@
 // A user must accept a policy again when a version that requires re-consent has come into force and they have not
 // accepted it or a later version: always for `blocking` documents (terms, privacy), and for `notice` documents
 // (community guidelines) only when the account is older than that version.
+//
+// Consent texts (backend S15b, owner decisions DQ-18 and DQ-19): every ConsentType has a document of mode `consent`.
+// A grant must name the consent text in force (consentTextFor) and records it; a consent stands on the newest text it
+// was granted or confirmed under (SQL identity.consent_text_at). When a consent-text version that requires re-consent
+// comes into force, the active consents under older texts need re-consent: listed in Me.policy_reconsent (user
+// consents) and flagged on ConsentRecord (user and organization consents) until confirmed or withdrawn. The version's
+// reconsent_action decides what they do meanwhile: keep (stay in effect) or pause (the consent gate treats them as not
+// granted; SQL identity.consent_reconsent and identity.has_consent).
 import type { Selectable } from 'kysely';
 import { sql } from 'kysely';
+import { writeAudit } from '#libs/audit/index.js';
 import { ApiError, type FieldError } from '#libs/contract/index.js';
+import { ENUMS, type ConsentType } from '#libs/contract/generated/enums.js';
 import type { DB } from '#libs/db/index.js';
 import { iso, isoOrNull } from '#libs/http-pipeline/index.js';
 import { l10n, type Locale, type Translations } from '#libs/i18n/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 
-export const POLICY_KEYS = ['terms', 'privacy', 'community_guidelines'] as const;
-export type PolicyKey = (typeof POLICY_KEYS)[number];
-export type ReconsentMode = 'blocking' | 'notice';
+/** The legal policies (DQ-02); every other key is a consent text. */
+export const LEGAL_POLICY_KEYS = ['terms', 'privacy', 'community_guidelines'] as const;
+export const CONSENT_TEXT_KEYS: readonly ConsentType[] = ENUMS.ConsentType;
+export const POLICY_KEYS: readonly PolicyKey[] = [...LEGAL_POLICY_KEYS, ...CONSENT_TEXT_KEYS];
+export type PolicyKey = (typeof LEGAL_POLICY_KEYS)[number] | ConsentType;
+export type ReconsentMode = 'blocking' | 'notice' | 'consent';
+/** DQ-19: what consents under an older text do until they are confirmed. */
+export type ReconsentAction = 'keep' | 'pause';
 
-/** DQ-02 default: terms and privacy block further use until accepted again; the guidelines show a notice. */
-export const RECONSENT_MODE: Readonly<Record<PolicyKey, ReconsentMode>> = {
-  terms: 'blocking',
-  privacy: 'blocking',
-  community_guidelines: 'notice',
-};
+export const isPolicyKey = (v: unknown): v is PolicyKey => typeof v === 'string' && (POLICY_KEYS as readonly string[]).includes(v);
+export const isConsentKey = (v: unknown): v is ConsentType => typeof v === 'string' && (CONSENT_TEXT_KEYS as readonly string[]).includes(v);
+
+/**
+ * DQ-02 default: terms and privacy block further use until accepted again; the guidelines show a notice. Consent texts
+ * (S15b) ask for the consents granted under an older text to be confirmed again.
+ */
+export const reconsentModeOf = (key: PolicyKey): ReconsentMode =>
+  key === 'terms' || key === 'privacy' ? 'blocking' : key === 'community_guidelines' ? 'notice' : 'consent';
 
 /** Locales every policy version needs (40 Translations: platform-curated, all enabled locales). */
 export const POLICY_LOCALES = ['en', 'fa'] as const;
-
-export const isPolicyKey = (v: unknown): v is PolicyKey => typeof v === 'string' && (POLICY_KEYS as readonly string[]).includes(v);
 
 export type PolicyDocumentRow = Selectable<DB['identity.policy_documents']>;
 export type PolicyVersionRow = Selectable<DB['identity.policy_versions']>;
@@ -57,7 +73,7 @@ export async function findDocument(scope: TxScope, region: string, key: PolicyKe
 export async function ensureDocument(scope: TxScope, region: string, key: PolicyKey): Promise<PolicyDocumentRow> {
   await scope.db
     .insertInto('identity.policy_documents')
-    .values({ policy_key: key, region_key: region, reconsent_mode: RECONSENT_MODE[key] })
+    .values({ policy_key: key, region_key: region, reconsent_mode: reconsentModeOf(key) })
     .onConflict((oc) => oc.columns(['policy_key', 'region_key']).doNothing())
     .execute();
   const doc = await findDocument(scope, region, key);
@@ -122,13 +138,23 @@ export interface PolicyReconsentView {
   policy_version: string;
   effective_at: string;
   mode: ReconsentMode;
+  /** mode consent: the caller's active consents of this type under an older text (empty for policies). */
+  consent_ids: string[];
+  /** mode consent: some of them are paused until confirmed (DQ-19 b). */
+  paused: boolean;
 }
 
-/** The policies a user must accept again (Me.policy_reconsent), in key order. */
+/** The policies a user must accept again and the consent types whose consents need confirming (Me.policy_reconsent). */
 export async function reconsentFor(scope: TxScope, userId: string, region: string): Promise<PolicyReconsentView[]> {
+  return [...(await policiesToAccept(scope, userId, region)), ...(await consentsToConfirm(scope, userId, region))];
+}
+
+/** Legal policies (blocking, notice) the user must accept again, in key order. */
+async function policiesToAccept(scope: TxScope, userId: string, region: string): Promise<PolicyReconsentView[]> {
   const { rows } = await sql<{ policy_key: PolicyKey; policy_version: string; effective_at: Date; mode: ReconsentMode }>`
     WITH d AS (
-      SELECT id, policy_key, reconsent_mode FROM identity.policy_documents WHERE region_key = ${region} AND deleted_at IS NULL),
+      SELECT id, policy_key, reconsent_mode FROM identity.policy_documents
+       WHERE region_key = ${region} AND reconsent_mode <> 'consent' AND deleted_at IS NULL),
     f AS (
       SELECT DISTINCT ON (v.document_id) v.document_id, v.policy_version, v.effective_at
         FROM identity.policy_versions v JOIN d ON d.id = v.document_id
@@ -150,7 +176,131 @@ export async function reconsentFor(scope: TxScope, userId: string, region: strin
                JOIN identity.policy_versions av ON av.id = a.policy_version_id
               WHERE a.user_id = ${userId}::uuid AND av.document_id = d.id AND av.effective_at >= r.since)
      ORDER BY array_position(ARRAY['terms','privacy','community_guidelines'], d.policy_key::text)`.execute(scope.db);
-  return rows.map((r) => ({ policy_key: r.policy_key, policy_version: r.policy_version, effective_at: iso(r.effective_at), mode: r.mode }));
+  return rows.map((r) => ({
+    policy_key: r.policy_key,
+    policy_version: r.policy_version,
+    effective_at: iso(r.effective_at),
+    mode: r.mode,
+    consent_ids: [],
+    paused: false,
+  }));
+}
+
+/** The SQL state of a consent row `c` in a region: null (nothing to confirm), keep or pause (DQ-19). */
+const reconsentOf = (region: string) =>
+  sql<ReconsentAction | null>`CASE WHEN c.granted AND c.withdrawn_at IS NULL AND (c.expires_at IS NULL OR c.expires_at > now())
+    THEN identity.consent_reconsent(c.consent_type, identity.consent_text_at(c.id, c.policy_version_id, c.granted_at), ${region})
+    END`;
+
+/** One entry per consent type whose active user consents stand on a text older than a re-consent version in force. */
+async function consentsToConfirm(scope: TxScope, userId: string, region: string): Promise<PolicyReconsentView[]> {
+  const { rows } = await sql<{ policy_key: ConsentType; policy_version: string; effective_at: Date; ids: string[]; paused: boolean }>`
+    WITH c AS (
+      SELECT c.id, c.consent_type::text AS consent_type, ${reconsentOf(region)} AS action
+        FROM identity.consent_records c
+       WHERE c.subject_type = 'user' AND c.subject_id = ${userId}::uuid AND c.deleted_at IS NULL),
+    f AS (
+      SELECT DISTINCT ON (d.id) d.policy_key, v.policy_version, v.effective_at
+        FROM identity.policy_documents d JOIN identity.policy_versions v ON v.document_id = d.id
+       WHERE d.region_key = ${region} AND d.reconsent_mode = 'consent' AND d.deleted_at IS NULL
+         AND v.status <> 'draft' AND v.effective_at <= now() AND v.deleted_at IS NULL
+       ORDER BY d.id, v.effective_at DESC, v.id DESC)
+    SELECT f.policy_key, f.policy_version, f.effective_at, array_agg(c.id ORDER BY c.id) AS ids,
+           bool_or(c.action = 'pause') AS paused
+      FROM c JOIN f ON f.policy_key = c.consent_type
+     WHERE c.action IS NOT NULL
+     GROUP BY f.policy_key, f.policy_version, f.effective_at
+     ORDER BY array_position(${sql.val([...CONSENT_TEXT_KEYS])}::text[], f.policy_key)`.execute(scope.db);
+  return rows.map((r) => ({
+    policy_key: r.policy_key,
+    policy_version: r.policy_version,
+    effective_at: iso(r.effective_at),
+    mode: 'consent' as const,
+    consent_ids: r.ids.slice(0, 100),
+    paused: r.paused,
+  }));
+}
+
+/** Re-consent state and latest confirmation of consent records (40 ConsentRecord, S15b). */
+export interface ConsentTextState {
+  reconsent: ReconsentAction | null;
+  confirmedVersion: string | null;
+  confirmedAt: Date | null;
+}
+
+export async function consentStates(scope: TxScope, region: string, ids: readonly string[]): Promise<Map<string, ConsentTextState>> {
+  if (ids.length === 0) return new Map();
+  const { rows } = await sql<{
+    id: string;
+    reconsent: ReconsentAction | null;
+    confirmed_version: string | null;
+    confirmed_at: Date | null;
+  }>`
+    SELECT c.id, ${reconsentOf(region)} AS reconsent, k.policy_version AS confirmed_version, k.confirmed_at
+      FROM identity.consent_records c
+      LEFT JOIN LATERAL (
+        SELECT v.policy_version, k.confirmed_at
+          FROM identity.consent_confirmations k JOIN identity.policy_versions v ON v.id = k.policy_version_id
+         WHERE k.consent_id = c.id AND k.deleted_at IS NULL
+         ORDER BY v.effective_at DESC, k.confirmed_at DESC
+         LIMIT 1) k ON true
+     WHERE c.id = ANY(${sql.val([...new Set(ids)])}::uuid[])`.execute(scope.db);
+  return new Map(rows.map((r) => [r.id, { reconsent: r.reconsent, confirmedVersion: r.confirmed_version, confirmedAt: r.confirmed_at }]));
+}
+
+/**
+ * The consent text in force a grant refers to (S15b.T2): the label sent must be the version in force of that consent
+ * type in the region (409 POLICY_VERSION_OUTDATED, detail the consent type). A region without a text of the type
+ * accepts any label and records no text (null), like sign-up without terms (signupVersions).
+ */
+export async function consentTextFor(scope: TxScope, region: string, consentType: ConsentType, sent: string): Promise<string | null> {
+  const doc = await findDocument(scope, region, consentType);
+  const current = doc ? await versionInForce(scope, doc.id) : undefined;
+  if (!current) return null;
+  if (current.policy_version !== sent) throw new ApiError('POLICY_VERSION_OUTDATED', { detail: consentType });
+  return current.id;
+}
+
+/**
+ * Confirms consents under the consent text in force (S15b.T3): the subject's active consents of the type (or the one
+ * named) that stand on an older text get a confirmation row and an audit entry. 404 when the region has no text of the
+ * type; 409 POLICY_VERSION_OUTDATED when the label is not the one in force. Returns the text and the consents confirmed.
+ */
+export async function confirmConsents(
+  scope: TxScope,
+  region: string,
+  q: {
+    subject: { type: 'user' | 'organization'; id: string };
+    consentType: ConsentType;
+    policyVersion: string;
+    consentId?: string;
+    by: string;
+  },
+): Promise<{ version: PolicyVersionRow; confirmed: string[] }> {
+  const doc = await findDocument(scope, region, q.consentType);
+  const current = doc ? await versionInForce(scope, doc.id) : undefined;
+  if (!current) throw new ApiError('NOT_FOUND');
+  if (current.policy_version !== q.policyVersion) throw new ApiError('POLICY_VERSION_OUTDATED', { detail: q.consentType });
+  const { rows } = await sql<{ id: string }>`
+    INSERT INTO identity.consent_confirmations (consent_id, policy_version_id, confirmed_by)
+    SELECT c.id, ${current.id}::uuid, ${q.by}::uuid
+      FROM identity.consent_records c
+     WHERE c.subject_type = ${q.subject.type} AND c.subject_id = ${q.subject.id}::uuid
+       AND c.consent_type = ${q.consentType} AND c.deleted_at IS NULL
+       AND c.granted AND c.withdrawn_at IS NULL AND (c.expires_at IS NULL OR c.expires_at > now())
+       ${q.consentId ? sql`AND c.id = ${q.consentId}::uuid` : sql``}
+       AND identity.consent_text_at(c.id, c.policy_version_id, c.granted_at)
+           < (SELECT v.effective_at FROM identity.policy_versions v WHERE v.id = ${current.id}::uuid)
+    ON CONFLICT (consent_id, policy_version_id) DO NOTHING
+    RETURNING consent_id AS id`.execute(scope.db);
+  for (const r of rows)
+    await writeAudit(scope, {
+      action: 'consent.confirmed',
+      entityType: 'consent_record',
+      entityId: r.id,
+      next: `${q.consentType} ${current.policy_version} (${region})`,
+    });
+  return { version: current, confirmed: rows.map((r) => r.id) };
 }
 
 /**
@@ -205,8 +355,14 @@ export function toPolicyText(doc: PolicyDocumentRow, v: PolicyVersionRow, next: 
     effective_at: iso(v.effective_at!),
     requires_reconsent: v.requires_reconsent,
     reconsent_mode: doc.reconsent_mode as ReconsentMode,
+    reconsent_action: v.reconsent_action as ReconsentAction | null,
     upcoming: next
-      ? { policy_version: next.policy_version, effective_at: iso(next.effective_at!), requires_reconsent: next.requires_reconsent }
+      ? {
+          policy_version: next.policy_version,
+          effective_at: iso(next.effective_at!),
+          requires_reconsent: next.requires_reconsent,
+          reconsent_action: next.reconsent_action as ReconsentAction | null,
+        }
       : null,
   };
 }
@@ -229,6 +385,7 @@ export function toStaffSummary(
     title: l10n(titles, locale) ?? { text: '', locale },
     effective_at: isoOrNull(v.effective_at),
     requires_reconsent: v.requires_reconsent,
+    reconsent_action: v.reconsent_action as ReconsentAction | null,
     locales: POLICY_LOCALES.filter((l) => !!titles[l] && !!(v.body_translations as Translations)[l]),
     created_by_display: (name(v.created_by) ?? 'CarPal').slice(0, 50),
     created_at: iso(v.created_at),

@@ -172,6 +172,30 @@ export const resolvers: Resolvers = {
     const doc = await h.upload(as, 'verification_document', { mime: 'application/pdf' });
     return { as, body: { verification_type: 'business_identity', submitted_document_ids: [doc.id] }, bodyRefs: true };
   },
+  // S19: the business answers CarPal's request for more information.
+  'org.verification_resubmit': async (h) => {
+    const as = await h.member('provider');
+    const v = ok(await as.c.post(`/v1/orgs/${as.org!.id}/verifications`, { verification_type: 'business_identity' }), 'verification');
+    const staff = await h.staff('platform_moderator');
+    ok(
+      await staff.c.post(
+        `/v1/admin/verifications/${v.id as string}/decision`,
+        {
+          decision: 'info_requested',
+          info_request: { missing_items: ['registration_number'], template_key: 'missing_documents', message: 'Please add the number.' },
+          reason: REASON,
+        },
+        purpose('verification', v.id as string),
+      ),
+      'info request',
+    );
+    return {
+      as,
+      params: { verification_id: v.id as string },
+      body: { registration_number: '10101234567', note: 'Added the number.' },
+      check: (res) => expect(res.body.info_request).toMatchObject({ status: 'answered', response_note: 'Added the number.' }),
+    };
+  },
 
   // ------------------------------------------------------------ §8 provider profile
   'provider.profile_get': async (h) => ({ as: await withProfile(h, 'provider_staff') }),
@@ -495,6 +519,30 @@ export const resolvers: Resolvers = {
       headers: purpose('verification', v.id as string),
       body: { decision: 'verified', reason: REASON },
     };
+  },
+  'admin.verification_assign': async (h) => {
+    const as = await h.member('provider');
+    const v = ok(await as.c.post(`/v1/orgs/${as.org!.id}/verifications`, { verification_type: 'business_identity' }), 'verification');
+    return {
+      as: await h.staff('platform_moderator'),
+      params: { verification_id: v.id as string },
+      body: { reason: REASON },
+      check: (res) => expect(res.body.assignee).toBeTruthy(),
+    };
+  },
+  'admin.org_correct': async (h) => {
+    const org = await h.fx.org('provider');
+    return {
+      as: await h.staff('platform_moderator'),
+      params: { org_id: org.id },
+      body: { website: 'https://corrected.example.com', reason: REASON },
+      check: (res) => expect(res.body).toMatchObject({ actor: 'staff', source: 'admin.org_correct', reason: REASON }),
+    };
+  },
+  'admin.org_history': async (h) => {
+    const p = await sharedProvider(h);
+    const caseId = await openCase(h.api, { type: 'organization', targetId: p.id });
+    return { as: await h.staff('platform_support'), params: { org_id: p.id }, headers: purpose('case', caseId) };
   },
   'admin.location_correct': async (h) => {
     const p = await h.provider();

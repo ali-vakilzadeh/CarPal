@@ -152,7 +152,7 @@ describe('me.preferences_get / update', () => {
       method: 'POST',
       path: '/v1/me/consents',
       token,
-      body: { consent_type: 'marketing', policy_version: '2026-10' },
+      body: { consent_type: 'marketing', policy_version: '1.0' },
       headers: idem(),
     });
     const ok = await put({ marketing_opt_in: true, navigation_app_key: 'neshan', distance_unit: 'km' });

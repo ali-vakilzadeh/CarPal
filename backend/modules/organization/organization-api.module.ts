@@ -26,6 +26,7 @@ import {
   OrgGetHandler,
   OrgUpdateHandler,
   OrgVerificationsListHandler,
+  OrgVerificationResubmitHandler,
   OrgVerificationSubmitHandler,
 } from './application/org-ops.js';
 import {
@@ -111,6 +112,7 @@ import { ProfileFacts } from './infrastructure/facts.js';
     GeoResolveMapLinkHandler,
     OrgVerificationsListHandler,
     OrgVerificationSubmitHandler,
+    OrgVerificationResubmitHandler,
     // §8 provider
     ProviderProfileGetHandler,
     ProviderProfilePutHandler,

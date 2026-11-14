@@ -4,6 +4,7 @@
 // value and the current usage, so two parallel requests at a limit are
 // serialized and only one passes.
 import { Injectable } from '@nestjs/common';
+import { sql } from 'kysely';
 import { ApiError } from '#libs/contract/index.js';
 import { EntitlementChecker, type CheckOptions, type EntitlementDecision, type EntitlementKey } from '#libs/entitlements/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
@@ -77,6 +78,24 @@ export class SubscriptionService extends SubscriptionReader {
     const [plan] = await loadPlans(scope, { ids: [sub.plan_id], includeInactive: true });
     if (!plan) return null;
     return toSubscription(sub, plan, effectiveEntitlements(sub, plan), await this.usage(scope, subscriber));
+  }
+
+  async staffPlanKeys(scope: TxScope, type: Subscriber['type'], ids: readonly string[]): Promise<Map<string, string>> {
+    if (ids.length === 0) return new Map();
+    // One row per subscriber: a current (trial or active) subscription first, else the latest.
+    const rows = await scope.db
+      .selectFrom('billing.subscriptions as s')
+      .innerJoin('billing.plans as p', 'p.id', 's.plan_id')
+      .select(['s.subscriber_id', 'p.plan_key'])
+      .distinctOn('s.subscriber_id')
+      .where('s.subscriber_type', '=', type)
+      .where('s.subscriber_id', 'in', [...ids])
+      .where('s.deleted_at', 'is', null)
+      .orderBy('s.subscriber_id')
+      .orderBy(sql`(s.status IN ('trial','active'))`, 'desc')
+      .orderBy('s.id', 'desc')
+      .execute();
+    return new Map(rows.map((r) => [r.subscriber_id, r.plan_key]));
   }
 
   async staffSummaryForUser(scope: TxScope, userId: string): Promise<SubscriptionSummary> {

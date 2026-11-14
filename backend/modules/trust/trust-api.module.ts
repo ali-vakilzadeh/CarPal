@@ -18,6 +18,7 @@ import {
   TrustSignalsListHandler,
 } from './application/business-ops.js';
 import { ReviewViews, Subjects } from './application/common.js';
+import { DisputesMessagePostHandler, DisputesMessagesListHandler } from './application/dispute-messages.js';
 import { DisputesCreateHandler, DisputesGetHandler, DisputesMineListHandler, DisputesWithdrawHandler } from './application/dispute-ops.js';
 import {
   InvitationViews,
@@ -75,6 +76,8 @@ import {
     DisputesMineListHandler,
     DisputesGetHandler,
     DisputesWithdrawHandler,
+    DisputesMessagesListHandler,
+    DisputesMessagePostHandler,
     BadgesListHandler,
     TrustSignalsListHandler,
   ],

@@ -72,7 +72,7 @@ describe('the trust loop (S7 acceptance)', () => {
   it('request → confirm → check-in → complete → service record → Path 1 review → published → trust score and evidence', async () => {
     const p = await publishedProvider(app, n, { name: `Loop Garage ${newId().slice(-6)}` });
     const cu = await customer(app, n);
-    const created = await cu.c.post('/v1/me/appointments', requestBody(p, cu, n, { share_history: { policy_version: '2026-10' } }));
+    const created = await cu.c.post('/v1/me/appointments', requestBody(p, cu, n, { share_history: { policy_version: '1.0' } }));
     expect(created.status).toBe(201);
     const a = created.body;
     expect(a).toMatchObject({
@@ -405,7 +405,7 @@ describe('pre-visit report', () => {
       visibility: 'private',
     });
     expect(rec.status).toBe(201);
-    const a = await requested(p, cu, n, { share_history: { policy_version: '2026-10' } });
+    const a = await requested(p, cu, n, { share_history: { policy_version: '1.0' } });
     const report = await p.c.get(provider(p, `/${a.id}/pre-visit-report`));
     expect(report.status).toBe(200);
     expect(report.headers['cache-control']).toBe('no-store');

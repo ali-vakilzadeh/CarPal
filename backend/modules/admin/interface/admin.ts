@@ -20,7 +20,7 @@
 import { Injectable } from '@nestjs/common';
 import { auditPiiRead } from '#libs/audit/index.js';
 import type { AccessPurpose, PurposeKind } from '#libs/authz/index.js';
-import { ApiError } from '#libs/contract/index.js';
+import { ApiError, type FieldError } from '#libs/contract/index.js';
 import type { OperationContext } from '#libs/http-pipeline/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { authorDisplayName, UserCards } from '#modules/identity/interface/identity.js';
@@ -293,6 +293,32 @@ export function excerpt(text: string | null | undefined, max = 120): string | nu
 /** Content actions an owning module applies to its own record (52 ModerationAction.action_type subset). */
 export type ContentAction = 'approve' | 'hide' | 'remove' | 'restore' | 'request_changes';
 
+/**
+ * Record-specific actions with parameters (backend S20, BR-15): reduce_weight and edit_request on reviews,
+ * downgrade_fitment on fitment rows. The owning module validates the parameters and changes its record.
+ */
+export type TargetAction = 'reduce_weight' | 'edit_request' | 'downgrade_fitment';
+
+/** What a TargetAction needs: the validated case-action parameters and who acts under which case. */
+export interface TargetActionInput {
+  staffUserId: string;
+  caseId: string;
+  reason: string;
+  params: {
+    weight_factor?: string;
+    edit_spans?: { field: 'title' | 'body'; start: number; end: number }[];
+    edit_message?: string;
+    fitment_confidence?: 'likely' | 'uncertain';
+  };
+}
+
+/**
+ * The outcome of a TargetAction: `params` are recorded with the moderation action (the previous value, for the
+ * log), or a refusal: `invalid` names a parameter pointer (422), `transition` a state that does not allow it (409).
+ */
+export type TargetActionResult =
+  { ok: true; params: Record<string, unknown> } | { ok: false; invalid: FieldError } | { ok: false; transition: string };
+
 /** 40 CaseTargetSummary of a record (backend S18, BR-27). */
 export interface TargetSummary {
   excerpt: string | null;
@@ -353,6 +379,8 @@ export interface ModerationTargetHandler {
    * action does not apply to the record's current state (409 INVALID_TRANSITION).
    */
   apply?(scope: TxScope, id: string, action: ContentAction): Promise<boolean>;
+  /** Applies a record-specific action (backend S20) in the staff transaction; absent = the action does not apply. */
+  act?(scope: TxScope, id: string, action: TargetAction, input: TargetActionInput): Promise<TargetActionResult>;
   /**
    * Records held for a moderator (pending moderation, pending review), oldest
    * first, at most `limit`: the intake rule opens a system_rule case for each
@@ -401,11 +429,8 @@ export abstract class ModerationLog {
    * violations (remove/hide on its content, −20 once) and fake-review findings.
    */
   abstract penalties(scope: TxScope, orgId: string, since: Date): Promise<TrustPenaltyInput[]>;
-  /** One moderation action (dispute targets: appeals, the actor who made the disputed decision). */
-  abstract get(
-    scope: TxScope,
-    id: string,
-  ): Promise<{ targetType: string; targetId: string; actionType: string; actorUserId: string; params: Record<string, unknown> } | null>;
+  /** One moderation action (dispute targets: appeals, the actor who made the disputed decision, the S20 snapshot). */
+  abstract get(scope: TxScope, id: string): Promise<LoggedAction | null>;
   /**
    * The parties a moderation action affected (definer admin.moderation_action_affects):
    * appeals by users and organizations, in their own RLS context.
@@ -415,11 +440,30 @@ export abstract class ModerationLog {
   abstract reportsAgainst(scope: TxScope, targetType: string, targetId: string, reason?: string): Promise<number>;
   /** Open moderation cases about a record (StaffOrgView.open_cases). */
   abstract openCases(scope: TxScope, targetType: string, targetId: string): Promise<number>;
+  /** The records among `ids` with an open moderation case about them (admin.orgs_search has_open_cases, backend S19). */
+  abstract withOpenCases(scope: TxScope, targetType: string, ids: readonly string[]): Promise<Set<string>>;
+  /**
+   * The records among `ids` with an open report of `reason` (status open, or triaged into a case not yet closed),
+   * as "type:id" keys (admin.orgs_search location_issue: wrong-location reports, backend S19).
+   */
+  abstract withOpenReports(scope: TxScope, targets: readonly SubjectRef[], reason: string): Promise<Set<string>>;
   /**
    * One staff member's actions of the given types since `since`, newest first, at most `limit` (backend S18,
    * admin.my_decisions_list). Actions recorded by a dispute resolution (params.dispute_id) are left out.
    */
   abstract byActor(scope: TxScope, actorUserId: string, actionTypes: readonly string[], since: Date, limit: number): Promise<ActorAction[]>;
+}
+
+/** One logged moderation action (ModerationLog.get). */
+export interface LoggedAction {
+  targetType: string;
+  targetId: string;
+  actionType: string;
+  actorUserId: string;
+  params: Record<string, unknown>;
+  reason: string;
+  caseId: string | null;
+  createdAt: Date;
 }
 
 /** A moderation action of one staff member (ModerationLog.byActor). */

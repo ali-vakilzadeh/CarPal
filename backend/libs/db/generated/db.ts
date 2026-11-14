@@ -1056,6 +1056,21 @@ export interface IdentityAuthenticationMethods {
   version: Generated<number>;
 }
 
+export interface IdentityConsentConfirmations {
+  confirmed_at: Generated<Timestamp>;
+  confirmed_by: string;
+  consent_id: string;
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  id: Generated<string>;
+  policy_version_id: string;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  version: Generated<number>;
+}
+
 export interface IdentityConsentRecords {
   consent_type: string;
   created_at: Generated<Timestamp>;
@@ -1069,6 +1084,7 @@ export interface IdentityConsentRecords {
   granted_to_type: string | null;
   id: Generated<string>;
   policy_version: string;
+  policy_version_id: string | null;
   scope_entity_id: string | null;
   scope_entity_type: string | null;
   source: string;
@@ -1192,6 +1208,7 @@ export interface IdentityPolicyVersions {
   policy_version: string;
   published_at: Timestamp | null;
   published_by: string | null;
+  reconsent_action: string | null;
   requires_reconsent: Generated<boolean>;
   status: Generated<string>;
   title_translations: Json;
@@ -1710,6 +1727,17 @@ export interface OrganizationOrganizationLocations {
   version: Generated<number>;
 }
 
+export interface OrganizationOrganizationProfileChanges {
+  actor_kind: string;
+  actor_user_id: string;
+  changes: Json;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  organization_id: string;
+  reason: string | null;
+  source: string;
+}
+
 export interface OrganizationOrganizations {
   contact_email: string;
   contact_phone: string | null;
@@ -1735,6 +1763,9 @@ export interface OrganizationOrganizations {
 }
 
 export interface OrganizationOrganizationVerifications {
+  ai_precheck: Json | null;
+  assigned_at: Timestamp | null;
+  assigned_to: string | null;
   created_at: Generated<Timestamp>;
   created_by: Generated<string | null>;
   deleted_at: Timestamp | null;
@@ -1742,9 +1773,12 @@ export interface OrganizationOrganizationVerifications {
   expires_at: Timestamp | null;
   id: Generated<string>;
   organization_id: string;
+  registration_number: string | null;
   rejection_reason: string | null;
   reviewed_at: Timestamp | null;
   reviewed_by: string | null;
+  sla_paused_at: Timestamp | null;
+  sla_started_at: Generated<Timestamp>;
   status: Generated<string>;
   submitted_document_ids: Generated<string[]>;
   updated_at: Generated<Timestamp>;
@@ -2010,6 +2044,29 @@ export interface OrganizationVendorProfiles {
   warranty_policy_translations: Json | null;
 }
 
+export interface OrganizationVerificationInfoRequests {
+  added_document_ids: Generated<string[]>;
+  answered_at: Timestamp | null;
+  answered_by: string | null;
+  closed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  id: Generated<string>;
+  message: string;
+  missing_items: string[];
+  organization_id: string;
+  requested_by: string;
+  response_note: string | null;
+  status: Generated<string>;
+  template_key: string;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  verification_id: string;
+  version: Generated<number>;
+}
+
 export interface TaxonomyTaxonomyMappings {
   created_at: Generated<Timestamp>;
   created_by: Generated<string | null>;
@@ -2067,6 +2124,19 @@ export interface TaxonomyTaxonomySynonyms {
   version: Generated<number>;
 }
 
+export interface TrustDisputeMessages {
+  author_kind: string;
+  author_organization_id: string | null;
+  author_user_id: string;
+  body: string;
+  created_at: Generated<Timestamp>;
+  dispute_id: string;
+  id: Generated<string>;
+  reply_due_at: Timestamp | null;
+  side: string;
+  template_key: string | null;
+}
+
 export interface TrustDisputes {
   assigned_to: string | null;
   created_at: Generated<Timestamp>;
@@ -2082,6 +2152,8 @@ export interface TrustDisputes {
   resolution: string | null;
   resolved_at: Timestamp | null;
   resolved_by: string | null;
+  respondent_organization_id: string | null;
+  respondent_user_id: string | null;
   status: Generated<string>;
   target_entity_id: string;
   target_entity_type: string;
@@ -2113,6 +2185,27 @@ export interface TrustProviderBadges {
   updated_by: string | null;
   version: Generated<number>;
   visibility: Generated<string>;
+}
+
+export interface TrustReviewEditRequests {
+  closed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  due_at: Timestamp;
+  edited_at: Timestamp | null;
+  id: Generated<string>;
+  message: string;
+  moderation_case_id: string | null;
+  previous_status: string;
+  requested_by: string;
+  review_id: string;
+  spans: Json;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  version: Generated<number>;
 }
 
 export interface TrustReviewRequests {
@@ -2216,6 +2309,7 @@ export interface TrustReviews {
   updated_by: string | null;
   verified_status: string;
   version: Generated<number>;
+  weight_factor: Generated<Numeric>;
   would_return: boolean | null;
 }
 
@@ -2527,6 +2621,7 @@ export interface DB {
   "fleet.fleet_profiles": FleetFleetProfiles;
   "fleet.fleet_vehicle_assignments": FleetFleetVehicleAssignments;
   "identity.authentication_methods": IdentityAuthenticationMethods;
+  "identity.consent_confirmations": IdentityConsentConfirmations;
   "identity.consent_records": IdentityConsentRecords;
   "identity.consent_requests": IdentityConsentRequests;
   "identity.data_subject_requests": IdentityDataSubjectRequests;
@@ -2556,6 +2651,7 @@ export interface DB {
   "notification.notifications": NotificationNotifications;
   "notification.push_device_tokens": NotificationPushDeviceTokens;
   "organization.organization_locations": OrganizationOrganizationLocations;
+  "organization.organization_profile_changes": OrganizationOrganizationProfileChanges;
   "organization.organization_verifications": OrganizationOrganizationVerifications;
   "organization.organizations": OrganizationOrganizations;
   "organization.portfolio_items": OrganizationPortfolioItems;
@@ -2569,11 +2665,14 @@ export interface DB {
   "organization.provider_vehicle_coverage": OrganizationProviderVehicleCoverage;
   "organization.vendor_coverage": OrganizationVendorCoverage;
   "organization.vendor_profiles": OrganizationVendorProfiles;
+  "organization.verification_info_requests": OrganizationVerificationInfoRequests;
   "taxonomy.taxonomy_mappings": TaxonomyTaxonomyMappings;
   "taxonomy.taxonomy_nodes": TaxonomyTaxonomyNodes;
   "taxonomy.taxonomy_synonyms": TaxonomyTaxonomySynonyms;
+  "trust.dispute_messages": TrustDisputeMessages;
   "trust.disputes": TrustDisputes;
   "trust.provider_badges": TrustProviderBadges;
+  "trust.review_edit_requests": TrustReviewEditRequests;
   "trust.review_requests": TrustReviewRequests;
   "trust.review_responses": TrustReviewResponses;
   "trust.review_sub_ratings": TrustReviewSubRatings;

@@ -358,7 +358,7 @@ describe('stock inquiries (40 §13.2-13.3)', () => {
       quantity: 2,
       message: 'Do these fit my car?',
       content_locale: 'en',
-      share_vehicle_context: { vehicle_id: car.id, policy_version: '2026-10' },
+      share_vehicle_context: { vehicle_id: car.id, policy_version: '1.0' },
     });
     expect(created.status).toBe(201);
     const q = created.body;
@@ -448,7 +448,7 @@ describe('stock inquiries (40 §13.2-13.3)', () => {
           inventory_item_id: pub.id,
           message: 'Fit?',
           content_locale: 'en',
-          share_vehicle_context: { vehicle_id: someoneElsesCar, policy_version: '2026-10' },
+          share_vehicle_context: { vehicle_id: someoneElsesCar, policy_version: '1.0' },
         })
       ).body.errors,
     ).toEqual([{ pointer: '/share_vehicle_context/vehicle_id', code: 'reference_not_found' }]);

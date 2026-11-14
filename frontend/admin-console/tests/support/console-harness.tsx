@@ -68,11 +68,13 @@ export function scriptedTransport(handlers: Partial<Record<AdminOperationId, Han
 
 export const page = <T,>(items: T[], next: string | null = null) => Response.json({ items, next_cursor: next });
 
-/** The admin.orgs_search row of a full organization view (backend S14: no contact data, no points). */
+/** The admin.orgs_search row of a full organization view (backend S14: no contact data, no points; S19 flags). */
 export const searchRow = (o: StaffOrgView): StaffOrgSearchRow => ({
   ...headOf(o),
   member_count: o.member_count,
   trust_score: o.trust_score,
+  location_issue: false,
+  possible_duplicate: false,
   created_at: o.created_at,
 });
 export const problem = (status: number, code: string, headers: Record<string, string> = {}) =>

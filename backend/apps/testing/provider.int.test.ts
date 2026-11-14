@@ -402,7 +402,7 @@ describe('certifications and work records', () => {
           scope_entity_id: vehicle,
           granted_to_type: 'organization',
           granted_to_id: org.id,
-          policy_version: '2026-10',
+          policy_version: '1.0',
           granted: true,
           granted_at: sql`now()`,
           source: 'ui',
@@ -536,7 +536,7 @@ describe('portfolio: consent request → grant → publish → withdrawal', () =
       path: '/v1/consent-requests/respond',
       token: customerToken,
       headers: idem(),
-      body: { token: link, decision: 'grant', policy_version: '2026-10' },
+      body: { token: link, decision: 'grant', policy_version: '1.0' },
     });
     expect(grant.status).toBe(200);
 
