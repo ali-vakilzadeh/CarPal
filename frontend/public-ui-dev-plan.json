@@ -1,0 +1,165 @@
+{
+  "meta": {
+    "title": "CarPal public Web UI (WP20: provider, vendor and fleet portals at web.<DOMAIN>) — plan and proposals",
+    "created": "2026-11-13",
+    "last_updated": "2026-11-13",
+    "status": "proposal",
+    "status_note": "No stage plan yet: the public Web UI is not scheduled. This file collects the proposals and decisions that must hold when its stage plan is written. The first two proposals (PU-P01, PU-P02) are copies of admin console pages, asked for by the owner on 2026-11-13.",
+    "owner": "project owner",
+    "purpose": "The public Web UI is the business web app for service providers, parts sellers and fleet managers (Docs/02 §1.4 and WP20). It is completely separate from the admin console (owner decision DQ-03): its own app, its own BFF and OAuth client (cp-web-portal), the api host only, and organization roles (ORG) decided by the server.",
+    "sources_of_truth": [
+      "Docs/02.Detailed project plan.md §1.4 (hosts: web.<DOMAIN>, fleet.<DOMAIN> redirect with ?fleet) and WP20",
+      "Docs/90.CarPal Screen Map.md §5-§8 (P-, V-, F- screens)",
+      "Docs/40.API contract.md (cp-web-portal §2.2; the {org}, {prv}, {vnd}, {flt} operations; §6.6 onboarding; §10 plans and subscriptions)",
+      "Docs/23.Admin_WebUI_screens.md §0 (DQ-03 scope and the console pages copied here)",
+      "frontend/admin-console/dev-plan.json (the console pages these copies mirror: AC6 plans, AC9 assist sessions)",
+      "backend/BR-update-plan.json DQ-03, DQ-20"
+    ],
+    "how_to_use": "When the public Web UI is scheduled, its stage plan is written in this file (stages PU1...). Each proposal below names the stage it belongs to once accepted. Backend needs are listed in backend_requests with the same entry shape as the console's (id, request, why), and join backend/BR-update-plan.json through its intake_rules."
+  },
+  "global_decisions": [
+    {
+      "id": "PU-GD-01",
+      "decision": "The public Web UI and the admin console are separate applications (DQ-03). No console page is part of the Web UI and no Web UI page is part of the console. Staff never sign in to the Web UI with staff rights: cp-web-admin tokens are admin-api only, and the api host refuses them.",
+      "source": "backend/BR-update-plan.json DQ-03 (owner, 2026-11-13)"
+    },
+    {
+      "id": "PU-GD-02",
+      "decision": "Pages that exist in both apps (the copies of PU-P01 and PU-P02) follow one screen specification and one look: same steps, fields, order, validation messages and components. They differ only in who acts and on what: in the Web UI the business acts on its own organization (api host, ORG roles); in the console staff act on any organization under a reason, purpose and audit (admin-api, STF roles). Rules live in the backend, so both copies get the same answers.",
+      "source": "owner request 2026-11-13 (\"another identical copy of such pages\"); see open question PU-OQ-01 for how the code is shared"
+    }
+  ],
+  "proposals": [
+    {
+      "id": "PU-P01",
+      "title": "Business onboarding wizard with the staff-assisted mode (copy of the admin console's assisted onboarding)",
+      "status": "proposed",
+      "origin": "Owner, 2026-11-13: DQ-03 table row 1 (assisted onboarding) stays in the admin console, and the public Web UI gets an identical copy of its pages.",
+      "console_side_today": {
+        "spec": "Docs/23 A-USR-02 \"Assist onboarding\": staff open the business setup wizard on behalf of an owner; every step is recorded with the staff member's name; the owner accepts the terms and stays the account owner; a banner on the owner's side shows that staff assisted.",
+        "built": "AC9 (frontend/admin-console/src/features/orgs/assist.tsx): start and end an assist session (admin.assist_session_start, admin.assist_session_end) and a banner on every console page while it is open. The assisted wizard itself is not built: its routes {adm}/assist/{assist_session_id}/... are undefined (backend DI-05, console DI-08).",
+        "backend": "admin.assist_session_start lists the allowlisted operations (org.update, org.location_*, geo.*, provider.profile_put, provider.service_category_create, provider.coverage_create, provider.capability_create, provider.certification_create, vendor.profile_put, vendor.coverage_create, inventory.create, inventory.import_create, availability.rule_create, media.upload_*, media.attach, fleet.profile_put) \"with the same bodies as the portal\"."
+      },
+      "copy_in_public_ui": {
+        "pages": [
+          "Provider onboarding P-ONB-01 Business Basics, P-ONB-02 Locations and Service Area (map pin editor), P-ONB-03 Services & Capabilities, P-ONB-04 Brands/Models/Series, P-ONB-05 Portfolio Upload, P-ONB-06 Hours & Appointment Capacity, P-ONB-07 Verification, P-ONB-08 AI Profile Preview",
+          "Vendor onboarding V-ONB-01 Vendor Basics, V-ONB-02 Categories and Brands, V-ONB-03 Inventory Setup",
+          "Fleet onboarding F-ONB-01 Fleet Organization Basics, F-ONB-02 Plan Selection (see PU-P02), F-ONB-03 Add Vehicles",
+          "Assisted-onboarding banner and history on the owner's side: who from CarPal helped, when, and which steps they filled in",
+          "Terms acceptance step for the owner after an assisted session (onboarding.accept_terms, owner only, AAL2; staff can never do it)"
+        ],
+        "who": "The organization's owner (O+) and managers allowed by each step's operation (ORG roles); fleet steps for the fleet roles of F-ONB.",
+        "operations": "The same operations as the console's allowlist, called directly on the api host ({org}/..., {prv}/..., {vnd}/..., {flt}/...), plus onboarding.list, onboarding.update, onboarding.accept_terms and org.create.",
+        "identical_to_console": "One wizard, used twice: the owner runs it in the Web UI; staff run the same pages inside an assist session in the console, where each call goes through {adm}/assist/{assist_session_id}/... with the same body. Same step order, fields, validation and texts."
+      },
+      "coherence_rules": [
+        "One step schema (step keys = OnboardingProgress steps of the WP0 journey maps) and one set of field definitions, used by both apps.",
+        "The UI texts of the wizard live in a shared namespace of shared/i18n, so a wording change reaches both apps.",
+        "What staff may do in an assist session is decided by the backend allowlist; the console copy hides the steps outside it (terms, consents) instead of keeping its own list.",
+        "Every step done by staff shows on the owner's side (banner and history) and in the console's audit drawer."
+      ],
+      "backend_requests": [
+        "PU-BR-01",
+        "PU-BR-02"
+      ],
+      "acceptance": [
+        "An owner completes onboarding alone in the Web UI with the same steps and texts as the console's assisted copy.",
+        "After a staff-assisted session the owner sees who assisted and which steps, and must accept the terms before the profile can be published.",
+        "A change to a step (field, validation, text) is made once and shows in both apps."
+      ]
+    },
+    {
+      "id": "PU-P02",
+      "title": "Plan and subscription pages for the business (copy of the admin console's plan assignment)",
+      "status": "proposed",
+      "origin": "Owner, 2026-11-13: DQ-03 table row 2 (plan assignment, trials and entitlement overrides) stays in the admin console, and the public Web UI gets an identical copy of its pages.",
+      "console_side_today": {
+        "spec": "Docs/23 A-PLAN-01 (Plans with entitlements; Assignments: assign plan, start trial with an end date, override an entitlement with a reason and expiry; History) and A-ORG-02 Plan tab and \"Change plan\".",
+        "built": "AC6 (frontend/admin-console/src/features/plans: plans-page.tsx, assign-form.tsx, plan-logic.ts): the plan list with entitlements, plan edits by four-eyes, the audit history and the assign form (plan, trial end, limit and entitlement overrides), prefilled from another screen with ?subscriber=organization:<id>.",
+        "backend": "admin.plans_list, admin.plan_update (4EYES), admin.subscription_assign (STF(ADM))."
+      },
+      "copy_in_public_ui": {
+        "pages": [
+          "Plan & limits (in P-SET-01 Provider Settings, the vendor settings and F-SET-01 Fleet Settings \"Plan limits\"): the same plan cards and entitlement table as the console's plan list, filtered to the organization's audience (plans.list audience)",
+          "Current subscription: plan, status, trial end, effective entitlements and usage meters (vehicles, users, inventory items) from subscription.org_get, in the same layout as the console's A-ORG-02 Plan tab",
+          "Change plan: the same form layout as the console's assign form; in the Web UI its action is \"Request this plan\" (subscription.change_request, owner only) while billing is manual",
+          "Request history: the organization's plan requests with their status (open, assigned, declined, withdrawn)",
+          "F-ONB-02 Plan Selection uses the same plan cards"
+        ],
+        "who": "Every member reads the plan and usage (ORG(ANY)); only the owner (O+) requests a change.",
+        "operations": "plans.list, subscription.org_get, subscription.change_request, and PU-BR-03 (own requests list).",
+        "identical_to_console": "Same plan cards, entitlement table, usage meters, labels (Plan.name_i18n_key) and form layout. The controls only staff may use stay staff-only and appear read-only in the Web UI: entitlement and limit overrides are shown as \"set by CarPal\" with their expiry; a trial is shown with its end date; the plan is assigned by an administrator in the console after the request.",
+        "never_in_public_ui": "A business never assigns its own plan, sets its own limits or overrides, or extends its own trial: those stay admin.subscription_assign on admin-api (security: a business could otherwise lift its own limits)."
+      },
+      "coherence_rules": [
+        "The plan card, entitlement table and usage meter are one component set used by both apps (see PU-OQ-01).",
+        "A request made in the Web UI arrives in the console as a work item, and the console's assign form opens prefilled from it (PU-BR-04); the decision returns to the business as a notification and in its request history.",
+        "Plan names, entitlement names and limits come from the backend and the shared dictionary, never from either app's own copy."
+      ],
+      "backend_requests": [
+        "PU-BR-03",
+        "PU-BR-04"
+      ],
+      "acceptance": [
+        "A business sees exactly the plans, entitlements and usage the console shows for it.",
+        "An owner's plan request appears in the console, an administrator assigns or declines it there, and the business sees the outcome.",
+        "No Web UI call can change a plan, a limit or an override."
+      ]
+    }
+  ],
+  "backend_requests": [
+    {
+      "id": "PU-BR-01",
+      "for": "PU-P01 (console side of the identical wizard)",
+      "request": "Define and serve the assisted routes {adm}/assist/{assist_session_id}/... for the allowlisted operations (backend DI-05), with the same bodies and answers as the api-host operations, each call audited as assist_onboarding.",
+      "why": "Without them the console's copy of the wizard cannot exist and the two copies cannot be identical."
+    },
+    {
+      "id": "PU-BR-02",
+      "for": "PU-P01 (owner side)",
+      "request": "The assist history on the owner's side: OnboardingProgress (onboarding.list) carries the assisted sessions of the flow (staff display name, started, ended, steps done by staff).",
+      "why": "Docs/23 A-USR-02 promises a banner on the owner's side; nothing in the api-host contract tells the owner that staff assisted."
+    },
+    {
+      "id": "PU-BR-03",
+      "for": "PU-P02",
+      "request": "GET {org}/subscription/change-requests (ORG(O+)): the organization's own plan requests with status, requested plan, note, handled_at.",
+      "why": "subscription.change_request answers 202 Ack only; the owner cannot see what happened to a request."
+    },
+    {
+      "id": "PU-BR-04",
+      "for": "PU-P02 (console side)",
+      "request": "admin.subscription_change_requests_list (STF(ADM)) and closing a request when admin.subscription_assign assigns it or an administrator declines it (SubscriptionChangeRequest.status assigned | declined, handled_by, handled_at), with a notification to the requester.",
+      "why": "The console has no read of change requests today, so a request from the Web UI would never reach the administrator who assigns plans."
+    }
+  ],
+  "open_questions": [
+    {
+      "id": "PU-OQ-01",
+      "question": "How are the identical pages shared between the two apps: a shared package in shared/ (React components, step schema, i18n namespace) used by both, or copies with provenance headers and a parity test (the way the console copied the PWA's BFF, console GD-03)?",
+      "default": "A shared package for the wizard steps and the plan components (shared/business-ui), because these pages must stay identical; copies with provenance only if the two apps' versions drift apart."
+    },
+    {
+      "id": "PU-OQ-02",
+      "question": "Should a business start a trial by itself (a new {org}/subscription/trial operation limited to the plan's trial_days, once per organization), or does every trial still need an administrator?",
+      "default": "An administrator, as today (manual billing): the Web UI requests, the console assigns."
+    },
+    {
+      "id": "PU-OQ-03",
+      "question": "Which items of the admin console's DQ-03 review besides PU-P01 and PU-P02 get a Web UI side: featured placements (Docs/23 §0 row 3) and the user side of support (row 4)?",
+      "default": "See backend/BR-update-plan.json DQ-20 (strategy proposed 2026-11-13): featured placements stay out of every plan until payments and featured placements are decided; the Web UI gets a Help page that files support tickets like the PWA."
+    }
+  ],
+  "deferred": [
+    {
+      "item": "Featured placements (Docs/23 A-FEAT-01; DQ-03 row 3)",
+      "note": "Not in the MVP (featured.enabled off, SEC-BF-6). Strategy proposed in backend/BR-update-plan.json DQ-20; nothing planned here until the owner decides."
+    }
+  ],
+  "progress_log": [
+    {
+      "date": "2026-11-13",
+      "summary": "File created with PU-P01 and PU-P02 (copies of the admin console's assisted onboarding and plan assignment pages, which stay in the console) and the backend requests they need (PU-BR-01..04)."
+    }
+  ]
+}
