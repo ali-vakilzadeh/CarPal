@@ -32,10 +32,12 @@ import { HOST, InjectInfra, InjectLogger } from '#libs/runtime/index.js';
 import { MetricGauges } from '#modules/analytics/interface/analytics.js';
 import { AdminExpiryRule, ModerationIntakeRule, registerPlatformRetention, RetentionRule } from './application/admin-rules.js';
 import { FourEyesDecideHandler, FourEyesListHandler } from './application/four-eyes-ops.js';
+import { CaseSnapshots } from './application/case-snapshots.js';
 import {
   CaseActionHandler,
   CaseAssignHandler,
   CaseCloseHandler,
+  CaseContextHandler,
   CaseGetHandler,
   CasesListHandler,
   CaseViews,
@@ -162,6 +164,7 @@ export class AdminRegistrations implements OnModuleInit {
     // media module (a file is about its attachments and owning organization), admin.users_search scopes its results.
     const recordBindings: [string, RecordBinding][] = [
       ['admin.case_get', pathRecord('case', 'case_id')],
+      ['admin.case_context', pathRecord('case', 'case_id')],
       ['admin.case_action', pathRecord('case', 'case_id')],
       ['admin.dispute_get', pathRecord('dispute', 'dispute_id')],
       ['admin.dispute_resolve', pathRecord('dispute', 'dispute_id')],
@@ -276,6 +279,7 @@ export class AdminModule {}
 
 @Module({
   providers: [
+    CaseSnapshots,
     CaseViews,
     FourEyesListHandler,
     FourEyesDecideHandler,
@@ -283,6 +287,7 @@ export class AdminModule {}
     ReportTriageHandler,
     CasesListHandler,
     CaseGetHandler,
+    CaseContextHandler,
     CaseAssignHandler,
     CaseActionHandler,
     CaseCloseHandler,

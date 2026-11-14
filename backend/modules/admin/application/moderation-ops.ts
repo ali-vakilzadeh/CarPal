@@ -20,6 +20,7 @@ import { TrustAdmin } from '#modules/trust/interface/trust.js';
 import { toAction, toCase, toReport, type CaseRow, type ReportRow } from '../api/projections.js';
 import {
   auditStaffRead,
+  caseSeverity,
   FourEyes,
   ModerationLog,
   ModerationTargets,
@@ -30,6 +31,7 @@ import {
   type ContentAction,
   type ModerationTargetHandler,
 } from '../interface/admin.js';
+import { CaseSnapshots } from './case-snapshots.js';
 import { afterId, exactlyOne, failIf, notFoundAt, pageOf } from './common.js';
 
 const OPEN_CASE = ['open', 'investigating', 'escalated'];
@@ -45,6 +47,8 @@ const DEDICATED: Record<string, string> = {
   assist_onboarding: 'admin.assist_session_start',
 };
 const PENALTY_TTL_MS = 365 * 86_400_000;
+/** 40 CaseContext.items: the target and up to 49 comments or answers around it. */
+const CONTEXT_LIMIT = 50;
 
 /** 403 PURPOSE_RECORD_MISMATCH: a record outside the case's subjects (S14, BR-09). */
 const mismatch = (what: 'target' | 'badge') => new ApiError('PURPOSE_RECORD_MISMATCH', { detail: `${what} is not a subject of the case` });
@@ -147,6 +151,7 @@ export class ReportTriageHandler implements OperationHandler {
       if (!r) throw new ApiError('NOT_FOUND');
       if (r.status !== 'open') throw new ApiError('INVALID_TRANSITION', { detail: r.status });
       let caseId: string | null = null;
+      let raised = '';
       if (b.moderation_case_id) {
         const c = await scope.db
           .selectFrom('admin.moderation_cases')
@@ -158,6 +163,9 @@ export class ReportTriageHandler implements OperationHandler {
         if (!OPEN_CASE.includes(c.status)) throw new ApiError('INVALID_TRANSITION', { detail: `case ${c.status}` });
         caseId = c.id;
       } else if (b.open_case) {
+        // S18 (BR-32): unsafe advice, media without consent and private data open at least high (Docs/23 A-CON-01).
+        const severity = caseSeverity(r.reason, b.open_case.severity);
+        if (severity !== b.open_case.severity) raised = ` (severity ${b.open_case.severity} raised to ${severity}: ${r.reason})`;
         const c = await scope.db
           .insertInto('admin.moderation_cases')
           .values({
@@ -166,7 +174,7 @@ export class ReportTriageHandler implements OperationHandler {
             target_entity_id: r.target_id,
             source: 'user_report',
             reason: r.reason,
-            severity: b.open_case.severity,
+            severity,
           })
           .returning('id')
           .executeTakeFirstOrThrow();
@@ -196,7 +204,7 @@ export class ReportTriageHandler implements OperationHandler {
         entityId: r.id,
         reason: b.reason,
         previous: 'open',
-        next: caseId ? `triaged into case ${caseId}` : 'dismissed',
+        next: caseId ? `triaged into case ${caseId}${raised}` : 'dismissed',
       });
       const row = await scope.db.selectFrom('admin.content_reports').selectAll().where('id', '=', r.id).executeTakeFirstOrThrow();
       return (await reportViews(scope, this.names, [row], ctx.locale))[0]!;
@@ -205,13 +213,21 @@ export class ReportTriageHandler implements OperationHandler {
   }
 }
 
-/** Case views with assignee names and report counts. */
+/** Case views with assignee names, report counts and target summaries (S18, BR-27). */
 @Injectable()
 export class CaseViews {
-  constructor(private readonly names: StaffNames) {}
+  constructor(
+    private readonly names: StaffNames,
+    private readonly snapshots: CaseSnapshots,
+  ) {}
 
   async many(scope: TxScope, rows: CaseRow[], locale: string) {
     const ids = rows.map((r) => r.id);
+    const summaries = await this.snapshots.summaries(
+      scope,
+      rows.map((r) => ({ type: r.target_entity_type, id: r.target_entity_id })),
+      locale,
+    );
     const counts = ids.length
       ? await scope.db
           .selectFrom('admin.content_reports')
@@ -226,7 +242,13 @@ export class CaseViews {
       rows.map((r) => r.assigned_to),
       locale,
     );
-    return rows.map((r) => toCase(r, { assignee: r.assigned_to ? names.get(r.assigned_to)! : null, reportCount: n.get(r.id) ?? 0 }));
+    return rows.map((r) =>
+      toCase(r, {
+        assignee: r.assigned_to ? names.get(r.assigned_to)! : null,
+        reportCount: n.get(r.id) ?? 0,
+        summary: summaries.get(`${r.target_entity_type}:${r.target_entity_id}`) ?? null,
+      }),
+    );
   }
 
   async one(scope: TxScope, row: CaseRow, locale: string) {
@@ -247,7 +269,18 @@ export class CasesListHandler implements OperationHandler {
   constructor(private readonly views: CaseViews) {}
 
   async handle(
-    ctx: OperationContext<undefined, { status?: string; severity?: string; case_type?: string; assigned_to_me?: boolean; limit: number }>,
+    ctx: OperationContext<
+      undefined,
+      {
+        status?: string;
+        severity?: string;
+        case_type?: string;
+        source?: string[];
+        reason?: string[];
+        assigned_to_me?: boolean;
+        limit: number;
+      }
+    >,
   ): Promise<OperationResult> {
     const s = staffOf(ctx);
     const q = ctx.query;
@@ -258,6 +291,9 @@ export class CasesListHandler implements OperationHandler {
         if (q.status) c = c.where('status', '=', q.status);
         if (q.severity) c = c.where('severity', '=', q.severity);
         if (q.case_type) c = c.where('case_type', '=', q.case_type);
+        // S18 (BR-27, BR-32): several sources or reasons match any of them (40 §3.3).
+        if (q.source?.length) c = c.where('source', 'in', q.source);
+        if (q.reason?.length) c = c.where('reason', 'in', q.reason);
         if (q.assigned_to_me !== undefined)
           c = q.assigned_to_me ? c.where('assigned_to', '=', s.userId) : c.where('assigned_to', 'is', null);
         if (after) c = c.where('id', '<', after);
@@ -278,7 +314,7 @@ export class CasesListHandler implements OperationHandler {
 export class CaseGetHandler implements OperationHandler {
   constructor(
     private readonly views: CaseViews,
-    private readonly targets: ModerationTargets,
+    private readonly snapshots: CaseSnapshots,
     private readonly names: StaffNames,
   ) {}
 
@@ -298,12 +334,58 @@ export class CaseGetHandler implements OperationHandler {
         actions.map((a) => a.actor_user_id),
         ctx.locale,
       );
-      const snapshot = (await this.targets.get(c.target_entity_type)?.snapshot(scope, c.target_entity_id)) ?? null;
+      // S18 (BR-27, BR-33): the typed snapshot with the author block (UnavailableSnapshot once the record is gone).
+      const snapshot = await this.snapshots.snapshot(scope, c.target_entity_type, c.target_entity_id, ctx.locale);
       await auditStaffRead(scope, s, 'moderation_case', c.id, `case target ${c.target_entity_type}`);
       return {
         case: await this.views.one(scope, c, ctx.locale),
         actions: actions.map((a) => toAction(a, names.get(a.actor_user_id)!)),
-        target_snapshot: snapshot ?? { type: c.target_entity_type, id: c.target_entity_id, available: false },
+        target_snapshot: snapshot,
+      };
+    });
+    return { body };
+  }
+}
+
+/**
+ * admin.case_context (S18, BR-33; Docs/23 A-CON-02 "the whole post with its comments, or the question with its
+ * answers"): the comments or answers around the case target with their authors, and the record they belong to.
+ * PURP case, bound to the case in the path (S14); other targets have no context (empty list).
+ */
+@Injectable()
+@Operation('admin.case_context')
+export class CaseContextHandler implements OperationHandler {
+  constructor(
+    private readonly targets: ModerationTargets,
+    private readonly snapshots: CaseSnapshots,
+  ) {}
+
+  async handle(ctx: OperationContext): Promise<OperationResult> {
+    const s = staffOf(ctx);
+    const body = await ctx.tx(async (scope) => {
+      const c = await loadCase(scope, ctx.params.case_id!);
+      const found = (await this.targets.get(c.target_entity_type)?.context?.(scope, c.target_entity_id, CONTEXT_LIMIT)) ?? null;
+      await auditStaffRead(scope, s, 'moderation_case', c.id, `case context ${c.target_entity_type}`);
+      if (!found) return { parent: null, items: [], total: 0 };
+      const authors = await this.snapshots.authors(
+        scope,
+        found.items.map((i) => ({ userId: i.authorUserId, organizationId: i.organizationId })),
+        ctx.locale,
+        false,
+      );
+      return {
+        parent: found.parent ? await this.snapshots.snapshot(scope, found.parent.type, found.parent.id, ctx.locale) : null,
+        items: found.items.map((i, k) => ({
+          type: i.type,
+          id: i.id,
+          body: i.body,
+          status: i.status,
+          moderation_status: i.moderationStatus,
+          created_at: i.createdAt.toISOString(),
+          author: authors[k]!,
+          is_target: i.isTarget,
+        })),
+        total: found.total,
       };
     });
     return { body };

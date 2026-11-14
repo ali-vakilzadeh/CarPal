@@ -272,6 +272,31 @@ export const resolvers: Resolvers = {
       body: { decision: 'approved', reason_code: 'credible', reason: REASON },
     };
   },
+  // S18 (BR-29): a reviewer's own decision is listed without a purpose, with no author data.
+  'admin.my_decisions_list': async (h) => {
+    const p = await sharedProvider(h);
+    const r = await pendingReview(h, p);
+    ok(await p.as.c.post(`/v1/orgs/${p.id}/review-approvals/${r.id}/answer`, { answer: 'confirmed' }), 'business answer');
+    const crv = await h.staff('platform_community_reviewer');
+    ok(
+      await crv.c.post(
+        `/v1/admin/review-approvals/${r.id}/decision`,
+        { decision: 'evidence_requested', reason_code: 'need_invoice', reason: REASON },
+        purpose('approval', r.id),
+      ),
+      'decision',
+    );
+    return {
+      as: crv,
+      query: { kind: 'approval' },
+      check: (res) => {
+        expect(res.body.items).toEqual([
+          expect.objectContaining({ kind: 'approval', decision: 'evidence_requested', reason_code: 'need_invoice', review_id: r.id }),
+        ]);
+        expect(res.text).not.toContain(r.author.user.email);
+      },
+    };
+  },
   'admin.review_move_to_approval_path': async (h) => {
     const r = await publishedReview(h, await sharedProvider(h));
     return {

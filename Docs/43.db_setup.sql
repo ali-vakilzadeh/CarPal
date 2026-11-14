@@ -2797,6 +2797,7 @@ CREATE TABLE trust.disputes (
   moderator_notes           text CHECK (char_length(moderator_notes) <= 3000),   -- internal
   resolution                text CHECK (char_length(resolution) <= 2000),
   resolved_at               timestamptz,
+  resolved_by               uuid,                    -- the staff member who decided (backend S18: admin.my_decisions_list)
   CHECK (status NOT IN ('resolved_upheld','resolved_rejected') OR (resolution IS NOT NULL AND resolved_at IS NOT NULL)),
   CHECK (dispute_type <> 'review_approval_objection' OR target_entity_type = 'review')
 );
@@ -2804,6 +2805,7 @@ CREATE UNIQUE INDEX disputes_open_uq ON trust.disputes (raised_by_user_id, targe
   WHERE status IN ('open','in_mediation');
 CREATE INDEX disputes_queue_idx ON trust.disputes (status, dispute_type, created_at);
 CREATE INDEX disputes_target_idx ON trust.disputes (target_entity_type, target_entity_id);
+CREATE INDEX disputes_resolver_idx ON trust.disputes (resolved_by, resolved_at) WHERE resolved_by IS NOT NULL;
 COMMENT ON TABLE trust.disputes IS '52 Dispute — decided by a different staff member from the original decision';
 
 CREATE TABLE trust.trust_signals (
@@ -3953,6 +3955,22 @@ CREATE INDEX moderation_cases_queue_idx ON admin.moderation_cases (status, sever
 CREATE INDEX moderation_cases_target_idx ON admin.moderation_cases (target_entity_type, target_entity_id);
 COMMENT ON TABLE admin.moderation_cases IS '52 ModerationCase — AI flags only open cases; humans decide';
 
+-- Severity floor (Docs/23 A-CON-01, backend S18): unsafe_advice, non_consensual_media and privacy cases are at least
+-- high, whichever path opens or changes the case (report triage, AI flags, rules).
+CREATE FUNCTION admin.tg_moderation_case_severity_floor() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog
+AS $$
+BEGIN
+  IF NEW.reason IN ('unsafe_advice','non_consensual_media','privacy') AND NEW.severity IN ('low','medium') THEN
+    NEW.severity := 'high';
+  END IF;
+  RETURN NEW;
+END
+$$;
+CREATE TRIGGER moderation_cases_severity_floor BEFORE INSERT OR UPDATE OF reason, severity ON admin.moderation_cases
+  FOR EACH ROW EXECUTE FUNCTION admin.tg_moderation_case_severity_floor();
+
 CREATE TABLE admin.content_reports (
   id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
   created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
@@ -3987,6 +4005,7 @@ CREATE TABLE admin.moderation_actions (
 );
 CREATE INDEX moderation_actions_case_idx ON admin.moderation_actions (moderation_case_id, created_at);
 CREATE INDEX moderation_actions_target_idx ON admin.moderation_actions (target_entity_type, target_entity_id);
+CREATE INDEX moderation_actions_actor_idx ON admin.moderation_actions (actor_user_id, created_at);
 COMMENT ON TABLE admin.moderation_actions IS '52 ModerationAction — append-only; every action has a reason and an AuditLog entry';
 
 CREATE TABLE admin.feature_flags (

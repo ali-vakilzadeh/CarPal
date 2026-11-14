@@ -173,13 +173,6 @@ function serverSchemas(): Record<string, Schema> {
       description:
         'Snapshot of the inputs a badge rule (rule_version) evaluated (54 §6; modules/trust/domain/scoring.ts): counts, ratings and thresholds, no personal data.',
     },
-    TargetSnapshot: {
-      type: 'object',
-      properties: { type: { type: 'string' }, id: { type: 'string', pattern: ID_PATTERN }, available: { type: 'boolean' } },
-      description:
-        'Plain fields of the moderated record for moderators (ModerationTargets of the owning module), never contact data or secrets; ' +
-        '{type, id, available: false} when the record is gone.',
-    },
     WebAuthnAssertion: {
       type: 'object',
       description: 'WebAuthn Level 3 AuthenticationResponseJSON (PublicKeyCredential.toJSON()) for the ceremony of auth.webauthn_options.',
@@ -436,6 +429,8 @@ function operation(op: Operation, route: Route, operationId: string, x: Ctx): Js
       in: 'query',
       required: (q.required ?? []).includes(name),
       schema: rewrite(schema),
+      // 40 §3.3: Set<T,n> filters are one comma-separated parameter.
+      ...((schema as { type?: unknown }).type === 'array' ? { style: 'form', explode: false } : {}),
       ...(name === 'cursor' ? { description: CURSOR_NOTE } : {}),
     });
   const noToken = tokenless(route);

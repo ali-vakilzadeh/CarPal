@@ -6,8 +6,8 @@ info:
   title: "CarPal API"
   version: "1.4.0"
   summary: "CarPal MVP API: consumer, business, admin plane and authorization server."
-  description: "Generated from Docs/40.API contract.md (contract 1.4.0, sha256 fbde0ee4eb0f7202d15e81576ff0e7483f7c788b849011883b052d5c68c7757d); the contract is authoritative.\n\nConventions (40 §0-§4): every schema is closed (additionalProperties false); unknown body members are 422 UNKNOWN_FIELD and unknown query parameters 400 UNKNOWN_QUERY_PARAM.\n\nRequest bodies are application/json except the OAuth forms of /oauth/* and the raw storage PUT. Personal or location data never appears in URLs (TR-7): searches use POST and page in the body.\n\nErrors are application/problem+json (Problem, RFC 9457) with a stable code; /oauth/* answer RFC 6749 error bodies (ProtocolError). Authorization failures are 404, never 403 (SEC-AZ-2).\n\nx-carpal-sec is the contract sec line (40 §0.4): PUB, USR, ORG(role groups), DRV, STF, LNK, AAL2/AAL3, ATT, IDEM, ETAG, RL, ENT, CNS, FLAG, ASYNC, AUD, RSN, 4EYES, PURP, PII.\n\nSchema keywords: x-node-type (taxonomy node type the id must have), x-conditional (rule of a conditional field), x-locale-config (enabled locales), x-vin (VIN normalization), x-external (standard document).\n\n4EYES operations answer 202 PendingChange until a second staff member approves (admin.four_eyes_decide); ASYNC operations answer 202 Job (jobs.get)."
-  x-carpal-contract-sha256: fbde0ee4eb0f7202d15e81576ff0e7483f7c788b849011883b052d5c68c7757d
+  description: "Generated from Docs/40.API contract.md (contract 1.4.0, sha256 8ad75d4f0976cbe1b3f519af20ade9ac946bedc330fffda9ba7a0c7e23b4fbee); the contract is authoritative.\n\nConventions (40 §0-§4): every schema is closed (additionalProperties false); unknown body members are 422 UNKNOWN_FIELD and unknown query parameters 400 UNKNOWN_QUERY_PARAM.\n\nRequest bodies are application/json except the OAuth forms of /oauth/* and the raw storage PUT. Personal or location data never appears in URLs (TR-7): searches use POST and page in the body.\n\nErrors are application/problem+json (Problem, RFC 9457) with a stable code; /oauth/* answer RFC 6749 error bodies (ProtocolError). Authorization failures are 404, never 403 (SEC-AZ-2).\n\nx-carpal-sec is the contract sec line (40 §0.4): PUB, USR, ORG(role groups), DRV, STF, LNK, AAL2/AAL3, ATT, IDEM, ETAG, RL, ENT, CNS, FLAG, ASYNC, AUD, RSN, 4EYES, PURP, PII.\n\nSchema keywords: x-node-type (taxonomy node type the id must have), x-conditional (rule of a conditional field), x-locale-config (enabled locales), x-vin (VIN normalization), x-external (standard document).\n\n4EYES operations answer 202 PendingChange until a second staff member approves (admin.four_eyes_decide); ASYNC operations answer 202 Job (jobs.get)."
+  x-carpal-contract-sha256: "8ad75d4f0976cbe1b3f519af20ade9ac946bedc330fffda9ba7a0c7e23b4fbee"
 servers:
   - url: "https://api.carpals.ir"
     description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
@@ -977,7 +977,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5583
+        line: 5673
   "/v1/admin/analytics/{dashboard_key}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1081,7 +1081,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5617
+        line: 5707
   "/v1/admin/assist-sessions/{assist_session_id}/end":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1181,7 +1181,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5097
+        line: 5171
   /v1/admin/audit-logs/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1319,7 +1319,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5522
+        line: 5612
   /v1/admin/badges:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1535,7 +1535,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5335
+        line: 5425
   "/v1/admin/badges/{badge_id}/approve":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1639,7 +1639,7 @@ paths:
         - badge.awarded
       x-carpal-contract:
         section: "23.4"
-        line: 5343
+        line: 5433
   /v1/admin/data-requests:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1847,7 +1847,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5531
+        line: 5621
   "/v1/admin/data-requests/{request_id}/execute-deletion":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1969,7 +1969,7 @@ paths:
         - user.deletion.completed
       x-carpal-contract:
         section: "23.5"
-        line: 5564
+        line: 5654
   "/v1/admin/data-requests/{request_id}/export":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2090,7 +2090,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5548
+        line: 5638
   "/v1/admin/data-requests/{request_id}/status":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2220,7 +2220,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5539
+        line: 5629
   /v1/admin/disputes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2343,7 +2343,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5308
+        line: 5398
   "/v1/admin/disputes/{dispute_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2441,7 +2441,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5316
+        line: 5406
   "/v1/admin/disputes/{dispute_id}/resolution":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2589,7 +2589,7 @@ paths:
         - review.published
       x-carpal-contract:
         section: "23.4"
-        line: 5324
+        line: 5414
   /v1/admin/exchange-rates:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2672,7 +2672,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5370
+        line: 5460
   "/v1/admin/exchange-rates/{currency}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2798,7 +2798,7 @@ paths:
         - exchange_rate.changed
       x-carpal-contract:
         section: "23.5"
-        line: 5377
+        line: 5467
   /v1/admin/flags:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2924,7 +2924,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5354
+        line: 5444
   "/v1/admin/flags/{key}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3091,7 +3091,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5362
+        line: 5452
   /v1/admin/four-eyes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3215,7 +3215,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5625
+        line: 5715
   "/v1/admin/four-eyes/{change_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3351,7 +3351,7 @@ paths:
         - four_eyes.decided
       x-carpal-contract:
         section: "23.5"
-        line: 5633
+        line: 5723
   "/v1/admin/jobs/{job_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3434,7 +3434,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5557
+        line: 5647
   /v1/admin/mcp/access-logs/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3576,7 +3576,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5608
+        line: 5698
   /v1/admin/mcp/clients:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3683,7 +3683,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5592
+        line: 5682
   "/v1/admin/mcp/clients/{client_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3834,7 +3834,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5599
+        line: 5689
   /v1/admin/me:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3911,7 +3911,102 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4860
+        line: 4934
+  /v1/admin/me/decisions:
+    servers:
+      - url: "https://admin-api.carpals.ir"
+        description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
+    get:
+      operationId: admin.my_decisions_list
+      summary: "Lists the caller's own review-approval decisions and dispute resolutions of the last 30 days, newest first, as decisi…"
+      description: "Lists the caller's own review-approval decisions and dispute resolutions of the last 30 days, newest first, as decision summaries without an access purpose: a reviewer can look back at what they decided after the approval or dispute purpose has ended. No author, reporter or evidence data."
+      tags:
+        - trust
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - approval
+              - dispute
+        - $ref: "#/components/parameters/CarPalClient"
+        - $ref: "#/components/parameters/DPoP"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - $ref: "#/components/parameters/CarPalTimezone"
+        - $ref: "#/components/parameters/CarPalRequestId"
+      responses:
+        "200":
+          description: "truncated: more than 200 in 30 days"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffDecision"
+                    maxItems: 200
+                  truncated:
+                    type: boolean
+                required:
+                  - items
+                  - truncated
+                additionalProperties: false
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "405":
+          $ref: "#/components/responses/Problem405"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "412":
+          $ref: "#/components/responses/Problem412"
+        "413":
+          $ref: "#/components/responses/Problem413"
+        "415":
+          $ref: "#/components/responses/Problem415"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "428":
+          $ref: "#/components/responses/Problem428"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "500":
+          $ref: "#/components/responses/Problem500"
+        "503":
+          $ref: "#/components/responses/Problem503"
+      security:
+        - dpop: []
+        - bffBearer: []
+          bffMutualTls: []
+      x-carpal-op-id: admin.my_decisions_list
+      x-carpal-host: admin-api
+      x-carpal-scope: single
+      x-carpal-sec: "STF(CRV, MOD)"
+      x-carpal-security:
+        principals:
+          - - tag: STF
+              args:
+                - CRV
+                - MOD
+        tags: []
+      x-carpal-status: implemented
+      x-carpal-contract:
+        section: "23.4"
+        line: 5305
   /v1/admin/me/notifications:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4026,7 +4121,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5442
+        line: 5532
   /v1/admin/me/notifications/read:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4121,7 +4216,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5457
+        line: 5547
   /v1/admin/me/notifications/unread-count:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4206,7 +4301,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5450
+        line: 5540
   /v1/admin/me/passkeys:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4292,7 +4387,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4928
+        line: 5002
     post:
       operationId: admin.staff_passkey_register
       summary: "Stores the key created with `admin.staff_passkey_register_options` (fresh `aal3` within 5 minutes)."
@@ -4412,7 +4507,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4944
+        line: 5018
   /v1/admin/me/passkeys/options:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4522,7 +4617,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4935
+        line: 5009
   "/v1/admin/me/passkeys/{method_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4621,7 +4716,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4953
+        line: 5027
   /v1/admin/me/recovery-codes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4718,7 +4813,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4961
+        line: 5035
   "/v1/admin/media/{media_id}/download-url":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4833,15 +4928,15 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5574
+        line: 5664
   /v1/admin/moderation/cases:
     servers:
       - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.cases_list
-      summary: "Lists moderation cases by status, severity, type and assignee."
-      description: "Lists moderation cases by status, severity, type and assignee."
+      summary: "Lists moderation cases by status, severity, type, source, reason and assignee; `source` and `reason` take several val…"
+      description: "Lists moderation cases by status, severity, type, source, reason and assignee; `source` and `reason` take several values (§3.3)."
       tags:
         - admin
       parameters:
@@ -4871,6 +4966,33 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/ReportTargetType"
+        - name: source
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - user_report
+                - ai_flag
+                - system_rule
+                - admin
+            maxItems: 4
+            uniqueItems: true
+          style: form
+          explode: false
+        - name: reason
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/ModerationReason"
+            maxItems: 18
+            uniqueItems: true
+          style: form
+          explode: false
         - name: assigned_to_me
           in: query
           required: false
@@ -4972,15 +5094,15 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5265
+        line: 5347
   "/v1/admin/moderation/cases/{case_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.case_get
-      summary: "Returns a case with its target content and action history."
-      description: "Returns a case with its target content and action history."
+      summary: "Returns a case with its target content (a typed snapshot with the author and the author's history) and action history."
+      description: "Returns a case with its target content (a typed snapshot with the author and the author's history) and action history."
       tags:
         - admin
       parameters:
@@ -4998,7 +5120,7 @@ paths:
         - $ref: "#/components/parameters/CarPalAccessPurpose"
       responses:
         "200":
-          description: "{ case: ModerationCase; actions: List<ModerationAction,200>; target_snapshot: Json<TargetSnapshot> }"
+          description: "{ case: ModerationCase; actions: List<ModerationAction,200>; target_snapshot: TargetSnapshot }"
           headers:
             CarPal-Request-Id:
               $ref: "#/components/headers/CarPal-Request-Id"
@@ -5083,7 +5205,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5274
+        line: 5356
   "/v1/admin/moderation/cases/{case_id}/actions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5213,7 +5335,7 @@ paths:
         - trust.score.changed
       x-carpal-contract:
         section: "23.4"
-        line: 5290
+        line: 5380
   "/v1/admin/moderation/cases/{case_id}/assign":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5318,7 +5440,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5282
+        line: 5372
   "/v1/admin/moderation/cases/{case_id}/close":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5432,7 +5554,103 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5300
+        line: 5390
+  "/v1/admin/moderation/cases/{case_id}/context":
+    servers:
+      - url: "https://admin-api.carpals.ir"
+        description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
+    get:
+      operationId: admin.case_context
+      summary: "Returns the content around a case's target: the comments on the record a reported comment is on, the answers to the q…"
+      description: "Returns the content around a case's target: the comments on the record a reported comment is on, the answers to the question of a reported answer, the comments on a reported post or the answers to a reported question, each with its author."
+      tags:
+        - admin
+      parameters:
+        - name: case_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        - $ref: "#/components/parameters/CarPalClient"
+        - $ref: "#/components/parameters/DPoP"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - $ref: "#/components/parameters/CarPalTimezone"
+        - $ref: "#/components/parameters/CarPalRequestId"
+        - $ref: "#/components/parameters/CarPalAccessPurpose"
+      responses:
+        "200":
+          description: CaseContext
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseContext"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          description: "Problem (RFC 9457): PURPOSE_RECORD_MISMATCH, FEATURE_DISABLED"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            "application/problem+json":
+              schema:
+                $ref: "#/components/schemas/Problem"
+          x-carpal-error-codes:
+            - PURPOSE_RECORD_MISMATCH
+            - FEATURE_DISABLED
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "405":
+          $ref: "#/components/responses/Problem405"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "412":
+          $ref: "#/components/responses/Problem412"
+        "413":
+          $ref: "#/components/responses/Problem413"
+        "415":
+          $ref: "#/components/responses/Problem415"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "428":
+          $ref: "#/components/responses/Problem428"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "500":
+          $ref: "#/components/responses/Problem500"
+        "503":
+          $ref: "#/components/responses/Problem503"
+      security:
+        - dpop: []
+        - bffBearer: []
+          bffMutualTls: []
+      x-carpal-op-id: admin.case_context
+      x-carpal-host: admin-api
+      x-carpal-scope: single
+      x-carpal-sec: "STF(MOD, ADM) PURP"
+      x-carpal-security:
+        principals:
+          - - tag: STF
+              args:
+                - MOD
+                - ADM
+        tags:
+          - tag: PURP
+            args: []
+      x-carpal-status: implemented
+      x-carpal-contract:
+        section: "23.4"
+        line: 5364
   /v1/admin/notification-rules:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5508,7 +5726,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5427
+        line: 5517
     put:
       operationId: admin.notif_rules_update
       summary: "Replaces the notification rules."
@@ -5593,7 +5811,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5434
+        line: 5524
   /v1/admin/notification-templates:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5704,7 +5922,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5393
+        line: 5483
   "/v1/admin/notification-templates/{template_key}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5814,7 +6032,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5401
+        line: 5491
   "/v1/admin/notification-templates/{template_key}/preview":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5942,7 +6160,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5418
+        line: 5508
   "/v1/admin/notification-templates/{template_key}/reset":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6058,7 +6276,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5410
+        line: 5500
   /v1/admin/orgs/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6159,7 +6377,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5027
+        line: 5101
   "/v1/admin/orgs/{org_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6260,7 +6478,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5035
+        line: 5109
   "/v1/admin/orgs/{org_id}/assist-sessions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6380,7 +6598,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5088
+        line: 5162
   "/v1/admin/orgs/{org_id}/locations/{location_id}/correct":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6536,7 +6754,7 @@ paths:
         - organization.location.corrected
       x-carpal-contract:
         section: "23.2"
-        line: 5078
+        line: 5152
   "/v1/admin/orgs/{org_id}/merge":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6643,7 +6861,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5052
+        line: 5126
   "/v1/admin/orgs/{org_id}/status":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6754,7 +6972,7 @@ paths:
         - moderation.action.taken
       x-carpal-contract:
         section: "23.2"
-        line: 5043
+        line: 5117
   /v1/admin/plans:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6861,7 +7079,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5113
+        line: 5187
   "/v1/admin/plans/{plan_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6975,7 +7193,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5120
+        line: 5194
   /v1/admin/policies:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7058,7 +7276,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5480
+        line: 5570
   "/v1/admin/policies/{policy_key}/versions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7163,7 +7381,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5494
+        line: 5584
   "/v1/admin/policy-versions/{version_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7245,7 +7463,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5487
+        line: 5577
     patch:
       operationId: admin.policy_version_update
       summary: "Changes a draft; a version that was published (or is scheduled) is read-only."
@@ -7400,7 +7618,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5503
+        line: 5593
   "/v1/admin/policy-versions/{version_id}/publish":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7522,7 +7740,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5513
+        line: 5603
   /v1/admin/region:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7599,7 +7817,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5386
+        line: 5476
   /v1/admin/reports:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7727,7 +7945,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5249
+        line: 5331
   "/v1/admin/reports/{report_id}/triage":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7735,7 +7953,7 @@ paths:
     post:
       operationId: admin.report_triage
       summary: "Links a report to an existing case or opens a new case, or dismisses it."
-      description: "Links a report to an existing case or opens a new case, or dismisses it.\n\nInput: C: exactly one"
+      description: "Links a report to an existing case or opens a new case, or dismisses it. A case about `unsafe_advice`, `non_consensual_media` or `privacy` opens at least `high`, whatever severity is sent (Docs/23 A-CON-01); the same floor holds for cases opened by AI flags and rules.\n\nInput: C: exactly one"
       tags:
         - admin
       parameters:
@@ -7845,7 +8063,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5257
+        line: 5339
   /v1/admin/retention-policies:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7952,7 +8170,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5465
+        line: 5555
   "/v1/admin/retention-policies/{policy_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8095,7 +8313,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5472
+        line: 5562
   /v1/admin/review-approvals:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8212,7 +8430,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5215
+        line: 5289
   "/v1/admin/review-approvals/{review_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8308,7 +8526,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5223
+        line: 5297
   "/v1/admin/review-approvals/{review_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8452,7 +8670,7 @@ paths:
         - moderation.action.taken
       x-carpal-contract:
         section: "23.4"
-        line: 5231
+        line: 5313
   "/v1/admin/reviews/{review_id}/move-to-approval-path":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8555,7 +8773,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5241
+        line: 5323
   /v1/admin/staff:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8683,7 +8901,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4867
+        line: 4941
   /v1/admin/staff/recoveries:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8801,7 +9019,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4893
+        line: 4967
   "/v1/admin/staff/recoveries/{request_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8881,7 +9099,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4901
+        line: 4975
   "/v1/admin/staff/recoveries/{request_id}/approve":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9020,7 +9238,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4908
+        line: 4982
   "/v1/admin/staff/recoveries/{request_id}/reject":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9131,7 +9349,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4919
+        line: 4993
   "/v1/admin/staff/{user_id}/disable":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9254,7 +9472,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4875
+        line: 4949
   "/v1/admin/staff/{user_id}/enable":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9381,7 +9599,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4884
+        line: 4958
   /v1/admin/subscriptions:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9467,7 +9685,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5105
+        line: 5179
   /v1/admin/taxonomy/mappings:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9606,7 +9824,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5196
+        line: 5270
     put:
       operationId: admin.mapping_upsert
       summary: "Creates or updates a weighted mapping (unique per source, target and type; node types must match the mapping type)."
@@ -9709,7 +9927,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5204
+        line: 5278
   /v1/admin/taxonomy/nodes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9838,7 +10056,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5130
+        line: 5204
     post:
       operationId: admin.taxonomy_node_create
       summary: "Creates a node with labels in every enabled locale; parent rules and cycles are checked."
@@ -9955,7 +10173,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5138
+        line: 5212
   "/v1/admin/taxonomy/nodes/{node_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10107,7 +10325,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5147
+        line: 5221
   "/v1/admin/taxonomy/nodes/{node_id}/merge":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10218,7 +10436,7 @@ paths:
         - taxonomy.node.merged
       x-carpal-contract:
         section: "23.3"
-        line: 5155
+        line: 5229
   "/v1/admin/taxonomy/nodes/{node_id}/synonyms":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10350,7 +10568,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5164
+        line: 5238
     post:
       operationId: admin.synonym_create
       summary: "Adds a synonym, alias, misspelling, local term, abbreviation or transliteration."
@@ -10457,7 +10675,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5172
+        line: 5246
   "/v1/admin/taxonomy/synonyms/{synonym_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10542,7 +10760,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5189
+        line: 5263
   "/v1/admin/taxonomy/synonyms/{synonym_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10650,7 +10868,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5181
+        line: 5255
   /v1/admin/users/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10756,7 +10974,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4969
+        line: 5043
   "/v1/admin/users/{user_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10855,7 +11073,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4977
+        line: 5051
   "/v1/admin/users/{user_id}/onboarding/{flow_type}/reset":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10967,7 +11185,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5019
+        line: 5093
   "/v1/admin/users/{user_id}/platform-roles":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11090,7 +11308,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5002
+        line: 5076
   "/v1/admin/users/{user_id}/platform-roles/{role}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11192,7 +11410,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5011
+        line: 5085
   "/v1/admin/users/{user_id}/sessions/revoke":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11292,7 +11510,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 4994
+        line: 5068
   "/v1/admin/users/{user_id}/status":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11404,7 +11622,7 @@ paths:
         - moderation.action.taken
       x-carpal-contract:
         section: "23.2"
-        line: 4985
+        line: 5059
   /v1/admin/verifications:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11609,7 +11827,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5060
+        line: 5134
   "/v1/admin/verifications/{verification_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11739,7 +11957,7 @@ paths:
         - organization.verified
       x-carpal-contract:
         section: "23.2"
-        line: 5068
+        line: 5142
   "/v1/ai/suggestions/{suggestion_id}/decision":
     servers:
       - url: "https://api.carpals.ir"
@@ -56313,6 +56531,52 @@ components:
         - created_at
         - expires_at
       additionalProperties: false
+    AiOutputSnapshot:
+      type: object
+      properties:
+        type:
+          const: ai_output
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        insight_type:
+          $ref: "#/components/schemas/InsightType"
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        visibility:
+          type: string
+          enum:
+            - internal
+            - owner_only
+            - public_after_approval
+        model_version:
+          type: string
+          minLength: 1
+          maxLength: 60
+          pattern: "^[^\\r\\n]*$"
+        organization_id:
+          anyOf:
+            - type: string
+              pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            - type: "null"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+      required:
+        - type
+        - id
+        - available
+        - insight_type
+        - summary
+        - visibility
+        - model_version
+        - organization_id
+        - created_at
+      additionalProperties: false
     AiSuggestion:
       type: object
       properties:
@@ -56406,6 +56670,47 @@ components:
         - occurred_at
       additionalProperties: false
       description: "validated per event; no personal data"
+    AnswerSnapshot:
+      type: object
+      properties:
+        type:
+          const: answer
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        question_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        body:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        status:
+          type: string
+          enum:
+            - active
+            - hidden
+            - removed
+        moderation_status:
+          $ref: "#/components/schemas/ModerationStatus"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        author:
+          $ref: "#/components/schemas/ContentAuthor"
+      required:
+        - type
+        - id
+        - available
+        - question_id
+        - body
+        - status
+        - moderation_status
+        - created_at
+        - author
+      additionalProperties: false
     AnswerWrite:
       type: object
       properties:
@@ -58065,6 +58370,92 @@ components:
         - experience_level
         - public_visibility
       additionalProperties: false
+    CaseContext:
+      type: object
+      properties:
+        parent:
+          anyOf:
+            - $ref: "#/components/schemas/TargetSnapshot"
+            - type: "null"
+          description: "the record a comment is on; the question of an answer; null otherwise"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaseContextItem"
+          maxItems: 50
+          description: "oldest first: the comments or answers around the target (or the first 50 on a post or question that is the target); empty for other targets"
+        total:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+      required:
+        - parent
+        - items
+        - total
+      additionalProperties: false
+      description: "comments or answers on that record in all"
+    CaseContextItem:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - comment
+            - answer
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        body:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        status:
+          type: string
+          enum:
+            - active
+            - hidden
+            - removed
+        moderation_status:
+          $ref: "#/components/schemas/ModerationStatus"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        author:
+          $ref: "#/components/schemas/ContentAuthor"
+        is_target:
+          type: boolean
+      required:
+        - type
+        - id
+        - body
+        - status
+        - moderation_status
+        - created_at
+        - author
+        - is_target
+      additionalProperties: false
+    CaseTargetSummary:
+      type: object
+      properties:
+        excerpt:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 120
+              pattern: "^[^\\r\\n]*$"
+            - type: "null"
+          description: "the title, name or start of the text on one line; null for accounts, files and AI output"
+        rating:
+          anyOf:
+            - type: integer
+              minimum: 1
+              maximum: 5
+            - type: "null"
+      required:
+        - excerpt
+        - rating
+      additionalProperties: false
+      description: "reviews only"
     Certification:
       type: object
       properties:
@@ -58310,6 +58701,46 @@ components:
         - content_locale
         - created_at
         - status
+      additionalProperties: false
+    CommentSnapshot:
+      type: object
+      properties:
+        type:
+          const: comment
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        target:
+          $ref: "#/components/schemas/CommentTarget"
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        status:
+          type: string
+          enum:
+            - active
+            - hidden
+            - removed
+        moderation_status:
+          $ref: "#/components/schemas/ModerationStatus"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        author:
+          $ref: "#/components/schemas/ContentAuthor"
+      required:
+        - type
+        - id
+        - available
+        - target
+        - body
+        - status
+        - moderation_status
+        - created_at
+        - author
       additionalProperties: false
     CommentTarget:
       type: object
@@ -58577,6 +59008,58 @@ components:
         - type
         - value
         - preferred
+      additionalProperties: false
+    ContentAuthor:
+      type: object
+      properties:
+        user_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        display_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          pattern: "^[^\\r\\n]*$"
+          description: "a neutral label once the account is gone"
+        role:
+          anyOf:
+            - $ref: "#/components/schemas/OrgType"
+            - type: string
+              enum:
+                - member
+          description: "the organization's type when written for an organization"
+        organization:
+          anyOf:
+            - $ref: "#/components/schemas/OrgSummary"
+            - type: "null"
+        history:
+          anyOf:
+            - type: object
+              properties:
+                published:
+                  type: integer
+                  minimum: 0
+                  maximum: 1000000
+                removed:
+                  type: integer
+                  minimum: 0
+                  maximum: 1000000
+                warnings:
+                  type: integer
+                  minimum: 0
+                  maximum: 1000000
+              required:
+                - published
+                - removed
+                - warnings
+              additionalProperties: false
+            - type: "null"
+      required:
+        - user_id
+        - display_name
+        - role
+        - organization
+        - history
       additionalProperties: false
     ContentVisibility:
       type: string
@@ -59584,6 +60067,96 @@ components:
         - confirmed
         - likely
         - uncertain
+    FitmentSnapshot:
+      type: object
+      properties:
+        type:
+          const: inventory_fitment
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        inventory_item_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        listing:
+          type: object
+          properties:
+            sku:
+              type: string
+              minLength: 1
+              maxLength: 80
+              pattern: "^[^\\r\\n]*$"
+            name_translations:
+              type: object
+              propertyNames:
+                enum:
+                  - en
+                  - fa
+              additionalProperties:
+                type: string
+                minLength: 1
+                maxLength: 160
+              minProperties: 1
+            status:
+              $ref: "#/components/schemas/InventoryStatus"
+          required:
+            - sku
+            - name_translations
+            - status
+          additionalProperties: false
+          description: "the listing of the row"
+        brand_node_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        model_node_id:
+          anyOf:
+            - type: string
+              pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            - type: "null"
+        series_node_id:
+          anyOf:
+            - type: string
+              pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            - type: "null"
+        year_start:
+          anyOf:
+            - type: integer
+              minimum: 1950
+              maximum: 2100
+            - type: "null"
+        year_end:
+          anyOf:
+            - type: integer
+              minimum: 1950
+              maximum: 2100
+            - type: "null"
+        confidence:
+          type: string
+          enum:
+            - confirmed
+            - likely
+            - uncertain
+        source:
+          $ref: "#/components/schemas/FitmentSource"
+        status:
+          $ref: "#/components/schemas/FitmentStatus"
+      required:
+        - type
+        - id
+        - available
+        - inventory_item_id
+        - listing
+        - brand_node_id
+        - model_node_id
+        - series_node_id
+        - year_start
+        - year_end
+        - confidence
+        - source
+        - status
+      additionalProperties: false
     FitmentSource:
       type: string
       enum:
@@ -60816,6 +61389,53 @@ components:
         - fitment_count
         - media
       additionalProperties: false
+    InventoryItemSnapshot:
+      type: object
+      properties:
+        type:
+          const: inventory_item
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        vendor_organization_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: "^[^\\r\\n]*$"
+        name_translations:
+          type: object
+          propertyNames:
+            enum:
+              - en
+              - fa
+          additionalProperties:
+            type: string
+            minLength: 1
+            maxLength: 160
+          minProperties: 1
+        status:
+          $ref: "#/components/schemas/InventoryStatus"
+        visibility:
+          $ref: "#/components/schemas/InventoryVisibility"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+      required:
+        - type
+        - id
+        - available
+        - vendor_organization_id
+        - sku
+        - name_translations
+        - status
+        - visibility
+        - created_at
+      additionalProperties: false
     InventoryItemWrite:
       type: object
       properties:
@@ -61566,6 +62186,73 @@ components:
             - viewport
           additionalProperties: false
       description: "\"Search this area\""
+    LocationSnapshot:
+      type: object
+      properties:
+        type:
+          const: organization_location
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        organization_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: "^[^\\r\\n]*$"
+        region:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 100
+              pattern: "^[^\\r\\n]*$"
+            - type: "null"
+        country:
+          type: string
+          pattern: "^[A-Z]{2}$"
+        public_point:
+          anyOf:
+            - type: object
+              properties:
+                lat:
+                  type: number
+                  minimum: -90
+                  maximum: 90
+                lng:
+                  type: number
+                  minimum: -180
+                  maximum: 180
+              required:
+                - lat
+                - lng
+              additionalProperties: false
+            - type: "null"
+        geo_source:
+          $ref: "#/components/schemas/GeoSource"
+        location_check_status:
+          $ref: "#/components/schemas/LocationCheckStatus"
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+      required:
+        - type
+        - id
+        - available
+        - organization_id
+        - city
+        - region
+        - country
+        - public_point
+        - geo_source
+        - location_check_status
+        - status
+      additionalProperties: false
     LocationWrite:
       type: object
       properties:
@@ -62646,6 +63333,64 @@ components:
         - thumbnail_url
       additionalProperties: false
       description: "signed; only when scan_status = clean"
+    MediaAssetSnapshot:
+      type: object
+      properties:
+        type:
+          const: media_asset
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        purpose:
+          $ref: "#/components/schemas/UploadPurpose"
+        media_type:
+          $ref: "#/components/schemas/MediaType"
+        privacy_level:
+          $ref: "#/components/schemas/MediaPrivacy"
+        status:
+          type: string
+          enum:
+            - active
+            - quarantined
+            - removed
+        scan_status:
+          $ref: "#/components/schemas/ScanStatus"
+        moderation_status:
+          $ref: "#/components/schemas/ModerationStatus"
+        owner_type:
+          type: string
+          enum:
+            - user
+            - organization
+            - system
+        owner_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        author:
+          anyOf:
+            - $ref: "#/components/schemas/ContentAuthor"
+            - type: "null"
+      required:
+        - type
+        - id
+        - available
+        - purpose
+        - media_type
+        - privacy_level
+        - status
+        - scan_status
+        - moderation_status
+        - owner_type
+        - owner_id
+        - created_at
+        - author
+      additionalProperties: false
+      description: "the uploader"
     MediaAttachmentView:
       type: object
       properties:
@@ -63161,6 +63906,7 @@ components:
             - medium
             - high
             - critical
+          description: "unsafe_advice, non_consensual_media and privacy cases are at least high"
         ai_risk_score:
           anyOf:
             - type: integer
@@ -63202,6 +63948,10 @@ components:
           type: integer
           minimum: 0
           maximum: 100000
+        target_summary:
+          anyOf:
+            - $ref: "#/components/schemas/CaseTargetSummary"
+            - type: "null"
       required:
         - id
         - created_at
@@ -63219,7 +63969,9 @@ components:
         - resolution
         - resolved_at
         - report_count
+        - target_summary
       additionalProperties: false
+      description: "null when the record is gone"
     ModerationReason:
       type: string
       enum:
@@ -63915,6 +64667,53 @@ components:
         - my_role
       additionalProperties: false
       description: "derived: caller's role in this organization"
+    OrganizationSnapshot:
+      type: object
+      properties:
+        type:
+          const: organization
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+          pattern: "^[^\\r\\n]*$"
+        organization_type:
+          $ref: "#/components/schemas/OrgType"
+        slug:
+          anyOf:
+            - type: string
+              pattern: "^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$"
+            - type: "null"
+        status:
+          $ref: "#/components/schemas/OrgStatus"
+        verification_status:
+          $ref: "#/components/schemas/VerificationStatus"
+        trust_score:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 100
+            - type: "null"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+      required:
+        - type
+        - id
+        - available
+        - name
+        - organization_type
+        - slug
+        - status
+        - verification_status
+        - trust_score
+        - created_at
+      additionalProperties: false
     OrganizationVerification:
       type: object
       properties:
@@ -65165,6 +65964,80 @@ components:
         - status
         - media
       additionalProperties: false
+    PortfolioItemSnapshot:
+      type: object
+      properties:
+        type:
+          const: portfolio_item
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        provider_organization_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        title:
+          type: string
+          minLength: 3
+          maxLength: 140
+          pattern: "^[^\\r\\n]*$"
+        description:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 3000
+            - type: "null"
+        caption:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 1000
+            - type: "null"
+        status:
+          type: string
+          enum:
+            - draft
+            - pending_review
+            - published
+            - rejected
+            - archived
+        moderation_status:
+          $ref: "#/components/schemas/ModerationStatus"
+        visibility:
+          $ref: "#/components/schemas/ContentVisibility"
+        customer_consent_status:
+          $ref: "#/components/schemas/MediaConsentStatus"
+        consent:
+          anyOf:
+            - $ref: "#/components/schemas/ShowcaseConsent"
+            - type: "null"
+          description: "the customer's consent record; null: none recorded"
+        media_ids:
+          type: array
+          items:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          maxItems: 40
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+      required:
+        - type
+        - id
+        - available
+        - provider_organization_id
+        - title
+        - description
+        - caption
+        - status
+        - moderation_status
+        - visibility
+        - customer_consent_status
+        - consent
+        - media_ids
+        - created_at
+      additionalProperties: false
     PortfolioWrite:
       type: object
       properties:
@@ -65361,6 +66234,63 @@ components:
         - media
         - helpful_count
         - like_count
+      additionalProperties: false
+    PostSnapshot:
+      type: object
+      properties:
+        type:
+          const: post
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        post_type:
+          type: string
+          enum:
+            - showcase
+            - availability
+            - seasonal_advice
+            - special_offer
+            - educational_tip
+            - job_completion
+            - community_event
+        title:
+          anyOf:
+            - type: string
+              minLength: 3
+              maxLength: 140
+              pattern: "^[^\\r\\n]*$"
+            - type: "null"
+        body:
+          type: string
+          minLength: 1
+          maxLength: 3000
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - hidden
+            - removed
+        moderation_status:
+          $ref: "#/components/schemas/ModerationStatus"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        author:
+          $ref: "#/components/schemas/ContentAuthor"
+      required:
+        - type
+        - id
+        - available
+        - post_type
+        - title
+        - body
+        - status
+        - moderation_status
+        - created_at
+        - author
       additionalProperties: false
     PostWrite:
       type: object
@@ -68146,6 +69076,50 @@ components:
         - platform
         - token
       additionalProperties: false
+    QuestionSnapshot:
+      type: object
+      properties:
+        type:
+          const: question
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        title:
+          type: string
+          minLength: 5
+          maxLength: 160
+          pattern: "^[^\\r\\n]*$"
+        body:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        status:
+          type: string
+          enum:
+            - open
+            - answered
+            - closed
+            - hidden
+        moderation_status:
+          $ref: "#/components/schemas/ModerationStatus"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        author:
+          $ref: "#/components/schemas/ContentAuthor"
+      required:
+        - type
+        - id
+        - available
+        - title
+        - body
+        - status
+        - moderation_status
+        - created_at
+        - author
+      additionalProperties: false
     QuestionWrite:
       type: object
       properties:
@@ -69425,6 +70399,50 @@ components:
         - status
         - published_at
       additionalProperties: false
+    ReviewResponseSnapshot:
+      type: object
+      properties:
+        type:
+          const: review_response
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        review_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        organization_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        response_text:
+          type: string
+          minLength: 1
+          maxLength: 3000
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - removed
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        author:
+          anyOf:
+            - $ref: "#/components/schemas/ContentAuthor"
+            - type: "null"
+      required:
+        - type
+        - id
+        - available
+        - review_id
+        - organization_id
+        - response_text
+        - status
+        - created_at
+        - author
+      additionalProperties: false
     ReviewResponseWrite:
       type: object
       properties:
@@ -69444,6 +70462,67 @@ components:
       required:
         - response_text
         - content_locale
+      additionalProperties: false
+    ReviewSnapshot:
+      type: object
+      properties:
+        type:
+          const: review
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        subject_organization_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        subject_type:
+          type: string
+          enum:
+            - provider
+            - vendor
+        overall_rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        title:
+          anyOf:
+            - type: string
+              minLength: 3
+              maxLength: 120
+              pattern: "^[^\\r\\n]*$"
+            - type: "null"
+        body:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        status:
+          $ref: "#/components/schemas/ReviewStatus"
+        confirmation_path:
+          anyOf:
+            - $ref: "#/components/schemas/ConfirmationPath"
+            - type: "null"
+        verified_status:
+          $ref: "#/components/schemas/VerifiedStatus"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        author:
+          $ref: "#/components/schemas/ContentAuthor"
+      required:
+        - type
+        - id
+        - available
+        - subject_organization_id
+        - subject_type
+        - overall_rating
+        - title
+        - body
+        - status
+        - confirmation_path
+        - verified_status
+        - created_at
+        - author
       additionalProperties: false
     ReviewStatus:
       type: string
@@ -70271,6 +71350,56 @@ components:
         - acr
         - current
       additionalProperties: false
+    ShowcaseConsent:
+      type: object
+      properties:
+        customer_display_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          pattern: "^[^\\r\\n]*$"
+        consent_type:
+          $ref: "#/components/schemas/ConsentType"
+        scope:
+          anyOf:
+            - type: object
+              properties:
+                type:
+                  $ref: "#/components/schemas/ConsentScopeType"
+                id:
+                  type: string
+                  pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              required:
+                - type
+                - id
+              additionalProperties: false
+            - type: "null"
+        granted:
+          type: boolean
+        granted_at:
+          anyOf:
+            - type: string
+              pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            - type: "null"
+        withdrawn_at:
+          anyOf:
+            - type: string
+              pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            - type: "null"
+        expires_at:
+          anyOf:
+            - type: string
+              pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            - type: "null"
+      required:
+        - customer_display_name
+        - consent_type
+        - scope
+        - granted
+        - granted_at
+        - withdrawn_at
+        - expires_at
+      additionalProperties: false
     SignedUrl:
       type: object
       properties:
@@ -70411,6 +71540,74 @@ components:
         - location_id
         - appointment_types
       additionalProperties: false
+    StaffDecision:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - approval
+            - dispute
+        decided_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        decision:
+          type: string
+          enum:
+            - approved
+            - rejected
+            - evidence_requested
+            - resolved_upheld
+            - resolved_rejected
+        reason_code:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 60
+              pattern: "^[^\\r\\n]*$"
+            - type: "null"
+          description: approvals
+        review_id:
+          anyOf:
+            - type: string
+              pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            - type: "null"
+          description: "the review decided, or the review a dispute is about"
+        review_status:
+          anyOf:
+            - $ref: "#/components/schemas/ReviewStatus"
+            - type: "null"
+          description: "as it is now"
+        dispute_id:
+          anyOf:
+            - type: string
+              pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            - type: "null"
+        dispute_type:
+          anyOf:
+            - $ref: "#/components/schemas/DisputeType"
+            - type: "null"
+        dispute_status:
+          anyOf:
+            - $ref: "#/components/schemas/DisputeStatus"
+            - type: "null"
+        subject:
+          anyOf:
+            - $ref: "#/components/schemas/OrgSummary"
+            - type: "null"
+      required:
+        - kind
+        - decided_at
+        - decision
+        - reason_code
+        - review_id
+        - review_status
+        - dispute_id
+        - dispute_type
+        - dispute_status
+        - subject
+      additionalProperties: false
+      description: "the business concerned; no author, reporter or evidence data"
     StaffDispute:
       type: object
       properties:
@@ -71456,6 +72653,21 @@ components:
               maxLength: 50
               pattern: "^[^\\r\\n]*$"
             - type: "null"
+        stage:
+          type:
+            - string
+            - "null"
+          enum:
+            - awaiting_business
+            - awaiting_reviewer
+            - evidence_requested
+            - null
+          description: "as admin.review_approvals_queue filters; null once decided"
+        business_answered_at:
+          anyOf:
+            - type: string
+              pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            - type: "null"
       required:
         - review
         - author_display_name
@@ -71468,7 +72680,10 @@ components:
         - fraud_signals
         - dispute_id
         - first_decider_display
+        - stage
+        - business_answered_at
       additionalProperties: false
+      description: "the business answer or the passed deadline: the reviewer's 2-working-day timer starts here"
     StaffTaxonomyNode:
       type: object
       properties:
@@ -72250,6 +73465,23 @@ components:
         - reason
       additionalProperties: false
       description: "C: script required for transliteration"
+    TargetSnapshot:
+      anyOf:
+        - $ref: "#/components/schemas/ReviewSnapshot"
+        - $ref: "#/components/schemas/ReviewResponseSnapshot"
+        - $ref: "#/components/schemas/PostSnapshot"
+        - $ref: "#/components/schemas/CommentSnapshot"
+        - $ref: "#/components/schemas/QuestionSnapshot"
+        - $ref: "#/components/schemas/AnswerSnapshot"
+        - $ref: "#/components/schemas/PortfolioItemSnapshot"
+        - $ref: "#/components/schemas/MediaAssetSnapshot"
+        - $ref: "#/components/schemas/InventoryItemSnapshot"
+        - $ref: "#/components/schemas/FitmentSnapshot"
+        - $ref: "#/components/schemas/OrganizationSnapshot"
+        - $ref: "#/components/schemas/LocationSnapshot"
+        - $ref: "#/components/schemas/UserSnapshot"
+        - $ref: "#/components/schemas/AiOutputSnapshot"
+        - $ref: "#/components/schemas/UnavailableSnapshot"
     TaxonomyNode:
       type: object
       properties:
@@ -72881,6 +74113,22 @@ components:
         - rule_version
         - calculated_at
       additionalProperties: false
+    UnavailableSnapshot:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/ReportTargetType"
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: false
+      required:
+        - type
+        - id
+        - available
+      additionalProperties: false
+      description: "the record is gone"
     UploadInit:
       type: object
       properties:
@@ -73196,6 +74444,37 @@ components:
           pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
       additionalProperties: false
       description: "C: exactly one"
+    UserSnapshot:
+      type: object
+      properties:
+        type:
+          const: user
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        available:
+          const: true
+        display_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          pattern: "^[^\\r\\n]*$"
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        trusted_user:
+          type: boolean
+      required:
+        - type
+        - id
+        - available
+        - display_name
+        - status
+        - created_at
+        - trusted_user
+      additionalProperties: false
     UserStatus:
       type: string
       enum:
@@ -75270,17 +76549,6 @@ components:
     BadgeEvaluation:
       type: object
       description: "Snapshot of the inputs a badge rule (rule_version) evaluated (54 §6; modules/trust/domain/scoring.ts): counts, ratings and thresholds, no personal data."
-    TargetSnapshot:
-      type: object
-      properties:
-        type:
-          type: string
-        id:
-          type: string
-          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
-        available:
-          type: boolean
-      description: "Plain fields of the moderated record for moderators (ModerationTargets of the owning module), never contact data or secrets; {type, id, available: false} when the record is gone."
     WebAuthnAssertion:
       type: object
       description: "WebAuthn Level 3 AuthenticationResponseJSON (PublicKeyCredential.toJSON()) for the ceremony of auth.webauthn_options."

@@ -45,6 +45,7 @@ import { DbConsentRequests, DbOrgMemberships, requestedOfUser } from './infrastr
 import {
   AccountAdmin,
   AccountFacts,
+  authorDisplayName,
   ConsentGrants,
   ConsentRequests,
   ConsentScopes,
@@ -157,7 +158,7 @@ export class IdentityAdminRegistrations implements OnModuleInit {
         const card = (await this.cards.cards(scope, [id])).get(id);
         return !!card && card.status !== 'deleted';
       },
-      snapshot: async (scope, id) => {
+      snapshot: async (scope, id, locale) => {
         const u = await scope.db
           .selectFrom('identity.user_accounts')
           .select(['id', 'display_name', 'status', 'created_at', 'trusted_user'])
@@ -167,7 +168,9 @@ export class IdentityAdminRegistrations implements OnModuleInit {
           ? {
               type: 'user',
               id: u.id,
-              display_name: u.display_name,
+              available: true,
+              // 40 UserSnapshot.display_name Str<2,50>: the neutral label for an empty or anonymized name (S18).
+              display_name: authorDisplayName({ id: u.id, displayName: u.display_name, status: u.status }, locale),
               status: u.status,
               created_at: u.created_at.toISOString(),
               trusted_user: u.trusted_user,
@@ -175,6 +178,13 @@ export class IdentityAdminRegistrations implements OnModuleInit {
           : null;
       },
       author: async (_scope, id) => id,
+      // S18 (BR-27): no excerpt for accounts in a list read without a purpose; the card says whether it still exists.
+      summaries: async (scope, ids) => {
+        const cards = await this.cards.cards(scope, ids);
+        return new Map(
+          ids.filter((id) => cards.get(id) && cards.get(id)!.status !== 'deleted').map((id) => [id, { excerpt: null, rating: null }]),
+        );
+      },
     });
     this.retention?.register('VerificationToken', async (scope, p) => {
       const r = await sql`DELETE FROM identity.verification_tokens WHERE created_at < ${retentionCutoff(p)}`.execute(scope.db);

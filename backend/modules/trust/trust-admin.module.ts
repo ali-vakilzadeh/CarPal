@@ -1,6 +1,6 @@
 // Trust operations on the admin-api host (40 §23.4): Path 2 review approval,
-// moving reviews to the approval path, disputes, the badge list and badge
-// approval.
+// moving reviews to the approval path, disputes, the caller's own decisions
+// (S18), the badge list and badge approval.
 import { Module } from '@nestjs/common';
 import {
   ApprovalViews,
@@ -9,6 +9,7 @@ import {
   DisputeGetHandler,
   DisputeResolveHandler,
   DisputesQueueHandler,
+  MyDecisionsListHandler,
   ReviewApprovalDecideHandler,
   ReviewApprovalGetHandler,
   ReviewApprovalsQueueHandler,
@@ -29,6 +30,7 @@ import { ReviewViews } from './application/common.js';
     DisputesQueueHandler,
     DisputeGetHandler,
     DisputeResolveHandler,
+    MyDecisionsListHandler,
     BadgesListHandler,
     BadgeApproveHandler,
   ],

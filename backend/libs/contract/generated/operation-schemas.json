@@ -15135,6 +15135,42 @@
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffReviewApprovalView"
       }
     },
+    "admin.my_decisions_list": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "approval",
+              "dispute"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffDecision"
+            },
+            "maxItems": 200
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "truncated"
+        ],
+        "additionalProperties": false
+      }
+    },
     "admin.review_approval_decide": {
       "query": {
         "type": "object",
@@ -15360,6 +15396,28 @@
           "case_type": {
             "$ref": "https://schemas.carpal.app/contract/v1#/$defs/ReportTargetType"
           },
+          "source": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "user_report",
+                "ai_flag",
+                "system_rule",
+                "admin"
+              ]
+            },
+            "maxItems": 4,
+            "uniqueItems": true
+          },
+          "reason": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/ModerationReason"
+            },
+            "maxItems": 18,
+            "uniqueItems": true
+          },
           "assigned_to_me": {
             "type": "boolean"
           },
@@ -15435,8 +15493,7 @@
             "maxItems": 200
           },
           "target_snapshot": {
-            "type": "object",
-            "x-server-schema": "TargetSnapshot"
+            "$ref": "https://schemas.carpal.app/contract/v1#/$defs/TargetSnapshot"
           }
         },
         "required": [
@@ -15445,6 +15502,22 @@
           "target_snapshot"
         ],
         "additionalProperties": false
+      }
+    },
+    "admin.case_context": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "case_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/CaseContext"
       }
     },
     "admin.case_assign": {

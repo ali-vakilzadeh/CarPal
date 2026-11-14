@@ -5,7 +5,7 @@
 import type { Selectable } from 'kysely';
 import type { DB } from '#libs/db/index.js';
 import { iso, isoOrNull, meta } from '#libs/http-pipeline/index.js';
-import type { PendingChangeView } from '../interface/admin.js';
+import type { PendingChangeView, TargetSummary } from '../interface/admin.js';
 
 export type PendingChangeRow = Selectable<DB['admin.pending_admin_changes']>;
 export type CaseRow = Selectable<DB['admin.moderation_cases']>;
@@ -43,7 +43,7 @@ export function toPendingChange(row: PendingChangeRow, names: ReadonlyMap<string
 export const pendingChangeStaff = (row: Pick<PendingChangeRow, 'requested_by' | 'decided_by'>): string[] =>
   row.decided_by ? [row.requested_by, row.decided_by] : [row.requested_by];
 
-export function toCase(row: CaseRow, o: { assignee: string | null; reportCount: number }) {
+export function toCase(row: CaseRow, o: { assignee: string | null; reportCount: number; summary: TargetSummary | null }) {
   return {
     ...meta(row),
     case_type: row.case_type,
@@ -58,6 +58,7 @@ export function toCase(row: CaseRow, o: { assignee: string | null; reportCount: 
     resolution: row.resolution,
     resolved_at: isoOrNull(row.resolved_at),
     report_count: o.reportCount,
+    target_summary: o.summary,
   };
 }
 

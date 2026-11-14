@@ -51,6 +51,18 @@ describe('projection rules over every response schema (40 Appendix C.4)', () => 
     expect(hits).toEqual([]);
   });
 
+  it('TargetSnapshot has one typed variant per ReportTargetType, so the checks above reach every snapshot (S18, BR-27, BR-33)', () => {
+    const variants = (defs.TargetSnapshot!.anyOf as { $ref: string }[]).map((v) => defs[v.$ref.split('/').at(-1)!]!);
+    const typed = variants
+      .filter((v) => (v.properties as Record<string, { const?: unknown }>).available?.const === true)
+      .map((v) => (v.properties as Record<string, { const?: unknown }>).type!.const);
+    expect([...typed].sort()).toEqual([...(defs.ReportTargetType!.enum as string[])].sort());
+    // Content and files carry the author block; ContentAuthor names no contact data.
+    const author = schemaProperties(defs.ContentAuthor, defs).map((p) => p.name);
+    expect(author).toEqual(expect.arrayContaining(['user_id', 'display_name', 'role', 'organization', 'history']));
+    expect(author.filter((n) => /email|phone|address/.test(n))).toEqual([]);
+  });
+
   it('admin.orgs_search rows carry no contact data and no location point (S14, SEC-ADM-5, DI-31)', () => {
     // Read without a purpose: what a staff queue may see of any organization. Contact data and points are org_get (PURP PII).
     const PRIVATE = new Set([

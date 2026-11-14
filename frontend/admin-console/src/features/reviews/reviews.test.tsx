@@ -70,6 +70,8 @@ function view(id: string, o: Partial<Review> = {}, v: Partial<StaffReviewApprova
     fraud_signals: [],
     dispute_id: null,
     first_decider_display: null,
+    stage: 'awaiting_reviewer',
+    business_answered_at: ago(100),
     ...v,
   };
 }
@@ -279,6 +281,7 @@ function modCase(o: Partial<ModerationCase> = {}): ModerationCase {
     resolution: null,
     resolved_at: null,
     report_count: 2,
+    target_summary: { excerpt: 'They fixed the noise', rating: 2 },
     ...o,
   };
 }

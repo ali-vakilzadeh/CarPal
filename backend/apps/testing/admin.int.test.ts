@@ -192,8 +192,15 @@ describe('data subject requests (MVP §14)', () => {
     const dsr = await uc.post('/v1/me/data-requests', { request_type: 'export' });
     expect(dsr.status, dsr.text).toBe(201);
     const id = dsr.body.id;
-    const queue = await support.get('/v1/admin/data-requests?status=received&limit=100');
-    expect(queue.body.items.find((d: Json) => d.id === id)).toMatchObject({ user_id: user.id });
+    // The queue is oldest first and the shared test database keeps earlier runs' requests: page until the new one.
+    let found: Json | undefined;
+    for (let cursor: string | null = null, n = 0; !found && n < 50; n++) {
+      const queue = await support.get(`/v1/admin/data-requests?status=received&limit=100${cursor ? `&cursor=${cursor}` : ''}`);
+      found = (queue.body.items as Json[]).find((d) => d.id === id);
+      cursor = (queue.body.next_cursor as string | null) ?? null;
+      if (!cursor) break;
+    }
+    expect(found).toMatchObject({ user_id: user.id });
     expect((await support.post(`/v1/admin/data-requests/${id}/export`, { reason }, purpose('dsr', id))).status).toBe(409);
     expect((await support.post(`/v1/admin/data-requests/${id}/status`, { status: 'completed', reason }, purpose('dsr', id))).status).toBe(
       409,

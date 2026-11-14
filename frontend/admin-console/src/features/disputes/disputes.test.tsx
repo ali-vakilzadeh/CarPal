@@ -86,6 +86,8 @@ function reviewView(): StaffReviewApprovalView {
     fraud_signals: [],
     dispute_id: D1,
     first_decider_display: 'Cyrus Reviewer',
+    stage: 'awaiting_reviewer',
+    business_answered_at: ago(10),
   };
 }
 

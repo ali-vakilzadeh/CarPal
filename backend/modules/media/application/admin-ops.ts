@@ -146,6 +146,7 @@ export class MediaAdminRegistrations implements OnModuleInit {
           ? {
               type: 'media_asset',
               id: a.id,
+              available: true,
               purpose: a.purpose,
               media_type: a.media_type,
               privacy_level: a.privacy_level,
@@ -154,8 +155,45 @@ export class MediaAdminRegistrations implements OnModuleInit {
               moderation_status: a.moderation_status,
               owner_type: a.owner_type,
               owner_id: a.owner_id,
+              created_at: a.created_at.toISOString(),
             }
           : null;
+      },
+      // S18 (BR-27): files have no excerpt in a list read without a purpose.
+      summaries: async (scope, ids) => {
+        const rows = ids.length
+          ? await scope.db
+              .selectFrom('media.media_assets')
+              .select('id')
+              .where('id', 'in', [...ids])
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [];
+        return new Map(rows.map((r) => [r.id, { excerpt: null, rating: null }]));
+      },
+      // S18 (BR-33): the uploader, the organization owning the file, and the uploader's files live and taken down.
+      authorOf: async (scope, id) => {
+        const a = await scope.db
+          .selectFrom('media.media_assets')
+          .select(['uploaded_by', 'owner_type', 'owner_id'])
+          .where('id', '=', id)
+          .executeTakeFirst();
+        if (!a?.uploaded_by) return null;
+        const h = await scope.db
+          .selectFrom('media.media_assets')
+          .select([
+            sql<string>`count(*) FILTER (WHERE status = 'active' AND moderation_status <> 'rejected')`.as('published'),
+            sql<string>`count(*) FILTER (WHERE status <> 'active' OR moderation_status = 'rejected')`.as('removed'),
+          ])
+          .where('uploaded_by', '=', a.uploaded_by)
+          .where('deleted_at', 'is', null)
+          .executeTakeFirstOrThrow();
+        return {
+          userId: a.uploaded_by,
+          organizationId: a.owner_type === 'organization' ? a.owner_id : null,
+          published: Number(h.published),
+          removed: Number(h.removed),
+        };
       },
       subjectOrganization: async (scope, id) => {
         const a = await scope.db

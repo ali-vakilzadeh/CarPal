@@ -213,6 +213,70 @@
       ],
       "additionalProperties": false
     },
+    "AiOutputSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "ai_output"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "insight_type": {
+          "$ref": "#/$defs/InsightType"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "internal",
+            "owner_only",
+            "public_after_approval"
+          ]
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "organization_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "insight_type",
+        "summary",
+        "visibility",
+        "model_version",
+        "organization_id",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
     "AiSuggestion": {
       "type": "object",
       "properties": {
@@ -342,6 +406,60 @@
       ],
       "additionalProperties": false,
       "description": "validated per event; no personal data"
+    },
+    "AnswerSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "answer"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "question_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "hidden",
+            "removed"
+          ]
+        },
+        "moderation_status": {
+          "$ref": "#/$defs/ModerationStatus"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "author": {
+          "$ref": "#/$defs/ContentAuthor"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "question_id",
+        "body",
+        "status",
+        "moderation_status",
+        "created_at",
+        "author"
+      ],
+      "additionalProperties": false
     },
     "AnswerWrite": {
       "type": "object",
@@ -2718,6 +2836,132 @@
       ],
       "additionalProperties": false
     },
+    "CaseContext": {
+      "type": "object",
+      "properties": {
+        "parent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TargetSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the record a comment is on; the question of an answer; null otherwise"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CaseContextItem"
+          },
+          "maxItems": 50,
+          "description": "oldest first: the comments or answers around the target (or the first 50 on a post or question that is the target); empty for other targets"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "parent",
+        "items",
+        "total"
+      ],
+      "additionalProperties": false,
+      "description": "comments or answers on that record in all"
+    },
+    "CaseContextItem": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "comment",
+            "answer"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "hidden",
+            "removed"
+          ]
+        },
+        "moderation_status": {
+          "$ref": "#/$defs/ModerationStatus"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "author": {
+          "$ref": "#/$defs/ContentAuthor"
+        },
+        "is_target": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "body",
+        "status",
+        "moderation_status",
+        "created_at",
+        "author",
+        "is_target"
+      ],
+      "additionalProperties": false
+    },
+    "CaseTargetSummary": {
+      "type": "object",
+      "properties": {
+        "excerpt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the title, name or start of the text on one line; null for accounts, files and AI output"
+        },
+        "rating": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "excerpt",
+        "rating"
+      ],
+      "additionalProperties": false,
+      "description": "reviews only"
+    },
     "Certification": {
       "type": "object",
       "properties": {
@@ -3034,6 +3278,59 @@
         "content_locale",
         "created_at",
         "status"
+      ],
+      "additionalProperties": false
+    },
+    "CommentSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "comment"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "target": {
+          "$ref": "#/$defs/CommentTarget"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "hidden",
+            "removed"
+          ]
+        },
+        "moderation_status": {
+          "$ref": "#/$defs/ModerationStatus"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "author": {
+          "$ref": "#/$defs/ContentAuthor"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "target",
+        "body",
+        "status",
+        "moderation_status",
+        "created_at",
+        "author"
       ],
       "additionalProperties": false
     },
@@ -3413,6 +3710,87 @@
         "type",
         "value",
         "preferred"
+      ],
+      "additionalProperties": false
+    },
+    "ContentAuthor": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "a neutral label once the account is gone"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrgType"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "member"
+              ]
+            }
+          ],
+          "description": "the organization's type when written for an organization"
+        },
+        "organization": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrgSummary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "history": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "published": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "removed": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "warnings": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                }
+              },
+              "required": [
+                "published",
+                "removed",
+                "warnings"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "user_id",
+        "display_name",
+        "role",
+        "organization",
+        "history"
       ],
       "additionalProperties": false
     },
@@ -4762,6 +5140,141 @@
         "likely",
         "uncertain"
       ]
+    },
+    "FitmentSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "inventory_fitment"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "inventory_item_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "listing": {
+          "type": "object",
+          "properties": {
+            "sku": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            "name_translations": {
+              "type": "object",
+              "propertyNames": {
+                "enum": [
+                  "en",
+                  "fa"
+                ]
+              },
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "minProperties": 1
+            },
+            "status": {
+              "$ref": "#/$defs/InventoryStatus"
+            }
+          },
+          "required": [
+            "sku",
+            "name_translations",
+            "status"
+          ],
+          "additionalProperties": false,
+          "description": "the listing of the row"
+        },
+        "brand_node_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "model_node_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "series_node_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "year_start": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1950,
+              "maximum": 2100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "year_end": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1950,
+              "maximum": 2100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "confirmed",
+            "likely",
+            "uncertain"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/FitmentSource"
+        },
+        "status": {
+          "$ref": "#/$defs/FitmentStatus"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "inventory_item_id",
+        "listing",
+        "brand_node_id",
+        "model_node_id",
+        "series_node_id",
+        "year_start",
+        "year_end",
+        "confidence",
+        "source",
+        "status"
+      ],
+      "additionalProperties": false
     },
     "FitmentSource": {
       "type": "string",
@@ -6419,6 +6932,68 @@
       ],
       "additionalProperties": false
     },
+    "InventoryItemSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "inventory_item"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "vendor_organization_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "sku": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "name_translations": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "en",
+              "fa"
+            ]
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "minProperties": 1
+        },
+        "status": {
+          "$ref": "#/$defs/InventoryStatus"
+        },
+        "visibility": {
+          "$ref": "#/$defs/InventoryVisibility"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "vendor_organization_id",
+        "sku",
+        "name_translations",
+        "status",
+        "visibility",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
     "InventoryItemWrite": {
       "type": "object",
       "properties": {
@@ -7441,6 +8016,102 @@
         }
       ],
       "description": "\"Search this area\""
+    },
+    "LocationSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "organization_location"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "organization_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "city": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "region": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "country": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "public_point": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "lat": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90
+                },
+                "lng": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 180
+                }
+              },
+              "required": [
+                "lat",
+                "lng"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "geo_source": {
+          "$ref": "#/$defs/GeoSource"
+        },
+        "location_check_status": {
+          "$ref": "#/$defs/LocationCheckStatus"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "organization_id",
+        "city",
+        "region",
+        "country",
+        "public_point",
+        "geo_source",
+        "location_check_status",
+        "status"
+      ],
+      "additionalProperties": false
     },
     "LocationWrite": {
       "type": "object",
@@ -8970,6 +9641,87 @@
       "additionalProperties": false,
       "description": "signed; only when scan_status = clean"
     },
+    "MediaAssetSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "media_asset"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "purpose": {
+          "$ref": "#/$defs/UploadPurpose"
+        },
+        "media_type": {
+          "$ref": "#/$defs/MediaType"
+        },
+        "privacy_level": {
+          "$ref": "#/$defs/MediaPrivacy"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "quarantined",
+            "removed"
+          ]
+        },
+        "scan_status": {
+          "$ref": "#/$defs/ScanStatus"
+        },
+        "moderation_status": {
+          "$ref": "#/$defs/ModerationStatus"
+        },
+        "owner_type": {
+          "type": "string",
+          "enum": [
+            "user",
+            "organization",
+            "system"
+          ]
+        },
+        "owner_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "author": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentAuthor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "purpose",
+        "media_type",
+        "privacy_level",
+        "status",
+        "scan_status",
+        "moderation_status",
+        "owner_type",
+        "owner_id",
+        "created_at",
+        "author"
+      ],
+      "additionalProperties": false,
+      "description": "the uploader"
+    },
     "MediaAttachmentView": {
       "type": "object",
       "properties": {
@@ -9702,7 +10454,8 @@
             "medium",
             "high",
             "critical"
-          ]
+          ],
+          "description": "unsafe_advice, non_consensual_media and privacy cases are at least high"
         },
         "ai_risk_score": {
           "anyOf": [
@@ -9777,6 +10530,16 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 100000
+        },
+        "target_summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CaseTargetSummary"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -9795,9 +10558,11 @@
         "assigned_to_display",
         "resolution",
         "resolved_at",
-        "report_count"
+        "report_count",
+        "target_summary"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "null when the record is gone"
     },
     "ModerationReason": {
       "type": "string",
@@ -10765,6 +11530,76 @@
       ],
       "additionalProperties": false,
       "description": "derived: caller's role in this organization"
+    },
+    "OrganizationSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "organization"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "organization_type": {
+          "$ref": "#/$defs/OrgType"
+        },
+        "slug": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/OrgStatus"
+        },
+        "verification_status": {
+          "$ref": "#/$defs/VerificationStatus"
+        },
+        "trust_score": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "name",
+        "organization_type",
+        "slug",
+        "status",
+        "verification_status",
+        "trust_score",
+        "created_at"
+      ],
+      "additionalProperties": false
     },
     "OrganizationVerification": {
       "type": "object",
@@ -12555,6 +13390,114 @@
       ],
       "additionalProperties": false
     },
+    "PortfolioItemSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "portfolio_item"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "provider_organization_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 140,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 3000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "caption": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "pending_review",
+            "published",
+            "rejected",
+            "archived"
+          ]
+        },
+        "moderation_status": {
+          "$ref": "#/$defs/ModerationStatus"
+        },
+        "visibility": {
+          "$ref": "#/$defs/ContentVisibility"
+        },
+        "customer_consent_status": {
+          "$ref": "#/$defs/MediaConsentStatus"
+        },
+        "consent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ShowcaseConsent"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the customer's consent record; null: none recorded"
+        },
+        "media_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "maxItems": 40
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "provider_organization_id",
+        "title",
+        "description",
+        "caption",
+        "status",
+        "moderation_status",
+        "visibility",
+        "customer_consent_status",
+        "consent",
+        "media_ids",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
     "PortfolioWrite": {
       "type": "object",
       "properties": {
@@ -12807,6 +13750,83 @@
         "media",
         "helpful_count",
         "like_count"
+      ],
+      "additionalProperties": false
+    },
+    "PostSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "post"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "post_type": {
+          "type": "string",
+          "enum": [
+            "showcase",
+            "availability",
+            "seasonal_advice",
+            "special_offer",
+            "educational_tip",
+            "job_completion",
+            "community_event"
+          ]
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 140,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "published",
+            "hidden",
+            "removed"
+          ]
+        },
+        "moderation_status": {
+          "$ref": "#/$defs/ModerationStatus"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "author": {
+          "$ref": "#/$defs/ContentAuthor"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "post_type",
+        "title",
+        "body",
+        "status",
+        "moderation_status",
+        "created_at",
+        "author"
       ],
       "additionalProperties": false
     },
@@ -16898,6 +17918,63 @@
       ],
       "additionalProperties": false
     },
+    "QuestionSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "question"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "title": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 160,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "answered",
+            "closed",
+            "hidden"
+          ]
+        },
+        "moderation_status": {
+          "$ref": "#/$defs/ModerationStatus"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "author": {
+          "$ref": "#/$defs/ContentAuthor"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "title",
+        "body",
+        "status",
+        "moderation_status",
+        "created_at",
+        "author"
+      ],
+      "additionalProperties": false
+    },
     "QuestionWrite": {
       "type": "object",
       "properties": {
@@ -18674,6 +19751,68 @@
       ],
       "additionalProperties": false
     },
+    "ReviewResponseSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "review_response"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "review_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "organization_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "response_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "published",
+            "removed"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "author": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentAuthor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "review_id",
+        "organization_id",
+        "response_text",
+        "status",
+        "created_at",
+        "author"
+      ],
+      "additionalProperties": false
+    },
     "ReviewResponseWrite": {
       "type": "object",
       "properties": {
@@ -18698,6 +19837,94 @@
       "required": [
         "response_text",
         "content_locale"
+      ],
+      "additionalProperties": false
+    },
+    "ReviewSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "review"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "subject_organization_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "subject_type": {
+          "type": "string",
+          "enum": [
+            "provider",
+            "vendor"
+          ]
+        },
+        "overall_rating": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 120,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "status": {
+          "$ref": "#/$defs/ReviewStatus"
+        },
+        "confirmation_path": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConfirmationPath"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verified_status": {
+          "$ref": "#/$defs/VerifiedStatus"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "author": {
+          "$ref": "#/$defs/ContentAuthor"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "subject_organization_id",
+        "subject_type",
+        "overall_rating",
+        "title",
+        "body",
+        "status",
+        "confirmation_path",
+        "verified_status",
+        "created_at",
+        "author"
       ],
       "additionalProperties": false
     },
@@ -19841,6 +21068,90 @@
       ],
       "additionalProperties": false
     },
+    "ShowcaseConsent": {
+      "type": "object",
+      "properties": {
+        "customer_display_name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "consent_type": {
+          "$ref": "#/$defs/ConsentType"
+        },
+        "scope": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "$ref": "#/$defs/ConsentScopeType"
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "required": [
+                "type",
+                "id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "granted": {
+          "type": "boolean"
+        },
+        "granted_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "withdrawn_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "customer_display_name",
+        "consent_type",
+        "scope",
+        "granted",
+        "granted_at",
+        "withdrawn_at",
+        "expires_at"
+      ],
+      "additionalProperties": false
+    },
     "SignedUrl": {
       "type": "object",
       "properties": {
@@ -20042,6 +21353,124 @@
         "appointment_types"
       ],
       "additionalProperties": false
+    },
+    "StaffDecision": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "approval",
+            "dispute"
+          ]
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "approved",
+            "rejected",
+            "evidence_requested",
+            "resolved_upheld",
+            "resolved_rejected"
+          ]
+        },
+        "reason_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "approvals"
+        },
+        "review_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the review decided, or the review a dispute is about"
+        },
+        "review_status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReviewStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "as it is now"
+        },
+        "dispute_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dispute_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DisputeType"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dispute_status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DisputeStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subject": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrgSummary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "decided_at",
+        "decision",
+        "reason_code",
+        "review_id",
+        "review_status",
+        "dispute_id",
+        "dispute_type",
+        "dispute_status",
+        "subject"
+      ],
+      "additionalProperties": false,
+      "description": "the business concerned; no author, reporter or evidence data"
     },
     "StaffDispute": {
       "type": "object",
@@ -21564,6 +22993,30 @@
               "type": "null"
             }
           ]
+        },
+        "stage": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "awaiting_business",
+            "awaiting_reviewer",
+            "evidence_requested",
+            null
+          ],
+          "description": "as admin.review_approvals_queue filters; null once decided"
+        },
+        "business_answered_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -21577,9 +23030,12 @@
         "evidence",
         "fraud_signals",
         "dispute_id",
-        "first_decider_display"
+        "first_decider_display",
+        "stage",
+        "business_answered_at"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "the business answer or the passed deadline: the reviewer's 2-working-day timer starts here"
     },
     "StaffTaxonomyNode": {
       "type": "object",
@@ -22701,6 +24157,55 @@
       "additionalProperties": false,
       "description": "C: script required for transliteration"
     },
+    "TargetSnapshot": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReviewSnapshot"
+        },
+        {
+          "$ref": "#/$defs/ReviewResponseSnapshot"
+        },
+        {
+          "$ref": "#/$defs/PostSnapshot"
+        },
+        {
+          "$ref": "#/$defs/CommentSnapshot"
+        },
+        {
+          "$ref": "#/$defs/QuestionSnapshot"
+        },
+        {
+          "$ref": "#/$defs/AnswerSnapshot"
+        },
+        {
+          "$ref": "#/$defs/PortfolioItemSnapshot"
+        },
+        {
+          "$ref": "#/$defs/MediaAssetSnapshot"
+        },
+        {
+          "$ref": "#/$defs/InventoryItemSnapshot"
+        },
+        {
+          "$ref": "#/$defs/FitmentSnapshot"
+        },
+        {
+          "$ref": "#/$defs/OrganizationSnapshot"
+        },
+        {
+          "$ref": "#/$defs/LocationSnapshot"
+        },
+        {
+          "$ref": "#/$defs/UserSnapshot"
+        },
+        {
+          "$ref": "#/$defs/AiOutputSnapshot"
+        },
+        {
+          "$ref": "#/$defs/UnavailableSnapshot"
+        }
+      ]
+    },
     "TaxonomyNode": {
       "type": "object",
       "properties": {
@@ -23598,6 +25103,28 @@
       ],
       "additionalProperties": false
     },
+    "UnavailableSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/ReportTargetType"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available"
+      ],
+      "additionalProperties": false,
+      "description": "the record is gone"
+    },
     "UploadInit": {
       "type": "object",
       "properties": {
@@ -24044,6 +25571,47 @@
       },
       "additionalProperties": false,
       "description": "C: exactly one"
+    },
+    "UserSnapshot": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "user"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "available": {
+          "const": true
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "status": {
+          "$ref": "#/$defs/UserStatus"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "trusted_user": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "available",
+        "display_name",
+        "status",
+        "created_at",
+        "trusted_user"
+      ],
+      "additionalProperties": false
     },
     "UserStatus": {
       "type": "string",

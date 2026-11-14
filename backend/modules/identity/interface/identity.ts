@@ -63,6 +63,23 @@ export interface ScopedConsentGrant {
 export abstract class ConsentGrants {
   /** Inserts the granted consent record in the caller's transaction; returns its id. */
   abstract grantScoped(scope: TxScope, g: ScopedConsentGrant): Promise<string>;
+  /**
+   * One consent record for a staff view (backend S18: the showcase consent of a moderation case), in the staff
+   * transaction; null when it does not exist. The subject's contact data is never part of it.
+   */
+  abstract record(scope: TxScope, id: string): Promise<ConsentRecordFacts | null>;
+}
+
+/** 52 ConsentRecord as staff views show it (40 ShowcaseConsent). */
+export interface ConsentRecordFacts {
+  subjectType: 'user' | 'organization';
+  subjectId: string;
+  consentType: string;
+  scope: { type: string; id: string } | null;
+  granted: boolean;
+  grantedAt: Date | null;
+  withdrawnAt: Date | null;
+  expiresAt: Date | null;
 }
 
 /**

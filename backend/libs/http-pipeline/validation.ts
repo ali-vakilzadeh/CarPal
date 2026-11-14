@@ -299,6 +299,8 @@ export class ContractValidator {
 }
 
 function coerce(value: string, type: string): unknown {
+  // 40 §3.3: a Set<T,n> filter carries its values comma-separated in one parameter (repeating it stays 400).
+  if (type === 'array') return value.split(',');
   if (type === 'integer' && /^-?\d{1,15}$/.test(value)) return Number(value);
   if (type === 'number' && /^-?\d{1,15}(\.\d{1,15})?$/.test(value)) return Number(value);
   if (type === 'boolean' && (value === 'true' || value === 'false')) return value === 'true';

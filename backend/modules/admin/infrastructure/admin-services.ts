@@ -11,6 +11,7 @@ import { registerConstraintErrors } from '#libs/db/index.js';
 import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
 import { toPendingChange, type PendingChangeRow } from '../api/projections.js';
 import {
+  caseSeverity,
   FourEyes,
   ModerationIntake,
   ModerationLog,
@@ -19,6 +20,7 @@ import {
   PurposeSubjects,
   StaffNames,
   subjectKey,
+  type ActorAction,
   type AutomatedFlag,
   type SubjectRef,
   type ModerationActionRecord,
@@ -174,6 +176,29 @@ export class DbModerationLog extends ModerationLog {
     return count(q.executeTakeFirst());
   }
 
+  async byActor(scope: TxScope, actorUserId: string, actionTypes: readonly string[], since: Date, limit: number): Promise<ActorAction[]> {
+    if (actionTypes.length === 0) return [];
+    const rows = await scope.db
+      .selectFrom('admin.moderation_actions')
+      .select(['id', 'target_entity_type', 'target_entity_id', 'action_type', 'params', 'created_at'])
+      .where('actor_user_id', '=', actorUserId)
+      .where('action_type', 'in', [...actionTypes])
+      .where('created_at', '>=', since)
+      .where(sql<boolean>`(params IS NULL OR NOT params ? 'dispute_id')`)
+      .orderBy('created_at', 'desc')
+      .orderBy('id', 'desc')
+      .limit(limit)
+      .execute();
+    return rows.map((a) => ({
+      id: a.id,
+      targetType: a.target_entity_type,
+      targetId: a.target_entity_id,
+      actionType: a.action_type,
+      params: (a.params as Record<string, unknown> | null) ?? {},
+      createdAt: a.created_at,
+    }));
+  }
+
   openCases(scope: TxScope, targetType: string, targetId: string): Promise<number> {
     return count(
       scope.db
@@ -258,9 +283,11 @@ export class DbPurposeSubjects extends PurposeSubjects {
 @Injectable()
 export class DbModerationIntake extends ModerationIntake {
   async open(scope: TxScope, f: AutomatedFlag): Promise<string | null> {
+    // S18 (BR-32): the A-CON-01 severity floor holds for automated cases too (the database trigger enforces it as well).
+    const severity = caseSeverity(f.reason, f.severity);
     const { rows } = await sql<{ id: string }>`
       INSERT INTO admin.moderation_cases (case_type, target_entity_type, target_entity_id, source, reason, severity, ai_risk_score, ai_flag_insight_id)
-      SELECT ${f.targetType}, ${f.targetType}, ${f.targetId}::uuid, ${f.insightId ? 'ai_flag' : 'system_rule'}, ${f.reason}, ${f.severity},
+      SELECT ${f.targetType}, ${f.targetType}, ${f.targetId}::uuid, ${f.insightId ? 'ai_flag' : 'system_rule'}, ${f.reason}, ${severity},
              ${f.riskScore}, ${f.insightId}::uuid
        WHERE NOT EXISTS (SELECT 1 FROM admin.moderation_cases c
                           WHERE c.target_entity_type = ${f.targetType} AND c.target_entity_id = ${f.targetId}::uuid

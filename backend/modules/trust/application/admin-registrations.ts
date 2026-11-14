@@ -8,6 +8,7 @@ import { sql } from 'kysely';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import {
+  excerpt,
   FourEyesExecutors,
   ModerationLog,
   ModerationTargets,
@@ -251,6 +252,7 @@ export class TrustAdminRegistrations implements OnModuleInit {
           ? {
               type: 'review',
               id: r.id,
+              available: true,
               subject_organization_id: r.subject_organization_id,
               subject_type: r.subject_type,
               overall_rating: Number(r.overall_rating),
@@ -262,6 +264,33 @@ export class TrustAdminRegistrations implements OnModuleInit {
               created_at: r.created_at.toISOString(),
             }
           : null;
+      },
+      // S18 (BR-27): the title or the start of the text, and the rating.
+      summaries: async (scope, ids) => {
+        const rows = ids.length
+          ? await scope.db
+              .selectFrom('trust.reviews')
+              .select(['id', 'title', 'body', 'overall_rating'])
+              .where('id', 'in', [...ids])
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [];
+        return new Map(rows.map((r) => [r.id, { excerpt: excerpt(r.title ?? r.body), rating: Number(r.overall_rating) }]));
+      },
+      // S18 (BR-33): reviews are written by members; the author's reviews published, and removed or rejected.
+      authorOf: async (scope, id) => {
+        const r = await scope.db.selectFrom('trust.reviews').select('author_user_id').where('id', '=', id).executeTakeFirst();
+        if (!r) return null;
+        const h = await scope.db
+          .selectFrom('trust.reviews')
+          .select([
+            sql<string>`count(*) FILTER (WHERE status = 'published')`.as('published'),
+            sql<string>`count(*) FILTER (WHERE status IN ('removed','rejected'))`.as('removed'),
+          ])
+          .where('author_user_id', '=', r.author_user_id)
+          .where('deleted_at', 'is', null)
+          .executeTakeFirstOrThrow();
+        return { userId: r.author_user_id, organizationId: null, published: Number(h.published), removed: Number(h.removed) };
       },
       subjectOrganization: async (scope, id) =>
         (await scope.db.selectFrom('trust.reviews').select('subject_organization_id').where('id', '=', id).executeTakeFirst())
@@ -299,12 +328,49 @@ export class TrustAdminRegistrations implements OnModuleInit {
           ? {
               type: 'review_response',
               id: r.id,
+              available: true,
               review_id: r.review_id,
               organization_id: r.organization_id,
               response_text: r.response_text,
               status: r.status,
+              created_at: r.created_at.toISOString(),
             }
           : null;
+      },
+      summaries: async (scope, ids) => {
+        const rows = ids.length
+          ? await scope.db
+              .selectFrom('trust.review_responses')
+              .select(['id', 'response_text'])
+              .where('id', 'in', [...ids])
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [];
+        return new Map(rows.map((r) => [r.id, { excerpt: excerpt(r.response_text), rating: null }]));
+      },
+      // S18 (BR-33): the member who answered for the business; their answers published, and removed.
+      authorOf: async (scope, id) => {
+        const r = await scope.db
+          .selectFrom('trust.review_responses')
+          .select(['responded_by_user_id', 'organization_id'])
+          .where('id', '=', id)
+          .executeTakeFirst();
+        if (!r) return null;
+        const h = await scope.db
+          .selectFrom('trust.review_responses')
+          .select([
+            sql<string>`count(*) FILTER (WHERE status = 'published')`.as('published'),
+            sql<string>`count(*) FILTER (WHERE status = 'removed')`.as('removed'),
+          ])
+          .where('responded_by_user_id', '=', r.responded_by_user_id)
+          .where('deleted_at', 'is', null)
+          .executeTakeFirstOrThrow();
+        return {
+          userId: r.responded_by_user_id,
+          organizationId: r.organization_id,
+          published: Number(h.published),
+          removed: Number(h.removed),
+        };
       },
       subjectOrganization: async (scope, id) =>
         (await scope.db.selectFrom('trust.review_responses').select('organization_id').where('id', '=', id).executeTakeFirst())
@@ -328,6 +394,7 @@ export class TrustAdminRegistrations implements OnModuleInit {
           ? {
               type: 'badge',
               id: b.id,
+              available: true,
               provider_organization_id: b.provider_organization_id,
               badge_type: b.badge_type,
               status: b.status,
@@ -335,6 +402,17 @@ export class TrustAdminRegistrations implements OnModuleInit {
               rule_version: b.rule_version,
             }
           : null;
+      },
+      summaries: async (scope, ids) => {
+        const rows = ids.length
+          ? await scope.db
+              .selectFrom('trust.provider_badges')
+              .select(['id', 'badge_type'])
+              .where('id', 'in', [...ids])
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [];
+        return new Map(rows.map((r) => [r.id, { excerpt: r.badge_type, rating: null }]));
       },
       subjectOrganization: async (scope, id) =>
         (await scope.db.selectFrom('trust.provider_badges').select('provider_organization_id').where('id', '=', id).executeTakeFirst())

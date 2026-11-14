@@ -268,14 +268,82 @@ export type ModerationTargetType =
   | 'ai_output'
   | 'badge';
 
+/** Docs/23 A-CON-01: cases about these reasons are at least high (backend S18, BR-32); a database trigger enforces it too. */
+export const SEVERITY_FLOOR_REASONS: readonly string[] = ['unsafe_advice', 'non_consensual_media', 'privacy'];
+const SEVERITIES = ['low', 'medium', 'high', 'critical'];
+
+/** The severity a case opens with: the floor raises low and medium to high for the floor reasons. */
+export function caseSeverity(reason: string, severity: string): string {
+  return SEVERITY_FLOOR_REASONS.includes(reason) && SEVERITIES.indexOf(severity) < SEVERITIES.indexOf('high') ? 'high' : severity;
+}
+
+/** CaseTargetSummary.excerpt (40 §23.1): one line, at most 120 characters, null when there is no text. */
+export function excerpt(text: string | null | undefined, max = 120): string | null {
+  const line = (text ?? '').replace(/\s+/gu, ' ').trim();
+  if (!line) return null;
+  const chars = [...line];
+  return chars.length <= max
+    ? line
+    : `${chars
+        .slice(0, max - 1)
+        .join('')
+        .trimEnd()}…`;
+}
+
 /** Content actions an owning module applies to its own record (52 ModerationAction.action_type subset). */
 export type ContentAction = 'approve' | 'hide' | 'remove' | 'restore' | 'request_changes';
+
+/** 40 CaseTargetSummary of a record (backend S18, BR-27). */
+export interface TargetSummary {
+  excerpt: string | null;
+  rating: number | null;
+}
+
+/** The author of a record as its owning module knows it (40 ContentAuthor; backend S18, BR-33). */
+export interface TargetAuthor {
+  userId: string;
+  /** The organization the record was written for (a post, an answer given as an organization, a review answer), or null. */
+  organizationId: string | null;
+  /** The author's records of the same kind that are live, and that are hidden, removed or rejected. */
+  published: number;
+  removed: number;
+}
+
+/** A comment or answer around a case target (40 CaseContextItem), as the owning module reads it. */
+export interface ContextRecord {
+  type: 'comment' | 'answer';
+  id: string;
+  body: string;
+  status: string;
+  moderationStatus: string;
+  createdAt: Date;
+  authorUserId: string;
+  organizationId: string | null;
+  isTarget: boolean;
+}
+
+/** 40 CaseContext before the admin module resolves authors and the parent's snapshot. */
+export interface TargetContext {
+  /** The record a comment is on, or the question of an answer; null when the target is that record itself. */
+  parent: SubjectRef | null;
+  items: ContextRecord[];
+  total: number;
+}
 
 export interface ModerationTargetHandler {
   /** Does the record exist (not deleted)? Runs in the system context (reports from any user). */
   exists(scope: TxScope, id: string): Promise<boolean>;
-  /** 40 case_get target_snapshot: plain fields for moderators, never contact data or secrets. Null when gone. */
-  snapshot(scope: TxScope, id: string): Promise<Record<string, unknown> | null>;
+  /**
+   * 40 case_get target_snapshot: the fields of the record's TargetSnapshot type (backend S18) with `available: true`,
+   * never contact data, secrets or internal scores. Null when gone. The admin module adds `author` (authorOf).
+   */
+  snapshot(scope: TxScope, id: string, locale: string): Promise<Record<string, unknown> | null>;
+  /** CaseTargetSummary of each existing record among `ids` (cases_list); records that are gone are left out. */
+  summaries(scope: TxScope, ids: readonly string[], locale: string): Promise<Map<string, TargetSummary>>;
+  /** The author block of a record whose snapshot type has `author` (content and files); null when it has none. */
+  authorOf?(scope: TxScope, id: string): Promise<TargetAuthor | null>;
+  /** The comments or answers around a record (admin.case_context): community content only. */
+  context?(scope: TxScope, id: string, limit: number): Promise<TargetContext | null>;
   /** The organization the content belongs to (trust penalties, notifications), or null. */
   subjectOrganization?(scope: TxScope, id: string): Promise<string | null>;
   /** The user who wrote or owns the content (warnings, suspensions), or null. */
@@ -347,6 +415,21 @@ export abstract class ModerationLog {
   abstract reportsAgainst(scope: TxScope, targetType: string, targetId: string, reason?: string): Promise<number>;
   /** Open moderation cases about a record (StaffOrgView.open_cases). */
   abstract openCases(scope: TxScope, targetType: string, targetId: string): Promise<number>;
+  /**
+   * One staff member's actions of the given types since `since`, newest first, at most `limit` (backend S18,
+   * admin.my_decisions_list). Actions recorded by a dispute resolution (params.dispute_id) are left out.
+   */
+  abstract byActor(scope: TxScope, actorUserId: string, actionTypes: readonly string[], since: Date, limit: number): Promise<ActorAction[]>;
+}
+
+/** A moderation action of one staff member (ModerationLog.byActor). */
+export interface ActorAction {
+  id: string;
+  targetType: string;
+  targetId: string;
+  actionType: string;
+  params: Record<string, unknown>;
+  createdAt: Date;
 }
 
 /** An automated flag (W11 fraud detection, AI moderation hints): it only opens a case, humans decide (52 ModerationCase). */

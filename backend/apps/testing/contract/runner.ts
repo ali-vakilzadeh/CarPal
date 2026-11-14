@@ -115,7 +115,8 @@ function build(
   });
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries({ ...(o.queryAll ?? c.query), ...o.query })) {
-    if (Array.isArray(v)) for (const x of v) q.append(k, x);
+    // 40 §3.3: a Set<T,n> filter is one comma-separated parameter.
+    if (Array.isArray(v)) q.append(k, v.join(','));
     else q.append(k, String(v));
   }
   if ([...q].length) path += `?${q.toString()}`;

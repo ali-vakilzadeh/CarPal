@@ -8,7 +8,14 @@
 import { Injectable, Optional, type OnModuleInit } from '@nestjs/common';
 import { sql } from 'kysely';
 import type { TxScope } from '#libs/tenancy/index.js';
-import { ModerationTargets, type ContentAction, type ModerationTargetHandler } from '#modules/admin/interface/admin.js';
+import {
+  excerpt,
+  ModerationTargets,
+  type ContentAction,
+  type ContextRecord,
+  type ModerationTargetHandler,
+  type TargetSummary,
+} from '#modules/admin/interface/admin.js';
 import { PersonalDataRegistry } from '#modules/identity/interface/identity.js';
 import type { CommunityEntity } from '../interface/community.js';
 import { contentChanged } from './common.js';
@@ -25,6 +32,10 @@ interface Spec {
   restored: (r: { published_at?: Date | null }) => string;
   org?: 'author_organization_id';
   text: (r: Record<string, unknown>) => Record<string, unknown>;
+  /** Snapshot-only fields (40 CommentSnapshot.target, AnswerSnapshot.question_id; backend S18). */
+  refs?: (r: Record<string, unknown>) => Record<string, unknown>;
+  /** Statuses of live records (author history: published). */
+  live: string[];
 }
 
 const SPECS: Record<'post' | 'comment' | 'question' | 'answer', Spec> = {
@@ -36,6 +47,7 @@ const SPECS: Record<'post' | 'comment' | 'question' | 'answer', Spec> = {
     restored: (r) => (r.published_at ? 'published' : 'draft'),
     org: 'author_organization_id',
     text: (r) => ({ title: r.title, body: r.body, post_type: r.post_type }),
+    live: ['published'],
   },
   comment: {
     table: 'community.comments',
@@ -44,6 +56,8 @@ const SPECS: Record<'post' | 'comment' | 'question' | 'answer', Spec> = {
     removed: 'removed',
     restored: () => 'active',
     text: (r) => ({ body: r.body }),
+    refs: (r) => ({ target: { type: r.target_type, id: r.target_id } }),
+    live: ['active'],
   },
   question: {
     table: 'community.questions',
@@ -52,6 +66,7 @@ const SPECS: Record<'post' | 'comment' | 'question' | 'answer', Spec> = {
     removed: 'hidden',
     restored: () => 'open',
     text: (r) => ({ title: r.title, body: r.body }),
+    live: ['open', 'answered', 'closed'],
   },
   answer: {
     table: 'community.answers',
@@ -61,8 +76,70 @@ const SPECS: Record<'post' | 'comment' | 'question' | 'answer', Spec> = {
     restored: () => 'active',
     org: 'author_organization_id',
     text: (r) => ({ body: r.body }),
+    refs: (r) => ({ question_id: r.question_id }),
+    live: ['active'],
   },
 };
+
+/** One author's community records, live and hidden or removed, over the four tables (S18, BR-33). */
+async function authorHistory(scope: TxScope, userId: string): Promise<{ published: number; removed: number }> {
+  const parts = Object.values(SPECS).map(
+    (spec) => sql`
+      SELECT count(*) FILTER (WHERE status IN (${sql.join(spec.live)})) AS published,
+             count(*) FILTER (WHERE status IN ('hidden','removed')) AS removed
+        FROM ${sql.table(spec.table)} WHERE author_user_id = ${userId}::uuid AND deleted_at IS NULL`,
+  );
+  const { rows } = await sql<{
+    published: string;
+    removed: string;
+  }>`SELECT sum(published) AS published, sum(removed) AS removed FROM (${sql.join(parts, sql` UNION ALL `)}) h`.execute(scope.db);
+  return { published: Number(rows[0]?.published ?? 0), removed: Number(rows[0]?.removed ?? 0) };
+}
+
+type Row = Record<string, unknown> & { id: string; body: string; status: string; moderation_status: string; created_at: Date };
+
+const contextRecord =
+  (type: 'comment' | 'answer', targetId: string | null) =>
+  (r: Row): ContextRecord => ({
+    type,
+    id: r.id,
+    body: r.body,
+    status: r.status,
+    moderationStatus: r.moderation_status,
+    createdAt: new Date(r.created_at),
+    authorUserId: r.author_user_id as string,
+    organizationId: (r.author_organization_id as string | null | undefined) ?? null,
+    isTarget: r.id === targetId,
+  });
+
+/**
+ * Up to `limit` comments on a record (or answers to a question), oldest first: around `targetId` when given (half
+ * before it, the rest from it on), else the first ones; with the total count (S18 admin.case_context).
+ */
+async function around(
+  scope: TxScope,
+  table: 'community.comments' | 'community.answers',
+  where: ReturnType<typeof sql>,
+  limit: number,
+  target: Row | null,
+): Promise<{ rows: Row[]; total: number }> {
+  const base = sql`FROM ${sql.table(table)} WHERE ${where} AND deleted_at IS NULL`;
+  const total = Number((await sql<{ n: string }>`SELECT count(*) AS n ${base}`.execute(scope.db)).rows[0]?.n ?? 0);
+  if (!target) {
+    const { rows } = await sql<Row>`SELECT * ${base} ORDER BY created_at, id LIMIT ${limit}`.execute(scope.db);
+    return { rows, total };
+  }
+  const key = sql`(${new Date(target.created_at)}::timestamptz, ${target.id}::uuid)`;
+  const before = (
+    await sql<Row>`SELECT * ${base} AND (created_at, id) < ${key} ORDER BY created_at DESC, id DESC LIMIT ${Math.floor((limit - 1) / 2)}`.execute(
+      scope.db,
+    )
+  ).rows.reverse();
+  const after = (
+    await sql<Row>`SELECT * ${base} AND (created_at, id) >= ${key} ORDER BY created_at, id LIMIT ${limit - before.length}`.execute(scope.db)
+  ).rows;
+  return { rows: [...before, ...after], total };
+}
 
 async function load(scope: TxScope, spec: Spec, id: string, lock = false): Promise<Record<string, unknown> | undefined> {
   const q = sql<
@@ -87,12 +164,64 @@ function handler(spec: Spec): ModerationTargetHandler {
         ? {
             type: spec.entity,
             id,
+            available: true,
             ...spec.text(r),
+            ...(spec.entity === 'post' ? { title: r.title ?? null } : {}),
+            ...spec.refs?.(r),
             status: r.status,
             moderation_status: r.moderation_status,
             created_at: new Date(r.created_at as Date).toISOString(),
           }
         : null;
+    },
+    // S18 (BR-27): the title, or the start of the text.
+    summaries: async (scope, ids) => {
+      if (ids.length === 0) return new Map<string, TargetSummary>();
+      const { rows } = await sql<{ id: string; title: string | null; body: string }>`
+        SELECT id, ${spec.entity === 'post' || spec.entity === 'question' ? sql`title` : sql`NULL::text`} AS title, body
+          FROM ${sql.table(spec.table)} WHERE id = ANY(${sql.val(ids)}::uuid[]) AND deleted_at IS NULL`.execute(scope.db);
+      return new Map(rows.map((r) => [r.id, { excerpt: excerpt(r.title ?? r.body), rating: null }]));
+    },
+    // S18 (BR-33): the author, the organization written for, and the author's community history.
+    authorOf: async (scope, id) => {
+      const r = await load(scope, spec, id);
+      if (!r) return null;
+      const userId = r.author_user_id as string;
+      return {
+        userId,
+        organizationId: spec.org ? ((r[spec.org] as string | null) ?? null) : null,
+        ...(await authorHistory(scope, userId)),
+      };
+    },
+    context: async (scope, id, limit) => {
+      const r = (await load(scope, spec, id)) as Row | undefined;
+      if (!r) return null;
+      if (spec.entity === 'comment') {
+        const on = sql`target_type = ${r.target_type as string} AND target_id = ${r.target_id as string}::uuid`;
+        const { rows, total } = await around(scope, 'community.comments', on, limit, r);
+        return {
+          parent: { type: r.target_type as string, id: r.target_id as string },
+          items: rows.map(contextRecord('comment', id)),
+          total,
+        };
+      }
+      if (spec.entity === 'answer') {
+        const on = sql`question_id = ${r.question_id as string}::uuid`;
+        const { rows, total } = await around(scope, 'community.answers', on, limit, r);
+        return { parent: { type: 'question', id: r.question_id as string }, items: rows.map(contextRecord('answer', id)), total };
+      }
+      if (spec.entity === 'post') {
+        const { rows, total } = await around(
+          scope,
+          'community.comments',
+          sql`target_type = 'post' AND target_id = ${id}::uuid`,
+          limit,
+          null,
+        );
+        return { parent: null, items: rows.map(contextRecord('comment', null)), total };
+      }
+      const { rows, total } = await around(scope, 'community.answers', sql`question_id = ${id}::uuid`, limit, null);
+      return { parent: null, items: rows.map(contextRecord('answer', null)), total };
     },
     subjectOrganization: async (scope, id) => (spec.org ? (((await load(scope, spec, id))?.[spec.org] as string | null) ?? null) : null),
     author: async (scope, id) => ((await load(scope, spec, id))?.author_user_id as string | undefined) ?? null,

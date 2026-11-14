@@ -10,7 +10,7 @@ const sample = (path: string) => path.replace(/\{[a-z_]+\}/g, '0193a5b0-0000-700
 describe('admin allowlist (SEC-WEB-1, GD-07 amendment)', () => {
   it('holds every admin-api operation of the generated map and nothing else', () => {
     expect(allowlist.routes.map((r) => r.opId).sort()).toEqual([...ADMIN_OPERATION_IDS].sort());
-    expect(allowlist.routes).toHaveLength(93);
+    expect(allowlist.routes).toHaveLength(95);
     for (const r of allowlist.routes) expect(r.op.host).toBe('admin-api');
   });
 

@@ -153,6 +153,21 @@ describe('ContractValidator', () => {
     expect(() => v.parseQuery('vehicles.list', 200, 'status=a&status=b')).toThrow(expect.objectContaining({ code: 'UNKNOWN_QUERY_PARAM' }));
   });
 
+  it('splits Set<T,n> query filters on commas (40 §3.3; backend S18)', () => {
+    expect(v.parseQuery('admin.cases_list', 200, 'reason=privacy,unsafe_advice&source=ai_flag')).toEqual({
+      reason: ['privacy', 'unsafe_advice'],
+      source: ['ai_flag'],
+      limit: 20,
+    });
+    // Repeating the parameter stays 400; unknown, duplicate or empty members are 422 at the parameter.
+    expect(() => v.parseQuery('admin.cases_list', 200, 'reason=privacy&reason=spam')).toThrow(
+      expect.objectContaining({ code: 'UNKNOWN_QUERY_PARAM' }),
+    );
+    expect(errs(() => v.parseQuery('admin.cases_list', 200, 'reason=privacy,nope'))?.[0]?.pointer).toBe('/query/reason/1');
+    expect(errs(() => v.parseQuery('admin.cases_list', 200, 'source=admin,admin'))?.[0]?.pointer).toBe('/query/source');
+    expect(errs(() => v.parseQuery('admin.cases_list', 200, 'reason='))?.[0]?.pointer).toBe('/query/reason/0');
+  });
+
   it('collects NodeId<type> references of a valid body for the taxonomy check (x-node-type)', () => {
     const brand = '0190a000-0000-7000-8000-000000000001';
     const model = '0190a000-0000-7000-8000-000000000002';

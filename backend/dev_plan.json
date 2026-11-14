@@ -2,7 +2,7 @@
   "meta": {
     "title": "CarPal backend — scratch build plan and stage log",
     "created": "2026-10-10",
-    "last_updated": "2026-11-13",
+    "last_updated": "2026-11-14",
     "status": "scratch_build_done",
     "progress": {
       "as_of": "2026-11-13",
@@ -4400,6 +4400,90 @@
           "Next backend stage: S15b (still not started), then S18."
         ]
       }
+    },
+    {
+      "id": "S18",
+      "title": "Moderation queues and content context",
+      "status": "done",
+      "depends_on": [
+        "S14"
+      ],
+      "plan": "backend/BR-update-plan.json action_plan.stages S18 (admin console refinement S13-S25).",
+      "goal": "Moderators work from server-side queues and full case details: the A-CON-01 severity floor holds on every path, the case list filters by source and reason and shows a target summary, case details carry a typed snapshot with the author and the content around it, and reviewers get the exact stage, the business answer time and their own decisions (admin console BR-32, BR-27, BR-33, BR-29).",
+      "scope": {
+        "contract_sections": [
+          "§3.3 Set<T,n> query filters (comma-separated)",
+          "§23.1 StaffReviewApprovalView stage, business_answered_at; StaffDecision; ModerationCase severity floor, target_summary; CaseTargetSummary, ContentAuthor, ShowcaseConsent, 14 snapshot types, UnavailableSnapshot, TargetSnapshot, CaseContextItem, CaseContext",
+          "§23.4 admin.my_decisions_list, admin.report_triage (floor), admin.cases_list (source, reason), admin.case_get (typed snapshot), admin.case_context",
+          "Appendix D \"Contract 1.4.0\" (four S18 rows)"
+        ],
+        "modules": [
+          "admin",
+          "trust",
+          "community",
+          "organization",
+          "inventory",
+          "media",
+          "identity",
+          "ai-mcp",
+          "libs/http-pipeline",
+          "libs/contract",
+          "tools/contract",
+          "apps/testing"
+        ],
+        "ops_target": 2,
+        "ops_note": "2 new admin-api operations (admin.case_context, admin.my_decisions_list); changed: admin.cases_list, admin.case_get, admin.report_triage, the three review-approval reads, admin.dispute_resolve. Registry after S18: 453 operations, 505 routes, 55 error codes; 452 served (auth.social_start deferred)."
+      },
+      "tasks": [
+        {
+          "id": "S18.T1",
+          "status": "done",
+          "title": "Severity floor: caseSeverity() in report triage and the automated intake; trigger moderation_cases_severity_floor on admin.moderation_cases (Docs/43, migration 0108, which also raised the open cases below the floor) (S18-D1)."
+        },
+        {
+          "id": "S18.T2",
+          "status": "done",
+          "title": "admin.cases_list q source and reason (Set, comma-separated, Docs/40 §3.3; pipeline, OpenAPI and sweep runner support); ModerationCase.target_summary (CaseTargetSummary) from a batch summaries() per target type (S18-D2, D3)."
+        },
+        {
+          "id": "S18.T3",
+          "status": "done",
+          "title": "TargetSnapshot union of 14 typed snapshots plus UnavailableSnapshot; ContentAuthor (role, organization card, history) added by the admin CaseSnapshots service from each module's authorOf(); showcase consent record (ConsentGrants.record) and media ids; fitment listing (S18-D4..D6)."
+        },
+        {
+          "id": "S18.T4",
+          "status": "done",
+          "title": "admin.case_context (GET {adm}/moderation/cases/{case_id}/context, PURP case, bound to the case): CaseContext with the parent snapshot and up to 50 comments or answers around the target (S18-D7)."
+        },
+        {
+          "id": "S18.T5",
+          "status": "done",
+          "title": "StaffReviewApprovalView.stage and business_answered_at; admin.my_decisions_list (GET {adm}/me/decisions, STF(CRV, MOD), no purpose) from the moderation log and trust.disputes.resolved_by (S18-D8, D9)."
+        }
+      ],
+      "deliverables": [
+        "contract 1.4.0 additions (Docs/40, libs/contract/generated, shared/api-contracts, console generated contract)",
+        "modules/admin/application/case-snapshots.ts; snapshot builders, summaries and authors in the community, trust, organization, inventory, media, identity and ai-mcp registrations",
+        "migration 0108_s18_moderation_queues_context.sql",
+        "apps/testing/s18.int.test.ts, modules/admin/interface/admin.test.ts, sweep resolvers for the 2 operations"
+      ],
+      "report": {
+        "started_at": "2026-11-14",
+        "completed_at": "2026-11-14",
+        "summary": "Moderation queues and case details now come from the server. Severity floor: unsafe_advice, non_consensual_media and privacy cases are at least high on every path (triage, automated intake, and a database trigger for anything else); the open cases below it were raised. admin.cases_list filters by several sources and reasons (comma-separated Set filters, a new Docs/40 §3.3 rule) and every case carries a target_summary (excerpt of at most 120 characters, the rating of a review). admin.case_get returns a typed TargetSnapshot for each of the 14 report target types, with the author block on content and files (display name, role, organization card, history: live, removed, warnings), the showcase consent record and media ids, and the fitment row's listing. New admin.case_context returns the comments or answers around a reported comment or answer (or under a reported post or question) with their authors, bound to the case purpose. StaffReviewApprovalView carries stage and business_answered_at, and new admin.my_decisions_list gives a reviewer or moderator their own decisions of the last 30 days without a purpose. Contract 1.4.0: 453 operations, 505 routes, 55 error codes. Migration 0108. Every acceptance criterion is met. Details and deviations S18-D1..D10 are in backend/BR-update-plan.json (action_plan.stages S18.report).",
+        "tests": {
+          "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 529 modules), typecheck, format:check: pass",
+          "backend_unit": "313 passed (45 files), including the registry pin (453 operations, 505 routes), the Set query filter parsing (http-pipeline.test.ts), modules/admin/interface/admin.test.ts (severity floor, excerpt) and the static TargetSnapshot check (contract-sweep.test.ts: one typed variant per ReportTargetType, ContentAuthor without contact fields)",
+          "backend_contract": "contract:check up to date (1.4.0, 453 operations, 55 error codes); contract sweep suites up to date (17 modules); openapi:check: 505 operations on 407 paths",
+          "backend_sweeps": "admin and trust sweeps pass, including admin.case_context (a reported comment between two others: the post as parent, the target marked) and admin.my_decisions_list; the sweep probes case_context with an unrelated purpose (403)",
+          "backend_s18": "14 passed (apps/testing/s18.int.test.ts); with s13, s14 (PURP pin 14 -> 15), moderation, admin, trust, community, privacy and the admin and trust sweeps: 141 passed in 9 files",
+          "backend_integration_full": "887 tests in 58 files (about 18 minutes): 884 passed, 3 failed. (1) admin.int.test.ts DSR export: the queue is oldest first with 100 per page and the shared test database now holds 109 open requests, so the new request was not on page 1 (test-data growth, not an S18 change); fixed by paging the queue in the test, then admin.int.test.ts passed (17). (2, 3) The two local-database states known since S13: the baseline hash (Docs/43 changed; the local database was migrated with 0108, not reset; passes after pnpm db:reset) and the non-fixture account count (94, expected 2; R-15). No other suite changed its result.",
+          "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck pass; 691 unit tests passed (76 files)",
+          "admin_console": "contract:generate (95 admin-api operations), typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files) after the pins 93 -> 95 and the new required fields in three test fixtures (StaffReviewApprovalView.stage, business_answered_at; ModerationCase.target_summary)",
+          "environment": "Node 20.10 is still the machine Node; this session used a portable Node 24.22.3 (official zip, checksum checked) from the session scratchpad on PATH; nothing was installed system-wide. db:codegen ran under it (libs/db/generated/db.ts: trust.disputes.resolved_by).",
+          "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
+        }
+      }
     }
   ],
   "coverage_summary": {
@@ -5479,6 +5563,56 @@
       "stage": "S14",
       "date": "2026-11-13",
       "deviation": "S14-D10 (BR-09, BR-35): Console: a dedicated kit message for PURPOSE_RECORD_MISMATCH (\"This record is not part of the work item you opened it from …\", en and fa) instead of the generic 403 text the plan named; admin.plans.assign.currentPlan lost its status variable."
+    },
+    {
+      "stage": "S18",
+      "date": "2026-11-14",
+      "deviation": "S18-D1 (BR-32): The floor raises a lower severity instead of refusing it: report triage with open_case low or medium on an unsafe_advice, non_consensual_media or privacy report opens the case at high and the audit entry says \"severity low raised to high: <reason>\". A database trigger (moderation_cases_severity_floor, BEFORE INSERT OR UPDATE OF reason, severity) does the same on every other path, including later changes of reason or severity; migration 0108 raised the open cases below the floor. The automated intake (ModerationIntake) applies the floor too, although its AutomatedFlag reasons (fake, spam, other) never reach it today."
+    },
+    {
+      "stage": "S18",
+      "date": "2026-11-14",
+      "deviation": "S18-D2 (BR-27, BR-32): source and reason are Set<...> query filters: several values comma-separated in one parameter (reason=privacy,unsafe_advice); repeating the parameter stays 400 UNKNOWN_QUERY_PARAM (SEC-IN-3). New general rule in Docs/40 §3.3; the pipeline splits array-typed query parameters on commas, OpenAPI marks them style form, explode false, and the sweep runner joins arrays with commas."
+    },
+    {
+      "stage": "S18",
+      "date": "2026-11-14",
+      "deviation": "S18-D3 (BR-27): CaseTargetSummary.excerpt: the title or the start of the text for reviews, review answers, posts, comments, questions, answers and showcases; the name for organizations; the town and country for locations; the listing name (caller language, else any) for inventory items and fitment rows. Accounts, files and AI output have no excerpt (the list is read without a purpose); rating only for reviews; target_summary is null when the record is gone."
+    },
+    {
+      "stage": "S18",
+      "date": "2026-11-14",
+      "deviation": "S18-D4 (BR-27, BR-33): TargetSnapshot is a union of one typed snapshot per ReportTargetType (14 types, each with available: true) and UnavailableSnapshot ({type, id, available: false}). badge is not a case target type (core.report_target_type), so it has no variant. Existing field names are kept (media owner_type/owner_id, inventory name_translations); new: available, created_at on several types, FitmentSnapshot listing, series_node_id and confidence, PortfolioItemSnapshot consent and media_ids, AiOutputSnapshot organization_id. UserSnapshot.display_name is now the public label (a neutral label when empty or anonymized), not the raw value."
+    },
+    {
+      "stage": "S18",
+      "date": "2026-11-14",
+      "deviation": "S18-D5 (BR-33): ContentAuthor.history counts the author's records of the same kind in the owning module, live and hidden/removed/rejected: community (posts, comments, questions and answers together), reviews, review answers, files; warnings are the warn_user actions on the account in the moderation log. It is not a total across all modules. role is member, or the type of the organization the record was written for (OrgType: provider, vendor, fleet, hybrid_provider_vendor), not only member/provider/vendor. The author block is on reviews, review answers (the member who answered), posts, comments, questions, answers and files (the uploader); showcases carry the consent record and media ids instead (the organization is the author), organizations, locations, items, fitment rows, accounts and AI output carry none."
+    },
+    {
+      "stage": "S18",
+      "date": "2026-11-14",
+      "deviation": "S18-D6 (BR-33): The showcase consent record is read through a new identity interface method (ConsentGrants.record) and shown with the customer's display name only (ShowcaseConsent: customer_display_name, consent_type, scope, granted, granted_at, withdrawn_at, expires_at); consent null when the item has no consent reference."
+    },
+    {
+      "stage": "S18",
+      "date": "2026-11-14",
+      "deviation": "S18-D7 (BR-33): admin.case_context is GET {adm}/moderation/cases/{case_id}/context, bound to the case in the path (S14 pathRecord). It returns the record a reported comment is on (as a TargetSnapshot) with up to 50 comments around the target (24 before, the rest from it on), the question of a reported answer with the answers around it, and for a reported post or question its first 50 comments or answers (parent null); every other target answers {parent: null, items: [], total: 0}. Context items carry the author without history. Comments on showcases are listed when a showcase comment is reported, but a reported showcase itself has no context (the organization module owns showcases, community owns comments)."
+    },
+    {
+      "stage": "S18",
+      "date": "2026-11-14",
+      "deviation": "S18-D8 (BR-29): admin.my_decisions_list is GET {adm}/me/decisions (q kind approval|dispute), STF(CRV, MOD), no purpose, answering { items: List<StaffDecision,200>; truncated } for the last 30 days instead of a cursor page. Approval decisions come from the append-only moderation log (the caller's confirm/reject/request_evidence actions, without dispute outcomes); dispute resolutions from the new column trust.disputes.resolved_by (set by admin.dispute_resolve; migration 0108 backfills it from the dispute.status_changed audit entries). The summary names the review or dispute, the decision, the reason code, the current status and the business; no author, reporter or evidence data. Another role is answered 404 like every hidden admin operation."
+    },
+    {
+      "stage": "S18",
+      "date": "2026-11-14",
+      "deviation": "S18-D9 (BR-29): StaffReviewApprovalView.stage is the queue stage while the review is pending_approval and null once decided; business_answered_at is business_confirmed_at: the business answer, the passed deadline (no_response) or the creation of a business-invited review. fraud_signals stays empty (SEC-BF-1 has no data source); the A-REV-01 suspicious-pattern and automatic-check-failed tabs are not built (no signals yet)."
+    },
+    {
+      "stage": "S18",
+      "date": "2026-11-14",
+      "deviation": "S18-D10 (-): OpenAPI: the hand-written TargetSnapshot server schema was removed (the contract now defines the type); the openapi test still requires the schema. Two sweep and test helpers changed: the runner joins array query values with commas (S18-D2) and s14 pins 15 PURP operations."
     }
   ],
   "handoff_notes": [

@@ -126,6 +126,9 @@ export class ApprovalViews {
         fraud_signals: [] as { signal: string; score: number }[],
         dispute_id: disputes.find((d) => d.target_entity_id === r.id)?.id ?? null,
         first_decider_display: r.reviewer_user_id ? (deciders.get(r.reviewer_user_id) ?? null) : null,
+        // S18 (BR-29): the queue's stage while pending, and when the business answered (or the deadline passed).
+        stage: r.status === 'pending_approval' ? approvalStage(r) : null,
+        business_answered_at: r.business_confirmed_at ? r.business_confirmed_at.toISOString() : null,
       });
     }
     return out;
@@ -486,7 +489,8 @@ export class DisputeResolveHandler implements OperationHandler {
           assigned_to: d.assigned_to ?? s.userId,
           ...(b.resolution !== undefined ? { resolution: b.resolution } : {}),
           ...(b.moderator_notes !== undefined ? { moderator_notes: b.moderator_notes } : {}),
-          ...(resolving ? { resolved_at: sql<Date>`now()` } : {}),
+          // S18 (BR-29): the decider, for admin.my_decisions_list.
+          ...(resolving ? { resolved_at: sql<Date>`now()`, resolved_by: s.userId } : {}),
         })
         .where('id', '=', d.id)
         .returningAll()
@@ -581,6 +585,135 @@ export class DisputeResolveHandler implements OperationHandler {
       return typeof a?.params.subject_organization_id === 'string' ? a.params.subject_organization_id : null;
     }
     return null;
+  }
+}
+
+/** admin.my_decisions_list: the last 30 days, at most 200 decisions (40 §23.4). */
+const DECISION_WINDOW_MS = 30 * 86_400_000;
+const DECISIONS_MAX = 200;
+const APPROVAL_DECISION: Record<string, 'approved' | 'rejected' | 'evidence_requested'> = {
+  confirm_review_approval: 'approved',
+  reject_review_approval: 'rejected',
+  request_evidence: 'evidence_requested',
+};
+
+type Decision40 = {
+  kind: 'approval' | 'dispute';
+  decided_at: string;
+  decision: string;
+  reason_code: string | null;
+  review_id: string | null;
+  review_status: string | null;
+  dispute_id: string | null;
+  dispute_type: string | null;
+  dispute_status: string | null;
+  subject: ReturnType<typeof toOrgSummary> | null;
+};
+
+/**
+ * admin.my_decisions_list (S18, BR-29, DI-25): the caller's own Path 2 decisions (from the moderation log) and dispute
+ * resolutions (trust.disputes.resolved_by) of the last 30 days, newest first, as summaries without an access purpose:
+ * no author, reporter or evidence data, only the decision and the business it concerned.
+ */
+@Injectable()
+@Operation('admin.my_decisions_list')
+export class MyDecisionsListHandler implements OperationHandler {
+  constructor(
+    private readonly log: ModerationLog,
+    private readonly orgs: OrgCards,
+  ) {}
+
+  async handle(ctx: OperationContext<undefined, { kind?: 'approval' | 'dispute' }>): Promise<OperationResult> {
+    const s = staffOf(ctx);
+    const kind = ctx.query.kind;
+    const since = new Date(Date.now() - DECISION_WINDOW_MS);
+    const body = await ctx.tx(
+      async (scope) => {
+        const approvals =
+          kind === 'dispute' ? [] : await this.log.byActor(scope, s.userId, Object.keys(APPROVAL_DECISION), since, DECISIONS_MAX + 1);
+        const disputes =
+          kind === 'approval'
+            ? []
+            : await scope.db
+                .selectFrom('trust.disputes')
+                .selectAll()
+                .where('resolved_by', '=', s.userId)
+                .where('resolved_at', '>=', since)
+                .where('status', 'in', ['resolved_upheld', 'resolved_rejected'])
+                .where('deleted_at', 'is', null)
+                .orderBy('resolved_at', 'desc')
+                .orderBy('id', 'desc')
+                .limit(DECISIONS_MAX + 1)
+                .execute();
+        const reviewIds = [
+          ...approvals.filter((a) => a.targetType === 'review').map((a) => a.targetId),
+          ...disputes.filter((d) => d.target_entity_type === 'review').map((d) => d.target_entity_id),
+        ];
+        const badgeIds = disputes.filter((d) => d.target_entity_type === 'badge').map((d) => d.target_entity_id);
+        const [reviews, badges] = await Promise.all([
+          reviewIds.length
+            ? scope.db
+                .selectFrom('trust.reviews')
+                .select(['id', 'status', 'subject_organization_id'])
+                .where('id', 'in', reviewIds)
+                .execute()
+            : [],
+          badgeIds.length
+            ? scope.db.selectFrom('trust.provider_badges').select(['id', 'provider_organization_id']).where('id', 'in', badgeIds).execute()
+            : [],
+        ]);
+        const review = new Map(reviews.map((r) => [r.id, r]));
+        const badgeOrg = new Map(badges.map((b) => [b.id, b.provider_organization_id]));
+        const orgOf = (d: DisputeRow): string | null =>
+          (d.target_entity_type === 'review' ? review.get(d.target_entity_id)?.subject_organization_id : undefined) ??
+          (d.target_entity_type === 'badge' ? badgeOrg.get(d.target_entity_id) : undefined) ??
+          d.raised_by_organization_id;
+        const cards = await this.orgs.cards(scope, [
+          ...new Set([...reviews.map((r) => r.subject_organization_id), ...disputes.map(orgOf)].filter((x): x is string => !!x)),
+        ]);
+        const summary = (id: string | null | undefined) => {
+          const c = id ? cards.get(id) : undefined;
+          return c ? toOrgSummary(c) : null;
+        };
+        const items: (Decision40 & { at: number })[] = [
+          ...approvals.map((a) => {
+            const r = review.get(a.targetId);
+            return {
+              at: a.createdAt.getTime(),
+              kind: 'approval' as const,
+              decided_at: a.createdAt.toISOString(),
+              decision: APPROVAL_DECISION[a.actionType]!,
+              reason_code: typeof a.params.reason_code === 'string' ? a.params.reason_code : null,
+              review_id: a.targetType === 'review' ? a.targetId : null,
+              review_status: r?.status ?? null,
+              dispute_id: null,
+              dispute_type: null,
+              dispute_status: null,
+              subject: summary(r?.subject_organization_id),
+            };
+          }),
+          ...disputes.map((d) => ({
+            at: d.resolved_at!.getTime(),
+            kind: 'dispute' as const,
+            decided_at: d.resolved_at!.toISOString(),
+            decision: d.status,
+            reason_code: null,
+            review_id: d.target_entity_type === 'review' ? d.target_entity_id : null,
+            review_status: d.target_entity_type === 'review' ? (review.get(d.target_entity_id)?.status ?? null) : null,
+            dispute_id: d.id,
+            dispute_type: d.dispute_type,
+            dispute_status: d.status,
+            subject: summary(orgOf(d)),
+          })),
+        ].sort((x, y) => y.at - x.at);
+        return {
+          items: items.slice(0, DECISIONS_MAX).map(({ at: _at, ...item }) => item),
+          truncated: items.length > DECISIONS_MAX,
+        };
+      },
+      { readOnly: true },
+    );
+    return { body };
   }
 }
 

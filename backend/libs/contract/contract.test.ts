@@ -12,11 +12,11 @@ describe('generated contract', () => {
     }
   });
 
-  it('declares 451 operations and 503 routes (S17: notification templates, rules and staff notices, contract 1.4.0)', () => {
+  it('declares 453 operations and 505 routes (S18: case context and own decisions, contract 1.4.0)', () => {
     const r = loadRegistry();
-    expect(r.operationCount).toBe(451);
-    expect(OPERATION_IDS).toHaveLength(451);
-    expect(r.routeCount).toBe(503);
+    expect(r.operationCount).toBe(453);
+    expect(OPERATION_IDS).toHaveLength(453);
+    expect(r.routeCount).toBe(505);
     for (const op of r.operations) {
       expect(op.routes.length, op.opId).toBeGreaterThan(0);
       for (const route of op.routes) {

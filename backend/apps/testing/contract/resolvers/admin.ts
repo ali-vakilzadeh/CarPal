@@ -7,6 +7,7 @@ import { expect } from 'vitest';
 import { SoftAuthenticator } from '#libs/testing/webauthn.js';
 import { purpose, REASON } from '../../s8-support.js';
 import { openRecovery, recoverableStaff } from '../../s16b-support.js';
+import { publishedPost, sharedProvider } from '../domain.js';
 import { ok, type Actor, type Harness, type Json, type Resolvers } from '../harness.js';
 
 /** A device-bound key registered by the staff member themselves (backend S16a). */
@@ -82,6 +83,36 @@ export const resolvers: Resolvers = {
       params: { case_id: c.caseId },
       headers: purpose('case', c.caseId),
       check: (res) => expect(res.body.case.status).toBe('open'),
+    };
+  },
+  // S18 (BR-33): a reported comment between two others on a published post: the post is the parent, the target is marked.
+  'admin.case_context': async (h) => {
+    const mod = await h.staff('platform_moderator');
+    const post = await publishedPost(h, await sharedProvider(h));
+    const comment = async (body: string) =>
+      ok(await (await h.user()).c.post('/v1/comments', { target: { type: 'post', id: post.id }, body, content_locale: 'en' }), 'comment')
+        .id as string;
+    await comment('First, a helpful note.');
+    const target = await comment('Call me on my private number for a deal.');
+    await comment('Last, another note.');
+    const rep = ok(
+      await (await h.user()).c.post('/v1/reports', { target_type: 'comment', target_id: target, reason: 'privacy' }),
+      'report',
+    );
+    const triaged = ok(
+      await mod.c.post(`/v1/admin/reports/${rep.report_id}/triage`, { open_case: { severity: 'low' }, reason: REASON }),
+      'triage',
+    );
+    const caseId = triaged.moderation_case_id as string;
+    return {
+      as: mod,
+      params: { case_id: caseId },
+      headers: purpose('case', caseId),
+      check: (res) => {
+        expect(res.body.parent).toMatchObject({ type: 'post', id: post.id, available: true });
+        expect((res.body.items as Json[]).map((i) => i.is_target)).toEqual([false, true, false]);
+        expect(res.body.total).toBe(3);
+      },
     };
   },
   'admin.case_assign': async (h) => {

@@ -9,7 +9,14 @@ import { OrganizationDirectory } from '#libs/authz/index.js';
 import { ConsentChecker, type ConsentQuery } from '#libs/consent-gate/index.js';
 import { ApiError } from '#libs/contract/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
-import { AccountFacts, ConsentGrants, UserCards, type ScopedConsentGrant, type UserCard } from '../interface/identity.js';
+import {
+  AccountFacts,
+  ConsentGrants,
+  UserCards,
+  type ConsentRecordFacts,
+  type ScopedConsentGrant,
+  type UserCard,
+} from '../interface/identity.js';
 
 @Injectable()
 export class DbConsentChecker extends ConsentChecker {
@@ -91,5 +98,36 @@ export class DbConsentGrants extends ConsentGrants {
       .executeTakeFirstOrThrow();
     await writeAudit(scope, { action: 'consent.granted', entityType: 'consent_record', entityId: row.id, next: g.consentType });
     return row.id;
+  }
+
+  async record(scope: TxScope, id: string): Promise<ConsentRecordFacts | null> {
+    const c = await scope.db
+      .selectFrom('identity.consent_records')
+      .select([
+        'subject_type',
+        'subject_id',
+        'consent_type',
+        'scope_entity_type',
+        'scope_entity_id',
+        'granted',
+        'granted_at',
+        'withdrawn_at',
+        'expires_at',
+      ])
+      .where('id', '=', id)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    return c
+      ? {
+          subjectType: c.subject_type as 'user' | 'organization',
+          subjectId: c.subject_id,
+          consentType: c.consent_type,
+          scope: c.scope_entity_type && c.scope_entity_id ? { type: c.scope_entity_type, id: c.scope_entity_id } : null,
+          granted: c.granted,
+          grantedAt: c.granted_at,
+          withdrawnAt: c.withdrawn_at,
+          expiresAt: c.expires_at,
+        }
+      : null;
   }
 }

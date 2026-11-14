@@ -4,10 +4,16 @@
 // index follows; and its part of data subject requests (the user's stock
 // inquiries are exported; they stay with the vendor as business records).
 import { Injectable, Optional, type OnModuleInit } from '@nestjs/common';
-import { ModerationTargets, type ContentAction } from '#modules/admin/interface/admin.js';
+import { excerpt, ModerationTargets, type ContentAction } from '#modules/admin/interface/admin.js';
 import { PersonalDataRegistry } from '#modules/identity/interface/identity.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { inventoryUpdated } from './common.js';
+
+/** The listing name in the caller's language, else any language it has (CaseTargetSummary.excerpt, S18). */
+function listingName(t: unknown, locale: string): string | null {
+  const names = (t ?? {}) as Record<string, string>;
+  return excerpt(names[locale] ?? Object.values(names)[0]);
+}
 
 async function applyToItem(scope: TxScope, id: string, action: ContentAction): Promise<boolean> {
   const i = await scope.db
@@ -77,13 +83,26 @@ export class InventoryAdminRegistrations implements OnModuleInit {
           ? {
               type: 'inventory_item',
               id: i.id,
+              available: true,
               vendor_organization_id: i.vendor_organization_id,
               sku: i.sku,
               name_translations: i.name_translations,
               status: i.status,
               visibility: i.visibility,
+              created_at: i.created_at.toISOString(),
             }
           : null;
+      },
+      summaries: async (scope, ids, locale) => {
+        const rows = ids.length
+          ? await scope.db
+              .selectFrom('inventory.inventory_items')
+              .select(['id', 'name_translations'])
+              .where('id', 'in', [...ids])
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [];
+        return new Map(rows.map((r) => [r.id, { excerpt: listingName(r.name_translations, locale), rating: null }]));
       },
       subjectOrganization: async (scope, id) =>
         (await scope.db.selectFrom('inventory.inventory_items').select('vendor_organization_id').where('id', '=', id).executeTakeFirst())
@@ -99,20 +118,44 @@ export class InventoryAdminRegistrations implements OnModuleInit {
           .where('deleted_at', 'is', null)
           .executeTakeFirst()),
       snapshot: async (scope, id) => {
-        const f = await scope.db.selectFrom('inventory.inventory_fitment').selectAll().where('id', '=', id).executeTakeFirst();
+        const f = await scope.db
+          .selectFrom('inventory.inventory_fitment as f')
+          .innerJoin('inventory.inventory_items as i', 'i.id', 'f.inventory_item_id')
+          .selectAll('f')
+          .select(['i.sku', 'i.name_translations', 'i.status as item_status'])
+          .where('f.id', '=', id)
+          .executeTakeFirst();
         return f
           ? {
               type: 'inventory_fitment',
               id: f.id,
+              available: true,
               inventory_item_id: f.inventory_item_id,
+              // S18 (BR-33): the listing the row belongs to (A-INV-01 "item as published").
+              listing: { sku: f.sku, name_translations: f.name_translations, status: f.item_status },
               brand_node_id: f.brand_node_id,
               model_node_id: f.model_node_id,
+              series_node_id: f.series_node_id,
               year_start: f.year_start,
               year_end: f.year_end,
+              confidence: f.confidence,
               source: f.source,
               status: f.status,
             }
           : null;
+      },
+      // S18 (BR-27): the listing's name.
+      summaries: async (scope, ids, locale) => {
+        const rows = ids.length
+          ? await scope.db
+              .selectFrom('inventory.inventory_fitment as f')
+              .innerJoin('inventory.inventory_items as i', 'i.id', 'f.inventory_item_id')
+              .select(['f.id', 'i.name_translations'])
+              .where('f.id', 'in', [...ids])
+              .where('f.deleted_at', 'is', null)
+              .execute()
+          : [];
+        return new Map(rows.map((r) => [r.id, { excerpt: listingName(r.name_translations, locale), rating: null }]));
       },
       subjectOrganization: async (scope, id) =>
         (

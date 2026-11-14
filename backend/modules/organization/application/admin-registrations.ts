@@ -9,8 +9,8 @@ import { sql } from 'kysely';
 import { Authorizer } from '#libs/authz/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
-import { FourEyesExecutors, ModerationTargets, PurposeQueues, type ContentAction } from '#modules/admin/interface/admin.js';
-import { PersonalDataRegistry } from '#modules/identity/interface/identity.js';
+import { excerpt, FourEyesExecutors, ModerationTargets, PurposeQueues, type ContentAction } from '#modules/admin/interface/admin.js';
+import { authorDisplayName, ConsentGrants, PersonalDataRegistry, UserCards } from '#modules/identity/interface/identity.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { MetricGauges } from '#modules/analytics/interface/analytics.js';
 import { repointColumns, TaxonomyReferences } from '#modules/taxonomy/interface/taxonomy-resolver.js';
@@ -29,7 +29,25 @@ export class OrganizationAdminRegistrations implements OnModuleInit {
     @Optional() private readonly personal?: PersonalDataRegistry,
     @Optional() private readonly taxonomyRefs?: TaxonomyReferences,
     @Optional() private readonly gauges?: MetricGauges,
+    @Optional() private readonly consents?: ConsentGrants,
+    @Optional() private readonly users?: UserCards,
   ) {}
+
+  /** 40 ShowcaseConsent of a showcase (S18, BR-33): the customer's consent record, by display name only. */
+  private async showcaseConsent(scope: TxScope, consentId: string | null, locale: string) {
+    const c = consentId ? await this.consents?.record(scope, consentId) : null;
+    if (!c) return null;
+    const card = c.subjectType === 'user' ? (await this.users?.cards(scope, [c.subjectId]))?.get(c.subjectId) : undefined;
+    return {
+      customer_display_name: authorDisplayName(card, locale),
+      consent_type: c.consentType,
+      scope: c.scope,
+      granted: c.granted,
+      granted_at: c.grantedAt ? c.grantedAt.toISOString() : null,
+      withdrawn_at: c.withdrawnAt ? c.withdrawnAt.toISOString() : null,
+      expires_at: c.expiresAt ? c.expiresAt.toISOString() : null,
+    };
+  }
 
   /** Moderator decisions on a showcase item (52 PortfolioItem: published only after moderation approves). */
   private async portfolio(scope: TxScope, id: string, action: ContentAction): Promise<boolean> {
@@ -181,6 +199,7 @@ export class OrganizationAdminRegistrations implements OnModuleInit {
           ? {
               type: 'organization',
               id: o.id,
+              available: true,
               name: o.name,
               organization_type: o.organization_type,
               slug: o.slug,
@@ -190,6 +209,18 @@ export class OrganizationAdminRegistrations implements OnModuleInit {
               created_at: o.created_at.toISOString(),
             }
           : null;
+      },
+      // S18 (BR-27): the organization's name (public on its page).
+      summaries: async (scope, ids) => {
+        const rows = ids.length
+          ? await scope.db
+              .selectFrom('organization.organizations')
+              .select(['id', 'name'])
+              .where('id', 'in', [...ids])
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [];
+        return new Map(rows.map((r) => [r.id, { excerpt: excerpt(r.name), rating: null }]));
       },
       subjectOrganization: async (_scope, id) => id,
     });
@@ -207,6 +238,7 @@ export class OrganizationAdminRegistrations implements OnModuleInit {
           ? {
               type: 'organization_location',
               id: l.id,
+              available: true,
               organization_id: l.organization_id,
               city: l.city,
               region: l.region,
@@ -217,6 +249,18 @@ export class OrganizationAdminRegistrations implements OnModuleInit {
               status: l.status,
             }
           : null;
+      },
+      // S18 (BR-27): the public town of the location (never the street address).
+      summaries: async (scope, ids) => {
+        const rows = ids.length
+          ? await scope.db
+              .selectFrom('organization.organization_locations')
+              .select(['id', 'city', 'country'])
+              .where('id', 'in', [...ids])
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [];
+        return new Map(rows.map((r) => [r.id, { excerpt: excerpt(`${r.city}, ${r.country}`), rating: null }]));
       },
       subjectOrganization: async (scope, id) =>
         (await scope.db.selectFrom('organization.organization_locations').select('organization_id').where('id', '=', id).executeTakeFirst())
@@ -230,22 +274,38 @@ export class OrganizationAdminRegistrations implements OnModuleInit {
           .where('id', '=', id)
           .where('deleted_at', 'is', null)
           .executeTakeFirst()),
-      snapshot: async (scope, id) => {
+      snapshot: async (scope, id, locale) => {
         const p = await scope.db.selectFrom('organization.portfolio_items').selectAll().where('id', '=', id).executeTakeFirst();
-        return p
-          ? {
-              type: 'portfolio_item',
-              id: p.id,
-              provider_organization_id: p.provider_organization_id,
-              title: p.title,
-              description: p.description,
-              caption: p.caption,
-              status: p.status,
-              moderation_status: p.moderation_status,
-              customer_consent_status: p.customer_consent_status,
-              visibility: p.visibility,
-            }
-          : null;
+        if (!p) return null;
+        // S18 (BR-33, A-CON-02): the consent record behind the showcase and the media to review.
+        const media = (await this.media?.attachmentViews(scope, 'portfolio_item', [p.id]))?.get(p.id) ?? [];
+        return {
+          type: 'portfolio_item',
+          id: p.id,
+          available: true,
+          provider_organization_id: p.provider_organization_id,
+          title: p.title,
+          description: p.description,
+          caption: p.caption,
+          status: p.status,
+          moderation_status: p.moderation_status,
+          visibility: p.visibility,
+          customer_consent_status: p.customer_consent_status,
+          consent: await this.showcaseConsent(scope, p.consent_reference_id, locale),
+          media_ids: [...new Set(media.map((m) => m.media_asset_id))].slice(0, 40),
+          created_at: p.created_at.toISOString(),
+        };
+      },
+      summaries: async (scope, ids) => {
+        const rows = ids.length
+          ? await scope.db
+              .selectFrom('organization.portfolio_items')
+              .select(['id', 'title'])
+              .where('id', 'in', [...ids])
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [];
+        return new Map(rows.map((r) => [r.id, { excerpt: excerpt(r.title), rating: null }]));
       },
       subjectOrganization: async (scope, id) =>
         (

@@ -335,12 +335,27 @@ export class AiMcpAdminRegistrations implements OnModuleInit {
           ? {
               type: 'ai_output',
               id: i.id,
+              available: true,
               insight_type: i.insight_type,
               summary: i.summary,
               visibility: i.visibility,
               model_version: i.model_version,
+              organization_id: i.organization_id,
+              created_at: i.created_at.toISOString(),
             }
           : null;
+      },
+      // S18 (BR-27): AI output may describe a member's vehicle, so a list read without a purpose shows no excerpt.
+      summaries: async (scope, ids) => {
+        const rows = ids.length
+          ? await scope.db
+              .selectFrom('ai_mcp.ai_insights')
+              .select('id')
+              .where('id', 'in', [...ids])
+              .where('deleted_at', 'is', null)
+              .execute()
+          : [];
+        return new Map(rows.map((r) => [r.id, { excerpt: null, rating: null }]));
       },
       subjectOrganization: async (scope, id) =>
         (await scope.db.selectFrom('ai_mcp.ai_insights').select('organization_id').where('id', '=', id).executeTakeFirst())

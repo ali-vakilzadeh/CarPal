@@ -2081,6 +2081,7 @@ export interface TrustDisputes {
   reason: string;
   resolution: string | null;
   resolved_at: Timestamp | null;
+  resolved_by: string | null;
   status: Generated<string>;
   target_entity_id: string;
   target_entity_type: string;
