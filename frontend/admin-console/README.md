@@ -7,9 +7,9 @@ served only on `admin.<DOMAIN>` behind an access gate.
 
 **Scope (owner decision DQ-03, 2026-11-13).** The console is completely separate from the public Web UI (the business
 web app for service providers, parts sellers and fleet managers, `web.<DOMAIN>`), and its only purpose is to monitor
-and control the social network. Work done for a business or on its behalf belongs to the Web UI. Built parts that do
-not fit yet (assist sessions, plan assignment) are listed in `Docs/23.Admin_WebUI_screens.md` §0 and stay as they
-are until their move is planned.
+and control the social network. Assist sessions and plan assignment stay here (owner, 2026-11-13), and the Web UI gets
+identical copies of those pages for the business (`../public-ui-dev-plan.json` PU-P01, PU-P02); the review of every
+console part is in `Docs/23.Admin_WebUI_screens.md` §0.
 
 The build plan and stage log is [dev-plan.json](dev-plan.json). Sources of truth: `Docs/40.API contract.md`
 (contract 1.3.0, §23 admin plane) for operations and security rules, `Docs/23.Admin_WebUI_screens.md` for screens.

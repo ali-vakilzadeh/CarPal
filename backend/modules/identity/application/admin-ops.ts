@@ -24,7 +24,7 @@ import { TrustAdmin } from '#modules/trust/interface/trust.js';
 import { iso, isoOrNull } from '#libs/http-pipeline/index.js';
 import { toDataSubjectRequest, toMembership, toOnboarding } from '../api/projections.js';
 import { normalizeEmail, type UserRow } from '../infrastructure/accounts.js';
-import { AccountAdmin, UserCards } from '../interface/identity.js';
+import { AccountAdmin, StaffRestrictions, UserCards } from '../interface/identity.js';
 import { DsrViews } from './privacy-ops.js';
 import { StaffRecoveryCodes } from './staff-security.js';
 
@@ -104,6 +104,7 @@ export class AdminStaffMeHandler implements OperationHandler {
   constructor(
     private readonly sessions: SessionStore,
     private readonly recoveryCodes: StaffRecoveryCodes,
+    private readonly restrictions: StaffRestrictions,
   ) {}
 
   async handle(ctx: OperationContext): Promise<OperationResult> {
@@ -112,8 +113,12 @@ export class AdminStaffMeHandler implements OperationHandler {
     const principal = ctx.principal;
     const session = await this.sessions.get(principal.sessionId);
     if (!session) throw new ApiError('UNAUTHENTICATED', { detail: 'session revoked or unknown' });
-    const { u, remaining } = await ctx.tx(
-      async (scope) => ({ u: await loadUser(scope, s.userId), remaining: await this.recoveryCodes.remaining(scope, s.userId) }),
+    const { u, remaining, restrictedUntil } = await ctx.tx(
+      async (scope) => ({
+        u: await loadUser(scope, s.userId),
+        remaining: await this.recoveryCodes.remaining(scope, s.userId),
+        restrictedUntil: await this.restrictions.restrictedUntil(scope, s.userId),
+      }),
       { readOnly: true },
     );
     const absoluteMs = CLIENTS['cp-web-admin'].sessionAbsoluteMs;
@@ -130,6 +135,8 @@ export class AdminStaffMeHandler implements OperationHandler {
         session_expires_at: iso(new Date(Date.parse(session.createdAt) + absoluteMs)),
         // S16a (DQ-04): 0 for staff enrolled before recovery codes existed, so the console asks them to create a set.
         recovery_codes_remaining: remaining,
+        // S16b (DQ-04): the end of the 72-hour restriction after an account recovery.
+        restricted_until: restrictedUntil ? iso(restrictedUntil) : null,
       },
     };
   }
@@ -349,12 +356,17 @@ export async function grantPlatformRole(
 @Injectable()
 @Operation('admin.platform_role_grant')
 export class AdminPlatformRoleGrantHandler implements OperationHandler {
-  constructor(private readonly fourEyes: FourEyes) {}
+  constructor(
+    private readonly fourEyes: FourEyes,
+    private readonly restrictions: StaffRestrictions,
+  ) {}
 
   async handle(ctx: OperationContext<{ role: string; reason: string }>): Promise<OperationResult> {
     const s = staffOf(ctx);
     const b = ctx.body;
     const body = await ctx.tx(async (scope) => {
+      // S16b (DQ-04): a recovered account grants no role for 72 hours.
+      await this.restrictions.assertNotRestricted(scope, s.userId);
       const u = await loadUser(scope, ctx.params.user_id!);
       if (u.status !== 'active') throw new ApiError('INVALID_TRANSITION', { detail: `account ${u.status}` });
       const held = await scope.db
@@ -388,14 +400,19 @@ export class AdminPlatformRoleGrantHandler implements OperationHandler {
 @Injectable()
 @Operation('admin.platform_role_revoke')
 export class AdminPlatformRoleRevokeHandler implements OperationHandler {
-  constructor(private readonly authorizer: Authorizer) {}
+  constructor(
+    private readonly authorizer: Authorizer,
+    private readonly restrictions: StaffRestrictions,
+  ) {}
 
   async handle(ctx: OperationContext): Promise<OperationResult> {
-    staffOf(ctx);
+    const s = staffOf(ctx);
     const reason = headerReasonOf(ctx);
     const role = ctx.params.role!;
     if (!PLATFORM_ROLES.includes(role)) throw new ApiError('NOT_FOUND');
     await ctx.tx(async (scope) => {
+      // S16b (DQ-04): a recovered account revokes no role for 72 hours.
+      await this.restrictions.assertNotRestricted(scope, s.userId);
       const m = await scope.db
         .selectFrom('identity.role_memberships')
         .select(['id'])

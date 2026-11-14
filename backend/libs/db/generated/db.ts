@@ -1221,6 +1221,24 @@ export interface IdentityRoleMemberships {
   version: Generated<number>;
 }
 
+export interface IdentityStaffRecoveryApprovals {
+  approver_id: string;
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  decided_at: Generated<Timestamp>;
+  decision: string;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  id: Generated<string>;
+  note: string | null;
+  reason: string;
+  request_id: string;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  verification_method: string | null;
+  version: Generated<number>;
+}
+
 export interface IdentityStaffRecoveryCodes {
   code_hash: string;
   created_at: Generated<Timestamp>;
@@ -1233,6 +1251,29 @@ export interface IdentityStaffRecoveryCodes {
   updated_at: Generated<Timestamp>;
   updated_by: string | null;
   used_at: Timestamp | null;
+  user_id: string;
+  version: Generated<number>;
+}
+
+export interface IdentityStaffRecoveryRequests {
+  approved_at: Timestamp | null;
+  completed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  email_verified_at: Timestamp | null;
+  expired_at: Timestamp | null;
+  expires_at: Timestamp;
+  handle_hash: string;
+  id: Generated<string>;
+  ip_country: string | null;
+  password_forgotten: boolean;
+  rejected_at: Timestamp | null;
+  restricted_until: Timestamp | null;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
   user_id: string;
   version: Generated<number>;
 }
@@ -1554,6 +1595,25 @@ export interface NotificationNotificationPreferences {
   version: Generated<number>;
 }
 
+export interface NotificationNotificationRules {
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  default_quiet_hours_end: string | null;
+  default_quiet_hours_start: string | null;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  digest_hour: Generated<number>;
+  id: Generated<string>;
+  reason: string | null;
+  review_invitation_delay_minutes: Generated<number>;
+  review_invitation_reminder_days: Generated<number[]>;
+  rule_set: Generated<string>;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  version: Generated<number>;
+  weekly_digest_day: Generated<number>;
+}
+
 export interface NotificationNotifications {
   category: string;
   created_at: Generated<Timestamp>;
@@ -1572,6 +1632,23 @@ export interface NotificationNotifications {
   status: Generated<string>;
   template_key: string;
   template_params: Generated<Json>;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  version: Generated<number>;
+}
+
+export interface NotificationNotificationTemplateOverrides {
+  body: string;
+  channel: string;
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  id: Generated<string>;
+  locale: string;
+  reason: string;
+  subject: string | null;
+  template_key: string;
   updated_at: Generated<Timestamp>;
   updated_by: string | null;
   version: Generated<number>;
@@ -2457,7 +2534,9 @@ export interface DB {
   "identity.policy_documents": IdentityPolicyDocuments;
   "identity.policy_versions": IdentityPolicyVersions;
   "identity.role_memberships": IdentityRoleMemberships;
+  "identity.staff_recovery_approvals": IdentityStaffRecoveryApprovals;
   "identity.staff_recovery_codes": IdentityStaffRecoveryCodes;
+  "identity.staff_recovery_requests": IdentityStaffRecoveryRequests;
   "identity.user_accounts": IdentityUserAccounts;
   "identity.user_preferences": IdentityUserPreferences;
   "identity.verification_tokens": IdentityVerificationTokens;
@@ -2471,6 +2550,8 @@ export interface DB {
   "media.media_attachments": MediaMediaAttachments;
   "notification.notification_deliveries": NotificationNotificationDeliveries;
   "notification.notification_preferences": NotificationNotificationPreferences;
+  "notification.notification_rules": NotificationNotificationRules;
+  "notification.notification_template_overrides": NotificationNotificationTemplateOverrides;
   "notification.notifications": NotificationNotifications;
   "notification.push_device_tokens": NotificationPushDeviceTokens;
   "organization.organization_locations": OrganizationOrganizationLocations;

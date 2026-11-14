@@ -16,6 +16,7 @@ import { ApiError } from '#libs/contract/index.js';
 import { isoOrNull, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { FourEyes, StaffNames, staffOf, type Staff } from '#modules/admin/interface/admin.js';
+import { StaffRestrictions } from '../interface/identity.js';
 
 const ROLE_ORDER = ['platform_admin', 'platform_moderator', 'platform_support', 'platform_community_reviewer'];
 const byRoleOrder = (roles: readonly string[]) =>
@@ -232,12 +233,15 @@ export class AdminStaffEnableHandler implements OperationHandler {
   constructor(
     private readonly fourEyes: FourEyes,
     private readonly names: StaffNames,
+    private readonly restrictions: StaffRestrictions,
   ) {}
 
   async handle(ctx: OperationContext<{ reason: string }>): Promise<OperationResult> {
     const s = staffOf(ctx);
     const userId = ctx.params.user_id!;
     const body = await ctx.tx(async (scope) => {
+      // S16b (DQ-04): a recovered account enables nobody for 72 hours.
+      await this.restrictions.assertNotRestricted(scope, s.userId);
       const roles = byRoleOrder((await suspendedRoles(scope, userId, false)).map((m) => m.role));
       const name = await this.names.name(scope, userId, ctx.locale);
       return this.fourEyes.request(

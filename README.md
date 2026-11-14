@@ -2164,7 +2164,7 @@ Users can control:
 
 This is essential for trust and safety.
 
-Owner decision DQ-03 (2026-11-13): the admin console is a separate application, completely separate from the public Web UI that service providers, parts sellers and fleet managers use. Its only purpose is to monitor and control the social network; work done for a business or on its behalf belongs to the Web UI ([23.Admin_WebUI_screens](Docs/23.Admin_WebUI_screens.md) §0).
+Owner decision DQ-03 (2026-11-13): the admin console is a separate application, completely separate from the public Web UI that service providers, parts sellers and fleet managers use. Its only purpose is to monitor and control the social network; work done for a business or on its behalf belongs to the Web UI, except assisted onboarding and plan assignment, which stay in the console with identical copies in the Web UI ([23.Admin_WebUI_screens](Docs/23.Admin_WebUI_screens.md) §0).
 
 ### Admin domains
 

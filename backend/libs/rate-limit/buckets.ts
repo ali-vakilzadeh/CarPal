@@ -38,6 +38,12 @@ export const DEFAULT_BUCKETS: Record<string, Window[]> = {
     { limit: 5, windowMs: DAY, scope: 'destination' },
     { limit: 20, windowMs: HOUR, scope: 'ip' },
   ],
+  // Staff account recovery requests (backend S16b, SEC-ADM-2): per account email and per IP prefix.
+  'auth.recovery': [
+    { limit: 3, windowMs: HOUR, scope: 'account' },
+    { limit: 5, windowMs: DAY, scope: 'account' },
+    { limit: 10, windowMs: HOUR, scope: 'ip' },
+  ],
   search: [
     { limit: 30, windowMs: MIN, scope: 'user' },
     { limit: 10, windowMs: MIN, scope: 'anon' },

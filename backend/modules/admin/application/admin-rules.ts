@@ -1,4 +1,5 @@
-// Admin W15 rules (41 §6.3): hourly expiry of pending four-eyes changes and
+// Admin W15 rules (41 §6.3): hourly expiry of pending four-eyes changes (each
+// expiry publishes four_eyes.decided for the requester's notice, S17) and
 // assist sessions past their deadline, and the daily retention run that hands
 // every active DataRetentionPolicy to the module owning its entity type
 // (RetentionHandlers). Platform tables without a module (relayed outbox
@@ -6,6 +7,7 @@
 import { Injectable } from '@nestjs/common';
 import { sql } from 'kysely';
 import { ScheduledRule } from '#libs/jobs/index.js';
+import { publishEvent } from '#libs/outbox/index.js';
 import type { Logger } from '#libs/observability/index.js';
 import { InjectLogger } from '#libs/runtime/index.js';
 import { TxRunner } from '#libs/tenancy/index.js';
@@ -27,20 +29,30 @@ export class AdminExpiryRule extends ScheduledRule {
   }
 
   async run(): Promise<{ changes: number; sessions: number }> {
-    return this.tx.run({ actorType: 'system' }, async ({ db }) => {
-      const changes = await db
+    return this.tx.run({ actorType: 'system' }, async (scope) => {
+      const { db } = scope;
+      const expired = await db
         .updateTable('admin.pending_admin_changes')
         .set({ status: 'expired' })
         .where('status', '=', 'pending')
         .where('expires_at', '<=', new Date())
-        .executeTakeFirst();
+        .returning(['id', 'requested_by', 'op_id'])
+        .execute();
+      // S17 (BR-21): the requester learns that nobody decided in time.
+      for (const c of expired)
+        await publishEvent(scope, {
+          type: 'four_eyes.decided',
+          aggregateType: 'pending_change',
+          aggregateId: c.id,
+          payload: { requested_by: c.requested_by, status: 'expired', op_id: c.op_id },
+        });
       const sessions = await db
         .updateTable('admin.assist_sessions')
         .set({ status: 'expired' })
         .where('status', '=', 'active')
         .where('expires_at', '<=', new Date())
         .executeTakeFirst();
-      return { changes: Number(changes.numUpdatedRows), sessions: Number(sessions.numUpdatedRows) };
+      return { changes: expired.length, sessions: Number(sessions.numUpdatedRows) };
     });
   }
 }

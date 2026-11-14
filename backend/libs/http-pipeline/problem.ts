@@ -67,6 +67,10 @@ const TITLES: Record<ErrorCode, [en: string, fa: string]> = {
     'This record is not part of the work item you opened it for.',
     'این مورد به کاری که برای آن باز شده است مربوط نیست.',
   ],
+  STAFF_RECOVERY_RESTRICTED: [
+    'Your account was recovered recently. Approvals and role changes are blocked for 72 hours after a recovery.',
+    'حساب شما به‌تازگی بازیابی شده است. تأییدها و تغییر نقش‌ها تا ۷۲ ساعت پس از بازیابی بسته است.',
+  ],
   STEP_UP_REQUIRED: ['Please confirm it is you to continue.', 'برای ادامه، هویت خود را دوباره تأیید کنید.'],
   TAXONOMY_MISMATCH: ['The selected categories do not fit together.', 'دسته‌های انتخاب‌شده با هم سازگار نیستند.'],
   UNAUTHENTICATED: ['Please sign in.', 'لطفاً وارد شوید.'],

@@ -305,6 +305,18 @@ describe('S16a break glass from the server shell (BR-19, R-08)', () => {
       /no active platform role/,
     );
 
+    // The consumer mails the account, then every other ADM. The shared test database holds more than a thousand
+    // fixture ADMs and the lite mail sink keeps the last 1000 messages: count the sends at the port instead.
+    let accountMails = 0;
+    let otherMails = 0;
+    let wrongMails = 0;
+    const send = infra.mailer.send.bind(infra.mailer);
+    infra.mailer.send = async (m) => {
+      if (m.to === target.email && m.template === 'identity.staff_break_glass_account') accountMails++;
+      if (m.to === other.user.email && m.template === 'identity.staff_break_glass_admins') otherMails++;
+      if (m.to === target.email && m.template === 'identity.staff_break_glass_admins') wrongMails++;
+      return send(m);
+    };
     const r = await breakGlassStaff(
       { tx: admin.fixtures.worker, crypto },
       target.email.toUpperCase(),
@@ -331,14 +343,15 @@ describe('S16a break glass from the server shell (BR-19, R-08)', () => {
     );
 
     // The worker's outbox relay delivers staff.break_glass to the consumer of the running backend.
-    expect(event.payload).toEqual({ user_id: target.id });
+    // S17: staff_name for the administrators' in-app staff notice.
+    expect(event.payload).toEqual({ user_id: target.id, staff_name: expect.any(String) });
     expect(worker.get(StaffBreakGlassConsumer).subjects).toEqual([BREAK_GLASS_EVENT]);
-    for (let i = 0; i < 100 && admin.mail(target.email, 'identity.staff_break_glass_account').length === 0; i++)
-      await new Promise((r) => setTimeout(r, 100));
+    for (let i = 0; i < 300 && (accountMails === 0 || otherMails === 0); i++) await new Promise((r) => setTimeout(r, 100));
+    infra.mailer.send = send;
     expect((await session.get('/v1/admin/me')).status).toBe(401);
-    expect(admin.mail(target.email, 'identity.staff_break_glass_account')).toHaveLength(1);
-    expect(admin.mail(other.user.email, 'identity.staff_break_glass_admins')).toHaveLength(1);
-    expect(admin.mail(target.email, 'identity.staff_break_glass_admins')).toHaveLength(0);
+    expect(accountMails).toBe(1);
+    expect(otherMails).toBe(1);
+    expect(wrongMails).toBe(0);
 
     // The next console sign-in enrols a key again, with a new set of codes.
     const again = await enrol(target, new SoftAuthenticator('carpals.ir', ORIGIN));

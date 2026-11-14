@@ -19,6 +19,7 @@ import {
   type OperationResult,
 } from '#libs/http-pipeline/index.js';
 import { mergedPreferences, SMS_CATEGORIES, type Preference } from '../domain/preferences.js';
+import { STAFF_ONLY_EVENT_TYPES } from '../domain/routing.js';
 import { pushTokenAad } from './dispatcher.js';
 
 registerConstraintErrors({ push_device_tokens_token_hash_key: { code: 'DUPLICATE', pointer: '/token', fieldCode: 'not_unique' } });
@@ -29,6 +30,9 @@ const me = (ctx: OperationContext): string => {
 };
 
 /** Personal notifications, or those of a portal organization the caller belongs to. */
+/** S17 staff notices are listed on the admin plane only (40 §20.2). */
+const STAFF_ONLY = [...STAFF_ONLY_EVENT_TYPES];
+
 async function contextOrg(ctx: OperationContext, orgId: string | undefined): Promise<string | null> {
   if (!orgId) return null;
   await ctx.authorizeOrg(orgId, ['ANY']);
@@ -51,6 +55,7 @@ export class NotificationsListHandler implements OperationHandler {
           .selectFrom('notification.notifications')
           .selectAll()
           .where('recipient_user_id', '=', user)
+          .where('event_type', 'not in', STAFF_ONLY)
           .where('status', '<>', 'expired')
           .where('deleted_at', 'is', null);
         s = org ? s.where('organization_context_id', '=', org) : s.where('organization_context_id', 'is', null);
@@ -98,6 +103,7 @@ export class NotificationsUnreadCountHandler implements OperationHandler {
           .selectFrom('notification.notifications')
           .select(sql<string>`count(*)`.as('n'))
           .where('recipient_user_id', '=', user)
+          .where('event_type', 'not in', STAFF_ONLY)
           .where('read_at', 'is', null)
           .where('status', '<>', 'expired')
           .where('deleted_at', 'is', null);

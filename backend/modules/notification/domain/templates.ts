@@ -135,6 +135,66 @@ export const TEMPLATES: Catalog = {
       text: 'کلیدهای امنیتی و کدهای بازیابی {staff_name} با روال اضطراری سرور بازنشانی شد. دلیل آن در گزارش ممیزی (اقدام staff.break_glass) ثبت شده است. اگر کسی انتظار این را نداشت، حساب را در کنسول مدیریت غیرفعال و موضوع را بررسی کنید.',
     },
   },
+  'identity.staff_recovery_code': {
+    en: {
+      subject: 'Account recovery requested for your CarPal staff account',
+      text: 'A recovery of your staff account was requested after a lost security key. To go on, enter this code: {code}\n\nThe code is valid for 10 minutes. Two administrators must then approve the request. If this was not you, tell a platform admin now.',
+    },
+    fa: {
+      subject: 'درخواست بازیابی برای حساب کارکنان کارپال شما',
+      text: 'برای حساب کارکنان شما، پس از گم شدن کلید امنیتی، درخواست بازیابی ثبت شد. برای ادامه این کد را وارد کنید: {code}\n\nاین کد ۱۰ دقیقه معتبر است. پس از آن دو مدیر باید درخواست را تأیید کنند. اگر شما نبودید، همین حالا به یک مدیر پلتفرم خبر دهید.',
+    },
+  },
+  'identity.staff_recovery_requested_admins': {
+    en: {
+      subject: 'Staff account recovery waiting for approval',
+      text: '{staff_name} asked to recover their staff account after a lost security key. Two administrators must approve it in the admin console ({console_url}) after checking with the person outside CarPal (a call to a known number, in person or a video call). Nothing can be approved from this email. If the request looks wrong, reject it in the console.',
+    },
+    fa: {
+      subject: 'بازیابی حساب یک کارمند در انتظار تأیید',
+      text: '{staff_name} پس از گم شدن کلید امنیتی، درخواست بازیابی حساب کارکنان خود را داده است. دو مدیر باید پس از بررسی با خود فرد بیرون از کارپال (تماس با شماره شناخته‌شده، حضوری یا تماس تصویری) آن را در کنسول مدیریت ({console_url}) تأیید کنند. از این ایمیل هیچ تأییدی ممکن نیست. اگر درخواست مشکوک است، آن را در کنسول رد کنید.',
+    },
+  },
+  'identity.staff_recovery_approved': {
+    en: {
+      subject: 'Your CarPal staff account recovery was approved',
+      text: 'Two administrators approved the recovery of your staff account. Go back to the admin console sign-in ({console_url}) on the same browser to register a new security key before the request expires. If you did not ask for this, tell a platform admin now.',
+    },
+    fa: {
+      subject: 'بازیابی حساب کارکنان کارپال شما تأیید شد',
+      text: 'دو مدیر بازیابی حساب کارکنان شما را تأیید کردند. پیش از پایان اعتبار درخواست، با همان مرورگر به صفحه ورود کنسول مدیریت ({console_url}) برگردید و یک کلید امنیتی تازه ثبت کنید. اگر شما این را نخواسته‌اید، همین حالا به یک مدیر پلتفرم خبر دهید.',
+    },
+  },
+  'identity.staff_recovery_rejected': {
+    en: {
+      subject: 'Your CarPal staff account recovery was rejected',
+      text: 'An administrator rejected the recovery request for your staff account. Contact a platform admin if you still need to recover it.',
+    },
+    fa: {
+      subject: 'بازیابی حساب کارکنان کارپال شما رد شد',
+      text: 'یک مدیر درخواست بازیابی حساب کارکنان شما را رد کرد. اگر هنوز به بازیابی نیاز دارید، با یک مدیر پلتفرم تماس بگیرید.',
+    },
+  },
+  'identity.staff_recovery_completed_account': {
+    en: {
+      subject: 'Your CarPal staff account was recovered',
+      text: 'Your staff account was recovered with a new security key. Your old keys and recovery codes no longer work and every session was signed out. For 72 hours the account cannot approve changes or grant roles. If this was not you, tell a platform admin now.',
+    },
+    fa: {
+      subject: 'حساب کارکنان کارپال شما بازیابی شد',
+      text: 'حساب کارکنان شما با یک کلید امنیتی تازه بازیابی شد. کلیدها و کدهای بازیابی قبلی دیگر کار نمی‌کنند و همه نشست‌ها بسته شدند. تا ۷۲ ساعت این حساب نمی‌تواند تغییری را تأیید کند یا نقشی بدهد. اگر شما نبودید، همین حالا به یک مدیر پلتفرم خبر دهید.',
+    },
+  },
+  'identity.staff_recovery_completed_admins': {
+    en: {
+      subject: 'Staff account recovered',
+      text: 'The staff account of {staff_name} was recovered with a new security key after two administrators approved it. For 72 hours it cannot approve changes or grant roles. The steps are in the audit log (actions staff.recovery_*).',
+    },
+    fa: {
+      subject: 'حساب یک کارمند بازیابی شد',
+      text: 'حساب کارکنان {staff_name} پس از تأیید دو مدیر با یک کلید امنیتی تازه بازیابی شد. تا ۷۲ ساعت این حساب نمی‌تواند تغییری را تأیید کند یا نقشی بدهد. مراحل در گزارش ممیزی (اقدام‌های staff.recovery_*) ثبت شده است.',
+    },
+  },
   'identity.consent_request': {
     en: {
       subject: '{organization_name} asks for your permission',
@@ -366,6 +426,57 @@ export const TEMPLATES: Catalog = {
   'media.upload_refused': {
     en: { subject: 'An upload could not be used', text: 'A file you uploaded ({purpose}) failed our safety checks and was not published.' },
     fa: { subject: 'فایل بارگذاری‌شده پذیرفته نشد', text: 'فایلی که بارگذاری کردید ({purpose}) از بررسی ایمنی عبور نکرد و منتشر نشد.' },
+  },
+  // ------------------------------------------- staff notices (S17, in-app on the admin plane)
+  'staff.four_eyes_outcome': {
+    en: {
+      subject: 'Your four-eyes request was decided',
+      text: 'Your request ({op_id}) was {status}. Open Pending approvals for the details.',
+    },
+    fa: {
+      subject: 'درباره درخواست چهارچشمی شما تصمیم گرفته شد',
+      text: 'درخواست شما ({op_id}) {status} شد. جزئیات را در «تأییدهای در انتظار» ببینید.',
+    },
+  },
+  'staff.kill_switch_changed': {
+    en: {
+      subject: 'AI automation kill switch changed',
+      text: 'The AI automation kill switch is now {enabled}. While it is on, every AI feature and AI write tool is stopped.',
+    },
+    fa: {
+      subject: 'کلید توقف خودکارسازی هوش مصنوعی تغییر کرد',
+      text: 'کلید توقف خودکارسازی هوش مصنوعی اکنون {enabled} است. تا وقتی روشن است، همه قابلیت‌ها و ابزارهای نوشتنی هوش مصنوعی متوقف‌اند.',
+    },
+  },
+  'staff.recovery_waiting': {
+    en: {
+      subject: 'Staff account recovery waiting for approval',
+      text: '{staff_name} asked to recover their staff account. Check with the person outside CarPal before you approve it in Recovery requests.',
+    },
+    fa: {
+      subject: 'بازیابی حساب یک کارمند در انتظار تأیید',
+      text: '{staff_name} درخواست بازیابی حساب کارکنان خود را داده است. پیش از تأیید در «درخواست‌های بازیابی»، بیرون از کارپال با خود فرد بررسی کنید.',
+    },
+  },
+  'staff.recovery_done': {
+    en: {
+      subject: 'Staff account recovered',
+      text: 'The staff account of {staff_name} was recovered with a new security key. For 72 hours it cannot approve changes or grant roles.',
+    },
+    fa: {
+      subject: 'حساب یک کارمند بازیابی شد',
+      text: 'حساب کارکنان {staff_name} با یک کلید امنیتی تازه بازیابی شد. تا ۷۲ ساعت این حساب نمی‌تواند تغییری را تأیید کند یا نقشی بدهد.',
+    },
+  },
+  'staff.break_glass_notice': {
+    en: {
+      subject: 'Break glass: staff security keys reset from the server',
+      text: 'The security keys and recovery codes of {staff_name} were reset from the server. If nobody expected this, disable the account and investigate.',
+    },
+    fa: {
+      subject: 'شکستن شیشه: بازنشانی کلیدهای امنیتی یک کارمند از روی سرور',
+      text: 'کلیدهای امنیتی و کدهای بازیابی {staff_name} از روی سرور بازنشانی شد. اگر کسی انتظار این را نداشت، حساب را غیرفعال و موضوع را بررسی کنید.',
+    },
   },
   'notification.digest': {
     en: { subject: 'Your CarPal summary', text: 'You have {count} new notifications:\n{items}' },

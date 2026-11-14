@@ -62,6 +62,32 @@ export interface Interaction {
    * auth.passkey_enrol activates.
    */
   enrol?: PendingEnrolment;
+  /**
+   * cp-web-admin, backend S16b (SEC-ADM-2): the staff recovery request started in this interaction, waiting for its
+   * emailed code (auth.staff_recovery_verify). `live` is false when no request was opened: the code can never match.
+   */
+  staffRecovery?: PendingStaffRecovery;
+  /** cp-web-admin, backend S16b: an approved recovery being completed (auth.staff_recovery_complete_options → complete). */
+  recovery?: RecoveryCompletion;
+}
+
+export interface PendingStaffRecovery {
+  /** SHA-256 of the request handle returned by auth.staff_recovery_start. */
+  handleHash: string;
+  codeHash: string;
+  attempts: number;
+  expiresAt: number;
+  live: boolean;
+}
+
+export interface RecoveryCompletion {
+  requestId: string;
+  /** The account being recovered; it becomes the interaction's account only when the new key is stored. */
+  userId: string;
+  /** The pending WebAuthn method of auth.staff_recovery_complete_options. */
+  methodId: string;
+  /** Argon2id hash of the new password (requests with password_forgotten only). */
+  passwordHash?: string;
 }
 
 export interface PendingEnrolment {

@@ -217,6 +217,8 @@ export abstract class Recipients {
   abstract contacts(scope: TxScope, userIds: readonly string[]): Promise<Map<string, RecipientContact>>;
   /** Active members of an organization with one of `roles` (all active members when empty). */
   abstract members(scope: TxScope, orgId: string, roles: readonly string[]): Promise<string[]>;
+  /** Active platform staff (active account, active platform role) with one of `roles` (S17 staff notices). */
+  abstract staff(scope: TxScope, roles: readonly string[]): Promise<string[]>;
 }
 
 /**
@@ -242,6 +244,17 @@ export abstract class AccountAdmin {
   ): Promise<{ previous: string; next: string }>;
   /** Staff review views (40 StaffReviewApprovalView.author_history): account age and verified contact, no contact data. */
   abstract facts(scope: TxScope, userId: string): Promise<{ createdAt: Date; verifiedContact: boolean } | null>;
+}
+
+/**
+ * The 72-hour restriction after a staff account recovery (backend S16b, SEC-ADM-2, DQ-04): until restricted_until the
+ * account cannot approve four-eyes changes, grant or revoke platform roles, enable staff or approve a recovery.
+ */
+export abstract class StaffRestrictions {
+  /** The end of the account's restriction, or null when it is not restricted now. */
+  abstract restrictedUntil(scope: TxScope, userId: string): Promise<Date | null>;
+  /** 403 STAFF_RECOVERY_RESTRICTED while the account is restricted. */
+  abstract assertNotRestricted(scope: TxScope, userId: string): Promise<void>;
 }
 
 /** One section of a DSR export bundle (40 admin.dsr_export): records as flat field maps. */

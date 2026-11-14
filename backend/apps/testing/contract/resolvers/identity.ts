@@ -8,6 +8,7 @@ import { LinkTokens } from '#libs/link-tokens/index.js';
 import { SoftAuthenticator } from '#libs/testing/webauthn.js';
 import { base32Decode, hotp, totpStep } from '#modules/identity/domain/credentials.js';
 import { openCase, purpose, REASON } from '../../s8-support.js';
+import { adminInteraction, approveRecovery, openRecovery, RECOVERY_PASSWORD, recoverableStaff, startRecovery } from '../../s16b-support.js';
 import { ok, type Actor, type Harness, type Json, type Resolvers, LINK_SECRET } from '../harness.js';
 
 const REDIRECT = 'https://carpals.ir/oauth/callback';
@@ -278,6 +279,68 @@ export const resolvers: Resolvers = {
       body: { interaction_id: ia.id, attestation: new SoftAuthenticator('carpals.ir', 'https://admin.carpals.ir').register(options) },
       check: (res) => {
         // S16a: the first key comes with the staff recovery codes, shown once.
+        expect(res.body).toMatchObject({ next: 'mfa', mfa_methods: ['webauthn'] });
+        expect(res.body.recovery_codes).toHaveLength(10);
+      },
+    };
+  },
+  // Contract 1.4.0 (backend S16b): staff account recovery on the auth host.
+  'auth.staff_recovery_start': async (h) => {
+    const { user, codes } = await recoverableStaff(h.auth);
+    const ia = await adminInteraction(h.auth);
+    return {
+      as: none,
+      headers: { cookie: ia.cookie },
+      body: { interaction_id: ia.id, email: user.email, password: RECOVERY_PASSWORD, password_forgotten: false, recovery_code: codes[0] },
+      check: (res) => {
+        expect(res.body.request_handle).toMatch(/^[A-Za-z0-9_-]{43}$/);
+        expect(h.auth.mail(user.email, 'identity.staff_recovery_code').length).toBeGreaterThan(0);
+      },
+    };
+  },
+  'auth.staff_recovery_verify': async (h) => {
+    const { user, codes } = await recoverableStaff(h.auth);
+    const ia = await adminInteraction(h.auth);
+    const started = await startRecovery(h.auth, ia, user, codes[0]!);
+    return {
+      as: none,
+      headers: { cookie: ia.cookie },
+      body: { interaction_id: ia.id, request_handle: started.handle, code: started.code },
+      check: (res) => expect(res.body).toMatchObject({ status: 'awaiting_approvals', approvals: 0, password_forgotten: false }),
+    };
+  },
+  'auth.staff_recovery_status': async (h) => {
+    const { user, codes } = await recoverableStaff(h.auth);
+    const { handle } = await openRecovery(h.auth, user, codes[0]!, { forgotten: true });
+    return {
+      as: none,
+      body: { request_handle: handle },
+      check: (res) => expect(res.body).toMatchObject({ status: 'awaiting_approvals', approvals: 0, password_forgotten: true }),
+    };
+  },
+  'auth.staff_recovery_complete_options': async (h) => {
+    const { user, codes } = await recoverableStaff(h.auth);
+    const { handle, requestId } = await openRecovery(h.auth, user, codes[0]!);
+    await approveRecovery(h.admin, requestId);
+    const ia = await adminInteraction(h.auth);
+    return {
+      as: none,
+      headers: { cookie: ia.cookie },
+      body: { interaction_id: ia.id, request_handle: handle },
+      check: (res) => expect(res.body).toMatchObject({ rp: { id: 'carpals.ir' }, attestation: 'none' }),
+    };
+  },
+  'auth.staff_recovery_complete': async (h) => {
+    const { user, codes } = await recoverableStaff(h.auth);
+    const { handle, requestId } = await openRecovery(h.auth, user, codes[0]!);
+    await approveRecovery(h.admin, requestId);
+    const ia = await adminInteraction(h.auth);
+    const options = ok(await ia.post('/v1/auth/staff-recovery/key/options', { request_handle: handle }), 'recovery key options');
+    return {
+      as: none,
+      headers: { cookie: ia.cookie },
+      body: { interaction_id: ia.id, attestation: new SoftAuthenticator('carpals.ir', 'https://admin.carpals.ir').register(options) },
+      check: (res) => {
         expect(res.body).toMatchObject({ next: 'mfa', mfa_methods: ['webauthn'] });
         expect(res.body.recovery_codes).toHaveLength(10);
       },

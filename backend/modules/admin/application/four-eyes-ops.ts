@@ -8,11 +8,14 @@
 // only (required_role platform_moderator). Contract 1.4.0 (admin console
 // BR-21): mine=true lists the caller's own requests with the decision, and an
 // executor that starts a background job records it as job_id (admin.job_get).
+// Backend S16b: an account recovered in the last 72 hours cannot approve (STAFF_RECOVERY_RESTRICTED).
 import { Injectable } from '@nestjs/common';
 import { sql } from 'kysely';
 import { writeAudit } from '#libs/audit/index.js';
+import { publishEvent } from '#libs/outbox/index.js';
 import { ApiError } from '#libs/contract/index.js';
 import { Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
+import { StaffRestrictions } from '#modules/identity/interface/identity.js';
 import { pendingChangeStaff, pendingStatus, toPendingChange, type PendingChangeRow } from '../api/projections.js';
 import { FourEyesExecutors, StaffNames, staffOf, type Staff } from '../interface/admin.js';
 import { afterId, pageOf } from './common.js';
@@ -72,12 +75,15 @@ export class FourEyesDecideHandler implements OperationHandler {
   constructor(
     private readonly executors: FourEyesExecutors,
     private readonly names: StaffNames,
+    private readonly restrictions: StaffRestrictions,
   ) {}
 
   async handle(ctx: OperationContext<{ decision: 'approve' | 'reject'; reason: string }>): Promise<OperationResult> {
     const s = staffOf(ctx);
     const b = ctx.body;
     const body = await ctx.tx(async (scope) => {
+      // S16b (DQ-04): a recovered account approves nothing for 72 hours; rejecting stays possible.
+      if (b.decision === 'approve') await this.restrictions.assertNotRestricted(scope, s.userId);
       const c = (await scope.db
         .selectFrom('admin.pending_admin_changes')
         .selectAll()
@@ -128,6 +134,13 @@ export class FourEyesDecideHandler implements OperationHandler {
         reason: b.reason,
         previous: `${c.op_id} requested by ${c.requested_by}: ${c.reason}`.slice(0, 2000),
         next: `${row.status} by ${s.userId} (change ${c.id})`,
+      });
+      // S17 (BR-21): the requester gets an in-app staff notice with the outcome.
+      await publishEvent(scope, {
+        type: 'four_eyes.decided',
+        aggregateType: 'pending_change',
+        aggregateId: c.id,
+        payload: { requested_by: c.requested_by, status: row.status, op_id: c.op_id },
       });
       return toPendingChange(row, await this.names.names(scope, pendingChangeStaff(row), ctx.locale));
     });

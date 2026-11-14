@@ -7,7 +7,9 @@ import type { Category, Channel } from './preferences.js';
 export type Audience =
   | { kind: 'users'; ids: string[] }
   | { kind: 'members'; orgId: string; roles: string[] }
-  | { kind: 'followers'; orgId: string; preferences: ('all' | 'important_only')[] };
+  | { kind: 'followers'; orgId: string; preferences: ('all' | 'important_only')[] }
+  /** Active platform staff with one of `roles` (S17 staff notices), without `except`. */
+  | { kind: 'staff'; roles: string[]; except: string | null };
 
 export interface Intent {
   audience: Audience;
@@ -74,6 +76,12 @@ export const ROUTED_EVENTS = [
   'vehicle.transfer.requested',
   'vehicle.transfer.decided',
   'fleet.vehicle_data.shared',
+  // S17: staff notices on the admin plane (four-eyes outcome, AI kill switch, staff account security)
+  'four_eyes.decided',
+  'feature_flag.changed',
+  'staff.recovery_requested',
+  'staff.recovery_completed',
+  'staff.break_glass',
 ] as const;
 
 const PROVIDER_MEMBERS = ['provider_owner', 'provider_manager', 'provider_staff'];
@@ -588,6 +596,96 @@ export function routeS8(e: RoutedEvent): Intent[] {
       ];
     }
     default:
+      return routeStaff(e);
+  }
+}
+
+/** Template params of staff notices are plain values; the console renders them from its own dictionary. */
+const ADMINS = ['platform_admin'];
+const KILL_SWITCH_KEY = 'ai.automation.kill_switch';
+
+function staffNotice(
+  audience: Audience,
+  eventType: 'four_eyes_outcome' | 'staff_security_alert' | 'ai_kill_switch_changed',
+  template: string,
+  params: Intent['params'],
+  reference: Intent['reference'],
+  priority: Intent['priority'],
+): Intent {
+  // In-app only: the console lists them (admin.notifications_list); the emails of S16a/S16b stay where they were.
+  return {
+    audience,
+    event_type: eventType,
+    category: 'system',
+    priority,
+    template_key: template,
+    params,
+    reference,
+    organization_context_id: null,
+    channels: ['in_app'],
+  };
+}
+
+/** S17 routes: staff notices (BR-21 four-eyes outcome, BR-26 kill switch, S16a-D6 and S16b-D2 staff security). */
+export function routeStaff(e: RoutedEvent): Intent[] {
+  const p = e.payload;
+  switch (e.type) {
+    case 'four_eyes.decided': {
+      const requester = str(p.requested_by);
+      const status = str(p.status);
+      if (!requester || !status || !['approved', 'rejected', 'expired'].includes(status)) return [];
+      return [
+        staffNotice(
+          { kind: 'users', ids: [requester] },
+          'four_eyes_outcome',
+          'staff.four_eyes_outcome',
+          { op_id: str(p.op_id) ?? 'change', status },
+          { type: 'pending_change', id: e.aggregateId },
+          'normal',
+        ),
+      ];
+    }
+    case 'feature_flag.changed': {
+      if (p.key !== KILL_SWITCH_KEY || typeof p.enabled !== 'boolean') return [];
+      return [
+        staffNotice(
+          { kind: 'staff', roles: ADMINS, except: null },
+          'ai_kill_switch_changed',
+          'staff.kill_switch_changed',
+          { enabled: p.enabled ? 'on' : 'off' },
+          { type: 'feature_flag', id: e.aggregateId },
+          'critical',
+        ),
+      ];
+    }
+    case 'staff.recovery_requested':
+    case 'staff.recovery_completed':
+    case 'staff.break_glass': {
+      const member = str(p.user_id);
+      if (!member) return [];
+      const template =
+        e.type === 'staff.recovery_requested'
+          ? 'staff.recovery_waiting'
+          : e.type === 'staff.recovery_completed'
+            ? 'staff.recovery_done'
+            : 'staff.break_glass_notice';
+      return [
+        staffNotice(
+          { kind: 'staff', roles: ADMINS, except: member },
+          'staff_security_alert',
+          template,
+          { staff_name: str(p.staff_name) ?? '' },
+          e.type === 'staff.break_glass' ? { type: 'user_account', id: member } : { type: 'staff_recovery_request', id: e.aggregateId },
+          'critical',
+        ),
+      ];
+    }
+    default:
       return [];
   }
 }
+
+/** Event types of the S17 staff notices: never listed on the api host (40 §20.2 notifications.list). */
+export const STAFF_ONLY_EVENT_TYPES = ['four_eyes_outcome', 'staff_security_alert', 'ai_kill_switch_changed'] as const;
+/** Event types admin.notifications_list shows (also the DSR deadline and reviewer queue notices). */
+export const STAFF_EVENT_TYPES = [...STAFF_ONLY_EVENT_TYPES, 'moderation_alert', 'review_awaiting_approval'] as const;

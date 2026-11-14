@@ -23,6 +23,13 @@ import {
   TokenHandler,
   WebAuthnOptionsHandler,
 } from './application/auth-ops.js';
+import {
+  StaffRecoveryCompleteHandler,
+  StaffRecoveryCompleteOptionsHandler,
+  StaffRecoveryStartHandler,
+  StaffRecoveryStatusHandler,
+  StaffRecoveryVerifyHandler,
+} from './application/staff-recovery.js';
 import { WebAuthnService } from './application/webauthn.js';
 import { AuthServer } from './application/auth-server.js';
 
@@ -44,6 +51,11 @@ import { AuthServer } from './application/auth-server.js';
     MfaVerifyHandler,
     PasskeyEnrolOptionsHandler,
     PasskeyEnrolHandler,
+    StaffRecoveryStartHandler,
+    StaffRecoveryVerifyHandler,
+    StaffRecoveryStatusHandler,
+    StaffRecoveryCompleteOptionsHandler,
+    StaffRecoveryCompleteHandler,
     ReactivateHandler,
     EmailVerifyHandler,
     PasswordResetStartHandler,

@@ -21,7 +21,8 @@ export type FieldErrorCode =
   | 'conditional_forbidden'
   | 'in_past'
   | 'in_future'
-  | 'order';
+  | 'order'
+  | 'unknown_placeholder';
 
 /** 40 §4.2 FieldError: an RFC 6901 pointer into the request body (or "/query/<name>"). */
 export interface FieldError {

@@ -1,8 +1,9 @@
 // Staff accounts without the admin console (backend S12; admin console OQ-10 and BR-05).
 //
 // bootstrap: the first run of a deployment creates, if they do not exist, as many base staff accounts as the pilot
-// needs (at least two ADM, because every ADM-only four-eyes change needs a second ADM, one MOD and one CRV; SUP is
-// optional). It never changes an existing account: a staff member who exists is reported, and later role changes go
+// needs (four ADM per owner decision DQ-16: three main administrators and one backup administrator whose holder and
+// credentials are not disclosed, so that four-eyes changes and the recovery of an ADM (two other ADM approve) work even
+// when one administrator is away; one MOD and one CRV; SUP is optional). It never changes an existing account: a staff member who exists is reported, and later role changes go
 // through admin.platform_role_grant with a second approver (4EYES). It runs in every environment; outside dev the
 // accounts come from a spec file and get a generated one-time password that is printed once.
 //
@@ -33,10 +34,14 @@ export const ROLE_CODES = {
 export type RoleCode = keyof typeof ROLE_CODES;
 const CODE_OF = Object.fromEntries(Object.entries(ROLE_CODES).map(([code, role]) => [role, code])) as Record<string, RoleCode>;
 
-/** Pilot minimum (admin console OQ-10): two ADM for ADM-only four-eyes changes, one MOD, one CRV for Path 2 reviews. */
-export const MINIMUM: Readonly<Record<RoleCode, number>> = { ADM: 2, MOD: 1, CRV: 1, SUP: 0 };
+/**
+ * Pilot minimum (admin console OQ-10, owner decision DQ-16): four ADM (three main administrators and one undisclosed
+ * backup administrator: four-eyes changes need a second ADM, an ADM recovery needs two other ADM), one MOD, one CRV for
+ * Path 2 reviews.
+ */
+export const MINIMUM: Readonly<Record<RoleCode, number>> = { ADM: 4, MOD: 1, CRV: 1, SUP: 0 };
 
-/** Development accounts: one per role plus a second ADM (admin console BR-05), all with the same password. */
+/** Development accounts: one per role plus the pilot's four ADM (DQ-16; admin console BR-05), all with the same password. */
 export const DEV_STAFF_PASSWORD = 'carpal-staff-dev-password';
 export const DEV_STAFF: readonly StaffSpec[] = [
   { email: 'adm1@staff.carpals.test', name: 'Dev Admin One', roles: ['ADM'] },
@@ -44,6 +49,8 @@ export const DEV_STAFF: readonly StaffSpec[] = [
   { email: 'mod1@staff.carpals.test', name: 'Dev Moderator', roles: ['MOD'] },
   { email: 'crv1@staff.carpals.test', name: 'Dev Community Reviewer', roles: ['CRV'] },
   { email: 'sup1@staff.carpals.test', name: 'Dev Support', roles: ['SUP'] },
+  { email: 'adm3@staff.carpals.test', name: 'Dev Admin Three', roles: ['ADM'] },
+  { email: 'adm-backup@staff.carpals.test', name: 'Dev Backup Admin', roles: ['ADM'] },
 ];
 
 /** Recorded as the accepted terms and privacy versions: staff did not accept the consumer texts by signing up. */

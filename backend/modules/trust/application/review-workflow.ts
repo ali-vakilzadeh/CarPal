@@ -7,13 +7,15 @@
 //     confirmation (or no_response) and a CarPal reviewer (S8 admin plane;
 //     the database check reviews_path2_publish_rule enforces it too).
 //   - appointment.completed / inquiry.status_changed (completed): the system
-//     invitation to the requester (in-app, 7 days).
+//     invitation to the requester (in-app, 7 days); an appointment's waits for
+//     the invitation delay of the notification rules (S17, A-NOTIF-01) and is
+//     then sent by the 15-minute sweep.
 //   - W15 rules: Path 2 business deadline → no_response (every 5 min),
-//     invitation reminders and expiry plus invitations for appointments that
+//     invitation reminders (days of the notification rules) and expiry plus invitations for appointments that
 //     took place without being closed (every 15 min), and the nightly trust
 //     recomputation (W3 sweep, staleness).
 //   - community.reaction.changed (review, helpful) keeps helpful_count.
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { sql } from 'kysely';
 import type { EventEnvelope } from '#libs/infra/index.js';
 import { ScheduledRule } from '#libs/jobs/index.js';
@@ -21,8 +23,13 @@ import { EventConsumer, publishEvent } from '#libs/outbox/index.js';
 import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
 import { AppointmentFacts, type AppointmentVisit } from '#modules/appointment/interface/appointments.js';
 import { InventoryRead } from '#modules/inventory/interface/inventory.js';
+import {
+  DEFAULT_NOTIFICATION_RULES,
+  NotificationRulesRead,
+  type NotificationRulesValues,
+} from '#modules/notification/interface/notification-rules.js';
 import { PublicProfiles } from '#modules/organization/interface/public-profiles.js';
-import { autoCheck, REMINDER_AFTER_MS } from '../domain/reviews.js';
+import { autoCheck } from '../domain/reviews.js';
 import { reviewTrustWeight } from '../domain/scoring.js';
 import { Invitations } from './invitation-ops.js';
 import { tookPlace } from './review-ops.js';
@@ -35,7 +42,13 @@ export class ReviewWorkflow {
     private readonly invitations: Invitations,
     private readonly appointments: AppointmentFacts,
     private readonly inventory: InventoryRead,
+    @Optional() private readonly rules?: NotificationRulesRead,
   ) {}
+
+  /** Invitation delay and reminder days (A-NOTIF-01 Rules; the defaults when the notification module is absent). */
+  notificationRules(scope: TxScope): Promise<NotificationRulesValues> {
+    return this.rules ? this.rules.get(scope) : Promise.resolve(DEFAULT_NOTIFICATION_RULES);
+  }
 
   /** Automatic checks of a Path 1 review waiting in pending_moderation; returns true when published. */
   async check(reviewId: string, requestId?: string): Promise<boolean> {
@@ -73,9 +86,13 @@ export class ReviewWorkflow {
   }
 
   /** The system invitation after a visit (52 ReviewRequest: invited_by null, in-app, 7 days). */
-  async inviteForAppointment(scope: TxScope, a: AppointmentVisit): Promise<boolean> {
+  async inviteForAppointment(scope: TxScope, a: AppointmentVisit, now = Date.now()): Promise<boolean> {
     // Fleet appointments are reviewed through the fleet workflow (fleet_confirmed, S8).
     if (a.requesterType !== 'user') return false;
+    // S17: the invitation delay after the visit (the 15-minute sweep sends it once it has passed).
+    const at = tookPlace(a, now);
+    const delayMs = (await this.notificationRules(scope)).invitationDelayMinutes * 60_000;
+    if (!at || at.getTime() + delayMs > now) return false;
     const existing = await scope.db
       .selectFrom('trust.review_requests')
       .select('id')
@@ -254,7 +271,7 @@ export class ApprovalDeadlineRule extends ScheduledRule {
   }
 }
 
-/** Invitation reminders (≤ 2, while valid), expiry, and invitations for visits that took place without being closed. */
+/** Invitation reminders (0-3 on the days of the notification rules, while valid), expiry, and invitations for visits that took place without being closed. */
 @Injectable()
 export class InvitationRule extends ScheduledRule {
   readonly name = 'trust.invitations';
@@ -280,18 +297,19 @@ export class InvitationRule extends ScheduledRule {
         .returning('id')
         .execute();
       n += expired.length;
+      const reminderAfterMs = (await this.workflow.notificationRules(scope)).reminderDays.map((d) => d * 86_400_000);
       const due = await scope.db
         .selectFrom('trust.review_requests')
         .select(['id', 'subject_organization_id', 'invited_user_id', 'reminder_count', 'sent_at'])
         .where('status', 'in', ['sent', 'reminded'])
         .where('invited_user_id', 'is not', null)
         .where('expires_at', '>', now)
-        .where('reminder_count', '<', REMINDER_AFTER_MS.length)
+        .where('reminder_count', '<', reminderAfterMs.length)
         .where('deleted_at', 'is', null)
         .limit(1000)
         .execute();
       for (const r of due) {
-        const after = REMINDER_AFTER_MS[Number(r.reminder_count)]!;
+        const after = reminderAfterMs[Number(r.reminder_count)]!;
         if (new Date(r.sent_at!).getTime() + after > now.getTime()) continue;
         await scope.db
           .updateTable('trust.review_requests')
@@ -311,7 +329,8 @@ export class InvitationRule extends ScheduledRule {
     const visits = await this.tx.run({ actorType: 'system' }, (scope) =>
       this.appointments.tookPlaceSince(scope, new Date(now.getTime() - 8 * 86_400_000), now, 500),
     );
-    for (const a of visits) if (await this.tx.run({ actorType: 'system' }, (scope) => this.workflow.inviteForAppointment(scope, a))) n++;
+    for (const a of visits)
+      if (await this.tx.run({ actorType: 'system' }, (scope) => this.workflow.inviteForAppointment(scope, a, now.getTime()))) n++;
     return n;
   }
 }

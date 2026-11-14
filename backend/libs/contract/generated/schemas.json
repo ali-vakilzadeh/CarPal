@@ -2193,7 +2193,7 @@
         "next"
       ],
       "additionalProperties": false,
-      "description": "C: only in the auth.passkey_enrol answer, once (staff recovery codes, SEC-ADM-2)"
+      "description": "C: only in the auth.passkey_enrol and auth.staff_recovery_complete answers, once (staff recovery codes, SEC-ADM-2)"
     },
     "AvailabilityRule": {
       "type": "object",
@@ -4614,8 +4614,10 @@
         "conditional_forbidden",
         "in_past",
         "in_future",
-        "order"
-      ]
+        "order",
+        "unknown_placeholder"
+      ],
+      "description": "a {name} in a template text that the template does not offer (admin.notif_template_update)"
     },
     "FilterImpact": {
       "type": "object",
@@ -10091,8 +10093,12 @@
         "moderation_update",
         "system_announcement",
         "marketing",
-        "review_awaiting_approval"
-      ]
+        "review_awaiting_approval",
+        "four_eyes_outcome",
+        "staff_security_alert",
+        "ai_kill_switch_changed"
+      ],
+      "description": "staff notices (backend S17): admin plane only"
     },
     "NotificationPreference": {
       "type": "object",
@@ -10120,6 +10126,334 @@
         "category",
         "enabled",
         "frequency"
+      ],
+      "additionalProperties": false
+    },
+    "NotificationRules": {
+      "type": "object",
+      "properties": {
+        "review_invitation_delay_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2880,
+          "description": "after an appointment's completion; 0: at once"
+        },
+        "review_invitation_reminder_days": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "maxItems": 3,
+          "description": "days after sending, strictly ascending; 0-3 reminders while the 7-day link is valid"
+        },
+        "default_quiet_hours": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/QuietHours"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "for accounts without their own quiet hours; on the recipient's clock"
+        },
+        "digest_hour": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 23,
+          "description": "daily digests go out at this hour on the recipient's clock"
+        },
+        "weekly_digest_day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7,
+          "description": "ISO weekday of weekly digests (1 Monday)"
+        },
+        "updated_by_display": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updated_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      },
+      "required": [
+        "review_invitation_delay_minutes",
+        "review_invitation_reminder_days",
+        "default_quiet_hours",
+        "digest_hour",
+        "weekly_digest_day",
+        "updated_by_display",
+        "updated_at",
+        "version"
+      ],
+      "additionalProperties": false,
+      "description": "If-Match of admin.notif_rules_update"
+    },
+    "NotificationRulesWrite": {
+      "type": "object",
+      "properties": {
+        "review_invitation_delay_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2880,
+          "description": "after an appointment's completion; 0: at once"
+        },
+        "review_invitation_reminder_days": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "maxItems": 3,
+          "description": "days after sending, strictly ascending; 0-3 reminders while the 7-day link is valid"
+        },
+        "default_quiet_hours": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/QuietHours"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "for accounts without their own quiet hours; on the recipient's clock"
+        },
+        "digest_hour": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 23,
+          "description": "daily digests go out at this hour on the recipient's clock"
+        },
+        "weekly_digest_day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7,
+          "description": "ISO weekday of weekly digests (1 Monday)"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "required": [
+        "review_invitation_delay_minutes",
+        "review_invitation_reminder_days",
+        "default_quiet_hours",
+        "digest_hour",
+        "weekly_digest_day",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "NotificationTemplate": {
+      "type": "object",
+      "properties": {
+        "template_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "channel": {
+          "$ref": "#/$defs/NotificationTemplateChannel"
+        },
+        "locale": {
+          "type": "string",
+          "enum": [
+            "en",
+            "fa"
+          ],
+          "x-locale-config": true
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "notification",
+            "transactional"
+          ],
+          "description": "transactional: links, codes, invitations and account security mails"
+        },
+        "always_delivered": {
+          "type": "boolean",
+          "description": "a critical alert: no user opt-out"
+        },
+        "editable": {
+          "type": "boolean",
+          "description": "false for transactional and always_delivered texts (DQ-05)"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "code",
+            "override"
+          ],
+          "description": "override: staff text; code: the built-in text (the fallback)"
+        },
+        "subject": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "email subject or push title; null for SMS"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "pattern": "^[^\\r\\n]*$"
+          },
+          "maxItems": 20,
+          "description": "the {name} placeholders the text may use"
+        },
+        "missing_translation": {
+          "type": "boolean",
+          "description": "this language has no text of its own (none, or a copy of the other language)"
+        },
+        "translation_outdated": {
+          "type": "boolean",
+          "description": "the other language has an override and this one does not"
+        },
+        "updated_by_display": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "of the override"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "template_key",
+        "channel",
+        "locale",
+        "kind",
+        "always_delivered",
+        "editable",
+        "source",
+        "subject",
+        "body",
+        "variables",
+        "missing_translation",
+        "translation_outdated",
+        "updated_by_display",
+        "updated_at",
+        "version"
+      ],
+      "additionalProperties": false,
+      "description": "the override's If-Match; null for the code text"
+    },
+    "NotificationTemplateChannel": {
+      "type": "string",
+      "enum": [
+        "email",
+        "push",
+        "sms"
+      ],
+      "description": "in-app texts are the clients' UI dictionary (§20.1)"
+    },
+    "NotificationTemplateWrite": {
+      "type": "object",
+      "properties": {
+        "channel": {
+          "$ref": "#/$defs/NotificationTemplateChannel"
+        },
+        "locale": {
+          "type": "string",
+          "enum": [
+            "en",
+            "fa"
+          ],
+          "x-locale-config": true
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\\r\\n]*$",
+          "x-conditional": "required for email and push, forbidden for sms",
+          "description": "C: required for email and push, forbidden for sms"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "required": [
+        "channel",
+        "locale",
+        "body",
+        "reason"
       ],
       "additionalProperties": false
     },
@@ -19907,7 +20241,19 @@
         "recovery_codes_remaining": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 10
+          "maximum": 10,
+          "description": "unused recovery codes; 0: ask the member to create a set"
+        },
+        "restricted_until": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -19920,10 +20266,11 @@
         "acr",
         "auth_time",
         "session_expires_at",
-        "recovery_codes_remaining"
+        "recovery_codes_remaining",
+        "restricted_until"
       ],
       "additionalProperties": false,
-      "description": "unused recovery codes; 0: ask the member to create a set"
+      "description": "after an account recovery: no approvals, role changes or staff enables until then"
     },
     "StaffMember": {
       "type": "object",
@@ -20772,6 +21119,234 @@
         "published_at"
       ],
       "additionalProperties": false
+    },
+    "StaffRecoveryDecision": {
+      "type": "object",
+      "properties": {
+        "decided_by_display": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "approve",
+            "reject"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "verification_method": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "phone_known_number",
+            "in_person",
+            "video_call",
+            "other",
+            null
+          ],
+          "description": "null on a rejection"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "decided_by_display",
+        "decision",
+        "reason",
+        "verification_method",
+        "note",
+        "decided_at"
+      ],
+      "additionalProperties": false
+    },
+    "StaffRecoveryRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "user_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "email_masked": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "platform_roles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "platform_admin",
+              "platform_moderator",
+              "platform_support",
+              "platform_community_reviewer"
+            ]
+          },
+          "maxItems": 4
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "awaiting_approvals",
+            "approved",
+            "rejected",
+            "expired",
+            "completed"
+          ]
+        },
+        "password_forgotten": {
+          "type": "boolean"
+        },
+        "requested_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "expires_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "ip_country": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "of the request, when known"
+        },
+        "approvals": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "approved_by_me": {
+          "type": "boolean"
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StaffRecoveryDecision"
+          },
+          "maxItems": 20,
+          "description": "approvals and the rejection, oldest first"
+        },
+        "completed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "restricted_until": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "user_id",
+        "display_name",
+        "email_masked",
+        "platform_roles",
+        "status",
+        "password_forgotten",
+        "requested_at",
+        "expires_at",
+        "ip_country",
+        "approvals",
+        "approved_by_me",
+        "decisions",
+        "completed_at",
+        "restricted_until"
+      ],
+      "additionalProperties": false,
+      "description": "never codes, handles or contact data"
+    },
+    "StaffRecoveryStatus": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "awaiting_approvals",
+            "approved",
+            "rejected",
+            "expired",
+            "completed"
+          ]
+        },
+        "password_forgotten": {
+          "type": "boolean",
+          "description": "true: auth.staff_recovery_complete_options asks for a new password"
+        },
+        "approvals": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "expires_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "status",
+        "password_forgotten",
+        "approvals",
+        "expires_at"
+      ],
+      "additionalProperties": false,
+      "description": "two approvals by different administrators make it approved"
     },
     "StaffReport": {
       "type": "object",

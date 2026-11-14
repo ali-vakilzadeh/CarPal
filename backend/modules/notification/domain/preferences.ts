@@ -72,6 +72,37 @@ export function channelsFor(o: {
   return out;
 }
 
+const WEEKDAYS: Record<string, number> = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+
+/** Hour (0-23) and ISO weekday (1 Monday … 7 Sunday) on the recipient's clock. */
+export function localClock(now: Date, timeZone: string): { hour: number; weekday: number } {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone, hour: '2-digit', weekday: 'short', hourCycle: 'h23' }).formatToParts(now);
+  return {
+    hour: Number(parts.find((p) => p.type === 'hour')?.value) % 24,
+    weekday: WEEKDAYS[parts.find((p) => p.type === 'weekday')?.value ?? 'Mon'] ?? 1,
+  };
+}
+
+/**
+ * Whether a recipient's email digest goes out now (52 NotificationRules, backend S17): daily ones at the digest hour
+ * on the recipient's clock, weekly ones at that hour on the weekly day; never later than a day (daily) or a week
+ * (weekly) after the oldest message, so a missed run does not hold a digest for another cycle.
+ */
+export function digestDue(o: {
+  now: Date;
+  timeZone: string;
+  oldest: Date;
+  weekly: boolean;
+  digestHour: number;
+  weeklyDigestDay: number;
+}): boolean {
+  const age = o.now.getTime() - o.oldest.getTime();
+  if (age >= (o.weekly ? 7 : 1) * 86_400_000) return true;
+  if (age < 0) return false;
+  const c = localClock(o.now, o.timeZone);
+  return c.hour === o.digestHour && (!o.weekly || c.weekday === o.weeklyDigestDay);
+}
+
 const minutes = (hhmm: string): number => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
 
 /**

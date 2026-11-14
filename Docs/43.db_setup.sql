@@ -1003,6 +1003,59 @@ CREATE INDEX staff_recovery_codes_open_idx ON identity.staff_recovery_codes (use
 COMMENT ON TABLE identity.staff_recovery_codes IS
   '52 StaffRecoveryCode — keyed hashes of a staff account''s single-use recovery codes (backend S16a, DQ-04)';
 
+-- Staff account recovery (backend S16b, DQ-04): a request opened on the auth host after a lost security key, approved
+-- by two other administrators on the admin plane. One open request per account; 24 hours to live; a completed one
+-- restricts the account for 72 hours.
+CREATE TABLE identity.staff_recovery_requests (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  user_id            uuid NOT NULL REFERENCES identity.user_accounts (id),
+  status             text NOT NULL DEFAULT 'awaiting_email_code' CHECK (status IN
+                       ('awaiting_email_code','awaiting_approvals','approved','rejected','expired','completed')),
+  password_forgotten boolean NOT NULL,
+  handle_hash        text NOT NULL UNIQUE CHECK (handle_hash ~ '^[0-9a-f]{64}$'),
+  ip_country         text CHECK (ip_country ~ '^[A-Z]{2}$'),
+  expires_at         timestamptz NOT NULL,
+  email_verified_at  timestamptz,
+  approved_at        timestamptz,
+  rejected_at        timestamptz,
+  expired_at         timestamptz,
+  completed_at       timestamptz,
+  restricted_until   timestamptz,
+  CHECK (expires_at > created_at),
+  CHECK (status <> 'completed' OR (completed_at IS NOT NULL AND restricted_until IS NOT NULL))
+);
+CREATE UNIQUE INDEX staff_recovery_requests_open_uq ON identity.staff_recovery_requests (user_id)
+  WHERE status IN ('awaiting_email_code','awaiting_approvals','approved') AND deleted_at IS NULL;
+CREATE INDEX staff_recovery_requests_status_idx ON identity.staff_recovery_requests (status, id);
+CREATE INDEX staff_recovery_requests_restricted_idx ON identity.staff_recovery_requests (user_id, restricted_until)
+  WHERE restricted_until IS NOT NULL;
+COMMENT ON TABLE identity.staff_recovery_requests IS
+  '52 StaffRecoveryRequest — a staff account recovery after a lost security key (backend S16b, DQ-04)';
+
+CREATE TABLE identity.staff_recovery_approvals (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  request_id          uuid NOT NULL REFERENCES identity.staff_recovery_requests (id),
+  approver_id         uuid NOT NULL REFERENCES identity.user_accounts (id),
+  decision            text NOT NULL CHECK (decision IN ('approve','reject')),
+  reason              text NOT NULL CHECK (char_length(reason) BETWEEN 3 AND 500),
+  verification_method text CHECK (verification_method IN ('phone_known_number','in_person','video_call','other')),
+  note                text CHECK (char_length(note) BETWEEN 1 AND 500),
+  decided_at          timestamptz NOT NULL DEFAULT now(),
+  CHECK ((decision = 'approve') = (verification_method IS NOT NULL)),
+  CHECK (verification_method IS DISTINCT FROM 'other' OR note IS NOT NULL)
+);
+CREATE UNIQUE INDEX staff_recovery_approvals_once_uq ON identity.staff_recovery_approvals (request_id, approver_id)
+  WHERE decision = 'approve' AND deleted_at IS NULL;
+CREATE INDEX staff_recovery_approvals_request_idx ON identity.staff_recovery_approvals (request_id);
+COMMENT ON TABLE identity.staff_recovery_approvals IS
+  '52 StaffRecoveryApproval — an administrator''s approval or rejection of a staff recovery request (backend S16b)';
+
 -- Every new account gets its preferences and the implicit individual role (52 §4).
 CREATE FUNCTION identity.tg_user_bootstrap() RETURNS trigger
 LANGUAGE plpgsql
@@ -3754,7 +3807,8 @@ CREATE TABLE notification.notifications (
     'review_approval_needed','review_response_draft_ready','ai_skill_insight_ready','customer_message','moderation_alert',
     'profile_suggestion','inquiry_received','inventory_import_finished','ai_fitment_suggestion','low_data_quality_alert',
     'driver_issue_reported','fleet_approval_needed','repair_completed','vehicle_due_for_service','monthly_report_ready',
-    'moderation_update','system_announcement','marketing','review_awaiting_approval')),
+    'moderation_update','system_announcement','marketing','review_awaiting_approval',
+    'four_eyes_outcome','staff_security_alert','ai_kill_switch_changed')),   -- staff notices (backend S17)
   category                core.notification_category NOT NULL,
   priority                text NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal','critical')),
   template_key            text NOT NULL CHECK (template_key ~ '^[a-z0-9_.]{1,120}$'),
@@ -3823,6 +3877,48 @@ CREATE TABLE notification.notification_preferences (
   UNIQUE (user_id, channel, category)
 );
 COMMENT ON TABLE notification.notification_preferences IS '52 NotificationPreference — critical alerts are always delivered in-app';
+
+-- Backend S17 (A-NOTIF-01, BR-11, owner decision DQ-05): staff overrides of the code templates
+-- (modules/notification/domain/templates.ts stay the fallback) and the platform's notification rules.
+CREATE TABLE notification.notification_template_overrides (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  template_key text NOT NULL CHECK (template_key ~ '^[a-z0-9_.]{1,120}$'),
+  channel      core.notification_channel NOT NULL CHECK (channel IN ('email','push','sms')),
+  locale       core.locale NOT NULL,
+  subject      text CHECK (char_length(subject) BETWEEN 1 AND 200),   -- email subject or push title
+  body         text NOT NULL CHECK (char_length(body) BETWEEN 1 AND 4000),
+  reason       text NOT NULL CHECK (char_length(reason) BETWEEN 3 AND 500),
+  CHECK ((channel = 'sms') = (subject IS NULL))
+);
+-- One live override per template, channel and language; a reset soft-deletes it (the code text applies again).
+CREATE UNIQUE INDEX notification_template_overrides_uq ON notification.notification_template_overrides (template_key, channel, locale)
+  WHERE deleted_at IS NULL;
+COMMENT ON TABLE notification.notification_template_overrides IS
+  '52 NotificationTemplateOverride — staff text of a code template per channel and language (backend S17)';
+
+CREATE TABLE notification.notification_rules (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  rule_set                        text NOT NULL DEFAULT 'default' UNIQUE CHECK (rule_set = 'default'),   -- one row
+  review_invitation_delay_minutes integer NOT NULL DEFAULT 0 CHECK (review_invitation_delay_minutes BETWEEN 0 AND 2880),
+  review_invitation_reminder_days integer[] NOT NULL DEFAULT '{2,5}' CHECK (
+    cardinality(review_invitation_reminder_days) <= 3 AND array_position(review_invitation_reminder_days, NULL) IS NULL
+    AND 1 <= ALL (review_invitation_reminder_days) AND 6 >= ALL (review_invitation_reminder_days)),
+  default_quiet_hours_start       text CHECK (default_quiet_hours_start ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'),
+  default_quiet_hours_end         text CHECK (default_quiet_hours_end ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'),
+  digest_hour                     integer NOT NULL DEFAULT 9 CHECK (digest_hour BETWEEN 0 AND 23),
+  weekly_digest_day               integer NOT NULL DEFAULT 6 CHECK (weekly_digest_day BETWEEN 1 AND 7),   -- ISO: 1 Monday, 6 Saturday
+  reason                          text CHECK (char_length(reason) BETWEEN 3 AND 500),
+  CHECK ((default_quiet_hours_start IS NULL) = (default_quiet_hours_end IS NULL)),
+  CHECK (default_quiet_hours_start IS DISTINCT FROM default_quiet_hours_end OR default_quiet_hours_start IS NULL)
+);
+COMMENT ON TABLE notification.notification_rules IS
+  '52 NotificationRules — invitation timing, reminders, default quiet hours and digest schedule (backend S17)';
 
 \echo '== 18. admin (WP15)'
 
@@ -4949,6 +5045,8 @@ GRANT DELETE ON community.reactions TO carpal_api;                 -- reactions.
 -- The public API never reads pseudonym keys, MCP registry internals or access logs.
 REVOKE ALL ON analytics.actor_pseudonyms FROM carpal_api, carpal_admin_api;
 REVOKE ALL ON identity.staff_recovery_codes FROM carpal_api;      -- staff recovery codes: auth host and admin plane only
+REVOKE ALL ON identity.staff_recovery_requests, identity.staff_recovery_approvals FROM carpal_api;   -- staff recovery (S16b)
+REVOKE ALL ON notification.notification_template_overrides, notification.notification_rules FROM carpal_api;   -- S17: admin plane and workers
 REVOKE INSERT, UPDATE ON ai_mcp.mcp_clients, ai_mcp.mcp_access_logs, ai_mcp.embeddings FROM carpal_api;
 
 -- Auth server: identity only, plus audit and outbox.
@@ -5151,6 +5249,10 @@ SELECT core.system_actor_id(), d.id, '1.0',
                ('community_guidelines', 'Community Guidelines', 'رهنمودهای انجمن')) AS t (policy_key, title_en, title_fa)
     ON t.policy_key = d.policy_key
  WHERE d.region_key = 'ir-pilot';
+
+-- Notification rules (backend S17): the values the code used before S17 (no invitation delay, reminders 2 and 5 days
+-- after sending, no platform quiet hours); digests at 09:00 on the recipient's clock, weekly ones on Saturday.
+INSERT INTO notification.notification_rules (created_by, rule_set) VALUES (core.system_actor_id(), 'default');
 
 INSERT INTO admin.feature_flags (created_by, key, description, flag_type, enabled, environment)
 SELECT core.system_actor_id(), f.key, f.description, f.flag_type,

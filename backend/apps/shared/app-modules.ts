@@ -28,6 +28,7 @@ import { InventoryWorkerModule } from '#modules/inventory/inventory-worker.modul
 import { InventoryModule } from '#modules/inventory/inventory.module.js';
 import { MediaApiModule } from '#modules/media/media-api.module.js';
 import { MediaModule } from '#modules/media/media.module.js';
+import { NotificationAdminModule } from '#modules/notification/notification-admin.module.js';
 import { NotificationApiModule } from '#modules/notification/notification-api.module.js';
 import { NotificationMessagingModule } from '#modules/notification/notification-messaging.module.js';
 import { NotificationModule } from '#modules/notification/notification.module.js';
@@ -126,7 +127,14 @@ export const apiAppModule = (o: AppOptions): DynamicModule =>
 
 /** D3 admin API: the same modules with the admin plane ({adm}) routes only. */
 export const adminApiAppModule = (o: AppOptions): DynamicModule =>
-  root('admin-api', o, [...DOMAIN_MODULES, AdminApiModule, IdentityAdminModule, TrustAdminModule, OrganizationAdminModule]);
+  root('admin-api', o, [
+    ...DOMAIN_MODULES,
+    AdminApiModule,
+    IdentityAdminModule,
+    TrustAdminModule,
+    OrganizationAdminModule,
+    NotificationAdminModule,
+  ]);
 
 /** D1 auth server: identity account logic behind /oauth/*, /v1/auth/*, /.well-known/* (carpal_auth: identity schema only). */
 export const authAppModule = (o: AppOptions): DynamicModule =>

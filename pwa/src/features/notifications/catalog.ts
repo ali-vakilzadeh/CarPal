@@ -47,6 +47,13 @@ export const BUSINESS_TEMPLATE_KEYS = [
   'organization.verified',
   'organization.location_corrected',
   'admin.dsr_deadline',
+  // Staff only (backend S17, contract 1.4.0): staff notices listed on the admin plane (admin.notifications_list);
+  // notifications.list never returns them.
+  'staff.four_eyes_outcome',
+  'staff.kill_switch_changed',
+  'staff.recovery_waiting',
+  'staff.recovery_done',
+  'staff.break_glass_notice',
 ] as const;
 
 /** Sent by email or SMS only (links, codes, invitations, digests): never an in-app notification (BA-18). */
@@ -64,6 +71,13 @@ export const MESSAGE_ONLY_TEMPLATE_KEYS = [
   'identity.staff_recovery_codes_created',
   'identity.staff_break_glass_account',
   'identity.staff_break_glass_admins',
+  // Staff only (backend S16b, contract 1.4.0): account recovery with two administrator approvals.
+  'identity.staff_recovery_code',
+  'identity.staff_recovery_requested_admins',
+  'identity.staff_recovery_approved',
+  'identity.staff_recovery_rejected',
+  'identity.staff_recovery_completed_account',
+  'identity.staff_recovery_completed_admins',
   'identity.consent_request',
   'organization.member_invitation',
   'appointment.check_in_link',

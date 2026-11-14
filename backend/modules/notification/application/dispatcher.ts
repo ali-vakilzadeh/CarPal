@@ -7,7 +7,9 @@
 // email, push and SMS; critical notifications skip them; email digests wait
 // for the digest rule. Business notifications go to portal (web) push tokens
 // only (52: the consumer app receives no business notifications). Runs in
-// the worker's system context.
+// the worker's system context. Since S17 the texts use the staff overrides
+// (template-catalog.ts renderWith; the code templates stay the fallback),
+// and the rules give the default quiet hours and the digest schedule.
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import { sql } from 'kysely';
 import { CryptoServices } from '#libs/crypto/index.js';
@@ -18,9 +20,11 @@ import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
 import { CommunityRead } from '#modules/community/interface/community.js';
 import { Recipients, type RecipientContact } from '#modules/identity/interface/identity.js';
 import { OrgCards } from '#modules/organization/interface/org-cards.js';
-import { channelsFor, quietUntil, type Preference } from '../domain/preferences.js';
+import { channelsFor, digestDue, quietUntil, type Preference } from '../domain/preferences.js';
 import { route, type Audience, type Intent } from '../domain/routing.js';
-import { render } from '../domain/templates.js';
+import { renderWith } from '../domain/template-catalog.js';
+import { loadOverrides } from '../infrastructure/notification-store.js';
+import { NotificationRulesRead } from '../interface/notification-rules.js';
 
 /** Envelope AAD of a stored push token. */
 export const pushTokenAad = (id: string): string => `notification.push_token:${id}`;
@@ -36,12 +40,14 @@ export class NotificationDispatcher {
     @Inject(CryptoServices) private readonly crypto: CryptoServices,
     @InjectInfra() private readonly infra: Infra,
     @InjectLogger() private readonly logger: Logger,
+    private readonly rules: NotificationRulesRead,
     @Optional() private readonly community?: CommunityRead,
   ) {}
 
   async #audience(scope: TxScope, a: Audience): Promise<string[]> {
     if (a.kind === 'users') return a.ids;
     if (a.kind === 'members') return this.recipients.members(scope, a.orgId, a.roles);
+    if (a.kind === 'staff') return (await this.recipients.staff(scope, a.roles)).filter((id) => id !== a.except);
     return this.community ? this.community.followers(scope, a.orgId, a.preferences) : [];
   }
 
@@ -81,6 +87,7 @@ export class NotificationDispatcher {
           .where('deleted_at', 'is', null)
           .execute()
       : [];
+    const defaultQuiet = (await this.rules.get(scope)).defaultQuietHours;
     const out: string[] = [];
     for (const userId of users) {
       const c = contacts.get(userId);
@@ -110,7 +117,8 @@ export class NotificationDispatcher {
         allowed: intent.channels,
       });
       // Quiet hours hold push and SMS; in-app and critical notifications never wait (52 UserPreference).
-      const heldUntil = intent.priority === 'critical' ? null : quietUntil(new Date(), c.timezone, c.quietHours);
+      // The account's own window, else the platform default (52 NotificationRules, S17).
+      const heldUntil = intent.priority === 'critical' ? null : quietUntil(new Date(), c.timezone, c.quietHours ?? defaultQuiet);
       for (const d of decisions) await this.#delivery(scope, n.id, d.channel, d.outcome, c, tokens, business, heldUntil);
     }
     return out;
@@ -190,10 +198,12 @@ export class NotificationDispatcher {
         rows.map((r) => r.recipient_user_id),
       ),
     );
+    const overrides = await this.tx.run({ actorType: 'system' }, (scope) => loadOverrides(scope), { readOnly: true });
     let sent = 0;
     for (const r of rows) {
       const params = (r.template_params ?? {}) as Record<string, unknown>;
-      const text = render(r.template_key, r.locale, params);
+      const channel = r.channel === 'sms' ? 'sms' : r.channel === 'push' ? 'push' : 'email';
+      const text = renderWith(r.template_key, r.locale, channel, params, overrides);
       const c = contacts.get(r.recipient_user_id);
       let error: string | null = null;
       try {
@@ -261,9 +271,11 @@ export class NotificationDispatcher {
   }
 
   /**
-   * Email digests (52 NotificationPreference.frequency): a recipient's
-   * deliveries kept for the digest go out together once the oldest is a day
-   * (daily) or a week (weekly) old. Returns the number of digests sent.
+   * Email digests (52 NotificationPreference.frequency, NotificationRules): a
+   * recipient's deliveries kept for the digest go out together at the digest
+   * hour on the recipient's clock (weekly ones on the weekly day), and never
+   * later than a day (daily) or a week (weekly) after the oldest. Returns the
+   * number of digests sent.
    */
   async sendDigests(now = new Date()): Promise<number> {
     const pending = await this.tx.run({ actorType: 'system' }, ({ db }) =>
@@ -286,18 +298,37 @@ export class NotificationDispatcher {
     const byUser = new Map<string, typeof pending>();
     for (const p of pending) byUser.set(p.recipient_user_id, [...(byUser.get(p.recipient_user_id) ?? []), p]);
     if (byUser.size === 0) return 0;
-    const contacts = await this.tx.run({ actorType: 'system' }, (scope) => this.recipients.contacts(scope, [...byUser.keys()]));
+    const { contacts, rules, overrides } = await this.tx.run(
+      { actorType: 'system' },
+      async (scope) => ({
+        contacts: await this.recipients.contacts(scope, [...byUser.keys()]),
+        rules: await this.rules.get(scope),
+        overrides: await loadOverrides(scope),
+      }),
+      { readOnly: true },
+    );
     let digests = 0;
     for (const [userId, items] of byUser) {
       const weekly = items.every((i) => i.frequency === 'weekly_digest');
-      const oldest = Math.min(...items.map((i) => new Date(i.created_at).getTime()));
-      if (now.getTime() - oldest < (weekly ? 7 : 1) * 86_400_000) continue;
+      const oldest = new Date(Math.min(...items.map((i) => new Date(i.created_at).getTime())));
       const c = contacts.get(userId);
+      const due = digestDue({
+        now,
+        timeZone: c?.timezone ?? 'UTC',
+        oldest,
+        weekly,
+        digestHour: rules.digestHour,
+        weeklyDigestDay: rules.weeklyDigestDay,
+      });
+      if (!due) continue;
       if (c?.email && c.status === 'active') {
         const locale = items[0]!.locale;
-        const lines = items.map((i) => `- ${render(i.template_key, locale, (i.template_params ?? {}) as Record<string, unknown>).subject}`);
+        const lines = items.map(
+          (i) =>
+            `- ${renderWith(i.template_key, locale, 'email', (i.template_params ?? {}) as Record<string, unknown>, overrides).subject}`,
+        );
         const params = { count: String(items.length), items: lines.join('\n') };
-        const r = render('notification.digest', locale, params);
+        const r = renderWith('notification.digest', locale, 'email', params, overrides);
         await this.infra.mailer.send({
           to: c.email,
           template: 'notification.digest',

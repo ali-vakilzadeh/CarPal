@@ -13,8 +13,8 @@ export function dimensionAllowed(subjectType: 'provider' | 'vendor', dimension: 
 export const INVITATION_TTL_MS = 7 * 86_400_000;
 /** 52 Review.business_confirmation_due_at: 7 days after submission (Path 2). */
 export const BUSINESS_CONFIRMATION_MS = 7 * 86_400_000;
-/** A-NOTIF-01: at most 3 reminders, sent while the link is valid (proposed: 2 and 5 days after sending). */
-export const REMINDER_AFTER_MS = [2 * 86_400_000, 5 * 86_400_000] as const;
+// A-NOTIF-01: at most 3 reminders, sent while the link is valid; since S17 their days are the notification rules
+// (52 NotificationRules.review_invitation_reminder_days, default 2 and 5 days after sending).
 /** 40 review_invitations.verify: 30-minute grant. */
 export const GRANT_TTL_MS = 30 * 60_000;
 /** One-time code of the ri landing page: 10 minutes, 5 attempts. */

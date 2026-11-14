@@ -12,11 +12,11 @@ describe('generated contract', () => {
     }
   });
 
-  it('declares 433 operations and 485 routes (S16a: staff keys and recovery codes, contract 1.4.0)', () => {
+  it('declares 451 operations and 503 routes (S17: notification templates, rules and staff notices, contract 1.4.0)', () => {
     const r = loadRegistry();
-    expect(r.operationCount).toBe(433);
-    expect(OPERATION_IDS).toHaveLength(433);
-    expect(r.routeCount).toBe(485);
+    expect(r.operationCount).toBe(451);
+    expect(OPERATION_IDS).toHaveLength(451);
+    expect(r.routeCount).toBe(503);
     for (const op of r.operations) {
       expect(op.routes.length, op.opId).toBeGreaterThan(0);
       for (const route of op.routes) {

@@ -533,6 +533,194 @@
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/AuthNext"
       }
     },
+    "auth.staff_recovery_start": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "type": "object",
+        "properties": {
+          "interaction_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[^\\r\\n]*$"
+          },
+          "password_forgotten": {
+            "type": "boolean"
+          },
+          "recovery_code": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 40,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "interaction_id",
+          "email",
+          "password_forgotten",
+          "recovery_code"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "request_handle": {
+            "type": "string",
+            "minLength": 43,
+            "maxLength": 43,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "request_handle"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "auth.staff_recovery_verify": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "type": "object",
+        "properties": {
+          "interaction_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "request_handle": {
+            "type": "string",
+            "minLength": 43,
+            "maxLength": 43,
+            "pattern": "^[^\\r\\n]*$"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$"
+          }
+        },
+        "required": [
+          "interaction_id",
+          "request_handle",
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffRecoveryStatus"
+      }
+    },
+    "auth.staff_recovery_status": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "type": "object",
+        "properties": {
+          "request_handle": {
+            "type": "string",
+            "minLength": 43,
+            "maxLength": 43,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "request_handle"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffRecoveryStatus"
+      }
+    },
+    "auth.staff_recovery_complete_options": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "type": "object",
+        "properties": {
+          "interaction_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "request_handle": {
+            "type": "string",
+            "minLength": 43,
+            "maxLength": 43,
+            "pattern": "^[^\\r\\n]*$"
+          },
+          "new_password": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 128,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "interaction_id",
+          "request_handle"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "type": "object",
+        "x-external": "WebAuthn Level 3 PublicKeyCredential*OptionsJSON"
+      }
+    },
+    "auth.staff_recovery_complete": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "type": "object",
+        "properties": {
+          "interaction_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "attestation": {
+            "type": "object",
+            "x-server-schema": "WebAuthnAttestation"
+          }
+        },
+        "required": [
+          "interaction_id",
+          "attestation"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/AuthNext"
+      }
+    },
     "auth.social_start": {
       "query": {
         "type": "object",
@@ -13255,6 +13443,160 @@
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PendingChange"
       }
     },
+    "admin.staff_recoveries_list": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "awaiting_approvals",
+              "approved",
+              "rejected",
+              "expired",
+              "completed"
+            ]
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffRecoveryRequest"
+            }
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "admin.staff_recovery_get": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "request_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffRecoveryRequest"
+      }
+    },
+    "admin.staff_recovery_approve": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "request_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "pattern": "^[^\\r\\n]*$"
+          },
+          "verification_method": {
+            "type": "string",
+            "enum": [
+              "phone_known_number",
+              "in_person",
+              "video_call",
+              "other"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "reason",
+          "verification_method"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffRecoveryRequest"
+      }
+    },
+    "admin.staff_recovery_reject": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "request_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffRecoveryRequest"
+      }
+    },
     "admin.staff_passkeys_list": {
       "query": {
         "type": "object",
@@ -15788,6 +16130,328 @@
       "pathParams": {},
       "response": {
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/RegionSettings"
+      }
+    },
+    "admin.notif_templates_list": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "template_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[^\\r\\n]*$"
+          },
+          "channel": {
+            "$ref": "https://schemas.carpal.app/contract/v1#/$defs/NotificationTemplateChannel"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "fa"
+            ],
+            "x-locale-config": true
+          },
+          "missing_only": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/NotificationTemplate"
+            },
+            "maxItems": 1000
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "admin.notif_template_update": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "template_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "input": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/NotificationTemplateWrite"
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/NotificationTemplate"
+      }
+    },
+    "admin.notif_template_reset": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "template_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "input": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "$ref": "https://schemas.carpal.app/contract/v1#/$defs/NotificationTemplateChannel"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "fa"
+            ],
+            "x-locale-config": true
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "channel",
+          "locale",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/NotificationTemplate"
+      }
+    },
+    "admin.notif_template_preview": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "template_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "input": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "$ref": "https://schemas.carpal.app/contract/v1#/$defs/NotificationTemplateChannel"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "fa"
+            ],
+            "x-locale-config": true
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "^[^\\r\\n]*$"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "params": {
+            "type": "object",
+            "x-server-schema": "TemplateParams"
+          }
+        },
+        "required": [
+          "channel",
+          "locale"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400,
+                "pattern": "^[^\\r\\n]*$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8000
+          }
+        },
+        "required": [
+          "subject",
+          "body"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "admin.notif_rules_get": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/NotificationRules"
+      }
+    },
+    "admin.notif_rules_update": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/NotificationRulesWrite"
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/NotificationRules"
+      }
+    },
+    "admin.notifications_list": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "unread_only": {
+            "type": "boolean"
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/Notification"
+            }
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "admin.notifications_unread_count": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "admin.notifications_mark_read": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            "maxItems": 100,
+            "uniqueItems": true
+          },
+          "up_to": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+          }
+        },
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/Ack"
       }
     },
     "admin.retention_list": {

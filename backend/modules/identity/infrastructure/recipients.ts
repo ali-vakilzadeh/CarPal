@@ -58,6 +58,25 @@ export class DbRecipients extends Recipients {
     if (roles.length) q = q.where('role', 'in', [...roles]);
     return [...new Set((await q.execute()).map((r) => r.user_id!))];
   }
+
+  async staff(scope: TxScope, roles: readonly string[]): Promise<string[]> {
+    if (roles.length === 0) return [];
+    const rows = await scope.db
+      .selectFrom('identity.role_memberships as m')
+      .innerJoin('identity.user_accounts as u', 'u.id', 'm.user_id')
+      .select('m.user_id')
+      .where('m.organization_id', 'is', null)
+      .where('m.role', 'in', [...roles])
+      .where('m.status', '=', 'active')
+      .where('m.deleted_at', 'is', null)
+      .where('u.status', '=', 'active')
+      .where('u.deleted_at', 'is', null)
+      // A handful in production; capped like contacts() (1000), newest roles first.
+      .orderBy('m.id', 'desc')
+      .limit(1000)
+      .execute();
+    return [...new Set(rows.map((r) => r.user_id!))];
+  }
 }
 
 @Injectable()

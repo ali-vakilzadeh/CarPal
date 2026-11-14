@@ -4049,7 +4049,7 @@
         "backend"
       ],
       "status": "todo",
-      "action": "Plan pilot staff accounts: at least two ADM, one MOD, one CRV (backend staff:bootstrap covers creation). Decide who they are.",
+      "action": "Plan pilot staff accounts: four ADM (DQ-16: three main and one undisclosed backup administrator), one MOD, one CRV (backend staff:bootstrap covers creation). Decide who they are.",
       "when": "before pilot"
     },
     {
@@ -4270,37 +4270,58 @@
         "affects": [
           "AC14 (A-POL-01 publish dialog: the choice, with (a) preselected)"
         ]
+      },
+      {
+        "id": "DQ-16",
+        "decision": "Four ADM accounts (owner, 2026-11-13): three main administrators and one backup administrator whose holder and credentials are not disclosed (sealed, out of daily use, a normal audited ADM account in the system).",
+        "affects": [
+          "R-05",
+          "AC11 runbook (staff accounts, the backup administrator)"
+        ]
+      },
+      {
+        "id": "DQ-20 (items 1-2)",
+        "decision": "Assist sessions and plan assignment stay in the console; the public Web UI gets identical copies of those pages (frontend/public-ui-dev-plan.json PU-P01, PU-P02).",
+        "affects": [
+          "AC6",
+          "AC9",
+          "AC14"
+        ]
       }
     ]
   },
   "dq03_scope_review": {
-    "status": "reported to the owner 2026-11-13; move plan pending",
+    "status": "items 1-2 answered 2026-11-13 (stay, with Web UI copies); items 3-4 strategy proposed",
     "source": "Docs/23.Admin_WebUI_screens.md §0",
     "does_not_match": [
       {
         "part": "Assist sessions (concierge onboarding)",
         "built": "AC9: src/features/orgs/assist.tsx (start, end, banner on every page)",
         "backend": "admin.assist_session_start, admin.assist_session_end; BR-34 (S19); DI-05 assisted routes undefined",
-        "proposed_home": "public Web UI: a staff-assisted mode of the business onboarding wizard"
+        "proposed_home": "public Web UI: a staff-assisted mode of the business onboarding wizard",
+        "decision": "Stays in the console; identical copy of the wizard pages in the Web UI (PU-P01). The console copy of the wizard waits for PU-BR-01 (backend DI-05)."
       },
       {
         "part": "Plan assignment, trials and entitlement overrides",
         "built": "AC6: src/features/plans/assign-form.tsx; Change plan link from the organization page (AC9)",
         "backend": "admin.subscription_assign; BR-24 (S21)",
         "proposed_home": "public Web UI: the business chooses its plan or trial (needs that self-service flow first; manual assignment is the MVP billing path today)",
-        "open_question": "whether the plan catalog (admin.plans_list, admin.plan_update) stays in the console as a platform rule"
+        "open_question": "whether the plan catalog (admin.plans_list, admin.plan_update) stays in the console as a platform rule",
+        "decision": "Stays in the console; identical copy of the plan pages in the Web UI (PU-P02); requests from the Web UI arrive here (PU-BR-04)."
       },
       {
         "part": "Featured placements (A-FEAT-01)",
         "built": "no (Later, flag off)",
         "backend": "none",
-        "proposed_home": "public Web UI; the console keeps eligibility and stopping placements of suspended organizations"
+        "proposed_home": "public Web UI; the console keeps eligibility and stopping placements of suspended organizations",
+        "proposed_strategy": "Featured placements (row 3): keep out of every plan until two product decisions exist: payments (there is no payment flow; billing is manual) and featured placements themselves (MVP Rule 2, SEC-BF-6: off, never on the map). When they are decided, split by purpose like every other function: the console keeps the control half (eligibility rules, the Featured label, stopping a suspended organization's placements at once, the featured.enabled flag with its four-eyes, reporting) and the public Web UI gets the commercial half (the business buys and schedules a placement and sees its impressions). One spec owns the rules (Docs/23 A-FEAT-01 plus a Web UI screen that refers to it), and the backend enforces them, so the two halves cannot disagree. Until then: no BR item, no console screen, no Web UI page; the flag stays off."
       },
       {
         "part": "Support inbox (A-SUP-01)",
         "built": "no (AC14 plan)",
         "backend": "BR-13 (S24)",
-        "proposed_home": "decide: triage only in the console, or a separate help-desk tool"
+        "proposed_home": "decide: triage only in the console, or a separate help-desk tool",
+        "proposed_strategy": "Support inbox (row 4): one ticket model and one intake, not a second tool. Users and businesses file tickets from the PWA, the mobile app and the public Web UI's Help page through one api-host operation (BR-13, user side). The console keeps the staff inbox, framed as an intake queue like reports: staff read a ticket under a purpose (SEC-ADM-5), answer with EN/FA templates, and turn it into a moderation case, privacy request, dispute or (for a business's plan question) a plan request, so it feeds the network's control queues. Pure how-to questions are answered from templates and closed. Revisit a separate help-desk tool only when ticket volume needs one (it would be another store of personal data and another set of staff accounts). DQ-07 default (in-app only, email intake later) stays."
       }
     ],
     "borderline_kept": [

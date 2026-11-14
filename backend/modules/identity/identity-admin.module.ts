@@ -1,5 +1,5 @@
 // Identity operations on the admin-api host (40 §23.2 users and the staff
-// directory, the staff member's own keys and recovery codes, §23.5 data subject requests and policy texts). Needs IdentityModule, AdminModule, BillingModule,
+// directory, the staff member's own keys and recovery codes, staff account recovery (S16b), §23.5 data subject requests and policy texts). Needs IdentityModule, AdminModule, BillingModule,
 // OrganizationModule and TrustModule (global) in the same application.
 import { Module } from '@nestjs/common';
 import {
@@ -34,6 +34,12 @@ import {
   AdminStaffPasskeysListHandler,
   AdminStaffRecoveryCodesRegenerateHandler,
 } from './application/staff-security.js';
+import {
+  AdminStaffRecoveriesListHandler,
+  AdminStaffRecoveryApproveHandler,
+  AdminStaffRecoveryGetHandler,
+  AdminStaffRecoveryRejectHandler,
+} from './application/staff-recovery-admin.js';
 import { WebAuthnService } from './application/webauthn.js';
 
 @Module({
@@ -50,6 +56,10 @@ import { WebAuthnService } from './application/webauthn.js';
     AdminStaffPasskeyRegisterHandler,
     AdminStaffPasskeyRemoveHandler,
     AdminStaffRecoveryCodesRegenerateHandler,
+    AdminStaffRecoveriesListHandler,
+    AdminStaffRecoveryGetHandler,
+    AdminStaffRecoveryApproveHandler,
+    AdminStaffRecoveryRejectHandler,
     AdminUsersSearchHandler,
     AdminUserGetHandler,
     AdminUserStatusHandler,

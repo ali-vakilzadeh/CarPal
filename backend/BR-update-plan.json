@@ -15,7 +15,8 @@
     "pending_sources": [
       "pwa",
       "backend own dev_plan / risk_control_plan",
-      "cp-web-portal (future)"
+      "cp-web-portal (future)",
+      "public Web UI (frontend/public-ui-dev-plan.json, created 2026-11-13: PU-BR-01..04)"
     ],
     "decisions_from_owner_2026_11_12": [
       "All BR items will be integrated in one backend refinement; it is not scheduled yet and more recommendations may arrive before the last Admin Console stage.",
@@ -32,7 +33,7 @@
     },
     "counts": {
       "recommendations": 35,
-      "todo": 19,
+      "todo": 17,
       "r_item_actions_for_backend": 12,
       "unlinked_open_doc_issues": 4,
       "stages": 15,
@@ -45,12 +46,12 @@
         "closed": 6
       },
       "by_priority_note": "Recommendations only. mixed = BR-35 (part 1 row P0, part 2 P1, parts 1-filters and 3 P2). R-items are planned in r_item_actions_for_backend and are not counted here.",
-      "done_in_refinement": 7,
-      "partly_done": 3,
+      "done_in_refinement": 10,
+      "partly_done": 2,
       "counts_note": "todo, done_in_refinement and partly_done follow the recommendation status; by_priority keeps the planning view of 2026-11-12."
     },
     "status": "in_progress",
-    "status_note": "Prioritised and staged from the Admin Console items (2026-11-12). S13 done on 2026-11-12 (contract 1.4.0 opened), S14 done on 2026-11-13 (purpose bound to the record). PWA items and the backend next_iteration items are not merged yet; they join through action_plan.intake_rules. Stages run as backend S13-S25 and are logged in backend/dev_plan.json when started. S15 done on 2026-11-13 (versioned legal texts and acceptance). S16a done on 2026-11-13 (staff recovery codes, own keys, break glass).",
+    "status_note": "Prioritised and staged from the Admin Console items (2026-11-12). S13 done on 2026-11-12 (contract 1.4.0 opened), S14 done on 2026-11-13 (purpose bound to the record). PWA items and the backend next_iteration items are not merged yet; they join through action_plan.intake_rules. Stages run as backend S13-S25 and are logged in backend/dev_plan.json when started. S15 done on 2026-11-13 (versioned legal texts and acceptance). S16a done on 2026-11-13 (staff recovery codes, own keys, break glass). S16b done on 2026-11-13 (staff account recovery with two ADM approvals). S17 done on 2026-11-14 (notification templates and rules, staff notices).",
     "last_updated": "2026-11-13",
     "progress": {
       "as_of": "2026-11-13",
@@ -63,7 +64,7 @@
       "stages_in_progress": [],
       "next_stage": "S15b (consent texts; DQ-19 answered: c), then S16b (recovery flow). The console can resume AC10 and AC12 at any time; A-POL-01 and the Security keys page wait for AC14.",
       "contract": "Docs/40 1.4.0 open (433 operations, 485 routes; 432 served, auth.social_start deferred; 54 error codes). Frozen at S25.",
-      "summary": "S16a done: staff recovery codes, own keys on the admin plane, break glass, DQ-11. Next, S15b adds the consent texts (DQ-19 c), then S16b the recovery flow. Open decisions: DQ-16, DQ-20 (new, from DQ-03); defaults applied and awaiting confirmation: DQ-01, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15."
+      "summary": "S16a done: staff recovery codes, own keys on the admin plane, break glass, DQ-11. Next, S15b adds the consent texts (DQ-19 c), then S16b the recovery flow. Open decisions: DQ-20 items 3-4 (strategy proposed); DQ-16 answered (four ADM); defaults applied and awaiting confirmation: DQ-01, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15."
     },
     "decisions_from_owner_2026_11_13": [
       "DQ-04 answered: the recommended staff recovery process (own recovery codes, requester proof, two ADM approvals in the console with an out-of-band check, 72-hour restriction, break glass). S16 split into S16a and S16b; R-11 and R-15 moved to S25.",
@@ -75,7 +76,9 @@
       "DQ-03 not answered: the owner asked what the console is separate from; the question was reworded.",
       "DQ-19 answered: (c) the administrator picks (a) keep or (b) pause each time a consent text version that requires re-consent is published.",
       "DQ-03 answered: the admin console is completely separate from the public Web UI (fleet managers, service providers, parts sellers); its only purpose is to monitor and control the social network. Documents updated; the parts that do not match are reported (DQ-20).",
-      "S16a run at the owner's request (\"stage 16a\") before S15b."
+      "S16a run at the owner's request (\"stage 16a\") before S15b.",
+      "DQ-16 answered: four ADM accounts, three main and one undisclosed backup.",
+      "DQ-20 items 1 and 2 answered: assisted onboarding and plan assignment stay in the console; identical copies go into the public Web UI plan (frontend/public-ui-dev-plan.json). Items 3 and 4: strategy proposed."
     ]
   },
   "recommendations": [
@@ -484,7 +487,7 @@
       },
       "priority": "must",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "Notification templates and rules (A-NOTIF-01): list templates per event, channel and locale with missing-translation flags; edit rules (invitation delay, reminders 0-3, quiet hours, digest).",
       "source_notes": {},
@@ -508,7 +511,13 @@
         "stage": [
           "S17"
         ],
-        "why": "Docs/23 Must (A-NOTIF-01). The pilot can run on the code templates, but invitation delay, reminders and quiet hours cannot be tuned without a deploy. New data model in the notification module."
+        "why": "Docs/23 Must (A-NOTIF-01). The pilot can run on the code templates, but invitation delay, reminders and quiet hours cannot be tuned without a deploy. New data model in the notification module.",
+        "done": {
+          "stage": "S17",
+          "date": "2026-11-14",
+          "part": "complete",
+          "result": "Template list per template, channel and language with variables, locks and missing/outdated translation flags; staff overrides with If-Match, reset and preview (DQ-05: transactional texts and critical alerts locked); rules for invitation delay, reminder days, default quiet hours and the digest schedule, read by the dispatcher and the invitation sweep."
+        }
       }
     },
     {
@@ -584,7 +593,7 @@
           "S24"
         ],
         "why": "Docs/23 Should. \"Contact support\" by email works for the pilot. New entity on both planes.",
-        "dq03": "DQ-03: the support inbox is customer service (Docs/23 §0 row 4); DQ-20 decides whether the console keeps triage only."
+        "dq03": "DQ-03/DQ-20 (strategy proposed for row 4): one ticket model; the console keeps the staff inbox as an intake queue; the Web UI files tickets like the PWA."
       }
     },
     {
@@ -841,7 +850,7 @@
       },
       "priority": "high",
       "status_in_source": "open",
-      "status": "partly_done",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "Staff passkey management on admin-api: list own passkeys, add a second (backup) device-bound key with a fresh aal3 re-authentication, remove one (never the last); and an ADM reset of another staff member's passkeys with a reason and four-eyes (the next sign-in then enrols again with password + emailed code). Today me.webauthn_register_options and me.mfa_remove are on the api host, which refuses admin tokens.",
       "source_notes": {},
@@ -865,11 +874,10 @@
         "why": "With one device-bound key per person, a lost key locks a staff member out and needs SQL on the server (R-08); OQ-14 plans two keys each, which needs \"add a backup key\". Design decided in DQ-04 (2026-11-13): own recovery codes, requester proof (password + code + emailed code), two ADM approvals in the console with an out-of-band check, 72-hour restriction, break glass on the server. Split into S16a (signed-in part) and S16b (recovery flow).",
         "decision": "DQ-04",
         "done": {
-          "stage": "S16a",
+          "stage": "S16a, S16b",
           "date": "2026-11-13",
-          "part": "signed-in half and break glass",
-          "result": "Staff recovery codes (10 per account, Crockford base32, keyed hashes, single use) issued with the first passkey and by admin.staff_recovery_codes_regenerate; own keys listed, added (backup) and removed, never the last device-bound one (LAST_PASSKEY), each after a fresh aal3 within 5 minutes; StaffMe.recovery_codes_remaining; break glass from the server shell (pnpm staff:break-glass, deploy/staff-break-glass.sh).",
-          "remaining": "The recovery flow with two ADM approvals: S16b."
+          "part": "complete",
+          "result": "S16a: staff recovery codes, own keys (list, backup, remove; fresh aal3), break glass. S16b: account recovery from the console sign-in (email, password or forgotten, one recovery code, emailed code; same answer whatever the account), two ADM approvals with a fresh aal3 and an out-of-band check, any ADM rejects, 24-hour expiry, completion with a new device-bound key (old keys, codes and sessions end, new codes once), 72-hour restriction (STAFF_RECOVERY_RESTRICTED)."
         }
       }
     },
@@ -933,7 +941,7 @@
       },
       "priority": "medium",
       "status_in_source": "open",
-      "status": "partly_done",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "Let the requester see their own four-eyes changes and the outcome: admin.four_eyes_list q: mine=true (requested_by = caller, all statuses, with decided_by_display, decided_at and the decision reason in PendingChange), or a separate admin.four_eyes_mine. Optionally a notification to the requester when the change is approved, rejected or expires (today the requester learns it only from the audit log, which only ADM can read).",
       "source_notes": {},
@@ -966,11 +974,10 @@
         ],
         "why": "R-16: matters most for the pilot; a requester never learns the outcome (only ADM can read the audit log). List part with the console unblockers (S13); the outcome notification with the other staff notices (S17).",
         "done": {
-          "stage": "S13",
-          "date": "2026-11-12",
-          "part": "list",
-          "result": "admin.four_eyes_list q mine=true (own requests, every status unless status is given) and PendingChange.decided_by_display, decided_at, decision_reason, job_id.",
-          "remaining": "Outcome notification to the requester: S17.T4."
+          "stage": "S13, S17",
+          "date": "2026-11-14",
+          "part": "complete",
+          "result": "S13: admin.four_eyes_list mine=true with the decision fields. S17: an in-app notice to the requester when a change is approved, rejected or expires (four_eyes.decided; admin.notifications_list)."
         }
       }
     },
@@ -1054,7 +1061,7 @@
           "S21"
         ],
         "why": "One field; the console hints that the list does not show it (D-42).",
-        "dq03": "DQ-03: plan catalog status; stays if the plan catalog stays in the console as a platform rule (DQ-20)."
+        "dq03": "DQ-03/DQ-20: the plan catalog stays in the console with plan assignment; S21 as planned."
       }
     },
     {
@@ -1092,7 +1099,7 @@
           "S21"
         ],
         "why": "A-PLAN-01 Assignments list; the assignment form works without it.",
-        "dq03": "DQ-03: the subscriptions list serves plan assignment, commercial work (Docs/23 §0 row 2); held until the DQ-20 move plan."
+        "dq03": "DQ-03/DQ-20: plan assignment stays in the console (owner, 2026-11-13); S21 builds BR-24 as planned. Related Web UI needs: PU-BR-03, PU-BR-04."
       }
     },
     {
@@ -1144,7 +1151,7 @@
       },
       "priority": "low",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "partly_done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "id in FeatureFlag and ExchangeRate (the audit entity ids), or admin.audit_search by entity key, for the per-record history; and a staff notification (in-app, ADM) when ai.automation.kill_switch is turned on or off (Docs/23 A-FLAG-01 \"broadcast to the dashboard and AI governance staff\").",
       "source_notes": {},
@@ -1167,7 +1174,14 @@
           "S21",
           "S17"
         ],
-        "why": "Ids for per-record history (S21) and the kill-switch staff notice (S17, with the other staff notices)."
+        "why": "Ids for per-record history (S21) and the kill-switch staff notice (S17, with the other staff notices).",
+        "done": {
+          "stage": "S17",
+          "date": "2026-11-14",
+          "part": "kill switch notice",
+          "result": "An in-app notice to every active ADM when ai.automation.kill_switch is turned on or off (there is no AI governance role).",
+          "remaining": "FeatureFlag and ExchangeRate ids, or audit search by entity key: S21."
+        }
       }
     },
     {
@@ -1506,7 +1520,7 @@
           "S19"
         ],
         "why": "A reload forgets the assist banner (D-62); the session still expires after 4 h.",
-        "dq03": "DQ-03: assist sessions are business work (Docs/23 §0 row 1); held until the DQ-20 move plan."
+        "dq03": "DQ-03/DQ-20: assisted onboarding stays in the console (owner, 2026-11-13); S19 builds BR-34 as planned. The Web UI copy needs PU-BR-01 and PU-BR-02 (frontend/public-ui-dev-plan.json)."
       }
     },
     {
@@ -1630,7 +1644,7 @@
       "raised_in": "AC1",
       "plan": {
         "stage": null,
-        "note": "Owner preparation (pilot_prep_checklist). Three ADM accounts recommended so ADM recovery works without server access (DQ-16). S25 updates deploy.md for the ADM accounts at bootstrap."
+        "note": "Owner preparation (pilot_prep_checklist). DQ-16 answered: four ADM (three main, one undisclosed backup); staff:bootstrap's minimum and deploy.md are updated (2026-11-13)."
       }
     },
     {
@@ -1638,7 +1652,7 @@
       "component": [
         "backend"
       ],
-      "status": "partly_done",
+      "status": "done",
       "action": "Build BR-19 (staff passkey management, ADM reset with four-eyes) so a spare key can be registered and a lost key needs no server SQL.",
       "br": [
         "BR-19"
@@ -1653,7 +1667,8 @@
         "note": "Break glass replaces the SQL in S16a; the full recovery flow closes it in S16b."
       },
       "done_in": [
-        "S16a (break glass replaces the SQL; backup keys)"
+        "S16a (break glass replaces the SQL; backup keys)",
+        "S16b (recovery in the console with two ADM approvals)"
       ]
     },
     {
@@ -1735,10 +1750,10 @@
         ],
         "note": "BR-21 list in S13, its notification in S17, BR-22 in S21.",
         "done": {
-          "stage": "S13",
-          "date": "2026-11-12",
-          "part": "BR-21 list",
-          "remaining": "BR-21 notification (S17), BR-22 (S21)"
+          "stage": "S13, S17",
+          "date": "2026-11-14",
+          "part": "BR-21 list and notification",
+          "remaining": "BR-22 (S21)"
         }
       }
     },
@@ -3013,12 +3028,12 @@
             "AC11 runbook: the lost-key section uses deploy/staff-break-glass.sh (backend deploy.md \"Lost security key, fewer than two other admins\") until S16b's recovery flow exists.",
             "S25: align the older AAL3 admin operations to the 5-minute window of SEC-ADM-2 (S16a-D4), or record the owner's choice.",
             "S17: the in-app staff notice for break glass (S16a-D6).",
-            "Owner: DQ-16 (three ADM accounts for the pilot; with two, break glass is the only ADM recovery); DQ-20 (move plan for the console parts that do not match DQ-03).",
+            "Owner (answered after the stage): DQ-16 four ADM; DQ-20 items 1-2 stay in the console with Web UI copies; items 3-4 strategy proposed.",
             "Local databases: pnpm db:setup in backend/ applies migration 0105; tools/db/baseline.int.test.ts passes only after pnpm db:reset (Docs/43 changed).",
             "Next backend stage: S15b (DQ-19 answered: c), then S16b."
           ],
           "open_after_stage": [
-            "Owner: DQ-16, DQ-20; confirm the earlier defaults (DQ-01, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15).",
+            "Owner: DQ-20 items 3 and 4 (strategy proposed); confirm the DQ-16 reading of \"non-disclosed\"; confirm the earlier defaults (DQ-01, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15).",
             "Nothing committed (commit only when the owner asks)."
           ]
         }
@@ -3026,7 +3041,7 @@
       {
         "id": "S16b",
         "title": "Staff account recovery with two ADM approvals",
-        "status": "not_started",
+        "status": "done",
         "items": [
           "BR-19 (recovery flow per DQ-04)"
         ],
@@ -3109,12 +3124,157 @@
           "After completion the old keys and every old session are gone and a new code set exists.",
           "A recovered account cannot approve or grant anything for 72 hours."
         ],
-        "split_point": "After T4: T5-T6 can move to S25 only if S25 has room; otherwise finish S16b in a second session before S17."
+        "split_point": "After T4: T5-T6 can move to S25 only if S25 has room; otherwise finish S16b in a second session before S17.",
+        "report": {
+          "started_at": "2026-11-13",
+          "completed_at": "2026-11-13",
+          "note_on_order": "Run at the owner's request (\"stage 16b\") before S15b, which is still not started. S16b does not depend on S15b. DQ-16 was answered during the session (four ADM accounts); the recovery flow needs no change for it.",
+          "summary": "A staff member who lost their security key recovers the account from the console sign-in without server access. auth.staff_recovery_start (cp-web-admin interactions only) takes the email, the password or password_forgotten, and one of the account's recovery codes; it answers 202 with an opaque handle after the same minimum time whatever the account (unknown, non-staff, disabled, wrong password or code, an open request already), and only a real request spends the code, is audited and gets an emailed code. auth.staff_recovery_verify checks that code (five wrong end it); the request then waits for approvals and every other active ADM is emailed (a link to the console only). Two different ADMs, each with a fresh aal3 (5 minutes), approve with a reason and the out-of-band check (admin.staff_recovery_approve); any ADM rejects (admin.staff_recovery_reject), also an approved request that is not completed yet; the queue is admin.staff_recoveries_list and admin.staff_recovery_get (no codes, handles or contact data). The requester polls auth.staff_recovery_status by handle and finishes on a new interaction: auth.staff_recovery_complete_options (a new password when forgotten) and auth.staff_recovery_complete (a device-bound key; synced keys refused and nothing changes). One transaction then disables the old keys and recovery codes, sets the password, issues a new code set (shown once), completes the request and restricts the account for 72 hours; every session ends, the account and every ADM are emailed, and the new key signs in at once (aal3). STAFF_RECOVERY_RESTRICTED blocks four-eyes approval, role grant and revoke, staff enable and recovery approval during the restriction; StaffMe.restricted_until shows it. Requests expire 24 hours after opening (W15 rule identity.staff_recovery_expiry; every read treats an overdue request as expired). Migration 0106. Every acceptance criterion is met.",
+          "acceptance_criteria": [
+            {
+              "criterion": "Recovery completes only after two different ADMs approve with a fresh aal3.",
+              "met": true,
+              "evidence": "s16b.int.test.ts: one approval leaves the request awaiting_approvals (status approvals 1); the second ADM's approval makes it approved; complete_options on a request that is not approved answers 409 INVALID_TRANSITION; the same ADM approving twice gets 409, the requester 403 SELF_APPROVAL_FORBIDDEN, a sign-in 400 s old 401 STEP_UP_REQUIRED with max_age=300."
+            },
+            {
+              "criterion": "A signed-out caller cannot tell whether an email belongs to a staff account.",
+              "met": true,
+              "evidence": "s16b.int.test.ts: an unknown email, a user without a platform role, a disabled staff member, a wrong password and a wrong recovery code all get 202 with a 43-character handle and no email; the handle's code check answers 422 CODE_INVALID and its status 404, as for a live request before its code is checked; a wrong password or code spends no recovery code; an already open request answers the same and sends nothing. With a 300 ms floor, a live and an unknown start both take at least 300 ms."
+            },
+            {
+              "criterion": "Nothing can be approved from an email link.",
+              "met": true,
+              "evidence": "The ADM email (identity.staff_recovery_requested_admins) carries only the staff name and the console origin; approval exists only as admin.staff_recovery_approve (STF(ADM) AAL3 RSN AUD, fresh aal3 within 5 minutes)."
+            },
+            {
+              "criterion": "After completion the old keys and every old session are gone and a new code set exists.",
+              "met": true,
+              "evidence": "s16b.int.test.ts: after auth.staff_recovery_complete the account has one active key (the new one), its earlier admin-plane session answers 401, 10 open codes of one new set exist, the answer carried them once, and the new key signs in at once (auth.mfa_verify -> complete)."
+            },
+            {
+              "criterion": "A recovered account cannot approve or grant anything for 72 hours.",
+              "met": true,
+              "evidence": "s16b.int.test.ts: restricted_until = completed + 72 h; four-eyes approve, role grant, role revoke, staff enable and recovery approve answer 403 STAFF_RECOVERY_RESTRICTED while a four-eyes reject still works; StaffMe.restricted_until is set, and null once the restriction has passed (then the approval succeeds)."
+            }
+          ],
+          "ops_added": [
+            "auth.staff_recovery_start (POST /v1/auth/staff-recovery, 202 { request_handle }, RL(auth.recovery))",
+            "auth.staff_recovery_verify (POST /v1/auth/staff-recovery/verify, 200 StaffRecoveryStatus, AUD)",
+            "auth.staff_recovery_status (POST /v1/auth/staff-recovery/status, 200 StaffRecoveryStatus; no interaction)",
+            "auth.staff_recovery_complete_options (POST /v1/auth/staff-recovery/key/options, 200 WebAuthnOptions)",
+            "auth.staff_recovery_complete (POST /v1/auth/staff-recovery/key, 200 AuthNext with recovery_codes, AUD)",
+            "admin.staff_recoveries_list (GET {adm}/staff/recoveries, STF(ADM))",
+            "admin.staff_recovery_get (GET {adm}/staff/recoveries/{request_id}, STF(ADM))",
+            "admin.staff_recovery_approve (POST {adm}/staff/recoveries/{request_id}/approve, STF(ADM) AAL3 RSN AUD, fresh 5 min)",
+            "admin.staff_recovery_reject (POST {adm}/staff/recoveries/{request_id}/reject, STF(ADM) RSN AUD)"
+          ],
+          "ops_changed": [
+            "admin.staff_me: StaffMe.restricted_until",
+            "admin.four_eyes_decide (approve), admin.platform_role_grant, admin.platform_role_revoke, admin.staff_enable: 403 STAFF_RECOVERY_RESTRICTED"
+          ],
+          "contract": "Docs/40 1.4.0 (still open): §2.8 bucket auth.recovery; §2.14 SEC-ADM-2 names the recovery flow and the restriction; §4.4 STAFF_RECOVERY_RESTRICTED (403); §6.1 StaffRecoveryStatus (AuthNext.recovery_codes also in the completion answer); §6.2 five auth operations; §23.1 StaffMe.restricted_until, StaffRecoveryRequest, StaffRecoveryDecision; §23.2 four admin operations and the restriction error on staff_enable, platform_role_grant and platform_role_revoke; §23.5 admin.four_eyes_decide; Appendix D three S16b rows. 442 operations, 494 routes (441 served; auth.social_start deferred), 55 error codes.",
+          "files_created": [
+            "backend/modules/identity/application/staff-recovery.ts",
+            "backend/modules/identity/application/staff-recovery-admin.ts",
+            "backend/modules/identity/application/staff-recovery.test.ts",
+            "backend/apps/testing/s16b.int.test.ts",
+            "backend/apps/testing/s16b-support.ts",
+            "database/migrations/0106_s16b_staff_recovery_requests.sql"
+          ],
+          "files_changed": [
+            "Docs/40.API contract.md, Docs/42.db schema.md, Docs/43.db_setup.sql, Docs/52.MVP Data Dictionary.md (StaffRecoveryRequest, StaffRecoveryApproval)",
+            "backend/modules/identity/{identity.module.ts (StaffRestrictions, StaffRecoveryExpiryRule), identity-auth.module.ts, identity-admin.module.ts, interface/identity.ts (StaffRestrictions), application/admin-ops.ts (staff_me, role grant and revoke), application/staff-ops.ts (staff_enable), application/staff-security.ts (activeAdmins shared with break glass), infrastructure/auth-state.ts (interaction staffRecovery and recovery), infrastructure/messages.ts}",
+            "backend/modules/admin/application/four-eyes-ops.ts (restriction on approve)",
+            "backend/modules/notification/domain/templates.ts (six EN/FA staff templates)",
+            "backend/libs/rate-limit/buckets.ts (auth.recovery), backend/libs/http-pipeline/problem.ts (STAFF_RECOVERY_RESTRICTED en/fa)",
+            "backend/libs/contract/generated/*, libs/contract/contract.test.ts (442/494), libs/db/generated/db.ts, tools/db/baseline.int.test.ts (110 tables)",
+            "backend/apps/testing/contract/{resolvers/admin.ts (4 operations), resolvers/identity.ts (5 operations), generated admin and identity sweeps}",
+            "backend/deploy/deploy.md (console recovery paragraph next to break glass)",
+            "shared/api-contracts/{openapi.yaml, generated/*}",
+            "pwa/src/features/notifications/catalog.ts (six staff-only message keys)",
+            "frontend/admin-console: src/lib/api/generated/*, tools/contract/generate.test.ts and src/server/bff/allowlist.test.ts (84 admin operations)"
+          ],
+          "tests": {
+            "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 518 modules), typecheck, format:check: pass",
+            "backend_unit": "298 passed (43 files), including the registry pin (442 operations, 494 routes) and staff-recovery.test.ts (status, handle hash, windows, auth.recovery bucket)",
+            "backend_contract": "contract:check up to date (1.4.0, 442 operations, 55 error codes); contract sweep suites up to date (17 modules); openapi:check: 494 operations on 397 paths; contract:coverage 441/442 served (auth.social_start deferred), 0 unexplained 501s",
+            "backend_sweeps": "admin and identity sweeps 113 passed, including the 9 new operations",
+            "backend_s16b": "14 passed (apps/testing/s16b.int.test.ts)",
+            "backend_integration_full": "852 tests in 56 files: 850 passed, 2 failed. Both are local-database state, the same as S13-S16a: the baseline hash (Docs/43 changed and the local database was migrated with 0106, not reset; passes after pnpm db:reset) and the seed count of non-fixture accounts (94, expected 2: console E2E and BFF test accounts in the shared dev database, R-15). No other suite changed its result.",
+            "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck pass; 691 unit tests passed (76 files)",
+            "admin_console": "contract:generate (84 admin-api operations), typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files) after the pins 80 -> 84",
+            "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
+          },
+          "deviations": [
+            {
+              "id": "S16b-D1",
+              "task": "S16b.T5",
+              "item": "BR-19",
+              "deviation": "The completion transaction runs when the new key's attestation is stored (auth.staff_recovery_complete); the key then proves itself at once on the same interaction through auth.webauthn_options purpose mfa and auth.mfa_verify (aal3), exactly as at the first enrolment (auth.passkey_enrol). The plan put the proof before the transaction. With attestation none, an assertion right after adds no proof of the person, and moving the recovery transaction into auth.mfa_verify would put recovery logic into every sign-in.",
+              "impact": "If the browser stops between the two calls, the recovery is complete and the member signs in normally (password + new key). Console: after complete, run the usual mfa step."
+            },
+            {
+              "id": "S16b-D2",
+              "task": "S16b.T3",
+              "item": "BR-19",
+              "deviation": "The account's notice at creation is the code email itself (identity.staff_recovery_code: the code plus \"if this was not you, tell an administrator\"). The other ADMs are emailed when the emailed code is checked, i.e. when the request enters their queue, not at the first call: an abandoned or mistyped attempt does not alert every administrator. ADMs are told by email only; the in-app staff notice comes with the staff notices of S17 (as S16a-D6).",
+              "impact": "S17: add the in-app staff notice for recovery requests and completions."
+            },
+            {
+              "id": "S16b-D3",
+              "task": "S16b.T1, T4",
+              "item": "BR-19",
+              "deviation": "ip_country is in the table and in StaffRecoveryRequest but stays null: the backend has no IP-to-country lookup (Session.country is null for the same reason).",
+              "impact": "Console: show it when present. Filled when a geo-IP lookup is added (S25 list or later)."
+            },
+            {
+              "id": "S16b-D4",
+              "task": "S16b.T2, T5",
+              "item": "BR-19",
+              "deviation": "Five auth operations instead of the four named: WebAuthn needs creation options before the attestation, so completion is auth.staff_recovery_complete_options (with the new password when forgotten) then auth.staff_recovery_complete. auth.staff_recovery_status is a POST with the handle in the body (a secret kept out of URLs and logs) and needs no interaction, because the waiting page outlives the 30-minute interaction; completion runs on a new cp-web-admin interaction that presents the handle.",
+              "impact": "Console BFF: keep the handle server-side (an HttpOnly cookie or the BFF session), never in browser storage (GD-12)."
+            },
+            {
+              "id": "S16b-D5",
+              "task": "S16b.T2",
+              "item": "BR-19",
+              "deviation": "auth.staff_recovery_start is not tagged AUD: the pipeline requires an audit entry on every success of an AUD operation, and the dead path must answer like the live one without naming an account. Every real request is audited (staff.recovery_requested); the later steps are AUD. No proof of work: cp-web-admin is a confidential BFF client without the anonymous grant, so the PoW of the anonymous grant does not apply; the new auth.recovery bucket (3/h and 5/day per account, 10/h per IP prefix) limits it.",
+              "impact": "None for clients."
+            },
+            {
+              "id": "S16b-D6",
+              "task": "S16b.T1, T4",
+              "item": "BR-19",
+              "deviation": "expires_at holds the emailed code's 10 minutes while the request is awaiting_email_code and moves to opened + 24 hours when the code is checked, so an abandoned request blocks a new one for at most 10 minutes. admin.staff_recovery_reject also ends an approved request that is not completed yet (an administrator can stop a suspicious completion). Approvals with verification_method other need a note.",
+              "impact": "Console: offer Reject on approved requests too; require the note for other."
+            },
+            {
+              "id": "S16b-D7",
+              "task": "S16b.T4, T5",
+              "item": "BR-19",
+              "deviation": "A member disabled while a request is open is not recovered: approval answers 409 INVALID_TRANSITION(requester_disabled) and completion 409 INVALID_TRANSITION(not_approved). admin.staff_disable does not close the open request itself; it expires or an ADM rejects it.",
+              "impact": "None; deploy.md says to enable a disabled member first (four eyes)."
+            }
+          ],
+          "notes_for_next": [
+            "Admin console (AC14 or a catch-up after AC10): \"Lost my security key\" under /id on the five auth operations (start -> emailed code -> waiting page polling auth.staff_recovery_status -> new password if forgotten -> new key -> the usual mfa step -> show the new recovery codes once, never in browser storage); keep the request handle server-side in the BFF; a \"Recovery requests\" queue for ADMs next to Pending approvals on admin.staff_recoveries_list / staff_recovery_get with Approve (reason, verification method, note required for other; fresh aal3 -> /bff/reauth on STEP_UP_REQUIRED max_age=300) and Reject; a banner while StaffMe.restricted_until is in the future and the STAFF_RECOVERY_RESTRICTED message. Console contract regenerated (84 operations).",
+            "AC11 runbook: the lost-key section uses the console recovery; break glass (deploy/staff-break-glass.sh) only when fewer than two other ADMs are active (deploy.md updated).",
+            "S17: in-app staff notices for recovery requests and completions (S16b-D2) and for break glass (S16a-D6).",
+            "S21: list open recovery requests in admin.work_summary (S16b.T4).",
+            "S25: geo-IP country for StaffRecoveryRequest.ip_country and Session.country if a lookup is added (S16b-D3); the S16a-D4 item (older AAL3 operations to 5 minutes) is still open.",
+            "Local databases: pnpm db:setup in backend/ applies migration 0106; tools/db/baseline.int.test.ts passes only after pnpm db:reset (Docs/43 changed).",
+            "Next backend stage: S15b (DQ-19 answered: c), then S17."
+          ],
+          "open_after_stage": [
+            "Owner: confirm DQ-15 (two ADM approvals for every role, applied) and the earlier defaults (DQ-01, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14); DQ-20 items 3 and 4.",
+            "Nothing committed (commit only when the owner asks)."
+          ]
+        }
       },
       {
         "id": "S17",
         "title": "Notification templates and rules; staff notices",
-        "status": "not_started",
+        "status": "done",
         "items": [
           "BR-11",
           "BR-21 (notification part)",
@@ -3145,21 +3305,27 @@
             "items": [
               "BR-11"
             ],
-            "task": "Docs/52 and migration: template overrides (event, channel, locale, subject, body, version) on top of the code templates (which stay the fallback), and notification rules (invitation delay, reminders 0-3, quiet hours default, digest)."
+            "task": "Docs/52 and migration: template overrides (event, channel, locale, subject, body, version) on top of the code templates (which stay the fallback), and notification rules (invitation delay, reminders 0-3, quiet hours default, digest).",
+            "status": "done",
+            "result": "Docs/52 NotificationTemplateOverride and NotificationRules, Docs/42, Docs/43 and migration 0107: notification.notification_template_overrides (one live override per template, channel and language; a reset soft-deletes it) and notification.notification_rules (one row, seeded with the pre-S17 values); three staff event types; admin plane and workers only."
           },
           {
             "id": "S17.T2",
             "items": [
               "BR-11"
             ],
-            "task": "admin.notif_templates_list (event x channel x locale, source code|override, missing-translation flags), admin.notif_template_update (If-Match RSN AUD; placeholders validated against the event payload), admin.notif_template_reset (back to the code default), admin.notif_template_preview (sample payload). Critical alerts are marked \"Always delivered\" and cannot be switched off."
+            "task": "admin.notif_templates_list (event x channel x locale, source code|override, missing-translation flags), admin.notif_template_update (If-Match RSN AUD; placeholders validated against the event payload), admin.notif_template_reset (back to the code default), admin.notif_template_preview (sample payload). Critical alerts are marked \"Always delivered\" and cannot be switched off.",
+            "status": "done",
+            "result": "admin.notif_templates_list, admin.notif_template_update, admin.notif_template_reset, admin.notif_template_preview; transactional texts and critical alerts locked (DQ-05); field error code unknown_placeholder; the dispatcher renders with the overrides (S17-D1..D3)."
           },
           {
             "id": "S17.T3",
             "items": [
               "BR-11"
             ],
-            "task": "admin.notif_rules_get and admin.notif_rules_update (If-Match RSN AUD); notification-dispatch and the invitation flow read the rules."
+            "task": "admin.notif_rules_get and admin.notif_rules_update (If-Match RSN AUD); notification-dispatch and the invitation flow read the rules.",
+            "status": "done",
+            "result": "admin.notif_rules_get and admin.notif_rules_update; the dispatcher reads the default quiet hours and the digest schedule, the trust invitation sweep the delay and the reminder days (S17-D4)."
           },
           {
             "id": "S17.T4",
@@ -3167,7 +3333,15 @@
               "BR-21",
               "BR-26"
             ],
-            "task": "Staff notices (in-app): four-eyes decided/expired to the requester; ai.automation.kill_switch changed to ADM and AI governance staff (Docs/23 A-FLAG-01)."
+            "task": "Staff notices (in-app): four-eyes decided/expired to the requester; ai.automation.kill_switch changed to ADM and AI governance staff (Docs/23 A-FLAG-01).",
+            "status": "done",
+            "result": "Staff notices in-app: four-eyes outcome (approved, rejected, expired) to the requester; kill switch on or off to every ADM; recovery requested, recovery completed and break glass to the other ADMs; read with admin.notifications_list, _unread_count, _mark_read (S17-D5..D9)."
+          },
+          {
+            "id": "S17.T5",
+            "task": "Tests per the definition of done, sweep resolvers, contract:check, openapi:check; log as backend S17 in backend/dev_plan.json; set the plan blocks here to done.",
+            "status": "done",
+            "result": "apps/testing/s17.int.test.ts (10), template-catalog.test.ts (9), sweep resolvers for the 9 operations; all checks green (see report.tests); logged as backend S17 in backend/dev_plan.json."
           }
         ],
         "contract_changes": "Additive: notification admin operations; new notification event types for staff.",
@@ -3178,7 +3352,165 @@
           "A template with an unknown placeholder is refused.",
           "Reset returns the code default.",
           "The requester receives the four-eyes outcome."
-        ]
+        ],
+        "report": {
+          "started_at": "2026-11-14",
+          "completed_at": "2026-11-14",
+          "note_on_order": "Run at the owner's request (\"execute the stage 17\") before S15b, which is still not started. S17 does not depend on S15b. DQ-05 had no answer: its default was applied and recorded.",
+          "summary": "Staff can now change notification texts and rules without a deploy, and staff notices reach the console. Templates: admin.notif_templates_list (every template per channel and language with the text in use, its variables, the lock and missing or outdated translation flags), admin.notif_template_update (ETAG(if exists); unknown placeholders refused with unknown_placeholder; transactional texts and critical alerts locked), admin.notif_template_reset (the code text again) and admin.notif_template_preview (sample values, drafts). The dispatcher renders email, push, SMS and digests with the overrides. Rules: admin.notif_rules_get and admin.notif_rules_update (invitation delay, reminder days, default quiet hours, digest hour and weekday), read by the dispatcher and the review invitation sweep. Staff notices (in-app): four-eyes outcome to the requester (approved, rejected, expired), AI kill switch on or off to every ADM, staff recovery requested and completed and break glass to the other ADMs; read with admin.notifications_list, _unread_count and _mark_read. Contract 1.4.0: 451 operations, 55 error codes. Migration 0107. Every acceptance criterion is met.",
+          "acceptance_criteria": [
+            {
+              "criterion": "Missing translations are flagged per locale.",
+              "met": true,
+              "evidence": "s17.int.test.ts: after an EN override the FA row of the same channel has translation_outdated true and missing_only lists exactly it; template-catalog.test.ts: a language copied from the other one is missing_translation."
+            },
+            {
+              "criterion": "A template with an unknown placeholder is refused.",
+              "met": true,
+              "evidence": "s17.int.test.ts: {vin} in a body answers 422 with [{pointer: /body, code: unknown_placeholder, limit: {vin}}]; the preview of a draft with {plate} is refused the same way."
+            },
+            {
+              "criterion": "Reset returns the code default.",
+              "met": true,
+              "evidence": "s17.int.test.ts: reset with the override's If-Match answers the code text (source code, version null, the built-in subject); a second reset is 404; both steps are audited with the reason."
+            },
+            {
+              "criterion": "The requester receives the four-eyes outcome.",
+              "met": true,
+              "evidence": "s17.int.test.ts: a rejected and an expired request each give the requester a four_eyes_outcome notice (op_id, status, reference pending_change) in admin.notifications_list; the decider gets none; an approved kill switch change gives approved."
+            }
+          ],
+          "ops_added": [
+            "admin.notif_templates_list (GET {adm}/notification-templates, STF(ADM))",
+            "admin.notif_template_update (PUT {adm}/notification-templates/{template_key}, STF(ADM) ETAG(if exists) RSN AUD)",
+            "admin.notif_template_reset (POST {adm}/notification-templates/{template_key}/reset, STF(ADM) ETAG RSN AUD)",
+            "admin.notif_template_preview (POST {adm}/notification-templates/{template_key}/preview, STF(ADM))",
+            "admin.notif_rules_get (GET {adm}/notification-rules, STF(ADM))",
+            "admin.notif_rules_update (PUT {adm}/notification-rules, STF(ADM) ETAG RSN AUD)",
+            "admin.notifications_list (GET {adm}/me/notifications, STF(ADM, MOD, SUP, CRV))",
+            "admin.notifications_unread_count (GET {adm}/me/notifications/unread-count, STF(ADM, MOD, SUP, CRV))",
+            "admin.notifications_mark_read (POST {adm}/me/notifications/read, STF(ADM, MOD, SUP, CRV))"
+          ],
+          "ops_changed": [
+            "admin.four_eyes_decide: emits four_eyes.decided",
+            "notifications.list, notifications.unread_count: never return the three staff event types"
+          ],
+          "contract": "Docs/40 1.4.0 (still open): §4.2 FieldErrorCode unknown_placeholder; §20.1 NotificationEventType four_eyes_outcome, staff_security_alert, ai_kill_switch_changed; §20.2 notifications.list wording; §23 intro; §23.1 five types; §23.5 nine operations; Appendix A four event rows; Appendix D three S17 rows. 451 operations, 503 routes (450 served; auth.social_start deferred), 55 error codes.",
+          "files_created": [
+            "backend/modules/notification/domain/template-catalog.ts",
+            "backend/modules/notification/domain/template-catalog.test.ts",
+            "backend/modules/notification/interface/notification-rules.ts",
+            "backend/modules/notification/infrastructure/notification-store.ts",
+            "backend/modules/notification/application/admin-ops.ts",
+            "backend/modules/notification/notification-admin.module.ts",
+            "backend/apps/testing/s17.int.test.ts",
+            "database/migrations/0107_s17_notification_templates_rules.sql"
+          ],
+          "files_changed": [
+            "Docs/40.API contract.md (§4.2 unknown_placeholder; §20.1 three event types; §20.2 notifications.list; §23 intro; §23.1 NotificationTemplateChannel, NotificationTemplate, NotificationTemplateWrite, NotificationRules, NotificationRulesWrite; §23.5 nine operations, four_eyes_decide emit; Appendix A four rows; Appendix D three S17 rows)",
+            "Docs/42.db schema.md, Docs/43.db_setup.sql (two tables, event type check, grant, rules seed), Docs/52.MVP Data Dictionary.md (NotificationTemplateOverride, NotificationRules, staff event types, ReviewRequest.reminder_count)",
+            "backend/modules/notification/{notification.module.ts (NotificationRulesRead), domain/templates.ts (five EN/FA staff notices), domain/routing.ts (staff audience, routeStaff, STAFF_EVENT_TYPES), domain/preferences.ts (localClock, digestDue), application/dispatcher.ts (overrides, default quiet hours, digest schedule, staff audience), application/notification-ops.ts (staff notices off the api host)}",
+            "backend/modules/admin/application/{four-eyes-ops.ts, admin-rules.ts} (four_eyes.decided)",
+            "backend/modules/identity/{interface/identity.ts and infrastructure/recipients.ts (Recipients.staff), application/staff-recovery.ts (staff.recovery_requested, staff.recovery_completed), application/staff-security.ts (staff_name in staff.break_glass)}",
+            "backend/modules/trust/{application/review-workflow.ts (invitation delay, reminder days from the rules), domain/reviews.ts (REMINDER_AFTER_MS removed)}",
+            "backend/apps/shared/app-modules.ts (NotificationAdminModule on admin-api)",
+            "backend/libs/contract/api-error.ts (unknown_placeholder), libs/contract/generated/*, libs/contract/contract.test.ts (451/503), libs/db/generated/db.ts (two tables, edited by hand: kysely-codegen needs Node 24)",
+            "backend/tools/contract/{generate.ts (template_key path param), parse-operations.ts (notif_ and notifications_ to the notification module)}",
+            "backend/apps/testing/contract/{resolvers/notification.ts (9 operations), generated/notification.contract.int.test.ts}, apps/testing/s16a.int.test.ts (break glass payload; mails counted at the Mailer port, because the shared test database now holds 1080 fixture ADMs and the lite mail sink keeps only the last 1000 messages), apps/testing/s16b.int.test.ts (recovery events; the happy path reads its mails at the Mailer port for the same reason), tools/db/baseline.int.test.ts (112 tables)",
+            "shared/api-contracts/{openapi.yaml, generated/*}",
+            "pwa/src/features/notifications/catalog.ts (five staff-only keys)",
+            "frontend/admin-console: src/lib/api/generated/*, tools/contract/generate.test.ts and src/server/bff/allowlist.test.ts (93 admin operations)"
+          ],
+          "tests": {
+            "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 526 modules), typecheck, format:check: pass",
+            "backend_unit": "307 passed (44 files), including the registry pin (451 operations, 503 routes) and template-catalog.test.ts (catalog, locks, variables, translation flags, rendering, digest schedule, staff routes)",
+            "backend_contract": "contract:check up to date (1.4.0, 451 operations, 55 error codes); contract sweep suites up to date (17 modules); openapi:check: 503 operations on 405 paths",
+            "backend_sweeps": "notification, admin and identity sweeps pass, including the 9 new operations",
+            "backend_s17": "10 passed (apps/testing/s17.int.test.ts); notification.int.test.ts 6 passed; s13 passes; s16a + s16b + s17 together 33 passed after the mail-sink fix",
+            "backend_integration_full": "871 tests in 57 files (about 25 minutes). Second full run: 868 passed, 3 failed. (1) s16b happy path: the lite mail sink keeps the last 1000 messages and the shared test database now holds more than 1080 fixture ADMs, so the member's mail was evicted by the broadcast to every ADM; fixed by reading the mails at the Mailer port; s16a, s16b and s17 then pass together (33). (2, 3) The two local-database states known since S13: the baseline hash (Docs/43 changed; the local database was migrated with 0107, not reset; passes after pnpm db:reset) and the non-fixture account count (94, expected 2; R-15). The first full run also failed s16a (same mail-sink cause, fixed) and the baseline table pin (110 -> 112, updated). No other suite changed its result.",
+            "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck pass; 691 unit tests passed (76 files), including the template drift check",
+            "admin_console": "contract:generate (93 admin-api operations), typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files) after the pins 84 -> 93",
+            "environment": "The machine has Node 20.10 (C:/Program Files/nodejs); the project needs Node >= 24.7 (vitest, dependency-cruiser, kysely-codegen fail on 20.10). This session used a portable Node 24.22.3 (official zip, checksum checked) from the session scratchpad on PATH; nothing was installed system-wide.",
+            "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
+          },
+          "deviations": [
+            {
+              "id": "S17-D1",
+              "task": "S17.T1, T2",
+              "item": "BR-11",
+              "deviation": "Templates are keyed by template key (the message of an event, as the router names it) rather than by event type, and listed for the channels the backend renders: email, push and SMS, only those the router can use for the template. In-app texts are the clients' dictionaries (PWA catalog.ts, console i18n), so templates that only reach the app (system.welcome, ai.suggestion_ready, the staff notices) are not listed. Docs/23 A-NOTIF-01 names in-app versions too.",
+              "impact": "Console A-NOTIF-01: edit email, push and SMS here; in-app wording stays in the console and PWA dictionaries. Server-rendered in-app texts would be a later change (S25 list)."
+            },
+            {
+              "id": "S17-D2",
+              "task": "S17.T2",
+              "item": "BR-11",
+              "deviation": "DQ-05 default applied (editable overrides, critical alerts locked), with \"locked\" read as \"not editable\": critical alerts (system.security_alert, admin.dsr_deadline, the staff security and kill switch notices; \"Always delivered\") and every transactional message (links, codes, invitations, account security: the 23 templates sent through the Messenger, also on the auth host, which cannot read the notification schema) are listed but refuse changes (409 INVALID_TRANSITION(locked)). A phishing-grade text in a security mail cannot be introduced from the console.",
+              "impact": "Console: show the lock and the reason (Always delivered / Transactional). Owner: confirm DQ-05."
+            },
+            {
+              "id": "S17-D3",
+              "task": "S17.T2",
+              "item": "BR-11",
+              "deviation": "The built-in catalog always has EN and FA, so \"missing translation\" means a language without text of its own (none, or a copy of the other language); a second flag translation_outdated marks a language without an override when the other language has one. Placeholders are checked against the template's variables (the placeholders of its built-in text plus the router's extra params), because the event payload is not a text; a new field error code unknown_placeholder names the placeholder in limit.",
+              "impact": "Console: missing_only=true lists both kinds; show the variables as chips."
+            },
+            {
+              "id": "S17-D4",
+              "task": "S17.T3",
+              "item": "BR-11",
+              "deviation": "Rules: the invitation delay (0-2880 minutes) applies to appointment visits only (the 15-minute sweep sends the invitation once it has passed; inquiry invitations stay immediate, there is no inquiry sweep). Reminders are a list of days after sending (0-3 entries, each 1-6, strictly ascending; default 2 and 5, the code values before S17) instead of a count. Default quiet hours apply to accounts without their own window (seeded none). The digest schedule is an hour on the recipient's clock (default 09:00) and an ISO weekday for weekly digests (default Saturday), never later than a day or a week after the oldest message. Not built from Docs/23 Rules: business review-approval reminders (day 3 and 6), maintenance and mileage reminder cadence, the Delivery health tab.",
+              "impact": "Console: Rules form; the missing Docs/23 items are listed for S25."
+            },
+            {
+              "id": "S17-D5",
+              "task": "S17.T4",
+              "item": "BR-21, BR-26",
+              "deviation": "In-app staff notices need an admin-plane read: the console had no way to read notifications (notifications.list is on the api host, which refuses staff tokens). Three operations were added (admin.notifications_list, admin.notifications_unread_count, admin.notifications_mark_read on {adm}/me/notifications, every staff role), 9 operations in S17 instead of 6. The new event types four_eyes_outcome, staff_security_alert and ai_kill_switch_changed are never listed by notifications.list.",
+              "impact": "Console: a notices bell (poll the count, list, mark read) and dictionary texts for staff.* templates."
+            },
+            {
+              "id": "S17-D6",
+              "task": "S17.T4",
+              "item": "BR-26",
+              "deviation": "There is no AI governance role (the platform roles are ADM, MOD, SUP, CRV), so the kill switch notice goes to every active ADM (as BR-26 asks). Turning it off again (four-eyes) notifies when the change is approved.",
+              "impact": "None; a governance role would join the audience."
+            },
+            {
+              "id": "S17-D7",
+              "task": "S17.T4",
+              "item": "BR-21",
+              "deviation": "admin.four_eyes_decide and the hourly admin.expiry rule publish four_eyes.decided (approved, rejected, expired); the requester gets an in-app notice with op_id and status and a reference to the change. Requests rejected because their requester was disabled (DQ-11) send none: the requester is the disabled member.",
+              "impact": "Console: \"Your requests\" can link the notice to the change (admin.four_eyes_list mine=true)."
+            },
+            {
+              "id": "S17-D8",
+              "task": "S17.T4",
+              "item": "S16a-D6, S16b-D2",
+              "deviation": "Recovery requested and completed (auth host) and break glass (server command) reach the administrators in-app through outbox events the worker routes: staff.recovery_requested and staff.recovery_completed are new; staff.break_glass carries staff_name. The emails of S16a and S16b are unchanged. The notice carries the member's display name (as the email does); it is kept 180 days (Notification retention).",
+              "impact": "None for clients beyond the notices."
+            },
+            {
+              "id": "S17-D9",
+              "task": "S17.T4",
+              "item": "-",
+              "deviation": "Recipients.staff (identity interface) lists active platform staff by role, newest role first, capped at 1000 like contacts(): the shared test database holds 816 fixture administrators, so an unordered cap missed the newest.",
+              "impact": "None in production (four ADM accounts, DQ-16)."
+            }
+          ],
+          "notes_for_next": [
+            "Admin console (AC14): A-NOTIF-01 on the six template and rule operations (Templates tab: filters by template, channel, language and missing_only; editor with the variables as chips, If-Match from version, preview, reset; locked rows marked Always delivered or Transactional; Rules tab with If-Match) and a staff notices bell (admin.notifications_unread_count polling, admin.notifications_list, admin.notifications_mark_read) with dictionary texts for staff.four_eyes_outcome, staff.kill_switch_changed, staff.recovery_waiting, staff.recovery_done, staff.break_glass_notice and admin.dsr_deadline. Console contract regenerated (93 operations).",
+            "S21: BR-26 ids part (FeatureFlag and ExchangeRate ids or audit search by key) is still open.",
+            "S25 list: Docs/23 Rules items not built (business review-approval reminders day 3 and 6, maintenance and mileage reminder cadence, Delivery health tab); server-rendered in-app texts if staff must edit them (S17-D1).",
+            "Local databases: pnpm db:setup in backend/ applies migration 0107; tools/db/baseline.int.test.ts passes only after pnpm db:reset (Docs/43 changed).",
+            "Environment: install Node 24 (package.json engines >= 24.7); the machine's Node 20.10 cannot run the tests, lint or db:codegen.",
+            "Next backend stage: S15b (still not started), then S18."
+          ],
+          "open_after_stage": [
+            "Owner: confirm DQ-05 (default applied: editable overrides, critical alerts and transactional texts locked), DQ-15 and the earlier defaults (DQ-01, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14); DQ-20 items 3 and 4.",
+            "Nothing committed (commit only when the owner asks)."
+          ]
+        }
       },
       {
         "id": "S18",
@@ -3744,7 +4076,10 @@
         "id": "DQ-05",
         "before": "S17",
         "question": "Notification templates: editable overrides per locale (code templates as fallback), or read-only list with only the rules editable?",
-        "default": "Editable overrides; critical alerts locked."
+        "default": "Editable overrides; critical alerts locked.",
+        "status": "default_applied",
+        "applied": "Applied in S17: editable overrides per template, channel and language over the code templates (the fallback); critical alerts (\"Always delivered\") and transactional messages (links, codes, invitations, account security) are listed but locked (409 INVALID_TRANSITION(locked)).",
+        "owner_confirmation": "pending"
       },
       {
         "id": "DQ-06",
@@ -3836,9 +4171,12 @@
         "id": "DQ-16",
         "raised_in": "DQ-04 analysis (2026-11-13)",
         "before": "pilot (R-05) and AC11 runbook",
-        "status": "open",
+        "status": "answered",
         "question": "Recovery of an ADM needs two other active ADMs, so with the two ADMs of R-05 an ADM can only recover through the server procedure (break glass). Plan three ADM accounts for the pilot?",
-        "default": "Three ADM accounts, so recovery works without server access; with two, the break-glass procedure is the ADM recovery path."
+        "default": "Three ADM accounts, so recovery works without server access; with two, the break-glass procedure is the ADM recovery path.",
+        "answer": "Four ADM accounts (owner, 2026-11-13): three main administrators and one backup administrator whose holder and credentials are not disclosed (sealed, out of daily use, a normal audited ADM account in the system). An ADM recovery needs two other ADMs, so it works in the console while one administrator is away; break glass is only for when fewer than two other ADMs are active.",
+        "applied": "2026-11-13: backend tools/db/staff.ts MINIMUM ADM 4 (staff:bootstrap warns below it), DEV_STAFF gains adm3 and adm-backup, deploy/templates/staff-bootstrap.json.example lists four ADM, backend/deploy/deploy.md \"Staff accounts\" and \"The backup administrator\" (how it is held, used and checked), Docs/23 §2 pilot staffing, pilot_prep_checklist R-05 and R-21, console dev-plan R-05.",
+        "interpretation_to_confirm": "\"Non-disclosed\" is read as: who holds the account and its credentials are not disclosed; the account itself is not hidden from the other administrators (it is listed in admin.staff_list to ADMs and audited like any account), because hiding an administrator from the others would weaken four-eyes and audit. Hiding it from the staff directory would be a backend change (about 0.5 point)."
       },
       {
         "id": "DQ-17",
@@ -3874,9 +4212,16 @@
         "id": "DQ-20",
         "raised_in": "DQ-03 answer (2026-11-13)",
         "before": "S19 (BR-34), S21 (BR-24), S24 (BR-13) and AC14",
-        "status": "open",
+        "status": "partly_answered",
         "question": "Move plan for the admin console parts that do not match DQ-03 (Docs/23 §0): assist onboarding, plan assignment / trials / overrides, featured placements, the support inbox. Where does each go in the public Web UI (WP20, not built yet), what stays in the console as control, and what happens to the backlog items BR-34 (assist sessions read), BR-24 (subscriptions list) and BR-13 (support tickets) meanwhile?",
-        "default": "Until the move plan exists: build nothing new for those parts (BR-34 and BR-24 wait; BR-13 keeps its user-side half), keep what AC6 and AC9 built, and keep the plan catalog (admin.plans_list, admin.plan_update) and the location corrections in the console as control."
+        "default": "Until the move plan exists: build nothing new for those parts (BR-34 and BR-24 wait; BR-13 keeps its user-side half), keep what AC6 and AC9 built, and keep the plan catalog (admin.plans_list, admin.plan_update) and the location corrections in the console as control.",
+        "answer_items_1_2": "Owner, 2026-11-13: assisted onboarding (row 1) and plan assignment (row 2) stay in the admin console. The public Web UI gets an identical copy of those pages for the business: frontend/public-ui-dev-plan.json PU-P01 (onboarding wizard with the assisted mode) and PU-P02 (plan and subscription pages), with backend requests PU-BR-01..04.",
+        "proposed_strategy_items_3_4": [
+          "Featured placements (row 3): keep out of every plan until two product decisions exist: payments (there is no payment flow; billing is manual) and featured placements themselves (MVP Rule 2, SEC-BF-6: off, never on the map). When they are decided, split by purpose like every other function: the console keeps the control half (eligibility rules, the Featured label, stopping a suspended organization's placements at once, the featured.enabled flag with its four-eyes, reporting) and the public Web UI gets the commercial half (the business buys and schedules a placement and sees its impressions). One spec owns the rules (Docs/23 A-FEAT-01 plus a Web UI screen that refers to it), and the backend enforces them, so the two halves cannot disagree. Until then: no BR item, no console screen, no Web UI page; the flag stays off.",
+          "Support inbox (row 4): one ticket model and one intake, not a second tool. Users and businesses file tickets from the PWA, the mobile app and the public Web UI's Help page through one api-host operation (BR-13, user side). The console keeps the staff inbox, framed as an intake queue like reports: staff read a ticket under a purpose (SEC-ADM-5), answer with EN/FA templates, and turn it into a moderation case, privacy request, dispute or (for a business's plan question) a plan request, so it feeds the network's control queues. Pure how-to questions are answered from templates and closed. Revisit a separate help-desk tool only when ticket volume needs one (it would be another store of personal data and another set of staff accounts). DQ-07 default (in-app only, email intake later) stays."
+        ],
+        "strategy_principle": "To keep the project coherent: one function, one rule owner (the backend), one screen spec; a function may have two front ends only when two kinds of actors use it (staff acting on any organization in the console, a business acting on itself in the Web UI), and then the pages are one shared implementation or a provenance-headed copy with a parity test (public-ui-dev-plan.json PU-GD-02, PU-OQ-01).",
+        "status_note": "Items 3 and 4: strategy proposed 2026-11-13, awaiting the owner."
       }
     ],
     "intake_rules": [
@@ -3959,7 +4304,7 @@
       {
         "r_item": "R-05",
         "owner": "user",
-        "item": "Name the pilot staff: three ADM (recommended, DQ-16; two is the minimum but then ADM recovery needs the server break-glass procedure), one MOD, one CRV."
+        "item": "Name the pilot staff: four ADM (DQ-16: three main administrators and one undisclosed backup administrator, held as backend/deploy/deploy.md \"The backup administrator\" says), one MOD, one CRV."
       },
       {
         "r_item": "R-07",
@@ -3974,7 +4319,7 @@
       {
         "r_item": "R-21",
         "owner": "user",
-        "item": "Set the real IRR rate in the console with two ADM accounts ready (the first change is over 20 %)."
+        "item": "Set the real IRR rate in the console with two of the ADM accounts ready (the first change is over 20 %)."
       },
       {
         "r_item": "R-24",
@@ -4084,7 +4429,51 @@
         "recommendations": [
           "Answer DQ-20 before S19 (BR-34), S21 (BR-24) and S24 (BR-13)."
         ]
+      },
+      {
+        "date": "2026-11-13",
+        "stage": "decisions",
+        "status": "recorded",
+        "summary": "Owner answers: DQ-16 four ADM (three main, one undisclosed backup; code minimum, bootstrap example and deploy.md updated); DQ-20 items 1-2 stay in the console and the public Web UI gets identical copies (new frontend/public-ui-dev-plan.json, PU-P01, PU-P02, PU-BR-01..04); items 3-4 strategy proposed.",
+        "recommendations": [
+          "Owner: decide DQ-20 items 3 and 4; confirm the reading of \"non-disclosed\" in DQ-16.",
+          "Stage the PU-BR items when the public Web UI is scheduled (PU-BR-04 can join S21 with BR-24, as it closes the loop for the console too)."
+        ]
+      },
+      {
+        "date": "2026-11-13",
+        "stage": "S16b",
+        "status": "done",
+        "summary": "S16b done: staff account recovery from the console sign-in with two ADM approvals (five auth operations, four admin operations), 24-hour expiry, completion with a new device-bound key and new recovery codes, 72-hour restriction (STAFF_RECOVERY_RESTRICTED, StaffMe.restricted_until). BR-19 and R-08 done. Contract 1.4.0: 442 operations, 55 error codes. Migration 0106.",
+        "recommendations": [
+          "Run S15b next (DQ-19 answered: c), then S17 (in-app staff notices for recovery and break glass).",
+          "Console: the lost-key pages under /id, the Recovery requests queue and the restriction banner (S16b.report.notes_for_next).",
+          "Owner: confirm DQ-15 (two ADM approvals for every role) and the earlier defaults; DQ-20 items 3 and 4.",
+          "Local developers: pnpm db:setup in backend/ (migration 0106); pnpm db:reset if the baseline test must pass locally."
+        ]
+      },
+      {
+        "date": "2026-11-14",
+        "stage": "S17",
+        "status": "done",
+        "summary": "S17 done: notification templates (list with variables, locks and translation flags; overrides with If-Match, reset, preview; DQ-05 default applied) and rules (invitation delay, reminder days, default quiet hours, digest schedule) on the admin plane; staff notices in-app (four-eyes outcome, AI kill switch, staff recovery and break glass) with three admin-plane reads. BR-11 and BR-21 done, BR-26 notice part done. Contract 1.4.0: 451 operations, 55 error codes. Migration 0107.",
+        "recommendations": [
+          "Run S15b next (still not started), then S18.",
+          "Console (AC14): A-NOTIF-01 Templates and Rules tabs and a staff notices bell (S17.report.notes_for_next).",
+          "Owner: confirm DQ-05 and the earlier defaults; DQ-20 items 3 and 4.",
+          "Install Node 24 on the development machine (Node 20.10 cannot run the tests).",
+          "Local developers: pnpm db:setup in backend/ (migration 0107); pnpm db:reset if the baseline test must pass locally."
+        ]
       }
-    ]
+    ],
+    "intake_candidates_public_ui": {
+      "note": "Backend requests of the public Web UI plan (frontend/public-ui-dev-plan.json), not yet staged here. They join through intake_rules when the owner accepts PU-P01 and PU-P02; PU-BR-04 also helps the console (a request from a business reaches the administrator who assigns plans).",
+      "items": [
+        "PU-BR-01 (assisted routes, backend DI-05)",
+        "PU-BR-02 (assist history on the owner side)",
+        "PU-BR-03 (own plan requests list)",
+        "PU-BR-04 (admin list of plan requests and their closing)"
+      ]
+    }
   }
 }

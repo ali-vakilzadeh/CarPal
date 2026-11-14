@@ -22,6 +22,12 @@ export type MailTemplate =
   | 'identity.staff_recovery_codes_created'
   | 'identity.staff_break_glass_account'
   | 'identity.staff_break_glass_admins'
+  | 'identity.staff_recovery_code'
+  | 'identity.staff_recovery_requested_admins'
+  | 'identity.staff_recovery_approved'
+  | 'identity.staff_recovery_rejected'
+  | 'identity.staff_recovery_completed_account'
+  | 'identity.staff_recovery_completed_admins'
   | 'identity.consent_request';
 
 @Injectable()

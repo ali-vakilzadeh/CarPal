@@ -60,7 +60,8 @@ async function main(): Promise<void> {
     if (!command.file) assertDev(config.env, 'staff:bootstrap without --file');
     const specs = parseSpec(command.file ? JSON.parse(readFileSync(command.file, 'utf8')) : DEV_STAFF, config.env);
     const missing = shortfall(specs);
-    if (missing.length) console.warn(`Warning: below the pilot minimum (two ADM, one MOD, one CRV): ${missing.join('; ')}`);
+    if (missing.length)
+      console.warn(`Warning: below the pilot minimum (four ADM: three main and one backup; one MOD, one CRV): ${missing.join('; ')}`);
     print(await bootstrapStaff(deps, specs));
   } finally {
     await database.close();

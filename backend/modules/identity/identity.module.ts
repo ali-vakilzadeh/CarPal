@@ -34,6 +34,7 @@ export { DSR_EXPORT_QUEUE } from './application/admin-ops.js';
 export { DsrExporter };
 import { MfaService } from './application/mfa-service.js';
 import { StaffBreakGlassConsumer, StaffRecoveryCodes } from './application/staff-security.js';
+import { DbStaffRestrictions, StaffRecoveryExpiryRule } from './application/staff-recovery.js';
 import { PowAttestationVerifier } from './infrastructure/attestation.js';
 import { AuthState } from './infrastructure/auth-state.js';
 import { DbAccountFacts, DbConsentChecker, DbConsentGrants, DbUserCards } from './infrastructure/directory.js';
@@ -50,6 +51,7 @@ import {
   OrgMemberships,
   PersonalDataRegistry,
   Recipients,
+  StaffRestrictions,
   UserChoices,
   UserCards,
 } from './interface/identity.js';
@@ -204,6 +206,7 @@ export class IdentityAdminRegistrations implements OnModuleInit {
     IdentityMessages,
     MfaService,
     StaffRecoveryCodes,
+    { provide: StaffRestrictions, useClass: DbStaffRestrictions },
     IdentityUsageRegistration,
     { provide: PersonalDataRegistry, useFactory: () => new PersonalDataRegistry() },
     { provide: AccountAdmin, useClass: DbAccountAdmin },
@@ -228,6 +231,7 @@ export class IdentityAdminRegistrations implements OnModuleInit {
     IdentityMessages,
     MfaService,
     StaffRecoveryCodes,
+    StaffRestrictions,
     PersonalDataRegistry,
     AccountAdmin,
   ],
@@ -236,11 +240,11 @@ export class IdentityModule {}
 
 /**
  * Identity work on the worker deployable: the W8 DSR export bundle (hosted by workers/export-jobs), the daily DSR
- * deadline alert, the 5-minute lift of timed suspensions (W15, backend S14) and policy versions coming into force
- * (W15, backend S15).
+ * deadline alert, the 5-minute lift of timed suspensions (W15, backend S14), policy versions coming into force
+ * (W15, backend S15) and the expiry of staff recovery requests (W15, backend S16b).
  */
 @Module({
-  providers: [DsrExporter, DsrDeadlineRule, SuspensionExpiryRule, PolicyVersionRule],
-  exports: [DsrExporter, DsrDeadlineRule, SuspensionExpiryRule, PolicyVersionRule],
+  providers: [DsrExporter, DsrDeadlineRule, SuspensionExpiryRule, PolicyVersionRule, StaffRecoveryExpiryRule],
+  exports: [DsrExporter, DsrDeadlineRule, SuspensionExpiryRule, PolicyVersionRule, StaffRecoveryExpiryRule],
 })
 export class IdentityWorkerModule {}

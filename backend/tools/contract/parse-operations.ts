@@ -104,6 +104,7 @@ export function moduleFor(opId: string, h1: Section): string {
     if (/^(taxonomy_|synonym|mapping)/.test(name)) return 'taxonomy';
     if (/^(review_|disputes_|dispute_|badge_)/.test(name)) return 'trust';
     if (/^(audit_search|analytics_dashboard)$/.test(name)) return 'analytics';
+    if (/^(notif_|notifications_)/.test(name)) return 'notification';
     if (name === 'media_download_url') return 'media';
     if (/^(ai_|mcp_)/.test(name)) return 'ai-mcp';
     return 'admin'; // reports, cases, flags, retention, four-eyes, assist sessions

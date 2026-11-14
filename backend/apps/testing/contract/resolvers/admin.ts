@@ -6,6 +6,7 @@ import { sql } from 'kysely';
 import { expect } from 'vitest';
 import { SoftAuthenticator } from '#libs/testing/webauthn.js';
 import { purpose, REASON } from '../../s8-support.js';
+import { openRecovery, recoverableStaff } from '../../s16b-support.js';
 import { ok, type Actor, type Harness, type Json, type Resolvers } from '../harness.js';
 
 /** A device-bound key registered by the staff member themselves (backend S16a). */
@@ -153,6 +154,51 @@ export const resolvers: Resolvers = {
     const first = await addKey(as, 'Old key');
     await addKey(as, 'New key');
     return { as, params: { method_id: first.id as string } };
+  },
+  // Contract 1.4.0 (backend S16b): staff account recovery, the administrators' side.
+  'admin.staff_recoveries_list': async (h) => {
+    const { user, codes } = await recoverableStaff(h.auth);
+    await openRecovery(h.auth, user, codes[0]!);
+    return {
+      as: await h.staff('platform_admin'),
+      query: { status: 'awaiting_approvals', limit: 10 },
+      check: (res) => expect((res.body.items as Json[]).length).toBeGreaterThan(0),
+    };
+  },
+  'admin.staff_recovery_get': async (h) => {
+    const { user, codes } = await recoverableStaff(h.auth, 'platform_support');
+    const { requestId } = await openRecovery(h.auth, user, codes[0]!);
+    return {
+      as: await h.staff('platform_admin'),
+      params: { request_id: requestId },
+      check: (res) =>
+        expect(res.body).toMatchObject({
+          user_id: user.id,
+          status: 'awaiting_approvals',
+          platform_roles: ['platform_support'],
+          approvals: 0,
+        }),
+    };
+  },
+  'admin.staff_recovery_approve': async (h) => {
+    const { user, codes } = await recoverableStaff(h.auth);
+    const { requestId } = await openRecovery(h.auth, user, codes[0]!);
+    return {
+      as: await h.staff('platform_admin'),
+      params: { request_id: requestId },
+      body: { reason: REASON, verification_method: 'in_person' },
+      check: (res) => expect(res.body).toMatchObject({ status: 'awaiting_approvals', approvals: 1, approved_by_me: true }),
+    };
+  },
+  'admin.staff_recovery_reject': async (h) => {
+    const { user, codes } = await recoverableStaff(h.auth);
+    const { requestId } = await openRecovery(h.auth, user, codes[0]!);
+    return {
+      as: await h.staff('platform_admin'),
+      params: { request_id: requestId },
+      body: { reason: REASON },
+      check: (res) => expect(res.body).toMatchObject({ status: 'rejected' }),
+    };
   },
   'admin.staff_recovery_codes_regenerate': async (h) => ({
     as: await h.staff('platform_admin'),

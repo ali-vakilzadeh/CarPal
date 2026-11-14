@@ -51,15 +51,15 @@ describe('staff tool (backend S12, admin console OQ-10 / BR-05)', () => {
     expect(() => parseSpec([{ email: 'x@y.test', name: 'X Y', roles: ['ADM'], password: 'short' }], 'dev')).toThrow();
   });
 
-  it('reports the pilot minimum: two ADM, one MOD, one CRV (a person may hold several roles)', () => {
-    expect(MINIMUM).toEqual({ ADM: 2, MOD: 1, CRV: 1, SUP: 0 });
+  it('reports the pilot minimum: four ADM (DQ-16), one MOD, one CRV (a person may hold several roles)', () => {
+    expect(MINIMUM).toEqual({ ADM: 4, MOD: 1, CRV: 1, SUP: 0 });
     expect(shortfall(DEV_STAFF)).toEqual([]);
-    expect(shortfall([{ roles: ['ADM', 'MOD', 'CRV'] }])).toEqual(['ADM: 1 of 2']);
-    expect(shortfall([{ roles: ['SUP'] }])).toEqual(['ADM: 0 of 2', 'MOD: 0 of 1', 'CRV: 0 of 1']);
+    expect(shortfall([{ roles: ['ADM', 'MOD', 'CRV'] }])).toEqual(['ADM: 1 of 4']);
+    expect(shortfall([{ roles: ['SUP'] }])).toEqual(['ADM: 0 of 4', 'MOD: 0 of 1', 'CRV: 0 of 1']);
   });
 
   it('keeps the development accounts and create in dev only', () => {
-    expect(DEV_STAFF.map((s) => s.roles.join(','))).toEqual(['ADM', 'ADM', 'MOD', 'CRV', 'SUP']);
+    expect(DEV_STAFF.map((s) => s.roles.join(','))).toEqual(['ADM', 'ADM', 'MOD', 'CRV', 'SUP', 'ADM', 'ADM']);
     expect(() => assertDev('dev', 'dev:staff create')).not.toThrow();
     expect(() => assertDev('prod', 'dev:staff create')).toThrow(/only runs with CARPAL_ENV=dev/);
   });

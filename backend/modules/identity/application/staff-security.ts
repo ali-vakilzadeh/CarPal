@@ -292,6 +292,19 @@ export class AdminStaffRecoveryCodesRegenerateHandler implements OperationHandle
   }
 }
 
+// ------------------------------------------------------------------ notices to administrators
+
+/** Email and language of every active administrator but `exceptUserId` (staff security notices: break glass, S16b recovery). */
+export async function activeAdmins(scope: TxScope, exceptUserId: string): Promise<{ email: string; locale: string }[]> {
+  const { rows } = await sql<{ email: string; locale: string }>`
+    SELECT DISTINCT u.email, u.locale
+      FROM identity.role_memberships m
+      JOIN identity.user_accounts u ON u.id = m.user_id AND u.deleted_at IS NULL AND u.status = 'active'
+     WHERE m.organization_id IS NULL AND m.role = 'platform_admin' AND m.status = 'active' AND m.deleted_at IS NULL
+       AND u.id <> ${exceptUserId}::uuid`.execute(scope.db);
+  return rows;
+}
+
 // ------------------------------------------------------------------ break glass
 
 export const BREAK_GLASS_EVENT = 'staff.break_glass';
@@ -324,19 +337,21 @@ export async function breakGlass(
     previous: `${summary.keys} WebAuthn credentials, ${summary.codes} open recovery codes`,
     next: 'keys and recovery codes disabled; the next sign-in enrols a key again',
   });
+  // staff_name: for the administrators' in-app staff notice (S17).
+  const account = await getUser(scope, userId);
   await publishEvent(scope, {
     type: BREAK_GLASS_EVENT,
     aggregateType: 'user_account',
     aggregateId: userId,
-    payload: { user_id: userId },
+    payload: { user_id: userId, staff_name: account ? (account.display_name ?? account.full_name) : '' },
   });
   return summary;
 }
 
 /**
  * staff.break_glass in the running backend: ends the account's sessions and refresh tokens, drops its cached
- * permissions and tells the account and every other active administrator by email. The in-app staff notice comes
- * with the staff notices of S17.
+ * permissions and tells the account and every other active administrator by email. The in-app staff notice is
+ * routed by the notification module from the same event (S17).
  */
 @Injectable()
 export class StaffBreakGlassConsumer extends EventConsumer {
@@ -359,13 +374,7 @@ export class StaffBreakGlassConsumer extends EventConsumer {
       { actorType: 'system' },
       async (scope) => {
         const account = await getUser(scope, userId);
-        const { rows: admins } = await sql<{ email: string; locale: string }>`
-          SELECT DISTINCT u.email, u.locale
-            FROM identity.role_memberships m
-            JOIN identity.user_accounts u ON u.id = m.user_id AND u.deleted_at IS NULL AND u.status = 'active'
-           WHERE m.organization_id IS NULL AND m.role = 'platform_admin' AND m.status = 'active' AND m.deleted_at IS NULL
-             AND u.id <> ${userId}::uuid`.execute(scope.db);
-        return { account, admins };
+        return { account, admins: await activeAdmins(scope, userId) };
       },
       { readOnly: true },
     );
