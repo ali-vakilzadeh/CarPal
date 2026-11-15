@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CarPal provider portal and Workshop PWA — screen mockup</title>
+<link rel="stylesheet" href="../../Docs/carpal-design-system/tokens.css">
+<style>
+/* Mockup only. Every colour, size and radius comes from Docs/carpal-design-system/tokens.css.
+   Logical properties only (start/end), so the RTL switch is a real layout check. */
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--surface-sunken);color:var(--ink);font-family:var(--font-sans);font-size:17px;line-height:26px}
+a{color:var(--accent)}
+h1,h2,h3,h4,p{margin:0}
+button{font:inherit;color:inherit}
+.i{width:var(--icon-md);height:var(--icon-md);fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:middle}
+.i.sm{width:var(--icon-sm);height:var(--icon-sm)}
+.i.fill{fill:currentColor}
+[dir="rtl"] .mirror{transform:scaleX(-1)}
+.star{width:18px;height:18px;fill:var(--signal);stroke:var(--ink);stroke-width:1.5}
+.star.off{fill:none;stroke:var(--ink-muted)}
+bdi{unicode-bidi:isolate}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- page chrome ---------- */
+.page-head{position:sticky;top:0;z-index:10;background:var(--surface);border-block-end:2px solid var(--divider);padding:var(--space-3) var(--space-6);display:flex;flex-wrap:wrap;gap:var(--space-4);align-items:center;justify-content:space-between}
+.page-head .brand{font-weight:800;font-size:22px}
+.page-head .brand small{font-weight:600;font-size:15px;color:var(--ink-muted);margin-inline-start:var(--space-2)}
+.controls{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:center}
+.seg{display:inline-flex;border:2px solid var(--border-inactive);border-radius:var(--radius-pill);overflow:hidden}
+.seg button{border:0;background:transparent;min-height:40px;padding-inline:var(--space-4);font-weight:700;font-size:15px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink)}
+.seg button[aria-pressed="true"]::before{content:"✓ "}
+.toc{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+.toc a{font-weight:700;font-size:15px;text-decoration:none;padding:var(--space-2) var(--space-3);border-radius:var(--radius-pill);border:2px solid var(--border-inactive);color:var(--ink)}
+main{padding:var(--space-8) var(--space-6);max-width:1680px;margin-inline:auto}
+section.group{margin-block-end:var(--space-12)}
+section.group>h2{font-size:28px;line-height:34px;font-weight:800;margin-block-end:var(--space-2)}
+section.group>p.lead{color:var(--ink-muted);max-width:var(--measure);margin-block-end:var(--space-6)}
+.flow-title{font-size:19px;font-weight:700;margin-block:var(--space-8) var(--space-4);display:flex;gap:var(--space-2);align-items:center}
+.flow-title .step{background:var(--signal);color:var(--on-signal);border-radius:var(--radius-pill);min-width:32px;height:32px;display:inline-grid;place-items:center;font-weight:800}
+.gallery{display:flex;flex-wrap:wrap;gap:var(--space-8);align-items:flex-start}
+.shot{width:360px}
+.meta{margin-block-start:var(--space-3);font-size:15px;line-height:22px}
+.meta .id{font-weight:800}
+.meta .mir{color:var(--ink-muted)}
+.meta code{font-size:13px;font-weight:600;background:var(--surface);border:1px solid var(--divider);border-radius:var(--radius-sm);padding:0 4px;word-break:break-word}
+.proposed-tag{display:inline-block;margin-block-end:var(--space-2);font-size:13px;font-weight:800;border:2px dashed var(--danger);color:var(--danger);border-radius:var(--radius-sm);padding:0 var(--space-2)}
+
+/* scope table */
+.scope{width:100%;max-width:1100px;border-collapse:collapse;background:var(--surface);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-1);font-size:15px;line-height:22px}
+.scope th,.scope td{text-align:start;padding:var(--space-3) var(--space-4);border-block-end:1px solid var(--divider);vertical-align:top}
+.scope th{background:var(--accent-soft);font-weight:800}
+.scope td:first-child{font-weight:700;white-space:nowrap}
+.yes,.no,.lnk,.prop{display:inline-flex;gap:4px;align-items:center;font-weight:700}
+.yes{color:var(--success)} .no{color:var(--ink-muted)} .lnk{color:var(--accent)} .prop{color:var(--danger)}
+[data-theme="sun"] .scope{border:2px solid var(--border)}
+.legend{display:flex;flex-wrap:wrap;gap:var(--space-4);margin-block:var(--space-3) var(--space-6);font-size:15px}
+
+/* ---------- phone frame ---------- */
+.phone{width:360px;height:760px;border:10px solid var(--Metal_black);border-radius:36px;background:var(--surface);overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:var(--shadow-2)}
+[data-theme="dark"] .phone{border-color:#2a346e}
+.phone.proposed{outline:3px dashed var(--danger);outline-offset:6px}
+.sbar{height:26px;flex:none;display:flex;justify-content:space-between;align-items:center;padding-inline:var(--space-5);font-size:13px;font-weight:700}
+.top{height:56px;flex:none;display:flex;align-items:center;gap:var(--space-2);padding-inline:var(--space-2);border-block-end:1px solid var(--divider)}
+.top .t{flex:1;font-weight:800;font-size:17px;line-height:22px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top .t small{display:block;font-size:13px;font-weight:600;color:var(--ink-muted)}
+.ib{width:var(--tap-min);height:var(--tap-min);display:inline-grid;place-items:center;border:0;background:transparent;border-radius:var(--radius-pill);position:relative;flex:none}
+.dot{position:absolute;inset-block-start:8px;inset-inline-end:8px;min-width:18px;height:18px;border-radius:var(--radius-pill);background:var(--signal);color:var(--on-signal);font-size:12px;font-weight:800;display:grid;place-items:center;padding-inline:4px;box-shadow:0 0 0 2px var(--surface)}
+.body{flex:1;overflow-y:auto;scrollbar-width:thin;padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-3)}
+.body.flush{padding:0}
+.tabs{height:var(--bar-height);flex:none;display:grid;grid-template-columns:repeat(4,1fr);border-block-start:1px solid var(--divider);background:var(--surface)}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:600;color:var(--ink-muted);position:relative}
+.tab.on{color:var(--ink);font-weight:800}
+.tab.on::before{content:"";position:absolute;inset-block-start:0;inset-inline:22%;height:4px;border-radius:0 0 4px 4px;background:var(--selector)}
+.tab .dot{inset-block-start:4px;inset-inline-end:calc(50% - 22px)}
+.bar{flex:none;display:flex;gap:var(--space-2);padding:var(--space-3) var(--space-4);border-block-start:1px solid var(--divider);background:var(--surface)}
+
+/* ---------- components ---------- */
+.btn{min-height:var(--control-md);border-radius:var(--radius-md);padding-inline:var(--space-4);display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);font-weight:700;font-size:16px;border:2px solid var(--border-inactive);background:var(--surface-raised);color:var(--ink);cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.pri{background:var(--signal);color:var(--on-signal);border-color:transparent;box-shadow:var(--shadow-signal)}
+[data-theme="sun"] .btn.pri{border-color:var(--border)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--accent);padding-inline:var(--space-2)}
+.btn.danger{border-color:var(--danger);color:var(--danger)}
+.btn.block{width:100%}
+.btn.grow{flex:1}
+.btn.sm{min-height:var(--control-sm);font-size:15px}
+.card{background:var(--surface-raised);border-radius:var(--radius-lg);box-shadow:var(--shadow-1);padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2)}
+[data-theme="sun"] .card{border:2px solid var(--border)}
+[data-theme="dark"] .card{border:1px solid var(--divider)}
+.card.tight{padding:var(--space-3)}
+.row{display:flex;gap:var(--space-3);align-items:center}
+.row.top-a{align-items:flex-start}
+.row.between{justify-content:space-between}
+.col{display:flex;flex-direction:column;gap:var(--space-1);min-width:0}
+.grow{flex:1;min-width:0}
+.h{font-size:19px;line-height:26px;font-weight:800}
+.hs{font-size:17px;line-height:24px;font-weight:700}
+.muted{color:var(--ink-muted)}
+.cap{font-size:13px;line-height:18px;font-weight:600}
+.callout{font-size:15px;line-height:22px}
+.strong{font-weight:700}
+.sec-title{font-size:13px;font-weight:800;color:var(--ink-muted);letter-spacing:.02em;margin-block-start:var(--space-1)}
+.chip{min-height:40px;border-radius:var(--radius-pill);border:2px solid var(--border-inactive);padding-inline:var(--space-3);display:inline-flex;align-items:center;gap:6px;font-size:15px;font-weight:700;background:var(--surface);white-space:nowrap}
+.chip.on{background:var(--accent-soft);border-color:var(--border)}
+.chip.on::before{content:"✓"}
+.chips{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:var(--radius-sm);padding:1px 6px;font-size:13px;line-height:18px;font-weight:700;border:1px solid var(--border-inactive);color:var(--ink);background:var(--surface);white-space:nowrap}
+.badge.sig{background:var(--signal-soft);border-color:var(--signal)}
+.badge.ok{color:var(--success);border-color:var(--success)}
+.badge.warn{color:var(--danger);border-color:var(--danger)}
+.badge.acc{background:var(--accent-soft);border-color:var(--accent)}
+.ai{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:800;color:var(--accent);background:var(--accent-soft);border-radius:var(--radius-pill);padding:2px 8px}
+.aibox{border:2px solid var(--accent);border-radius:var(--radius-md);padding:var(--space-3);background:var(--surface);display:flex;flex-direction:column;gap:var(--space-2)}
+.safety{border:2px solid var(--danger);border-inline-start-width:6px;border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);display:flex;gap:var(--space-2);align-items:flex-start;font-size:15px;line-height:22px;font-weight:700}
+.safety .i{color:var(--danger)}
+.note{border-inline-start:4px solid var(--accent);padding-inline-start:var(--space-3);font-size:15px;line-height:22px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:15px;font-weight:700}
+.input{min-height:var(--control-md);border:2px solid var(--border-inactive);border-radius:var(--radius-md);padding:10px var(--space-3);background:var(--surface);font-size:17px;line-height:24px}
+.input.area{min-height:110px}
+.input.focus{border-color:var(--border);box-shadow:var(--ring-focus)}
+.avatar{width:var(--avatar-md);height:var(--avatar-md);border-radius:var(--radius-pill);background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:800;flex:none}
+.thumb{border-radius:var(--radius-md);background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;position:relative;overflow:hidden;font-size:13px;font-weight:800}
+.thumb .lbl{position:absolute;inset-block-end:6px;inset-inline-start:6px;background:var(--surface);color:var(--ink);border-radius:var(--radius-sm);padding:0 6px}
+.thumb.after{background:var(--signal-soft);color:var(--ink)}
+.plate{position:absolute;inset-block-end:18%;inset-inline-start:30%;width:40%;height:16%;border:2px dashed var(--danger);border-radius:4px;background:var(--divider)}
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:var(--space-3);align-items:center;padding-block:var(--space-3);border-block-end:1px solid var(--divider);min-height:var(--tap-min)}
+.li:last-child{border-block-end:0}
+.segtabs{display:flex;gap:var(--space-2);padding:var(--space-3) var(--space-4) 0;overflow-x:auto;scrollbar-width:none;flex:none}
+.segtabs .chip{flex:none}
+.segtabs .chip{min-height:40px}
+.tile{display:flex;gap:var(--space-3);align-items:center}
+.tile .big{font-size:34px;line-height:40px;font-weight:800;font-variant-numeric:tabular-nums}
+.ic-round{width:44px;height:44px;border-radius:var(--radius-pill);display:grid;place-items:center;background:var(--signal-soft);color:var(--ink);flex:none}
+.ic-round.blue{background:var(--accent-soft);color:var(--accent)}
+.progress{height:8px;border-radius:var(--radius-pill);background:var(--surface-sunken);border:1px solid var(--divider);overflow:hidden}
+.progress span{display:block;height:100%;background:var(--accent)}
+.stepper{display:flex;gap:var(--space-1)}
+.stepper span{flex:1;height:6px;border-radius:var(--radius-pill);background:var(--divider)}
+.stepper span.on{background:var(--signal)}
+.switch{width:52px;height:32px;border-radius:var(--radius-pill);background:var(--accent);position:relative;flex:none}
+.switch::after{content:"";position:absolute;inset-block-start:4px;inset-inline-end:4px;width:24px;height:24px;border-radius:50%;background:var(--surface)}
+.switch.off{background:var(--divider)}
+.switch.off::after{inset-inline-end:auto;inset-inline-start:4px}
+.codes{display:flex;gap:var(--space-2)}
+.codes span{width:44px;height:52px;border:2px solid var(--border-inactive);border-radius:var(--radius-md);display:grid;place-items:center;font-size:22px;font-weight:800}
+.codes span.f{border-color:var(--border);box-shadow:var(--ring-focus)}
+.scrim{position:absolute;inset:0;background:var(--scrim)}
+.sheet{position:absolute;inset-inline:0;inset-block-end:0;background:var(--surface);border-start-start-radius:var(--radius-lg);border-start-end-radius:var(--radius-lg);padding:var(--space-3) var(--space-4) var(--space-4);display:flex;flex-direction:column;gap:var(--space-3);box-shadow:var(--shadow-2)}
+[data-theme="sun"] .sheet{border-block-start:2px solid var(--border)}
+.grab{width:40px;height:5px;border-radius:var(--radius-pill);background:var(--divider);margin-inline:auto}
+.under{opacity:1}
+.ug{user-select:none}
+.lock{background:var(--Metal_black);color:var(--White)}
+.lock .clock{font-size:64px;line-height:72px;font-weight:800;text-align:center;margin-block-start:var(--space-8)}
+.lock .date{text-align:center;font-weight:600}
+.notif{background:var(--White);color:var(--Metal_black);border-radius:var(--radius-lg);padding:var(--space-3);display:flex;gap:var(--space-3);margin-inline:var(--space-3)}
+.notif .appicon{width:36px;height:36px;border-radius:10px;background:var(--light_orange);display:grid;place-items:center;flex:none;color:var(--Metal_black)}
+.stars{display:inline-flex;gap:2px;vertical-align:middle}
+.quote{font-size:15px;line-height:22px}
+.shopreply{background:var(--surface-sunken);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);margin-inline-start:var(--space-8)}
+[data-theme="sun"] .shopreply{border:2px solid var(--border-inactive)}
+
+/* ---------- desktop frame ---------- */
+.desk{width:100%;max-width:1280px;border:2px solid var(--border-inactive);border-radius:var(--radius-lg);overflow:hidden;background:var(--surface);box-shadow:var(--shadow-2)}
+.desk-bar{height:40px;background:var(--surface-sunken);display:flex;align-items:center;gap:var(--space-3);padding-inline:var(--space-4);border-block-end:1px solid var(--divider)}
+.desk-bar .url{flex:1;max-width:520px;height:28px;border-radius:var(--radius-pill);background:var(--surface);border:1px solid var(--divider);font-size:13px;font-weight:600;display:flex;align-items:center;padding-inline:var(--space-3);direction:ltr}
+.dots3{display:flex;gap:6px}.dots3 span{width:12px;height:12px;border-radius:50%;background:var(--divider)}
+.app{display:grid;grid-template-columns:232px 1fr 320px;min-height:640px}
+.app.two{grid-template-columns:220px 320px 1fr}
+.nav{border-inline-end:1px solid var(--divider);padding:var(--space-4) var(--space-3);display:flex;flex-direction:column;gap:2px;font-size:15px}
+.nav .org{display:flex;gap:var(--space-2);align-items:center;padding:var(--space-2);border:2px solid var(--border-inactive);border-radius:var(--radius-md);margin-block-end:var(--space-3);font-weight:800;line-height:20px}
+.nav a{display:flex;gap:var(--space-3);align-items:center;min-height:44px;padding-inline:var(--space-3);border-radius:var(--radius-md);color:var(--ink);text-decoration:none;font-weight:600}
+.nav a.on{background:var(--accent-soft);font-weight:800;box-shadow:inset 4px 0 0 var(--selector)}
+[dir="rtl"] .nav a.on{box-shadow:inset -4px 0 0 var(--selector)}
+.nav .c{margin-inline-start:auto;font-size:13px;font-weight:800;background:var(--signal);color:var(--on-signal);border-radius:var(--radius-pill);padding:0 8px}
+.dmain{padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-4);min-width:0}
+.drail{border-inline-start:1px solid var(--divider);padding:var(--space-6) var(--space-4);display:flex;flex-direction:column;gap:var(--space-4);background:var(--surface-sunken)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3)}
+.kpi .v{font-size:28px;line-height:34px;font-weight:800;font-variant-numeric:tabular-nums}
+.tbl{width:100%;border-collapse:collapse;font-size:15px;line-height:22px}
+.tbl th,.tbl td{text-align:start;padding:var(--space-2) var(--space-3);border-block-end:1px solid var(--divider)}
+.tbl th{font-size:13px;color:var(--ink-muted);font-weight:800}
+.tbl tr.sel td{background:var(--accent-soft)}
+.mlist .li{padding-inline:var(--space-4)}
+.mlist .li.sel{background:var(--accent-soft);box-shadow:inset 4px 0 0 var(--selector)}
+[dir="rtl"] .mlist .li.sel{box-shadow:inset -4px 0 0 var(--selector)}
+.overflow-x{overflow-x:auto}
+footer.notes{border-block-start:2px solid var(--divider);padding:var(--space-6);color:var(--ink-muted);font-size:15px;max-width:1100px;margin-inline:auto}
+</style>
+</head>
+<body>
+
+<!-- Icon set: 24 px grid, 2 px round stroke (Docs/carpal-design-system Iconography). -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M5 11l1.6-4.4A2 2 0 0 1 8.5 5h7a2 2 0 0 1 1.9 1.6L19 11"/><rect x="3" y="11" width="18" height="6" rx="2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M21 16l-5-5-8 8"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.8 5.8 6.2.8-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.8z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9h-6v-6H9v6H3z"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3 13l3-8h12l3 8v6H3zM3 13h5l1 2h6l1-2h5"/></symbol>
+  <symbol id="i-ai" viewBox="0 0 24 24"><path d="M11 3l1.8 5.2L18 10l-5.2 1.8L11 17l-1.8-5.2L4 10l5.2-1.8zM18.5 15l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.01"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-3-7z"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><path d="M3 3l18 18"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 7h13l-3-3M17 17H4l3 3"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5 3.5-5 3.5z"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v4l3 2"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 12v8h14v-8"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-team" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0 1 14 0M16 4.5a3.5 3.5 0 0 1 0 7M18 13.5a7 7 0 0 1 4 6.5"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></symbol>
+  <symbol id="i-part" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3l2 2.5h3.5V9L20 12l-2.5 3v3.5H14L12 21l-2-2.5H6.5V15L4 12l2.5-3V5.5H10z"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M3 9l2-5h14l2 5M4 9v11h16V9M3 9h18M9 20v-6h6v6"/></symbol>
+</svg>
+
+<header class="page-head">
+  <div class="brand">CarPal <small>Provider portal and Workshop PWA — screen mockup · proposal 2026-11-15</small></div>
+  <nav class="toc" aria-label="Sections">
+    <a href="#scope">Scope</a><a href="#start">Start</a><a href="#requests">Requests</a><a href="#replies">Replies</a><a href="#photos">Photos</a><a href="#proposed">Proposed</a><a href="#portal">Full portal</a>
+  </nav>
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Theme">
+      <button data-theme-set="light" aria-pressed="true">Daylight</button>
+      <button data-theme-set="sun" aria-pressed="false">Sunlight</button>
+      <button data-theme-set="dark" aria-pressed="false">Night</button>
+    </div>
+    <div class="seg" role="group" aria-label="Direction">
+      <button data-dir-set="ltr" aria-pressed="true">LTR</button>
+      <button data-dir-set="rtl" aria-pressed="false">RTL check</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ================= SCOPE ================= -->
+<section class="group" id="scope">
+  <h2>Two surfaces of one business app</h2>
+  <p class="lead">The full provider portal (web.carpals.ir, desktop first) keeps every P- screen of Docs/90 §6. The compact <strong>CarPal Workshop</strong> PWA (web.carpals.ir/&lt;locale&gt;/workshop, installed on the phone) does three jobs for workshops without a computer: answer appointment requests, reply to customers, post before/after photos. Everything else opens the full portal. Plan: <code>frontend/provider-dev-plan.json</code>.</p>
+  <div class="legend">
+    <span class="yes"><svg class="i sm"><use href="#i-check"/></svg>In the Workshop PWA</span>
+    <span class="lnk"><svg class="i sm mirror"><use href="#i-ext"/></svg>Opens the full portal</span>
+    <span class="prop"><svg class="i sm"><use href="#i-alert"/></svg>Proposed, needs the owner's OK</span>
+    <span class="no"><svg class="i sm"><use href="#i-x"/></svg>Full portal only</span>
+  </div>
+  <div class="overflow-x">
+  <table class="scope">
+    <thead><tr><th>Area (Docs/90 §6.1)</th><th>Full portal</th><th>Workshop PWA</th><th>Story (Docs/11)</th></tr></thead>
+    <tbody>
+      <tr><td>Sign-up and onboarding</td><td>P-ONB-01..08, responsive to phone width</td><td><span class="lnk"><svg class="i sm mirror"><use href="#i-ext"/></svg>Opens the wizard</span> · sign-in only (PW-AUTH-01)</td><td>Ch.1-2</td></tr>
+      <tr><td>Dashboard</td><td>P-DASH-01</td><td><span class="yes"><svg class="i sm"><use href="#i-check"/></svg>Today (PW-HOME-01)</span>, three jobs only</td><td>Ch.3</td></tr>
+      <tr><td>Requests</td><td>P-REQ-01, P-REQ-02</td><td><span class="yes"><svg class="i sm"><use href="#i-check"/></svg>PW-REQ-01..03</span>: accept, propose time, decline, ask</td><td>Ch.5</td></tr>
+      <tr><td>Job status and completion</td><td>P-REQ-02, P-CAL-01, job log</td><td><span class="prop"><svg class="i sm"><use href="#i-alert"/></svg>PW-JOB-01 Close job (PRV-OQ-02)</span></td><td>Ch.7</td></tr>
+      <tr><td>Calendar, availability</td><td>P-CAL-01, P-CAL-02</td><td><span class="no"><svg class="i sm"><use href="#i-x"/></svg></span> a "day load" line in the request</td><td>Ch.4-5</td></tr>
+      <tr><td>Reviews</td><td>P-REV-01..05</td><td><span class="yes"><svg class="i sm"><use href="#i-check"/></svg>Inbox, AI-drafted reply, approvals (PW-RPL-01/02/04)</span></td><td>Ch.8</td></tr>
+      <tr><td>Comments on showcases and posts</td><td>Comments tab in P-REV-01, P-PORT-01</td><td><span class="yes"><svg class="i sm"><use href="#i-check"/></svg>Reply as the shop (PW-RPL-03)</span> needs PRV-BR-01..03</td><td>Docs/22 W-PUB-05</td></tr>
+      <tr><td>Portfolio</td><td>P-PORT-01..03</td><td><span class="yes"><svg class="i sm"><use href="#i-check"/></svg>Before/after from a job (PW-PHO-01..04)</span></td><td>Ch.8</td></tr>
+      <tr><td>Profile, team, settings, plan</td><td>P-PROF-01..05, P-TEAM-01, P-SET-01</td><td><span class="lnk"><svg class="i sm mirror"><use href="#i-ext"/></svg>Opens the full portal</span> (language, theme, notifications stay in the app)</td><td>Ch.4</td></tr>
+      <tr><td>Insights</td><td>P-INS-01..04</td><td><span class="lnk"><svg class="i sm mirror"><use href="#i-ext"/></svg>Opens the full portal</span></td><td>Ch.8</td></tr>
+      <tr><td>Parts search, trade accounts</td><td>P-PART-01/02 (new)</td><td><span class="no"><svg class="i sm"><use href="#i-x"/></svg></span> deferred</td><td>Ch.6</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ================= START ================= -->
+<section class="group" id="start">
+  <h2>Workshop PWA — start</h2>
+  <p class="lead">Reza installs CarPal Workshop on his phone, signs in with a code and gets a push when Sara's request arrives (Docs/11 Ch.3 and Ch.5).</p>
+  <div class="gallery">
+
+    <!-- PW-AUTH-01 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">08:02</span><span>4G ▮▮▮</span></div>
+        <div class="body" style="gap:var(--space-4);padding-block-start:var(--space-8)">
+          <div class="row"><span class="ic-round"><svg class="i"><use href="#i-wrench"/></svg></span><div class="col"><span class="h">CarPal Workshop</span><span class="cap muted">For repair shops</span></div></div>
+          <h3 class="h" style="font-size:22px;line-height:28px">Sign in to your workshop</h3>
+          <div class="field"><label>Mobile number</label><div class="input num" dir="ltr"><bdi>+98 912 345 6789</bdi></div></div>
+          <div class="field"><label>Code we sent you</label>
+            <div class="codes num" dir="ltr"><span>4</span><span>8</span><span>1</span><span class="f">2</span><span></span><span></span></div>
+            <span class="cap muted">Resend in 0:41</span>
+          </div>
+          <label class="row callout"><span class="switch"></span>Keep me signed in on this phone</label>
+          <button class="btn pri block">Sign in</button>
+          <button class="btn block"><svg class="i"><use href="#i-key"/></svg>Use a passkey</button>
+          <div class="callout muted" style="margin-block-start:auto">New business? <a href="#">Set up your workshop in the full portal</a></div>
+        </div>
+      </div>
+      <div class="meta"><div class="id">PW-AUTH-01 · Sign in</div><div class="mir">Mirrors S-AUTH-02. No sign-up here: onboarding runs in the full portal (PRV-OQ-03).</div><code>auth.otp_start</code> <code>auth.otp_verify</code> <code>auth.webauthn_options</code></div>
+    </div>
+
+    <!-- PW-SYS-01 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">08:03</span><span>4G ▮▮▮</span></div>
+        <div class="top"><span class="t">Set up this phone<small>Step 2 of 2</small></span></div>
+        <div class="body">
+          <div class="card tight">
+            <span class="sec-title">YOUR BUSINESS</span>
+            <div class="row"><span class="avatar">RA</span><div class="col grow"><span class="hs">Reza Auto Suspension</span><span class="cap muted">Owner · Verified Business</span></div><svg class="i" style="color:var(--success)"><use href="#i-check"/></svg></div>
+          </div>
+          <div class="card tight">
+            <div class="row"><svg class="i"><use href="#i-sun"/></svg><div class="col grow"><span class="hs">Working outside?</span><span class="callout muted">Sunlight mode is easier to read in bright light.</span></div><span class="switch"></span></div>
+          </div>
+          <div class="card tight">
+            <div class="row"><svg class="i"><use href="#i-down"/></svg><span class="hs">Add to Home Screen</span></div>
+            <span class="callout">Android: tap <strong>Install</strong>.<br>iPhone: tap <svg class="i sm"><use href="#i-share"/></svg> Share, then <strong>Add to Home Screen</strong>. iPhones only show new requests after this.</span>
+            <button class="btn sm">Install</button>
+          </div>
+          <div class="card tight">
+            <div class="row"><svg class="i"><use href="#i-bell"/></svg><div class="col grow"><span class="hs">Get new requests on this phone</span><span class="callout muted">New requests, reviews, comments and photo approvals.</span></div></div>
+          </div>
+        </div>
+        <div class="bar"><button class="btn ghost">Not now</button><button class="btn pri grow">Turn on notifications</button></div>
+      </div>
+      <div class="meta"><div class="id">PW-SYS-01 · Install and notifications</div><div class="mir">First run. Push permission is asked only on this tap (Docs/22 §2.5).</div><code>me.memberships_list</code> <code>push_tokens.register</code> <code>notification_prefs.put</code></div>
+    </div>
+
+    <!-- Lock screen push -->
+    <div class="shot">
+      <div class="phone lock">
+        <div class="sbar"><span class="num">21:14</span><span>4G ▮▮▮</span></div>
+        <div class="clock num">21:14</div>
+        <div class="date">Tuesday 11 November</div>
+        <div style="margin-block-start:var(--space-8)" class="notif">
+          <span class="appicon"><svg class="i sm"><use href="#i-wrench"/></svg></span>
+          <div class="col">
+            <span class="cap" style="font-weight:800">CarPal Workshop · now</span>
+            <span class="strong callout">New appointment request</span>
+            <span class="callout">BMW 320i (E90), front suspension noise, within 2 weeks.</span>
+          </div>
+        </div>
+      </div>
+      <div class="meta"><div class="id">Web push</div><div class="mir">Tapping opens /workshop/requests/&lt;id&gt;. Needs the backend web push sender (PRV-BR-06, PWA DI-72).</div></div>
+    </div>
+
+    <!-- PW-HOME-01 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">08:40</span><span>4G ▮▮▮</span></div>
+        <div class="top">
+          <span class="avatar" style="width:36px;height:36px;margin-inline-start:var(--space-2)">RA</span>
+          <span class="t">Reza Auto Suspension<small>Wednesday 12 November</small></span>
+          <button class="ib" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="dot num">4</span></button>
+        </div>
+        <div class="body">
+          <div class="card tight">
+            <div class="tile"><span class="ic-round"><svg class="i"><use href="#i-inbox"/></svg></span><div class="col grow"><span class="hs">New requests</span><span class="cap muted">Oldest waiting 11 h · You usually reply in 2 h 10 min</span></div><span class="big">3</span></div>
+            <div class="safety"><svg class="i sm"><use href="#i-alert"/></svg><span>1 safety-critical: brake pedal goes soft</span></div>
+            <button class="btn pri block">Answer requests</button>
+          </div>
+          <div class="card tight">
+            <div class="tile"><span class="ic-round blue"><svg class="i mirror"><use href="#i-chat"/></svg></span><div class="col grow"><span class="hs">Replies waiting</span><span class="cap muted">1 review · 1 comment · 1 approval (5 days left)</span></div><span class="big">3</span></div>
+          </div>
+          <div class="card tight">
+            <div class="tile"><span class="ic-round blue"><svg class="i"><use href="#i-camera"/></svg></span><div class="col grow"><span class="hs">Photos</span><span class="cap muted">1 job ready for photos · 1 waiting for customer</span></div></div>
+          </div>
+          <span class="sec-title">TODAY ON THE LIFTS</span>
+          <div class="list">
+            <div class="li"><span class="strong num">09:00</span><div class="col grow"><span class="callout strong">Mercedes C200 (W205)</span><span class="cap muted">Rear shock absorbers · 3 h</span></div><span class="badge ok">Confirmed</span></div>
+            <div class="li"><span class="strong num">13:30</span><div class="col grow"><span class="callout strong">BMW 530i (F10)</span><span class="cap muted">Inspection · 45 min</span></div><span class="badge ok">Confirmed</span></div>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab on"><svg class="i fill"><use href="#i-home"/></svg>Today</div>
+          <div class="tab"><svg class="i"><use href="#i-inbox"/></svg>Requests<span class="dot num">3</span></div>
+          <div class="tab"><svg class="i mirror"><use href="#i-chat"/></svg>Replies<span class="dot num">3</span></div>
+          <div class="tab"><svg class="i"><use href="#i-camera"/></svg>Photos</div>
+        </div>
+      </div>
+      <div class="meta"><div class="id">PW-HOME-01 · Today</div><div class="mir">Mirrors P-DASH-01, reduced to the three jobs. Safety-critical first.</div><code>provider.appointments_list</code> <code>reviews.org_list</code> <code>review_approvals.list</code> <code>provider.insights_get</code></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================= REQUESTS ================= -->
+<section class="group" id="requests">
+  <h2>Job 1 — answer appointment requests</h2>
+  <p class="lead">Neda opens Sara's request in the morning and proposes Thursday 14:00 instead of the morning slot, so a part can be ordered for the next day (Docs/11 Ch.5).</p>
+  <div class="gallery">
+
+    <!-- PW-REQ-01 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">08:41</span><span>4G ▮▮▮</span></div>
+        <div class="top"><span class="t" style="padding-inline-start:var(--space-2)">Requests</span><button class="ib" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="dot num">4</span></button></div>
+        <div class="segtabs"><span class="chip on">New 3</span><span class="chip">Proposed 1</span><span class="chip">Upcoming 6</span></div>
+        <div class="body">
+          <div class="card tight">
+            <div class="safety"><svg class="i sm"><use href="#i-alert"/></svg><span>Safety-critical</span></div>
+            <div class="row between"><span class="hs">BMW X3 (F25) · 2014</span><span class="cap muted num">40 min</span></div>
+            <span class="callout">Brake pedal goes soft, grinding at low speed</span>
+            <div class="chips"><span class="badge warn">As soon as possible</span><span class="badge acc"><svg class="i sm"><use href="#i-ai"/></svg>Help Me</span></div>
+          </div>
+          <div class="card tight" style="outline:3px solid var(--signal)">
+            <div class="row between"><span class="hs">BMW 320i (E90) · 2012</span><span class="cap muted num">11 h</span></div>
+            <span class="callout">Front suspension noise · knock over bumps</span>
+            <div class="chips"><span class="badge">Within 2 weeks</span><span class="badge">Thu or Sat morning</span><span class="badge acc"><svg class="i sm"><use href="#i-ai"/></svg>Help Me</span></div>
+            <span class="cap muted">Sara M. · first visit</span>
+          </div>
+          <div class="card tight">
+            <div class="row between"><span class="hs">Peugeot 206 · 2009</span><span class="cap muted num">1 d</span></div>
+            <span class="callout">Clutch slipping on hills</span>
+            <div class="chips"><span class="badge">This week</span><span class="badge">Triage: not provided</span></div>
+            <span class="cap muted">No evidence for Peugeot in your profile</span>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab"><svg class="i"><use href="#i-home"/></svg>Today</div>
+          <div class="tab on"><svg class="i fill"><use href="#i-inbox"/></svg>Requests<span class="dot num">3</span></div>
+          <div class="tab"><svg class="i mirror"><use href="#i-chat"/></svg>Replies<span class="dot num">3</span></div>
+          <div class="tab"><svg class="i"><use href="#i-camera"/></svg>Photos</div>
+        </div>
+      </div>
+      <div class="meta"><div class="id">PW-REQ-01 · Requests</div><div class="mir">Mirrors P-REQ-01. Request age and safety sort; mismatch note from the server.</div><code>provider.appointments_list</code></div>
+    </div>
+
+    <!-- PW-REQ-02 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">08:42</span><span>4G ▮▮▮</span></div>
+        <div class="top"><button class="ib" aria-label="Back"><svg class="i mirror"><use href="#i-back"/></svg></button><span class="t">BMW 320i (E90)<small>Sara M. · first visit</small></span><span class="badge" style="margin-inline-end:var(--space-2)">Reviewing</span></div>
+        <div class="body" style="gap:var(--space-3)">
+          <div class="row callout"><svg class="i"><use href="#i-car"/></svg><span>2012 · petrol · <span class="num">151,200</span> km</span></div>
+          <div class="aibox">
+            <span class="ai"><svg class="i sm"><use href="#i-ai"/></svg>AI pre-visit summary</span>
+            <span class="callout">Single knock from the front right over bumps, started two weeks ago and getting louder. No steering play, no pulling. Likely: front control arm bushings, sway bar links, strut mounts.</span>
+          </div>
+          <div class="row">
+            <div class="thumb" style="width:120px;height:72px"><svg class="i"><use href="#i-play"/></svg><span class="lbl num">0:10</span></div>
+            <div class="col grow"><span class="callout strong">Video, sound on</span><span class="cap muted">The knock is audible</span></div>
+          </div>
+          <div class="note"><span class="strong">Shared history</span><br>Front brake pads and discs · 14 months ago</div>
+          <span class="sec-title">PREFERRED TIMES</span>
+          <div class="chips"><span class="chip">Thu 13 · morning</span><span class="chip">Sat 15 · morning</span></div>
+          <div class="aibox">
+            <span class="ai"><svg class="i sm"><use href="#i-ai"/></svg>AI suggestion</span>
+            <span class="callout">2 h repair slot. Control arms for this model are often not in stock locally: an afternoon slot lets you order a part for the next morning.</span>
+            <span class="cap muted">Thursday: 1 of 2 lifts free all day</span>
+          </div>
+        </div>
+        <div class="bar">
+          <button class="ib" aria-label="More actions" style="border:2px solid var(--border-inactive);border-radius:var(--radius-md)"><svg class="i"><use href="#i-more"/></svg></button>
+          <button class="btn grow">Propose time</button>
+          <button class="btn pri grow">Accept</button>
+        </div>
+      </div>
+      <div class="meta"><div class="id">PW-REQ-02 · Request detail</div><div class="mir">Mirrors P-REQ-02. History only with the customer's sharing consent, else "Not shared by customer". More: Decline, Ask for information.</div><code>provider.appointments_get</code> <code>pre_visit.provider_get</code> <code>ai.appointment_suggestions</code> <code>provider.calendar</code></div>
+    </div>
+
+    <!-- PW-REQ-03 propose -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">08:43</span><span>4G ▮▮▮</span></div>
+        <div class="top"><span class="t" style="padding-inline-start:var(--space-2)">BMW 320i (E90)</span></div>
+        <div class="body"><div class="aibox"><span class="callout">…</span></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <span class="h">Propose another time</span>
+          <span class="sec-title">DAY</span>
+          <div class="chips"><span class="chip on">Thu 13</span><span class="chip">Fri 14</span><span class="chip">Sat 15</span><span class="chip">Sun 16</span></div>
+          <span class="sec-title">TIME</span>
+          <div class="chips num"><span class="chip">08:00</span><span class="chip">10:30</span><span class="chip on">14:00</span><span class="chip">15:30</span></div>
+          <div class="row callout"><svg class="i sm"><use href="#i-clock"/></svg><span>2 h · <span class="ai"><svg class="i sm"><use href="#i-ai"/></svg>AI suggestion</span></span><button class="btn ghost sm" style="margin-inline-start:auto">Change</button></div>
+          <div class="field"><label>Note to Sara</label><div class="input area callout" dir="auto">We'll inspect first. An afternoon slot lets us order a part for the next morning if needed.</div></div>
+          <button class="btn pri block">Send proposal</button>
+        </div>
+      </div>
+      <div class="meta"><div class="id">PW-REQ-03 · Propose time</div><div class="mir">Status → alternative_proposed. Sara accepts or counters in the consumer app (W-APP-01).</div><code>provider.appointments_transition {to: alternative_proposed}</code></div>
+    </div>
+
+    <!-- PW-REQ-03 accept -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">08:43</span><span>4G ▮▮▮</span></div>
+        <div class="top"><span class="t" style="padding-inline-start:var(--space-2)">Mercedes C200 (W205)</span></div>
+        <div class="body"></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <span class="h">Accept request</span>
+          <span class="callout muted">Pick one of the customer's times.</span>
+          <div class="list">
+            <div class="li"><span class="chip on" style="min-height:36px">Sat 15</span><span class="callout grow">09:00-12:00</span><span class="cap muted">1 lift free</span></div>
+            <div class="li"><span class="chip" style="min-height:36px">Sun 16</span><span class="callout grow">08:00-11:00</span><span class="cap muted">2 lifts free</span></div>
+          </div>
+          <div class="field"><label>Start</label><div class="input num">Sat 15 Nov · 09:00</div></div>
+          <div class="field"><label>Duration</label><div class="input">1 h 30 min</div></div>
+          <button class="btn pri block">Confirm appointment</button>
+        </div>
+      </div>
+      <div class="meta"><div class="id">PW-REQ-03 · Accept</div><div class="mir">Capacity is re-checked on the server; 409 CAPACITY_UNAVAILABLE offers Propose time.</div><code>provider.appointments_transition {to: confirmed}</code></div>
+    </div>
+
+    <!-- PW-REQ-03 decline / ask -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">08:44</span><span>4G ▮▮▮</span></div>
+        <div class="top"><span class="t" style="padding-inline-start:var(--space-2)">Peugeot 206</span></div>
+        <div class="body"></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <span class="h">Decline request</span>
+          <span class="callout muted">The customer sees your reason and other shops.</span>
+          <div class="chips"><span class="chip">Fully booked</span><span class="chip on">We don't work on this car</span><span class="chip">We don't offer this service</span><span class="chip">Other</span></div>
+          <div class="field"><label>Message (optional)</label><div class="input area callout" dir="auto">Sorry, we only work on BMW and Mercedes.</div></div>
+          <button class="btn danger block">Decline request</button>
+          <div style="border-block-start:1px solid var(--divider);padding-block-start:var(--space-3)" class="row between"><span class="callout">Need more details first?</span><button class="btn sm">Ask the customer</button></div>
+        </div>
+      </div>
+      <div class="meta"><div class="id">PW-REQ-03 · Decline or ask</div><div class="mir">Reason chips need PRV-BR-05. "Ask the customer" sends a customer-visible note; status stays provider_reviewing.</div><code>provider.appointments_transition {to: cancelled}</code> <code>provider.note_create</code></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================= REPLIES ================= -->
+<section class="group" id="replies">
+  <h2>Job 2 — reply to customers</h2>
+  <p class="lead">Reza publishes the edited AI reply to Sara's 5-star review, confirms a walk-in customer and answers a comment on his showcase, all as the shop (Docs/11 Ch.8, Docs/22 W-PUB-05).</p>
+  <div class="gallery">
+
+    <!-- PW-RPL-01 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">10:05</span><span>4G ▮▮▮</span></div>
+        <div class="top"><span class="t" style="padding-inline-start:var(--space-2)">Replies</span><button class="ib" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg></button></div>
+        <div class="segtabs"><span class="chip on">Reviews 2</span><span class="chip">Comments 1</span><span class="chip">Approvals 1</span></div>
+        <div class="body">
+          <div class="card tight">
+            <div class="row between"><span class="stars"><svg class="star"><use href="#i-star"/></svg><svg class="star"><use href="#i-star"/></svg><svg class="star"><use href="#i-star"/></svg><svg class="star"><use href="#i-star"/></svg><svg class="star"><use href="#i-star"/></svg> <span class="strong num">5.0</span></span><span class="cap muted">Sat</span></div>
+            <span class="callout" dir="auto">Found the knock in ten minutes and showed me the torn bushing. Car was ready the next day…</span>
+            <div class="row"><span class="badge ok"><svg class="i sm"><use href="#i-shield"/></svg>Verified visit</span><span class="cap muted">Sara M. · Suspension</span></div>
+            <span class="badge sig" style="align-self:flex-start"><svg class="i sm"><use href="#i-ai"/></svg>Reply draft ready</span>
+          </div>
+          <div class="card tight">
+            <div class="row between"><span class="stars"><svg class="star"><use href="#i-star"/></svg><svg class="star"><use href="#i-star"/></svg><svg class="star off"><use href="#i-star"/></svg><svg class="star off"><use href="#i-star"/></svg><svg class="star off"><use href="#i-star"/></svg> <span class="strong num">2.0</span></span><span class="cap muted">Wed</span></div>
+            <span class="callout" dir="auto">Good repair but I waited 50 minutes past my appointment time and nobody told me.</span>
+            <div class="row"><span class="badge ok"><svg class="i sm"><use href="#i-shield"/></svg>Verified visit</span><span class="cap muted">Timeliness</span></div>
+            <span class="cap" style="color:var(--danger)">No reply yet · 2 days</span>
+          </div>
+          <div class="card tight">
+            <div class="row between"><span class="stars"><svg class="star"><use href="#i-star"/></svg><svg class="star"><use href="#i-star"/></svg><svg class="star"><use href="#i-star"/></svg><svg class="star"><use href="#i-star"/></svg><svg class="star off"><use href="#i-star"/></svg> <span class="strong num">4.0</span></span><span class="cap muted">2 Nov</span></div>
+            <span class="callout" dir="auto">Fair price for the alignment…</span>
+            <span class="cap muted"><svg class="i sm"><use href="#i-check"/></svg> Replied</span>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab"><svg class="i"><use href="#i-home"/></svg>Today</div>
+          <div class="tab"><svg class="i"><use href="#i-inbox"/></svg>Requests</div>
+          <div class="tab on"><svg class="i fill mirror"><use href="#i-chat"/></svg>Replies<span class="dot num">4</span></div>
+          <div class="tab"><svg class="i"><use href="#i-camera"/></svg>Photos</div>
+        </div>
+      </div>
+      <div class="meta"><div class="id">PW-RPL-01 · Replies</div><div class="mir">Mirrors P-REV-01 (Needs response first) plus comments and approvals.</div><code>reviews.org_list</code> <code>review_approvals.list</code> <code>{org}/comments (PRV-BR-02)</code></div>
+    </div>
+
+    <!-- PW-RPL-02 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">10:06</span><span>4G ▮▮▮</span></div>
+        <div class="top"><button class="ib" aria-label="Back"><svg class="i mirror"><use href="#i-back"/></svg></button><span class="t">Reply to Sara M.<small>Verified visit · BMW 3 Series · Suspension</small></span></div>
+        <div class="body">
+          <div class="row"><span class="stars"><svg class="star"><use href="#i-star"/></svg><svg class="star"><use href="#i-star"/></svg><svg class="star"><use href="#i-star"/></svg><svg class="star"><use href="#i-star"/></svg><svg class="star"><use href="#i-star"/></svg></span><span class="strong num">5.0</span></div>
+          <span class="quote" dir="auto">Found the knock in ten minutes and showed me the torn bushing. Car was ready the next day, and they told me to watch the left side.</span>
+          <div class="row between"><span class="ai"><svg class="i sm"><use href="#i-ai"/></svg>AI draft — edit before publishing</span></div>
+          <div class="chips"><span class="chip on">Friendly</span><span class="chip">Formal</span><span class="chip">Brief</span></div>
+          <div class="input area input focus callout" dir="auto">Thank you, Sara, for trusting us with your E90. Glad the knock is gone. As mentioned, the left side should be checked at your next service. We're here whenever you need us.</div>
+          <div class="row cap muted"><svg class="i sm" style="color:var(--success)"><use href="#i-check"/></svg>No liability or legal sensitivity detected</div>
+          <a class="callout" href="#">Flag or request mediation <svg class="i sm mirror"><use href="#i-ext"/></svg></a>
+        </div>
+        <div class="bar"><button class="btn grow">Save draft</button><button class="btn pri grow">Publish reply</button></div>
+      </div>
+      <div class="meta"><div class="id">PW-RPL-02 · Reply to a review</div><div class="mir">Mirrors P-REV-02. Stored as AI-assisted and edited; only a tap publishes. P+ roles only; staff see "Ask the owner".</div><code>ai.review_response_draft</code> <code>review_responses.create</code> <code>review_responses.publish</code></div>
+    </div>
+
+    <!-- PW-RPL-03 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">10:10</span><span>4G ▮▮▮</span></div>
+        <div class="top"><button class="ib" aria-label="Back"><svg class="i mirror"><use href="#i-back"/></svg></button><span class="t">Comment on your showcase</span></div>
+        <div class="body">
+          <div class="card tight">
+            <div class="row"><div class="thumb" style="width:56px;height:56px"><svg class="i"><use href="#i-image"/></svg></div><div class="thumb after" style="width:56px;height:56px"><svg class="i"><use href="#i-image"/></svg></div><div class="col grow"><span class="callout strong">Front lower control arm · BMW E90</span><span class="cap muted">Live · 212 views</span></div></div>
+          </div>
+          <div class="row top-a"><span class="avatar">KT</span><div class="col grow"><span class="callout strong">Kaveh T. <span class="cap muted">· 2 h</span></span><span class="callout" dir="auto">Does this also fix a steering wobble at 100 km/h? Mine is an F30.</span></div></div>
+          <div class="row top-a shopreply"><div class="col grow"><span class="callout strong">Reza Auto Suspension <span class="badge acc"><svg class="i sm"><use href="#i-wrench"/></svg>Shop</span></span><span class="cap muted">Replying as the shop</span></div></div>
+          <div class="input area focus callout" dir="auto">A wobble at that speed is usually wheel balance or a worn tie rod, not this bushing. Bring it in and we'll check both.</div>
+          <a class="callout" href="#"><svg class="i sm"><use href="#i-flag"/></svg> Report comment</a>
+        </div>
+        <div class="bar"><button class="btn pri block"><svg class="i mirror"><use href="#i-send"/></svg>Send reply</button></div>
+      </div>
+      <div class="meta"><div class="id">PW-RPL-03 · Reply to a comment</div><div class="mir">Shop badge as on W-PUB-05. Needs PRV-BR-01 (as_organization_id), PRV-BR-03 (reply to a comment).</div><code>comments.list</code> <code>comments.create</code></div>
+    </div>
+
+    <!-- PW-RPL-04 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">10:12</span><span>4G ▮▮▮</span></div>
+        <div class="top"><button class="ib" aria-label="Back"><svg class="i mirror"><use href="#i-back"/></svg></button><span class="t">Approval needed<small>5 days left</small></span></div>
+        <div class="body" style="gap:var(--space-4)">
+          <span class="h" style="font-size:22px;line-height:28px">Do you recognise this customer?</span>
+          <div class="card tight">
+            <div class="row"><span class="avatar">HA</span><div class="col"><span class="hs">Hossein A.</span><span class="cap muted">Review written 18 Nov</span></div></div>
+            <span class="callout">Kind of work: <strong>Suspension</strong></span>
+            <span class="cap muted">No CarPal appointment</span>
+          </div>
+          <span class="callout muted">You can't see or answer the review at this step. A low rating is never a reason to say no. No answer in 7 days counts as no objection.</span>
+          <div class="field"><label>Note for CarPal (optional)</label><div class="input callout muted">Only CarPal staff see this</div></div>
+          <div class="col" style="gap:var(--space-2);margin-block-start:auto">
+            <button class="btn pri block">Yes, this was our customer</button>
+            <button class="btn block">I don't recognise this customer</button>
+            <button class="btn ghost block">Not sure — ask CarPal</button>
+          </div>
+        </div>
+      </div>
+      <div class="meta"><div class="id">PW-RPL-04 · Approval request</div><div class="mir">Mirrors P-REV-04. A "no" opens a dispute decided by CarPal; it never removes the review.</div><code>review_approvals.answer</code></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================= PHOTOS ================= -->
+<section class="group" id="photos">
+  <h2>Job 3 — post before/after photos</h2>
+  <p class="lead">On Monday Reza takes four photos of Sara's job. The AI pairs them, flags the plate and drafts a caption. Sara approves, and the showcase goes live (Docs/11 Ch.8).</p>
+  <div class="gallery">
+
+    <!-- PW-PHO-01 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">09:30</span><span>4G ▮▮▮</span></div>
+        <div class="top"><span class="t" style="padding-inline-start:var(--space-2)">Photos</span></div>
+        <div class="body">
+          <span class="sec-title">JOBS READY FOR PHOTOS</span>
+          <div class="card tight">
+            <div class="row"><svg class="i"><use href="#i-car"/></svg><div class="col grow"><span class="hs">BMW 320i (E90)</span><span class="cap muted">Control arm replacement · completed Fri 14 Nov · Sara M.</span></div></div>
+            <button class="btn pri block"><svg class="i"><use href="#i-camera"/></svg>Add before/after</button>
+          </div>
+          <span class="sec-title">YOUR SHOWCASES</span>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)">
+            <div class="col"><div class="thumb after" style="height:96px"><svg class="i"><use href="#i-image"/></svg></div><span class="badge sig">Waiting for customer</span><span class="cap">W205 front struts</span></div>
+            <div class="col"><div class="thumb after" style="height:96px"><svg class="i"><use href="#i-image"/></svg></div><span class="badge ok"><svg class="i sm"><use href="#i-check"/></svg>Live</span><span class="cap">F30 control arms</span></div>
+            <div class="col"><div class="thumb" style="height:96px"><svg class="i"><use href="#i-image"/></svg></div><span class="badge">Draft</span><span class="cap">E60 steering rack</span></div>
+            <div class="col"><div class="thumb" style="height:96px"><svg class="i"><use href="#i-eyeoff"/></svg></div><span class="badge">Declined · private</span><span class="cap">E92 shocks</span></div>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab"><svg class="i"><use href="#i-home"/></svg>Today</div>
+          <div class="tab"><svg class="i"><use href="#i-inbox"/></svg>Requests</div>
+          <div class="tab"><svg class="i mirror"><use href="#i-chat"/></svg>Replies</div>
+          <div class="tab on"><svg class="i fill"><use href="#i-camera"/></svg>Photos</div>
+        </div>
+      </div>
+      <div class="meta"><div class="id">PW-PHO-01 · Photos</div><div class="mir">Mirrors P-PORT-01, reduced. Jobs come from completed CarPal appointments (PRV-OQ-06).</div><code>provider.portfolio_list</code> <code>provider.appointments_list {group: closed}</code></div>
+    </div>
+
+    <!-- PW-PHO-02 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">09:31</span><span>4G ▮▮</span></div>
+        <div class="top"><button class="ib" aria-label="Back"><svg class="i mirror"><use href="#i-back"/></svg></button><span class="t">New before/after<small>Step 2 of 4 · Photos</small></span></div>
+        <div class="body">
+          <div class="stepper"><span class="on"></span><span class="on"></span><span></span><span></span></div>
+          <div class="chips"><span class="badge acc"><svg class="i sm"><use href="#i-car"/></svg>BMW 320i E90 · Control arm replacement</span></div>
+          <span class="sec-title">BEFORE</span>
+          <div class="row">
+            <div class="thumb" style="width:96px;height:96px"><svg class="i"><use href="#i-image"/></svg><span class="lbl">Old arm</span></div>
+            <div class="thumb" style="width:96px;height:96px"><svg class="i"><use href="#i-image"/></svg><div class="plate"></div></div>
+            <button class="btn" style="width:96px;height:96px;flex-direction:column;gap:2px"><svg class="i"><use href="#i-plus"/></svg><span class="cap">Add</span></button>
+          </div>
+          <span class="sec-title">AFTER</span>
+          <div class="row">
+            <div class="thumb after" style="width:96px;height:96px"><svg class="i"><use href="#i-image"/></svg><span class="lbl">New arm</span></div>
+            <div class="col" style="width:96px;gap:6px"><div class="thumb after" style="width:96px;height:68px"><svg class="i"><use href="#i-image"/></svg></div><div class="progress"><span style="width:64%"></span></div><span class="cap muted num">64% · 410 KB</span></div>
+            <button class="btn" style="width:96px;height:96px;flex-direction:column;gap:2px"><svg class="i"><use href="#i-plus"/></svg><span class="cap">Add</span></button>
+          </div>
+          <div class="row" style="margin-block-start:var(--space-2)"><button class="btn grow"><svg class="i"><use href="#i-camera"/></svg>Take photo</button><button class="btn grow"><svg class="i"><use href="#i-image"/></svg>Gallery</button></div>
+          <span class="cap muted">Photos are resized on this phone before upload to save data.</span>
+        </div>
+        <div class="bar"><button class="btn pri block">Next: check photos</button></div>
+      </div>
+      <div class="meta"><div class="id">PW-PHO-02 · New before/after</div><div class="mir">Mirrors P-PORT-02 steps 1-2. Camera by file input with capture (no camera permission change, PRV-GD-05).</div><code>provider.portfolio_create</code> <code>media.upload_init/put/complete</code> <code>media.attach</code></div>
+    </div>
+
+    <!-- PW-PHO-03 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">09:33</span><span>4G ▮▮</span></div>
+        <div class="top"><button class="ib" aria-label="Back"><svg class="i mirror"><use href="#i-back"/></svg></button><span class="t">Check and caption<small>Step 3 of 4</small></span></div>
+        <div class="body">
+          <div class="stepper"><span class="on"></span><span class="on"></span><span class="on"></span><span></span></div>
+          <span class="ai"><svg class="i sm"><use href="#i-ai"/></svg>AI suggestions — check before sending</span>
+          <div class="row">
+            <div class="thumb" style="flex:1;height:84px"><svg class="i"><use href="#i-image"/></svg><span class="lbl">Before</span></div>
+            <button class="ib" aria-label="Swap before and after"><svg class="i"><use href="#i-swap"/></svg></button>
+            <div class="thumb after" style="flex:1;height:84px"><svg class="i"><use href="#i-image"/></svg><span class="lbl">After</span></div>
+          </div>
+          <div class="safety" style="font-weight:600"><svg class="i sm"><use href="#i-eyeoff"/></svg><div class="col grow"><span class="strong">Number plate in 1 photo</span><span class="cap">Blurred. Keep only if the customer agrees.</span></div><span class="switch"></span></div>
+          <div class="field"><label>Caption</label><div class="input area callout" dir="auto">Front right lower control arm replacement on a BMW 3 Series E90. Torn rear bushing caused a knock over bumps. Replaced with a Lemförder arm, alignment checked, completed the next morning.</div></div>
+          <div class="chips"><span class="chip on">BMW</span><span class="chip on">3 Series</span><span class="chip on">E90</span><span class="chip on">Suspension</span><span class="chip on">Control arm replacement</span><span class="chip"><svg class="i sm"><use href="#i-plus"/></svg>Tag</span></div>
+        </div>
+        <div class="bar"><button class="btn pri block">Next: preview</button></div>
+      </div>
+      <div class="meta"><div class="id">PW-PHO-03 · Check and caption</div><div class="mir">AI Showroom of P-PORT-02. Reza removed "OE-quality" and named the brand.</div><code>ai.showcase_compose</code> <code>media.redaction_decide</code> <code>provider.portfolio_update</code></div>
+    </div>
+
+    <!-- PW-PHO-04 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sbar"><span class="num">09:35</span><span>4G ▮▮</span></div>
+        <div class="top"><button class="ib" aria-label="Back"><svg class="i mirror"><use href="#i-back"/></svg></button><span class="t">Send for approval<small>Step 4 of 4</small></span></div>
+        <div class="body">
+          <div class="stepper"><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span></div>
+          <span class="sec-title">AS CUSTOMERS WILL SEE IT</span>
+          <div class="card tight">
+            <div class="row"><span class="avatar">RA</span><div class="col grow"><span class="callout strong">Reza Auto Suspension <span class="badge acc"><svg class="i sm"><use href="#i-wrench"/></svg>Shop</span></span><span class="cap muted">Showcase · BMW E90 · Suspension</span></div></div>
+            <div class="row"><div class="thumb" style="flex:1;height:110px"><span class="lbl">Before</span></div><div class="thumb after" style="flex:1;height:110px"><span class="lbl">After</span></div></div>
+            <span class="callout" dir="auto">Front right lower control arm replacement on a BMW 3 Series E90…</span>
+          </div>
+          <div class="note">Sara M. gets a link to approve these photos. Nothing is public until she approves and CarPal checks it.</div>
+          <label class="row callout"><span class="switch"></span><span class="grow">Also share to the CarPal feed</span></label>
+        </div>
+        <div class="bar"><button class="btn pri block"><svg class="i mirror"><use href="#i-send"/></svg>Ask Sara M. to approve</button></div>
+      </div>
+      <div class="meta"><div class="id">PW-PHO-04 · Send for customer approval</div><div class="mir">Customer side: W-REV-02 /l/cn (built in PWA P11). Feed switch only when community.feed.enabled is on.</div><code>provider.portfolio_consent_request</code> <code>provider.portfolio_publish</code> <code>posts.create</code></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================= PROPOSED ================= -->
+<section class="group" id="proposed">
+  <h2>Proposed addition — close the job</h2>
+  <p class="lead">Outside the three requested jobs, but without completion there is no service record, no Verified visit review, no review invitation and no evidence toward badges (Docs/11 Ch.7). Decision PRV-OQ-02.</p>
+  <div class="gallery">
+    <div class="shot">
+      <span class="proposed-tag">PROPOSED · PRV-OQ-02</span>
+      <div class="phone proposed">
+        <div class="sbar"><span class="num">12:20</span><span>4G ▮▮▮</span></div>
+        <div class="top"><button class="ib" aria-label="Back"><svg class="i mirror"><use href="#i-back"/></svg></button><span class="t">BMW 320i (E90)<small>Sara M. · Fri 14 Nov</small></span><span class="badge sig" style="margin-inline-end:var(--space-2)">Ready for pickup</span></div>
+        <div class="body">
+          <span class="sec-title">STATUS</span>
+          <div class="chips"><span class="chip">In progress</span><span class="chip">Awaiting parts</span><span class="chip on">Ready for pickup</span></div>
+          <span class="h">Close job</span>
+          <div class="field"><label>What was done</label><div class="input callout">Suspension · Control arm replacement</div></div>
+          <div class="field"><label>Final cost</label><div class="input num" dir="ltr">IRR 18,500,000</div></div>
+          <div class="field"><label>Warranty</label><div class="input callout" dir="auto">12 months on part and labour</div></div>
+          <button class="btn"><svg class="i"><use href="#i-camera"/></svg>Invoice photo</button>
+          <a class="callout" href="#">Parts used and cost breakdown <svg class="i sm mirror"><use href="#i-ext"/></svg></a>
+        </div>
+        <div class="bar"><button class="btn pri block">Close job</button></div>
+      </div>
+      <div class="meta"><div class="id">PW-JOB-01 · Update job / Close job</div><div class="mir">Status buttons come from allowed_transitions. Completion creates the service record and Sara's review invitation.</div><code>provider.appointments_transition {to: completed}</code></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FULL PORTAL ================= -->
+<section class="group" id="portal">
+  <h2>Full provider portal (desktop) — for comparison</h2>
+  <p class="lead">The same components in desktop layouts. The Workshop PWA's request card, pre-visit report, reply editor and showcase composer are built once and reused here (stages PP3, PP5, PP6).</p>
+
+  <div class="flow-title"><span class="step">1</span>P-DASH-01 Provider dashboard</div>
+  <div class="desk">
+    <div class="desk-bar"><div class="dots3"><span></span><span></span><span></span></div><div class="url">web.carpals.ir/en/provider/dashboard</div></div>
+    <div class="app">
+      <nav class="nav" aria-label="Portal">
+        <div class="org"><span class="avatar" style="width:36px;height:36px">RA</span><span>Reza Auto Suspension<br><span class="cap muted">Owner · switch</span></span></div>
+        <a class="on" href="#"><svg class="i"><use href="#i-home"/></svg>Dashboard</a>
+        <a href="#"><svg class="i"><use href="#i-inbox"/></svg>Requests<span class="c">3</span></a>
+        <a href="#"><svg class="i"><use href="#i-cal"/></svg>Calendar</a>
+        <a href="#"><svg class="i"><use href="#i-store"/></svg>Profile</a>
+        <a href="#"><svg class="i"><use href="#i-image"/></svg>Portfolio</a>
+        <a href="#"><svg class="i"><use href="#i-star"/></svg>Reviews<span class="c">3</span></a>
+        <a href="#"><svg class="i"><use href="#i-chart"/></svg>Insights</a>
+        <a href="#"><svg class="i"><use href="#i-part"/></svg>Parts</a>
+        <a href="#"><svg class="i"><use href="#i-wrench"/></svg>Job log</a>
+        <a href="#"><svg class="i"><use href="#i-team"/></svg>Team</a>
+        <a href="#"><svg class="i"><use href="#i-gear"/></svg>Settings</a>
+      </nav>
+      <div class="dmain">
+        <div class="row between"><h3 class="title-2" style="font-size:22px;font-weight:800">Good morning, Reza</h3><button class="btn pri"><svg class="i"><use href="#i-camera"/></svg>Add showcase</button></div>
+        <div class="kpis">
+          <div class="card tight kpi"><span class="cap muted">New requests</span><span class="v">3</span><span class="cap" style="color:var(--danger)">1 safety-critical</span></div>
+          <div class="card tight kpi"><span class="cap muted">Avg. response time</span><span class="v">2 h 10</span><span class="cap muted">last 30 days</span></div>
+          <div class="card tight kpi"><span class="cap muted">Rating</span><span class="v">4.8</span><span class="cap muted">41 reviews · 2 unanswered</span></div>
+          <div class="card tight kpi"><span class="cap muted">Profile completeness</span><span class="v">86%</span><div class="progress"><span style="width:86%"></span></div></div>
+        </div>
+        <div class="card">
+          <div class="row between"><span class="hs">Requests waiting</span><a href="#" class="callout">All requests</a></div>
+          <table class="tbl">
+            <thead><tr><th>Customer</th><th>Vehicle</th><th>Service</th><th>Urgency</th><th>Preferred</th><th>Age</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>Navid P.</td><td>BMW X3 (F25)</td><td>Brakes</td><td><span class="badge warn"><svg class="i sm"><use href="#i-alert"/></svg>Safety</span></td><td>ASAP</td><td class="num">40 min</td><td><button class="btn sm">Open</button></td></tr>
+              <tr class="sel"><td>Sara M.</td><td>BMW 320i (E90)</td><td>Suspension</td><td>Within 2 weeks</td><td>Thu / Sat am</td><td class="num">11 h</td><td><button class="btn sm">Open</button></td></tr>
+              <tr><td>Omid S.</td><td>Peugeot 206</td><td>Clutch</td><td>This week</td><td>Any</td><td class="num">1 d</td><td><button class="btn sm">Open</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <span class="hs">Today's appointments</span>
+          <div class="list">
+            <div class="li"><span class="strong num">09:00</span><span class="grow">Mercedes C200 (W205) · Rear shock absorbers · Lift 1 · Hamid</span><span class="badge ok">Confirmed</span></div>
+            <div class="li"><span class="strong num">13:30</span><span class="grow">BMW 530i (F10) · Inspection · Lift 2</span><span class="badge ok">Confirmed</span></div>
+          </div>
+        </div>
+      </div>
+      <aside class="drail">
+        <div class="card tight"><span class="hs">Review approvals</span><span class="callout">Hossein A. · Suspension · 5 days left</span><button class="btn sm">Answer</button></div>
+        <div class="card tight"><span class="ai"><svg class="i sm"><use href="#i-ai"/></svg>AI profile suggestion</span><span class="callout">8 of your recent jobs were front control arms on BMW F30. Add it as a highlighted service?</span><div class="row"><button class="btn sm">Reject</button><button class="btn sm pri">Accept</button></div></div>
+        <div class="card tight"><span class="hs">Provider Pro trial</span><span class="callout">41 days left · full insights and more AI drafts</span></div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="flow-title"><span class="step">2</span>P-REQ-01 / P-REQ-02 Requests, master–detail</div>
+  <div class="desk">
+    <div class="desk-bar"><div class="dots3"><span></span><span></span><span></span></div><div class="url">web.carpals.ir/en/provider/requests/apt_8f2c</div></div>
+    <div class="app two">
+      <nav class="nav" aria-label="Portal">
+        <div class="org"><span class="avatar" style="width:36px;height:36px">RA</span><span>Reza Auto Suspension<br><span class="cap muted">Bookings · Neda</span></span></div>
+        <a href="#"><svg class="i"><use href="#i-home"/></svg>Dashboard</a>
+        <a class="on" href="#"><svg class="i"><use href="#i-inbox"/></svg>Requests<span class="c">3</span></a>
+        <a href="#"><svg class="i"><use href="#i-cal"/></svg>Calendar</a>
+        <a href="#"><svg class="i"><use href="#i-star"/></svg>Reviews</a>
+      </nav>
+      <div class="mlist" style="border-inline-end:1px solid var(--divider)">
+        <div class="segtabs" style="padding-block-end:var(--space-3)"><span class="chip on">New 3</span><span class="chip">Proposed 1</span><span class="chip">Upcoming 6</span></div>
+        <div class="list">
+          <div class="li"><svg class="i" style="color:var(--danger)"><use href="#i-alert"/></svg><div class="col grow"><span class="strong">BMW X3 (F25) · Brakes</span><span class="cap muted">Navid P. · ASAP · 40 min</span></div></div>
+          <div class="li sel"><svg class="i"><use href="#i-car"/></svg><div class="col grow"><span class="strong">BMW 320i (E90) · Suspension</span><span class="cap muted">Sara M. · within 2 weeks · 11 h</span></div></div>
+          <div class="li"><svg class="i"><use href="#i-car"/></svg><div class="col grow"><span class="strong">Peugeot 206 · Clutch</span><span class="cap muted">Omid S. · this week · 1 d</span></div></div>
+        </div>
+      </div>
+      <div class="dmain" style="display:grid;grid-template-columns:1fr 260px;gap:var(--space-4);align-items:start">
+        <div class="col" style="gap:var(--space-3)">
+          <div class="row between"><div class="col"><span class="h">BMW 320i (E90) · 2012 · 151,200 km</span><span class="callout muted">Sara M. · first visit · Help Me request</span></div><span class="badge">Reviewing</span></div>
+          <div class="aibox"><span class="ai"><svg class="i sm"><use href="#i-ai"/></svg>AI pre-visit summary</span><span class="callout">Single knock from the front right over bumps, started two weeks ago and getting louder. No steering play, no pulling. Previous front brake pads and discs 14 months ago. Likely inspection areas: front control arm bushings, sway bar links, strut mounts.</span></div>
+          <div class="row" style="flex-wrap:wrap"><div class="thumb" style="width:180px;height:100px"><svg class="i"><use href="#i-play"/></svg><span class="lbl">0:10</span></div><div class="note grow" style="min-width:200px"><span class="strong">Shared history</span><br>Front brake pads and discs · 14 months ago · Pars Brake Center</div></div>
+          <div class="card tight"><span class="hs">Internal notes</span><span class="callout muted">Customer note (private): prefers updates by app message</span></div>
+          <div class="row"><button class="btn danger">Decline</button><button class="btn">Ask for information</button><span class="grow"></span><button class="btn">Propose time</button><button class="btn pri">Accept</button></div>
+        </div>
+        <div class="col" style="gap:var(--space-3)">
+          <div class="card tight"><span class="hs">Thursday 13 Nov</span>
+            <div class="list cap">
+              <div class="li"><span class="num">08:00</span><span class="grow">Lift 1 · Golf brakes</span></div>
+              <div class="li"><span class="num">10:30</span><span class="grow">Lift 2 · free</span></div>
+              <div class="li" style="background:var(--signal-soft)"><span class="num">14:00</span><span class="grow strong">Proposed: Sara M. · 2 h</span></div>
+            </div>
+          </div>
+          <div class="aibox"><span class="ai"><svg class="i sm"><use href="#i-ai"/></svg>AI suggestion</span><span class="callout">2 h repair slot. A control arm for this model is often not in stock locally.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="notes">
+  Mockup for review only: static HTML, sample data from Docs/11 (Reza, Sara, Neda, Hamid are story personas). Colours, type, spacing and themes come from Docs/carpal-design-system/tokens.css; the RTL switch checks layout direction only (texts stay English). Screen ids PW-* are proposed (PRV-OQ-08).
+</footer>
+
+<script>
+  // Theme and direction switches for the review (no storage, no network).
+  document.querySelectorAll('[data-theme-set]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.documentElement.setAttribute('data-theme', b.dataset.themeSet);
+      document.querySelectorAll('[data-theme-set]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    });
+  });
+  document.querySelectorAll('[data-dir-set]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.documentElement.setAttribute('dir', b.dataset.dirSet);
+      document.querySelectorAll('[data-dir-set]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    });
+  });
+</script>
+</body>
+</html>

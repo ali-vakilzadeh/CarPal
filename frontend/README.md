@@ -13,4 +13,6 @@ Public addresses (Docs/02 §1.4): `web.<DOMAIN>` is the web app. `fleet.<DOMAIN>
 
 **Admin console scope (DQ-03).** The console only monitors and controls the social network. Nothing of it appears in the portals, and work a business does for itself belongs to the portals. Assisted onboarding and plan assignment stay in the console; the portals get identical copies of those pages for the business. The portals' plan and proposals are in [public-ui-dev-plan.json](public-ui-dev-plan.json); the review of every console part is in `Docs/23.Admin_WebUI_screens.md` §0.
 
+**Provider portal and Workshop PWA (proposal 2026-11-15).** Repair mechanics get the full provider portal plus a compact phone app, CarPal Workshop, for workshops without a computer. The Workshop app only answers appointment requests, replies to customers and posts before/after photos. The plan is in [provider-dev-plan.json](provider-dev-plan.json) and the screen mockup is in [provider-portal/mockup.html](provider-portal/mockup.html).
+
 All portals use the shared design system and UI dictionary (`shared/`). They are RTL-first for Persian (FA) and LTR for English (EN). Testing: Playwright E2E, visual regression, RTL layout, and a11y checks.
