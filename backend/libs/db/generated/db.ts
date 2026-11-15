@@ -173,6 +173,43 @@ export interface AdminPendingAdminChanges {
   version: Generated<number>;
 }
 
+export interface AdminSupportTicketMessages {
+  author_kind: string;
+  author_user_id: string;
+  body: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  template_key: string | null;
+  ticket_id: string;
+}
+
+export interface AdminSupportTickets {
+  app_area: string | null;
+  assigned_to: string | null;
+  clock_started_at: Generated<Timestamp | null>;
+  created_at: Generated<Timestamp>;
+  created_by: Generated<string | null>;
+  deleted_at: Timestamp | null;
+  deletion_reason: string | null;
+  diagnostics: Json | null;
+  first_response_at: Timestamp | null;
+  id: Generated<string>;
+  last_message_at: Generated<Timestamp>;
+  linked_items: Generated<Json>;
+  organization_id: string | null;
+  outcome: string | null;
+  requester_user_id: string;
+  resolution_note: string | null;
+  solved_at: Timestamp | null;
+  solved_by: string | null;
+  status: Generated<string>;
+  subject: string;
+  topic: string;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+  version: Generated<number>;
+}
+
 export interface AiMcpAiEvaluationRecords {
   actor_user_id: string | null;
   comment: string | null;
@@ -2579,6 +2616,8 @@ export interface DB {
   "admin.moderation_actions": AdminModerationActions;
   "admin.moderation_cases": AdminModerationCases;
   "admin.pending_admin_changes": AdminPendingAdminChanges;
+  "admin.support_ticket_messages": AdminSupportTicketMessages;
+  "admin.support_tickets": AdminSupportTickets;
   "ai_mcp.ai_evaluation_records": AiMcpAiEvaluationRecords;
   "ai_mcp.ai_insights": AiMcpAiInsights;
   "ai_mcp.ai_suggestions": AiMcpAiSuggestions;

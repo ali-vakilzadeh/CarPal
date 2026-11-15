@@ -63,7 +63,7 @@ export interface AuthorizerOptions {
   cacheTtlMs: number;
 }
 
-const PURPOSE = /^(case|dispute|dsr|verification|approval):([0-9a-f-]{36})$/;
+const PURPOSE = /^(case|dispute|dsr|verification|approval|ticket):([0-9a-f-]{36})$/;
 const ALIAS_TYPES: Record<string, OrgType[]> = {
   provider: ['provider', 'hybrid_provider_vendor'],
   vendor: ['vendor', 'hybrid_provider_vendor'],

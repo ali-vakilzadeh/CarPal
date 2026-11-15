@@ -15,14 +15,15 @@ import { VehicleCards } from '#modules/vehicle/interface/vehicles.js';
 import { toDispute, type DisputeRow } from '../api/projections.js';
 import { afterId, failIf, notFoundAt, pageOf, signedIn } from './common.js';
 
-type DisputeCreate = {
+export type DisputeCreate = {
   target: { type: 'review' | 'service_record' | 'badge' | 'appointment' | 'moderation_action'; id: string };
   dispute_type: string;
   reason: string;
   raised_by_organization_id?: string;
 };
 
-const TYPES_BY_TARGET: Record<string, string[]> = {
+/** Dispute types allowed per target (40 DisputeCreate). */
+export const DISPUTE_TYPES_BY_TARGET: Record<string, string[]> = {
   review: ['fake_review', 'inaccurate_review', 'mediation_request'],
   appointment: ['mediation_request'],
   badge: ['badge_challenge'],
@@ -30,100 +31,131 @@ const TYPES_BY_TARGET: Record<string, string[]> = {
   moderation_action: ['moderation_appeal'],
 };
 
+export interface DisputePartyDeps {
+  appointments: AppointmentFacts;
+  vehicles: VehicleCards;
+  moderation: ModerationLog;
+}
+
+/**
+ * The raiser (or its organization) must be a party of the target; 422 REFERENCE_NOT_FOUND at `pointer` otherwise.
+ * Shared by disputes.create and the staff conversion of a support ticket (TrustAdmin.raiseDispute, backend S24).
+ */
+export async function requireDisputeParty(
+  deps: DisputePartyDeps,
+  scope: TxScope,
+  t: DisputeCreate['target'],
+  userId: string,
+  orgId: string | null,
+  pointer = '/target/id',
+): Promise<void> {
+  if (t.type === 'review') {
+    const r = await scope.db
+      .selectFrom('trust.reviews')
+      .select(['author_user_id', 'subject_organization_id'])
+      .where('id', '=', t.id)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    if (!r || !(r.author_user_id === userId || (orgId && r.subject_organization_id === orgId))) throw notFoundAt(pointer);
+    return;
+  }
+  if (t.type === 'appointment') {
+    const a = (await deps.appointments.visits(scope, [t.id])).get(t.id);
+    const party = a && (orgId ? a.providerOrgId === orgId || a.requesterOrgId === orgId : a.requesterUserId === userId);
+    if (!party) throw notFoundAt(pointer);
+    return;
+  }
+  if (t.type === 'badge') {
+    const b = await scope.db
+      .selectFrom('trust.provider_badges')
+      .select('provider_organization_id')
+      .where('id', '=', t.id)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    // Public badges can be challenged by anyone signed in (badge_challenge); private ones only by their provider.
+    if (!b) throw notFoundAt(pointer);
+    return;
+  }
+  if (t.type === 'service_record') {
+    const p = await deps.vehicles.serviceRecordParties(scope, t.id);
+    const party =
+      p &&
+      (orgId
+        ? p.providerOrgId === orgId || (p.ownerType === 'organization' && p.ownerId === orgId)
+        : p.ownerType === 'user' && p.ownerId === userId);
+    if (!party) throw notFoundAt(pointer);
+    return;
+  }
+  // Moderation actions are staff records: only the parties they affected may appeal (definer, no other fields).
+  const a = await deps.moderation.affects(scope, t.id);
+  const affected = a && (orgId ? a.organizationId === orgId : a.userId === userId);
+  if (!affected) throw notFoundAt(pointer);
+}
+
+/** Inserts the dispute, marks a review reported by its subject, and publishes dispute.opened. */
+export async function insertDispute(
+  scope: TxScope,
+  d: { target: DisputeCreate['target']; disputeType: string; userId: string; orgId: string | null; reason: string },
+): Promise<DisputeRow> {
+  const row = await scope.db
+    .insertInto('trust.disputes')
+    .values({
+      target_entity_type: d.target.type,
+      target_entity_id: d.target.id,
+      dispute_type: d.disputeType,
+      raised_by_user_id: d.userId,
+      raised_by_organization_id: d.orgId,
+      reason: d.reason,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+  // A review reported by its subject shows as reported in the inbox (RLS subject_answer lets the subject set it).
+  if (d.target.type === 'review' && d.orgId)
+    await scope.db
+      .updateTable('trust.reviews')
+      .set({ report_status: 'reported' })
+      .where('id', '=', d.target.id)
+      .where('subject_organization_id', '=', d.orgId)
+      .where('report_status', '=', 'none')
+      .execute();
+  await publishEvent(scope, {
+    type: 'dispute.opened',
+    aggregateType: 'dispute',
+    aggregateId: row.id,
+    payload: { target_type: row.target_entity_type, target_id: row.target_entity_id, dispute_type: row.dispute_type },
+  });
+  return row;
+}
+
 @Injectable()
 @Operation('disputes.create')
 export class DisputesCreateHandler implements OperationHandler {
   constructor(
-    private readonly appointments: AppointmentFacts,
-    private readonly vehicles: VehicleCards,
-    private readonly moderation: ModerationLog,
+    readonly appointments: AppointmentFacts,
+    readonly vehicles: VehicleCards,
+    readonly moderation: ModerationLog,
   ) {}
 
   async handle(ctx: OperationContext<DisputeCreate>): Promise<OperationResult> {
     const c = signedIn(ctx);
     const b = ctx.body;
-    if (!(TYPES_BY_TARGET[b.target.type] ?? []).includes(b.dispute_type)) failIf([{ pointer: '/dispute_type', code: 'enum' }]);
+    if (!(DISPUTE_TYPES_BY_TARGET[b.target.type] ?? []).includes(b.dispute_type)) failIf([{ pointer: '/dispute_type', code: 'enum' }]);
     if ([...b.reason.trim()].length < 10) failIf([{ pointer: '/reason', code: 'too_short', limit: '10' }]);
     // The caller must be a member of the raising organization (40 DisputeCreate).
     const org = b.raised_by_organization_id ? await ctx.authorizeOrg(b.raised_by_organization_id, ['ANY']) : null;
     const body = await ctx.tx(async (scope) => {
       if (org) await scope.setOrganization(org.id, org.role);
-      await this.requireParty(scope, b.target, c.userId, org?.id ?? null);
-      const row = await scope.db
-        .insertInto('trust.disputes')
-        .values({
-          target_entity_type: b.target.type,
-          target_entity_id: b.target.id,
-          dispute_type: b.dispute_type,
-          raised_by_user_id: c.userId,
-          raised_by_organization_id: org?.id ?? null,
-          reason: b.reason,
-        })
-        .returningAll()
-        .executeTakeFirstOrThrow();
-      // A review reported by its subject shows as reported in the inbox (RLS subject_answer lets the subject set it).
-      if (b.target.type === 'review' && org)
-        await scope.db
-          .updateTable('trust.reviews')
-          .set({ report_status: 'reported' })
-          .where('id', '=', b.target.id)
-          .where('subject_organization_id', '=', org.id)
-          .where('report_status', '=', 'none')
-          .execute();
-      await publishEvent(scope, {
-        type: 'dispute.opened',
-        aggregateType: 'dispute',
-        aggregateId: row.id,
-        payload: { target_type: row.target_entity_type, target_id: row.target_entity_id, dispute_type: row.dispute_type },
+      await requireDisputeParty(this, scope, b.target, c.userId, org?.id ?? null);
+      const row = await insertDispute(scope, {
+        target: b.target,
+        disputeType: b.dispute_type,
+        userId: c.userId,
+        orgId: org?.id ?? null,
+        reason: b.reason,
       });
       return toDispute(row);
     });
     return created(body, `/v1/disputes/${body.id}`);
-  }
-
-  /** The caller (or its organization) must be a party of the target. */
-  private async requireParty(scope: TxScope, t: DisputeCreate['target'], userId: string, orgId: string | null): Promise<void> {
-    if (t.type === 'review') {
-      const r = await scope.db
-        .selectFrom('trust.reviews')
-        .select(['author_user_id', 'subject_organization_id'])
-        .where('id', '=', t.id)
-        .where('deleted_at', 'is', null)
-        .executeTakeFirst();
-      if (!r || !(r.author_user_id === userId || (orgId && r.subject_organization_id === orgId))) throw notFoundAt('/target/id');
-      return;
-    }
-    if (t.type === 'appointment') {
-      const a = (await this.appointments.visits(scope, [t.id])).get(t.id);
-      const party = a && (orgId ? a.providerOrgId === orgId || a.requesterOrgId === orgId : a.requesterUserId === userId);
-      if (!party) throw notFoundAt('/target/id');
-      return;
-    }
-    if (t.type === 'badge') {
-      const b = await scope.db
-        .selectFrom('trust.provider_badges')
-        .select('provider_organization_id')
-        .where('id', '=', t.id)
-        .where('deleted_at', 'is', null)
-        .executeTakeFirst();
-      // Public badges can be challenged by anyone signed in (badge_challenge); private ones only by their provider.
-      if (!b) throw notFoundAt('/target/id');
-      return;
-    }
-    if (t.type === 'service_record') {
-      const p = await this.vehicles.serviceRecordParties(scope, t.id);
-      const party =
-        p &&
-        (orgId
-          ? p.providerOrgId === orgId || (p.ownerType === 'organization' && p.ownerId === orgId)
-          : p.ownerType === 'user' && p.ownerId === userId);
-      if (!party) throw notFoundAt('/target/id');
-      return;
-    }
-    // Moderation actions are staff records: only the parties they affected may appeal (definer, no other fields).
-    const a = await this.moderation.affects(scope, t.id);
-    const affected = a && (orgId ? a.organizationId === orgId : a.userId === userId);
-    if (!affected) throw notFoundAt('/target/id');
   }
 }
 

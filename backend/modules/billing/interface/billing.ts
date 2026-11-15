@@ -60,6 +60,15 @@ export type OrgSubscriberType = 'provider' | 'vendor' | 'fleet' | 'hybrid_provid
 export abstract class SubscriptionWriter {
   /** Returns the plan key that was assigned. */
   abstract createDefaultForOrganization(scope: TxScope, orgId: string, orgType: OrgSubscriberType): Promise<PlanKey>;
+  /**
+   * Records an organization's plan request on behalf of its owner, in the staff transaction, as
+   * subscription.change_request would (admin.support_ticket_convert, backend S24): the plan must be active and offered
+   * to the organization's type (422 at `/plan_key`). Returns the request id.
+   */
+  abstract requestPlanChange(
+    scope: TxScope,
+    r: { orgId: string; orgType: OrgSubscriberType; userId: string; planKey: string; note: string | null },
+  ): Promise<string>;
 }
 
 /** Counts current usage of a counter entitlement, inside the caller's transaction (after the subscriber lock). */

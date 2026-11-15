@@ -12,11 +12,11 @@ describe('generated contract', () => {
     }
   });
 
-  it('declares 479 operations and 531 routes (S23: nine staff tab reads, contract 1.4.0)', () => {
+  it('declares 489 operations and 541 routes (S24: support tickets on both planes, contract 1.4.0)', () => {
     const r = loadRegistry();
-    expect(r.operationCount).toBe(479);
-    expect(OPERATION_IDS).toHaveLength(479);
-    expect(r.routeCount).toBe(531);
+    expect(r.operationCount).toBe(489);
+    expect(OPERATION_IDS).toHaveLength(489);
+    expect(r.routeCount).toBe(541);
     for (const op of r.operations) {
       expect(op.routes.length, op.opId).toBeGreaterThan(0);
       for (const route of op.routes) {

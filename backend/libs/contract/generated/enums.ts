@@ -76,6 +76,9 @@ export const ENUMS = {
   ReasonType: ["capability_evidence","rating_evidence","location","availability","urgency_fit","user_preference","trust_signal","recency"],
   InsightType: ["triage_summary","urgency_assessment","maintenance_suggestion","provider_match","match_explanation","vehicle_field_suggestion","vehicle_summary","service_history_summary","recurring_issue","category_extraction","resolution_status_suggestion","duplicate_record","skill_heatmap","capability_suggestion","profile_suggestion","badge_eligibility","review_sentiment","review_theme","review_response_draft","review_quality_score","improvement_suggestion","showcase_caption","showcase_draft","redaction_suggestion","appointment_slot_suggestion","customer_need_summary","pre_visit_summary","inventory_normalization","fitment_suggestion","duplicate_inventory","inventory_gap","catalog_quality","fleet_suggestion","fraud_flag","duplicate_entity","search_synonym_suggestion","query_interpretation","moderation_recommendation","profile_confidence_score","likely_specialization"],
   JobKind: ["ai_insight","inventory_import","fleet_import","fleet_export","data_export","pre_visit_report","bulk_inventory_update","taxonomy_merge","redaction","organization_merge"],
+  SupportTopic: ["account_access","appointment_problem","data","bug","plan_billing","other"],
+  SupportTicketStatus: ["new","waiting_on_user","waiting_on_team","solved"],
+  SupportOutcome: ["answered","converted","duplicate","no_response","out_of_scope"],
 } as const;
 
 export type UserStatus = (typeof ENUMS)['UserStatus'][number];
@@ -153,3 +156,6 @@ export type DistanceOrigin = (typeof ENUMS)['DistanceOrigin'][number];
 export type ReasonType = (typeof ENUMS)['ReasonType'][number];
 export type InsightType = (typeof ENUMS)['InsightType'][number];
 export type JobKind = (typeof ENUMS)['JobKind'][number];
+export type SupportTopic = (typeof ENUMS)['SupportTopic'][number];
+export type SupportTicketStatus = (typeof ENUMS)['SupportTicketStatus'][number];
+export type SupportOutcome = (typeof ENUMS)['SupportOutcome'][number];

@@ -194,4 +194,32 @@ export class DbSubscriptionWriter extends SubscriptionWriter {
       .execute();
     return plan.plan_key as PlanKey;
   }
+
+  async requestPlanChange(
+    scope: TxScope,
+    r: { orgId: string; orgType: OrgSubscriberType; userId: string; planKey: string; note: string | null },
+  ): Promise<string> {
+    // As subscription.change_request: an active plan of the organization's audience (a hybrid takes either).
+    const audiences = r.orgType === 'hybrid_provider_vendor' ? ['provider', 'vendor'] : [ORG_AUDIENCE[r.orgType]];
+    const plan = await scope.db
+      .selectFrom('billing.plans')
+      .select(['id', 'audience'])
+      .where('plan_key', '=', r.planKey)
+      .where('status', '=', 'active')
+      .executeTakeFirst();
+    if (!plan || !audiences.includes(plan.audience)) throw ApiError.validation([{ pointer: '/plan_key', code: 'enum' }]);
+    const current = await currentSubscription(scope, { type: 'organization', id: r.orgId });
+    const row = await scope.db
+      .insertInto('billing.subscription_change_requests')
+      .values({
+        organization_id: r.orgId,
+        requested_by_user_id: r.userId,
+        current_subscription_id: current?.id ?? null,
+        requested_plan_id: plan.id,
+        note: r.note,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return row.id;
+  }
 }

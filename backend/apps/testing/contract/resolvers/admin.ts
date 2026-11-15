@@ -47,7 +47,139 @@ async function openReport(h: Harness): Promise<string> {
   ).report_id as string;
 }
 
+/** A support ticket filed by `as` (a new user by default), for `orgId` when given (backend S24, BR-13). */
+async function supportTicket(h: Harness, as?: Actor, orgId?: string): Promise<{ as: Actor; id: string }> {
+  const user = as ?? (await h.user());
+  const t = ok(
+    await user.c.post('/v1/support/tickets', {
+      topic: 'bug',
+      subject: 'The map stays grey',
+      body: 'The map stays grey after I open it on my phone.',
+      app_area: 'map',
+      ...(orgId ? { organization_id: orgId } : {}),
+    }),
+    'support ticket',
+  );
+  return { as: user, id: t.id as string };
+}
+
+/** A ticket CarPal already answered, so it waits on the user. */
+async function answeredTicket(h: Harness): Promise<{ as: Actor; id: string; sup: Actor }> {
+  const t = await supportTicket(h);
+  const sup = await h.staff('platform_support');
+  ok(
+    await sup.c.post(
+      `/v1/admin/support/tickets/${t.id}/messages`,
+      { template_key: 'request_information', body: 'Which phone and app version do you use?', reason: REASON },
+      purpose('ticket', t.id),
+    ),
+    'staff reply',
+  );
+  return { ...t, sup };
+}
+
 export const resolvers: Resolvers = {
+  // Backend S24 (BR-13): support tickets on the api host and the staff inbox.
+  'support.ticket_create': async (h) => ({
+    as: await h.user(),
+    body: { topic: 'account_access', subject: 'Cannot change my phone', body: 'The code never arrives when I change my phone number.' },
+    check: (res) => {
+      expect(res.body).toMatchObject({ status: 'new', can_reply: true, organization_id: null });
+      expect(res.body.items).toEqual([expect.objectContaining({ author: 'requester' })]);
+    },
+  }),
+  'support.tickets_list': async (h) => {
+    const t = await supportTicket(h);
+    return { as: t.as, check: (res) => expect(res.body.items.map((i: Json) => i.id)).toEqual([t.id]) };
+  },
+  'support.ticket_get': async (h) => {
+    const t = await answeredTicket(h);
+    return {
+      as: t.as,
+      params: { ticket_id: t.id },
+      check: (res) => {
+        expect(res.body.status).toBe('waiting_on_user');
+        expect(res.body.items[1]).toMatchObject({ author: 'staff', author_display: 'CarPal' });
+        expect(res.text).not.toContain(t.sup.user.email);
+      },
+    };
+  },
+  'support.ticket_reply': async (h) => {
+    const t = await answeredTicket(h);
+    return {
+      as: t.as,
+      params: { ticket_id: t.id },
+      body: { body: 'An Android phone, app version 1.4.0.' },
+      check: async () => {
+        const [row] = await h.q<{ status: string }>(sql`SELECT status FROM admin.support_tickets WHERE id = ${t.id}::uuid`);
+        expect(row!.status).toBe('waiting_on_team');
+      },
+    };
+  },
+  'admin.support_tickets_list': async (h) => {
+    const t = await supportTicket(h);
+    return {
+      as: await h.staff('platform_support'),
+      query: { status: 'new', limit: 100 },
+      check: (res) => {
+        expect(res.body.items.every((i: Json) => i.status === 'new')).toBe(true);
+        expect(res.text).not.toContain(t.as.user.email);
+        expect(res.text).not.toContain('grey after I open');
+      },
+    };
+  },
+  'admin.support_ticket_get': async (h) => {
+    const t = await supportTicket(h);
+    return {
+      as: await h.staff('platform_support'),
+      params: { ticket_id: t.id },
+      headers: purpose('ticket', t.id),
+      check: (res) => {
+        expect(res.body).toMatchObject({ id: t.id, status: 'new', requester: { user_id: t.as.user.id } });
+        expect(res.body.items).toHaveLength(1);
+        expect(res.text).not.toContain(t.as.user.email);
+      },
+    };
+  },
+  'admin.support_ticket_assign': async (h) => {
+    const t = await supportTicket(h);
+    return { as: await h.staff('platform_support'), params: { ticket_id: t.id }, body: { reason: REASON } };
+  },
+  'admin.support_ticket_reply': async (h) => {
+    const t = await supportTicket(h);
+    return {
+      as: await h.staff('platform_support'),
+      params: { ticket_id: t.id },
+      headers: purpose('ticket', t.id),
+      body: { template_key: 'how_to', body: 'Open Settings, then Map, and turn on location.', reason: REASON },
+    };
+  },
+  'admin.support_ticket_convert': async (h) => {
+    const t = await supportTicket(h);
+    const target = await h.user();
+    return {
+      as: await h.staff('platform_support'),
+      params: { ticket_id: t.id },
+      headers: purpose('ticket', t.id),
+      body: {
+        into: 'moderation_case',
+        case_target: { type: 'user', id: target.user.id },
+        moderation_reason: 'harassment',
+        severity: 'medium',
+        reason: REASON,
+      },
+      check: (res) => expect(res.body.item.type).toBe('moderation_case'),
+    };
+  },
+  'admin.support_ticket_close': async (h) => {
+    const t = await supportTicket(h);
+    return {
+      as: await h.staff('platform_support'),
+      params: { ticket_id: t.id },
+      headers: purpose('ticket', t.id),
+      body: { outcome: 'answered', reason: REASON },
+    };
+  },
   'reports.create': async (h) => {
     const target = await h.user();
     return {

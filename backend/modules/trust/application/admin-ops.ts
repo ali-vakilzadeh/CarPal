@@ -29,6 +29,7 @@ import { toBadge, toDispute, type BadgeRow, type DisputeRow, type ReviewRow } fr
 import { TrustAdmin } from '../interface/trust.js';
 import { afterId, failIf, pageOf, ReviewViews } from './common.js';
 import { DisputeParties, type DisputeParty } from './dispute-messages.js';
+import { DISPUTE_TYPES_BY_TARGET, insertDispute, requireDisputeParty } from './dispute-ops.js';
 
 const PATH2_WEIGHT = '0.600';
 /** 52 §11, 54 §9.7: a rating is never a reason to reject. */
@@ -937,6 +938,21 @@ export class BadgeApproveHandler implements OperationHandler {
 
 @Injectable()
 export class DbTrustAdmin extends TrustAdmin {
+  constructor(
+    readonly appointments: AppointmentFacts,
+    readonly vehicles: VehicleCards,
+    readonly moderation: ModerationLog,
+  ) {
+    super();
+  }
+
+  async raiseDispute(scope: TxScope, d: Parameters<TrustAdmin['raiseDispute']>[1]): Promise<string> {
+    // Backend S24 (BR-13, DQ-20 row 4): the rules of disputes.create, applied to the ticket's requester.
+    if (!(DISPUTE_TYPES_BY_TARGET[d.target.type] ?? []).includes(d.disputeType)) failIf([{ pointer: '/dispute_type', code: 'enum' }]);
+    await requireDisputeParty(this, scope, d.target, d.userId, d.orgId, '/dispute_target/id');
+    return (await insertDispute(scope, d)).id;
+  }
+
   async revokeBadge(scope: TxScope, badgeId: string, reason: string): Promise<{ organizationId: string } | null> {
     const b = await scope.db
       .selectFrom('trust.provider_badges')

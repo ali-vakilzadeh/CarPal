@@ -13382,6 +13382,108 @@
         "additionalProperties": false
       }
     },
+    "support.ticket_create": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SupportTicketCreate"
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SupportTicketThread"
+      }
+    },
+    "support.tickets_list": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SupportTicketStatus"
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SupportTicket"
+            }
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "support.ticket_get": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "ticket_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SupportTicketThread"
+      }
+    },
+    "support.ticket_reply": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "ticket_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SupportReply"
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SupportMessage"
+      }
+    },
     "health.get": {
       "query": {
         "type": "object",
@@ -18634,6 +18736,182 @@
       },
       "response": {
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PendingChange"
+      }
+    },
+    "admin.support_tickets_list": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SupportTicketStatus"
+            },
+            "maxItems": 4,
+            "uniqueItems": true
+          },
+          "topic": {
+            "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SupportTopic"
+          },
+          "assigned_to_me": {
+            "type": "boolean"
+          },
+          "organization_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffSupportTicket"
+            }
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "admin.support_ticket_get": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "ticket_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffSupportTicketDetail"
+      }
+    },
+    "admin.support_ticket_assign": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "ticket_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "type": "object",
+        "properties": {
+          "assignee_user_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffSupportTicket"
+      }
+    },
+    "admin.support_ticket_reply": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "ticket_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffSupportReplyWrite"
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffSupportMessage"
+      }
+    },
+    "admin.support_ticket_convert": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "ticket_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SupportConversion"
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SupportConversionResult"
+      }
+    },
+    "admin.support_ticket_close": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "ticket_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SupportTicketClose"
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffSupportTicket"
       }
     }
   }

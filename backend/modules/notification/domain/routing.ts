@@ -69,6 +69,9 @@ export const ROUTED_EVENTS = [
   'moderation.action.taken',
   // S20: a staff message in a dispute thread (the party is told to read and answer it)
   'dispute.message.posted',
+  // S24: CarPal answered or solved the user's support ticket (staff replies only; the requester's own replies wait in the inbox)
+  'support.message.posted',
+  'support.ticket.solved',
   'organization.verified',
   'organization.location.corrected',
   // S19: CarPal asks a business for more information on a verification check; staff corrected its profile
@@ -540,6 +543,26 @@ export function routeS8(e: RoutedEvent): Intent[] {
           reference,
           organization_context_id: org,
           channels: ['in_app', 'email'],
+        },
+      ];
+    }
+    case 'support.message.posted':
+    case 'support.ticket.solved': {
+      // Backend S24 (BR-13): only staff messages and solved tickets notify; the notice links to the ticket in the app.
+      if (e.type === 'support.message.posted' && p.author !== 'staff') return [];
+      const user = str(p.requester_user_id);
+      if (!user) return [];
+      return [
+        {
+          audience: { kind: 'users', ids: [user] },
+          event_type: 'support_update',
+          category: 'system',
+          priority: 'normal',
+          template_key: e.type === 'support.ticket.solved' ? 'support.ticket_solved' : 'support.reply_received',
+          params: {},
+          reference: { type: 'support_ticket', id: str(p.ticket_id) ?? e.aggregateId },
+          organization_context_id: null,
+          channels: ['in_app', 'email', 'push'],
         },
       ];
     }

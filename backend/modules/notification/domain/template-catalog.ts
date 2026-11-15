@@ -78,6 +78,8 @@ const NOTIFICATION_CHANNELS: Record<string, TemplateChannel[]> = {
   'ai.suggestion_ready': [],
   'moderation.action_taken': ['email'],
   'dispute.message_received': ['email'],
+  'support.reply_received': EMAIL_PUSH,
+  'support.ticket_solved': EMAIL_PUSH,
   'organization.verified': ['email'],
   'organization.location_corrected': ['email'],
   'organization.verification_info_requested': ['email'],

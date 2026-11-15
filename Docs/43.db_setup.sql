@@ -3981,7 +3981,7 @@ CREATE TABLE notification.notifications (
     'review_approval_needed','review_response_draft_ready','ai_skill_insight_ready','customer_message','moderation_alert',
     'profile_suggestion','inquiry_received','inventory_import_finished','ai_fitment_suggestion','low_data_quality_alert',
     'driver_issue_reported','fleet_approval_needed','repair_completed','vehicle_due_for_service','monthly_report_ready',
-    'moderation_update','system_announcement','marketing','review_awaiting_approval',
+    'moderation_update','system_announcement','marketing','review_awaiting_approval','support_update',   -- support: S24
     'four_eyes_outcome','staff_security_alert','ai_kill_switch_changed')),   -- staff notices (backend S17)
   category                core.notification_category NOT NULL,
   priority                text NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal','critical')),
@@ -4162,6 +4162,51 @@ CREATE UNIQUE INDEX content_reports_open_uq ON admin.content_reports (reporter_u
 CREATE INDEX content_reports_queue_idx ON admin.content_reports (status, created_at);
 COMMENT ON TABLE admin.content_reports IS '52 ContentReport — includes wrong location / closed business and AI output';
 
+-- Support tickets (backend S24, Docs/23 A-SUP-01; owner decisions DQ-07 in-app only, DQ-20 row 4): filed in the apps,
+-- worked in the admin console's inbox, turned into cases, privacy requests, disputes or plan requests (linked_items).
+CREATE TABLE admin.support_tickets (
+  id uuid PRIMARY KEY DEFAULT core.uuid_v7(), version integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(), created_by uuid DEFAULT core.actor_id(),
+  updated_at timestamptz NOT NULL DEFAULT now(), updated_by uuid,
+  deleted_at timestamptz, deletion_reason text CHECK (char_length(deletion_reason) <= 500),
+  requester_user_id uuid NOT NULL,
+  organization_id   uuid,
+  topic             text NOT NULL CHECK (topic IN ('account_access','appointment_problem','data','bug','plan_billing','other')),
+  subject           text NOT NULL CHECK (char_length(subject) BETWEEN 3 AND 120),
+  app_area          text CHECK (char_length(app_area) BETWEEN 1 AND 60),
+  diagnostics       jsonb CHECK (diagnostics IS NULL OR jsonb_typeof(diagnostics) = 'object'),
+  status            text NOT NULL DEFAULT 'new' CHECK (status IN ('new','waiting_on_user','waiting_on_team','solved')),
+  outcome           text CHECK (outcome IN ('answered','converted','duplicate','no_response','out_of_scope')),
+  assigned_to       uuid,
+  clock_started_at  timestamptz DEFAULT now(),
+  first_response_at timestamptz,
+  last_message_at   timestamptz NOT NULL DEFAULT now(),
+  solved_at         timestamptz,
+  solved_by         uuid,
+  resolution_note   text CHECK (char_length(resolution_note) <= 1000),
+  linked_items      jsonb NOT NULL DEFAULT '[]' CHECK (jsonb_typeof(linked_items) = 'array' AND jsonb_array_length(linked_items) <= 10),
+  CHECK ((status = 'solved') = (solved_at IS NOT NULL AND outcome IS NOT NULL)),
+  CHECK ((status IN ('new','waiting_on_team')) = (clock_started_at IS NOT NULL))
+);
+CREATE INDEX support_tickets_requester_idx ON admin.support_tickets (requester_user_id, id);
+CREATE INDEX support_tickets_queue_idx ON admin.support_tickets (status, created_at) WHERE deleted_at IS NULL;
+CREATE INDEX support_tickets_org_idx ON admin.support_tickets (organization_id) WHERE organization_id IS NOT NULL;
+COMMENT ON TABLE admin.support_tickets IS '52 SupportTicket — filed in the apps only (DQ-07); the staff inbox is an intake queue (backend S24)';
+
+CREATE TABLE admin.support_ticket_messages (
+  id             uuid PRIMARY KEY DEFAULT core.uuid_v7(),
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  ticket_id      uuid NOT NULL REFERENCES admin.support_tickets (id) ON DELETE CASCADE,
+  author_kind    text NOT NULL CHECK (author_kind IN ('requester','staff')),
+  author_user_id uuid NOT NULL,
+  template_key   text CHECK (template_key IN ('acknowledgement','request_information','how_to','status_update',
+                   'converted_notice','resolution','other')),
+  body           text NOT NULL CHECK (char_length(body) BETWEEN 1 AND 4000),
+  CHECK ((author_kind = 'staff') = (template_key IS NOT NULL))
+);
+CREATE INDEX support_ticket_messages_thread_idx ON admin.support_ticket_messages (ticket_id, created_at);
+COMMENT ON TABLE admin.support_ticket_messages IS '52 SupportTicketMessage — insert-only for the app roles; erased with the ticket on a deletion request (backend S24)';
+
 CREATE TABLE admin.moderation_actions (
   id                 uuid PRIMARY KEY DEFAULT core.uuid_v7(),
   created_at         timestamptz NOT NULL DEFAULT now(),
@@ -4290,7 +4335,7 @@ CREATE TABLE analytics.audit_logs (
   previous_state_summary text CHECK (char_length(previous_state_summary) <= 2000),
   new_state_summary      text CHECK (char_length(new_state_summary) <= 2000),
   reason                 text CHECK (char_length(reason) <= 500),
-  access_purpose         text CHECK (access_purpose ~ '^(case|dispute|dsr|verification|approval):[0-9a-f-]{36}$'),
+  access_purpose         text CHECK (access_purpose ~ '^(case|dispute|dsr|verification|approval|ticket):[0-9a-f-]{36}$'),   -- ticket: S24
   request_id             text CHECK (char_length(request_id) <= 64),
   PRIMARY KEY (id, created_at),
   CHECK (action <> 'pii.read' OR access_purpose IS NOT NULL)
@@ -5069,6 +5114,21 @@ CREATE POLICY self_all ON notification.push_device_tokens FOR ALL USING (user_id
 CREATE POLICY reporter_read ON admin.content_reports FOR SELECT USING (reporter_user_id = core.me());
 CREATE POLICY reporter_insert ON admin.content_reports FOR INSERT
   WITH CHECK (reporter_user_id = core.me() AND status = 'open' AND moderation_case_id IS NULL);
+-- Support tickets (backend S24): the requester files, reads and answers its own; a reply only hands the ticket back
+-- to the team (or reopens a solved one). Staff work them through staff_all.
+CREATE POLICY requester_read ON admin.support_tickets FOR SELECT USING (requester_user_id = core.me());
+CREATE POLICY requester_insert ON admin.support_tickets FOR INSERT
+  WITH CHECK (requester_user_id = core.me() AND status = 'new' AND outcome IS NULL AND assigned_to IS NULL
+              AND first_response_at IS NULL AND resolution_note IS NULL AND linked_items = '[]'::jsonb
+              AND (organization_id IS NULL OR organization_id = core.my_org()));
+CREATE POLICY requester_update ON admin.support_tickets FOR UPDATE
+  USING (requester_user_id = core.me())
+  WITH CHECK (requester_user_id = core.me() AND status IN ('new','waiting_on_team') AND outcome IS NULL AND solved_at IS NULL);
+CREATE POLICY requester_read ON admin.support_ticket_messages FOR SELECT
+  USING (EXISTS (SELECT 1 FROM admin.support_tickets t WHERE t.id = ticket_id AND t.requester_user_id = core.me()));
+CREATE POLICY requester_insert ON admin.support_ticket_messages FOR INSERT
+  WITH CHECK (author_kind = 'requester' AND author_user_id = core.me() AND template_key IS NULL
+              AND EXISTS (SELECT 1 FROM admin.support_tickets t WHERE t.id = ticket_id AND t.requester_user_id = core.me()));
 CREATE POLICY read_all ON admin.feature_flags FOR SELECT USING (true);
 CREATE POLICY read_all ON admin.exchange_rates FOR SELECT USING (true);
 
@@ -5306,6 +5366,7 @@ GRANT SELECT, INSERT, UPDATE ON core.background_jobs TO carpal_api, carpal_admin
 GRANT INSERT ON analytics.audit_logs TO carpal_api, carpal_auth, carpal_ai;
 GRANT SELECT, INSERT ON analytics.audit_logs TO carpal_admin_api;
 GRANT DELETE ON community.reactions TO carpal_api;                 -- reactions.delete removes the row
+REVOKE UPDATE ON admin.support_ticket_messages FROM carpal_api, carpal_admin_api;   -- S24: messages are insert-only for the apps
 -- The public API never reads pseudonym keys, MCP registry internals or access logs.
 REVOKE ALL ON analytics.actor_pseudonyms FROM carpal_api, carpal_admin_api;
 REVOKE ALL ON identity.staff_recovery_codes FROM carpal_api;      -- staff recovery codes: auth host and admin plane only

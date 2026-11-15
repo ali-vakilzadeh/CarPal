@@ -346,9 +346,18 @@ describe('work summary (BR-22)', () => {
 
   it("returns only the queues the caller's roles may read", async () => {
     const expected: Record<string, string[]> = {
-      platform_admin: ['four_eyes', 'verifications', 'cases', 'privacy_requests', 'badge_approvals', 'subscription_change_requests'],
+      // S24 (BR-13): support_tickets for support staff and administrators.
+      platform_admin: [
+        'four_eyes',
+        'verifications',
+        'cases',
+        'privacy_requests',
+        'badge_approvals',
+        'subscription_change_requests',
+        'support_tickets',
+      ],
       platform_moderator: ['four_eyes', 'verifications', 'review_approvals', 'reports', 'cases', 'disputes', 'badge_approvals'],
-      platform_support: ['reports', 'privacy_requests'],
+      platform_support: ['reports', 'privacy_requests', 'support_tickets'],
       platform_community_reviewer: ['review_approvals', 'disputes'],
     };
     for (const [role, queues] of Object.entries(expected)) {
@@ -361,7 +370,13 @@ describe('work summary (BR-22)', () => {
     }
     // Several roles: the union, in the fixed order.
     const both = await summary(await h.staff('platform_support', 'platform_community_reviewer'));
-    expect((both.body.items as Json[]).map((q) => q.queue)).toEqual(['review_approvals', 'reports', 'disputes', 'privacy_requests']);
+    expect((both.body.items as Json[]).map((q) => q.queue)).toEqual([
+      'review_approvals',
+      'reports',
+      'disputes',
+      'privacy_requests',
+      'support_tickets',
+    ]);
     // The clock: the caller's CarPal-Timezone, else the pilot region's.
     expect((await summary(adm)).body.time_zone).toBe('Asia/Tehran');
     expect((await summary(adm, { 'carpal-timezone': 'Europe/Berlin' })).body.time_zone).toBe('Europe/Berlin');

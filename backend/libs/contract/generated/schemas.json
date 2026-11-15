@@ -11550,6 +11550,7 @@
         "system_announcement",
         "marketing",
         "review_awaiting_approval",
+        "support_update",
         "four_eyes_outcome",
         "staff_security_alert",
         "ai_kill_switch_changed"
@@ -26140,6 +26141,507 @@
       "additionalProperties": false,
       "description": "null: given by the system (sign-up, organization creation, trial end)"
     },
+    "StaffSupportMessage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "author": {
+          "type": "string",
+          "enum": [
+            "requester",
+            "staff"
+          ]
+        },
+        "author_display": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "\"CarPal\" for staff messages; staff names never reach the requester"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "template_key": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SupportReplyTemplate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "staff messages only"
+        },
+        "staff_author_display": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "author",
+        "author_display",
+        "body",
+        "created_at",
+        "template_key",
+        "staff_author_display"
+      ],
+      "additionalProperties": false,
+      "description": "the staff member who wrote it"
+    },
+    "StaffSupportReplyWrite": {
+      "type": "object",
+      "properties": {
+        "template_key": {
+          "$ref": "#/$defs/SupportReplyTemplate"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "≥ 1 character after trimming"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "waiting_on_user",
+            "waiting_on_team"
+          ],
+          "description": "default waiting_on_user; waiting_on_team keeps the team's clock running"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "required": [
+        "template_key",
+        "body",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "StaffSupportTicket": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "topic": {
+          "$ref": "#/$defs/SupportTopic"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "app_area": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requester": {
+          "type": "object",
+          "properties": {
+            "user_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            "display": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            }
+          },
+          "required": [
+            "user_id",
+            "display"
+          ],
+          "additionalProperties": false,
+          "description": "the display name only; contact data through admin.user_get under the ticket"
+        },
+        "organization": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrgSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the business the ticket was filed for"
+        },
+        "status": {
+          "$ref": "#/$defs/SupportTicketStatus"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SupportOutcome"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assignee": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "display": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 50,
+                  "pattern": "^[^\\r\\n]*$"
+                }
+              },
+              "required": [
+                "user_id",
+                "display"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "clock_started_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the team's clock (Docs/23 §6: first response within 1 working day): since the ticket was filed or the requester last answered; null while waiting on the user or solved"
+        },
+        "first_response_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "message_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 400
+        },
+        "linked_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SupportLinkedItem"
+          },
+          "maxItems": 10,
+          "description": "what staff turned the ticket into (admin.support_ticket_convert)"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "last_message_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "solved_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      },
+      "required": [
+        "id",
+        "topic",
+        "subject",
+        "app_area",
+        "requester",
+        "organization",
+        "status",
+        "outcome",
+        "assignee",
+        "clock_started_at",
+        "first_response_at",
+        "message_count",
+        "linked_items",
+        "created_at",
+        "last_message_at",
+        "solved_at",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "StaffSupportTicketDetail": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "topic": {
+          "$ref": "#/$defs/SupportTopic"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "app_area": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requester": {
+          "type": "object",
+          "properties": {
+            "user_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            "display": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            }
+          },
+          "required": [
+            "user_id",
+            "display"
+          ],
+          "additionalProperties": false,
+          "description": "the display name only; contact data through admin.user_get under the ticket"
+        },
+        "organization": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrgSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the business the ticket was filed for"
+        },
+        "status": {
+          "$ref": "#/$defs/SupportTicketStatus"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SupportOutcome"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assignee": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "display": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 50,
+                  "pattern": "^[^\\r\\n]*$"
+                }
+              },
+              "required": [
+                "user_id",
+                "display"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "clock_started_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the team's clock (Docs/23 §6: first response within 1 working day): since the ticket was filed or the requester last answered; null while waiting on the user or solved"
+        },
+        "first_response_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "message_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 400
+        },
+        "linked_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SupportLinkedItem"
+          },
+          "maxItems": 10,
+          "description": "what staff turned the ticket into (admin.support_ticket_convert)"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "last_message_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "solved_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "diagnostics": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SupportDiagnostics"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolution_note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "staff only, never shown to the requester"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StaffSupportMessage"
+          },
+          "maxItems": 200
+        }
+      },
+      "required": [
+        "id",
+        "topic",
+        "subject",
+        "app_area",
+        "requester",
+        "organization",
+        "status",
+        "outcome",
+        "assignee",
+        "clock_started_at",
+        "first_response_at",
+        "message_count",
+        "linked_items",
+        "created_at",
+        "last_message_at",
+        "solved_at",
+        "version",
+        "diagnostics",
+        "resolution_note",
+        "items"
+      ],
+      "additionalProperties": false,
+      "description": "oldest first"
+    },
     "StaffTaxonomyNode": {
       "type": "object",
       "properties": {
@@ -27724,6 +28226,565 @@
         "decision"
       ],
       "additionalProperties": false
+    },
+    "SupportConversion": {
+      "type": "object",
+      "properties": {
+        "into": {
+          "type": "string",
+          "enum": [
+            "moderation_case",
+            "privacy_request",
+            "dispute",
+            "plan_request"
+          ]
+        },
+        "case_target": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "$ref": "#/$defs/ReportTargetType"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false,
+          "x-conditional": "required for moderation_case",
+          "description": "C: required for moderation_case"
+        },
+        "moderation_reason": {
+          "$ref": "#/$defs/ModerationReason",
+          "x-conditional": "required for moderation_case",
+          "description": "C: required for moderation_case"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ],
+          "x-conditional": "required for moderation_case; unsafe_advice, non_consensual_media and privacy are raised to high (S18 floor)",
+          "description": "C: required for moderation_case; unsafe_advice, non_consensual_media and privacy are raised to high (S18 floor)"
+        },
+        "request_type": {
+          "type": "string",
+          "enum": [
+            "export",
+            "deletion",
+            "rectification",
+            "consent_withdrawal"
+          ],
+          "x-conditional": "required for privacy_request",
+          "description": "C: required for privacy_request"
+        },
+        "dispute_target": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "review",
+                "service_record",
+                "badge",
+                "appointment",
+                "moderation_action"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false,
+          "x-conditional": "required for dispute",
+          "description": "C: required for dispute"
+        },
+        "dispute_type": {
+          "$ref": "#/$defs/DisputeType",
+          "x-conditional": "required for dispute; not review_approval_objection",
+          "description": "C: required for dispute; not review_approval_objection"
+        },
+        "plan_key": {
+          "type": "string",
+          "enum": [
+            "individual_free",
+            "fleet_20",
+            "fleet_50",
+            "fleet_100",
+            "fleet_custom",
+            "provider_basic",
+            "provider_pro",
+            "vendor_basic",
+            "vendor_pro"
+          ],
+          "x-conditional": "required for plan_request",
+          "description": "C: required for plan_request"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "description": "the requester's words carried into the item; default: the ticket's first message, cut to fit"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "required": [
+        "into",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "SupportConversionResult": {
+      "type": "object",
+      "properties": {
+        "ticket": {
+          "$ref": "#/$defs/StaffSupportTicket"
+        },
+        "item": {
+          "$ref": "#/$defs/SupportLinkedItem"
+        }
+      },
+      "required": [
+        "ticket",
+        "item"
+      ],
+      "additionalProperties": false
+    },
+    "SupportDiagnostics": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "type": "string",
+          "enum": [
+            "ios",
+            "android",
+            "web_pwa",
+            "web_portal"
+          ]
+        },
+        "app_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "os_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "screen": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "required": [
+        "platform",
+        "app_version"
+      ],
+      "additionalProperties": false,
+      "description": "sent only when the user ticks \"attach diagnostic info\" (backend S24)"
+    },
+    "SupportLinkedItem": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "moderation_case",
+            "data_subject_request",
+            "dispute",
+            "subscription_change_request"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "SupportMessage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "author": {
+          "type": "string",
+          "enum": [
+            "requester",
+            "staff"
+          ]
+        },
+        "author_display": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "\"CarPal\" for staff messages; staff names never reach the requester"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "id",
+        "author",
+        "author_display",
+        "body",
+        "created_at"
+      ],
+      "additionalProperties": false
+    },
+    "SupportOutcome": {
+      "type": "string",
+      "enum": [
+        "answered",
+        "converted",
+        "duplicate",
+        "no_response",
+        "out_of_scope"
+      ]
+    },
+    "SupportReply": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        }
+      },
+      "required": [
+        "body"
+      ],
+      "additionalProperties": false,
+      "description": "≥ 1 character after trimming"
+    },
+    "SupportReplyTemplate": {
+      "type": "string",
+      "enum": [
+        "acknowledgement",
+        "request_information",
+        "how_to",
+        "status_update",
+        "converted_notice",
+        "resolution",
+        "other"
+      ],
+      "description": "backend S24; the console fills the EN/FA text, staff may edit it"
+    },
+    "SupportTicket": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "topic": {
+          "$ref": "#/$defs/SupportTopic"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "app_area": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "organization_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/SupportTicketStatus"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SupportOutcome"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "can_reply": {
+          "type": "boolean",
+          "description": "open, or solved less than 14 days ago (a reply reopens it)"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "last_message_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "solved_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "topic",
+        "subject",
+        "app_area",
+        "organization_id",
+        "status",
+        "outcome",
+        "can_reply",
+        "created_at",
+        "last_message_at",
+        "solved_at"
+      ],
+      "additionalProperties": false
+    },
+    "SupportTicketClose": {
+      "type": "object",
+      "properties": {
+        "outcome": {
+          "$ref": "#/$defs/SupportOutcome",
+          "description": "converted: the ticket has a linked item"
+        },
+        "resolution_note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "required": [
+        "outcome",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "SupportTicketCreate": {
+      "type": "object",
+      "properties": {
+        "topic": {
+          "$ref": "#/$defs/SupportTopic"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "≥ 10 characters after trimming"
+        },
+        "app_area": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "the part of the app the problem is in, as the client names it"
+        },
+        "organization_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "filed for a business: the caller must be an active member"
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/SupportDiagnostics"
+        }
+      },
+      "required": [
+        "topic",
+        "subject",
+        "body"
+      ],
+      "additionalProperties": false
+    },
+    "SupportTicketStatus": {
+      "type": "string",
+      "enum": [
+        "new",
+        "waiting_on_user",
+        "waiting_on_team",
+        "solved"
+      ]
+    },
+    "SupportTicketThread": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "topic": {
+          "$ref": "#/$defs/SupportTopic"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "app_area": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "organization_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/SupportTicketStatus"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SupportOutcome"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "can_reply": {
+          "type": "boolean",
+          "description": "open, or solved less than 14 days ago (a reply reopens it)"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "last_message_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "solved_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SupportMessage"
+          },
+          "maxItems": 200
+        }
+      },
+      "required": [
+        "id",
+        "topic",
+        "subject",
+        "app_area",
+        "organization_id",
+        "status",
+        "outcome",
+        "can_reply",
+        "created_at",
+        "last_message_at",
+        "solved_at",
+        "items"
+      ],
+      "additionalProperties": false,
+      "description": "oldest first"
+    },
+    "SupportTopic": {
+      "type": "string",
+      "enum": [
+        "account_access",
+        "appointment_problem",
+        "data",
+        "bug",
+        "plan_billing",
+        "other"
+      ],
+      "description": "backend S24 (52 SupportTicket)"
     },
     "Synonym": {
       "type": "object",
@@ -31208,8 +32269,10 @@
         "disputes",
         "privacy_requests",
         "badge_approvals",
-        "subscription_change_requests"
-      ]
+        "subscription_change_requests",
+        "support_tickets"
+      ],
+      "description": "support_tickets: backend S24"
     },
     "WorkQueueSummary": {
       "type": "object",

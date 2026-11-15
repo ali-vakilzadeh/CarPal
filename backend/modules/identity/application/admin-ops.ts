@@ -253,6 +253,24 @@ export class DbAccountAdmin extends AccountAdmin {
       .executeTakeFirst();
     return u ? { createdAt: u.created_at, verifiedContact: !!(u.email_verified_at || u.phone_verified_at) } : null;
   }
+
+  async createDsr(scope: TxScope, userId: string, requestType: string, details: string | null, source: string): Promise<string> {
+    const u = await loadUser(scope, userId);
+    if (u.status === 'deleted') throw new ApiError('NOT_FOUND');
+    // As dsr.create: one open request per type (data_subject_requests_open_uq → 409 DUPLICATE), due date from policy.
+    const r = await scope.db
+      .insertInto('identity.data_subject_requests')
+      .values({ user_id: u.id, request_type: requestType, details })
+      .returning(['id', 'request_type'])
+      .executeTakeFirstOrThrow();
+    await writeAudit(scope, {
+      action: 'dsr.received',
+      entityType: 'data_subject_request',
+      entityId: r.id,
+      next: `${r.request_type} (filed by staff from ${source})`,
+    });
+    return r.id;
+  }
 }
 
 @Injectable()

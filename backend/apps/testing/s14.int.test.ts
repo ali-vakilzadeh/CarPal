@@ -53,7 +53,7 @@ describe('purpose bound to the record (BR-09, RCP-01)', () => {
       .operations.filter((o) => o.sec.includes('PURP'))
       .map((o) => o.opId)
       .sort();
-    expect(purp).toHaveLength(27);
+    expect(purp).toHaveLength(31);
     expect(admin.app.get(PurposeBindings).opIds().sort()).toEqual(purp);
   });
 

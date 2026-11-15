@@ -408,6 +408,27 @@ export const TEMPLATES: Catalog = {
       text: 'کارپال درباره یک اختلاف ({dispute_type}) برای شما پیامی فرستاد. آن را در حساب خود باز کنید، بخوانید و پاسخ دهید.',
     },
   },
+  // Backend S24 (BR-13): support tickets are answered in the app only (DQ-07); the notice only points there.
+  'support.reply_received': {
+    en: {
+      subject: 'CarPal answered your support request',
+      text: 'CarPal answered your support request. Open Help in the CarPal app to read the answer and reply.',
+    },
+    fa: {
+      subject: 'پاسخ کارپال به درخواست پشتیبانی شما',
+      text: 'کارپال به درخواست پشتیبانی شما پاسخ داد. بخش راهنما را در برنامه کارپال باز کنید تا پاسخ را بخوانید و جواب دهید.',
+    },
+  },
+  'support.ticket_solved': {
+    en: {
+      subject: 'Your support request is solved',
+      text: 'CarPal marked your support request as solved. If something is still wrong, reply in the app within 14 days to reopen it.',
+    },
+    fa: {
+      subject: 'درخواست پشتیبانی شما حل شد',
+      text: 'کارپال درخواست پشتیبانی شما را حل‌شده علامت زد. اگر مشکل هنوز باقی است، تا ۱۴ روز در برنامه پاسخ دهید تا دوباره باز شود.',
+    },
+  },
   'organization.verified': {
     en: { subject: 'Your business is verified', text: 'CarPal verified your business identity and location. Your profile now shows it.' },
     fa: { subject: 'کسب‌وکار شما تأیید شد', text: 'کارپال هویت و موقعیت کسب‌وکار شما را تأیید کرد و این در نمایه شما نمایش داده می‌شود.' },

@@ -5059,6 +5059,88 @@
           "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
         }
       }
+    },
+    {
+      "id": "S24",
+      "title": "Support tickets: in-app requests and the staff support inbox",
+      "status": "done",
+      "depends_on": [
+        "S14",
+        "S17"
+      ],
+      "plan": "backend/BR-update-plan.json action_plan.stages S24 (admin console refinement S13-S25).",
+      "goal": "Users and businesses ask CarPal for help in the apps (no email intake, DQ-07); staff answer, assign, convert and close tickets in the admin console's inbox under a purpose bound to the ticket (admin console BR-13, DI-10; DQ-20 row 4). BR-14 deferred by the owner.",
+      "scope": {
+        "contract_sections": [
+          "§1.3 and §2.14 purpose ticket:<Id>",
+          "§5, §20.1, §22.1, §23.1 types",
+          "§22.2 four operations",
+          "§23.6 six operations",
+          "Appendix A three events, Appendix D two S24 rows"
+        ],
+        "modules": [
+          "admin",
+          "identity",
+          "trust",
+          "billing",
+          "notification",
+          "apps/testing",
+          "libs/authz"
+        ],
+        "ops_target": 10,
+        "ops_note": "4 api-host and 6 admin-api operations (one PURP PII read, three PURP writes). Registry after S24: 489 operations, 541 routes, 55 error codes; 488 served (auth.social_start deferred)."
+      },
+      "tasks": [
+        {
+          "id": "S24.T1",
+          "status": "done",
+          "title": "Support tickets on both planes, purpose ticket:<id>, conversion into a case, privacy request, dispute or plan request, work queue, notices, DSR and retention (S24-D2..D12)."
+        },
+        {
+          "id": "S24.T2",
+          "status": "deferred",
+          "title": "AI insight review decisions and safety queue (BR-14): deferred to the next phase by the owner (S24-D1)."
+        }
+      ],
+      "deliverables": [
+        "contract 1.4.0 additions (Docs/40, libs/contract/generated, shared/api-contracts, console generated contract)",
+        "migration 0114 and Docs/43 (admin.support_tickets, admin.support_ticket_messages)",
+        "admin module support-ops.ts and support-registrations.ts; ports AccountAdmin.createDsr, TrustAdmin.raiseDispute, SubscriptionWriter.requestPlanChange",
+        "apps/testing/s24.int.test.ts, ten sweep resolvers"
+      ],
+      "report": {
+        "started_at": "2026-11-15",
+        "completed_at": "2026-11-15",
+        "summary": "Support tickets in the apps and the staff support inbox; every acceptance criterion is met. Details and deviations S24-D1..D12 are in backend/BR-update-plan.json action_plan.stages S24.report.",
+        "ops_implemented": [
+          "support.ticket_create",
+          "support.tickets_list",
+          "support.ticket_get",
+          "support.ticket_reply",
+          "admin.support_tickets_list",
+          "admin.support_ticket_get",
+          "admin.support_ticket_assign",
+          "admin.support_ticket_reply",
+          "admin.support_ticket_convert",
+          "admin.support_ticket_close"
+        ],
+        "ops_changed": [
+          "admin.work_summary (queue support_tickets)"
+        ],
+        "files_created": [
+          "database/migrations/0114_s24_support_tickets.sql",
+          "backend/modules/admin/application/support-ops.ts",
+          "backend/modules/admin/application/support-registrations.ts",
+          "backend/apps/testing/s24.int.test.ts"
+        ],
+        "files_changed": [
+          "See backend/BR-update-plan.json action_plan.stages S24.report.files_changed."
+        ],
+        "tests": {
+          "see": "backend/BR-update-plan.json action_plan.stages S24.report.tests",
+          "backend_integration_full": "990 tests in 65 files: 976 passed, 14 failed in the first full run, none caused by S24 logic: the table-count pin of tools/db/baseline.int.test.ts (117 -> 119, updated; S24 adds two tables), apps/testing/media.int.test.ts (its MediaHarness hook timed out at 120 s while the PWA and console suites ran on the same machine, so all 11 media tests failed) and one S19 verification-queue test (a timing-dependent list read under the same load). Rerun alone after the pin update: media, s19 and baseline 32 passed (3 files), including the baseline hash and seed checks."
+        }
+      }
     }
   ],
   "coverage_summary": {

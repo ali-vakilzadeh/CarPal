@@ -33,7 +33,7 @@
     },
     "counts": {
       "recommendations": 35,
-      "todo": 2,
+      "todo": 0,
       "r_item_actions_for_backend": 12,
       "unlinked_open_doc_issues": 4,
       "stages": 15,
@@ -46,9 +46,10 @@
         "closed": 6
       },
       "by_priority_note": "Recommendations only. mixed = BR-35 (part 1 row P0, part 2 P1, parts 1-filters and 3 P2). R-items are planned in r_item_actions_for_backend and are not counted here.",
-      "done_in_refinement": 32,
+      "done_in_refinement": 33,
       "partly_done": 0,
-      "counts_note": "todo, done_in_refinement and partly_done follow the recommendation status; by_priority keeps the planning view of 2026-11-12."
+      "counts_note": "todo, done_in_refinement, partly_done and deferred follow the recommendation status (deferred: BR-14, owner 2026-11-15); by_priority keeps the planning view of 2026-11-12.",
+      "deferred": 1
     },
     "status": "in_progress",
     "status_note": "Prioritised and staged from the Admin Console items (2026-11-12). S13 done on 2026-11-12 (contract 1.4.0 opened), S14 done on 2026-11-13 (purpose bound to the record). PWA items and the backend next_iteration items are not merged yet; they join through action_plan.intake_rules. Stages run as backend S13-S25 and are logged in backend/dev_plan.json when started. S15 done on 2026-11-13 (versioned legal texts and acceptance). S16a done on 2026-11-13 (staff recovery codes, own keys, break glass). S16b done on 2026-11-13 (staff account recovery with two ADM approvals). S17 done on 2026-11-14 (notification templates and rules, staff notices). S18 done on 2026-11-14 (moderation queues and content context). S15b done on 2026-11-14 (consent texts as versioned documents, re-consent of granted consents). S20 done on 2026-11-14 (dispute message threads, target snapshots and withdrawal; reduce_weight, edit_request and downgrade_fitment), run before S19 at the owner's request. S19 done on 2026-11-14 (organization search filters, request more info with resubmission and a paused review clock, verification assignment, profile corrections with history, assist sessions list), after S20. S21 done on 2026-11-15 (plan status and defaults, subscriptions and plan requests lists, retention create and dry run, flag and rate ids, system health and the work summary). S22 done on 2026-11-15 (organization merge through the OrganizationReferences registry: preview, the merge job after four eyes, every module's rule; apply_redaction on images). S23 done on 2026-11-15 (the A-USR-02 and A-ORG-02 tab reads: vehicles, appointments, consents, sessions and devices; capabilities and badges, portfolio, inventory quality, members, plan history).",
@@ -68,12 +69,13 @@
         "S20",
         "S21",
         "S22",
-        "S23"
+        "S23",
+        "S24"
       ],
       "stages_in_progress": [],
-      "next_stage": "S24 (support tickets and AI review decisions). The console can take the S15b and S17-S23 additions into AC9 (merge), AC10 (user tabs) and AC13/AC14.",
-      "contract": "Docs/40 1.4.0 open (479 operations, 531 routes; 478 served, auth.social_start deferred; 55 error codes). Frozen at S25.",
-      "summary": "S23 done: nine staff reads behind the A-USR-02 tabs (admin.user_vehicles, user_appointments, user_consents, user_sessions) and the A-ORG-02 tabs (admin.org_capabilities, org_portfolio, org_inventory_quality, org_members, org_plan_history), each PURP and bound per S14 to the user or organization in its path; six are PII reads with a pii.read entry. BR-16 done (DI-06, DI-07). Next, S24. Open decisions: DQ-20 items 3-4 (strategy proposed); defaults applied and awaiting confirmation: DQ-01, DQ-05, DQ-06, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15, DQ-21."
+      "next_stage": "S25 (refinement closure: contract 1.4.0 freeze and readiness for the whole-plan test run). The console can take the S24 inbox into AC14.",
+      "contract": "Docs/40 1.4.0 open (489 operations, 541 routes; 488 served, auth.social_start deferred; 55 error codes). Frozen at S25.",
+      "summary": "S24 done: support tickets on both planes. Users and businesses file tickets in the apps (support.ticket_create, tickets_list, ticket_get, ticket_reply; in-app only, DQ-07); staff work them in the inbox (admin.support_tickets_list, support_ticket_get under the purpose ticket:<id>, assign, templated reply, convert into a moderation case, privacy request, dispute or plan request (DQ-20 row 4), close); support_tickets work queue, support_update notices, DSR export and erasure, retention; migration 0114. BR-13 done; BR-14 deferred by the owner. Next, S25. Owner answers 2026-11-15: DQ-07, DQ-13, DQ-20. Defaults applied and awaiting confirmation: DQ-01, DQ-05, DQ-06, DQ-09, DQ-10, DQ-12, DQ-14, DQ-15, DQ-21."
     },
     "decisions_from_owner_2026_11_13": [
       "DQ-04 answered: the recommended staff recovery process (own recovery codes, requester proof, two ADM approvals in the console with an out-of-band check, 72-hour restriction, break glass). S16 split into S16a and S16b; R-11 and R-15 moved to S25.",
@@ -97,7 +99,12 @@
     "decisions_from_owner_2026_11_15": [
       "S21 run at the owner's request (\"execute stage 21\"), after S19 and S20.",
       "S22 run at the owner's request (\"execute stage 22\", after a 200-minute timer), after S21.",
-      "S23 run at the owner's request (\"review the file backend/BR-update-plan.json and execute the stage 23\"), after S22."
+      "S23 run at the owner's request (\"review the file backend/BR-update-plan.json and execute the stage 23\"), after S22.",
+      "DQ-07 answered: support tickets in the apps only (no email intake).",
+      "DQ-20 confirmed: items 3 and 4 follow the proposed strategy (featured placements out of every plan until payments and placements are decided; the support inbox is one ticket model with a staff intake queue in the console).",
+      "BR-14 deferred to the next phase (AI review decisions, with the AI build); S24 builds BR-13 only.",
+      "DQ-13 answered: No (members of a subject organization are not purpose subjects), as built in S14.",
+      "S24 run at the owner's request (\"start executing the stage S-24\"), after S23."
     ]
   },
   "recommendations": [
@@ -592,7 +599,7 @@
       },
       "priority": "should",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "Support tickets for A-SUP-01 (today 'Contact support' is an email address).",
       "source_notes": {},
@@ -617,7 +624,7 @@
           "S24"
         ],
         "why": "Docs/23 Should. \"Contact support\" by email works for the pilot. New entity on both planes.",
-        "dq03": "DQ-03/DQ-20 (strategy proposed for row 4): one ticket model; the console keeps the staff inbox as an intake queue; the Web UI files tickets like the PWA."
+        "dq03": "DQ-20 row 4 confirmed (owner, 2026-11-15): one ticket model; the console keeps the staff inbox as an intake queue that answers with templates and turns tickets into a case, privacy request, dispute or plan request; the Web UI files tickets like the PWA. DQ-07: in-app only."
       }
     },
     {
@@ -632,7 +639,7 @@
       },
       "priority": "must_with_ai",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "deferred",
       "in_scope_of_backend_refinement": true,
       "raw_text": "AI output review decisions (mark ok / wrong with category, add to evaluation set) and triage safety review queues (A-AI-02, A-AI-03).",
       "source_notes": {},
@@ -653,10 +660,15 @@
       "plan": {
         "priority": "P3",
         "complexity": "M",
-        "stage": [
-          "S24"
-        ],
-        "why": "Tied to the AI build (must_with_ai). Insights exist in lite mode, so the decision store can be built; its value grows with the real AI workers (backend NI-09, NI-10)."
+        "stage": [],
+        "why": "Tied to the AI build (must_with_ai). Insights exist in lite mode, so the decision store can be built; its value grows with the real AI workers (backend NI-09, NI-10).",
+        "deferred_to": "next phase (AI build)"
+      },
+      "deferred": {
+        "by": "owner",
+        "date": "2026-11-15",
+        "decision": "AI output review decisions (A-AI-02 decisions, A-AI-03 safety queue, evaluation set) are deferred to the next phase, with the AI build (backend NI-09, NI-10).",
+        "effect": "Taken out of S24 and out of this refinement; the console keeps A-AI-02 read-only (admin.ai_insights_search) and AC13 does not wait for it."
       }
     },
     {
@@ -5130,26 +5142,29 @@
       },
       {
         "id": "S24",
-        "title": "Support tickets and AI review decisions",
-        "status": "not_started",
+        "title": "Support tickets",
+        "status": "done",
         "items": [
-          "BR-13",
-          "BR-14"
+          "BR-13"
         ],
-        "priority_mix": "P2: BR-13. P3: BR-14.",
+        "priority_mix": "P2: BR-13. (BR-14, P3, deferred by the owner.)",
         "load": {
-          "points": 10,
+          "points": 8,
           "rating": "full",
-          "breakdown": "BR-13 6, BR-14 4"
+          "breakdown": "BR-13 6, ticket conversion into cases, privacy requests, disputes and plan requests (DQ-20 row 4 confirmed) 2",
+          "note": "BR-14 (4 points) deferred."
         },
         "why_this_stage": "Both are new staff work queues with their own entity, and both are the lowest-priority items (Should, and with the AI build). They come last so the pilot-relevant work is never waiting on them, and they can be cut or moved without touching the rest.",
         "depends_on": [
           "S17 (notifications for ticket replies)",
-          "DQ-07"
+          "DQ-07 (answered: in-app only)",
+          "DQ-20 row 4 (answered: confirmed)"
         ],
         "context_to_read": [
-          "Docs/23 A-SUP-01, A-AI-02, A-AI-03",
-          "Docs/43 ai_mcp.ai_insights"
+          "Docs/23 A-SUP-01, §0 row 4, §6 SLA",
+          "Docs/21 C-PROF-09",
+          "S20 dispute message threads (trust/application/dispute-messages.ts)",
+          "S14 purpose queues (admin.module.ts)"
         ],
         "tasks": [
           {
@@ -5157,23 +5172,209 @@
             "items": [
               "BR-13"
             ],
-            "task": "Support tickets and messages entity; api host: create, list own, read, reply; admin: tickets list (queue with SLA), get (PURP), assign, reply (templates), close."
+            "task": "Support tickets and messages entity; api host: create, list own, read, reply; admin: tickets list (queue with SLA), get (PURP), assign, reply (templates), close.",
+            "status": "done",
+            "result": "support.ticket_create, support.tickets_list, support.ticket_get, support.ticket_reply on the api host; admin.support_tickets_list, admin.support_ticket_get (PURP PII), admin.support_ticket_assign, admin.support_ticket_reply (templates), admin.support_ticket_convert (case, privacy request, dispute, plan request; DQ-20 row 4), admin.support_ticket_close; purpose ticket:<id>; support_tickets work queue; support_update notices; DSR export and erasure; SupportTicket retention (S24-D1..D12)."
           },
           {
             "id": "S24.T2",
             "items": [
               "BR-14"
             ],
-            "task": "AI insight reviews: admin.ai_insight_review (ok or wrong with a category, note, add to the evaluation set), admin.ai_safety_queue (insights with safety flags awaiting triage, A-AI-03), admin.ai_eval_set_list."
+            "task": "AI insight reviews: admin.ai_insight_review (ok or wrong with a category, note, add to the evaluation set), admin.ai_safety_queue (insights with safety flags awaiting triage, A-AI-03), admin.ai_eval_set_list.",
+            "status": "deferred",
+            "deferred": "Owner, 2026-11-15: BR-14 to the next phase."
           }
         ],
         "contract_changes": "Additive.",
-        "console_impact": "A-SUP-01, A-AI-02 decisions, A-AI-03.",
+        "console_impact": "A-SUP-01 (AC14). A-AI-02 decisions and A-AI-03 wait for the next phase.",
         "pwa_impact": "Follow-up for the PWA: in-app support requests instead of the email address.",
         "acceptance_criteria": [
           "A user reads only their own tickets.",
-          "A reviewed insight records the reviewer and the verdict in the audit log."
-        ]
+          "Staff read a ticket only under its purpose, and every staff reply, assignment, conversion and close is audited."
+        ],
+        "title_before_2026_11_15": "Support tickets and AI review decisions",
+        "deferred_items": [
+          "BR-14 (owner, 2026-11-15: next phase)"
+        ],
+        "acceptance_criteria_removed": [
+          "A reviewed insight records the reviewer and the verdict in the audit log. (BR-14 deferred)"
+        ],
+        "report": {
+          "started_at": "2026-11-15",
+          "completed_at": "2026-11-15",
+          "note_on_order": "Run at the owner's request (\"start executing the stage S-24\") after recording DQ-07 (in-app only), DQ-20 (confirmed), DQ-13 (No) and the deferral of BR-14 (next phase). S24 therefore builds BR-13 only; S24.T2 is deferred.",
+          "summary": "Users and businesses can now ask CarPal for help inside the apps, and staff have an inbox for it. A user files a ticket (topic, subject, description, app area, optional diagnostic info, and the business when they act for one), sees only their own tickets, reads CarPal's answers (staff shown as \"CarPal\") and replies; a reply within 14 days reopens a solved ticket; at most 5 open tickets per user. There is no email intake (DQ-07). Staff (support and admins) list the inbox with the team's clock (first response within 1 working day, paused while waiting on the user), read a ticket only under its purpose ticket:<id> (subjects: the requester and the business; moderators and community reviewers never), assign it, answer with templates, turn it into a moderation case (the user's report, triaged into the target's open case or a new one with the severity floor), a privacy request, a dispute or a plan request (DQ-20 row 4, confirmed), and close it with an outcome; every staff action needs a reason and is audited with the purpose. The user is notified of each staff answer and of the solved ticket (support_update: in the app, plus an email or push notice that points to the app). The work summary has a support_tickets queue; a deletion request erases the tickets, an export includes them, and retention can purge solved tickets. Contract 1.4.0: 489 operations, 541 routes, 55 error codes. Migration 0114. Every acceptance criterion is met. BR-14 (AI review decisions) is deferred to the next phase by the owner.",
+          "acceptance_criteria": [
+            {
+              "criterion": "A user reads only their own tickets.",
+              "met": true,
+              "evidence": "s24.int.test.ts: another user gets 404 on get and reply and an empty list; other members of the business a ticket was filed for get 404; filing for a business needs an active membership (404 otherwise). RLS: admin.support_tickets requester_read / requester_insert / requester_update and admin.support_ticket_messages requester_read / requester_insert. The admin sweep runs BOLA on the four api routes (another user: 404, no data, same answer as a missing ticket)."
+            },
+            {
+              "criterion": "Staff read a ticket only under its purpose, and every staff reply, assignment, conversion and close is audited.",
+              "met": true,
+              "evidence": "s24.int.test.ts: no purpose 400, a case about someone else 403 PURPOSE_RECORD_MISMATCH, a moderator with a ticket purpose 404, a ticket assigned to someone else or solved 404; the requester is a subject (admin.user_get 200) and another user is not (403); pii.read names ticket:<id>; audit entries support.ticket_assigned, support.reply_posted, support.ticket_converted, support.ticket_solved (the purpose-bound ones carry access_purpose ticket:<id>). s14.int.test.ts: all 31 PURP operations have a binding (pin 27 -> 31); the sweep probes each new PURP route with an unrelated purpose (403)."
+            }
+          ],
+          "acceptance_criteria_removed": [
+            "A reviewed insight records the reviewer and the verdict in the audit log. (BR-14 deferred by the owner, 2026-11-15)"
+          ],
+          "ops_added": [
+            "support.ticket_create (POST /v1/support/tickets, USR IDEM RL(report.create))",
+            "support.tickets_list (GET /v1/support/tickets, USR)",
+            "support.ticket_get (GET /v1/support/tickets/{ticket_id}, USR)",
+            "support.ticket_reply (POST /v1/support/tickets/{ticket_id}/messages, USR IDEM RL(report.create))",
+            "admin.support_tickets_list (GET {adm}/support/tickets, STF(SUP, ADM))",
+            "admin.support_ticket_get (GET {adm}/support/tickets/{ticket_id}, STF(SUP, ADM) PURP PII)",
+            "admin.support_ticket_assign (POST {adm}/support/tickets/{ticket_id}/assign, STF(SUP, ADM) RSN AUD)",
+            "admin.support_ticket_reply (POST {adm}/support/tickets/{ticket_id}/messages, STF(SUP, ADM) PURP RSN AUD)",
+            "admin.support_ticket_convert (POST {adm}/support/tickets/{ticket_id}/conversions, STF(SUP, ADM) PURP RSN AUD)",
+            "admin.support_ticket_close (POST {adm}/support/tickets/{ticket_id}/close, STF(SUP, ADM) PURP RSN AUD)"
+          ],
+          "ops_changed": [
+            "admin.work_summary: WorkQueueKey support_tickets (SUP, ADM)",
+            "notifications: NotificationEventType support_update (support.reply_received, support.ticket_solved)"
+          ],
+          "contract": "Docs/40 1.4.0 (still open): §1.3 and SEC-ADM-5 purpose ticket:<Id>; §5 SupportTopic, SupportTicketStatus, SupportOutcome; §20.1 support_update; §22.1 SupportDiagnostics, SupportTicketCreate, SupportTicket, SupportMessage, SupportTicketThread, SupportReply; §22.2 four operations; §23.1 WorkQueueKey support_tickets, SupportReplyTemplate, SupportLinkedItem, StaffSupportTicket, StaffSupportMessage, StaffSupportTicketDetail, StaffSupportReplyWrite, SupportTicketClose, SupportConversion, SupportConversionResult; new §23.6 six operations; Appendix A three events; Appendix D two S24 rows. 489 operations, 541 routes (488 served; auth.social_start deferred), 55 error codes.",
+          "files_created": [
+            "database/migrations/0114_s24_support_tickets.sql",
+            "backend/modules/admin/application/support-ops.ts",
+            "backend/modules/admin/application/support-registrations.ts",
+            "backend/apps/testing/s24.int.test.ts"
+          ],
+          "files_changed": [
+            "Docs/40.API contract.md (§1.3, §2.14, §5, §20.1, §22.1, §22.2, §23.1, §23.6, Appendix A, Appendix D)",
+            "Docs/43.db_setup.sql (admin.support_tickets, admin.support_ticket_messages, policies, grants; notifications event type; audit_logs access_purpose check)",
+            "Docs/42.db schema.md (admin tables, S24 rule row), Docs/52.MVP Data Dictionary.md (SupportTicket, SupportTicketMessage)",
+            "Docs/23.Admin_WebUI_screens.md (§0 rows 3 and 4, A-SUP-01, A-AI-02 and A-AI-03 phase notes, §7 item 0), Docs/21.Mobile_app_screen_list.md (C-PROF-09)",
+            "backend/libs/authz/{ports.ts, authorizer.ts} (PurposeKind ticket)",
+            "backend/modules/admin/{admin.module.ts (handlers, bindings, registrations), interface/admin.ts (WorkQueueKey support_tickets)}",
+            "backend/modules/identity/{interface/identity.ts, application/admin-ops.ts} (AccountAdmin.createDsr)",
+            "backend/modules/trust/{interface/trust.ts, application/admin-ops.ts (TrustAdmin.raiseDispute), application/dispute-ops.ts (requireDisputeParty, insertDispute shared with disputes.create)}",
+            "backend/modules/billing/{interface/billing.ts, application/subscriptions.ts} (SubscriptionWriter.requestPlanChange)",
+            "backend/modules/notification/domain/{routing.ts, templates.ts, template-catalog.ts} (support.message.posted, support.ticket.solved)",
+            "backend/tools/contract/parse-operations.ts (support.* -> admin)",
+            "backend/libs/contract/generated/*, libs/contract/contract.test.ts (489/541), libs/db/generated/db.ts",
+            "backend/apps/testing/{s14.int.test.ts (31 PURP), s21.int.test.ts (support_tickets queue), contract/resolvers/admin.ts, contract/generated/admin.contract.int.test.ts}",
+            "backend/tools/db/baseline.int.test.ts (119 tables)",
+            "shared/api-contracts/{openapi.yaml, generated/*}, shared/i18n/locales/{en,fa}.json (notifications.templates.support)",
+            "pwa/src/features/notifications/{catalog.ts, links.ts} (support.reply_received, support.ticket_solved -> Settings > Help), pwa/src/server/bff/allowlist.test.ts (176 -> 180)",
+            "frontend/admin-console: src/lib/api/generated/*, tools/contract/generate.test.ts and src/server/bff/allowlist.test.ts (123 admin operations)",
+            "frontend/admin-console/dev-plan.json (BR-14 deferred, dq03_scope_review items 3-4), frontend/public-ui-dev-plan.json (PU-OQ-03 answer, featured placements note), Docs/23 A-FEAT-01 note",
+            "backend/BR-update-plan.json, backend/dev_plan.json"
+          ],
+          "tests": {
+            "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 567 modules), typecheck, format:check: pass",
+            "backend_unit": "323 passed (47 files), including the registry pin (489 operations, 541 routes)",
+            "backend_contract": "contract:check up to date (1.4.0, 489 operations, 55 error codes); sweep suites up to date (17 modules, admin regenerated); openapi:check: 541 operations on 438 paths; contract:coverage --strict 488/489 served (auth.social_start deferred), 0 unexplained 501s",
+            "backend_s24": "15 passed (apps/testing/s24.int.test.ts): own tickets only (get, reply, list; other members of the business); filing for a business needs membership; five open tickets; short messages; status and clock moves, reopen within 14 days and refusal after; purpose (400, 403 under a case, 404 for a moderator, for another assignee and once solved; requester is a subject, another user is not; pii.read names ticket:<id>); staff shown as CarPal, acknowledgement keeps the clock, audit trail with purposes; notifications support.reply_received and support.ticket_solved (none for the requester reply); work summary queue for support, not moderators; conversions: case as the requester report with the severity floor and joining the open case, missing target 422; privacy request (own DSR visible to the user, duplicate 409), close as converted only after a link; dispute only for a party (wrong type 422, not party 422); plan request by the owner only (wrong audience 422, manager 409, no organization 409); conditional members; DSR export (staff as CarPal) and erasure",
+            "backend_affected": "admin sweep 51 passed (the ten new routes: schemas, BOLA, BFLA, purpose mechanics, projections); trust, billing, identity and notification sweeps and s20, s21 (support_tickets in the per-role queues), s14 (31 PURP bindings): passed",
+            "backend_integration_full": "990 tests in 65 files: 976 passed, 14 failed in the first full run, none caused by S24 logic: the table-count pin of tools/db/baseline.int.test.ts (117 -> 119, updated; S24 adds two tables), apps/testing/media.int.test.ts (its MediaHarness hook timed out at 120 s while the PWA and console suites ran on the same machine, so all 11 media tests failed) and one S19 verification-queue test (a timing-dependent list read under the same load). Rerun alone after the pin update: media, s19 and baseline 32 passed (3 files), including the baseline hash and seed checks.",
+            "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck, lint and i18n:check (3179 keys) pass; 691 unit tests passed (76 files) after the notification catalog (support.reply_received, support.ticket_solved; link to Settings > Help) and the allowlist pin 176 -> 180",
+            "admin_console": "contract:generate (123 admin-api operations), contract:check, typecheck, lint pass; 430 unit and DOM tests passed (44 files) after the pins 117 -> 123",
+            "environment": "Node 24.21.0 from backend/.tools/node (tools/use-local-node.sh); migration 0114 applied with pnpm db:setup; its audit_logs check was added to 0114 after the first local apply and applied to the local database by hand (same statements).",
+            "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
+          },
+          "deviations": [
+            {
+              "id": "S24-D1",
+              "task": "S24.T2",
+              "item": "BR-14",
+              "deviation": "Not built: the owner deferred AI output review decisions, the A-AI-03 safety queue and the evaluation set to the next phase (2026-11-15).",
+              "impact": "Console: A-AI-02 stays read-only (admin.ai_insights_search); A-AI-03 has no queue. AC13 does not wait for S24."
+            },
+            {
+              "id": "S24-D2",
+              "task": "S24.T1",
+              "item": "BR-13",
+              "deviation": "One api-host intake for users and businesses (DQ-20 row 4): support.ticket_create takes organization_id (the caller must be an active member); the ticket stays the caller's own and other members of the business do not see it. The ticket operations live in §22 next to reports.create and are served by the admin module (parse-operations maps support.* to admin).",
+              "impact": "PWA and Web UI: one form; the Help page of the business portal sends organization_id."
+            },
+            {
+              "id": "S24-D3",
+              "task": "S24.T1",
+              "item": "BR-13",
+              "deviation": "Topics are Docs/23's five plus plan_billing (a business's plan question, DQ-20 row 4): account_access, appointment_problem, data, bug, plan_billing, other.",
+              "impact": "Docs/23 A-SUP-01 and 52 SupportTicket list them."
+            },
+            {
+              "id": "S24-D4",
+              "task": "S24.T1",
+              "item": "BR-13",
+              "deviation": "No screenshot or file attachments (C-PROF-09 \"optional screenshot\"): there is no upload purpose for support files. Diagnostic info is a small closed object (platform, app version, OS version, screen) sent only when the user ticks it.",
+              "impact": "Follow-up candidate: an upload purpose support_attachment (private, scanned) attached to a message, as dispute evidence is."
+            },
+            {
+              "id": "S24-D5",
+              "task": "S24.T1",
+              "item": "BR-13",
+              "deviation": "Conversion (DQ-20 row 4) reuses each item's own rules through ports: a moderation case is filed as the requester's ContentReport (status triaged, the user's words as details) into the target's open case or a new case (source user_report, S18 severity floor), so the requester is a case subject like any reporter and no new case source exists; a privacy request through AccountAdmin.createDsr (one open per type, 409 DUPLICATE); a dispute through TrustAdmin.raiseDispute (the disputes.create type and party rules, now shared as requireDisputeParty and insertDispute; the ticket's business raises it with the user when the user still belongs to it); a plan request through SubscriptionWriter.requestPlanChange (the business's owner only, as ORG(O+); one open per organization). The conversion does not notify the requester; staff answer with the converted_notice template.",
+              "impact": "Console: A-SUP-01 Turn into, then a reply; the created item opens in its own queue."
+            },
+            {
+              "id": "S24-D6",
+              "task": "S24.T1",
+              "item": "BR-13",
+              "deviation": "Docs/23 \"escalate to engineering (bug)\" has no operation: bugs are answered and closed (outcome answered or out_of_scope) and tracked outside the console.",
+              "impact": "None for the pilot."
+            },
+            {
+              "id": "S24-D7",
+              "task": "S24.T1",
+              "item": "BR-13",
+              "deviation": "The purpose ticket:<id> is open only to support staff and administrators (the queue resolver checks the caller's platform roles), only while the ticket is not solved and unassigned or assigned to the caller; its subjects are the requester and the organization. analytics.audit_logs.access_purpose accepts ticket (migration 0114).",
+              "impact": "Console: the purpose regex in purpose-gate.tsx, lib/api/client.ts and server/bff/forwarder.ts must accept ticket when AC14 builds A-SUP-01."
+            },
+            {
+              "id": "S24-D8",
+              "task": "S24.T1",
+              "item": "BR-13",
+              "deviation": "The team's clock is clock_started_at: set when the ticket is filed or the requester answers, cleared while waiting on the user and when solved; an acknowledgement (status waiting_on_team) counts as the first response and keeps the clock. The server stores the clock and the console computes the SLA state (as for verifications); the work summary uses 1 working day. No automatic close for tickets left waiting on the user (staff close them with no_response).",
+              "impact": "Console: show the clock from clock_started_at and first_response_at."
+            },
+            {
+              "id": "S24-D9",
+              "task": "S24.T1",
+              "item": "BR-13",
+              "deviation": "DQ-07 \"in app only\" is read as: tickets are filed and answered only in the apps (no email intake, no replies by email). A staff answer and a solved ticket still send a support_update notification (category system: in the app, plus an email or push notice without the message text that points to the app). The requester's replies do not notify staff (the inbox and work summary show them).",
+              "impact": "Owner: say if notices by email are not wanted; removing email from the two templates is a one-line change."
+            },
+            {
+              "id": "S24-D10",
+              "task": "S24.T1",
+              "item": "BR-13",
+              "deviation": "Privacy: a DSR export includes the requester's tickets and the whole thread (staff as CarPal); a deletion request deletes the requester's tickets with their messages (the items a ticket was turned into follow their own modules); retention entity SupportTicket purges solved tickets by solved_at. Messages are insert-only for the app roles but not append-only, so erasure and retention can delete them.",
+              "impact": "Retention: add a SupportTicket policy in A-RET-01 (e.g. delete solved tickets after 24 months) before the pilot."
+            },
+            {
+              "id": "S24-D11",
+              "task": "S24.T1",
+              "item": "BR-13",
+              "deviation": "The qualifiers of INVALID_TRANSITION (too_many_open, closed, solved, thread_full, too_many_links, no_organization, not_owner, not_converted) are in the contract text and the server log only (SEC-OUT-5): clients see the code.",
+              "impact": "PWA and console: show a message per operation, not per qualifier."
+            },
+            {
+              "id": "S24-D12",
+              "task": "-",
+              "item": "-",
+              "deviation": "Clients kept green as in S20: the PWA classifies support.reply_received and support.ticket_solved (EN/FA texts in shared/i18n, link to Settings > Help until the request screens exist) and its BFF allowlist holds 180 consumer routes; the console regenerated 123 admin-api operations (pins only).",
+              "impact": "None beyond the follow-ups in notes_for_next."
+            }
+          ],
+          "notes_for_next": [
+            "Admin console (AC14): A-SUP-01 inbox (admin.support_tickets_list with the clock, admin.support_ticket_get under ticket:<id>, assign, templated replies EN/FA, Turn into, Close with outcome), the support_tickets widget in the work summary, and the purpose regex (purpose-gate.tsx, lib/api/client.ts, server/bff/forwarder.ts) accepting ticket. A-AI-02 decisions and A-AI-03 wait for the next phase (BR-14).",
+            "PWA follow-up: Settings > Help files tickets (support.ticket_create with optional diagnostics; organization_id in a business context) instead of the support email address, lists them (support.tickets_list) and shows the thread with replies (support.ticket_get, support.ticket_reply); the support notices then link to the request itself (reference support_ticket).",
+            "Public Web UI (frontend/public-ui-dev-plan.json): the Help page uses the same operations with organization_id.",
+            "S25 candidates: support attachments (upload purpose, S24-D4); automatic no_response close after N days (S24-D8); a SupportTicket retention policy in the pilot settings (S24-D10).",
+            "Owner: confirm the reading of DQ-07 for notices (S24-D9) and the earlier defaults still pending (DQ-01, DQ-05, DQ-06, DQ-09, DQ-10, DQ-12, DQ-14, DQ-15, DQ-21).",
+            "Local developers: pnpm db:setup in backend/ (migration 0114); pnpm db:reset if the baseline test must pass locally.",
+            "Next backend stage: S25 (refinement closure: contract 1.4.0 freeze and readiness for the whole-plan test run)."
+          ],
+          "open_after_stage": [
+            "Nothing committed (commit only when the owner asks)."
+          ]
+        }
       },
       {
         "id": "S25",
@@ -5321,7 +5522,10 @@
         "id": "DQ-07",
         "before": "S24",
         "question": "Support tickets scope: in-app tickets from the PWA plus a staff inbox, or also email intake?",
-        "default": "In-app only; email intake later."
+        "default": "In-app only; email intake later.",
+        "status": "answered",
+        "answer": "In-app only (owner, 2026-11-15): support tickets are filed and answered inside the apps (PWA, later the mobile app and the public Web UI Help page) through one api-host operation; there is no email intake.",
+        "applied": "S24 builds in-app tickets only: no inbound email, no mail parsing. Ticket notifications go out through the existing channels (in-app, push, email notice that links back to the app); a user answers in the app, never by replying to an email."
       },
       {
         "id": "DQ-08",
@@ -5374,10 +5578,11 @@
         "id": "DQ-13",
         "raised_in": "S14",
         "before": "AC10 (A-USER) or S23 (extended staff reads)",
-        "status": "default_applied",
-        "owner_confirmation": "pending",
+        "status": "answered",
+        "owner_confirmation": "confirmed 2026-11-15",
         "question": "Should the members of an organization a work item is about (e.g. the owner of an organization under an impersonation case) also be subjects, so staff can open their user accounts under that item?",
-        "default": "No (built in S14): only the people the item names (author, reporters, raiser, submitter, requester). If staff need the owner, add \"active owners and managers of a subject organization\" as subjects of case and verification items (about 0.5 point, S19 or S23)."
+        "default": "No (built in S14): only the people the item names (author, reporters, raiser, submitter, requester). If staff need the owner, add \"active owners and managers of a subject organization\" as subjects of case and verification items (about 0.5 point, S19 or S23).",
+        "answer": "No (owner, 2026-11-15): only the people a work item names are its subjects; members of a subject organization are not. As built in S14; nothing to change."
       },
       {
         "id": "DQ-14",
@@ -5442,7 +5647,7 @@
         "id": "DQ-20",
         "raised_in": "DQ-03 answer (2026-11-13)",
         "before": "S19 (BR-34), S21 (BR-24), S24 (BR-13) and AC14",
-        "status": "partly_answered",
+        "status": "answered",
         "question": "Move plan for the admin console parts that do not match DQ-03 (Docs/23 §0): assist onboarding, plan assignment / trials / overrides, featured placements, the support inbox. Where does each go in the public Web UI (WP20, not built yet), what stays in the console as control, and what happens to the backlog items BR-34 (assist sessions read), BR-24 (subscriptions list) and BR-13 (support tickets) meanwhile?",
         "default": "Until the move plan exists: build nothing new for those parts (BR-34 and BR-24 wait; BR-13 keeps its user-side half), keep what AC6 and AC9 built, and keep the plan catalog (admin.plans_list, admin.plan_update) and the location corrections in the console as control.",
         "answer_items_1_2": "Owner, 2026-11-13: assisted onboarding (row 1) and plan assignment (row 2) stay in the admin console. The public Web UI gets an identical copy of those pages for the business: frontend/public-ui-dev-plan.json PU-P01 (onboarding wizard with the assisted mode) and PU-P02 (plan and subscription pages), with backend requests PU-BR-01..04.",
@@ -5451,7 +5656,9 @@
           "Support inbox (row 4): one ticket model and one intake, not a second tool. Users and businesses file tickets from the PWA, the mobile app and the public Web UI's Help page through one api-host operation (BR-13, user side). The console keeps the staff inbox, framed as an intake queue like reports: staff read a ticket under a purpose (SEC-ADM-5), answer with EN/FA templates, and turn it into a moderation case, privacy request, dispute or (for a business's plan question) a plan request, so it feeds the network's control queues. Pure how-to questions are answered from templates and closed. Revisit a separate help-desk tool only when ticket volume needs one (it would be another store of personal data and another set of staff accounts). DQ-07 default (in-app only, email intake later) stays."
         ],
         "strategy_principle": "To keep the project coherent: one function, one rule owner (the backend), one screen spec; a function may have two front ends only when two kinds of actors use it (staff acting on any organization in the console, a business acting on itself in the Web UI), and then the pages are one shared implementation or a provenance-headed copy with a parity test (public-ui-dev-plan.json PU-GD-02, PU-OQ-01).",
-        "status_note": "Items 3 and 4: strategy proposed 2026-11-13, awaiting the owner."
+        "status_note": "All four items answered (items 1-2 on 2026-11-13, items 3-4 on 2026-11-15).",
+        "answer_items_3_4": "Confirmed (owner, 2026-11-15): the proposed strategy for featured placements (row 3: out of every plan until payments and placements are decided; then the console keeps the control half and the Web UI gets the selling half) and for the support inbox (row 4: one ticket model and one api-host intake; the console keeps the staff inbox as an intake queue that answers with templates and turns tickets into a moderation case, privacy request, dispute or plan request).",
+        "applied_items_3_4": "Row 3: no BR item, no console screen, no Web UI page; featured.enabled stays off. Row 4: built in S24 (BR-13)."
       },
       {
         "id": "DQ-21",
@@ -5497,7 +5704,7 @@
         {
           "stage": "AC13",
           "resume_after": "S25 (owner decision PD-02)",
-          "why": "Technically buildable after S21 (BR-17 system health, BR-22 work summary, BR-26 ids); A-AI-02 decisions need S24 (BR-14)."
+          "why": "Technically buildable after S21 (BR-17 system health, BR-22 work summary, BR-26 ids); A-AI-02 decisions (BR-14) are deferred to the next phase (owner, 2026-11-15)."
         },
         {
           "stage": "AC14",
@@ -5602,6 +5809,10 @@
       {
         "id": "BR-29 (fraud signals)",
         "reason": "Same: needs SEC-BF-1 signals (backend NI-05)."
+      },
+      {
+        "id": "BR-14",
+        "reason": "Owner, 2026-11-15: AI output review decisions and the AI safety triage queue are deferred to the next phase, with the AI build."
       }
     ],
     "progress_log": [
@@ -5755,6 +5966,19 @@
           "Console (AC13/AC14): dashboard System and queue widgets, My work from the work summary, A-PLAN-01 status, assignments and requests, A-RET-01 add and dry run, flag and rate history (S21.report.notes_for_next).",
           "S25 candidates: decline a plan request with a notice (PU-BR-04 rest) and the business's own request list (PU-BR-03); retention handlers for UserAccount, McpAccessLog, AnalyticsEvent and InventoryImportBatch.",
           "Local developers: pnpm db:setup in backend/ (migration 0112); pnpm db:reset if the baseline test must pass locally."
+        ]
+      },
+      {
+        "date": "2026-11-15",
+        "stage": "S24",
+        "status": "done",
+        "summary": "S24 done: support tickets in the apps (four api-host operations, the requester's own only) and the staff support inbox (six admin-api operations in new §23.6: list with the team's clock, purpose-bound read, assign, templated reply, conversion into a moderation case, privacy request, dispute or plan request, close), purpose ticket:<id> for support and admins, the support_tickets work queue, support_update notices, DSR export and erasure, SupportTicket retention (migration 0114). BR-13 done; BR-14 deferred to the next phase (owner). Owner answers recorded: DQ-07 in-app only, DQ-13 No, DQ-20 confirmed. Contract 1.4.0: 489 operations, 541 routes, 55 error codes.",
+        "recommendations": [
+          "Run S25 next (contract freeze and closure).",
+          "Console (AC14): A-SUP-01 inbox and the ticket purpose (S24.report.notes_for_next).",
+          "PWA: in-app support requests in Settings > Help instead of the email address (follow-up).",
+          "S25 candidates: support attachments, automatic no_response close, a SupportTicket retention policy.",
+          "Local developers: pnpm db:setup in backend/ (migration 0114); pnpm db:reset if the baseline test must pass locally."
         ]
       }
     ],

@@ -74,4 +74,19 @@ export abstract class TrustAdmin {
    * that awarded each): admin.org_capabilities (backend S23, BR-16).
    */
   abstract badges(scope: TxScope, orgId: string, limit: number): Promise<Record<string, unknown>[]>;
+  /**
+   * Raises a dispute for a user (and the organization they act for) on their behalf, in the staff transaction
+   * (admin.support_ticket_convert, backend S24): the same type and party rules as disputes.create (422 at
+   * `/dispute_type` or `/dispute_target/id`), 409 DUPLICATE for an open dispute on the same target; dispute.opened.
+   */
+  abstract raiseDispute(
+    scope: TxScope,
+    d: {
+      target: { type: 'review' | 'service_record' | 'badge' | 'appointment' | 'moderation_action'; id: string };
+      disputeType: string;
+      userId: string;
+      orgId: string | null;
+      reason: string;
+    },
+  ): Promise<string>;
 }

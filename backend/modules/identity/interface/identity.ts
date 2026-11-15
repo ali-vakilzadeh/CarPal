@@ -261,6 +261,12 @@ export abstract class AccountAdmin {
   ): Promise<{ previous: string; next: string }>;
   /** Staff review views (40 StaffReviewApprovalView.author_history): account age and verified contact, no contact data. */
   abstract facts(scope: TxScope, userId: string): Promise<{ createdAt: Date; verifiedContact: boolean } | null>;
+  /**
+   * Files a privacy request for the user on their behalf (admin.support_ticket_convert, backend S24) in the staff
+   * transaction, as dsr.create would: one open request per type (409 DUPLICATE), due date from policy, audited.
+   * 404 NOT_FOUND for unknown or deleted accounts.
+   */
+  abstract createDsr(scope: TxScope, userId: string, requestType: string, details: string | null, source: string): Promise<string>;
 }
 
 /**

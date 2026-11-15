@@ -96,7 +96,8 @@ export function moduleFor(opId: string, h1: Section): string {
   }
   if (opId === 'feed.discover') return 'discovery'; // §19 operation owned by discovery (41 §2.1 M7)
   if (h1.number === '21') return 'ai-mcp';
-  if (h1.number === '22') return { events: 'analytics', reports: 'admin' }[prefix] ?? 'platform';
+  // Backend S24 (BR-13): support tickets are filed on the api host and worked in the admin module's inbox.
+  if (h1.number === '22') return { events: 'analytics', reports: 'admin', support: 'admin' }[prefix] ?? 'platform';
   if (h1.number === '23') {
     // Backend S23 (BR-16): staff tab reads served by the module that owns the records.
     const s23: Record<string, string> = {

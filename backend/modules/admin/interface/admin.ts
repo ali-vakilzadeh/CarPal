@@ -571,6 +571,7 @@ export const WORK_QUEUE_KEYS = [
   'privacy_requests',
   'badge_approvals',
   'subscription_change_requests',
+  'support_tickets', // backend S24 (BR-13)
 ] as const;
 export type WorkQueueKey = (typeof WORK_QUEUE_KEYS)[number];
 

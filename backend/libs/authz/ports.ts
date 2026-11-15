@@ -16,7 +16,7 @@ export interface OrganizationInfo {
   status: OrgStatus;
 }
 
-export type PurposeKind = 'case' | 'dispute' | 'dsr' | 'verification' | 'approval';
+export type PurposeKind = 'case' | 'dispute' | 'dsr' | 'verification' | 'approval' | 'ticket';
 /** CarPal-Access-Purpose (40 §1.3, SEC-ADM-5). */
 export interface AccessPurpose {
   kind: PurposeKind;

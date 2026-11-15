@@ -7,7 +7,7 @@
 //                      flag and rate cache listener (feature_flag.changed, exchange_rate.changed).
 //   AdminApiModule     §23 moderation, flags, retention, assist sessions and
 //                      four-eyes operations on the admin-api host.
-//   AdminPublicModule  reports.create on the api host.
+//   AdminPublicModule  reports.create and the support.* tickets (backend S24) on the api host.
 //   AdminWorkerModule  W15 rules: expiry of pending changes and assist
 //                      sessions, the daily retention run.
 import {
@@ -21,7 +21,7 @@ import {
   type OnModuleInit,
 } from '@nestjs/common';
 import { sql } from 'kysely';
-import { PurposeVerifier } from '#libs/authz/index.js';
+import { MembershipDirectory, PurposeVerifier } from '#libs/authz/index.js';
 import { ApiError } from '#libs/contract/index.js';
 import { uuidv7 } from '#libs/crypto/index.js';
 import { FlagService } from '#libs/flags/index.js';
@@ -47,6 +47,21 @@ import {
 } from './application/moderation-ops.js';
 import { SystemHealthHandler, WorkSummaryHandler } from './application/dashboard-ops.js';
 import { registerAdminWork } from './application/work-queues.js';
+import {
+  AdminSupportTicketAssignHandler,
+  AdminSupportTicketCloseHandler,
+  AdminSupportTicketConvertHandler,
+  AdminSupportTicketGetHandler,
+  AdminSupportTicketReplyHandler,
+  AdminSupportTicketsListHandler,
+  SupportTicketCreateHandler,
+  SupportTicketGetHandler,
+  SupportTicketReplyHandler,
+  SupportTicketsListHandler,
+  SupportViews,
+} from './application/support-ops.js';
+import { registerSupport } from './application/support-registrations.js';
+import { PersonalDataRegistry } from '#modules/identity/interface/identity.js';
 import {
   applyFlagChange,
   applyRetentionChange,
@@ -109,8 +124,10 @@ export class AdminRegistrations implements OnModuleInit {
     private readonly health: SystemHealthSignals,
     private readonly flags: FlagService,
     private readonly rates: ExchangeRates,
+    private readonly directory: MembershipDirectory,
     @Optional() private readonly gauges?: MetricGauges,
     @Optional() private readonly orgRefs?: OrganizationReferences,
+    @Optional() private readonly personal?: PersonalDataRegistry,
   ) {}
 
   onModuleInit(): void {
@@ -206,6 +223,11 @@ export class AdminRegistrations implements OnModuleInit {
       ['admin.org_members', pathRecord('organization', 'org_id')],
       ['admin.org_plan_history', pathRecord('organization', 'org_id')],
       ['admin.users_search', async () => 'scoped'],
+      // Backend S24 (BR-13): the support inbox works on the ticket of the purpose.
+      ['admin.support_ticket_get', pathRecord('ticket', 'ticket_id')],
+      ['admin.support_ticket_reply', pathRecord('ticket', 'ticket_id')],
+      ['admin.support_ticket_convert', pathRecord('ticket', 'ticket_id')],
+      ['admin.support_ticket_close', pathRecord('ticket', 'ticket_id')],
     ];
     for (const [opId, binding] of recordBindings) this.bindings.register(opId, binding);
     this.executors.register('admin.flag_update', async (scope, change) => {
@@ -240,6 +262,14 @@ export class AdminRegistrations implements OnModuleInit {
     );
     registerPlatformRetention(this.retention);
     registerAdminWork(this.work, this.health);
+    // Backend S24 (BR-13): ticket:<id> purposes, the support_tickets work queue, DSR export and erasure, retention.
+    registerSupport({
+      purposes: this.purposes,
+      work: this.work,
+      retention: this.retention,
+      directory: this.directory,
+      personal: this.personal,
+    });
   }
 }
 
@@ -343,11 +373,26 @@ export class AdminModule {}
     AssistSessionStartHandler,
     AssistSessionEndHandler,
     AssistSessionsListHandler,
+    SupportViews,
+    AdminSupportTicketsListHandler,
+    AdminSupportTicketGetHandler,
+    AdminSupportTicketAssignHandler,
+    AdminSupportTicketReplyHandler,
+    AdminSupportTicketConvertHandler,
+    AdminSupportTicketCloseHandler,
   ],
 })
 export class AdminApiModule {}
 
-@Module({ providers: [ReportsCreateHandler] })
+@Module({
+  providers: [
+    ReportsCreateHandler,
+    SupportTicketCreateHandler,
+    SupportTicketsListHandler,
+    SupportTicketGetHandler,
+    SupportTicketReplyHandler,
+  ],
+})
 export class AdminPublicModule {}
 
 @Module({ providers: [AdminExpiryRule, RetentionRule, ModerationIntakeRule], exports: [ModerationIntakeRule] })

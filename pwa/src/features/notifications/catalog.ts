@@ -31,6 +31,9 @@ export const CONSUMER_TEMPLATE_KEYS = [
   'moderation.action_taken',
   // backend S20: a CarPal message in the user's thread of a dispute (the thread screen is a later PWA stage).
   'dispute.message_received',
+  // backend S24 (BR-13, DQ-07): CarPal answered or solved the user's support request (the Help screens are a later PWA stage).
+  'support.reply_received',
+  'support.ticket_solved',
   'ai.suggestion_ready',
 ] as const;
 

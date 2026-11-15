@@ -26,6 +26,8 @@ export function notificationDestination(n: Pick<Notification, 'template_key' | '
   }
   // backend S20: a dispute message → My Activity, Reports & requests (the dispute thread screen comes later).
   if (n.template_key === 'dispute.message_received') return href('/activity?tab=reports');
+  // backend S24: a support answer or a solved request → Settings › Help (C-PROF-09; the request thread comes with the PWA follow-up).
+  if (n.template_key === 'support.reply_received' || n.template_key === 'support.ticket_solved') return href('/settings/help');
   if (!ref) return null;
   switch (ref.type) {
     case 'appointment':
