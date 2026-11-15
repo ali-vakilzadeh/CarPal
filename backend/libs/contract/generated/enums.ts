@@ -61,7 +61,7 @@ export const ENUMS = {
   DisputeStatus: ["open","in_mediation","resolved_upheld","resolved_rejected","withdrawn"],
   ModerationReason: ["fake","abusive","hate_speech","harassment","spam","off_topic","privacy","unsafe_advice","misleading","counterfeit","inaccurate_fitment","wrong_location_or_closed","impersonation","non_consensual_media","consent_issue","redaction_issue","hallucination","other"],
   ReportTargetType: ["review","review_response","post","comment","question","answer","portfolio_item","media_asset","inventory_item","inventory_fitment","organization","organization_location","user","ai_output"],
-  ModerationActionType: ["approve","hide","remove","restore","request_changes","warn_user","suspend_account","reactivate_account","verify_organization","reject_verification","merge_duplicate","revoke_badge","apply_trust_penalty","confirm_review_approval","reject_review_approval","request_evidence","correct_location","assist_onboarding","reduce_weight","edit_request","downgrade_fitment","request_verification_info","correct_profile"],
+  ModerationActionType: ["approve","hide","remove","restore","request_changes","warn_user","suspend_account","reactivate_account","verify_organization","reject_verification","merge_duplicate","revoke_badge","apply_trust_penalty","confirm_review_approval","reject_review_approval","request_evidence","correct_location","assist_onboarding","reduce_weight","edit_request","downgrade_fitment","request_verification_info","correct_profile","apply_redaction"],
   MediaType: ["image","video","document"],
   MediaPrivacy: ["public","shared","private","internal"],
   ScanStatus: ["pending","clean","infected","failed"],
@@ -75,7 +75,7 @@ export const ENUMS = {
   DistanceOrigin: ["user_position","chosen_city","map_center"],
   ReasonType: ["capability_evidence","rating_evidence","location","availability","urgency_fit","user_preference","trust_signal","recency"],
   InsightType: ["triage_summary","urgency_assessment","maintenance_suggestion","provider_match","match_explanation","vehicle_field_suggestion","vehicle_summary","service_history_summary","recurring_issue","category_extraction","resolution_status_suggestion","duplicate_record","skill_heatmap","capability_suggestion","profile_suggestion","badge_eligibility","review_sentiment","review_theme","review_response_draft","review_quality_score","improvement_suggestion","showcase_caption","showcase_draft","redaction_suggestion","appointment_slot_suggestion","customer_need_summary","pre_visit_summary","inventory_normalization","fitment_suggestion","duplicate_inventory","inventory_gap","catalog_quality","fleet_suggestion","fraud_flag","duplicate_entity","search_synonym_suggestion","query_interpretation","moderation_recommendation","profile_confidence_score","likely_specialization"],
-  JobKind: ["ai_insight","inventory_import","fleet_import","fleet_export","data_export","pre_visit_report","bulk_inventory_update","taxonomy_merge","redaction"],
+  JobKind: ["ai_insight","inventory_import","fleet_import","fleet_export","data_export","pre_visit_report","bulk_inventory_update","taxonomy_merge","redaction","organization_merge"],
 } as const;
 
 export type UserStatus = (typeof ENUMS)['UserStatus'][number];

@@ -509,6 +509,21 @@ export const resolvers: Resolvers = {
       check: (res) => h.rejectChange(res.body.change_id as string),
     };
   },
+  // Backend S22 (BR-08): counts only; the published provider's locations, reviews and memberships are listed by rule.
+  'admin.org_merge_preview': async (h) => {
+    const [p, y] = await Promise.all([sharedProvider(h), h.fx.org('provider')]);
+    return {
+      as: await h.staff('platform_admin'),
+      params: { org_id: p.id },
+      query: { into_organization_id: y.id },
+      check: (res) => {
+        expect(res.body.blocked_by).toEqual([]);
+        expect(res.body.references).toEqual(
+          expect.arrayContaining([expect.objectContaining({ module: 'identity', reference: 'identity.memberships', rule: 'retire' })]),
+        );
+      },
+    };
+  },
   'admin.verifications_queue': async (h) => ({ as: await h.staff('platform_moderator'), query: { status: 'pending', limit: 10 } }),
   'admin.verification_decide': async (h) => {
     const as = await h.member('provider');

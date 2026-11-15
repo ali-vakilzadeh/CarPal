@@ -18,7 +18,16 @@ import { InjectConfig } from '#libs/runtime/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { OrgCards, toOrgSummary } from '#modules/organization/interface/org-cards.js';
 import { toExchangeRate, toFlag, toRetention, type ExchangeRateRow, type FlagRow } from '../api/projections.js';
-import { FourEyes, ModerationLog, StaffNames, staffOf } from '../interface/admin.js';
+import { uuidv7 } from '#libs/crypto/index.js';
+import {
+  FourEyes,
+  ModerationLog,
+  retentionCutoff,
+  RetentionHandlers,
+  StaffNames,
+  staffOf,
+  type RetentionPolicyRecord,
+} from '../interface/admin.js';
 import { afterId, pageOf } from './common.js';
 
 type FlagPatch = { enabled?: boolean; targeting?: Record<string, unknown> | null; reason: string };
@@ -361,6 +370,165 @@ export class RetentionUpdateHandler implements OperationHandler {
   }
 }
 
+/** 52 entity names: an upper-case letter, then letters and digits (e.g. "MediaAsset"). */
+const ENTITY_NAME = /^[A-Z][A-Za-z0-9]{0,59}$/u;
+
+/** Is a policy for this entity type and status already there, or asked for and still pending? */
+async function retentionTaken(scope: TxScope, entityType: string, status: string | null): Promise<boolean> {
+  if (await policyExists(scope, entityType, status)) return true;
+  const pending = await scope.db
+    .selectFrom('admin.pending_admin_changes')
+    .select('id')
+    .where('op_id', '=', 'admin.retention_create')
+    .where('status', '=', 'pending')
+    .where('expires_at', '>', new Date())
+    .where('deleted_at', 'is', null)
+    .where(sql<boolean>`request_payload->>'entity_type' = ${entityType}`)
+    .where(sql<boolean>`request_payload->>'applies_to_status' IS NOT DISTINCT FROM ${status}`)
+    .executeTakeFirst();
+  return !!pending;
+}
+
+/**
+ * 40 admin.retention_create (backend S21, BR-25): a new policy waits for a second administrator (4EYES). The pending
+ * change targets the id the policy will get, so its audit entries and the policy's share one id. A delete or
+ * anonymize policy needs a module that applies the entity type; an archive policy keeps records and may name any entity.
+ */
+@Injectable()
+@Operation('admin.retention_create')
+export class RetentionCreateHandler implements OperationHandler {
+  constructor(
+    private readonly fourEyes: FourEyes,
+    private readonly handlers: RetentionHandlers,
+  ) {}
+
+  async handle(ctx: OperationContext<RetentionWrite>): Promise<OperationResult> {
+    const s = staffOf(ctx);
+    const b = ctx.body;
+    if (!ENTITY_NAME.test(b.entity_type) || (b.action !== 'archive' && !this.handlers.get(b.entity_type)))
+      throw ApiError.validation([{ pointer: '/entity_type', code: 'enum' }]);
+    const body = await ctx.tx(async (scope) => {
+      if (await retentionTaken(scope, b.entity_type, b.applies_to_status ?? null))
+        throw new ApiError('DUPLICATE', { detail: 'entity_type' });
+      return this.fourEyes.request(
+        scope,
+        s.userId,
+        {
+          opId: 'admin.retention_create',
+          targetType: 'data_retention_policy',
+          targetId: uuidv7(),
+          payload: { ...b, applies_to_status: b.applies_to_status ?? null },
+          summary:
+            `New retention policy ${b.entity_type}${b.applies_to_status ? ` (${b.applies_to_status})` : ''}: ${b.retention_days} d ${b.action} (${b.status})`.slice(
+              0,
+              1000,
+            ),
+          reason: b.reason,
+          requiredRole: 'platform_admin',
+        },
+        ctx.locale,
+      );
+    });
+    return { status: 202, body };
+  }
+}
+
+/** Creates an approved retention policy (four-eyes executor of admin.retention_create) with the pending change's target id. */
+export async function applyRetentionCreate(scope: TxScope, policyId: string, w: RetentionWrite): Promise<void> {
+  const status = w.applies_to_status ?? null;
+  if (await policyExists(scope, w.entity_type, status)) throw new ApiError('DUPLICATE', { detail: 'entity_type' });
+  await scope.db
+    .insertInto('admin.data_retention_policies')
+    .values({
+      id: policyId,
+      entity_type: w.entity_type,
+      applies_to_status: status,
+      retention_days: w.retention_days,
+      action: w.action,
+      legal_basis: w.legal_basis,
+      status: w.status,
+    })
+    .execute();
+  await writeAudit(scope, {
+    action: 'admin.retention_created',
+    entityType: 'data_retention_policy',
+    entityId: policyId,
+    reason: w.reason,
+    next: JSON.stringify({ ...w, reason: undefined }),
+  });
+}
+
+/** UNIQUE NULLS NOT DISTINCT (entity_type, applies_to_status) counts soft-deleted policies too. */
+async function policyExists(scope: TxScope, entityType: string, status: string | null): Promise<boolean> {
+  const row = await scope.db
+    .selectFrom('admin.data_retention_policies')
+    .select('id')
+    .where('entity_type', '=', entityType)
+    .where(sql<boolean>`applies_to_status IS NOT DISTINCT FROM ${status}`)
+    .executeTakeFirst();
+  return !!row;
+}
+
+type DryRunInput = { retention_days?: number; applies_to_status?: string | null };
+
+/**
+ * 40 admin.retention_dry_run (backend S21, BR-25): what the next daily run (RetentionRule) would delete or anonymize
+ * under a policy, counted by the owning module's RetentionCounter with the handler's own conditions; nothing changes.
+ * Inactive policies are counted too (what activating them would do).
+ */
+@Injectable()
+@Operation('admin.retention_dry_run')
+export class RetentionDryRunHandler implements OperationHandler {
+  constructor(private readonly handlers: RetentionHandlers) {}
+
+  async handle(ctx: OperationContext<DryRunInput>): Promise<OperationResult> {
+    staffOf(ctx);
+    const b = ctx.body ?? {};
+    const body = await ctx.tx(
+      async (scope) => {
+        const p = await scope.db
+          .selectFrom('admin.data_retention_policies')
+          .selectAll()
+          .where('id', '=', ctx.params.policy_id!)
+          .where('deleted_at', 'is', null)
+          .executeTakeFirst();
+        if (!p) throw new ApiError('NOT_FOUND');
+        const policy: RetentionPolicyRecord = {
+          id: p.id,
+          entityType: p.entity_type,
+          appliesToStatus: b.applies_to_status !== undefined ? b.applies_to_status : p.applies_to_status,
+          retentionDays: b.retention_days ?? p.retention_days,
+          action: p.action as RetentionPolicyRecord['action'],
+        };
+        const counter = this.handlers.counter(p.entity_type);
+        const outcome =
+          policy.action === 'archive'
+            ? 'archive'
+            : !this.handlers.get(p.entity_type)
+              ? 'no_handler'
+              : !counter
+                ? 'not_countable'
+                : 'counted';
+        const count = outcome === 'counted' ? await counter!(scope, policy) : null;
+        return {
+          policy_id: p.id,
+          entity_type: p.entity_type,
+          applies_to_status: policy.appliesToStatus,
+          retention_days: policy.retentionDays,
+          action: policy.action,
+          status: p.status as 'active' | 'inactive',
+          cutoff: retentionCutoff(policy).toISOString(),
+          outcome,
+          affected: count ? count.affected : null,
+          by_status: count?.byStatus ? count.byStatus.slice(0, 20) : null,
+        };
+      },
+      { readOnly: true },
+    );
+    return { body };
+  }
+}
+
 const FLOW_TYPES: Record<string, string[]> = {
   provider: ['provider', 'hybrid_provider_vendor'],
   vendor: ['vendor', 'hybrid_provider_vendor'],
@@ -529,6 +697,7 @@ export class AssistSessionEndHandler implements OperationHandler {
 export const ADMIN_JOB_KINDS: Readonly<Record<string, { module: string; roles: readonly string[] }>> = {
   data_export: { module: 'identity', roles: ['platform_admin', 'platform_support'] }, // admin.dsr_export
   taxonomy_merge: { module: 'taxonomy', roles: ['platform_admin'] }, // approved admin.taxonomy_merge
+  organization_merge: { module: 'organization', roles: ['platform_admin'] }, // approved admin.org_merge (backend S22)
 };
 
 /** admin.job_get: the state of a job an admin-plane operation started (no input or personal data). */

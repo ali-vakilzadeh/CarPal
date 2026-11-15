@@ -262,8 +262,18 @@ describe('request more info on a verification check (BR-35 part 2, R-25)', () =>
     // A phone check of the same organization: its latest status is the call-back result.
     await h.q(sql`INSERT INTO organization.organization_verifications (organization_id, verification_type, status, reviewed_by, reviewed_at)
       VALUES (${owner.org!.id}::uuid, 'phone', 'verified', ${mod.user.id}::uuid, now())`);
-    const q = ok(await mod.c.get('/v1/admin/verifications?status=pending&verification_type=business_identity&limit=100'), 'queue');
-    const item = (q.items as Json[]).find((i) => i.id === id)!;
+    // The queue is oldest first: a database used by many runs holds more than one page of pending checks.
+    let item: Json | undefined;
+    for (let cursor: string | null = null, first = true; !item && (first || cursor); first = false) {
+      const q = ok(
+        await mod.c.get(
+          `/v1/admin/verifications?status=pending&verification_type=business_identity&limit=100${cursor ? `&cursor=${cursor}` : ''}`,
+        ),
+        'queue',
+      );
+      item = (q.items as Json[]).find((i) => i.id === id);
+      cursor = q.next_cursor as string | null;
+    }
     expect(item).toMatchObject({
       registration_number: '14001234567',
       callback_result: 'verified',

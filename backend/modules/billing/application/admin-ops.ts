@@ -16,10 +16,10 @@ import { ScheduledRule } from '#libs/jobs/index.js';
 import type { Logger } from '#libs/observability/index.js';
 import { InjectLogger } from '#libs/runtime/index.js';
 import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
-import { FourEyes, staffOf } from '#modules/admin/interface/admin.js';
+import { FourEyes, StaffNames, staffOf, type WorkQueues } from '#modules/admin/interface/admin.js';
 import { UserCards } from '#modules/identity/interface/identity.js';
-import { OrgCards } from '#modules/organization/interface/org-cards.js';
-import { toPlan, toSubscription } from '../api/projections.js';
+import { OrgCards, toOrgSummary } from '#modules/organization/interface/org-cards.js';
+import { overrideList, toPlan, toStaffPlan, toSubscription } from '../api/projections.js';
 import type { PlanKey } from '../interface/billing.js';
 import { currentSubscription, effectiveEntitlements, loadPlans, type PlanWithEntitlements } from '../infrastructure/subscription-store.js';
 import { SubscriptionService } from './subscriptions.js';
@@ -143,8 +143,182 @@ export class AdminPlansListHandler implements OperationHandler {
   async handle(ctx: OperationContext): Promise<OperationResult> {
     staffOf(ctx);
     const plans = await ctx.tx((scope) => loadPlans(scope, { includeInactive: true }), { readOnly: true });
-    return { body: ctx.page(plans.map(toPlan), null) };
+    // Backend S21 (BR-23): StaffPlan says which plans are offered and which one is the audience default.
+    return { body: ctx.page(plans.map(toStaffPlan), null) };
   }
+}
+
+const afterIdOf = (ctx: OperationContext): string | undefined => (ctx.cursor as { id?: string } | undefined)?.id;
+
+type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'cancelled';
+type SubscriptionsQuery = {
+  plan_key?: PlanKey;
+  status?: SubscriptionStatus;
+  subscriber_type?: 'user' | 'organization';
+  trial_ends_before?: string;
+  subscriber_id?: string;
+  limit: number;
+};
+
+/**
+ * 40 admin.subscriptions_list (backend S21, BR-24): A-PLAN-01 Assignments, newest first. Subscribers are shown by
+ * their public name (an organization's name, a user's display name); trial_ends_before finds trials ending soon.
+ */
+@Injectable()
+@Operation('admin.subscriptions_list')
+export class AdminSubscriptionsListHandler implements OperationHandler {
+  constructor(
+    private readonly orgs: OrgCards,
+    private readonly names: StaffNames,
+  ) {}
+
+  async handle(ctx: OperationContext<undefined, SubscriptionsQuery>): Promise<OperationResult> {
+    staffOf(ctx);
+    const q = ctx.query;
+    const after = afterIdOf(ctx);
+    const body = await ctx.tx(
+      async (scope) => {
+        let r = scope.db
+          .selectFrom('billing.subscriptions as s')
+          .innerJoin('billing.plans as p', 'p.id', 's.plan_id')
+          .selectAll('s')
+          .select('p.plan_key')
+          .where('s.deleted_at', 'is', null);
+        if (q.plan_key) r = r.where('p.plan_key', '=', q.plan_key);
+        if (q.status) r = r.where('s.status', '=', q.status);
+        if (q.subscriber_type) r = r.where('s.subscriber_type', '=', q.subscriber_type);
+        if (q.subscriber_id) r = r.where('s.subscriber_id', '=', q.subscriber_id);
+        if (q.trial_ends_before) r = r.where('s.status', '=', 'trial').where('s.trial_ends_at', '<', new Date(q.trial_ends_before));
+        if (after) r = r.where('s.id', '<', after);
+        const rows = await r
+          .orderBy('s.id', 'desc')
+          .limit(q.limit + 1)
+          .execute();
+        const page = rows.slice(0, q.limit);
+        const [cards, names] = await Promise.all([
+          this.orgs.cards(
+            scope,
+            page.filter((x) => x.subscriber_type === 'organization').map((x) => x.subscriber_id),
+          ),
+          this.names.names(
+            scope,
+            [...page.filter((x) => x.subscriber_type === 'user').map((x) => x.subscriber_id), ...page.map((x) => x.assigned_by)],
+            ctx.locale,
+          ),
+        ]);
+        const items = page.map((x) => ({
+          id: x.id,
+          subscriber: {
+            type: x.subscriber_type as 'user' | 'organization',
+            id: x.subscriber_id,
+            // A gone organization keeps its row; the console shows the id.
+            display: (x.subscriber_type === 'organization' ? cards.get(x.subscriber_id)?.name : names.get(x.subscriber_id)) ?? '—',
+          },
+          plan_key: x.plan_key as PlanKey,
+          status: x.status as SubscriptionStatus,
+          started_at: x.started_at.toISOString(),
+          trial_ends_at: x.trial_ends_at ? x.trial_ends_at.toISOString() : null,
+          expires_at: x.expires_at ? x.expires_at.toISOString() : null,
+          overrides: {
+            vehicle_limit: x.vehicle_limit_override,
+            user_limit: x.user_limit_override,
+            entitlements: overrideList(x.entitlement_overrides),
+          },
+          assigned_by_display: x.assigned_by ? names.get(x.assigned_by)! : null,
+        }));
+        return ctx.page(items, rows.length > q.limit ? { id: page.at(-1)!.id } : null);
+      },
+      { readOnly: true },
+    );
+    return { body };
+  }
+}
+
+type RequestStatus = 'open' | 'assigned' | 'declined' | 'withdrawn';
+type ChangeRequestsQuery = { status: RequestStatus; organization_id?: string; limit: number };
+
+/**
+ * 40 admin.subscription_change_requests_list (backend S21, BR-24; public Web UI PU-BR-04 list part): the plan requests
+ * of organizations (subscription.change_request) as a work queue, oldest first. admin.subscription_assign closes the
+ * organization's open request as assigned.
+ */
+@Injectable()
+@Operation('admin.subscription_change_requests_list')
+export class AdminSubscriptionChangeRequestsListHandler implements OperationHandler {
+  constructor(
+    private readonly orgs: OrgCards,
+    private readonly names: StaffNames,
+  ) {}
+
+  async handle(ctx: OperationContext<undefined, ChangeRequestsQuery>): Promise<OperationResult> {
+    staffOf(ctx);
+    const q = ctx.query;
+    const after = afterIdOf(ctx);
+    const body = await ctx.tx(
+      async (scope) => {
+        let r = scope.db
+          .selectFrom('billing.subscription_change_requests as c')
+          .innerJoin('billing.plans as p', 'p.id', 'c.requested_plan_id')
+          .leftJoin('billing.subscriptions as cs', 'cs.id', 'c.current_subscription_id')
+          .leftJoin('billing.plans as cp', 'cp.id', 'cs.plan_id')
+          .selectAll('c')
+          .select(['p.plan_key as requested_plan_key', 'cp.plan_key as current_plan_key'])
+          .where('c.deleted_at', 'is', null)
+          .where('c.status', '=', q.status);
+        if (q.organization_id) r = r.where('c.organization_id', '=', q.organization_id);
+        if (after) r = r.where('c.id', '>', after);
+        const rows = await r
+          .orderBy('c.id')
+          .limit(q.limit + 1)
+          .execute();
+        const page = rows.slice(0, q.limit);
+        const [cards, names] = await Promise.all([
+          this.orgs.cards(
+            scope,
+            page.map((x) => x.organization_id),
+          ),
+          this.names.names(scope, [...page.map((x) => x.requested_by_user_id), ...page.map((x) => x.handled_by)], ctx.locale),
+        ]);
+        const items = [];
+        for (const x of page) {
+          const card = cards.get(x.organization_id);
+          if (!card) continue; // the organization is gone
+          items.push({
+            id: x.id,
+            organization: toOrgSummary(card),
+            requested_plan_key: x.requested_plan_key as PlanKey,
+            current_plan_key: (x.current_plan_key as PlanKey | null) ?? null,
+            note: x.note,
+            requested_by_display: names.get(x.requested_by_user_id)!,
+            status: x.status as RequestStatus,
+            created_at: x.created_at.toISOString(),
+            handled_by_display: x.handled_by ? names.get(x.handled_by)! : null,
+            handled_at: x.handled_at ? x.handled_at.toISOString() : null,
+          });
+        }
+        return ctx.page(items, rows.length > q.limit ? { id: page.at(-1)!.id } : null);
+      },
+      { readOnly: true },
+    );
+    return { body };
+  }
+}
+
+/** The open plan requests as a work queue for administrators (admin.work_summary, backend S21; no target). */
+export function registerBillingWork(queues: WorkQueues): void {
+  queues.register('subscription_change_requests', {
+    roles: ['platform_admin'],
+    assignable: false,
+    timed: false,
+    async items(scope, _staff, limit) {
+      const q = scope.db.selectFrom('billing.subscription_change_requests').where('deleted_at', 'is', null).where('status', '=', 'open');
+      const [n, rows] = await Promise.all([
+        q.select(sql<string>`count(*)`.as('n')).executeTakeFirst(),
+        q.select('created_at').orderBy('created_at').limit(limit).execute(),
+      ]);
+      return { open: Number(n?.n ?? 0), items: rows.map((r) => ({ startedAt: r.created_at, target: null })) };
+    },
+  });
 }
 
 type PlanUpdate = { entitlements: EntitlementValue[]; status?: 'active' | 'inactive'; reason: string };

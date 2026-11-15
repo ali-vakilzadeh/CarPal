@@ -14181,6 +14181,30 @@
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PendingChange"
       }
     },
+    "admin.org_merge_preview": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "into_organization_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          }
+        },
+        "required": [
+          "into_organization_id"
+        ],
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "org_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/OrgMergePreview"
+      }
+    },
     "admin.verifications_queue": {
       "query": {
         "type": "object",
@@ -14659,6 +14683,158 @@
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/Subscription"
       }
     },
+    "admin.subscriptions_list": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "plan_key": {
+            "type": "string",
+            "enum": [
+              "individual_free",
+              "fleet_20",
+              "fleet_50",
+              "fleet_100",
+              "fleet_custom",
+              "provider_basic",
+              "provider_pro",
+              "vendor_basic",
+              "vendor_pro"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "trial",
+              "active",
+              "expired",
+              "cancelled"
+            ]
+          },
+          "subscriber_type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "organization"
+            ]
+          },
+          "trial_ends_before": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+          },
+          "subscriber_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffSubscriptionRow"
+            }
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "admin.subscription_change_requests_list": {
+      "query": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "assigned",
+              "declined",
+              "withdrawn"
+            ],
+            "default": "open"
+          },
+          "organization_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SubscriptionChangeRequestView"
+            }
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      }
+    },
     "admin.plans_list": {
       "query": {
         "type": "object",
@@ -14685,7 +14861,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/Plan"
+              "$ref": "https://schemas.carpal.app/contract/v1#/$defs/StaffPlan"
             }
           },
           "next_cursor": {
@@ -16785,80 +16961,43 @@
         }
       },
       "input": {
-        "type": "object",
-        "properties": {
-          "entity_type": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 60,
-            "pattern": "^[^\\r\\n]*$"
-          },
-          "applies_to_status": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 40,
-                "pattern": "^[^\\r\\n]*$"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "retention_days": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 36500
-          },
-          "action": {
-            "type": "string",
-            "enum": [
-              "delete",
-              "anonymize",
-              "archive"
-            ]
-          },
-          "legal_basis": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 300,
-                "pattern": "^[^\\r\\n]*$"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "active",
-              "inactive"
-            ]
-          },
-          "reason": {
-            "type": "string",
-            "minLength": 3,
-            "maxLength": 500,
-            "pattern": "^[^\\r\\n]*$"
-          }
-        },
-        "required": [
-          "entity_type",
-          "applies_to_status",
-          "retention_days",
-          "action",
-          "legal_basis",
-          "status",
-          "reason"
-        ],
-        "additionalProperties": false
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/RetentionPolicyWrite"
       },
       "response": {
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PendingChange"
+      }
+    },
+    "admin.retention_create": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/RetentionPolicyWrite"
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/PendingChange"
+      }
+    },
+    "admin.retention_dry_run": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {
+        "policy_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "input": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/RetentionDryRunInput"
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/RetentionDryRun"
       }
     },
     "admin.policies_list": {
@@ -17965,6 +18104,28 @@
       },
       "response": {
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/Dashboard"
+      }
+    },
+    "admin.system_health": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/SystemHealth"
+      }
+    },
+    "admin.work_summary": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/WorkSummary"
       }
     },
     "admin.four_eyes_list": {

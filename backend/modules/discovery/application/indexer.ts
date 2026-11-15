@@ -37,6 +37,8 @@ const ORG_EVENTS = [
   // S7: availability (next open slot) changes with confirmations and calendar edits.
   'appointment.confirmed',
   'appointment.availability.changed',
+  // S22: the surviving organization of a merge (the merged one leaves through moderation.action.taken).
+  'organization.merged',
 ];
 
 const str = (v: unknown): string | null => (typeof v === 'string' && /^[0-9a-f-]{36}$/.test(v) ? v : null);

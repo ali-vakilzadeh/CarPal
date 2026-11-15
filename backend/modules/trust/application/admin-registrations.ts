@@ -20,6 +20,7 @@ import {
   type TargetAction,
   type TargetActionInput,
   type TargetActionResult,
+  WorkQueues,
 } from '#modules/admin/interface/admin.js';
 import { MetricGauges } from '#modules/analytics/interface/analytics.js';
 import { AppointmentFacts } from '#modules/appointment/interface/appointments.js';
@@ -27,6 +28,9 @@ import { VehicleCards } from '#modules/vehicle/interface/vehicles.js';
 import { PersonalDataRegistry } from '#modules/identity/interface/identity.js';
 import { repointColumns, TaxonomyReferences } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { moveToApprovalPath } from './admin-ops.js';
+import { registerTrustWork } from './work-queues.js';
+import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
+import { trustOrgReferences } from './org-references.js';
 
 const reviewPayload = (r: { subject_organization_id: string; author_user_id: string }) => ({
   organization_id: r.subject_organization_id,
@@ -243,6 +247,8 @@ export class TrustAdminRegistrations implements OnModuleInit {
     @Optional() private readonly appointments?: AppointmentFacts,
     @Optional() private readonly vehicles?: VehicleCards,
     @Optional() private readonly moderation?: ModerationLog,
+    @Optional() private readonly work?: WorkQueues,
+    @Optional() private readonly orgRefs?: OrganizationReferences,
   ) {}
 
   /** The parties of a dispute target, as disputes.create checks them (S14 purpose subjects). */
@@ -284,6 +290,9 @@ export class TrustAdminRegistrations implements OnModuleInit {
   }
 
   onModuleInit(): void {
+    // Backend S22 (BR-08): what an organization merge does to this module's references.
+    this.orgRefs?.register('trust', trustOrgReferences());
+    if (this.work) registerTrustWork(this.work);
     this.gauges?.register('gauge.review_approvals_pending', async (scope) =>
       Number(
         (

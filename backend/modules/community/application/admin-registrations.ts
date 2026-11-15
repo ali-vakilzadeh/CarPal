@@ -19,6 +19,8 @@ import {
 import { PersonalDataRegistry } from '#modules/identity/interface/identity.js';
 import type { CommunityEntity } from '../interface/community.js';
 import { contentChanged } from './common.js';
+import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
+import { communityOrgReferences } from './org-references.js';
 
 type Table = 'community.posts' | 'community.comments' | 'community.questions' | 'community.answers';
 
@@ -264,9 +266,12 @@ export class CommunityAdminRegistrations implements OnModuleInit {
   constructor(
     @Optional() private readonly targets?: ModerationTargets,
     @Optional() private readonly personal?: PersonalDataRegistry,
+    @Optional() private readonly orgRefs?: OrganizationReferences,
   ) {}
 
   onModuleInit(): void {
+    // Backend S22 (BR-08): what an organization merge does to this module's references.
+    this.orgRefs?.register('community', communityOrgReferences());
     for (const [type, spec] of Object.entries(SPECS)) this.targets?.register(type as keyof typeof SPECS, handler(spec));
     this.personal?.register('community', {
       async export(scope, userId) {

@@ -13,6 +13,7 @@ import { RatesPage } from './rates-page';
 vi.mock('next/navigation', async () => (await import('../../../tests/support/navigation-mock')).navigationMock());
 
 const irr = (o: Partial<ExchangeRate> = {}): ExchangeRate => ({
+  id: '0193a3c4-5d6e-7f80-9a1b-0000000000c1',
   currency: 'IRR',
   per_usd: '1000000.0000',
   updated_at: '2026-11-01T08:00:00Z',

@@ -210,6 +210,7 @@ export class TrustScoringConsumer extends EventConsumer {
     'organization.verified',
     'moderation.action.taken',
     'provider.profile.published',
+    'organization.merged', // backend S22: the surviving organization received the merged one's reviews
   ];
 
   constructor(private readonly scorer: TrustScorer) {

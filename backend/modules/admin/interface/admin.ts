@@ -18,6 +18,7 @@
 //   ModerationLog       append-only moderation actions written by any module
 //                       (52 ModerationAction) and the trust inputs they carry.
 import { Injectable } from '@nestjs/common';
+import { sql, type RawBuilder } from 'kysely';
 import { auditPiiRead } from '#libs/audit/index.js';
 import type { AccessPurpose, PurposeKind } from '#libs/authz/index.js';
 import { ApiError, type FieldError } from '#libs/contract/index.js';
@@ -295,9 +296,10 @@ export type ContentAction = 'approve' | 'hide' | 'remove' | 'restore' | 'request
 
 /**
  * Record-specific actions with parameters (backend S20, BR-15): reduce_weight and edit_request on reviews,
- * downgrade_fitment on fitment rows. The owning module validates the parameters and changes its record.
+ * downgrade_fitment on fitment rows; apply_redaction on images (backend S22: boxes, the media worker writes the
+ * redacted copy). The owning module validates the parameters and changes its record.
  */
-export type TargetAction = 'reduce_weight' | 'edit_request' | 'downgrade_fitment';
+export type TargetAction = 'reduce_weight' | 'edit_request' | 'downgrade_fitment' | 'apply_redaction';
 
 /** What a TargetAction needs: the validated case-action parameters and who acts under which case. */
 export interface TargetActionInput {
@@ -309,6 +311,8 @@ export interface TargetActionInput {
     edit_spans?: { field: 'title' | 'body'; start: number; end: number }[];
     edit_message?: string;
     fitment_confidence?: 'likely' | 'uncertain';
+    /** apply_redaction: boxes relative to the image (0..1), at most 30. */
+    redaction_regions?: { x: string | number; y: string | number; w: string | number; h: string | number }[];
   };
 }
 
@@ -515,18 +519,147 @@ export interface RetentionPolicyRecord {
  */
 export type RetentionHandler = (scope: TxScope, policy: RetentionPolicyRecord) => Promise<number>;
 
+/** What a retention handler would delete or anonymize now (admin.retention_dry_run, backend S21), per record status where the entity has one. */
+export interface RetentionCount {
+  affected: number;
+  byStatus?: { status: string; count: number }[];
+}
+
+/**
+ * Counts the records `RetentionHandler` would change for the policy, with the handler's own conditions, without
+ * changing anything. Runs in the caller's read-only staff transaction (admin-api).
+ */
+export type RetentionCounter = (scope: TxScope, policy: RetentionPolicyRecord) => Promise<RetentionCount>;
+
 /** Retention handlers by 52 entity name (e.g. "Notification"); unregistered entity types are skipped and logged. */
 export class RetentionHandlers {
   readonly #handlers = new Map<string, RetentionHandler>();
+  readonly #counters = new Map<string, RetentionCounter>();
 
-  register(entityType: string, handler: RetentionHandler): void {
+  /** `counter`: the dry run of the handler; without one the dry run says not_countable (backend S21). */
+  register(entityType: string, handler: RetentionHandler, counter?: RetentionCounter): void {
     if (this.#handlers.has(entityType)) throw new Error(`retention handler ${entityType} registered twice`);
     this.#handlers.set(entityType, handler);
+    if (counter) this.#counters.set(entityType, counter);
   }
 
   get(entityType: string): RetentionHandler | undefined {
     return this.#handlers.get(entityType);
   }
+
+  counter(entityType: string): RetentionCounter | undefined {
+    return this.#counters.get(entityType);
+  }
+}
+
+/** A `count(*) … GROUP BY status` result as RetentionCount (counters of entities with a status). */
+export function countByStatus(rows: readonly { status: string; n: string | number | bigint }[]): RetentionCount {
+  const byStatus = rows.map((r) => ({ status: r.status, count: Number(r.n) })).sort((a, b) => a.status.localeCompare(b.status));
+  return { affected: byStatus.reduce((t, r) => t + r.count, 0), byStatus };
+}
+
+// ------------------------------------------------------------------ work queues (backend S21, BR-22)
+
+/** 40 WorkQueueKey, in the order admin.work_summary lists the queues. */
+export const WORK_QUEUE_KEYS = [
+  'four_eyes',
+  'verifications',
+  'review_approvals',
+  'reports',
+  'cases',
+  'disputes',
+  'privacy_requests',
+  'badge_approvals',
+  'subscription_change_requests',
+] as const;
+export type WorkQueueKey = (typeof WORK_QUEUE_KEYS)[number];
+
+/** An item's target (Docs/23 §6): hours or working days from its clock start, or a fixed time (a due date, an expiry). */
+export type SlaTarget = { hours: number } | { workingDays: number } | { at: Date };
+
+/** One open item of a work queue, as its owning module sees it (no personal data). */
+export interface WorkItem {
+  /** When the item's clock started (submission, the business's answer, creation). */
+  startedAt: Date;
+  /** Null: the queue has no target. */
+  target: SlaTarget | null;
+  /** The clock is paused (a verification check waiting for the business). */
+  paused?: boolean;
+  /** Assigned to the caller (queues with an assignee). */
+  mine?: boolean;
+  /** Breakdown keys ('status:open', 'reason:privacy', 'source:ai_flag', 'type:review', 'severity:critical'). */
+  keys?: readonly string[];
+}
+
+export interface WorkQueue {
+  /** The staff roles of the queue's list operation (40 STF): only they see the queue in admin.work_summary. */
+  roles: readonly StaffRole[];
+  /** Items have an assignee (WorkQueueSummary.assigned_to_me). */
+  assignable: boolean;
+  /** Items have a target (WorkQueueSummary.sla); false: sla is null. */
+  timed: boolean;
+  /**
+   * The exact number of open items (as the list operation shows them to `staff`) and up to `limit` of them, oldest
+   * first. Runs in the caller's read-only staff transaction.
+   */
+  items(scope: TxScope, staff: Staff, limit: number): Promise<{ open: number; items: WorkItem[] }>;
+}
+
+/** Work queues by key; each owning module registers its queue (admin.work_summary). */
+export class WorkQueues {
+  readonly #queues = new Map<WorkQueueKey, WorkQueue>();
+
+  register(key: WorkQueueKey, queue: WorkQueue): void {
+    if (this.#queues.has(key)) throw new Error(`work queue ${key} registered twice`);
+    this.#queues.set(key, queue);
+  }
+
+  get(key: WorkQueueKey): WorkQueue | undefined {
+    return this.#queues.get(key);
+  }
+}
+
+// ---------------------------------------------------------------- system health (backend S21, BR-17)
+
+export type SystemHealthKey = 'import_failures' | 'notification_delivery_failures' | 'media_scan_failures';
+
+/** Failures in the last 24 hours, 7 days and 30 days, and the last one within 30 days. */
+export interface FailureCounts {
+  last24h: number;
+  last7d: number;
+  last30d: number;
+  lastFailureAt: Date | null;
+}
+
+/** Counts one kind of failure; runs in the caller's read-only staff transaction. */
+export type HealthSignal = (scope: TxScope, now: Date) => Promise<FailureCounts>;
+
+/** System health signals by key; a key may have several contributors (their counts add up). */
+export class SystemHealthSignals {
+  readonly #signals = new Map<SystemHealthKey, HealthSignal[]>();
+
+  register(key: SystemHealthKey, signal: HealthSignal): void {
+    this.#signals.set(key, [...(this.#signals.get(key) ?? []), signal]);
+  }
+
+  get(key: SystemHealthKey): readonly HealthSignal[] {
+    return this.#signals.get(key) ?? [];
+  }
+}
+
+/**
+ * FailureCounts over the rows of `from` (a FROM … WHERE … fragment naming the failed rows) by the time column `at`.
+ * Example: failureCounts(scope, sql`FROM notification.notification_deliveries WHERE status = 'failed'`, sql`updated_at`, now).
+ */
+export async function failureCounts(scope: TxScope, from: RawBuilder<unknown>, at: RawBuilder<unknown>, now: Date): Promise<FailureCounts> {
+  const day = 86_400_000;
+  const [d1, d7, d30] = [1, 7, 30].map((n) => new Date(now.getTime() - n * day));
+  const { rows } = await sql<{ d1: string; d7: string; d30: string; last: Date | null }>`
+    SELECT count(*) FILTER (WHERE ${at} > ${d1}) AS d1, count(*) FILTER (WHERE ${at} > ${d7}) AS d7, count(*) AS d30,
+           max(${at}) AS last
+      ${from} AND ${at} > ${d30}`.execute(scope.db);
+  const r = rows[0];
+  return { last24h: Number(r?.d1 ?? 0), last7d: Number(r?.d7 ?? 0), last30d: Number(r?.d30 ?? 0), lastFailureAt: r?.last ?? null };
 }
 
 /** Cut-off date of a retention policy. */

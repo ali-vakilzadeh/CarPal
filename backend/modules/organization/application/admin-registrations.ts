@@ -1,27 +1,38 @@
 // Organization's plug-ins for the admin plane (S8): the verification purpose
-// queue, the four-eyes executor of admin.org_merge, moderation targets
+// queue, the four-eyes executor of admin.org_merge (a job since S22) and the
+// module's own organization references, moderation targets
 // (organization, organization_location, portfolio_item — approval publishes a
 // showcase and makes its media publicly servable), and its part of data
 // subject requests (provider notes about a customer: exported, and deleted
 // with the account).
 import { Injectable, Optional, type OnModuleInit } from '@nestjs/common';
 import { sql } from 'kysely';
-import { Authorizer } from '#libs/authz/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
-import { excerpt, FourEyesExecutors, ModerationTargets, PurposeQueues, type ContentAction } from '#modules/admin/interface/admin.js';
+import {
+  excerpt,
+  FourEyesExecutors,
+  ModerationTargets,
+  PurposeQueues,
+  WorkQueues,
+  type ContentAction,
+} from '#modules/admin/interface/admin.js';
 import { authorDisplayName, ConsentGrants, PersonalDataRegistry, UserCards } from '#modules/identity/interface/identity.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { MetricGauges } from '#modules/analytics/interface/analytics.js';
 import { repointColumns, TaxonomyReferences } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { OrgCards } from '../interface/org-cards.js';
-import { mergeOrganization } from './admin-ops.js';
+import { JobService } from '#libs/jobs/index.js';
+import { OrganizationReferences } from '../interface/org-references.js';
+import { organizationReferences, startOrganizationMerge } from './merge.js';
+import { registerOrganizationWork } from './work-queue.js';
 
 @Injectable()
 export class OrganizationAdminRegistrations implements OnModuleInit {
   constructor(
-    private readonly authorizer: Authorizer,
     private readonly cards: OrgCards,
+    private readonly jobs: JobService,
+    private readonly orgRefs: OrganizationReferences,
     @Optional() private readonly media?: MediaService,
     @Optional() private readonly purposes?: PurposeQueues,
     @Optional() private readonly executors?: FourEyesExecutors,
@@ -31,6 +42,7 @@ export class OrganizationAdminRegistrations implements OnModuleInit {
     @Optional() private readonly gauges?: MetricGauges,
     @Optional() private readonly consents?: ConsentGrants,
     @Optional() private readonly users?: UserCards,
+    @Optional() private readonly work?: WorkQueues,
   ) {}
 
   /** 40 ShowcaseConsent of a showcase (S18, BR-33): the customer's consent record, by display name only. */
@@ -109,6 +121,7 @@ export class OrganizationAdminRegistrations implements OnModuleInit {
   }
 
   onModuleInit(): void {
+    if (this.work) registerOrganizationWork(this.work);
     this.gauges?.register('gauge.providers_published', async (scope) =>
       Number(
         (
@@ -184,9 +197,9 @@ export class OrganizationAdminRegistrations implements OnModuleInit {
         ];
       },
     });
-    this.executors?.register('admin.org_merge', async (scope, c) =>
-      mergeOrganization(scope, this.authorizer, c.targetId, String(c.payload.into_organization_id), c.reason),
-    );
+    // Backend S22 (BR-08): the approval starts the merge job; its id becomes PendingChange.job_id (admin.job_get).
+    this.executors?.register('admin.org_merge', (scope, c) => startOrganizationMerge(scope, this.jobs, this.orgRefs, c));
+    this.orgRefs.register('organization', organizationReferences());
 
     // The org_cards definer: reporters (users) see any organization's card, not its row.
     const orgExists = async (scope: TxScope, id: string) => {

@@ -54,6 +54,8 @@ import {
   workflowOn,
 } from './infrastructure/fleet-services.js';
 import { FleetDrivers, FleetPartners, FleetWorkflow } from './interface/fleet.js';
+import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
+import { fleetOrgReferences } from './application/org-references.js';
 
 export { FLEET_EXPORT_QUEUE, FLEET_IMPORT_QUEUE, FleetExporter, FleetImporter } from './application/transfer-ops.js';
 
@@ -153,9 +155,12 @@ export class FleetRegistrations implements OnModuleInit {
     @Optional() private readonly personal?: PersonalDataRegistry,
     @Optional() private readonly retention?: RetentionHandlers,
     @Optional() private readonly taxonomyRefs?: TaxonomyReferences,
+    @Optional() private readonly orgRefs?: OrganizationReferences,
   ) {}
 
   onModuleInit(): void {
+    // Backend S22 (BR-08): what an organization merge does to this module's references.
+    this.orgRefs?.register('fleet', fleetOrgReferences());
     this.personal?.register('fleet', {
       async export(scope, userId) {
         const rows = await scope.db
@@ -186,10 +191,22 @@ export class FleetRegistrations implements OnModuleInit {
       },
     });
     // 52 DataRetentionPolicy FleetExport (30 days): the export rows go; their files are private and unreachable afterwards.
-    this.retention?.register('FleetExport', async (scope, p) => {
-      const r = await sql`DELETE FROM fleet.fleet_exports WHERE created_at < ${retentionCutoff(p)}`.execute(scope.db);
-      return Number(r.numAffectedRows ?? 0);
-    });
+    this.retention?.register(
+      'FleetExport',
+      async (scope, p) => {
+        const r = await sql`DELETE FROM fleet.fleet_exports WHERE created_at < ${retentionCutoff(p)}`.execute(scope.db);
+        return Number(r.numAffectedRows ?? 0);
+      },
+      async (scope, p) => ({
+        affected: Number(
+          (
+            await sql<{ n: string }>`SELECT count(*) AS n FROM fleet.fleet_exports WHERE created_at < ${retentionCutoff(p)}`.execute(
+              scope.db,
+            )
+          ).rows[0]?.n ?? 0,
+        ),
+      }),
+    );
     this.taxonomyRefs?.register('fleet', (scope, from, into) =>
       repointColumns(
         scope,

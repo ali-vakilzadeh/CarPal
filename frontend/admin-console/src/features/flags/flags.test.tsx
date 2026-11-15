@@ -17,6 +17,7 @@ const ORG = '0193a3c4-5d6e-7f80-9a1b-0000000000b1';
 
 function flag(key: string, o: Partial<FeatureFlag> = {}): FeatureFlag {
   return {
+    id: `0193a3c4-5d6e-7f80-9a1b-${String(key.length).padStart(12, '0')}`,
     key,
     description: `About ${key}`,
     flag_type: key.startsWith('ai.') ? 'ai_feature' : 'release',

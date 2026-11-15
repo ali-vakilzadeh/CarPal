@@ -27,7 +27,7 @@ import {
 } from '#libs/http-pipeline/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
-import { auditStaffRead, FourEyes, ModerationLog, StaffNames, staffOf, type Staff } from '#modules/admin/interface/admin.js';
+import { auditStaffRead, ModerationLog, StaffNames, staffOf, type Staff } from '#modules/admin/interface/admin.js';
 import { SubscriptionReader } from '#modules/billing/interface/billing.js';
 import { OrgMemberships } from '#modules/identity/interface/identity.js';
 import { toLocation, toOrganization, toVerification, type OrgRow, type VerificationRow } from '../api/projections.js';
@@ -39,8 +39,8 @@ import {
   json,
   latestInfoRequests,
   profileDiff,
+  profilesFollow,
   profileUpdated,
-  publicationChanged,
   recordProfileChange,
   toVerifications,
   type StoredFieldChange,
@@ -360,20 +360,6 @@ const STATUS_FROM: Record<string, string[]> = {
 };
 
 /** Moves both public profiles with the organization (suspension leaves search and the map; reactivation restores them). */
-async function profilesFollow(scope: TxScope, orgId: string, from: string, to: string): Promise<void> {
-  for (const side of ['provider', 'vendor'] as const) {
-    const table = side === 'provider' ? 'organization.provider_profiles' : 'organization.vendor_profiles';
-    const rows = await scope.db
-      .updateTable(table)
-      .set({ public_status: to })
-      .where('organization_id', '=', orgId)
-      .where('public_status', '=', from)
-      .returning('id')
-      .execute();
-    for (const r of rows) await publicationChanged(scope, orgId, side, to === 'published' ? 'published' : 'unpublished', r.id);
-  }
-}
-
 @Injectable()
 @Operation('admin.org_status')
 export class AdminOrgStatusHandler implements OperationHandler {
@@ -425,93 +411,6 @@ export class AdminOrgStatusHandler implements OperationHandler {
     });
     return { body };
   }
-}
-
-@Injectable()
-@Operation('admin.org_merge')
-export class AdminOrgMergeHandler implements OperationHandler {
-  constructor(private readonly fourEyes: FourEyes) {}
-
-  async handle(ctx: OperationContext<{ into_organization_id: string; reason: string }>): Promise<OperationResult> {
-    const s = staffOf(ctx);
-    const b = ctx.body;
-    const body = await ctx.tx(async (scope) => {
-      const [from, into] = await mergePair(scope, ctx.params.org_id!, b.into_organization_id);
-      return this.fourEyes.request(
-        scope,
-        s.userId,
-        {
-          opId: 'admin.org_merge',
-          targetType: 'organization',
-          targetId: from.id,
-          payload: { org_id: from.id, into_organization_id: into.id },
-          summary: `Merge "${from.name}" (${from.id}) into "${into.name}" (${into.id})`,
-          reason: b.reason,
-          requiredRole: 'platform_admin',
-        },
-        ctx.locale,
-      );
-    });
-    return { status: 202, body };
-  }
-}
-
-/** The organizations of a merge: distinct, same kind of business, neither merged nor archived. */
-async function mergePair(scope: TxScope, fromId: string, intoId: string): Promise<[OrgRow, OrgRow]> {
-  const from = await loadOrgRow(scope, fromId, true);
-  if (fromId === intoId) failIf([{ pointer: '/into_organization_id', code: 'conditional_forbidden' }]);
-  const into = await scope.db
-    .selectFrom('organization.organizations')
-    .selectAll()
-    .where('id', '=', intoId)
-    .where('deleted_at', 'is', null)
-    .forUpdate()
-    .executeTakeFirst();
-  if (!into) throw ApiError.validation([{ pointer: '/into_organization_id', code: 'reference_not_found' }], 'REFERENCE_NOT_FOUND');
-  for (const o of [from, into])
-    if (['merged', 'archived'].includes(o.status)) throw new ApiError('INVALID_TRANSITION', { detail: `${o.id} ${o.status}` });
-  const kind = (t: string) => (t === 'fleet' ? 'fleet' : 'business');
-  if (kind(from.organization_type) !== kind(into.organization_type))
-    throw new ApiError('INVALID_TRANSITION', { detail: 'different organization kinds' });
-  return [from, into];
-}
-
-/** Four-eyes executor of admin.org_merge: the duplicate becomes merged and leaves publication; references resolve through merged_into_organization_id. */
-export async function mergeOrganization(
-  scope: TxScope,
-  authorizer: Authorizer,
-  fromId: string,
-  intoId: string,
-  reason: string,
-): Promise<void> {
-  const [from, into] = await mergePair(scope, fromId, intoId);
-  await scope.db
-    .updateTable('organization.organizations')
-    .set({ status: 'merged', merged_into_organization_id: into.id })
-    .where('id', '=', from.id)
-    .execute();
-  await profilesFollow(scope, from.id, 'published', 'draft');
-  await writeAudit(scope, {
-    action: 'organization.merged',
-    entityType: 'organization',
-    entityId: from.id,
-    reason,
-    previous: from.status,
-    next: `merged into ${into.id}`,
-  });
-  await publishEvent(scope, {
-    type: 'moderation.action.taken',
-    aggregateType: 'organization',
-    aggregateId: from.id,
-    payload: {
-      action_type: 'merge_duplicate',
-      target_type: 'organization',
-      target_id: from.id,
-      organization_id: from.id,
-      merged_into_organization_id: into.id,
-    },
-  });
-  scope.afterCommit(() => authorizer.invalidateOrganization(from.id));
 }
 
 /** 40 StaffVerificationItem: a verification check with what the A-VER-01 queue and A-VER-02 review show (S19 additions). */

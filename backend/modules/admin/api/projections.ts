@@ -89,6 +89,7 @@ export function toReport(row: ReportRow, reporter: string) {
 
 export function toFlag(row: FlagRow, updatedBy: string) {
   return {
+    id: row.id, // backend S21 (BR-26): the audit log's entity id
     key: row.key,
     description: row.description,
     flag_type: row.flag_type,
@@ -118,6 +119,7 @@ export type ExchangeRateRow = Selectable<DB['admin.exchange_rates']>;
 /** 40 ExchangeRate. */
 export function toExchangeRate(r: ExchangeRateRow, updatedBy: string) {
   return {
+    id: r.id, // backend S21 (BR-26): the audit log's entity id
     currency: r.currency,
     per_usd: String(r.per_usd),
     updated_at: iso(r.updated_at),

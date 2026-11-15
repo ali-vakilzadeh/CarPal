@@ -549,7 +549,8 @@ CREATE TABLE core.background_jobs (
   updated_by      uuid,
   version         integer NOT NULL DEFAULT 1,
   kind            text NOT NULL CHECK (kind IN ('ai_insight','inventory_import','fleet_import','fleet_export','data_export',
-                    'pre_visit_report','bulk_inventory_update','taxonomy_merge','redaction')),
+                    'pre_visit_report','bulk_inventory_update','taxonomy_merge','redaction',
+                    'organization_merge')),                                   -- organization_merge: backend S22
   owner_user_id   uuid NOT NULL,
   organization_id uuid,
   owning_module   text NOT NULL CHECK (owning_module ~ '^[a-z_-]{2,40}$'),
@@ -557,7 +558,8 @@ CREATE TABLE core.background_jobs (
   status          text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','running','succeeded','failed','cancelled')),
   progress        smallint CHECK (progress BETWEEN 0 AND 100),
   result_type     text CHECK (result_type IN ('ai_insight','inventory_import_batch','fleet_import_batch','fleet_export',
-                    'data_subject_request','pre_visit_report','match_session','media_asset','taxonomy_node')),
+                    'data_subject_request','pre_visit_report','match_session','media_asset','taxonomy_node',
+                    'organization')),
   result_id       uuid,
   error_code      text CHECK (error_code ~ '^[A-Z_]{3,60}$'),
   started_at      timestamptz,
@@ -3896,6 +3898,7 @@ CREATE TABLE media.media_assets (
 CREATE INDEX media_assets_owner_idx ON media.media_assets (owner_type, owner_id, created_at DESC);
 CREATE INDEX media_assets_pending_idx ON media.media_assets (upload_expires_at) WHERE status = 'pending_upload';
 CREATE INDEX media_assets_scan_idx ON media.media_assets (created_at) WHERE scan_status = 'pending' AND status = 'active';
+CREATE INDEX media_assets_scan_failed_idx ON media.media_assets (updated_at) WHERE scan_status = 'failed';   -- admin.system_health (S21)
 COMMENT ON TABLE media.media_assets IS '52 MediaAsset — never served before a clean scan; public only when publicly_servable';
 
 CREATE TABLE media.media_attachments (
@@ -4033,6 +4036,7 @@ CREATE TABLE notification.notification_deliveries (
 );
 CREATE INDEX notification_deliveries_idx ON notification.notification_deliveries (notification_id);
 CREATE INDEX notification_deliveries_queue_idx ON notification.notification_deliveries (created_at) WHERE status = 'queued';
+CREATE INDEX notification_deliveries_failed_idx ON notification.notification_deliveries (updated_at) WHERE status = 'failed';   -- admin.system_health (S21)
 COMMENT ON TABLE notification.notification_deliveries IS '52 NotificationDelivery';
 
 CREATE TABLE notification.notification_preferences (
@@ -4168,7 +4172,7 @@ CREATE TABLE admin.moderation_actions (
                        'suspend_account','reactivate_account','verify_organization','reject_verification','merge_duplicate',
                        'revoke_badge','apply_trust_penalty','confirm_review_approval','reject_review_approval',
                        'request_evidence','correct_location','assist_onboarding','reduce_weight','edit_request',
-                       'downgrade_fitment','request_verification_info','correct_profile')),
+                       'downgrade_fitment','request_verification_info','correct_profile','apply_redaction')),
   reason             text NOT NULL CHECK (char_length(reason) BETWEEN 3 AND 500),
   params             jsonb CHECK (params IS NULL OR jsonb_typeof(params) = 'object'),
   actor_user_id      uuid NOT NULL

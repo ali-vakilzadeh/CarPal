@@ -279,6 +279,48 @@ export const resolvers: Resolvers = {
     return { as, params: { currency: 'IRR' }, version: rate.version as number, body: { per_usd: rate.per_usd, reason: REASON } };
   },
   'admin.retention_list': async (h) => ({ as: await h.staff('platform_admin') }),
+  // Backend S21: an archive policy for a name of its own (no module needed), rejected again by a second admin.
+  'admin.retention_create': async (h) => ({
+    as: await h.staff('platform_admin'),
+    body: {
+      entity_type: `SweepRecord${Date.now()}`,
+      applies_to_status: null,
+      retention_days: 365,
+      action: 'archive',
+      legal_basis: 'Contract sweep',
+      status: 'inactive',
+      reason: REASON,
+    },
+    check: (res) => h.rejectChange(res.body.change_id as string),
+  }),
+  'admin.retention_dry_run': async (h) => {
+    const as = await h.staff('platform_admin');
+    const p = (ok(await as.c.get('/v1/admin/retention-policies?limit=100'), 'policies').items as Json[]).find(
+      (r) => r.entity_type === 'NotificationDelivery',
+    )!;
+    return {
+      as,
+      params: { policy_id: p.id as string },
+      body: { retention_days: 1 },
+      check: (res) => {
+        expect(res.body.outcome).toBe('counted');
+        expect(res.body.retention_days).toBe(1);
+      },
+    };
+  },
+  'admin.system_health': async (h) => ({
+    as: await h.staff('platform_support'),
+    check: (res) =>
+      expect((res.body.signals as Json[]).map((s) => s.key)).toEqual([
+        'import_failures',
+        'notification_delivery_failures',
+        'media_scan_failures',
+      ]),
+  }),
+  'admin.work_summary': async (h) => ({
+    as: await h.staff('platform_community_reviewer'),
+    check: (res) => expect((res.body.items as Json[]).map((q) => q.queue)).toEqual(['review_approvals', 'disputes']),
+  }),
   'admin.retention_update': async (h) => {
     const as = await h.staff('platform_admin');
     const p = (ok(await as.c.get('/v1/admin/retention-policies?limit=100'), 'policies').items as Json[]).find(

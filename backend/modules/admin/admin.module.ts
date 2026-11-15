@@ -2,7 +2,7 @@
 // modules share this folder:
 //   AdminModule        (global, every deployable) the admin registries
 //                      (FourEyesExecutors, PurposeQueues, PurposeBindings, ModerationTargets,
-//                      RetentionHandlers), FourEyes, ModerationLog, the
+//                      RetentionHandlers, WorkQueues, SystemHealthSignals), FourEyes, ModerationLog, the
 //                      purpose verifier of the authorizer (SEC-ADM-5) and the
 //                      flag and rate cache listener (feature_flag.changed, exchange_rate.changed).
 //   AdminApiModule     §23 moderation, flags, retention, assist sessions and
@@ -45,9 +45,12 @@ import {
   ReportsListHandler,
   ReportTriageHandler,
 } from './application/moderation-ops.js';
+import { SystemHealthHandler, WorkSummaryHandler } from './application/dashboard-ops.js';
+import { registerAdminWork } from './application/work-queues.js';
 import {
   applyFlagChange,
   applyRetentionChange,
+  applyRetentionCreate,
   AssistSessionEndHandler,
   AssistSessionsListHandler,
   AssistSessionStartHandler,
@@ -60,6 +63,8 @@ import {
 import {
   AdminJobGetHandler,
   AdminRegionSettingsHandler,
+  RetentionCreateHandler,
+  RetentionDryRunHandler,
   RetentionListHandler,
   RetentionUpdateHandler,
 } from './application/platform-ops.js';
@@ -82,9 +87,13 @@ import {
   PurposeSubjects,
   RetentionHandlers,
   StaffNames,
+  SystemHealthSignals,
+  WorkQueues,
   type RecordBinding,
   type SubjectRef,
 } from './interface/admin.js';
+import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
+import { adminOrgReferences } from './application/org-references.js';
 
 const OPEN_CASE = ['open', 'investigating', 'escalated'];
 
@@ -96,12 +105,17 @@ export class AdminRegistrations implements OnModuleInit {
     private readonly targets: ModerationTargets,
     private readonly executors: FourEyesExecutors,
     private readonly retention: RetentionHandlers,
+    private readonly work: WorkQueues,
+    private readonly health: SystemHealthSignals,
     private readonly flags: FlagService,
     private readonly rates: ExchangeRates,
     @Optional() private readonly gauges?: MetricGauges,
+    @Optional() private readonly orgRefs?: OrganizationReferences,
   ) {}
 
   onModuleInit(): void {
+    // Backend S22 (BR-08): what an organization merge does to this module's references.
+    this.orgRefs?.register('admin', adminOrgReferences());
     this.gauges?.register('gauge.moderation_open_cases', async (scope) =>
       Number(
         (
@@ -210,7 +224,12 @@ export class AdminRegistrations implements OnModuleInit {
     this.executors.register('admin.retention_update', async (scope, change) =>
       applyRetentionChange(scope, change.targetId, change.payload as Parameters<typeof applyRetentionChange>[2]),
     );
+    // Backend S21 (BR-25): the approved create inserts the policy with the pending change's target id.
+    this.executors.register('admin.retention_create', async (scope, change) =>
+      applyRetentionCreate(scope, change.targetId, change.payload as Parameters<typeof applyRetentionCreate>[2]),
+    );
     registerPlatformRetention(this.retention);
+    registerAdminWork(this.work, this.health);
   }
 }
 
@@ -257,6 +276,8 @@ export class FlagCacheListener implements OnApplicationBootstrap, OnApplicationS
     { provide: PurposeSubjects, useClass: DbPurposeSubjects },
     { provide: ModerationTargets, useFactory: () => new ModerationTargets() },
     { provide: RetentionHandlers, useFactory: () => new RetentionHandlers() },
+    { provide: WorkQueues, useFactory: () => new WorkQueues() },
+    { provide: SystemHealthSignals, useFactory: () => new SystemHealthSignals() },
     StaffNames,
     { provide: FourEyes, useClass: DbFourEyes },
     { provide: ModerationLog, useClass: DbModerationLog },
@@ -272,6 +293,8 @@ export class FlagCacheListener implements OnApplicationBootstrap, OnApplicationS
     PurposeSubjects,
     ModerationTargets,
     RetentionHandlers,
+    WorkQueues,
+    SystemHealthSignals,
     StaffNames,
     FourEyes,
     ModerationLog,
@@ -301,6 +324,10 @@ export class AdminModule {}
     ExchangeRateUpdateHandler,
     RetentionListHandler,
     RetentionUpdateHandler,
+    RetentionCreateHandler,
+    RetentionDryRunHandler,
+    SystemHealthHandler,
+    WorkSummaryHandler,
     AdminJobGetHandler,
     AdminRegionSettingsHandler,
     AssistSessionStartHandler,

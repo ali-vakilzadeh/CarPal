@@ -14,6 +14,8 @@ import { TaxonomyReferences } from '#modules/taxonomy/interface/taxonomy-resolve
 import { turnsOf } from '../api/projections.js';
 
 import type { TxScope } from '#libs/tenancy/index.js';
+import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
+import { aiOrgReferences } from './org-references.js';
 
 const count = async (q: RawBuilder<{ n: string }>, scope: TxScope): Promise<number> => Number((await q.execute(scope.db)).rows[0]?.n ?? 0);
 
@@ -24,9 +26,12 @@ export class AiMcpRegistrations implements OnModuleInit {
     @Optional() private readonly retention?: RetentionHandlers,
     @Optional() private readonly taxonomyRefs?: TaxonomyReferences,
     @Optional() private readonly gauges?: MetricGauges,
+    @Optional() private readonly orgRefs?: OrganizationReferences,
   ) {}
 
   onModuleInit(): void {
+    // Backend S22 (BR-08): what an organization merge does to this module's references.
+    this.orgRefs?.register('ai_mcp', aiOrgReferences());
     this.personal?.register('ai_mcp', {
       async export(scope, userId) {
         const sessions = await scope.db
@@ -153,10 +158,19 @@ export class AiMcpRegistrations implements OnModuleInit {
       },
     });
 
-    this.retention?.register('TriageSession', async (scope, p) => {
-      const r = await scope.db.deleteFrom('ai_mcp.triage_sessions').where('created_at', '<', retentionCutoff(p)).executeTakeFirst();
-      return Number(r.numDeletedRows);
-    });
+    this.retention?.register(
+      'TriageSession',
+      async (scope, p) => {
+        const r = await scope.db.deleteFrom('ai_mcp.triage_sessions').where('created_at', '<', retentionCutoff(p)).executeTakeFirst();
+        return Number(r.numDeletedRows);
+      },
+      async (scope, p) => ({
+        affected: await count(
+          sql<{ n: string }>`SELECT count(*) AS n FROM ai_mcp.triage_sessions WHERE created_at < ${retentionCutoff(p)}`,
+          scope,
+        ),
+      }),
+    );
 
     // Merged nodes: triage references move; heatmap entries of the merged node expire (W10 rebuilds them).
     this.taxonomyRefs?.register('ai_mcp', async (scope, fromId, intoId) => {

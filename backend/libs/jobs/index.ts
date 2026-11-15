@@ -22,7 +22,8 @@ export type JobResultType =
   | 'pre_visit_report'
   | 'match_session'
   | 'media_asset'
-  | 'taxonomy_node';
+  | 'taxonomy_node'
+  | 'organization';
 
 /** 40 §4.1 Job (response projection). */
 export interface JobView {

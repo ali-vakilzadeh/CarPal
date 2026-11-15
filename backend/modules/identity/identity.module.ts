@@ -15,12 +15,21 @@ import { ConsentChecker } from '#libs/consent-gate/index.js';
 import { CryptoServices } from '#libs/crypto/index.js';
 import type { Infra } from '#libs/infra/index.js';
 import { AttestationVerifierPort, INFRA } from '#libs/runtime/index.js';
-import { FourEyesExecutors, ModerationTargets, PurposeQueues, retentionCutoff, RetentionHandlers } from '#modules/admin/interface/admin.js';
+import {
+  countByStatus,
+  FourEyesExecutors,
+  ModerationTargets,
+  PurposeQueues,
+  retentionCutoff,
+  RetentionHandlers,
+  WorkQueues,
+} from '#modules/admin/interface/admin.js';
 import { MetricGauges } from '#modules/analytics/interface/analytics.js';
 import { UsageCounters } from '#modules/billing/interface/billing.js';
 import { DbAccountAdmin, grantPlatformRole, startDeletion } from './application/admin-ops.js';
 import { PolicyVersionRule, publishPolicyVersion } from './application/policy-ops.js';
 import { enableStaff } from './application/staff-ops.js';
+import { registerIdentityWork } from './application/work-queue.js';
 import {
   DsrDeadlineRule,
   DsrDeletionConsumer,
@@ -56,6 +65,8 @@ import {
   UserChoices,
   UserCards,
 } from './interface/identity.js';
+import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
+import { identityOrgReferences } from './application/org-references.js';
 
 /**
  * Registers the fleet-users counter (entitlement max_fleet_users,
@@ -103,9 +114,14 @@ export class IdentityAdminRegistrations implements OnModuleInit {
     @Optional() private readonly targets?: ModerationTargets,
     @Optional() private readonly retention?: RetentionHandlers,
     @Optional() private readonly gauges?: MetricGauges,
+    @Optional() private readonly work?: WorkQueues,
+    @Optional() private readonly orgRefs?: OrganizationReferences,
   ) {}
 
   onModuleInit(): void {
+    // Backend S22 (BR-08): what an organization merge does to this module's references.
+    this.orgRefs?.register('identity', identityOrgReferences(this.authorizer));
+    if (this.work) registerIdentityWork(this.work);
     this.gauges?.register('gauge.users_active', async (scope) =>
       Number(
         (
@@ -186,10 +202,20 @@ export class IdentityAdminRegistrations implements OnModuleInit {
         );
       },
     });
-    this.retention?.register('VerificationToken', async (scope, p) => {
-      const r = await sql`DELETE FROM identity.verification_tokens WHERE created_at < ${retentionCutoff(p)}`.execute(scope.db);
-      return Number(r.numAffectedRows ?? 0);
-    });
+    this.retention?.register(
+      'VerificationToken',
+      async (scope, p) => {
+        const r = await sql`DELETE FROM identity.verification_tokens WHERE created_at < ${retentionCutoff(p)}`.execute(scope.db);
+        return Number(r.numAffectedRows ?? 0);
+      },
+      async (scope, p) =>
+        countByStatus(
+          (
+            await sql<{ status: string; n: string }>`SELECT status, count(*) AS n FROM identity.verification_tokens
+                                                      WHERE created_at < ${retentionCutoff(p)} GROUP BY status`.execute(scope.db)
+          ).rows,
+        ),
+    );
   }
 }
 

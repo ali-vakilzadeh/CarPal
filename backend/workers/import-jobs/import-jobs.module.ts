@@ -3,11 +3,13 @@
 // inventory.bulk_update, inventory.bulk_update), both through JobRunner so
 // core.background_jobs records running → succeeded / failed. S8 adds fleet
 // vehicle imports (queue fleet.import) and taxonomy merges (queue
-// taxonomy.merge: re-pointing every module's references after approval).
+// taxonomy.merge: re-pointing every module's references after approval). S22
+// adds organization merges (queue organization.merge, the same for organizations).
 import { Injectable, Module, type OnApplicationBootstrap, type OnApplicationShutdown } from '@nestjs/common';
 import { JobRunner } from '#libs/jobs/index.js';
 import { FLEET_IMPORT_QUEUE, FleetImporter, FleetWorkerModule } from '#modules/fleet/fleet.module.js';
 import { BULK_QUEUE, IMPORT_QUEUE, InventoryBulkUpdater, InventoryImporter } from '#modules/inventory/inventory.module.js';
+import { ORG_MERGE_QUEUE, OrgMerger } from '#modules/organization/organization.module.js';
 import { TAXONOMY_MERGE_QUEUE, TaxonomyMerger } from '#modules/taxonomy/taxonomy.module.js';
 
 @Injectable()
@@ -20,6 +22,7 @@ export class ImportJobsHost implements OnApplicationBootstrap, OnApplicationShut
     private readonly bulk: InventoryBulkUpdater,
     private readonly merger: TaxonomyMerger,
     private readonly fleet: FleetImporter,
+    private readonly orgMerger: OrgMerger,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -27,6 +30,7 @@ export class ImportJobsHost implements OnApplicationBootstrap, OnApplicationShut
     this.#stop.push(this.runner.register(BULK_QUEUE, (ctx) => this.bulk.run(ctx)));
     this.#stop.push(this.runner.register(TAXONOMY_MERGE_QUEUE, (ctx) => this.merger.run(ctx)));
     this.#stop.push(this.runner.register(FLEET_IMPORT_QUEUE, (ctx) => this.fleet.run(ctx)));
+    this.#stop.push(this.runner.register(ORG_MERGE_QUEUE, (ctx) => this.orgMerger.run(ctx)));
   }
 
   onApplicationShutdown(): void {

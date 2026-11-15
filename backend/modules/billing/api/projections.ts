@@ -20,6 +20,23 @@ export function toPlan(p: PlanWithEntitlements) {
   };
 }
 
+/** 40 StaffPlan (backend S21, BR-23): the plan with whether it is offered and the audience default. */
+export function toStaffPlan(p: PlanWithEntitlements) {
+  return {
+    ...toPlan(p),
+    status: p.plan.status as 'active' | 'inactive',
+    is_default_for_audience: p.plan.is_default_for_audience,
+  };
+}
+
+/** The entitlement overrides of a subscription row as 40 EntitlementValue list (sorted by key). */
+export function overrideList(raw: unknown): { key: string; value: EntitlementValue }[] {
+  if (!raw || typeof raw !== 'object') return [];
+  return Object.entries(raw as Record<string, EntitlementValue>)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => ({ key, value }));
+}
+
 export type Usage = { active_vehicles?: number; users?: number; active_inventory_items?: number };
 
 /** 40 Subscription (status past_due_future is reserved and never stored, 52 §6). */

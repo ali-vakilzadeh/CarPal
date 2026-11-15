@@ -25,6 +25,8 @@ import { DbInventoryRead } from './infrastructure/inventory-read.js';
 import { InventoryRead } from './interface/inventory.js';
 import { InventoryAdminRegistrations } from './application/admin-registrations.js';
 import { InventoryAiRegistrations } from './application/ai-registrations.js';
+import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
+import { inventoryOrgReferences } from './application/org-references.js';
 
 export { InventoryBulkUpdater, InventoryImporter } from './application/importer.js';
 export { IMPORT_QUEUE } from './application/import-ops.js';
@@ -62,9 +64,12 @@ export class InventoryRegistrations implements OnModuleInit {
     @Optional() private readonly targets?: AttachmentTargets,
     @Optional() private readonly scopes?: ConsentScopes,
     @Optional() private readonly taxonomyRefs?: TaxonomyReferences,
+    @Optional() private readonly orgRefs?: OrganizationReferences,
   ) {}
 
   onModuleInit(): void {
+    // Backend S22 (BR-08): what an organization merge does to this module's references.
+    this.orgRefs?.register('inventory', inventoryOrgReferences());
     // admin.taxonomy_merge (S8): item categories follow a merged node.
     this.taxonomyRefs?.register('inventory', (scope, from, into) =>
       repointColumns(scope, [['inventory.inventory_items', 'part_category_node_id']], from, into),

@@ -11,6 +11,8 @@ import { retentionCutoff, RetentionHandlers } from '#modules/admin/interface/adm
 import { TxRunner } from '#libs/tenancy/index.js';
 import { AiContextSources } from '#modules/ai-mcp/interface/ai.js';
 import { PersonalDataRegistry } from '#modules/identity/interface/identity.js';
+import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
+import { discoveryOrgReferences } from './org-references.js';
 
 // The session keeps an unlinkable key (52 MatchSession needs a requester or an anonymous key).
 const ANONYMIZE = sql`query_text = NULL, query_normalized = NULL, latitude = NULL, longitude = NULL, map_viewport = NULL,
@@ -24,9 +26,12 @@ export class DiscoveryAdminRegistrations implements OnModuleInit {
     @Optional() private readonly personal?: PersonalDataRegistry,
     @Optional() private readonly ai?: AiContextSources,
     @Optional() private readonly tx?: TxRunner,
+    @Optional() private readonly orgRefs?: OrganizationReferences,
   ) {}
 
   onModuleInit(): void {
+    // Backend S22 (BR-08): what an organization merge does to this module's references.
+    this.orgRefs?.register('discovery', discoveryOrgReferences());
     this.ai?.register('search.part_demand', async () => {
       if (!this.tx) return null;
       const { rows } = await this.tx.run({ actorType: 'system' }, ({ db }) =>
@@ -37,13 +42,21 @@ export class DiscoveryAdminRegistrations implements OnModuleInit {
       const max = Math.max(1, ...rows.map((r) => Number(r.n)));
       return { public_demand: rows.map((r) => ({ part_category_node_id: r.node, demand_score: Math.round((Number(r.n) / max) * 100) })) };
     });
-    this.retention?.register('MatchSession', async (scope, p) => {
-      const r = await sql`UPDATE discovery.match_sessions SET ${ANONYMIZE}
-                           WHERE created_at < ${retentionCutoff(p)} AND (query_text IS NOT NULL OR latitude IS NOT NULL OR requester_user_id IS NOT NULL)`.execute(
-        scope.db,
-      );
-      return Number(r.numAffectedRows ?? 0);
-    });
+    // Sessions still holding a query text, a position or a requester (an anonymized session is not changed again).
+    const due = (p: Parameters<typeof retentionCutoff>[0]) =>
+      sql`created_at < ${retentionCutoff(p)} AND (query_text IS NOT NULL OR latitude IS NOT NULL OR requester_user_id IS NOT NULL)`;
+    this.retention?.register(
+      'MatchSession',
+      async (scope, p) => {
+        const r = await sql`UPDATE discovery.match_sessions SET ${ANONYMIZE} WHERE ${due(p)}`.execute(scope.db);
+        return Number(r.numAffectedRows ?? 0);
+      },
+      async (scope, p) => ({
+        affected: Number(
+          (await sql<{ n: string }>`SELECT count(*) AS n FROM discovery.match_sessions WHERE ${due(p)}`.execute(scope.db)).rows[0]?.n ?? 0,
+        ),
+      }),
+    );
     this.personal?.register('discovery', {
       async erase(scope, userId) {
         const r = await sql`UPDATE discovery.match_sessions SET ${ANONYMIZE} WHERE requester_user_id = ${userId}::uuid`.execute(scope.db);

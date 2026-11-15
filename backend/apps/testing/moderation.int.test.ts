@@ -466,7 +466,11 @@ describe('badges, verification, locations and organizations (40 §23.2, §23.4)'
     const req = await adm.post(`/v1/admin/orgs/${x.id}/merge`, { into_organization_id: y.id, reason });
     expect(req.status, req.text).toBe(202);
     expect((await adm.post(`/v1/admin/orgs/${x.id}/merge`, { into_organization_id: x.id, reason })).status).toBe(422);
-    expect((await adm2.post(`/v1/admin/four-eyes/${req.body.change_id}/decision`, { decision: 'approve', reason })).status).toBe(200);
+    const approved = await adm2.post(`/v1/admin/four-eyes/${req.body.change_id}/decision`, { decision: 'approve', reason });
+    expect(approved.status, approved.text).toBe(200);
+    // Backend S22: the approval starts the merge job (PendingChange.job_id).
+    expect(approved.body.job_id).toBeTruthy();
+    await api.infra.jobs.idle();
     const row = await query<{ status: string; merged_into_organization_id: string }>(
       api,
       sql`SELECT status, merged_into_organization_id FROM organization.organizations WHERE id = ${x.id}::uuid`,

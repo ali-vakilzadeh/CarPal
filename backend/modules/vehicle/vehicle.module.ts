@@ -20,6 +20,8 @@ import { VehicleCreator } from './application/vehicle-ops.js';
 import { COUNTING_STATUSES } from './domain/rules.js';
 import { DbVehicleCards, DbVehicleService, isServiceCustomer, serviceRecordVisit, vehicleOwner } from './infrastructure/vehicles.js';
 import { VehicleCards, VehicleService } from './interface/vehicles.js';
+import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
+import { vehicleOrgReferences } from './application/org-references.js';
 
 export { VehicleReminderRule } from './application/reminder-rule.js';
 
@@ -36,9 +38,12 @@ export class VehicleRegistrations implements OnModuleInit {
     @Optional() private readonly scopes?: ConsentScopes,
     @Optional() private readonly taxonomyRefs?: TaxonomyReferences,
     @Optional() private readonly personal?: PersonalDataRegistry,
+    @Optional() private readonly orgRefs?: OrganizationReferences,
   ) {}
 
   onModuleInit(): void {
+    // Backend S22 (BR-08): what an organization merge does to this module's references.
+    this.orgRefs?.register('vehicle', vehicleOrgReferences());
     // DSR (S8): personal vehicles with their records and issues are exported; deletion removes the vehicles (VIN and plate cleared).
     this.personal?.register('vehicle', {
       async export(scope, userId) {

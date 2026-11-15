@@ -20,8 +20,11 @@ import { containsMalwareSignature, mp4DurationSeconds, sniffType } from '../doma
 import { keys, type AssetRow } from '../infrastructure/assets.js';
 
 type Region = { x: string; y: string; w: string; h: string };
-/** core.background_jobs.input_summary of a redaction job (coordinates only, no personal data). */
-type RedactionInput = { media_asset_id: string; decision: string; regions?: Region[] };
+/**
+ * core.background_jobs.input_summary of a redaction job (coordinates only, no personal data). style box (backend S22,
+ * case_action apply_redaction): opaque boxes; otherwise the owner's media.redaction_decide blur.
+ */
+type RedactionInput = { media_asset_id: string; decision: string; regions?: Region[]; style?: 'blur' | 'box' };
 
 const DISPLAY_MAX = 2048;
 const THUMB_MAX = 400;
@@ -142,7 +145,7 @@ export class MediaProcessor {
     return { scan: 'clean', width: null, height: null, duration: null, thumbnail: null, exifStripped: false };
   }
 
-  /** media.redaction_decide jobs: blurs the chosen regions of the display variant (or records "not needed"). */
+  /** media.redaction_decide and apply_redaction jobs: blurs or boxes the chosen regions of the display variant (or records "not needed"). */
   async redact(ctx: JobContext): Promise<JobOutcome> {
     const input = ctx.job.input_summary as RedactionInput | null;
     if (!input?.media_asset_id) return { errorCode: 'INTERNAL' };
@@ -158,7 +161,7 @@ export class MediaProcessor {
     let status: 'completed' | 'not_needed' | 'failed' = 'not_needed';
     if ((input.decision === 'apply_regions' || input.decision === 'apply_suggestions') && input.regions?.length) {
       try {
-        await this.#blur(a, input.regions);
+        await this.#blur(a, input.regions, input.style === 'box');
         status = 'completed';
       } catch (err) {
         this.logger.warn({ err, media_asset_id: a.id }, 'redaction failed');
@@ -171,8 +174,11 @@ export class MediaProcessor {
     return status === 'failed' ? { errorCode: 'INTERNAL' } : { result: { type: 'media_asset', id: a.id } };
   }
 
-  /** Blurs relative regions (0..1) of the display variant and rebuilds the thumbnail; the original stays owner-only. */
-  async #blur(a: AssetRow, regions: Region[]): Promise<void> {
+  /**
+   * Blurs (or, for staff redaction, fills with opaque boxes) relative regions (0..1) of the display variant, which
+   * replaces the public copy, and rebuilds the thumbnail; the original stays owner-only.
+   */
+  async #blur(a: AssetRow, regions: Region[], box = false): Promise<void> {
     const display = await this.infra.storage.get(keys.display(a.id));
     if (!display) throw new Error('no display variant');
     const { width = 0, height = 0 } = await sharp(display.body).metadata();
@@ -182,7 +188,11 @@ export class MediaProcessor {
       const top = Math.min(height - 1, Math.floor(Number(r.y) * height));
       const w = Math.max(1, Math.min(width - left, Math.ceil(Number(r.w) * width)));
       const h = Math.max(1, Math.min(height - top, Math.ceil(Number(r.h) * height)));
-      const patch = await sharp(display.body).extract({ left, top, width: w, height: h }).blur(30).toBuffer();
+      const patch = box
+        ? await sharp({ create: { width: w, height: h, channels: 3, background: { r: 0, g: 0, b: 0 } } })
+            .png()
+            .toBuffer()
+        : await sharp(display.body).extract({ left, top, width: w, height: h }).blur(30).toBuffer();
       overlays.push({ input: patch, left, top });
     }
     const out = await sharp(display.body).composite(overlays).webp().toBuffer();

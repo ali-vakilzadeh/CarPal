@@ -6,7 +6,9 @@
 //                          (inventory, S5), ProviderBooking (appointments,
 //                          S7), TrustFigures (W3 trust scoring, S7), the OrganizationExtensions
 //                          registry, its media attachment targets and the
-//                          consent.withdrawn consumer (run by the worker).
+//                          consent.withdrawn consumer (run by the worker),
+//                          the OrganizationReferences registry and the merge
+//                          job (OrgMerger, W7; backend S22).
 //   OrganizationApiModule  §7-§9 operations on the api host (organization-api.module.ts)
 import { Global, Injectable, Module, Optional, type OnModuleInit } from '@nestjs/common';
 import { OrganizationDirectory } from '#libs/authz/index.js';
@@ -14,6 +16,7 @@ import type { TxScope } from '#libs/tenancy/index.js';
 import { AttachmentTargets, type AttachmentTarget } from '#modules/media/interface/media.js';
 import { OrganizationAdminRegistrations } from './application/admin-registrations.js';
 import { OrganizationAiRegistrations } from './application/ai-registrations.js';
+import { OrgMerger } from './application/merge.js';
 import { ConsentWithdrawnPortfolioConsumer } from './events/consent-withdrawn.consumer.js';
 import { ReactionChangedPortfolioConsumer } from './events/reaction-changed.consumer.js';
 import { DbProviderBooking } from './infrastructure/booking.js';
@@ -28,11 +31,14 @@ import { DbOrgLocations, DbVendorCatalog } from './infrastructure/vendor-catalog
 import { ProviderBooking } from './interface/booking.js';
 import { OrgLifecycle } from './interface/lifecycle.js';
 import { OrganizationExtensions } from './interface/extensions.js';
+import { OrganizationReferences } from './interface/org-references.js';
 import { OrgCards } from './interface/org-cards.js';
 import { ProviderCapabilities } from './interface/provider-capabilities.js';
 import { PublicOrgCards, PublicProfiles } from './interface/public-profiles.js';
 import { TrustFigures } from './interface/trust-figures.js';
 import { OrgLocations, VendorCatalog } from './interface/vendor-catalog.js';
+
+export { ORG_MERGE_QUEUE, OrgMerger } from './application/merge.js';
 
 const orgTarget = (id: string | undefined, groups: string[]): AttachmentTarget | null =>
   id ? { owner: { type: 'organization', id }, groups } : null;
@@ -95,6 +101,9 @@ export class OrganizationRegistrations implements OnModuleInit {
     { provide: OrgLifecycle, useClass: DbOrgLifecycle },
     // One registry per application context (contexts share a process in pnpm dev and tests).
     { provide: OrganizationExtensions, useFactory: () => new OrganizationExtensions() },
+    // Backend S22 (BR-08): every module's organization references, applied by the merge job (W7).
+    { provide: OrganizationReferences, useFactory: () => new OrganizationReferences() },
+    OrgMerger,
     OrganizationRegistrations,
     OrganizationAdminRegistrations,
     OrganizationAiRegistrations,
@@ -113,6 +122,8 @@ export class OrganizationRegistrations implements OnModuleInit {
     TrustFigures,
     OrgLifecycle,
     OrganizationExtensions,
+    OrganizationReferences,
+    OrgMerger,
   ],
 })
 export class OrganizationModule {}

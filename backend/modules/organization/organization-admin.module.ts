@@ -1,5 +1,5 @@
 // Organization operations on the admin-api host (40 §23.2): search and read,
-// status, merge (4EYES), verification queue, assignment and decisions (with
+// status, merge (4EYES, a job after approval) and its preview (S22), verification queue, assignment and decisions (with
 // requests for more information, S19), location corrections, profile
 // corrections and the profile history (S19).
 import { Module } from '@nestjs/common';
@@ -8,7 +8,6 @@ import {
   AdminOrgCorrectHandler,
   AdminOrgGetHandler,
   AdminOrgHistoryHandler,
-  AdminOrgMergeHandler,
   AdminOrgsSearchHandler,
   AdminOrgStatusHandler,
   AdminVerificationAssignHandler,
@@ -19,6 +18,7 @@ import {
   StaffVerificationItems,
 } from './application/admin-ops.js';
 import { LocationChecker } from './application/location-ops.js';
+import { AdminOrgMergeHandler, AdminOrgMergePreviewHandler } from './application/merge.js';
 
 @Module({
   providers: [
@@ -30,6 +30,7 @@ import { LocationChecker } from './application/location-ops.js';
     AdminOrgGetHandler,
     AdminOrgStatusHandler,
     AdminOrgMergeHandler,
+    AdminOrgMergePreviewHandler,
     AdminVerificationsQueueHandler,
     AdminVerificationAssignHandler,
     AdminVerificationDecideHandler,

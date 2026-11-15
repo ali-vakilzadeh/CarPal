@@ -7,7 +7,7 @@
 // through the identity and trust interfaces. Every action is appended to the
 // moderation log with an audit entry and publishes moderation.action.taken
 // (W2 reindexes, W3 recomputes trust, W5 tells the owner).
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { sql } from 'kysely';
 import { writeAudit } from '#libs/audit/index.js';
 import { MembershipDirectory } from '#libs/authz/index.js';
@@ -35,11 +35,12 @@ import {
 } from '../interface/admin.js';
 import { CaseSnapshots } from './case-snapshots.js';
 import { afterId, exactlyOne, failIf, notFoundAt, pageOf } from './common.js';
+import { OrganizationReferences, previewReferences, refusals } from '#modules/organization/interface/org-references.js';
 
 const OPEN_CASE = ['open', 'investigating', 'escalated'];
 const CONTENT_ACTIONS: ContentAction[] = ['approve', 'hide', 'remove', 'restore', 'request_changes'];
 /** Record-specific actions with parameters, applied by the owning module (backend S20, BR-15). */
-const TARGET_ACTIONS: TargetAction[] = ['reduce_weight', 'edit_request', 'downgrade_fitment'];
+const TARGET_ACTIONS: TargetAction[] = ['reduce_weight', 'edit_request', 'downgrade_fitment', 'apply_redaction'];
 /** Actions recorded by their own operations (verification, review approval, location, assisted onboarding). */
 const DEDICATED: Record<string, string> = {
   verify_organization: 'admin.verification_decide',
@@ -459,6 +460,7 @@ export class CaseActionHandler implements OperationHandler {
     private readonly fourEyes: FourEyes,
     private readonly names: StaffNames,
     private readonly subjects: PurposeSubjects,
+    @Optional() private readonly orgRefs?: OrganizationReferences,
   ) {}
 
   async handle(ctx: OperationContext<ActionInput>): Promise<OperationResult> {
@@ -550,7 +552,7 @@ export class CaseActionHandler implements OperationHandler {
   ): Promise<void> {
     const a = b.action_type;
     if ((TARGET_ACTIONS as string[]).includes(a)) {
-      // S20 (BR-15): reduce_weight and edit_request on reviews, downgrade_fitment on fitment rows.
+      // S20 (BR-15): reduce_weight and edit_request on reviews, downgrade_fitment on fitment rows; S22: apply_redaction on images.
       if (!handler.act) throw new ApiError('INVALID_TRANSITION', { detail: `${a} does not apply to this ${target.type}` });
       const r = await handler.act(scope, target.id, a as TargetAction, {
         staffUserId: staffId,
@@ -611,6 +613,11 @@ export class CaseActionHandler implements OperationHandler {
         const into = b.params?.merge_into_id;
         if (target.type !== 'organization') throw new ApiError('INVALID_TRANSITION', { detail: 'only organizations merge' });
         if (!into) failIf([{ pointer: '/params/merge_into_id', code: 'conditional_required' }]);
+        // Backend S22 (BR-08): a reference with the refuse rule (an open assist session) blocks the merge up front.
+        if (this.orgRefs) {
+          const blocked = refusals(await previewReferences(scope, this.orgRefs, target.id, into!));
+          if (blocked.length) throw new ApiError('INVALID_TRANSITION', { detail: `merge refused by ${blocked.join(', ')}` });
+        }
         // Merging needs a second approver (admin.org_merge, 4EYES): the action files the pending change.
         const pending = await this.fourEyes.request(
           scope,

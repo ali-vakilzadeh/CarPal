@@ -33,7 +33,7 @@
     },
     "counts": {
       "recommendations": 35,
-      "todo": 9,
+      "todo": 3,
       "r_item_actions_for_backend": 12,
       "unlinked_open_doc_issues": 4,
       "stages": 15,
@@ -46,15 +46,15 @@
         "closed": 6
       },
       "by_priority_note": "Recommendations only. mixed = BR-35 (part 1 row P0, part 2 P1, parts 1-filters and 3 P2). R-items are planned in r_item_actions_for_backend and are not counted here.",
-      "done_in_refinement": 23,
-      "partly_done": 2,
+      "done_in_refinement": 31,
+      "partly_done": 0,
       "counts_note": "todo, done_in_refinement and partly_done follow the recommendation status; by_priority keeps the planning view of 2026-11-12."
     },
     "status": "in_progress",
-    "status_note": "Prioritised and staged from the Admin Console items (2026-11-12). S13 done on 2026-11-12 (contract 1.4.0 opened), S14 done on 2026-11-13 (purpose bound to the record). PWA items and the backend next_iteration items are not merged yet; they join through action_plan.intake_rules. Stages run as backend S13-S25 and are logged in backend/dev_plan.json when started. S15 done on 2026-11-13 (versioned legal texts and acceptance). S16a done on 2026-11-13 (staff recovery codes, own keys, break glass). S16b done on 2026-11-13 (staff account recovery with two ADM approvals). S17 done on 2026-11-14 (notification templates and rules, staff notices). S18 done on 2026-11-14 (moderation queues and content context). S15b done on 2026-11-14 (consent texts as versioned documents, re-consent of granted consents). S20 done on 2026-11-14 (dispute message threads, target snapshots and withdrawal; reduce_weight, edit_request and downgrade_fitment), run before S19 at the owner's request. S19 done on 2026-11-14 (organization search filters, request more info with resubmission and a paused review clock, verification assignment, profile corrections with history, assist sessions list), after S20.",
-    "last_updated": "2026-11-14",
+    "status_note": "Prioritised and staged from the Admin Console items (2026-11-12). S13 done on 2026-11-12 (contract 1.4.0 opened), S14 done on 2026-11-13 (purpose bound to the record). PWA items and the backend next_iteration items are not merged yet; they join through action_plan.intake_rules. Stages run as backend S13-S25 and are logged in backend/dev_plan.json when started. S15 done on 2026-11-13 (versioned legal texts and acceptance). S16a done on 2026-11-13 (staff recovery codes, own keys, break glass). S16b done on 2026-11-13 (staff account recovery with two ADM approvals). S17 done on 2026-11-14 (notification templates and rules, staff notices). S18 done on 2026-11-14 (moderation queues and content context). S15b done on 2026-11-14 (consent texts as versioned documents, re-consent of granted consents). S20 done on 2026-11-14 (dispute message threads, target snapshots and withdrawal; reduce_weight, edit_request and downgrade_fitment), run before S19 at the owner's request. S19 done on 2026-11-14 (organization search filters, request more info with resubmission and a paused review clock, verification assignment, profile corrections with history, assist sessions list), after S20. S21 done on 2026-11-15 (plan status and defaults, subscriptions and plan requests lists, retention create and dry run, flag and rate ids, system health and the work summary). S22 done on 2026-11-15 (organization merge through the OrganizationReferences registry: preview, the merge job after four eyes, every module's rule; apply_redaction on images).",
+    "last_updated": "2026-11-15",
     "progress": {
-      "as_of": "2026-11-14",
+      "as_of": "2026-11-15",
       "stages_done": [
         "S13",
         "S14",
@@ -65,12 +65,14 @@
         "S17",
         "S18",
         "S19",
-        "S20"
+        "S20",
+        "S21",
+        "S22"
       ],
       "stages_in_progress": [],
-      "next_stage": "S21 (platform settings, billing reads and dashboard aggregates). The console can take the S15b, S17, S18, S19 and S20 additions into AC14.",
-      "contract": "Docs/40 1.4.0 open (463 operations, 515 routes; 462 served, auth.social_start deferred; 55 error codes). Frozen at S25.",
-      "summary": "S19 done: organization search filters (city, plan, open cases, location issue, possible duplicate) and row flags; request more info on a verification check (pending, paused clock, business notified) answered by org.verification_resubmit; verification queue items with assignee, clock, owner, call-back result and duplicate flag, and admin.verification_assign; staff profile corrections with the profile history under a purpose; the assist sessions list. BR-34 and BR-35 done, R-25 closed. Next, S21. Open decisions: DQ-20 items 3-4 (strategy proposed); defaults applied and awaiting confirmation: DQ-01, DQ-05, DQ-06, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15."
+      "next_stage": "S23 (extended staff reads for users and organizations). The console can take the S15b and S17-S22 additions into AC9 (merge) and AC13/AC14.",
+      "contract": "Docs/40 1.4.0 open (470 operations, 522 routes; 469 served, auth.social_start deferred; 55 error codes). Frozen at S25.",
+      "summary": "S22 done: admin.org_merge runs as a job after approval (organization_merge, read by admin.job_get) that applies every module's registered organization references by rule (move, keep_target, merge, retire, refuse, history) in one transaction; admin.org_merge_preview counts them with their conflicts; an open assist session refuses the merge; the duplicate's members lose access and are not added. case_action apply_redaction boxes an image in the media worker and replaces the public copy. BR-08 and BR-15 done, DI-67 closed. Next, S23. Open decisions: DQ-20 items 3-4 (strategy proposed); defaults applied and awaiting confirmation: DQ-01, DQ-05, DQ-06, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15, DQ-21."
     },
     "decisions_from_owner_2026_11_13": [
       "DQ-04 answered: the recommended staff recovery process (own recovery codes, requester proof, two ADM approvals in the console with an out-of-band check, 72-hour restriction, break glass). S16 split into S16a and S16b; R-11 and R-15 moved to S25.",
@@ -90,6 +92,10 @@
       "S15b run at the owner's request (\"run stage 15b\", corrected from \"stage 19\" before the start) after S18; S19 follows.",
       "S20 run at the owner's request (\"run stage 20\" after an 18:00 timer, corrected from \"stage 21\" before the start) before S19; S19 still follows.",
       "S19 run at the owner's request after a 13:00 timer (\"execute stage 20\", corrected to \"run stage 19\" before the start), after S20."
+    ],
+    "decisions_from_owner_2026_11_15": [
+      "S21 run at the owner's request (\"execute stage 21\"), after S19 and S20.",
+      "S22 run at the owner's request (\"execute stage 22\", after a 200-minute timer), after S21."
     ]
   },
   "recommendations": [
@@ -371,7 +377,7 @@
       },
       "priority": "medium",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "Organization merge re-pointing registry (backend DI-67). Until done, AC9 hides Merge.",
       "source_notes": {
@@ -396,6 +402,11 @@
           "S22"
         ],
         "why": "Merge is hidden in the console until built (D-51); duplicates can be handled by status change meanwhile. Cross-module re-pointing with conflict rules for every module that references an organization: the most invasive item of the plan."
+      },
+      "done_in": {
+        "stage": "S22",
+        "date": "2026-11-15",
+        "note": "OrganizationReferences registry (13 modules, 64 references), admin.org_merge job after approval, admin.org_merge_preview, event organization.merged; DI-67 closed. Deviations S22-D1..D7. AC9 can offer Merge (D-51)."
       }
     },
     {
@@ -658,7 +669,7 @@
       },
       "priority": "should",
       "status_in_source": "open",
-      "status": "partly_done",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "Moderation actions reduce_weight, edit_request (with highlighted spans) and apply_redaction (boxes → redacted copy).",
       "source_notes": {
@@ -703,6 +714,14 @@
           "result": "Case actions reduce_weight (Review.weight_factor, step-up), edit_request (ReviewEditRequest, Review.edit_request) and downgrade_fitment (S20-D6..D8).",
           "remaining": "apply_redaction: S22."
         }
+      },
+      "done_in": {
+        "stage": [
+          "S20",
+          "S22"
+        ],
+        "date": "2026-11-15",
+        "note": "apply_redaction (S22-D8): opaque boxes on the public copy by the media worker, MediaAssetSnapshot.redaction_status; reduce_weight, edit_request and downgrade_fitment were S20."
       }
     },
     {
@@ -761,7 +780,7 @@
       },
       "priority": "should",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "System health metrics for the dashboard (import failures, notification delivery failures, media scan failures).",
       "source_notes": {},
@@ -785,7 +804,12 @@
         "stage": [
           "S21"
         ],
-        "why": "Should. Dashboard widget for AC13; aggregates over existing tables."
+        "why": "Should. Dashboard widget for AC13; aggregates over existing tables.",
+        "done": {
+          "stage": "S21",
+          "date": "2026-11-15",
+          "result": "admin.system_health (STF(ADM, MOD, SUP)): failed inventory and fleet imports (core.background_jobs), failed notification deliveries and files whose virus scan failed, in the last 24 h, 7 days and 30 days with the last failure; the owning modules register their counts in SystemHealthSignals (S21-D7)."
+        }
       }
     },
     {
@@ -1011,7 +1035,7 @@
       },
       "priority": "low",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "A queue summary read for My work and the navigation counts: GET /v1/admin/work-summary (admin.work_summary, STF(any staff), aggregates only) returning per queue the caller may see: open count, oldest created_at and the SLA-relevant timestamps (or counts per SLA state). Today the console pages each list (up to 2 pages of 100 per status, 13 calls for a MOD) every minute and shows '200+' beyond.",
       "source_notes": {},
@@ -1041,7 +1065,12 @@
         "stage": [
           "S21"
         ],
-        "why": "The console pages every list each minute (D-32), which works at pilot volumes. Built after the queue-changing stages so it counts the final set of queues."
+        "why": "The console pages every list each minute (D-32), which works at pilot volumes. Built after the queue-changing stages so it counts the final set of queues.",
+        "done": {
+          "stage": "S21",
+          "date": "2026-11-15",
+          "result": "admin.work_summary (STF(ADM, MOD, SUP, CRV), aggregates only): per queue the caller's roles may list, the open count, assigned to the caller, oldest item, next target, items per SLA state (ok, warn, breach, paused) and a breakdown; the owning modules register their queues in WorkQueues; Docs/23 §6 targets with working days on the caller's clock (S21-D8..D10)."
+        }
       }
     },
     {
@@ -1056,7 +1085,7 @@
       },
       "priority": "low",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "Plan in admin.plans_list carries status: 'active'|'inactive' (and is_default_for_audience), so A-PLAN-01 shows which plans are offered and which plan a trial falls back to.",
       "source_notes": {},
@@ -1079,7 +1108,12 @@
           "S21"
         ],
         "why": "One field; the console hints that the list does not show it (D-42).",
-        "dq03": "DQ-03/DQ-20: the plan catalog stays in the console with plan assignment; S21 as planned."
+        "dq03": "DQ-03/DQ-20: the plan catalog stays in the console with plan assignment; S21 as planned.",
+        "done": {
+          "stage": "S21",
+          "date": "2026-11-15",
+          "result": "admin.plans_list answers Page<StaffPlan> (Plan plus status and is_default_for_audience) (S21-D1)."
+        }
       }
     },
     {
@@ -1094,7 +1128,7 @@
       },
       "priority": "medium",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "admin.subscriptions_list (GET {adm}/subscriptions, STF(ADM)): q plan_key, status (trial|active|expired|cancelled), subscriber_type, trial_ends_before, cursor, limit ≤ 100; items: subscriber (type, id, display name), plan_key, status, trial_ends_at, expires_at, overrides, assigned_by_display, started_at. Also the open subscription change requests (subscription.change_request) with the organization, for a \"requests to handle\" queue.",
       "source_notes": {},
@@ -1117,7 +1151,12 @@
           "S21"
         ],
         "why": "A-PLAN-01 Assignments list; the assignment form works without it.",
-        "dq03": "DQ-03/DQ-20: plan assignment stays in the console (owner, 2026-11-13); S21 builds BR-24 as planned. Related Web UI needs: PU-BR-03, PU-BR-04."
+        "dq03": "DQ-03/DQ-20: plan assignment stays in the console (owner, 2026-11-13); S21 builds BR-24 as planned. Related Web UI needs: PU-BR-03, PU-BR-04.",
+        "done": {
+          "stage": "S21",
+          "date": "2026-11-15",
+          "result": "admin.subscriptions_list (q plan_key, status, subscriber_type, trial_ends_before, subscriber_id) and admin.subscription_change_requests_list (the open plan requests as a queue, PU-BR-04 list part) (S21-D2, D3)."
+        }
       }
     },
     {
@@ -1132,7 +1171,7 @@
       },
       "priority": "low",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "admin.retention_create (POST {adm}/retention-policies, STF(ADM) 4EYES RSN AUD) and admin.retention_dry_run (POST {adm}/retention-policies/{policy_id}/dry-run → { affected: Int, by_status?: … }, STF(ADM)) for Docs/23 A-RET-01.",
       "source_notes": {},
@@ -1154,7 +1193,12 @@
         "stage": [
           "S21"
         ],
-        "why": "A-RET-01 add and dry run; editing existing policies works."
+        "why": "A-RET-01 add and dry run; editing existing policies works.",
+        "done": {
+          "stage": "S21",
+          "date": "2026-11-15",
+          "result": "admin.retention_create (STF(ADM) 4EYES RSN AUD; 409 DUPLICATE; delete and anonymize need a module that applies the entity type) and admin.retention_dry_run (counts only, per status; a period or status can be previewed) through RetentionCounter registrations next to every retention handler (S21-D4, D5)."
+        }
       }
     },
     {
@@ -1169,7 +1213,7 @@
       },
       "priority": "low",
       "status_in_source": "open",
-      "status": "partly_done",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "id in FeatureFlag and ExchangeRate (the audit entity ids), or admin.audit_search by entity key, for the per-record history; and a staff notification (in-app, ADM) when ai.automation.kill_switch is turned on or off (Docs/23 A-FLAG-01 \"broadcast to the dashboard and AI governance staff\").",
       "source_notes": {},
@@ -1199,6 +1243,13 @@
           "part": "kill switch notice",
           "result": "An in-app notice to every active ADM when ai.automation.kill_switch is turned on or off (there is no AI governance role).",
           "remaining": "FeatureFlag and ExchangeRate ids, or audit search by entity key: S21."
+        },
+        "done_s21": {
+          "stage": "S21",
+          "date": "2026-11-15",
+          "part": "ids",
+          "result": "FeatureFlag.id and ExchangeRate.id (the audit log entity ids), so admin.audit_search with entity_type and entity_id opens a flag's or a rate's history (S21-D6).",
+          "remaining": null
         }
       }
     },
@@ -1795,7 +1846,7 @@
       "component": [
         "backend"
       ],
-      "status": "partly_done",
+      "status": "done",
       "action": "Bundle BR-21 (own four-eyes requests with outcome) and BR-22 (queue summary) into the contract 1.4.0 backend stage. BR-21 matters most for the pilot.",
       "br": [
         "BR-21",
@@ -1811,10 +1862,10 @@
         ],
         "note": "BR-21 list in S13, its notification in S17, BR-22 in S21.",
         "done": {
-          "stage": "S13, S17",
-          "date": "2026-11-14",
-          "part": "BR-21 list and notification",
-          "remaining": "BR-22 (S21)"
+          "stage": "S13, S17, S21",
+          "date": "2026-11-15",
+          "part": "BR-21 list (S13) and notification (S17); BR-22 admin.work_summary (S21)",
+          "remaining": null
         }
       }
     },
@@ -4419,7 +4470,7 @@
       {
         "id": "S21",
         "title": "Platform settings, billing reads and dashboard aggregates",
-        "status": "not_started",
+        "status": "done",
         "items": [
           "BR-23",
           "BR-24",
@@ -4452,42 +4503,54 @@
             "items": [
               "BR-23"
             ],
-            "task": "Plan.status and is_default_for_audience in admin.plans_list."
+            "task": "Plan.status and is_default_for_audience in admin.plans_list.",
+            "status": "done",
+            "result": "admin.plans_list answers Page<StaffPlan>: status (active, inactive) and is_default_for_audience (S21-D1)."
           },
           {
             "id": "S21.T2",
             "items": [
               "BR-24"
             ],
-            "task": "admin.subscriptions_list (q plan_key, status, subscriber_type, trial_ends_before; items as in raw_text) and the open subscription change requests as a queue."
+            "task": "admin.subscriptions_list (q plan_key, status, subscriber_type, trial_ends_before; items as in raw_text) and the open subscription change requests as a queue.",
+            "status": "done",
+            "result": "admin.subscriptions_list (StaffSubscriptionRow: subscriber by public name, plan, status, trial end, expiry, overrides, assigned_by_display; newest first) and admin.subscription_change_requests_list (SubscriptionChangeRequestView, default open, oldest first); the plan requests are a work queue (S21-D2, D3)."
           },
           {
             "id": "S21.T3",
             "items": [
               "BR-25"
             ],
-            "task": "admin.retention_create (4EYES RSN AUD) and admin.retention_dry_run (affected count, by status)."
+            "task": "admin.retention_create (4EYES RSN AUD) and admin.retention_dry_run (affected count, by status).",
+            "status": "done",
+            "result": "admin.retention_create (4EYES; the pending change targets the new policy's id; executor applyRetentionCreate) and admin.retention_dry_run (RetentionDryRun: outcome counted, archive, no_handler or not_countable; affected and by_status; retention_days and applies_to_status can be previewed) (S21-D4, D5)."
           },
           {
             "id": "S21.T4",
             "items": [
               "BR-26"
             ],
-            "task": "id in FeatureFlag and ExchangeRate (the audit entity ids)."
+            "task": "id in FeatureFlag and ExchangeRate (the audit entity ids).",
+            "status": "done",
+            "result": "FeatureFlag.id and ExchangeRate.id (S21-D6)."
           },
           {
             "id": "S21.T5",
             "items": [
               "BR-17"
             ],
-            "task": "admin.system_health: import job failures, notification delivery failures and media scan failures per window, with the last failure time (from core.background_jobs, notification deliveries and media)."
+            "task": "admin.system_health: import job failures, notification delivery failures and media scan failures per window, with the last failure time (from core.background_jobs, notification deliveries and media).",
+            "status": "done",
+            "result": "admin.system_health over SystemHealthSignals: import_failures (admin, core.background_jobs), notification_delivery_failures (notification), media_scan_failures (media); migration 0112 adds two partial indexes (S21-D7)."
           },
           {
             "id": "S21.T6",
             "items": [
               "BR-22"
             ],
-            "task": "admin.work_summary (STF any staff, aggregates only): per queue the caller may see, open count, oldest created_at and counts per SLA state."
+            "task": "admin.work_summary (STF any staff, aggregates only): per queue the caller may see, open count, oldest created_at and counts per SLA state.",
+            "status": "done",
+            "result": "admin.work_summary over WorkQueues: four_eyes, reports, cases (admin), verifications (organization), review_approvals, disputes, badge_approvals (trust), privacy_requests (identity), subscription_change_requests (billing) (S21-D8..D10)."
           }
         ],
         "contract_changes": "Additive.",
@@ -4497,12 +4560,173 @@
           "work_summary returns only queues the caller's roles may read.",
           "retention_create needs a second ADM; dry run changes nothing."
         ],
-        "split_point": "T5 and T6 can move to S23."
+        "split_point": "T5 and T6 can move to S23.",
+        "report": {
+          "started_at": "2026-11-14",
+          "completed_at": "2026-11-15",
+          "note_on_order": "Run at the owner's request (\"execute stage 21\") after S19 and S20, its dependencies (S18, S19) done. The whole stage was built; the split point (T5 and T6 to S23) was not needed.",
+          "summary": "The admin plane now serves the platform-settings and billing reads and the two dashboard aggregates the console was missing. A-PLAN-01 sees which plans are offered and which is each audience's default, lists every subscription (subscriber by public name, plan, trial end, expiry, overrides, who assigned it; trials ending soon) and works the organizations' plan requests as a queue. A-RET-01 adds a policy with a second administrator and runs a dry run that counts, per status, what the next daily run would delete or anonymize (also previewing another period or status) without changing anything. Feature flags and exchange rates carry their audit ids, so their history opens. The dashboard gets admin.system_health (failed imports, deliveries and virus scans in 24 h, 7 days and 30 days, with the last failure) and admin.work_summary: per queue the caller's roles may list, the open count, the caller's share, the oldest item, the next target, items per SLA state (with paused verifications) and a breakdown by status, source, reason, type or severity, so My work no longer pages every list each minute. Contract 1.4.0: 469 operations, 521 routes, 55 error codes. Migration 0112 (two partial indexes). Every acceptance criterion is met.",
+          "acceptance_criteria": [
+            {
+              "criterion": "work_summary returns only queues the caller's roles may read.",
+              "met": true,
+              "evidence": "s21.int.test.ts: an administrator gets four_eyes, verifications, cases, privacy_requests, badge_approvals, subscription_change_requests; a moderator four_eyes, verifications, review_approvals, reports, cases, disputes, badge_approvals; support reports and privacy_requests; a community reviewer review_approvals and disputes; support plus reviewer the union in the fixed order (each queue's roles are its list operation's STF roles). A four-eyes change is never in its requester's queue, is in another administrator's and not in a moderator's (an administrator change). No personal data (projection check). Sweep: work_summary as a community reviewer."
+            },
+            {
+              "criterion": "retention_create needs a second ADM; dry run changes nothing.",
+              "met": true,
+              "evidence": "s21.int.test.ts: admin.retention_create answers 202 PendingChange and creates nothing until a second administrator approves (the requester's own approval is 403); then the policy is listed with its audit entry admin.retention_created; a second request for the same entity and status is 409 DUPLICATE while pending and after; a delete policy for an entity no module applies is 422 at /entity_type. The dry run of BackgroundJob counts three 40-day-old finished jobs (by status succeeded 2, failed 1; the running one is not due), a 60-day preview leaves them out, and all four rows are still there afterwards; archive, not_countable and no_handler outcomes; MediaAsset previewed with another status."
+            }
+          ],
+          "ops_added": [
+            "admin.subscriptions_list (GET {adm}/subscriptions, STF(ADM))",
+            "admin.subscription_change_requests_list (GET {adm}/subscription-change-requests, STF(ADM))",
+            "admin.retention_create (POST {adm}/retention-policies, STF(ADM) 4EYES RSN AUD)",
+            "admin.retention_dry_run (POST {adm}/retention-policies/{policy_id}/dry-run, STF(ADM))",
+            "admin.system_health (GET {adm}/system-health, STF(ADM, MOD, SUP))",
+            "admin.work_summary (GET {adm}/work-summary, STF(ADM, MOD, SUP, CRV))"
+          ],
+          "ops_changed": [
+            "admin.plans_list: Page<StaffPlan> (status, is_default_for_audience)",
+            "admin.flags_list, admin.flag_update: FeatureFlag.id",
+            "admin.exchange_rates_list, admin.exchange_rate_update: ExchangeRate.id",
+            "admin.retention_update: input named RetentionPolicyWrite (same members)"
+          ],
+          "contract": "Docs/40 1.4.0 (still open): §23.1 StaffPlan, StaffSubscriptionRow, SubscriptionChangeRequestView, FeatureFlag.id, ExchangeRate.id, RetentionPolicyWrite, RetentionDryRunInput, RetentionDryRun, SystemHealthKey, SystemHealthSignal, SystemHealth, WorkQueueKey, WorkQueueSummary, WorkSummary; §23.2 admin.subscriptions_list, admin.subscription_change_requests_list, admin.plans_list; §23.5 admin.retention_update, admin.retention_create, admin.retention_dry_run, admin.system_health, admin.work_summary; Appendix D five S21 rows. 469 operations, 521 routes (468 served; auth.social_start deferred), 55 error codes.",
+          "files_created": [
+            "backend/modules/admin/application/dashboard-ops.ts",
+            "backend/modules/admin/application/work-queues.ts",
+            "backend/modules/admin/application/work-sla.ts",
+            "backend/modules/admin/application/work-sla.test.ts",
+            "backend/modules/organization/application/work-queue.ts",
+            "backend/modules/trust/application/work-queues.ts",
+            "backend/modules/identity/application/work-queue.ts",
+            "backend/apps/testing/s21.int.test.ts",
+            "database/migrations/0112_s21_system_health_indexes.sql"
+          ],
+          "files_changed": [
+            "Docs/40.API contract.md (§23.1, §23.2, §23.5, Appendix D)",
+            "Docs/43.db_setup.sql (notification_deliveries_failed_idx, media_assets_scan_failed_idx), Docs/42.db schema.md (S21 rule row)",
+            "backend/modules/admin/{interface/admin.ts (RetentionCounter, countByStatus, WorkQueues, WorkItem, SlaTarget, SystemHealthSignals, failureCounts), application/platform-ops.ts (RetentionCreateHandler, applyRetentionCreate, RetentionDryRunHandler), application/admin-rules.ts (BackgroundJob counter), api/projections.ts (flag and rate ids), admin.module.ts (registries, handlers, the retention_create executor)}",
+            "backend/modules/billing/{application/admin-ops.ts (StaffPlan, AdminSubscriptionsListHandler, AdminSubscriptionChangeRequestsListHandler, registerBillingWork), api/projections.ts (toStaffPlan, overrideList), billing.module.ts}",
+            "backend/modules/{organization/application/admin-registrations.ts, trust/application/admin-registrations.ts, identity/identity.module.ts} (work queues; identity: VerificationToken counter)",
+            "backend/modules/{notification/application/admin-registrations.ts, media/application/admin-ops.ts} (health signals and retention counters), backend/modules/{ai-mcp/application/registrations.ts, discovery/application/admin-registrations.ts, fleet/fleet.module.ts} (retention counters)",
+            "backend/tools/contract/parse-operations.ts (the two subscription lists belong to billing)",
+            "backend/libs/contract/generated/*, libs/contract/contract.test.ts (469/521)",
+            "backend/apps/testing/{contract/resolvers/admin.ts (4 operations), contract/resolvers/billing.ts (2 operations), contract/generated admin and billing suites}",
+            "shared/api-contracts/{openapi.yaml, generated/*}",
+            "frontend/admin-console: src/lib/api/generated/*, tools/contract/generate.test.ts and src/server/bff/allowlist.test.ts (107 admin operations), src/features/flags/flags.test.tsx and src/features/rates/rates.test.tsx (fixtures with id)"
+          ],
+          "tests": {
+            "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 542 modules), typecheck, format:check: pass",
+            "backend_unit": "322 passed (47 files), including the registry pin (469 operations, 521 routes) and work-sla.test.ts (working days on the Friday weekend in Asia/Tehran, the 75 % warning, Docs/23 §6 moderation targets, the queue summary)",
+            "backend_contract": "contract:check up to date (1.4.0, 469 operations, 55 error codes); contract sweep suites up to date (17 modules); openapi:check: 521 operations on 419 paths; contract:coverage 468/469 served (auth.social_start deferred), 0 unexplained 501s",
+            "backend_sweeps": "admin and billing sweeps 51 passed, including the six new operations (an archive policy request rejected again by a second admin; a dry run with a preview period; system health as support; the work summary as a community reviewer; one organization's subscriptions; an organization's open plan request)",
+            "backend_s21": "10 passed (apps/testing/s21.int.test.ts): StaffPlan and the unchanged public Plan; subscriptions with overrides, assigner, paging, trials ending soon and an individual by display name; plan requests open and assigned; retention create with four eyes, duplicates and refused entity types; dry run counts, preview and nothing changed; flag and rate ids opening the audit history; system health per window; work summary queues per role, the clock, verifications (caller share, paused, breach), reports, cases and four-eyes",
+            "backend_integration_full": "936 tests in 62 files (about 31 minutes): 934 passed, 2 failed, both in tools/db/baseline.int.test.ts. (1) The baseline hash: Docs/43 changed and the local database was migrated with 0112, not reset (passes after pnpm db:reset). (2) The seed check: it first counted 20 retention policies, not 17, because s21.int.test.ts left the policy it approves (three local runs); the test now deletes its policy, the leftovers were removed, and the rerun of s21 and the baseline file leaves only the state known since S13: 94 non-fixture accounts, expected 2 (R-15). No other suite changed its result; s14 still pins its PURP operations (no new PURP operation).",
+            "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck, lint and i18n:check (3175 keys) pass; 691 unit tests passed (76 files); nothing else changed (admin-plane operations only)",
+            "admin_console": "contract:generate (107 admin-api operations), contract:check, typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files) after the pins 101 -> 107 and two fixtures (FeatureFlag.id, ExchangeRate.id)",
+            "environment": "Node 20.10 is still the machine Node; this session used the portable Node 24.22.3 from session 84fe488f's scratchpad on PATH; nothing was installed system-wide. db:setup applied migration 0112.",
+            "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
+          },
+          "deviations": [
+            {
+              "id": "S21-D1",
+              "task": "S21.T1",
+              "item": "BR-23",
+              "deviation": "admin.plans_list answers a new type StaffPlan (Plan & { status, is_default_for_audience }) instead of adding the fields to Plan, so plans.list (public) is unchanged. A plan stays listed when inactive; is_default_for_audience is stored per plan (one active default per audience is the seed's rule, not a database constraint).",
+              "impact": "Console: A-PLAN-01 shows Offered / Not offered and the default badge; remove the D-42 hint."
+            },
+            {
+              "id": "S21-D2",
+              "task": "S21.T2",
+              "item": "BR-24",
+              "deviation": "admin.subscriptions_list lists every subscription row (current and past: a reassignment cancels the previous row), newest first, and adds q subscriber_id (one subscriber's history, the A-PLAN-01 History tab) to the BR's filters; trial_ends_before implies status trial. The subscriber is shown by its public name (organization name, user display name or the former-member label), never contact data; overrides are { vehicle_limit, user_limit, entitlements }; assigned_by_display is null for rows the system created (sign-up, organization creation, trial end).",
+              "impact": "Console: A-PLAN-01 Assignments list with filters and a per-subscriber history."
+            },
+            {
+              "id": "S21-D3",
+              "task": "S21.T2",
+              "item": "BR-24",
+              "deviation": "The plan requests are a separate operation admin.subscription_change_requests_list (the name PU-BR-04 asked for), default status open, oldest first, with the requested and the current plan, the note and the requester's display name. Only the list part of PU-BR-04 is built: declining a request with a notice to the requester, and the business's own list (PU-BR-03), are not (proposed for S25 or the Web UI intake).",
+              "impact": "Console: a \"Requests to handle\" tab that opens the assign form prefilled; admin.subscription_assign closes the request."
+            },
+            {
+              "id": "S21-D4",
+              "task": "S21.T3",
+              "item": "BR-25",
+              "deviation": "admin.retention_create answers 202 PendingChange; the pending change targets the id the policy will get (generated at request time), and the approval inserts it (executor applyRetentionCreate, audit admin.retention_created). One policy per entity type and status (the table's NULLS NOT DISTINCT key, soft-deleted rows included): 409 DUPLICATE for an existing policy or a pending request for the same pair. entity_type must look like a 52 entity name; a delete or anonymize policy needs a module that registered a retention handler for it (422 enum at /entity_type), an archive policy may name any entity (the run keeps the records). The input type is named RetentionPolicyWrite, shared with admin.retention_update (same members).",
+              "impact": "Console: A-RET-01 Add (four eyes) with the entity types the console knows; show the 409 and 422 at the entity field."
+            },
+            {
+              "id": "S21-D5",
+              "task": "S21.T3",
+              "item": "BR-25",
+              "deviation": "The dry run is POST (it takes optional retention_days and applies_to_status to preview a change before admin.retention_update) and counts with a RetentionCounter that each module registers next to its handler with the same conditions, in the caller's read-only staff transaction; nothing is executed or rolled back. Outcomes: counted (affected, and by_status where the entity has a status: BackgroundJob, NotificationDelivery, VerificationToken, MediaAsset), archive (the run keeps records), no_handler (no module applies the entity type: UserAccount, McpAccessLog, AnalyticsEvent, InventoryImportBatch today), not_countable (DomainEventOutbox: the admin-api role may only insert into the outbox). Inactive policies are counted too (what activating them would do). MediaAsset counts every due file while the daily run handles at most 1,000 a day.",
+              "impact": "Console: A-RET-01 Dry run per row and in the edit form (preview the new period); explain the four outcomes."
+            },
+            {
+              "id": "S21-D6",
+              "task": "S21.T4",
+              "item": "BR-26",
+              "deviation": "Only the ids were added; no audit search by entity key. admin.audit_search with entity_type feature_flag or exchange_rate and the id opens the history.",
+              "impact": "Console: AuditDrawer for flags and rates (D-42 history)."
+            },
+            {
+              "id": "S21-D7",
+              "task": "S21.T5",
+              "item": "BR-17",
+              "deviation": "admin.system_health has fixed windows (24 h, 7 days, 30 days) instead of a query window, and last_failure_at within 30 days. import_failures are failed inventory_import and fleet_import jobs by finish time (the admin module reads core.background_jobs, a platform table); notification_delivery_failures are deliveries with status failed on any channel by their last change; media_scan_failures are files whose scan failed (scan_status failed, by their last change; infected files are detections, not failures). Each owning module registers its count (SystemHealthSignals; a key may have several contributors). STF(ADM, MOD, SUP) like admin.analytics_dashboard; no rates or per-channel split (Docs/23 A-NOTIF-01 delivery health stays open). Migration 0112 adds partial indexes for the two rare failure states.",
+              "impact": "Console: A-DASH-01 System widget (three counts per window, last failure); the date-range control maps to the windows."
+            },
+            {
+              "id": "S21-D8",
+              "task": "S21.T6",
+              "item": "BR-22",
+              "deviation": "The queues are the D-32 set plus the S18/S19 additions as the list operations show them: four_eyes (pending, not expired, not the caller's, moderators only moderation changes), verifications (pending; waiting for the business counts as paused), review_approvals (awaiting_reviewer, clock from the business's answer), reports (open), cases (open, investigating, escalated), disputes (open, in_mediation), privacy_requests (received, verifying_identity, in_progress), badge_approvals (pending_approval needing an administrator) and subscription_change_requests (open). A queue is shown when one of the caller's roles is among its list operation's STF roles; each module registers its queue (WorkQueues). Staff recovery requests have no list operation and stay with their staff notice.",
+              "impact": "Console: My work and the navigation counts from admin.work_summary instead of paging (remove D-32 and the \"200+\" cap); badge approvals and plan requests become queues."
+            },
+            {
+              "id": "S21-D9",
+              "task": "S21.T6",
+              "item": "BR-22",
+              "deviation": "SLA states are computed on the server with the console's arithmetic and the Docs/23 §6 targets (OQ-05 defaults): verification and review approval 2 working days, disputes 5 working days, cases and reports 4 h for unsafe_advice, non_consensual_media, privacy and critical cases, 24 h for reviews, 48 h otherwise, privacy requests their due_at, four-eyes their expires_at; warn after 75 % of the window. Working days skip the region's weekend (Friday, a constant matching the console's WEEKEND_DAYS) on the CarPal-Timezone clock, else Asia/Tehran. Queues without a target (badge approvals, plan requests) have sla null. The targets are now in two places (console config and backend); a change of targets must change both until the console reads them from the server.",
+              "impact": "Console: take sla, next_due_at and oldest_at from the summary; keep the per-item timers on the list pages."
+            },
+            {
+              "id": "S21-D10",
+              "task": "S21.T6",
+              "item": "BR-22",
+              "deviation": "The summary carries more than BR-22 asked: assigned_to_me (verifications, cases, disputes), next_due_at, a paused count and a breakdown of open items by key (status:, source:, reason:, type:, severity:), so the reason-based case views (safety, consent) and the A-DASH-01 content, inventory and AI-flag rows can be counted without paging. open is exact; the states, oldest item and breakdown are computed over at most 5,000 items per queue (oldest first).",
+              "impact": "Console: case view counts from the breakdown (reason:unsafe_advice, source:ai_flag, type:inventory_item ...)."
+            },
+            {
+              "id": "S21-D11",
+              "task": "-",
+              "item": "-",
+              "deviation": "RetentionHandlers.register takes an optional counter (RetentionCounter); new registries WorkQueues and SystemHealthSignals in the admin interface, filled by the owning modules in their existing registration classes; tools/contract/parse-operations.ts gives the two subscription lists to billing. Clients: the console regenerated 107 admin-api operations (pins and two fixtures); the PWA only regenerated shared/api-contracts.",
+              "impact": "None."
+            }
+          ],
+          "notes_for_next": [
+            "Admin console (AC13/AC14): A-DASH-01 System widget from admin.system_health and the queue widgets, My work and navigation counts from admin.work_summary (remove the D-32 paging and the \"200+\" cap; case view counts from the breakdown); A-PLAN-01 plan status and default (remove the D-42 hint), the Assignments list and History (admin.subscriptions_list), the plan requests queue (admin.subscription_change_requests_list, opening the assign form prefilled); A-RET-01 Add (four eyes) and Dry run with a preview of the new period; flag and rate history from FeatureFlag.id and ExchangeRate.id. Console contract regenerated (107 operations); only pins and two fixtures changed.",
+            "SLA targets now live in the backend too (S21-D9): when the owner changes OQ-05 targets or the region's weekend, change modules/admin/application/work-sla.ts and the console config together.",
+            "Proposed for S25 (from PU-BR-03/04): admin.subscription_change_request_decline with a notice to the requester, and the business's own list of its plan requests on the api host.",
+            "Retention: UserAccount (anonymize), McpAccessLog, AnalyticsEvent and InventoryImportBatch policies have no module handler (the daily run logs and skips them; the dry run says no_handler). Existing since S8; candidates for S25.",
+            "Local databases: pnpm db:setup in backend/ applies migration 0112; tools/db/baseline.int.test.ts passes only after pnpm db:reset (Docs/43 changed).",
+            "Environment: Node 24 is still not installed on the machine (package.json engines >= 24.7); this session used the portable Node 24.22.3 from an earlier session scratchpad.",
+            "Next backend stage: S22 (organization merge and media redaction)."
+          ],
+          "open_after_stage": [
+            "Owner: confirm DQ-06 (default applied: docs only), DQ-05, DQ-15 and the earlier defaults (DQ-01, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14); DQ-20 items 3 and 4.",
+            "Nothing committed (commit only when the owner asks)."
+          ]
+        }
       },
       {
         "id": "S22",
         "title": "Organization merge and media redaction (data-rewriting operations)",
-        "status": "not_started",
+        "status": "done",
         "items": [
           "BR-08",
           "BR-15 (apply_redaction)"
@@ -4532,21 +4756,27 @@
             "items": [
               "BR-08"
             ],
-            "task": "OrganizationReferences registry: every module registers its organization references with a re-point rule and a unique-key conflict rule (keep target, keep source, merge, refuse)."
+            "task": "OrganizationReferences registry: every module registers its organization references with a re-point rule and a unique-key conflict rule (keep target, keep source, merge, refuse).",
+            "status": "done",
+            "result": "OrganizationReferences (organization interface) with helpers; 64 references registered by 13 modules (S22-D1..D4): organization 14, identity 5, billing 3, vehicle 4, inventory 4, discovery 2, trust 7, appointment 4, fleet 6, community 4, admin 2, ai_mcp 6, media 3."
           },
           {
             "id": "S22.T2",
             "items": [
               "BR-08"
             ],
-            "task": "admin.org_merge runs the registry in a job (4EYES as today, ASYNC, read by admin.job_get); admin.org_merge_preview lists counts and conflicts per module."
+            "task": "admin.org_merge runs the registry in a job (4EYES as today, ASYNC, read by admin.job_get); admin.org_merge_preview lists counts and conflicts per module.",
+            "status": "done",
+            "result": "admin.org_merge: 4EYES as before; the approval starts the organization_merge job (W7, queue organization.merge, admin.job_get), which applies every reference in one transaction, marks the duplicate merged and publishes organization.merged; admin.org_merge_preview (OrgMergePreview: references with rule, count and conflicts, blocked_by); refusals at request, approval and in the job (S22-D5..D7)."
           },
           {
             "id": "S22.T3",
             "items": [
               "BR-15"
             ],
-            "task": "case_action apply_redaction: boxes on an image, the media worker writes a redacted copy that replaces the public one; the original keeps restricted access under retention."
+            "task": "case_action apply_redaction: boxes on an image, the media worker writes a redacted copy that replaces the public one; the original keeps restricted access under retention.",
+            "status": "done",
+            "result": "case_action apply_redaction on a media_asset (params.redaction_regions): the file leaves public serving at once, W6 boxes the display variant and rebuilds the thumbnail (the public copy), the original keeps restricted access; MediaAssetSnapshot.redaction_status (S22-D8)."
           }
         ],
         "contract_changes": "Additive (preview operation, new action type).",
@@ -4556,7 +4786,152 @@
           "After a merge no reference points at the merged organization; conflicts follow the registered rule.",
           "A merge failing half-way leaves no partial re-pointing.",
           "The public URL serves only the redacted copy."
-        ]
+        ],
+        "report": {
+          "started_at": "2026-11-15",
+          "completed_at": "2026-11-15",
+          "note_on_order": "Run at the owner's request (\"execute stage 22\", after a 200-minute timer) after S21; its dependencies (S13 job read, S18 snapshots) were done.",
+          "summary": "An organization merge now moves the business's records to the surviving organization instead of only marking the duplicate. Each of the 13 modules that keep organization references registers them with a rule: reviews, appointments, inventory, posts, showcases, fleet vehicles, files and follows move; rows that collide with the surviving organization's own (the same SKU, service category, follow, trade account between the two) are retired; locations move and arrive inactive when the surviving organization already has one; the duplicate's memberships, badges, current subscription and open plan request end; its consents, verification history, cases and AI outputs stay with it. A second administrator's approval starts a job (admin.job_get) that applies everything in one transaction, so a failure half-way changes nothing; an open assist session refuses the merge at the request, the approval and in the job. admin.org_merge_preview shows the counts and conflicts per module before anyone asks. Moderators can now apply a redaction to an image: the file leaves public serving at once, the media worker draws opaque boxes on the public copy, and the original keeps its restricted access. Contract 1.4.0: 470 operations, 522 routes, 55 error codes. Migration 0113 (three CHECK constraints). Every acceptance criterion is met.",
+          "acceptance_criteria": [
+            {
+              "criterion": "After a merge no reference points at the merged organization; conflicts follow the registered rule.",
+              "met": true,
+              "evidence": "s22.int.test.ts: after the job every registered reference of rule move, keep_target, merge and retire counts 0 live rows for the duplicate (history references stay by design, S22-D1); the review moved; the follower of both keeps one live follow on the surviving organization, the other follow moved; the duplicate's location arrived inactive and not primary; the surviving profile stays published and the duplicate's is retired; the duplicate's owner can act for neither organization; a duplicate SKU and a trade account between the two vendors were retired, another trade account moved; a provider profile moved into a vendor made it hybrid. The preview listed every rule and conflict before."
+            },
+            {
+              "criterion": "A merge failing half-way leaves no partial re-pointing.",
+              "met": true,
+              "evidence": "s22.int.test.ts: a reference registered after every module's own throws for one pair; the job ends failed (INTERNAL) and the duplicate is still active with its review, follow, active location, published profile and its owner's access. An open assist session refuses the request and the approval (409, the change stays pending); once it ends the approval runs the merge."
+            },
+            {
+              "criterion": "The public URL serves only the redacted copy.",
+              "met": true,
+              "evidence": "s22.int.test.ts: the public copy (display variant, served under the same key) and the thumbnail are black inside the box and white outside after the job, the original is unchanged, the file is publicly servable again only once redaction_status is completed; a redaction that cannot be written ends failed and the file stays off public serving; documents and other targets are refused (409); missing or out-of-range boxes are 422 at their pointer; case_get shows redaction_status."
+            }
+          ],
+          "ops_added": [
+            "admin.org_merge_preview (GET {adm}/orgs/{org_id}/merge-preview, STF(ADM))"
+          ],
+          "ops_changed": [
+            "admin.org_merge: ASYNC after approval (job organization_merge), 409 when refused, emits organization.merged",
+            "admin.case_action: ModerationActionType apply_redaction, params.redaction_regions",
+            "admin.case_get: MediaAssetSnapshot.redaction_status",
+            "admin.job_get: organization_merge jobs for administrators"
+          ],
+          "contract": "Docs/40 1.4.0 (still open): §4.1 JobResultType organization; §5 JobKind organization_merge, ModerationActionType apply_redaction; §23.1 OrgMergeRule, OrgMergeReference, OrgMergePreview, ModerationActionInput.params.redaction_regions, MediaAssetSnapshot.redaction_status; §23.2 admin.org_merge, admin.org_merge_preview; §23.4 admin.case_action; Appendix A organization.merged; Appendix D two S22 rows. 470 operations, 522 routes (469 served; auth.social_start deferred), 55 error codes.",
+          "files_created": [
+            "backend/modules/organization/interface/org-references.ts",
+            "backend/modules/organization/application/merge.ts",
+            "backend/modules/{identity,billing,vehicle,inventory,discovery,trust,appointment,fleet,community,admin,ai-mcp,media}/application/org-references.ts",
+            "backend/apps/testing/s22.int.test.ts",
+            "database/migrations/0113_s22_org_merge_redaction.sql"
+          ],
+          "files_changed": [
+            "Docs/40.API contract.md (§4.1, §5, §23.1, §23.2, §23.4, Appendix A, Appendix D)",
+            "Docs/43.db_setup.sql (background_jobs kind and result_type, moderation_actions action_type), Docs/42.db schema.md (S22 rule row)",
+            "backend/modules/organization/{organization.module.ts (OrganizationReferences, OrgMerger), organization-admin.module.ts (merge and preview handlers), application/admin-ops.ts (merge code moved out), application/common.ts (profilesFollow), application/admin-registrations.ts (executor starts the job, own references)}",
+            "backend/modules/{identity/identity.module.ts, billing/billing.module.ts, vehicle/vehicle.module.ts, inventory/inventory.module.ts, appointment/appointment.module.ts, fleet/fleet.module.ts, admin/admin.module.ts, discovery, trust, community and ai-mcp registration classes, media/application/admin-ops.ts} (reference registration)",
+            "backend/modules/admin/{interface/admin.ts (TargetAction apply_redaction, redaction_regions), application/moderation-ops.ts (apply_redaction, merge_duplicate refusals), application/platform-ops.ts (ADMIN_JOB_KINDS organization_merge)}",
+            "backend/modules/media/application/{admin-ops.ts (applyRedaction, snapshot redaction_status), processor.ts (box style)}",
+            "backend/modules/trust/application/review-workflow.ts, backend/modules/discovery/application/indexer.ts (organization.merged)",
+            "backend/workers/import-jobs/import-jobs.module.ts (organization.merge queue), backend/libs/jobs/index.ts (JobResultType organization)",
+            "backend/libs/contract/generated/*, libs/contract/contract.test.ts (470/522)",
+            "backend/apps/testing/{moderation.int.test.ts (merge waits for the job), contract/resolvers/organization.ts (admin.org_merge_preview), contract/generated organization suite}",
+            "shared/api-contracts/{openapi.yaml, generated/*}",
+            "frontend/admin-console: src/lib/api/generated/*, tools/contract/generate.test.ts and src/server/bff/allowlist.test.ts (108 admin operations)",
+            "backend/apps/testing/s19.int.test.ts (pages the oldest-first verification queue; failed on a local database with more than 100 pending checks)"
+          ],
+          "tests": {
+            "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 557 modules), typecheck, format:check: pass",
+            "backend_unit": "322 passed (47 files), including the registry pin (470 operations, 522 routes)",
+            "backend_contract": "contract:check up to date (1.4.0, 470 operations, 55 error codes); contract sweep suites up to date (17 modules); openapi:check: 522 operations on 420 paths; contract:coverage 469/470 served (auth.social_start deferred), 0 unexplained 501s",
+            "backend_s22": "7 passed (apps/testing/s22.int.test.ts): the preview (every module listed, rules and conflicts, administrators only, 422 for a wrong target, nothing changed); the merge job (admin.job_get, every rule applied, no live reference left, review, follows, locations, profiles, the duplicate owner's access, organization.merged, audit, no second merge); refusal by an open assist session at request and approval, then the merge after it ends; vendors (duplicate SKU and trade account between the two retired, another trade account moved, a provider profile moved into a vendor makes it hybrid); a merge failing half-way changes nothing; apply_redaction (boxes on the public copy and thumbnail, the original unchanged, 422 pointers, case_get redaction_status) and a failed redaction kept off public serving, documents and organizations refused",
+            "backend_affected": "11 files, 208 passed: organization, admin and media sweeps (admin.org_merge_preview as an administrator), moderation (the merge waits for its job), s13 (job reads), s14 (purpose bindings), s18 (snapshots), s20 (target actions), s21, media, s22",
+            "backend_integration_full": "944 tests in 63 files (about 27 minutes): 941 passed, 3 failed. tools/db/baseline.int.test.ts twice, both known: the baseline hash (Docs/43 changed and the local database was migrated with 0113, not reset; passes after pnpm db:reset) and the seed check (94 non-fixture accounts, expected 2; R-15, unchanged since S13). s19.int.test.ts once: the local database had 109 pending business_identity checks from earlier runs and the test read only the first page of the oldest-first queue; the test now follows next_cursor and passes (9/9). No S22 code was involved.",
+            "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck, lint and i18n:check (3175 keys) pass; 691 unit tests passed (76 files); nothing else changed (admin-plane operations only)",
+            "admin_console": "contract:generate (108 admin-api operations), contract:check, typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files) after the pins 107 -> 108",
+            "environment": "Node 20.10 is still the machine Node; this session used the portable Node 24.22.3 from session 84fe488f's scratchpad on PATH; nothing was installed system-wide. db:setup applied migration 0113.",
+            "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
+          },
+          "deviations": [
+            {
+              "id": "S22-D1",
+              "task": "S22.T1",
+              "item": "BR-08",
+              "deviation": "The rules are move, keep_target, merge, retire, refuse and history (40 OrgMergeRule) instead of keep target, keep source, merge, refuse: the surviving organization is always the one kept, and where only the duplicate has a row (a provider, vendor or fleet profile) it moves because the target has none, so keep_source is never needed. retire (the duplicate's rows end, nothing moves) and history (the duplicate's own record stays with it and resolves through merged_into_organization_id) were added. A retired row is soft-deleted or ends by status; append-only and immutable records (consent records, dispute messages, profile history) and logs (audit, outbox, analytics events, MCP access logs, jobs, notifications) are never re-pointed.",
+              "impact": "Console: the merge dialog lists each reference with its rule and conflicts from admin.org_merge_preview and explains the six rules (EN/FA)."
+            },
+            {
+              "id": "S22-D2",
+              "task": "S22.T1",
+              "item": "BR-08",
+              "deviation": "Memberships do not move: the duplicate's memberships and open invitations end (removed, soft-deleted; each member's authorization cache is cleared after commit), so a merge never gives the duplicate's members access to the surviving business (a duplicate may have been created by someone else). The surviving organization's owner invites people again. Raised as DQ-21 (default applied).",
+              "impact": "Console: the merge dialog says the duplicate's members lose access and are not added to the surviving organization."
+            },
+            {
+              "id": "S22-D3",
+              "task": "S22.T1",
+              "item": "BR-08",
+              "deviation": "What does not follow the business: consents granted to the duplicate stay with it (consent records are immutable), so access to shared vehicle history through those consents ends for moved appointments (fail closed); verification checks and their documents stay with the duplicate (pending checks expire, open requests for information close); its badges are revoked (reason 'organization merged') and the surviving organization's are evaluated again; its current subscription is cancelled and an open plan request withdrawn; skill heatmap entries expire; its logo and cover attachments end; open moderation cases, AI outputs, match sessions and trust signals stay with it. Everything customers and the business made follows: reviews, review requests and answers, disputes, appointments, service records, inventory, posts, answers, showcases, job logs, customer notes, certifications, catalog rows, fleet vehicles and their records, files, embeddings, follows and favourites.",
+              "impact": "Console: show the history rows as \"stays with the merged organization\"."
+            },
+            {
+              "id": "S22-D4",
+              "task": "S22.T1",
+              "item": "BR-08",
+              "deviation": "Locations (rule merge): every location of the duplicate moves; when the surviving organization has an active location they arrive inactive and not primary (no second pin for the same business on the map; the business or staff reactivate a real branch), otherwise they keep their status and primary flag. A provider or vendor profile that moves into an organization of the other kind makes it hybrid_provider_vendor.",
+              "impact": "Console: the preview shows locations under conflicts when they will arrive inactive."
+            },
+            {
+              "id": "S22-D5",
+              "task": "S22.T2",
+              "item": "BR-08",
+              "deviation": "admin.org_merge_preview is GET {adm}/orgs/{org_id}/merge-preview with q into_organization_id, STF(ADM) (the role that may request and approve a merge), counts only, in the caller's read-only staff transaction; blocked_by lists the refuse references with live rows. Counts are a snapshot: the job applies the rules to the rows present when it runs.",
+              "impact": "Console: AC9 Merge opens the preview first and disables Submit while blocked_by is not empty (D-51 can be lifted)."
+            },
+            {
+              "id": "S22-D6",
+              "task": "S22.T2",
+              "item": "BR-08",
+              "deviation": "The pair and the refusals are checked at the request, at the approval (409 INVALID_TRANSITION, the change stays pending) and in the job (failed with INVALID_TRANSITION, nothing changed). The job (kind organization_merge, result organization, owner the approver, queue organization.merge on W7) applies every reference in one system transaction (module, then key order), then marks the duplicate merged, takes its profiles off publication, writes the audit entry with the per-reference counts and publishes moderation.action.taken (the duplicate) and the new event organization.merged (the surviving organization; trust scoring and the search indexer recompute it). admin.job_get shows organization_merge jobs to administrators. The merge_duplicate case action files the same pending change and checks the refusals too. As a guard against a host composed without a module, the request, the approval and the job refuse to run unless all 13 modules with organization references have registered (ORG_REFERENCE_MODULES).",
+              "impact": "Console: follow PendingChange.job_id with admin.job_get after approval (as for taxonomy merges)."
+            },
+            {
+              "id": "S22-D7",
+              "task": "S22.T2",
+              "item": "BR-08",
+              "deviation": "The only refuse reference is an open assist session on the duplicate (staff end it first). No other state was found that a merge must not cross; refuse is available to every module for later rules.",
+              "impact": "Console: show \"End the assist session first\" when blocked_by names admin.assist_sessions."
+            },
+            {
+              "id": "S22-D8",
+              "task": "S22.T3",
+              "item": "BR-15",
+              "deviation": "apply_redaction is a record-specific case action (TargetAction) that the media module applies to a media_asset: the case target, or `target` naming an image that is a subject of the case (a showcase's photos). params.redaction_regions: at most 30 boxes relative to the image (0..1, x + w and y + h at most 1). The worker fills opaque boxes (not the owner's blur) on the display variant, which is the public copy (same object key, so earlier signed URLs serve the redacted bytes), and rebuilds the thumbnail; the processed original keeps its owner-only and purpose-bound staff access until retention removes the file. The file leaves public serving when the action is recorded (redaction_status pending makes publicly_servable false) and stays off if the redaction fails. No AAL3 (it removes exposure, it does not penalise). The redaction job (kind redaction, owner the staff member) is not readable through admin.job_get because the api host starts redaction jobs too; the console reads the outcome from MediaAssetSnapshot.redaction_status (new).",
+              "impact": "Console: A-CON-02 Apply redaction draws boxes on the image and shows redaction_status from case_get (pending, completed, failed)."
+            },
+            {
+              "id": "S22-D9",
+              "task": "-",
+              "item": "-",
+              "deviation": "Migration 0113 changes three CHECK constraints (background_jobs kind and result_type, moderation_actions action_type); no table or column. OrganizationReferences lives in the organization interface (org-references.ts, with move/keyed/single/retire/refuse/history helpers) and is filled by each module's existing registration class; profilesFollow moved to organization/application/common.ts; the merge handler moved from admin-ops.ts to merge.ts. A CDN in front of public media (full mode) needs the display key purged after a redaction; lite mode has none.",
+              "impact": "None (CDN purge: noted for the deploy kit, S25)."
+            }
+          ],
+          "notes_for_next": [
+            "Admin console (AC9/AC8, AC14): offer Merge (lift D-51) with admin.org_merge_preview first (rules, conflicts, blocked_by; explain that the duplicate's members lose access and history stays), follow PendingChange.job_id with admin.job_get; merge_duplicate on organization cases; A-CON-02 Apply redaction with boxes and redaction_status from case_get. Console contract regenerated (108 operations); only the two pins changed.",
+            "A module that adds a column naming an organization must register it in OrganizationReferences (and add itself to ORG_REFERENCE_MODULES if it is a new module); otherwise the merge leaves those rows on the duplicate.",
+            "Owner: confirm DQ-21 (default: the duplicate's members lose access).",
+            "Deploy (S25): purge the CDN entry of a redacted file's display and thumbnail keys in full mode.",
+            "Local databases: pnpm db:setup in backend/ applies migration 0113; tools/db/baseline.int.test.ts passes only after pnpm db:reset (Docs/43 changed).",
+            "Environment: Node 24 is still not installed on the machine; this session used the portable Node 24.22.3 from session 84fe488f's scratchpad.",
+            "Next backend stage: S23 (extended staff reads for users and organizations)."
+          ],
+          "open_after_stage": [
+            "Owner: confirm DQ-21 (new), DQ-06, DQ-05, DQ-15 and the earlier defaults (DQ-01, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14); DQ-20 items 3 and 4.",
+            "Nothing committed (commit only when the owner asks)."
+          ]
+        }
       },
       {
         "id": "S23",
@@ -4928,6 +5303,16 @@
         ],
         "strategy_principle": "To keep the project coherent: one function, one rule owner (the backend), one screen spec; a function may have two front ends only when two kinds of actors use it (staff acting on any organization in the console, a business acting on itself in the Web UI), and then the pages are one shared implementation or a provenance-headed copy with a parity test (public-ui-dev-plan.json PU-GD-02, PU-OQ-01).",
         "status_note": "Items 3 and 4: strategy proposed 2026-11-13, awaiting the owner."
+      },
+      {
+        "id": "DQ-21",
+        "raised_in": "S22",
+        "before": "AC9 (merge) or the pilot",
+        "question": "When a duplicate organization is merged into another, what happens to the duplicate's members? (a) Their memberships end and they are not added to the surviving organization; its owner invites them again. (b) They are added to the surviving organization with the lowest role of its kind (provider_staff, vendor_staff, fleet_viewer). (c) They are added with their role.",
+        "default": "(a): a merge never grants access to the surviving business (a duplicate may have been created by someone other than the business). (b) costs about 1 point; (c) is not recommended.",
+        "status": "default_applied",
+        "applied": "Applied in S22 (S22-D2): the duplicate's memberships and invitations end; their authorization caches are cleared.",
+        "owner_confirmation": "pending"
       }
     ],
     "intake_rules": [
@@ -5209,6 +5594,18 @@
           "Business side: the request for more information and the resubmit form (follow-up).",
           "S25 candidate: notify the organization of a rejected verification with the reason (S19.report.notes_for_next).",
           "Local developers: pnpm db:setup in backend/ (migration 0111); pnpm db:reset if the baseline test must pass locally."
+        ]
+      },
+      {
+        "date": "2026-11-15",
+        "stage": "S21",
+        "status": "done",
+        "summary": "S21 done: plan status and audience defaults in admin.plans_list, admin.subscriptions_list and admin.subscription_change_requests_list, admin.retention_create (four eyes) and admin.retention_dry_run (counts only, per status, with a preview), FeatureFlag and ExchangeRate ids, admin.system_health and admin.work_summary (migration 0112). BR-17, BR-22, BR-23, BR-24, BR-25, BR-26 done, R-16 closed. Contract 1.4.0: 469 operations, 55 error codes.",
+        "recommendations": [
+          "Run S22 next (organization merge and media redaction).",
+          "Console (AC13/AC14): dashboard System and queue widgets, My work from the work summary, A-PLAN-01 status, assignments and requests, A-RET-01 add and dry run, flag and rate history (S21.report.notes_for_next).",
+          "S25 candidates: decline a plan request with a notice (PU-BR-04 rest) and the business's own request list (PU-BR-03); retention handlers for UserAccount, McpAccessLog, AnalyticsEvent and InventoryImportBatch.",
+          "Local developers: pnpm db:setup in backend/ (migration 0112); pnpm db:reset if the baseline test must pass locally."
         ]
       }
     ],

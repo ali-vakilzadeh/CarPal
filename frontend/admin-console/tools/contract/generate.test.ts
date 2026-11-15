@@ -25,12 +25,12 @@ describe('admin contract generation (AC1.T2)', () => {
     expect(contractProblems(registry())).toEqual([]);
   });
 
-  it('selects the 101 admin-api operations of contract 1.4.0 (S19: verification and organization records) and no api reads (AC2: the api host refuses admin tokens)', () => {
+  it('selects the 108 admin-api operations of contract 1.4.0 (S22: organization merge preview) and no api reads (AC2: the api host refuses admin tokens)', () => {
     const ops = selectOperations(registry());
-    expect([...ops.values()].filter((o) => o.plane === 'admin')).toHaveLength(101);
+    expect([...ops.values()].filter((o) => o.plane === 'admin')).toHaveLength(108);
     expect(API_READS).toEqual([]);
     expect([...ops.values()].filter((o) => o.plane === 'api-read')).toHaveLength(0);
-    expect(ADMIN_CONTRACT).toMatchObject({ version: '1.4.0', adminOperationCount: 101, apiReadCount: 0 });
+    expect(ADMIN_CONTRACT).toMatchObject({ version: '1.4.0', adminOperationCount: 108, apiReadCount: 0 });
     for (const op of ops.values()) if (op.plane === 'admin') expect(op.host).toBe('admin-api');
   });
 

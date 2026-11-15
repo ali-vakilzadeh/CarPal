@@ -12,6 +12,7 @@ import type { Logger } from '#libs/observability/index.js';
 import { InjectLogger } from '#libs/runtime/index.js';
 import { TxRunner } from '#libs/tenancy/index.js';
 import {
+  countByStatus,
   ModerationTargets,
   retentionCutoff,
   RetentionHandlers,
@@ -166,9 +167,21 @@ export function registerPlatformRetention(handlers: RetentionHandlers): void {
                          AND occurred_at < ${retentionCutoff(p)}`.execute(scope.db);
     return Number(r.numAffectedRows ?? 0);
   });
-  handlers.register('BackgroundJob', async (scope, p) => {
-    const r = await sql`DELETE FROM core.background_jobs WHERE status IN ('succeeded','failed','cancelled')
-                         AND created_at < ${retentionCutoff(p)}`.execute(scope.db);
-    return Number(r.numAffectedRows ?? 0);
-  });
+  // The outbox is not readable on the admin-api host (INSERT only): its dry run says not_countable.
+  handlers.register(
+    'BackgroundJob',
+    async (scope, p) => {
+      const r = await sql`DELETE FROM core.background_jobs WHERE status IN ('succeeded','failed','cancelled')
+                           AND created_at < ${retentionCutoff(p)}`.execute(scope.db);
+      return Number(r.numAffectedRows ?? 0);
+    },
+    async (scope, p) =>
+      countByStatus(
+        (
+          await sql<{ status: string; n: string }>`SELECT status, count(*) AS n FROM core.background_jobs
+                                                    WHERE status IN ('succeeded','failed','cancelled') AND created_at < ${retentionCutoff(p)}
+                                                    GROUP BY status`.execute(scope.db)
+        ).rows,
+      ),
+  );
 }

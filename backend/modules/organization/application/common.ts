@@ -200,3 +200,18 @@ export async function publicationChanged(
     payload: { organization_id: orgId, profile_id: profileId },
   });
 }
+
+/** Moves the provider and vendor profiles of an organization from one publication status to another (suspension, merge). */
+export async function profilesFollow(scope: TxScope, orgId: string, from: string, to: string): Promise<void> {
+  for (const side of ['provider', 'vendor'] as const) {
+    const table = side === 'provider' ? 'organization.provider_profiles' : 'organization.vendor_profiles';
+    const rows = await scope.db
+      .updateTable(table)
+      .set({ public_status: to })
+      .where('organization_id', '=', orgId)
+      .where('public_status', '=', from)
+      .returning('id')
+      .execute();
+    for (const r of rows) await publicationChanged(scope, orgId, side, to === 'published' ? 'published' : 'unpublished', r.id);
+  }
+}

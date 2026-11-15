@@ -3,12 +3,15 @@
 // EntitlementChecker, SubscriptionReader, SubscriptionWriter and UsageCounters.
 import { Global, Injectable, Module, Optional, type OnModuleInit } from '@nestjs/common';
 import { EntitlementChecker } from '#libs/entitlements/index.js';
-import { FourEyesExecutors } from '#modules/admin/interface/admin.js';
+import { FourEyesExecutors, WorkQueues } from '#modules/admin/interface/admin.js';
 import {
   AdminPlansListHandler,
   AdminPlanUpdateHandler,
   AdminSubscriptionAssignHandler,
+  AdminSubscriptionChangeRequestsListHandler,
+  AdminSubscriptionsListHandler,
   applyPlanUpdate,
+  registerBillingWork,
   TrialExpiryRule,
 } from './application/admin-ops.js';
 import {
@@ -20,13 +23,22 @@ import {
 import { BillingEntitlementChecker, DbSubscriptionWriter, SubscriptionService } from './application/subscriptions.js';
 import { UserRegisteredBillingConsumer } from './events/user-registered.consumer.js';
 import { SubscriptionReader, SubscriptionWriter, UsageCounters } from './interface/billing.js';
+import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
+import { billingOrgReferences } from './application/org-references.js';
 
-/** The four-eyes executor of admin.plan_update (S8). */
+/** The four-eyes executor of admin.plan_update (S8) and the plan request work queue (S21). */
 @Injectable()
 export class BillingAdminRegistrations implements OnModuleInit {
-  constructor(@Optional() private readonly executors?: FourEyesExecutors) {}
+  constructor(
+    @Optional() private readonly executors?: FourEyesExecutors,
+    @Optional() private readonly work?: WorkQueues,
+    @Optional() private readonly orgRefs?: OrganizationReferences,
+  ) {}
 
   onModuleInit(): void {
+    // Backend S22 (BR-08): what an organization merge does to this module's references.
+    this.orgRefs?.register('billing', billingOrgReferences());
+    if (this.work) registerBillingWork(this.work);
     this.executors?.register('admin.plan_update', async (scope, c) =>
       applyPlanUpdate(scope, c.targetId, c.payload as Parameters<typeof applyPlanUpdate>[2], c.reason),
     );
@@ -52,6 +64,8 @@ export class BillingAdminRegistrations implements OnModuleInit {
     AdminSubscriptionAssignHandler,
     AdminPlansListHandler,
     AdminPlanUpdateHandler,
+    AdminSubscriptionsListHandler,
+    AdminSubscriptionChangeRequestsListHandler,
   ],
   exports: [UsageCounters, SubscriptionReader, SubscriptionWriter, EntitlementChecker],
 })

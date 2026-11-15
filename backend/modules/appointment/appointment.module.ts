@@ -20,6 +20,8 @@ import { repointColumns, TaxonomyReferences } from '#modules/taxonomy/interface/
 import { AppointmentAiRegistrations } from './application/ai-registrations.js';
 import { DbAppointmentFacts } from './infrastructure/appointment-facts.js';
 import { AppointmentFacts } from './interface/appointments.js';
+import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
+import { appointmentOrgReferences } from './application/org-references.js';
 
 /** An appointment of the provider (provider context, RLS party_all) as a visit of its requester. */
 async function appointmentVisit(scope: TxScope, providerOrgId: string, id: string): Promise<VisitInfo | null> {
@@ -53,9 +55,12 @@ export class AppointmentRegistrations implements OnModuleInit {
     @Optional() private readonly scopes?: ConsentScopes,
     @Optional() private readonly taxonomyRefs?: TaxonomyReferences,
     @Optional() private readonly personal?: PersonalDataRegistry,
+    @Optional() private readonly orgRefs?: OrganizationReferences,
   ) {}
 
   onModuleInit(): void {
+    // Backend S22 (BR-08): what an organization merge does to this module's references.
+    this.orgRefs?.register('appointment', appointmentOrgReferences());
     // DSR (S8): the user's requests are exported; on deletion the provider keeps the appointment as a business
     // record without the customer's own words (description replaced, expectations cleared).
     this.personal?.register('appointment', {

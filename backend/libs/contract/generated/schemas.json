@@ -5128,6 +5128,11 @@
     "ExchangeRate": {
       "type": "object",
       "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "the audit log's entity id (entity_type exchange_rate)"
+        },
         "currency": {
           "type": "string",
           "pattern": "^[A-Z]{3}$"
@@ -5153,6 +5158,7 @@
         }
       },
       "required": [
+        "id",
         "currency",
         "per_usd",
         "updated_at",
@@ -5293,6 +5299,11 @@
     "FeatureFlag": {
       "type": "object",
       "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "description": "the audit log's entity id (entity_type feature_flag)"
+        },
         "key": {
           "type": "string",
           "minLength": 1,
@@ -5408,6 +5419,7 @@
         }
       },
       "required": [
+        "id",
         "key",
         "description",
         "flag_type",
@@ -8045,9 +8057,10 @@
         "pre_visit_report",
         "bulk_inventory_update",
         "taxonomy_merge",
-        "redaction"
+        "redaction",
+        "organization_merge"
       ],
-      "description": "52 BackgroundJob.kind"
+      "description": "backend S22 (admin.org_merge after approval)"
     },
     "JobLog": {
       "type": "object",
@@ -8220,8 +8233,10 @@
         "pre_visit_report",
         "match_session",
         "media_asset",
-        "taxonomy_node"
-      ]
+        "taxonomy_node",
+        "organization"
+      ],
+      "description": "backend S22: the surviving organization of a merge"
     },
     "Location": {
       "type": "object",
@@ -10211,6 +10226,10 @@
           "type": "string",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
         },
+        "redaction_status": {
+          "$ref": "#/$defs/RedactionStatus",
+          "description": "backend S22: pending while apply_redaction runs, then completed or failed"
+        },
         "author": {
           "anyOf": [
             {
@@ -10235,6 +10254,7 @@
         "owner_type",
         "owner_id",
         "created_at",
+        "redaction_status",
         "author"
       ],
       "additionalProperties": false,
@@ -10903,7 +10923,40 @@
               "enum": [
                 "likely",
                 "uncertain"
-              ]
+              ],
+              "description": "downgrade_fitment: lower than the row's confidence"
+            },
+            "redaction_regions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "string",
+                    "pattern": "^\\d{1,1}(\\.\\d{1,4})?$"
+                  },
+                  "y": {
+                    "type": "string",
+                    "pattern": "^\\d{1,1}(\\.\\d{1,4})?$"
+                  },
+                  "w": {
+                    "type": "string",
+                    "pattern": "^\\d{1,1}(\\.\\d{1,4})?$"
+                  },
+                  "h": {
+                    "type": "string",
+                    "pattern": "^\\d{1,1}(\\.\\d{1,4})?$"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "w",
+                  "h"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 30
             }
           },
           "additionalProperties": false
@@ -10913,8 +10966,7 @@
         "action_type",
         "reason"
       ],
-      "additionalProperties": false,
-      "description": "downgrade_fitment: lower than the row's confidence"
+      "additionalProperties": false
     },
     "ModerationActionSnapshot": {
       "type": "object",
@@ -11019,9 +11071,10 @@
         "edit_request",
         "downgrade_fitment",
         "request_verification_info",
-        "correct_profile"
+        "correct_profile",
+        "apply_redaction"
       ],
-      "description": "backend S19"
+      "description": "backend S22"
     },
     "ModerationCase": {
       "type": "object",
@@ -12560,6 +12613,94 @@
         "joined_at"
       ],
       "additionalProperties": false
+    },
+    "OrgMergePreview": {
+      "type": "object",
+      "properties": {
+        "organization": {
+          "$ref": "#/$defs/OrgSummary"
+        },
+        "into": {
+          "$ref": "#/$defs/OrgSummary"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OrgMergeReference"
+          },
+          "maxItems": 200
+        },
+        "blocked_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 80,
+            "pattern": "^[^\\r\\n]*$"
+          },
+          "maxItems": 50
+        }
+      },
+      "required": [
+        "organization",
+        "into",
+        "references",
+        "blocked_by"
+      ],
+      "additionalProperties": false,
+      "description": "references with the refuse rule and live rows; empty: the merge may run"
+    },
+    "OrgMergeReference": {
+      "type": "object",
+      "properties": {
+        "module": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 80,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "e.g. trust / trust.reviews"
+        },
+        "rule": {
+          "$ref": "#/$defs/OrgMergeRule"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000,
+          "description": "live rows naming the duplicate"
+        },
+        "conflicts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000
+        }
+      },
+      "required": [
+        "module",
+        "reference",
+        "rule",
+        "count",
+        "conflicts"
+      ],
+      "additionalProperties": false,
+      "description": "rows retired or reconciled instead of moved; for refuse: rows blocking"
+    },
+    "OrgMergeRule": {
+      "type": "string",
+      "enum": [
+        "move",
+        "keep_target",
+        "merge",
+        "retire",
+        "refuse",
+        "history"
+      ]
     },
     "OrgProfileChange": {
       "type": "object",
@@ -19872,6 +20013,154 @@
       ],
       "additionalProperties": false
     },
+    "RetentionDryRun": {
+      "type": "object",
+      "properties": {
+        "policy_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entity_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "applies_to_status": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retention_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 36500
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "delete",
+            "anonymize",
+            "archive"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive"
+          ]
+        },
+        "cutoff": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+          "description": "records older than this are due"
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "counted",
+            "archive",
+            "no_handler",
+            "not_countable"
+          ],
+          "description": "archive: the run keeps the records; no_handler: no module applies this entity type; not_countable: applied, but not readable here"
+        },
+        "affected": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000000
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "records the next daily run would delete or anonymize; null unless counted"
+        },
+        "by_status": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40,
+                    "pattern": "^[^\\r\\n]*$"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000000
+                  }
+                },
+                "required": [
+                  "status",
+                  "count"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 20
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "policy_id",
+        "entity_type",
+        "applies_to_status",
+        "retention_days",
+        "action",
+        "status",
+        "cutoff",
+        "outcome",
+        "affected",
+        "by_status"
+      ],
+      "additionalProperties": false,
+      "description": "per record status, where the entity has one"
+    },
+    "RetentionDryRunInput": {
+      "type": "object",
+      "properties": {
+        "retention_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 36500,
+          "description": "preview a change before admin.retention_update"
+        },
+        "applies_to_status": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "absent: the policy's own values"
+    },
     "RetentionPolicy": {
       "type": "object",
       "properties": {
@@ -19942,6 +20231,80 @@
         "status"
       ],
       "additionalProperties": false
+    },
+    "RetentionPolicyWrite": {
+      "type": "object",
+      "properties": {
+        "entity_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "applies_to_status": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retention_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 36500
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "delete",
+            "anonymize",
+            "archive"
+          ]
+        },
+        "legal_basis": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500,
+          "pattern": "^[^\\r\\n]*$"
+        }
+      },
+      "required": [
+        "entity_type",
+        "applies_to_status",
+        "retention_days",
+        "action",
+        "legal_basis",
+        "status",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "description": "entity_type: a 52 entity name, e.g. 'Notification'"
     },
     "Review": {
       "type": "object",
@@ -23715,6 +24078,112 @@
       "additionalProperties": false,
       "description": "the authenticator's model id as it claims it (attestation none, unverified); null when it gave none"
     },
+    "StaffPlan": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "plan_key": {
+          "type": "string",
+          "enum": [
+            "individual_free",
+            "fleet_20",
+            "fleet_50",
+            "fleet_100",
+            "fleet_custom",
+            "provider_basic",
+            "provider_pro",
+            "vendor_basic",
+            "vendor_pro"
+          ]
+        },
+        "audience": {
+          "type": "string",
+          "enum": [
+            "individual",
+            "fleet",
+            "provider",
+            "vendor"
+          ]
+        },
+        "name_i18n_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "max_vehicles": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_users": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "trial_days": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 365
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "entitlements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EntitlementValue"
+          },
+          "maxItems": 20
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive"
+          ],
+          "description": "inactive: no longer offered (plans.list leaves it out); subscribers keep it"
+        },
+        "is_default_for_audience": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "plan_key",
+        "audience",
+        "name_i18n_key",
+        "max_vehicles",
+        "max_users",
+        "trial_days",
+        "entitlements",
+        "status",
+        "is_default_for_audience"
+      ],
+      "additionalProperties": false,
+      "description": "new organizations of the audience, and ended trials, get this plan"
+    },
     "StaffPolicyDocument": {
       "type": "object",
       "properties": {
@@ -24586,6 +25055,162 @@
       ],
       "additionalProperties": false,
       "description": "the business answer or the passed deadline: the reviewer's 2-working-day timer starts here"
+    },
+    "StaffSubscriptionRow": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "subscriber": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "user",
+                "organization"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            "display": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "pattern": "^[^\\r\\n]*$"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "display"
+          ],
+          "additionalProperties": false,
+          "description": "public name"
+        },
+        "plan_key": {
+          "type": "string",
+          "enum": [
+            "individual_free",
+            "fleet_20",
+            "fleet_50",
+            "fleet_100",
+            "fleet_custom",
+            "provider_basic",
+            "provider_pro",
+            "vendor_basic",
+            "vendor_pro"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "trial",
+            "active",
+            "expired",
+            "cancelled"
+          ]
+        },
+        "started_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "trial_ends_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "overrides": {
+          "type": "object",
+          "properties": {
+            "vehicle_limit": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "user_limit": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "entitlements": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/EntitlementValue"
+              },
+              "maxItems": 20
+            }
+          },
+          "required": [
+            "vehicle_limit",
+            "user_limit",
+            "entitlements"
+          ],
+          "additionalProperties": false,
+          "description": "empty: no entitlement override"
+        },
+        "assigned_by_display": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "subscriber",
+        "plan_key",
+        "status",
+        "started_at",
+        "trial_ends_at",
+        "expires_at",
+        "overrides",
+        "assigned_by_display"
+      ],
+      "additionalProperties": false,
+      "description": "null: given by the system (sign-up, organization creation, trial end)"
     },
     "StaffTaxonomyNode": {
       "type": "object",
@@ -25745,6 +26370,122 @@
       ],
       "additionalProperties": false
     },
+    "SubscriptionChangeRequestView": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "organization": {
+          "$ref": "#/$defs/OrgSummary"
+        },
+        "requested_plan_key": {
+          "type": "string",
+          "enum": [
+            "individual_free",
+            "fleet_20",
+            "fleet_50",
+            "fleet_100",
+            "fleet_custom",
+            "provider_basic",
+            "provider_pro",
+            "vendor_basic",
+            "vendor_pro"
+          ]
+        },
+        "current_plan_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "individual_free",
+                "fleet_20",
+                "fleet_50",
+                "fleet_100",
+                "fleet_custom",
+                "provider_basic",
+                "provider_pro",
+                "vendor_basic",
+                "vendor_pro"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the plan of the subscription the request was made from"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requested_by_display": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "assigned",
+            "declined",
+            "withdrawn"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "handled_by_display": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "handled_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "organization",
+        "requested_plan_key",
+        "current_plan_key",
+        "note",
+        "requested_by_display",
+        "status",
+        "created_at",
+        "handled_by_display",
+        "handled_at"
+      ],
+      "additionalProperties": false
+    },
     "SubscriptionSummary": {
       "type": "object",
       "properties": {
@@ -25967,6 +26708,79 @@
       ],
       "additionalProperties": false,
       "description": "C: script required for transliteration"
+    },
+    "SystemHealth": {
+      "type": "object",
+      "properties": {
+        "generated_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "signals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SystemHealthSignal"
+          },
+          "maxItems": 10
+        }
+      },
+      "required": [
+        "generated_at",
+        "signals"
+      ],
+      "additionalProperties": false
+    },
+    "SystemHealthKey": {
+      "type": "string",
+      "enum": [
+        "import_failures",
+        "notification_delivery_failures",
+        "media_scan_failures"
+      ]
+    },
+    "SystemHealthSignal": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/SystemHealthKey",
+          "description": "failed inventory and fleet imports; failed deliveries (any channel); files the virus scan could not check (scan failed, not infected)"
+        },
+        "last_24h": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "last_7d": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "last_30d": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "last_failure_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "key",
+        "last_24h",
+        "last_7d",
+        "last_30d",
+        "last_failure_at"
+      ],
+      "additionalProperties": false,
+      "description": "within the last 30 days"
     },
     "TargetSnapshot": {
       "anyOf": [
@@ -29228,6 +30042,177 @@
       ],
       "additionalProperties": false,
       "description": "suggestions only; applying them is a normal update"
+    },
+    "WorkQueueKey": {
+      "type": "string",
+      "enum": [
+        "four_eyes",
+        "verifications",
+        "review_approvals",
+        "reports",
+        "cases",
+        "disputes",
+        "privacy_requests",
+        "badge_approvals",
+        "subscription_change_requests"
+      ]
+    },
+    "WorkQueueSummary": {
+      "type": "object",
+      "properties": {
+        "queue": {
+          "$ref": "#/$defs/WorkQueueKey"
+        },
+        "open": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000,
+          "description": "open items of the queue (for four_eyes: the ones the caller may decide)"
+        },
+        "assigned_to_me": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000000
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "queues with an assignee (verifications, cases, disputes); else null"
+        },
+        "oldest_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the earliest clock start among the open items"
+        },
+        "next_due_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the earliest target among the open items whose clock runs"
+        },
+        "sla": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000000
+                },
+                "warn": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000000
+                },
+                "breach": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000000
+                },
+                "paused": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000000
+                }
+              },
+              "required": [
+                "ok",
+                "warn",
+                "breach",
+                "paused"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "null: the queue has no target (badge approvals, change requests)"
+        },
+        "breakdown": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "pattern": "^[^\\r\\n]*$"
+              },
+              "open": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000000
+              }
+            },
+            "required": [
+              "key",
+              "open"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "queue",
+        "open",
+        "assigned_to_me",
+        "oldest_at",
+        "next_due_at",
+        "sla",
+        "breakdown"
+      ],
+      "additionalProperties": false,
+      "description": "'status:…', 'source:…', 'reason:…', 'type:…', 'severity:…'"
+    },
+    "WorkSummary": {
+      "type": "object",
+      "properties": {
+        "generated_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "time_zone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z][A-Za-z0-9_+\\-]*(/[A-Za-z0-9_+\\-]+)*$",
+          "description": "working days are counted on this clock"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WorkQueueSummary"
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "generated_at",
+        "time_zone",
+        "items"
+      ],
+      "additionalProperties": false,
+      "description": "the queues the caller's roles may read, in the order above"
     }
   }
 }
