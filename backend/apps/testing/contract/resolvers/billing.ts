@@ -1,7 +1,7 @@
 // Contract sweep resolvers: billing (40 §10) and its administration (40 §23.2).
 import { sql } from 'kysely';
 import { expect } from 'vitest';
-import { REASON } from '../../s8-support.js';
+import { openCase, purpose, REASON } from '../../s8-support.js';
 import { ok, type Json, type Resolvers } from '../harness.js';
 
 export const resolvers: Resolvers = {
@@ -59,6 +59,25 @@ export const resolvers: Resolvers = {
       params: { plan_id: plan!.id },
       body: { entitlements: [{ key: 'max_inventory_items', value: 6000 }], reason: REASON },
       check: (res) => h.rejectChange(res.body.change_id as string),
+    };
+  },
+  // Backend S23 (BR-16): A-ORG-02 Plan history under a case about the organization.
+  'admin.org_plan_history': async (h) => {
+    const v = await h.member('vendor');
+    const sub = await h.fx.subscription(v.org!, 'vendor_basic');
+    const caseId = await openCase(h.api, { type: 'organization', targetId: v.org!.id });
+    return {
+      as: await h.staff('platform_support'),
+      params: { org_id: v.org!.id },
+      headers: purpose('case', caseId),
+      check: (res) =>
+        expect(res.body.items).toEqual([
+          expect.objectContaining({
+            id: sub,
+            subscriber: expect.objectContaining({ type: 'organization', id: v.org!.id }),
+            change_request: null,
+          }),
+        ]),
     };
   },
 };

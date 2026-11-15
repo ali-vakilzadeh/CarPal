@@ -6,8 +6,8 @@ info:
   title: "CarPal API"
   version: "1.4.0"
   summary: "CarPal MVP API: consumer, business, admin plane and authorization server."
-  description: "Generated from Docs/40.API contract.md (contract 1.4.0, sha256 0cdbb6538b95f81827369526e9b802f053072b78435463732f705a0f2e6ca26b); the contract is authoritative.\n\nConventions (40 §0-§4): every schema is closed (additionalProperties false); unknown body members are 422 UNKNOWN_FIELD and unknown query parameters 400 UNKNOWN_QUERY_PARAM.\n\nRequest bodies are application/json except the OAuth forms of /oauth/* and the raw storage PUT. Personal or location data never appears in URLs (TR-7): searches use POST and page in the body.\n\nErrors are application/problem+json (Problem, RFC 9457) with a stable code; /oauth/* answer RFC 6749 error bodies (ProtocolError). Authorization failures are 404, never 403 (SEC-AZ-2).\n\nx-carpal-sec is the contract sec line (40 §0.4): PUB, USR, ORG(role groups), DRV, STF, LNK, AAL2/AAL3, ATT, IDEM, ETAG, RL, ENT, CNS, FLAG, ASYNC, AUD, RSN, 4EYES, PURP, PII.\n\nSchema keywords: x-node-type (taxonomy node type the id must have), x-conditional (rule of a conditional field), x-locale-config (enabled locales), x-vin (VIN normalization), x-external (standard document).\n\n4EYES operations answer 202 PendingChange until a second staff member approves (admin.four_eyes_decide); ASYNC operations answer 202 Job (jobs.get)."
-  x-carpal-contract-sha256: "0cdbb6538b95f81827369526e9b802f053072b78435463732f705a0f2e6ca26b"
+  description: "Generated from Docs/40.API contract.md (contract 1.4.0, sha256 4f0bc4a6bb9834988cc3b387130eee505090719724a95d4cda8ecdf8ee0df870); the contract is authoritative.\n\nConventions (40 §0-§4): every schema is closed (additionalProperties false); unknown body members are 422 UNKNOWN_FIELD and unknown query parameters 400 UNKNOWN_QUERY_PARAM.\n\nRequest bodies are application/json except the OAuth forms of /oauth/* and the raw storage PUT. Personal or location data never appears in URLs (TR-7): searches use POST and page in the body.\n\nErrors are application/problem+json (Problem, RFC 9457) with a stable code; /oauth/* answer RFC 6749 error bodies (ProtocolError). Authorization failures are 404, never 403 (SEC-AZ-2).\n\nx-carpal-sec is the contract sec line (40 §0.4): PUB, USR, ORG(role groups), DRV, STF, LNK, AAL2/AAL3, ATT, IDEM, ETAG, RL, ENT, CNS, FLAG, ASYNC, AUD, RSN, 4EYES, PURP, PII.\n\nSchema keywords: x-node-type (taxonomy node type the id must have), x-conditional (rule of a conditional field), x-locale-config (enabled locales), x-vin (VIN normalization), x-external (standard document).\n\n4EYES operations answer 202 PendingChange until a second staff member approves (admin.four_eyes_decide); ASYNC operations answer 202 Job (jobs.get)."
+  x-carpal-contract-sha256: "4f0bc4a6bb9834988cc3b387130eee505090719724a95d4cda8ecdf8ee0df870"
 servers:
   - url: "https://api.carpals.ir"
     description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
@@ -977,7 +977,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5991
+        line: 6110
   "/v1/admin/analytics/{dashboard_key}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1081,7 +1081,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6025
+        line: 6144
   /v1/admin/assist-sessions:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1209,7 +1209,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5436
+        line: 5555
   "/v1/admin/assist-sessions/{assist_session_id}/end":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1309,7 +1309,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5428
+        line: 5547
   /v1/admin/audit-logs/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1447,7 +1447,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5930
+        line: 6049
   /v1/admin/badges:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1663,7 +1663,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5726
+        line: 5845
   "/v1/admin/badges/{badge_id}/approve":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1767,7 +1767,7 @@ paths:
         - badge.awarded
       x-carpal-contract:
         section: "23.4"
-        line: 5734
+        line: 5853
   /v1/admin/data-requests:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1975,7 +1975,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5939
+        line: 6058
   "/v1/admin/data-requests/{request_id}/execute-deletion":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2097,7 +2097,7 @@ paths:
         - user.deletion.completed
       x-carpal-contract:
         section: "23.5"
-        line: 5972
+        line: 6091
   "/v1/admin/data-requests/{request_id}/export":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2218,7 +2218,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5956
+        line: 6075
   "/v1/admin/data-requests/{request_id}/status":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2348,7 +2348,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5947
+        line: 6066
   /v1/admin/disputes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2471,7 +2471,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5680
+        line: 5799
   "/v1/admin/disputes/{dispute_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2569,7 +2569,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5688
+        line: 5807
   "/v1/admin/disputes/{dispute_id}/messages":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2679,7 +2679,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5707
+        line: 5826
     post:
       operationId: admin.dispute_message_post
       summary: "Writes a templated message to one party of an open dispute; the party is notified and can answer in its thread."
@@ -2797,7 +2797,7 @@ paths:
         - dispute.message.posted
       x-carpal-contract:
         section: "23.4"
-        line: 5716
+        line: 5835
   "/v1/admin/disputes/{dispute_id}/resolution":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2946,7 +2946,7 @@ paths:
         - review.published
       x-carpal-contract:
         section: "23.4"
-        line: 5696
+        line: 5815
   /v1/admin/exchange-rates:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3029,7 +3029,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5761
+        line: 5880
   "/v1/admin/exchange-rates/{currency}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3155,7 +3155,7 @@ paths:
         - exchange_rate.changed
       x-carpal-contract:
         section: "23.5"
-        line: 5768
+        line: 5887
   /v1/admin/flags:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3281,7 +3281,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5745
+        line: 5864
   "/v1/admin/flags/{key}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3448,7 +3448,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5753
+        line: 5872
   /v1/admin/four-eyes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3572,7 +3572,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6047
+        line: 6166
   "/v1/admin/four-eyes/{change_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3708,7 +3708,7 @@ paths:
         - four_eyes.decided
       x-carpal-contract:
         section: "23.5"
-        line: 6055
+        line: 6174
   "/v1/admin/jobs/{job_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3791,7 +3791,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5965
+        line: 6084
   /v1/admin/mcp/access-logs/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3933,7 +3933,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6016
+        line: 6135
   /v1/admin/mcp/clients:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4040,7 +4040,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6000
+        line: 6119
   "/v1/admin/mcp/clients/{client_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4191,7 +4191,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6007
+        line: 6126
   /v1/admin/me:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4268,7 +4268,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5152
+        line: 5193
   /v1/admin/me/decisions:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4363,7 +4363,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5587
+        line: 5706
   /v1/admin/me/notifications:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4478,7 +4478,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5833
+        line: 5952
   /v1/admin/me/notifications/read:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4573,7 +4573,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5848
+        line: 5967
   /v1/admin/me/notifications/unread-count:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4658,7 +4658,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5841
+        line: 5960
   /v1/admin/me/passkeys:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4744,7 +4744,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5220
+        line: 5261
     post:
       operationId: admin.staff_passkey_register
       summary: "Stores the key created with `admin.staff_passkey_register_options` (fresh `aal3` within 5 minutes)."
@@ -4864,7 +4864,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5236
+        line: 5277
   /v1/admin/me/passkeys/options:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4974,7 +4974,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5227
+        line: 5268
   "/v1/admin/me/passkeys/{method_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5073,7 +5073,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5245
+        line: 5286
   /v1/admin/me/recovery-codes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5170,7 +5170,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5253
+        line: 5294
   "/v1/admin/media/{media_id}/download-url":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5285,7 +5285,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5982
+        line: 6101
   /v1/admin/moderation/cases:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5451,7 +5451,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5629
+        line: 5748
   "/v1/admin/moderation/cases/{case_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5562,7 +5562,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5638
+        line: 5757
   "/v1/admin/moderation/cases/{case_id}/actions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5693,7 +5693,7 @@ paths:
         - trust.score.changed
       x-carpal-contract:
         section: "23.4"
-        line: 5662
+        line: 5781
   "/v1/admin/moderation/cases/{case_id}/assign":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5798,7 +5798,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5654
+        line: 5773
   "/v1/admin/moderation/cases/{case_id}/close":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5912,7 +5912,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5672
+        line: 5791
   "/v1/admin/moderation/cases/{case_id}/context":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6008,7 +6008,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5646
+        line: 5765
   /v1/admin/notification-rules:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6084,7 +6084,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5818
+        line: 5937
     put:
       operationId: admin.notif_rules_update
       summary: "Replaces the notification rules."
@@ -6169,7 +6169,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5825
+        line: 5944
   /v1/admin/notification-templates:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6280,7 +6280,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5784
+        line: 5903
   "/v1/admin/notification-templates/{template_key}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6390,7 +6390,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5792
+        line: 5911
   "/v1/admin/notification-templates/{template_key}/preview":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6518,7 +6518,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5809
+        line: 5928
   "/v1/admin/notification-templates/{template_key}/reset":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6634,7 +6634,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5801
+        line: 5920
   /v1/admin/orgs/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6735,7 +6735,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5319
+        line: 5395
   "/v1/admin/orgs/{org_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6836,7 +6836,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5327
+        line: 5403
   "/v1/admin/orgs/{org_id}/assist-sessions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6956,7 +6956,104 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5419
+        line: 5538
+  "/v1/admin/orgs/{org_id}/capabilities":
+    servers:
+      - url: "https://admin-api.carpals.ir"
+        description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
+    get:
+      operationId: admin.org_capabilities
+      summary: "Returns an organization's capability matrix (source, confidence level and score, evidence count, status) and its badg…"
+      description: "Returns an organization's capability matrix (source, confidence level and score, evidence count, status) and its badges in every status, each with the rule evaluation that awarded it (backend S23)."
+      tags:
+        - organization
+      parameters:
+        - name: org_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        - $ref: "#/components/parameters/CarPalClient"
+        - $ref: "#/components/parameters/DPoP"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - $ref: "#/components/parameters/CarPalTimezone"
+        - $ref: "#/components/parameters/CarPalRequestId"
+        - $ref: "#/components/parameters/CarPalAccessPurpose"
+      responses:
+        "200":
+          description: StaffOrgCapabilities
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffOrgCapabilities"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          description: "Problem (RFC 9457): PURPOSE_RECORD_MISMATCH, FEATURE_DISABLED"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            "application/problem+json":
+              schema:
+                $ref: "#/components/schemas/Problem"
+          x-carpal-error-codes:
+            - PURPOSE_RECORD_MISMATCH
+            - FEATURE_DISABLED
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "405":
+          $ref: "#/components/responses/Problem405"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "412":
+          $ref: "#/components/responses/Problem412"
+        "413":
+          $ref: "#/components/responses/Problem413"
+        "415":
+          $ref: "#/components/responses/Problem415"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "428":
+          $ref: "#/components/responses/Problem428"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "500":
+          $ref: "#/components/responses/Problem500"
+        "503":
+          $ref: "#/components/responses/Problem503"
+      security:
+        - dpop: []
+        - bffBearer: []
+          bffMutualTls: []
+      x-carpal-op-id: admin.org_capabilities
+      x-carpal-host: admin-api
+      x-carpal-scope: single
+      x-carpal-sec: "STF(ADM, MOD, SUP) PURP"
+      x-carpal-security:
+        principals:
+          - - tag: STF
+              args:
+                - ADM
+                - MOD
+                - SUP
+        tags:
+          - tag: PURP
+            args: []
+      x-carpal-status: implemented
+      x-carpal-contract:
+        section: "23.2"
+        line: 5495
   "/v1/admin/orgs/{org_id}/correct":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7061,7 +7158,7 @@ paths:
         - organization.profile.corrected
       x-carpal-contract:
         section: "23.2"
-        line: 5401
+        line: 5477
   "/v1/admin/orgs/{org_id}/history":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7193,7 +7290,104 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5411
+        line: 5487
+  "/v1/admin/orgs/{org_id}/inventory-quality":
+    servers:
+      - url: "https://admin-api.carpals.ir"
+        description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
+    get:
+      operationId: admin.org_inventory_quality
+      summary: "Returns a vendor's inventory quality: item counts by status, data quality, confirmed fitment, inquiry fulfillment, th…"
+      description: "Returns a vendor's inventory quality: item counts by status, data quality, confirmed fitment, inquiry fulfillment, the catalog quality score computed now, and the flagged items (open case, pending review, hidden, possible duplicate). Every count is 0 for an organization without inventory (backend S23)."
+      tags:
+        - inventory
+      parameters:
+        - name: org_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        - $ref: "#/components/parameters/CarPalClient"
+        - $ref: "#/components/parameters/DPoP"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - $ref: "#/components/parameters/CarPalTimezone"
+        - $ref: "#/components/parameters/CarPalRequestId"
+        - $ref: "#/components/parameters/CarPalAccessPurpose"
+      responses:
+        "200":
+          description: StaffInventoryQuality
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffInventoryQuality"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          description: "Problem (RFC 9457): PURPOSE_RECORD_MISMATCH, FEATURE_DISABLED"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            "application/problem+json":
+              schema:
+                $ref: "#/components/schemas/Problem"
+          x-carpal-error-codes:
+            - PURPOSE_RECORD_MISMATCH
+            - FEATURE_DISABLED
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "405":
+          $ref: "#/components/responses/Problem405"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "412":
+          $ref: "#/components/responses/Problem412"
+        "413":
+          $ref: "#/components/responses/Problem413"
+        "415":
+          $ref: "#/components/responses/Problem415"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "428":
+          $ref: "#/components/responses/Problem428"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "500":
+          $ref: "#/components/responses/Problem500"
+        "503":
+          $ref: "#/components/responses/Problem503"
+      security:
+        - dpop: []
+        - bffBearer: []
+          bffMutualTls: []
+      x-carpal-op-id: admin.org_inventory_quality
+      x-carpal-host: admin-api
+      x-carpal-scope: single
+      x-carpal-sec: "STF(ADM, MOD, SUP) PURP"
+      x-carpal-security:
+        principals:
+          - - tag: STF
+              args:
+                - ADM
+                - MOD
+                - SUP
+        tags:
+          - tag: PURP
+            args: []
+      x-carpal-status: implemented
+      x-carpal-contract:
+        section: "23.2"
+        line: 5512
   "/v1/admin/orgs/{org_id}/locations/{location_id}/correct":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7349,7 +7543,149 @@ paths:
         - organization.location.corrected
       x-carpal-contract:
         section: "23.2"
-        line: 5391
+        line: 5467
+  "/v1/admin/orgs/{org_id}/members":
+    servers:
+      - url: "https://admin-api.carpals.ir"
+        description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
+    get:
+      operationId: admin.org_members
+      summary: "Lists an organization's members and pending invitations with role and status, as the organization sees them in `org.m…"
+      description: "Lists an organization's members and pending invitations with role and status, as the organization sees them in `org.members_list` (backend S23)."
+      tags:
+        - organization
+      parameters:
+        - name: org_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        - name: role
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Role"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/MembershipStatus"
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+            pattern: "^[A-Za-z0-9_-]+$"
+          description: "Opaque signed cursor from the previous page (next_cursor). It is bound to its caller and to the filters of the first page: any other combination is 400 CURSOR_MISMATCH (40 §3.3)."
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - $ref: "#/components/parameters/CarPalClient"
+        - $ref: "#/components/parameters/DPoP"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - $ref: "#/components/parameters/CarPalTimezone"
+        - $ref: "#/components/parameters/CarPalRequestId"
+        - $ref: "#/components/parameters/CarPalAccessPurpose"
+      responses:
+        "200":
+          description: "Page<OrgMember>"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OrgMember"
+                  next_cursor:
+                    anyOf:
+                      - type: string
+                        minLength: 1
+                        maxLength: 512
+                        pattern: "^[A-Za-z0-9_-]+$"
+                      - type: "null"
+                required:
+                  - items
+                  - next_cursor
+                additionalProperties: false
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          description: "Problem (RFC 9457): PURPOSE_RECORD_MISMATCH, FEATURE_DISABLED"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            "application/problem+json":
+              schema:
+                $ref: "#/components/schemas/Problem"
+          x-carpal-error-codes:
+            - PURPOSE_RECORD_MISMATCH
+            - FEATURE_DISABLED
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "405":
+          $ref: "#/components/responses/Problem405"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "412":
+          $ref: "#/components/responses/Problem412"
+        "413":
+          $ref: "#/components/responses/Problem413"
+        "415":
+          $ref: "#/components/responses/Problem415"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "428":
+          $ref: "#/components/responses/Problem428"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "500":
+          $ref: "#/components/responses/Problem500"
+        "503":
+          $ref: "#/components/responses/Problem503"
+      security:
+        - dpop: []
+        - bffBearer: []
+          bffMutualTls: []
+      x-carpal-op-id: admin.org_members
+      x-carpal-host: admin-api
+      x-carpal-scope: single
+      x-carpal-sec: "STF(ADM, MOD, SUP) PURP PII"
+      x-carpal-security:
+        principals:
+          - - tag: STF
+              args:
+                - ADM
+                - MOD
+                - SUP
+        tags:
+          - tag: PURP
+            args: []
+          - tag: PII
+            args: []
+      x-carpal-status: implemented
+      x-carpal-contract:
+        section: "23.2"
+        line: 5520
   "/v1/admin/orgs/{org_id}/merge":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7489,7 +7825,7 @@ paths:
         - organization.merged
       x-carpal-contract:
         section: "23.2"
-        line: 5344
+        line: 5420
   "/v1/admin/orgs/{org_id}/merge-preview":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7603,7 +7939,280 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5354
+        line: 5430
+  "/v1/admin/orgs/{org_id}/plan-history":
+    servers:
+      - url: "https://admin-api.carpals.ir"
+        description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
+    get:
+      operationId: admin.org_plan_history
+      summary: "Lists an organization's subscriptions, newest first (the current one, earlier plans, trials and overrides), each with…"
+      description: "Lists an organization's subscriptions, newest first (the current one, earlier plans, trials and overrides), each with who assigned it and the plan request it answered (backend S23)."
+      tags:
+        - billing
+      parameters:
+        - name: org_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+            pattern: "^[A-Za-z0-9_-]+$"
+          description: "Opaque signed cursor from the previous page (next_cursor). It is bound to its caller and to the filters of the first page: any other combination is 400 CURSOR_MISMATCH (40 §3.3)."
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - $ref: "#/components/parameters/CarPalClient"
+        - $ref: "#/components/parameters/DPoP"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - $ref: "#/components/parameters/CarPalTimezone"
+        - $ref: "#/components/parameters/CarPalRequestId"
+        - $ref: "#/components/parameters/CarPalAccessPurpose"
+      responses:
+        "200":
+          description: "Page<StaffPlanHistoryItem>"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffPlanHistoryItem"
+                  next_cursor:
+                    anyOf:
+                      - type: string
+                        minLength: 1
+                        maxLength: 512
+                        pattern: "^[A-Za-z0-9_-]+$"
+                      - type: "null"
+                required:
+                  - items
+                  - next_cursor
+                additionalProperties: false
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          description: "Problem (RFC 9457): PURPOSE_RECORD_MISMATCH, FEATURE_DISABLED"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            "application/problem+json":
+              schema:
+                $ref: "#/components/schemas/Problem"
+          x-carpal-error-codes:
+            - PURPOSE_RECORD_MISMATCH
+            - FEATURE_DISABLED
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "405":
+          $ref: "#/components/responses/Problem405"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "412":
+          $ref: "#/components/responses/Problem412"
+        "413":
+          $ref: "#/components/responses/Problem413"
+        "415":
+          $ref: "#/components/responses/Problem415"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "428":
+          $ref: "#/components/responses/Problem428"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "500":
+          $ref: "#/components/responses/Problem500"
+        "503":
+          $ref: "#/components/responses/Problem503"
+      security:
+        - dpop: []
+        - bffBearer: []
+          bffMutualTls: []
+      x-carpal-op-id: admin.org_plan_history
+      x-carpal-host: admin-api
+      x-carpal-scope: single
+      x-carpal-sec: "STF(ADM, MOD, SUP) PURP"
+      x-carpal-security:
+        principals:
+          - - tag: STF
+              args:
+                - ADM
+                - MOD
+                - SUP
+        tags:
+          - tag: PURP
+            args: []
+      x-carpal-status: implemented
+      x-carpal-contract:
+        section: "23.2"
+        line: 5529
+  "/v1/admin/orgs/{org_id}/portfolio":
+    servers:
+      - url: "https://admin-api.carpals.ir"
+        description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
+    get:
+      operationId: admin.org_portfolio
+      summary: "Lists an organization's showcase items, newest first, with their consent status, the customer's consent record (displ…"
+      description: "Lists an organization's showcase items, newest first, with their consent status, the customer's consent record (display name only), moderation status and open cases (backend S23)."
+      tags:
+        - organization
+      parameters:
+        - name: org_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - draft
+              - pending_review
+              - published
+              - rejected
+              - archived
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+            pattern: "^[A-Za-z0-9_-]+$"
+          description: "Opaque signed cursor from the previous page (next_cursor). It is bound to its caller and to the filters of the first page: any other combination is 400 CURSOR_MISMATCH (40 §3.3)."
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - $ref: "#/components/parameters/CarPalClient"
+        - $ref: "#/components/parameters/DPoP"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - $ref: "#/components/parameters/CarPalTimezone"
+        - $ref: "#/components/parameters/CarPalRequestId"
+        - $ref: "#/components/parameters/CarPalAccessPurpose"
+      responses:
+        "200":
+          description: "Page<StaffPortfolioItem>"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffPortfolioItem"
+                  next_cursor:
+                    anyOf:
+                      - type: string
+                        minLength: 1
+                        maxLength: 512
+                        pattern: "^[A-Za-z0-9_-]+$"
+                      - type: "null"
+                required:
+                  - items
+                  - next_cursor
+                additionalProperties: false
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          description: "Problem (RFC 9457): PURPOSE_RECORD_MISMATCH, FEATURE_DISABLED"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            "application/problem+json":
+              schema:
+                $ref: "#/components/schemas/Problem"
+          x-carpal-error-codes:
+            - PURPOSE_RECORD_MISMATCH
+            - FEATURE_DISABLED
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "405":
+          $ref: "#/components/responses/Problem405"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "412":
+          $ref: "#/components/responses/Problem412"
+        "413":
+          $ref: "#/components/responses/Problem413"
+        "415":
+          $ref: "#/components/responses/Problem415"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "428":
+          $ref: "#/components/responses/Problem428"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "500":
+          $ref: "#/components/responses/Problem500"
+        "503":
+          $ref: "#/components/responses/Problem503"
+      security:
+        - dpop: []
+        - bffBearer: []
+          bffMutualTls: []
+      x-carpal-op-id: admin.org_portfolio
+      x-carpal-host: admin-api
+      x-carpal-scope: single
+      x-carpal-sec: "STF(ADM, MOD, SUP) PURP PII"
+      x-carpal-security:
+        principals:
+          - - tag: STF
+              args:
+                - ADM
+                - MOD
+                - SUP
+        tags:
+          - tag: PURP
+            args: []
+          - tag: PII
+            args: []
+      x-carpal-status: implemented
+      x-carpal-contract:
+        section: "23.2"
+        line: 5503
   "/v1/admin/orgs/{org_id}/status":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7714,7 +8323,7 @@ paths:
         - moderation.action.taken
       x-carpal-contract:
         section: "23.2"
-        line: 5335
+        line: 5411
   /v1/admin/plans:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7821,7 +8430,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5469
+        line: 5588
   "/v1/admin/plans/{plan_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7935,7 +8544,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5476
+        line: 5595
   /v1/admin/policies:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8018,7 +8627,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5888
+        line: 6007
   "/v1/admin/policies/{policy_key}/versions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8123,7 +8732,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5902
+        line: 6021
   "/v1/admin/policy-versions/{version_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8205,7 +8814,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5895
+        line: 6014
     patch:
       operationId: admin.policy_version_update
       summary: "Changes a draft; a version that was published (or is scheduled) is read-only."
@@ -8360,7 +8969,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5911
+        line: 6030
   "/v1/admin/policy-versions/{version_id}/publish":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8484,7 +9093,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5921
+        line: 6040
   /v1/admin/region:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8561,7 +9170,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5777
+        line: 5896
   /v1/admin/reports:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8689,7 +9298,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5613
+        line: 5732
   "/v1/admin/reports/{report_id}/triage":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8807,7 +9416,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5621
+        line: 5740
   /v1/admin/retention-policies:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8914,7 +9523,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5856
+        line: 5975
     post:
       operationId: admin.retention_create
       summary: "Adds a retention policy; needs a second approver, who creates it."
@@ -9010,7 +9619,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5871
+        line: 5990
   "/v1/admin/retention-policies/{policy_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9104,7 +9713,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5863
+        line: 5982
   "/v1/admin/retention-policies/{policy_id}/dry-run":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9190,7 +9799,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5880
+        line: 5999
   /v1/admin/review-approvals:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9307,7 +9916,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5571
+        line: 5690
   "/v1/admin/review-approvals/{review_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9403,7 +10012,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5579
+        line: 5698
   "/v1/admin/review-approvals/{review_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9547,7 +10156,7 @@ paths:
         - moderation.action.taken
       x-carpal-contract:
         section: "23.4"
-        line: 5595
+        line: 5714
   "/v1/admin/reviews/{review_id}/move-to-approval-path":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9650,7 +10259,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5605
+        line: 5724
   /v1/admin/staff:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9778,7 +10387,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5159
+        line: 5200
   /v1/admin/staff/recoveries:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9896,7 +10505,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5185
+        line: 5226
   "/v1/admin/staff/recoveries/{request_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9976,7 +10585,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5193
+        line: 5234
   "/v1/admin/staff/recoveries/{request_id}/approve":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10115,7 +10724,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5200
+        line: 5241
   "/v1/admin/staff/recoveries/{request_id}/reject":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10226,7 +10835,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5211
+        line: 5252
   "/v1/admin/staff/{user_id}/disable":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10349,7 +10958,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5167
+        line: 5208
   "/v1/admin/staff/{user_id}/enable":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10476,7 +11085,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5176
+        line: 5217
   /v1/admin/subscription-change-requests:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10600,7 +11209,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5461
+        line: 5580
   /v1/admin/subscriptions:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10686,7 +11295,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5444
+        line: 5563
     get:
       operationId: admin.subscriptions_list
       summary: "Lists subscriptions for A-PLAN-01 Assignments: the subscriber (organization or individual, by public name), plan, sta…"
@@ -10834,7 +11443,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5452
+        line: 5571
   /v1/admin/system-health:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10910,7 +11519,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6033
+        line: 6152
   /v1/admin/taxonomy/mappings:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11049,7 +11658,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5552
+        line: 5671
     put:
       operationId: admin.mapping_upsert
       summary: "Creates or updates a weighted mapping (unique per source, target and type; node types must match the mapping type)."
@@ -11152,7 +11761,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5560
+        line: 5679
   /v1/admin/taxonomy/nodes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11281,7 +11890,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5486
+        line: 5605
     post:
       operationId: admin.taxonomy_node_create
       summary: "Creates a node with labels in every enabled locale; parent rules and cycles are checked."
@@ -11398,7 +12007,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5494
+        line: 5613
   "/v1/admin/taxonomy/nodes/{node_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11550,7 +12159,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5503
+        line: 5622
   "/v1/admin/taxonomy/nodes/{node_id}/merge":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11661,7 +12270,7 @@ paths:
         - taxonomy.node.merged
       x-carpal-contract:
         section: "23.3"
-        line: 5511
+        line: 5630
   "/v1/admin/taxonomy/nodes/{node_id}/synonyms":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11793,7 +12402,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5520
+        line: 5639
     post:
       operationId: admin.synonym_create
       summary: "Adds a synonym, alias, misspelling, local term, abbreviation or transliteration."
@@ -11900,7 +12509,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5528
+        line: 5647
   "/v1/admin/taxonomy/synonyms/{synonym_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11985,7 +12594,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5545
+        line: 5664
   "/v1/admin/taxonomy/synonyms/{synonym_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12093,7 +12702,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5537
+        line: 5656
   /v1/admin/users/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12199,7 +12808,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5261
+        line: 5302
   "/v1/admin/users/{user_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12298,7 +12907,286 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5269
+        line: 5310
+  "/v1/admin/users/{user_id}/appointments":
+    servers:
+      - url: "https://admin-api.carpals.ir"
+        description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
+    get:
+      operationId: admin.user_appointments
+      summary: "Lists the appointments a user requested, newest first, with the business, vehicle, type, status and dates; never the …"
+      description: "Lists the appointments a user requested, newest first, with the business, vehicle, type, status and dates; never the description, notes, contact data or the exact address (backend S23)."
+      tags:
+        - appointment
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AppointmentStatus"
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+            pattern: "^[A-Za-z0-9_-]+$"
+          description: "Opaque signed cursor from the previous page (next_cursor). It is bound to its caller and to the filters of the first page: any other combination is 400 CURSOR_MISMATCH (40 §3.3)."
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - $ref: "#/components/parameters/CarPalClient"
+        - $ref: "#/components/parameters/DPoP"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - $ref: "#/components/parameters/CarPalTimezone"
+        - $ref: "#/components/parameters/CarPalRequestId"
+        - $ref: "#/components/parameters/CarPalAccessPurpose"
+      responses:
+        "200":
+          description: "Page<StaffAppointmentRow>"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffAppointmentRow"
+                  next_cursor:
+                    anyOf:
+                      - type: string
+                        minLength: 1
+                        maxLength: 512
+                        pattern: "^[A-Za-z0-9_-]+$"
+                      - type: "null"
+                required:
+                  - items
+                  - next_cursor
+                additionalProperties: false
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          description: "Problem (RFC 9457): PURPOSE_RECORD_MISMATCH, FEATURE_DISABLED"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            "application/problem+json":
+              schema:
+                $ref: "#/components/schemas/Problem"
+          x-carpal-error-codes:
+            - PURPOSE_RECORD_MISMATCH
+            - FEATURE_DISABLED
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "405":
+          $ref: "#/components/responses/Problem405"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "412":
+          $ref: "#/components/responses/Problem412"
+        "413":
+          $ref: "#/components/responses/Problem413"
+        "415":
+          $ref: "#/components/responses/Problem415"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "428":
+          $ref: "#/components/responses/Problem428"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "500":
+          $ref: "#/components/responses/Problem500"
+        "503":
+          $ref: "#/components/responses/Problem503"
+      security:
+        - dpop: []
+        - bffBearer: []
+          bffMutualTls: []
+      x-carpal-op-id: admin.user_appointments
+      x-carpal-host: admin-api
+      x-carpal-scope: single
+      x-carpal-sec: "STF(ADM, MOD, SUP) PURP PII"
+      x-carpal-security:
+        principals:
+          - - tag: STF
+              args:
+                - ADM
+                - MOD
+                - SUP
+        tags:
+          - tag: PURP
+            args: []
+          - tag: PII
+            args: []
+      x-carpal-status: implemented
+      x-carpal-contract:
+        section: "23.2"
+        line: 5327
+  "/v1/admin/users/{user_id}/consents":
+    servers:
+      - url: "https://admin-api.carpals.ir"
+        description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
+    get:
+      operationId: admin.user_consents
+      summary: "Lists a user's consent records, active and withdrawn, newest first: the full history with the consent text version, t…"
+      description: "Lists a user's consent records, active and withdrawn, newest first: the full history with the consent text version, the channel and the business a share goes to. Read-only: staff never grant or withdraw a consent for a user (backend S23)."
+      tags:
+        - identity
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        - name: consent_type
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ConsentType"
+        - name: active
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+            pattern: "^[A-Za-z0-9_-]+$"
+          description: "Opaque signed cursor from the previous page (next_cursor). It is bound to its caller and to the filters of the first page: any other combination is 400 CURSOR_MISMATCH (40 §3.3)."
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - $ref: "#/components/parameters/CarPalClient"
+        - $ref: "#/components/parameters/DPoP"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - $ref: "#/components/parameters/CarPalTimezone"
+        - $ref: "#/components/parameters/CarPalRequestId"
+        - $ref: "#/components/parameters/CarPalAccessPurpose"
+      responses:
+        "200":
+          description: "Page<ConsentRecord>"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ConsentRecord"
+                  next_cursor:
+                    anyOf:
+                      - type: string
+                        minLength: 1
+                        maxLength: 512
+                        pattern: "^[A-Za-z0-9_-]+$"
+                      - type: "null"
+                required:
+                  - items
+                  - next_cursor
+                additionalProperties: false
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          description: "Problem (RFC 9457): PURPOSE_RECORD_MISMATCH, FEATURE_DISABLED"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            "application/problem+json":
+              schema:
+                $ref: "#/components/schemas/Problem"
+          x-carpal-error-codes:
+            - PURPOSE_RECORD_MISMATCH
+            - FEATURE_DISABLED
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "405":
+          $ref: "#/components/responses/Problem405"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "412":
+          $ref: "#/components/responses/Problem412"
+        "413":
+          $ref: "#/components/responses/Problem413"
+        "415":
+          $ref: "#/components/responses/Problem415"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "428":
+          $ref: "#/components/responses/Problem428"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "500":
+          $ref: "#/components/responses/Problem500"
+        "503":
+          $ref: "#/components/responses/Problem503"
+      security:
+        - dpop: []
+        - bffBearer: []
+          bffMutualTls: []
+      x-carpal-op-id: admin.user_consents
+      x-carpal-host: admin-api
+      x-carpal-scope: single
+      x-carpal-sec: "STF(ADM, MOD, SUP) PURP PII"
+      x-carpal-security:
+        principals:
+          - - tag: STF
+              args:
+                - ADM
+                - MOD
+                - SUP
+        tags:
+          - tag: PURP
+            args: []
+          - tag: PII
+            args: []
+      x-carpal-status: implemented
+      x-carpal-contract:
+        section: "23.2"
+        line: 5336
   "/v1/admin/users/{user_id}/onboarding/{flow_type}/reset":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12410,7 +13298,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5311
+        line: 5387
   "/v1/admin/users/{user_id}/platform-roles":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12533,7 +13421,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5294
+        line: 5370
   "/v1/admin/users/{user_id}/platform-roles/{role}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12635,7 +13523,106 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5303
+        line: 5379
+  "/v1/admin/users/{user_id}/sessions":
+    servers:
+      - url: "https://admin-api.carpals.ir"
+        description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
+    get:
+      operationId: admin.user_sessions
+      summary: "Returns a user's active sessions (device, client, country, assurance, last seen) and push devices, for an account-com…"
+      description: "Returns a user's active sessions (device, client, country, assurance, last seen) and push devices, for an account-compromise check before `admin.user_sessions_revoke`; never tokens (backend S23)."
+      tags:
+        - identity
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        - $ref: "#/components/parameters/CarPalClient"
+        - $ref: "#/components/parameters/DPoP"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - $ref: "#/components/parameters/CarPalTimezone"
+        - $ref: "#/components/parameters/CarPalRequestId"
+        - $ref: "#/components/parameters/CarPalAccessPurpose"
+      responses:
+        "200":
+          description: StaffUserSessions
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffUserSessions"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          description: "Problem (RFC 9457): PURPOSE_RECORD_MISMATCH, FEATURE_DISABLED"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            "application/problem+json":
+              schema:
+                $ref: "#/components/schemas/Problem"
+          x-carpal-error-codes:
+            - PURPOSE_RECORD_MISMATCH
+            - FEATURE_DISABLED
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "405":
+          $ref: "#/components/responses/Problem405"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "412":
+          $ref: "#/components/responses/Problem412"
+        "413":
+          $ref: "#/components/responses/Problem413"
+        "415":
+          $ref: "#/components/responses/Problem415"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "428":
+          $ref: "#/components/responses/Problem428"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "500":
+          $ref: "#/components/responses/Problem500"
+        "503":
+          $ref: "#/components/responses/Problem503"
+      security:
+        - dpop: []
+        - bffBearer: []
+          bffMutualTls: []
+      x-carpal-op-id: admin.user_sessions
+      x-carpal-host: admin-api
+      x-carpal-scope: single
+      x-carpal-sec: "STF(ADM, MOD, SUP) PURP PII"
+      x-carpal-security:
+        principals:
+          - - tag: STF
+              args:
+                - ADM
+                - MOD
+                - SUP
+        tags:
+          - tag: PURP
+            args: []
+          - tag: PII
+            args: []
+      x-carpal-status: implemented
+      x-carpal-contract:
+        section: "23.2"
+        line: 5345
   "/v1/admin/users/{user_id}/sessions/revoke":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12735,7 +13722,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5286
+        line: 5362
   "/v1/admin/users/{user_id}/status":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12847,7 +13834,144 @@ paths:
         - moderation.action.taken
       x-carpal-contract:
         section: "23.2"
-        line: 5277
+        line: 5353
+  "/v1/admin/users/{user_id}/vehicles":
+    servers:
+      - url: "https://admin-api.carpals.ir"
+        description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
+    get:
+      operationId: admin.user_vehicles
+      summary: "Lists the vehicles a user owns, newest first, with brand, model, year and status only: the VIN shows its last four ch…"
+      description: "Lists the vehicles a user owns, newest first, with brand, model, year and status only: the VIN shows its last four characters and the plate its last two; documents, notes and history are never listed (backend S23)."
+      tags:
+        - vehicle
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/VehicleStatus"
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+            pattern: "^[A-Za-z0-9_-]+$"
+          description: "Opaque signed cursor from the previous page (next_cursor). It is bound to its caller and to the filters of the first page: any other combination is 400 CURSOR_MISMATCH (40 §3.3)."
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - $ref: "#/components/parameters/CarPalClient"
+        - $ref: "#/components/parameters/DPoP"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - $ref: "#/components/parameters/CarPalTimezone"
+        - $ref: "#/components/parameters/CarPalRequestId"
+        - $ref: "#/components/parameters/CarPalAccessPurpose"
+      responses:
+        "200":
+          description: "Page<StaffVehicleRow>"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffVehicleRow"
+                  next_cursor:
+                    anyOf:
+                      - type: string
+                        minLength: 1
+                        maxLength: 512
+                        pattern: "^[A-Za-z0-9_-]+$"
+                      - type: "null"
+                required:
+                  - items
+                  - next_cursor
+                additionalProperties: false
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          description: "Problem (RFC 9457): PURPOSE_RECORD_MISMATCH, FEATURE_DISABLED"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            "application/problem+json":
+              schema:
+                $ref: "#/components/schemas/Problem"
+          x-carpal-error-codes:
+            - PURPOSE_RECORD_MISMATCH
+            - FEATURE_DISABLED
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "405":
+          $ref: "#/components/responses/Problem405"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "412":
+          $ref: "#/components/responses/Problem412"
+        "413":
+          $ref: "#/components/responses/Problem413"
+        "415":
+          $ref: "#/components/responses/Problem415"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "428":
+          $ref: "#/components/responses/Problem428"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "500":
+          $ref: "#/components/responses/Problem500"
+        "503":
+          $ref: "#/components/responses/Problem503"
+      security:
+        - dpop: []
+        - bffBearer: []
+          bffMutualTls: []
+      x-carpal-op-id: admin.user_vehicles
+      x-carpal-host: admin-api
+      x-carpal-scope: single
+      x-carpal-sec: "STF(ADM, MOD, SUP) PURP PII"
+      x-carpal-security:
+        principals:
+          - - tag: STF
+              args:
+                - ADM
+                - MOD
+                - SUP
+        tags:
+          - tag: PURP
+            args: []
+          - tag: PII
+            args: []
+      x-carpal-status: implemented
+      x-carpal-contract:
+        section: "23.2"
+        line: 5318
   /v1/admin/verifications:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12989,7 +14113,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5363
+        line: 5439
   "/v1/admin/verifications/{verification_id}/assign":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13122,7 +14246,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5372
+        line: 5448
   "/v1/admin/verifications/{verification_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13245,7 +14369,7 @@ paths:
         - organization.verification.info_requested
       x-carpal-contract:
         section: "23.2"
-        line: 5381
+        line: 5457
   /v1/admin/work-summary:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13322,7 +14446,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6040
+        line: 6159
   "/v1/ai/suggestions/{suggestion_id}/decision":
     servers:
       - url: "https://api.carpals.ir"
@@ -63361,6 +64485,14 @@ components:
         - item_ids
         - patch
       additionalProperties: false
+    InventoryFlag:
+      type: string
+      enum:
+        - open_case
+        - pending_review
+        - hidden
+        - possible_duplicate
+        - low_quality
     InventoryImportBatch:
       type: object
       properties:
@@ -74479,6 +75611,142 @@ components:
         - location_id
         - appointment_types
       additionalProperties: false
+    StaffAppointmentRow:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        provider:
+          anyOf:
+            - $ref: "#/components/schemas/OrgSummary"
+            - type: "null"
+          description: "null when the business is gone"
+        requester_type:
+          $ref: "#/components/schemas/RequesterType"
+        requester_organization:
+          anyOf:
+            - $ref: "#/components/schemas/OrgSummary"
+            - type: "null"
+          description: "the fleet of a fleet appointment"
+        vehicle:
+          anyOf:
+            - type: object
+              properties:
+                id:
+                  type: string
+                  pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                brand:
+                  type: object
+                  properties:
+                    text:
+                      type: string
+                    locale:
+                      type: string
+                      enum:
+                        - en
+                        - fa
+                      x-locale-config: true
+                  required:
+                    - text
+                    - locale
+                  additionalProperties: false
+                model:
+                  type: object
+                  properties:
+                    text:
+                      type: string
+                    locale:
+                      type: string
+                      enum:
+                        - en
+                        - fa
+                      x-locale-config: true
+                  required:
+                    - text
+                    - locale
+                  additionalProperties: false
+                year:
+                  type: integer
+                  minimum: 1950
+                  maximum: 2100
+              required:
+                - id
+                - brand
+                - model
+                - year
+              additionalProperties: false
+            - type: "null"
+        appointment_type:
+          $ref: "#/components/schemas/AppointmentType"
+        service_mode:
+          $ref: "#/components/schemas/ServiceMode"
+        service_system:
+          anyOf:
+            - type: object
+              properties:
+                text:
+                  type: string
+                locale:
+                  type: string
+                  enum:
+                    - en
+                    - fa
+                  x-locale-config: true
+              required:
+                - text
+                - locale
+              additionalProperties: false
+            - type: "null"
+        source:
+          $ref: "#/components/schemas/AppointmentSource"
+        urgency_level:
+          $ref: "#/components/schemas/UrgencyLevel"
+        safety_flag:
+          type: boolean
+        status:
+          $ref: "#/components/schemas/AppointmentStatus"
+        cancelled_by:
+          type:
+            - string
+            - "null"
+          enum:
+            - requester
+            - provider
+            - system
+            - null
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        confirmed_start_at:
+          anyOf:
+            - type: string
+              pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            - type: "null"
+        completed_at:
+          anyOf:
+            - type: string
+              pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            - type: "null"
+      required:
+        - id
+        - provider
+        - requester_type
+        - requester_organization
+        - vehicle
+        - appointment_type
+        - service_mode
+        - service_system
+        - source
+        - urgency_level
+        - safety_flag
+        - status
+        - cancelled_by
+        - created_at
+        - confirmed_start_at
+        - completed_at
+      additionalProperties: false
+      description: "no description, notes, contact or address"
     StaffDecision:
       type: object
       properties:
@@ -74855,6 +76123,155 @@ components:
         - body
         - reason
       additionalProperties: false
+    StaffFlaggedItem:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: "^[^\\r\\n]*$"
+        name_translations:
+          type: object
+          propertyNames:
+            enum:
+              - en
+              - fa
+          additionalProperties:
+            type: string
+            minLength: 1
+            maxLength: 160
+          minProperties: 1
+        status:
+          $ref: "#/components/schemas/InventoryStatus"
+        visibility:
+          $ref: "#/components/schemas/InventoryVisibility"
+        data_quality_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        flags:
+          type: array
+          items:
+            $ref: "#/components/schemas/InventoryFlag"
+          maxItems: 5
+          uniqueItems: true
+        updated_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+      required:
+        - id
+        - sku
+        - name_translations
+        - status
+        - visibility
+        - data_quality_score
+        - flags
+        - updated_at
+      additionalProperties: false
+    StaffInventoryQuality:
+      type: object
+      properties:
+        counts:
+          type: object
+          properties:
+            draft:
+              type: integer
+              minimum: 0
+              maximum: 10000000
+            active:
+              type: integer
+              minimum: 0
+              maximum: 10000000
+            pending_review:
+              type: integer
+              minimum: 0
+              maximum: 10000000
+            hidden:
+              type: integer
+              minimum: 0
+              maximum: 10000000
+            discontinued:
+              type: integer
+              minimum: 0
+              maximum: 10000000
+            removed:
+              type: integer
+              minimum: 0
+              maximum: 10000000
+          required:
+            - draft
+            - active
+            - pending_review
+            - hidden
+            - discontinued
+            - removed
+          additionalProperties: false
+        low_quality_active:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+          description: "active items with data_quality_score below 50"
+        average_data_quality:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 100
+            - type: "null"
+          description: "of active items; null without any"
+        confirmed_fitment_items:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+          description: "active items with an active confirmed fitment row"
+        inquiries_90d:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        inquiry_fulfillment_percent:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 100
+            - type: "null"
+          description: "54 §3.2; null without decidable inquiries"
+        measured_response_time_minutes:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 100000
+            - type: "null"
+        catalog_quality_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: "54 §7.2, computed now (the profile keeps the last stored value)"
+        flagged:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffFlaggedItem"
+          maxItems: 50
+          description: "items with an open case, pending review, hidden or a possible duplicate; newest change first"
+        flagged_total:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+      required:
+        - counts
+        - low_quality_active
+        - average_data_quality
+        - confirmed_fitment_items
+        - inquiries_90d
+        - inquiry_fulfillment_percent
+        - measured_response_time_minutes
+        - catalog_quality_score
+        - flagged
+        - flagged_total
+      additionalProperties: false
+      description: "every count is 0 for an organization without inventory"
     StaffMe:
       type: object
       properties:
@@ -74974,6 +76391,31 @@ components:
         - status
       additionalProperties: false
       description: "C: email_masked to last_sign_in_at only for platform_admin callers"
+    StaffOrgCapabilities:
+      type: object
+      properties:
+        capabilities:
+          type: array
+          items:
+            $ref: "#/components/schemas/Capability"
+          maxItems: 500
+          description: "strongest confidence first"
+        capabilities_total:
+          type: integer
+          minimum: 0
+          maximum: 100000
+          description: "more than 500: the weakest are not listed"
+        badges:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProviderBadge"
+          maxItems: 100
+      required:
+        - capabilities
+        - capabilities_total
+        - badges
+      additionalProperties: false
+      description: "every status, newest first; evaluation_snapshot is the rule evaluation that awarded it"
     StaffOrgSearchRow:
       type: object
       properties:
@@ -75332,6 +76774,153 @@ components:
         - is_default_for_audience
       additionalProperties: false
       description: "new organizations of the audience, and ended trials, get this plan"
+    StaffPlanHistoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        subscriber:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - user
+                - organization
+            id:
+              type: string
+              pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            display:
+              type: string
+              minLength: 1
+              maxLength: 120
+              pattern: "^[^\\r\\n]*$"
+          required:
+            - type
+            - id
+            - display
+          additionalProperties: false
+          description: "public name"
+        plan_key:
+          type: string
+          enum:
+            - individual_free
+            - fleet_20
+            - fleet_50
+            - fleet_100
+            - fleet_custom
+            - provider_basic
+            - provider_pro
+            - vendor_basic
+            - vendor_pro
+        status:
+          type: string
+          enum:
+            - trial
+            - active
+            - expired
+            - cancelled
+        started_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        trial_ends_at:
+          anyOf:
+            - type: string
+              pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            - type: "null"
+        expires_at:
+          anyOf:
+            - type: string
+              pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            - type: "null"
+        overrides:
+          type: object
+          properties:
+            vehicle_limit:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 1000000
+                - type: "null"
+            user_limit:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 1000000
+                - type: "null"
+            entitlements:
+              type: array
+              items:
+                $ref: "#/components/schemas/EntitlementValue"
+              maxItems: 20
+          required:
+            - vehicle_limit
+            - user_limit
+            - entitlements
+          additionalProperties: false
+          description: "empty: no entitlement override"
+        assigned_by_display:
+          anyOf:
+            - type: string
+              minLength: 2
+              maxLength: 50
+              pattern: "^[^\\r\\n]*$"
+            - type: "null"
+        change_request:
+          anyOf:
+            - type: object
+              properties:
+                id:
+                  type: string
+                  pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                requested_plan_key:
+                  type: string
+                  enum:
+                    - individual_free
+                    - fleet_20
+                    - fleet_50
+                    - fleet_100
+                    - fleet_custom
+                    - provider_basic
+                    - provider_pro
+                    - vendor_basic
+                    - vendor_pro
+                requested_by_display:
+                  type: string
+                  minLength: 2
+                  maxLength: 50
+                  pattern: "^[^\\r\\n]*$"
+                note:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 1000
+                    - type: "null"
+                created_at:
+                  type: string
+                  pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+              required:
+                - id
+                - requested_plan_key
+                - requested_by_display
+                - note
+                - created_at
+              additionalProperties: false
+            - type: "null"
+      required:
+        - id
+        - subscriber
+        - plan_key
+        - status
+        - started_at
+        - trial_ends_at
+        - expires_at
+        - overrides
+        - assigned_by_display
+        - change_request
+      additionalProperties: false
+      description: "the organization's plan request this subscription answered"
     StaffPolicyDocument:
       type: object
       properties:
@@ -75592,6 +77181,191 @@ components:
         - approved_by_display
         - published_at
       additionalProperties: false
+    StaffPortfolioItem:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        updated_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        title:
+          type: string
+          minLength: 3
+          maxLength: 140
+          pattern: "^[^\\r\\n]*$"
+        description:
+          type: string
+          minLength: 1
+          maxLength: 3000
+        content_locale:
+          type: string
+          enum:
+            - en
+            - fa
+          x-locale-config: true
+        brand_node_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          x-node-type: vehicle_brand
+        model_node_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          x-node-type: vehicle_model
+        series_node_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          x-node-type: vehicle_series
+        service_system_node_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          x-node-type: service_system
+        service_task_node_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          x-node-type: service_task
+        tag_node_ids:
+          type: array
+          items:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          maxItems: 20
+          uniqueItems: true
+        job_date:
+          type: string
+          pattern: "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$"
+        job_log_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        service_record_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        appointment_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        caption:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        caption_source:
+          type: string
+          enum:
+            - manual
+            - ai_approved
+          x-conditional: "required with caption; ai_approved needs an accepted insight"
+          description: "C: required with caption; ai_approved needs an accepted insight"
+        ai_caption_insight_id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        visibility:
+          $ref: "#/components/schemas/ContentVisibility"
+        customer_consent_status:
+          $ref: "#/components/schemas/MediaConsentStatus"
+        consent_reference_id:
+          anyOf:
+            - type: string
+              pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            - type: "null"
+        moderation_status:
+          $ref: "#/components/schemas/ModerationStatus"
+        status:
+          type: string
+          enum:
+            - draft
+            - pending_review
+            - published
+            - rejected
+            - archived
+        media:
+          type: array
+          items:
+            $ref: "#/components/schemas/MediaAttachmentView"
+          maxItems: 40
+        consent:
+          anyOf:
+            - $ref: "#/components/schemas/ShowcaseConsent"
+            - type: "null"
+          description: "the customer's consent record; null: none recorded"
+        open_cases:
+          type: integer
+          minimum: 0
+          maximum: 100000
+      required:
+        - id
+        - created_at
+        - updated_at
+        - version
+        - title
+        - content_locale
+        - service_system_node_id
+        - visibility
+        - customer_consent_status
+        - consent_reference_id
+        - moderation_status
+        - status
+        - media
+        - consent
+        - open_cases
+      additionalProperties: false
+      description: "open moderation cases about the showcase"
+    StaffPushDevice:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        platform:
+          type: string
+          enum:
+            - ios
+            - android
+            - web
+        app_version:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 20
+              pattern: "^[^\\r\\n]*$"
+            - type: "null"
+        locale:
+          anyOf:
+            - type: string
+              enum:
+                - en
+                - fa
+              x-locale-config: true
+            - type: "null"
+        status:
+          type: string
+          enum:
+            - active
+            - revoked
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        last_seen_at:
+          anyOf:
+            - type: string
+              pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            - type: "null"
+      required:
+        - id
+        - platform
+        - app_version
+        - locale
+        - status
+        - created_at
+        - last_seen_at
+      additionalProperties: false
+      description: "never the device token"
     StaffRecoveryDecision:
       type: object
       properties:
@@ -76167,6 +77941,77 @@ components:
         - version
       additionalProperties: false
       description: "If-Match of admin.taxonomy_node_update"
+    StaffUserSession:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        client_id:
+          type: string
+          minLength: 3
+          maxLength: 40
+          pattern: "^[^\\r\\n]*$"
+        device_label:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: "^[^\\r\\n]*$"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        last_seen_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        country:
+          anyOf:
+            - type: string
+              pattern: "^[A-Z]{2}$"
+            - type: "null"
+        acr:
+          type: string
+          enum:
+            - aal1
+            - aal2
+            - aal3
+        staff:
+          type: boolean
+      required:
+        - id
+        - client_id
+        - device_label
+        - created_at
+        - last_seen_at
+        - country
+        - acr
+        - staff
+      additionalProperties: false
+      description: "staff: a session on the admin plane"
+    StaffUserSessions:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffUserSession"
+          maxItems: 100
+          description: "newest first"
+        sessions_total:
+          type: integer
+          minimum: 0
+          maximum: 100000
+          description: "more than 100: the oldest are not listed"
+        push_devices:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffPushDevice"
+          maxItems: 50
+      required:
+        - sessions
+        - sessions_total
+        - push_devices
+      additionalProperties: false
+      description: "active first, then newest"
     StaffUserView:
       type: object
       properties:
@@ -76269,6 +78114,94 @@ components:
         - suspended_until
       additionalProperties: false
       description: "a timed suspension; lifted automatically once passed"
+    StaffVehicleRow:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        brand:
+          type: object
+          properties:
+            text:
+              type: string
+            locale:
+              type: string
+              enum:
+                - en
+                - fa
+              x-locale-config: true
+          required:
+            - text
+            - locale
+          additionalProperties: false
+        model:
+          type: object
+          properties:
+            text:
+              type: string
+            locale:
+              type: string
+              enum:
+                - en
+                - fa
+              x-locale-config: true
+          required:
+            - text
+            - locale
+          additionalProperties: false
+        series:
+          anyOf:
+            - type: object
+              properties:
+                text:
+                  type: string
+                locale:
+                  type: string
+                  enum:
+                    - en
+                    - fa
+                  x-locale-config: true
+              required:
+                - text
+                - locale
+              additionalProperties: false
+            - type: "null"
+        year:
+          type: integer
+          minimum: 1950
+          maximum: 2100
+        status:
+          $ref: "#/components/schemas/VehicleStatus"
+        vin_last4:
+          anyOf:
+            - type: string
+              minLength: 4
+              maxLength: 4
+              pattern: "^[^\\r\\n]*$"
+            - type: "null"
+        plate_masked:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 20
+              pattern: "^[^\\r\\n]*$"
+            - type: "null"
+          description: "the last two characters only (\"•••• 42\"); never the plate, VIN, notes or documents"
+        created_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+      required:
+        - id
+        - brand
+        - model
+        - series
+        - year
+        - status
+        - vin_last4
+        - plate_masked
+        - created_at
+      additionalProperties: false
     StaffVerificationItem:
       type: object
       properties:

@@ -69,4 +69,9 @@ export abstract class TrustAdmin {
   abstract revokeBadge(scope: TxScope, badgeId: string, reason: string): Promise<{ organizationId: string } | null>;
   /** StaffUserView.counts: reviews the user wrote and their open disputes. */
   abstract userCounts(scope: TxScope, userId: string): Promise<{ reviews: number; openDisputes: number }>;
+  /**
+   * An organization's badges in every status, newest first, at most `limit` (40 ProviderBadge, with the rule evaluation
+   * that awarded each): admin.org_capabilities (backend S23, BR-16).
+   */
+  abstract badges(scope: TxScope, orgId: string, limit: number): Promise<Record<string, unknown>[]>;
 }

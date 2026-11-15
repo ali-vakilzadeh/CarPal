@@ -5,6 +5,7 @@
 import type { Route } from '#libs/contract/index.js';
 import { expect } from 'vitest';
 import { vehicleBody } from '../../s5-support.js';
+import { openCase, purpose } from '../../s8-support.js';
 import { ok, type Actor, type Harness, type Json, type Resolvers } from '../harness.js';
 
 const item = (h: Harness, o: Json = {}) => ({
@@ -350,6 +351,20 @@ export const resolvers: Resolvers = {
         });
         expect(anon.body.price).toMatchObject({ amount: '100.00' });
         expect(anon.text).not.toContain('80.00');
+      },
+    };
+  },
+  // Backend S23 (BR-16): A-ORG-02 Inventory under a case about the vendor.
+  'admin.org_inventory_quality': async (h) => {
+    const v = await h.vendor();
+    const caseId = await openCase(h.api, { type: 'organization', targetId: v.id });
+    return {
+      as: await h.staff('platform_moderator'),
+      params: { org_id: v.id },
+      headers: purpose('case', caseId),
+      check: (res) => {
+        expect((res.body.counts as Json).active).toBeGreaterThan(0);
+        expect(res.body.catalog_quality_score).toEqual(expect.any(Number));
       },
     };
   },

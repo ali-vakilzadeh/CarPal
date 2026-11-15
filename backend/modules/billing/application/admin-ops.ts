@@ -445,3 +445,94 @@ export class TrialExpiryRule extends ScheduledRule {
     });
   }
 }
+
+/**
+ * 40 admin.org_plan_history (backend S23, BR-16, DI-06): A-ORG-02 Plan history. The organization's subscriptions,
+ * newest first (as admin.subscriptions_list rows), each with the plan request it answered. PURP: the purpose is bound
+ * to the organization in the path (S14); no personal data beyond staff and member display names.
+ */
+@Injectable()
+@Operation('admin.org_plan_history')
+export class AdminOrgPlanHistoryHandler implements OperationHandler {
+  constructor(
+    private readonly orgs: OrgCards,
+    private readonly names: StaffNames,
+  ) {}
+
+  async handle(ctx: OperationContext<undefined, { limit: number }>): Promise<OperationResult> {
+    staffOf(ctx);
+    const orgId = ctx.params.org_id!;
+    const limit = ctx.query.limit;
+    const after = afterIdOf(ctx);
+    const body = await ctx.tx(
+      async (scope) => {
+        const card = (await this.orgs.cards(scope, [orgId])).get(orgId);
+        if (!card) throw new ApiError('NOT_FOUND');
+        let r = scope.db
+          .selectFrom('billing.subscriptions as s')
+          .innerJoin('billing.plans as p', 'p.id', 's.plan_id')
+          .selectAll('s')
+          .select('p.plan_key')
+          .where('s.subscriber_type', '=', 'organization')
+          .where('s.subscriber_id', '=', orgId)
+          .where('s.deleted_at', 'is', null);
+        if (after) r = r.where('s.id', '<', after);
+        const rows = await r
+          .orderBy('s.id', 'desc')
+          .limit(limit + 1)
+          .execute();
+        const page = rows.slice(0, limit);
+        const requests = page.length
+          ? await scope.db
+              .selectFrom('billing.subscription_change_requests as c')
+              .innerJoin('billing.plans as p', 'p.id', 'c.requested_plan_id')
+              .select(['c.id', 'c.resulting_subscription_id', 'c.requested_by_user_id', 'c.note', 'c.created_at', 'p.plan_key'])
+              .where('c.organization_id', '=', orgId)
+              .where(
+                'c.resulting_subscription_id',
+                'in',
+                page.map((x) => x.id),
+              )
+              .where('c.deleted_at', 'is', null)
+              .execute()
+          : [];
+        const byResult = new Map(requests.map((c) => [c.resulting_subscription_id!, c]));
+        const names = await this.names.names(
+          scope,
+          [...page.map((x) => x.assigned_by), ...requests.map((c) => c.requested_by_user_id)],
+          ctx.locale,
+        );
+        const items = page.map((x) => {
+          const c = byResult.get(x.id);
+          return {
+            id: x.id,
+            subscriber: { type: 'organization' as const, id: orgId, display: card.name },
+            plan_key: x.plan_key as PlanKey,
+            status: x.status as SubscriptionStatus,
+            started_at: x.started_at.toISOString(),
+            trial_ends_at: x.trial_ends_at ? x.trial_ends_at.toISOString() : null,
+            expires_at: x.expires_at ? x.expires_at.toISOString() : null,
+            overrides: {
+              vehicle_limit: x.vehicle_limit_override,
+              user_limit: x.user_limit_override,
+              entitlements: overrideList(x.entitlement_overrides),
+            },
+            assigned_by_display: x.assigned_by ? names.get(x.assigned_by)! : null,
+            change_request: c
+              ? {
+                  id: c.id,
+                  requested_plan_key: c.plan_key as PlanKey,
+                  requested_by_display: names.get(c.requested_by_user_id)!,
+                  note: c.note,
+                  created_at: c.created_at.toISOString(),
+                }
+              : null,
+          };
+        });
+        return ctx.page(items, rows.length > limit ? { id: page.at(-1)!.id } : null);
+      },
+      { readOnly: true },
+    );
+    return { body };
+  }
+}

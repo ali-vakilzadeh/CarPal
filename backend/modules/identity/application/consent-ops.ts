@@ -39,7 +39,7 @@ type ConsentGrant = {
 type Position = { id?: string } | undefined;
 type ConsentRow = Selectable<DB['identity.consent_records']>;
 
-async function listConsents(
+export async function listConsents(
   ctx: OperationContext<undefined, { consent_type?: string; active?: boolean; limit: number }>,
   subject: { type: 'user' | 'organization'; id: string },
   views: ConsentViews,

@@ -975,4 +975,16 @@ export class DbTrustAdmin extends TrustAdmin {
                 AND deleted_at IS NULL) AS disputes`.execute(scope.db);
     return { reviews: Number(rows[0]!.reviews), openDisputes: Number(rows[0]!.disputes) };
   }
+
+  async badges(scope: TxScope, orgId: string, limit: number): Promise<Record<string, unknown>[]> {
+    const rows = (await scope.db
+      .selectFrom('trust.provider_badges')
+      .selectAll()
+      .where('provider_organization_id', '=', orgId)
+      .where('deleted_at', 'is', null)
+      .orderBy('id', 'desc')
+      .limit(limit)
+      .execute()) as BadgeRow[];
+    return rows.map(toBadge);
+  }
 }

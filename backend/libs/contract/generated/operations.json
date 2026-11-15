@@ -1,9 +1,9 @@
 {
   "source": "Docs/40.API contract.md",
-  "sourceSha256": "0cdbb6538b95f81827369526e9b802f053072b78435463732f705a0f2e6ca26b",
+  "sourceSha256": "4f0bc4a6bb9834988cc3b387130eee505090719724a95d4cda8ecdf8ee0df870",
   "contractVersion": "1.4.0",
-  "operationCount": 470,
-  "routeCount": 522,
+  "operationCount": 479,
+  "routeCount": 531,
   "assistAllowlist": [
     "org.update",
     "org.location_create",
@@ -21146,7 +21146,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 5152
+      "line": 5193
     },
     {
       "opId": "admin.staff_list",
@@ -21210,7 +21210,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 5159
+      "line": 5200
     },
     {
       "opId": "admin.staff_disable",
@@ -21272,7 +21272,7 @@
         }
       ],
       "emits": [],
-      "line": 5167
+      "line": 5208
     },
     {
       "opId": "admin.staff_enable",
@@ -21337,7 +21337,7 @@
         }
       ],
       "emits": [],
-      "line": 5176
+      "line": 5217
     },
     {
       "opId": "admin.staff_recoveries_list",
@@ -21393,7 +21393,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5185
+      "line": 5226
     },
     {
       "opId": "admin.staff_recovery_get",
@@ -21435,7 +21435,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5193
+      "line": 5234
     },
     {
       "opId": "admin.staff_recovery_approve",
@@ -21506,7 +21506,7 @@
         }
       ],
       "emits": [],
-      "line": 5200
+      "line": 5241
     },
     {
       "opId": "admin.staff_recovery_reject",
@@ -21563,7 +21563,7 @@
         }
       ],
       "emits": [],
-      "line": 5211
+      "line": 5252
     },
     {
       "opId": "admin.staff_passkeys_list",
@@ -21606,7 +21606,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 5220
+      "line": 5261
     },
     {
       "opId": "admin.staff_passkey_register_options",
@@ -21660,7 +21660,7 @@
         }
       ],
       "emits": [],
-      "line": 5227
+      "line": 5268
     },
     {
       "opId": "admin.staff_passkey_register",
@@ -21726,7 +21726,7 @@
         }
       ],
       "emits": [],
-      "line": 5236
+      "line": 5277
     },
     {
       "opId": "admin.staff_passkey_remove",
@@ -21785,7 +21785,7 @@
         }
       ],
       "emits": [],
-      "line": 5245
+      "line": 5286
     },
     {
       "opId": "admin.staff_recovery_codes_regenerate",
@@ -21837,7 +21837,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV) AAL3 AUD",
       "errors": [],
       "emits": [],
-      "line": 5253
+      "line": 5294
     },
     {
       "opId": "admin.users_search",
@@ -21894,7 +21894,7 @@
       "sec": "STF(ADM, MOD, SUP) PURP PII RL(admin.bulk_read)",
       "errors": [],
       "emits": [],
-      "line": 5261
+      "line": 5302
     },
     {
       "opId": "admin.user_get",
@@ -21952,7 +21952,292 @@
         }
       ],
       "emits": [],
-      "line": 5269
+      "line": 5310
+    },
+    {
+      "opId": "admin.user_vehicles",
+      "section": "23.2",
+      "sectionTitle": "Users, organizations and plans",
+      "module": "vehicle",
+      "summary": "Lists the vehicles a user owns, newest first, with brand, model, year and status only: the VIN shows its last four characters and the plate its last two; documents, notes and history are never listed (backend S23).",
+      "method": "GET",
+      "pathTemplate": "{adm}/users/{user_id}/vehicles",
+      "routes": [
+        {
+          "scope": "single",
+          "host": "admin-api",
+          "method": "GET",
+          "path": "/v1/admin/users/{user_id}/vehicles",
+          "pathParams": [
+            "user_id"
+          ],
+          "security": {
+            "principals": [
+              [
+                {
+                  "tag": "STF",
+                  "args": [
+                    "ADM",
+                    "MOD",
+                    "SUP"
+                  ]
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "tag": "PURP",
+                "args": []
+              },
+              {
+                "tag": "PII",
+                "args": []
+              }
+            ]
+          }
+        }
+      ],
+      "successStatus": 200,
+      "responseType": "Page<StaffVehicleRow>",
+      "inputType": null,
+      "inputEncoding": "none",
+      "query": [
+        {
+          "name": "status",
+          "optional": true,
+          "type": "VehicleStatus"
+        },
+        {
+          "name": "cursor",
+          "optional": true,
+          "type": null
+        },
+        {
+          "name": "limit",
+          "optional": true,
+          "type": null
+        }
+      ],
+      "sec": "STF(ADM, MOD, SUP) PURP PII",
+      "errors": [
+        {
+          "status": 403,
+          "code": "PURPOSE_RECORD_MISMATCH"
+        }
+      ],
+      "emits": [],
+      "line": 5318
+    },
+    {
+      "opId": "admin.user_appointments",
+      "section": "23.2",
+      "sectionTitle": "Users, organizations and plans",
+      "module": "appointment",
+      "summary": "Lists the appointments a user requested, newest first, with the business, vehicle, type, status and dates; never the description, notes, contact data or the exact address (backend S23).",
+      "method": "GET",
+      "pathTemplate": "{adm}/users/{user_id}/appointments",
+      "routes": [
+        {
+          "scope": "single",
+          "host": "admin-api",
+          "method": "GET",
+          "path": "/v1/admin/users/{user_id}/appointments",
+          "pathParams": [
+            "user_id"
+          ],
+          "security": {
+            "principals": [
+              [
+                {
+                  "tag": "STF",
+                  "args": [
+                    "ADM",
+                    "MOD",
+                    "SUP"
+                  ]
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "tag": "PURP",
+                "args": []
+              },
+              {
+                "tag": "PII",
+                "args": []
+              }
+            ]
+          }
+        }
+      ],
+      "successStatus": 200,
+      "responseType": "Page<StaffAppointmentRow>",
+      "inputType": null,
+      "inputEncoding": "none",
+      "query": [
+        {
+          "name": "status",
+          "optional": true,
+          "type": "AppointmentStatus"
+        },
+        {
+          "name": "cursor",
+          "optional": true,
+          "type": null
+        },
+        {
+          "name": "limit",
+          "optional": true,
+          "type": null
+        }
+      ],
+      "sec": "STF(ADM, MOD, SUP) PURP PII",
+      "errors": [
+        {
+          "status": 403,
+          "code": "PURPOSE_RECORD_MISMATCH"
+        }
+      ],
+      "emits": [],
+      "line": 5327
+    },
+    {
+      "opId": "admin.user_consents",
+      "section": "23.2",
+      "sectionTitle": "Users, organizations and plans",
+      "module": "identity",
+      "summary": "Lists a user's consent records, active and withdrawn, newest first: the full history with the consent text version, the channel and the business a share goes to. Read-only: staff never grant or withdraw a consent for a user (backend S23).",
+      "method": "GET",
+      "pathTemplate": "{adm}/users/{user_id}/consents",
+      "routes": [
+        {
+          "scope": "single",
+          "host": "admin-api",
+          "method": "GET",
+          "path": "/v1/admin/users/{user_id}/consents",
+          "pathParams": [
+            "user_id"
+          ],
+          "security": {
+            "principals": [
+              [
+                {
+                  "tag": "STF",
+                  "args": [
+                    "ADM",
+                    "MOD",
+                    "SUP"
+                  ]
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "tag": "PURP",
+                "args": []
+              },
+              {
+                "tag": "PII",
+                "args": []
+              }
+            ]
+          }
+        }
+      ],
+      "successStatus": 200,
+      "responseType": "Page<ConsentRecord>",
+      "inputType": null,
+      "inputEncoding": "none",
+      "query": [
+        {
+          "name": "consent_type",
+          "optional": true,
+          "type": "ConsentType"
+        },
+        {
+          "name": "active",
+          "optional": true,
+          "type": "boolean"
+        },
+        {
+          "name": "cursor",
+          "optional": true,
+          "type": null
+        },
+        {
+          "name": "limit",
+          "optional": true,
+          "type": null
+        }
+      ],
+      "sec": "STF(ADM, MOD, SUP) PURP PII",
+      "errors": [
+        {
+          "status": 403,
+          "code": "PURPOSE_RECORD_MISMATCH"
+        }
+      ],
+      "emits": [],
+      "line": 5336
+    },
+    {
+      "opId": "admin.user_sessions",
+      "section": "23.2",
+      "sectionTitle": "Users, organizations and plans",
+      "module": "identity",
+      "summary": "Returns a user's active sessions (device, client, country, assurance, last seen) and push devices, for an account-compromise check before `admin.user_sessions_revoke`; never tokens (backend S23).",
+      "method": "GET",
+      "pathTemplate": "{adm}/users/{user_id}/sessions",
+      "routes": [
+        {
+          "scope": "single",
+          "host": "admin-api",
+          "method": "GET",
+          "path": "/v1/admin/users/{user_id}/sessions",
+          "pathParams": [
+            "user_id"
+          ],
+          "security": {
+            "principals": [
+              [
+                {
+                  "tag": "STF",
+                  "args": [
+                    "ADM",
+                    "MOD",
+                    "SUP"
+                  ]
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "tag": "PURP",
+                "args": []
+              },
+              {
+                "tag": "PII",
+                "args": []
+              }
+            ]
+          }
+        }
+      ],
+      "successStatus": 200,
+      "responseType": "StaffUserSessions",
+      "inputType": null,
+      "inputEncoding": "none",
+      "query": [],
+      "sec": "STF(ADM, MOD, SUP) PURP PII",
+      "errors": [
+        {
+          "status": 403,
+          "code": "PURPOSE_RECORD_MISMATCH"
+        }
+      ],
+      "emits": [],
+      "line": 5345
     },
     {
       "opId": "admin.user_status",
@@ -22008,7 +22293,7 @@
           "event": "moderation.action.taken"
         }
       ],
-      "line": 5277
+      "line": 5353
     },
     {
       "opId": "admin.user_sessions_revoke",
@@ -22060,7 +22345,7 @@
       "sec": "STF(ADM, SUP) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5286
+      "line": 5362
     },
     {
       "opId": "admin.platform_role_grant",
@@ -22120,7 +22405,7 @@
         }
       ],
       "emits": [],
-      "line": 5294
+      "line": 5370
     },
     {
       "opId": "admin.platform_role_revoke",
@@ -22177,7 +22462,7 @@
         }
       ],
       "emits": [],
-      "line": 5303
+      "line": 5379
     },
     {
       "opId": "admin.onboarding_reset",
@@ -22230,7 +22515,7 @@
       "sec": "STF(ADM, SUP) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5311
+      "line": 5387
     },
     {
       "opId": "admin.orgs_search",
@@ -22279,7 +22564,7 @@
       "sec": "STF(ADM, MOD, SUP) RL(admin.bulk_read)",
       "errors": [],
       "emits": [],
-      "line": 5319
+      "line": 5395
     },
     {
       "opId": "admin.org_get",
@@ -22337,7 +22622,7 @@
         }
       ],
       "emits": [],
-      "line": 5327
+      "line": 5403
     },
     {
       "opId": "admin.org_status",
@@ -22393,7 +22678,7 @@
           "event": "moderation.action.taken"
         }
       ],
-      "line": 5335
+      "line": 5411
     },
     {
       "opId": "admin.org_merge",
@@ -22471,7 +22756,7 @@
           "note": "by the job"
         }
       ],
-      "line": 5344
+      "line": 5420
     },
     {
       "opId": "admin.org_merge_preview",
@@ -22530,7 +22815,7 @@
         }
       ],
       "emits": [],
-      "line": 5354
+      "line": 5430
     },
     {
       "opId": "admin.verifications_queue",
@@ -22602,7 +22887,7 @@
       "sec": "STF(ADM, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5363
+      "line": 5439
     },
     {
       "opId": "admin.verification_assign",
@@ -22665,7 +22950,7 @@
         }
       ],
       "emits": [],
-      "line": 5372
+      "line": 5448
     },
     {
       "opId": "admin.verification_decide",
@@ -22739,7 +23024,7 @@
           "event": "organization.verification.info_requested"
         }
       ],
-      "line": 5381
+      "line": 5457
     },
     {
       "opId": "admin.location_correct",
@@ -22796,7 +23081,7 @@
           "event": "organization.location.corrected"
         }
       ],
-      "line": 5391
+      "line": 5467
     },
     {
       "opId": "admin.org_correct",
@@ -22858,7 +23143,7 @@
           "event": "organization.profile.corrected"
         }
       ],
-      "line": 5401
+      "line": 5477
     },
     {
       "opId": "admin.org_history",
@@ -22916,7 +23201,333 @@
         }
       ],
       "emits": [],
-      "line": 5411
+      "line": 5487
+    },
+    {
+      "opId": "admin.org_capabilities",
+      "section": "23.2",
+      "sectionTitle": "Users, organizations and plans",
+      "module": "organization",
+      "summary": "Returns an organization's capability matrix (source, confidence level and score, evidence count, status) and its badges in every status, each with the rule evaluation that awarded it (backend S23).",
+      "method": "GET",
+      "pathTemplate": "{adm}/orgs/{org_id}/capabilities",
+      "routes": [
+        {
+          "scope": "single",
+          "host": "admin-api",
+          "method": "GET",
+          "path": "/v1/admin/orgs/{org_id}/capabilities",
+          "pathParams": [
+            "org_id"
+          ],
+          "security": {
+            "principals": [
+              [
+                {
+                  "tag": "STF",
+                  "args": [
+                    "ADM",
+                    "MOD",
+                    "SUP"
+                  ]
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "tag": "PURP",
+                "args": []
+              }
+            ]
+          }
+        }
+      ],
+      "successStatus": 200,
+      "responseType": "StaffOrgCapabilities",
+      "inputType": null,
+      "inputEncoding": "none",
+      "query": [],
+      "sec": "STF(ADM, MOD, SUP) PURP",
+      "errors": [
+        {
+          "status": 403,
+          "code": "PURPOSE_RECORD_MISMATCH"
+        }
+      ],
+      "emits": [],
+      "line": 5495
+    },
+    {
+      "opId": "admin.org_portfolio",
+      "section": "23.2",
+      "sectionTitle": "Users, organizations and plans",
+      "module": "organization",
+      "summary": "Lists an organization's showcase items, newest first, with their consent status, the customer's consent record (display name only), moderation status and open cases (backend S23).",
+      "method": "GET",
+      "pathTemplate": "{adm}/orgs/{org_id}/portfolio",
+      "routes": [
+        {
+          "scope": "single",
+          "host": "admin-api",
+          "method": "GET",
+          "path": "/v1/admin/orgs/{org_id}/portfolio",
+          "pathParams": [
+            "org_id"
+          ],
+          "security": {
+            "principals": [
+              [
+                {
+                  "tag": "STF",
+                  "args": [
+                    "ADM",
+                    "MOD",
+                    "SUP"
+                  ]
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "tag": "PURP",
+                "args": []
+              },
+              {
+                "tag": "PII",
+                "args": []
+              }
+            ]
+          }
+        }
+      ],
+      "successStatus": 200,
+      "responseType": "Page<StaffPortfolioItem>",
+      "inputType": null,
+      "inputEncoding": "none",
+      "query": [
+        {
+          "name": "status",
+          "optional": true,
+          "type": "PortfolioItem['status']"
+        },
+        {
+          "name": "cursor",
+          "optional": true,
+          "type": null
+        },
+        {
+          "name": "limit",
+          "optional": true,
+          "type": null
+        }
+      ],
+      "sec": "STF(ADM, MOD, SUP) PURP PII",
+      "errors": [
+        {
+          "status": 403,
+          "code": "PURPOSE_RECORD_MISMATCH"
+        }
+      ],
+      "emits": [],
+      "line": 5503
+    },
+    {
+      "opId": "admin.org_inventory_quality",
+      "section": "23.2",
+      "sectionTitle": "Users, organizations and plans",
+      "module": "inventory",
+      "summary": "Returns a vendor's inventory quality: item counts by status, data quality, confirmed fitment, inquiry fulfillment, the catalog quality score computed now, and the flagged items (open case, pending review, hidden, possible duplicate). Every count is 0 for an organization without inventory (backend S23).",
+      "method": "GET",
+      "pathTemplate": "{adm}/orgs/{org_id}/inventory-quality",
+      "routes": [
+        {
+          "scope": "single",
+          "host": "admin-api",
+          "method": "GET",
+          "path": "/v1/admin/orgs/{org_id}/inventory-quality",
+          "pathParams": [
+            "org_id"
+          ],
+          "security": {
+            "principals": [
+              [
+                {
+                  "tag": "STF",
+                  "args": [
+                    "ADM",
+                    "MOD",
+                    "SUP"
+                  ]
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "tag": "PURP",
+                "args": []
+              }
+            ]
+          }
+        }
+      ],
+      "successStatus": 200,
+      "responseType": "StaffInventoryQuality",
+      "inputType": null,
+      "inputEncoding": "none",
+      "query": [],
+      "sec": "STF(ADM, MOD, SUP) PURP",
+      "errors": [
+        {
+          "status": 403,
+          "code": "PURPOSE_RECORD_MISMATCH"
+        }
+      ],
+      "emits": [],
+      "line": 5512
+    },
+    {
+      "opId": "admin.org_members",
+      "section": "23.2",
+      "sectionTitle": "Users, organizations and plans",
+      "module": "organization",
+      "summary": "Lists an organization's members and pending invitations with role and status, as the organization sees them in `org.members_list` (backend S23).",
+      "method": "GET",
+      "pathTemplate": "{adm}/orgs/{org_id}/members",
+      "routes": [
+        {
+          "scope": "single",
+          "host": "admin-api",
+          "method": "GET",
+          "path": "/v1/admin/orgs/{org_id}/members",
+          "pathParams": [
+            "org_id"
+          ],
+          "security": {
+            "principals": [
+              [
+                {
+                  "tag": "STF",
+                  "args": [
+                    "ADM",
+                    "MOD",
+                    "SUP"
+                  ]
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "tag": "PURP",
+                "args": []
+              },
+              {
+                "tag": "PII",
+                "args": []
+              }
+            ]
+          }
+        }
+      ],
+      "successStatus": 200,
+      "responseType": "Page<OrgMember>",
+      "inputType": null,
+      "inputEncoding": "none",
+      "query": [
+        {
+          "name": "role",
+          "optional": true,
+          "type": "Role"
+        },
+        {
+          "name": "status",
+          "optional": true,
+          "type": "MembershipStatus"
+        },
+        {
+          "name": "cursor",
+          "optional": true,
+          "type": null
+        },
+        {
+          "name": "limit",
+          "optional": true,
+          "type": null
+        }
+      ],
+      "sec": "STF(ADM, MOD, SUP) PURP PII",
+      "errors": [
+        {
+          "status": 403,
+          "code": "PURPOSE_RECORD_MISMATCH"
+        }
+      ],
+      "emits": [],
+      "line": 5520
+    },
+    {
+      "opId": "admin.org_plan_history",
+      "section": "23.2",
+      "sectionTitle": "Users, organizations and plans",
+      "module": "billing",
+      "summary": "Lists an organization's subscriptions, newest first (the current one, earlier plans, trials and overrides), each with who assigned it and the plan request it answered (backend S23).",
+      "method": "GET",
+      "pathTemplate": "{adm}/orgs/{org_id}/plan-history",
+      "routes": [
+        {
+          "scope": "single",
+          "host": "admin-api",
+          "method": "GET",
+          "path": "/v1/admin/orgs/{org_id}/plan-history",
+          "pathParams": [
+            "org_id"
+          ],
+          "security": {
+            "principals": [
+              [
+                {
+                  "tag": "STF",
+                  "args": [
+                    "ADM",
+                    "MOD",
+                    "SUP"
+                  ]
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "tag": "PURP",
+                "args": []
+              }
+            ]
+          }
+        }
+      ],
+      "successStatus": 200,
+      "responseType": "Page<StaffPlanHistoryItem>",
+      "inputType": null,
+      "inputEncoding": "none",
+      "query": [
+        {
+          "name": "cursor",
+          "optional": true,
+          "type": null
+        },
+        {
+          "name": "limit",
+          "optional": true,
+          "type": null
+        }
+      ],
+      "sec": "STF(ADM, MOD, SUP) PURP",
+      "errors": [
+        {
+          "status": 403,
+          "code": "PURPOSE_RECORD_MISMATCH"
+        }
+      ],
+      "emits": [],
+      "line": 5529
     },
     {
       "opId": "admin.assist_session_start",
@@ -22969,7 +23580,7 @@
       "sec": "STF(ADM, SUP) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5419
+      "line": 5538
     },
     {
       "opId": "admin.assist_session_end",
@@ -23021,7 +23632,7 @@
       "sec": "STF(ADM, SUP) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5428
+      "line": 5547
     },
     {
       "opId": "admin.assist_sessions_list",
@@ -23088,7 +23699,7 @@
       "sec": "STF(ADM, SUP)",
       "errors": [],
       "emits": [],
-      "line": 5436
+      "line": 5555
     },
     {
       "opId": "admin.subscription_assign",
@@ -23137,7 +23748,7 @@
       "sec": "STF(ADM) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5444
+      "line": 5563
     },
     {
       "opId": "admin.subscriptions_list",
@@ -23213,7 +23824,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5452
+      "line": 5571
     },
     {
       "opId": "admin.subscription_change_requests_list",
@@ -23275,7 +23886,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5461
+      "line": 5580
     },
     {
       "opId": "admin.plans_list",
@@ -23315,7 +23926,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5469
+      "line": 5588
     },
     {
       "opId": "admin.plan_update",
@@ -23370,7 +23981,7 @@
       "sec": "STF(ADM) 4EYES RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5476
+      "line": 5595
     },
     {
       "opId": "admin.taxonomy_snapshot",
@@ -23438,7 +24049,7 @@
       "sec": "STF(ADM, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5486
+      "line": 5605
     },
     {
       "opId": "admin.taxonomy_node_create",
@@ -23501,7 +24112,7 @@
         }
       ],
       "emits": [],
-      "line": 5494
+      "line": 5613
     },
     {
       "opId": "admin.taxonomy_node_update",
@@ -23556,7 +24167,7 @@
       "sec": "STF(ADM) ETAG RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5503
+      "line": 5622
     },
     {
       "opId": "admin.taxonomy_merge",
@@ -23619,7 +24230,7 @@
           "event": "taxonomy.node.merged"
         }
       ],
-      "line": 5511
+      "line": 5630
     },
     {
       "opId": "admin.synonyms_list",
@@ -23683,7 +24294,7 @@
       "sec": "STF(ADM, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5520
+      "line": 5639
     },
     {
       "opId": "admin.synonym_create",
@@ -23743,7 +24354,7 @@
         }
       ],
       "emits": [],
-      "line": 5528
+      "line": 5647
     },
     {
       "opId": "admin.synonym_decide",
@@ -23795,7 +24406,7 @@
       "sec": "STF(ADM, MOD) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5537
+      "line": 5656
     },
     {
       "opId": "admin.synonym_delete",
@@ -23846,7 +24457,7 @@
       "sec": "STF(ADM) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5545
+      "line": 5664
     },
     {
       "opId": "admin.mappings_list",
@@ -23918,7 +24529,7 @@
       "sec": "STF(ADM, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5552
+      "line": 5671
     },
     {
       "opId": "admin.mapping_upsert",
@@ -23976,7 +24587,7 @@
         }
       ],
       "emits": [],
-      "line": 5560
+      "line": 5679
     },
     {
       "opId": "admin.review_approvals_queue",
@@ -24033,7 +24644,7 @@
       "sec": "STF(CRV, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5571
+      "line": 5690
     },
     {
       "opId": "admin.review_approval_get",
@@ -24086,7 +24697,7 @@
         }
       ],
       "emits": [],
-      "line": 5579
+      "line": 5698
     },
     {
       "opId": "admin.my_decisions_list",
@@ -24134,7 +24745,7 @@
       "sec": "STF(CRV, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5587
+      "line": 5706
     },
     {
       "opId": "admin.review_approval_decide",
@@ -24214,7 +24825,7 @@
           "event": "moderation.action.taken"
         }
       ],
-      "line": 5595
+      "line": 5714
     },
     {
       "opId": "admin.review_move_to_approval_path",
@@ -24269,7 +24880,7 @@
       "sec": "STF(MOD) 4EYES RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5605
+      "line": 5724
     },
     {
       "opId": "admin.reports_list",
@@ -24336,7 +24947,7 @@
       "sec": "STF(MOD, SUP)",
       "errors": [],
       "emits": [],
-      "line": 5613
+      "line": 5732
     },
     {
       "opId": "admin.report_triage",
@@ -24389,7 +25000,7 @@
       "sec": "STF(MOD, SUP) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5621
+      "line": 5740
     },
     {
       "opId": "admin.cases_list",
@@ -24471,7 +25082,7 @@
       "sec": "STF(MOD, ADM)",
       "errors": [],
       "emits": [],
-      "line": 5629
+      "line": 5748
     },
     {
       "opId": "admin.case_get",
@@ -24524,7 +25135,7 @@
         }
       ],
       "emits": [],
-      "line": 5638
+      "line": 5757
     },
     {
       "opId": "admin.case_context",
@@ -24577,7 +25188,7 @@
         }
       ],
       "emits": [],
-      "line": 5646
+      "line": 5765
     },
     {
       "opId": "admin.case_assign",
@@ -24630,7 +25241,7 @@
       "sec": "STF(MOD, ADM) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5654
+      "line": 5773
     },
     {
       "opId": "admin.case_action",
@@ -24721,7 +25332,7 @@
           "note": "penalty"
         }
       ],
-      "line": 5662
+      "line": 5781
     },
     {
       "opId": "admin.case_close",
@@ -24773,7 +25384,7 @@
       "sec": "STF(MOD, ADM) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5672
+      "line": 5791
     },
     {
       "opId": "admin.disputes_queue",
@@ -24840,7 +25451,7 @@
       "sec": "STF(MOD, CRV)",
       "errors": [],
       "emits": [],
-      "line": 5680
+      "line": 5799
     },
     {
       "opId": "admin.dispute_get",
@@ -24893,7 +25504,7 @@
         }
       ],
       "emits": [],
-      "line": 5688
+      "line": 5807
     },
     {
       "opId": "admin.dispute_resolve",
@@ -24971,7 +25582,7 @@
           "note": "upheld objection"
         }
       ],
-      "line": 5696
+      "line": 5815
     },
     {
       "opId": "admin.dispute_messages_list",
@@ -25031,7 +25642,7 @@
         }
       ],
       "emits": [],
-      "line": 5707
+      "line": 5826
     },
     {
       "opId": "admin.dispute_message_post",
@@ -25101,7 +25712,7 @@
           "event": "dispute.message.posted"
         }
       ],
-      "line": 5716
+      "line": 5835
     },
     {
       "opId": "admin.badges_list",
@@ -25168,7 +25779,7 @@
       "sec": "STF(ADM, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5726
+      "line": 5845
     },
     {
       "opId": "admin.badge_approve",
@@ -25224,7 +25835,7 @@
           "event": "badge.awarded"
         }
       ],
-      "line": 5734
+      "line": 5853
     },
     {
       "opId": "admin.flags_list",
@@ -25285,7 +25896,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5745
+      "line": 5864
     },
     {
       "opId": "admin.flag_update",
@@ -25353,7 +25964,7 @@
       "sec": "STF(ADM) ETAG RSN AUD 4EYES(kill switch off, featured.enabled on)",
       "errors": [],
       "emits": [],
-      "line": 5753
+      "line": 5872
     },
     {
       "opId": "admin.exchange_rates_list",
@@ -25393,7 +26004,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5761
+      "line": 5880
     },
     {
       "opId": "admin.exchange_rate_update",
@@ -25465,7 +26076,7 @@
           "event": "exchange_rate.changed"
         }
       ],
-      "line": 5768
+      "line": 5887
     },
     {
       "opId": "admin.region_settings",
@@ -25508,7 +26119,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 5777
+      "line": 5896
     },
     {
       "opId": "admin.notif_templates_list",
@@ -25570,7 +26181,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5784
+      "line": 5903
     },
     {
       "opId": "admin.notif_template_update",
@@ -25632,7 +26243,7 @@
         }
       ],
       "emits": [],
-      "line": 5792
+      "line": 5911
     },
     {
       "opId": "admin.notif_template_reset",
@@ -25687,7 +26298,7 @@
       "sec": "STF(ADM) ETAG RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5801
+      "line": 5920
     },
     {
       "opId": "admin.notif_template_preview",
@@ -25730,7 +26341,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5809
+      "line": 5928
     },
     {
       "opId": "admin.notif_rules_get",
@@ -25770,7 +26381,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5818
+      "line": 5937
     },
     {
       "opId": "admin.notif_rules_update",
@@ -25824,7 +26435,7 @@
       "sec": "STF(ADM) ETAG RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5825
+      "line": 5944
     },
     {
       "opId": "admin.notifications_list",
@@ -25883,7 +26494,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 5833
+      "line": 5952
     },
     {
       "opId": "admin.notifications_unread_count",
@@ -25926,7 +26537,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 5841
+      "line": 5960
     },
     {
       "opId": "admin.notifications_mark_read",
@@ -25970,7 +26581,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 5848
+      "line": 5967
     },
     {
       "opId": "admin.retention_list",
@@ -26010,7 +26621,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5856
+      "line": 5975
     },
     {
       "opId": "admin.retention_update",
@@ -26065,7 +26676,7 @@
       "sec": "STF(ADM) 4EYES RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5863
+      "line": 5982
     },
     {
       "opId": "admin.retention_create",
@@ -26124,7 +26735,7 @@
         }
       ],
       "emits": [],
-      "line": 5871
+      "line": 5990
     },
     {
       "opId": "admin.retention_dry_run",
@@ -26166,7 +26777,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5880
+      "line": 5999
     },
     {
       "opId": "admin.policies_list",
@@ -26206,7 +26817,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5888
+      "line": 6007
     },
     {
       "opId": "admin.policy_version_get",
@@ -26248,7 +26859,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5895
+      "line": 6014
     },
     {
       "opId": "admin.policy_version_create",
@@ -26305,7 +26916,7 @@
         }
       ],
       "emits": [],
-      "line": 5902
+      "line": 6021
     },
     {
       "opId": "admin.policy_version_update",
@@ -26371,7 +26982,7 @@
         }
       ],
       "emits": [],
-      "line": 5911
+      "line": 6030
     },
     {
       "opId": "admin.policy_version_publish",
@@ -26432,7 +27043,7 @@
         }
       ],
       "emits": [],
-      "line": 5921
+      "line": 6040
     },
     {
       "opId": "admin.audit_search",
@@ -26484,7 +27095,7 @@
       "sec": "STF(ADM) RL(admin.bulk_read) AUD",
       "errors": [],
       "emits": [],
-      "line": 5930
+      "line": 6049
     },
     {
       "opId": "admin.dsr_queue",
@@ -26551,7 +27162,7 @@
       "sec": "STF(ADM, SUP)",
       "errors": [],
       "emits": [],
-      "line": 5939
+      "line": 6058
     },
     {
       "opId": "admin.dsr_update",
@@ -26612,7 +27223,7 @@
         }
       ],
       "emits": [],
-      "line": 5947
+      "line": 6066
     },
     {
       "opId": "admin.dsr_export",
@@ -26677,7 +27288,7 @@
         }
       ],
       "emits": [],
-      "line": 5956
+      "line": 6075
     },
     {
       "opId": "admin.job_get",
@@ -26720,7 +27331,7 @@
       "sec": "STF(ADM, SUP)",
       "errors": [],
       "emits": [],
-      "line": 5965
+      "line": 6084
     },
     {
       "opId": "admin.dsr_execute_deletion",
@@ -26792,7 +27403,7 @@
           "event": "user.deletion.completed"
         }
       ],
-      "line": 5972
+      "line": 6091
     },
     {
       "opId": "admin.media_download_url",
@@ -26851,7 +27462,7 @@
         }
       ],
       "emits": [],
-      "line": 5982
+      "line": 6101
     },
     {
       "opId": "admin.ai_insights_search",
@@ -26899,7 +27510,7 @@
       "sec": "STF(ADM, MOD) RL(admin.bulk_read)",
       "errors": [],
       "emits": [],
-      "line": 5991
+      "line": 6110
     },
     {
       "opId": "admin.mcp_clients_list",
@@ -26939,7 +27550,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 6000
+      "line": 6119
     },
     {
       "opId": "admin.mcp_client_update",
@@ -27007,7 +27618,7 @@
       "sec": "STF(ADM) ETAG RSN AUD 4EYES(scope, resource or tool changes)",
       "errors": [],
       "emits": [],
-      "line": 6007
+      "line": 6126
     },
     {
       "opId": "admin.mcp_access_log_search",
@@ -27058,7 +27669,7 @@
       "sec": "STF(ADM) RL(admin.bulk_read) AUD",
       "errors": [],
       "emits": [],
-      "line": 6016
+      "line": 6135
     },
     {
       "opId": "admin.analytics_dashboard",
@@ -27123,7 +27734,7 @@
       "sec": "STF(ADM, MOD, SUP)",
       "errors": [],
       "emits": [],
-      "line": 6025
+      "line": 6144
     },
     {
       "opId": "admin.system_health",
@@ -27165,7 +27776,7 @@
       "sec": "STF(ADM, MOD, SUP)",
       "errors": [],
       "emits": [],
-      "line": 6033
+      "line": 6152
     },
     {
       "opId": "admin.work_summary",
@@ -27208,7 +27819,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 6040
+      "line": 6159
     },
     {
       "opId": "admin.four_eyes_list",
@@ -27271,7 +27882,7 @@
       "sec": "STF(ADM, MOD)",
       "errors": [],
       "emits": [],
-      "line": 6047
+      "line": 6166
     },
     {
       "opId": "admin.four_eyes_decide",
@@ -27347,7 +27958,7 @@
           "event": "four_eyes.decided"
         }
       ],
-      "line": 6055
+      "line": 6174
     }
   ]
 }

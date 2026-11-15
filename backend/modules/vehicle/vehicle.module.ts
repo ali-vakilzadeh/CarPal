@@ -22,6 +22,7 @@ import { DbVehicleCards, DbVehicleService, isServiceCustomer, serviceRecordVisit
 import { VehicleCards, VehicleService } from './interface/vehicles.js';
 import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
 import { vehicleOrgReferences } from './application/org-references.js';
+import { AdminUserVehiclesHandler } from './application/admin-ops.js';
 
 export { VehicleReminderRule } from './application/reminder-rule.js';
 
@@ -237,6 +238,8 @@ export class VehicleRegistrations implements OnModuleInit {
     { provide: VehicleService, useClass: DbVehicleService },
     VehicleRegistrations,
     VehicleAiRegistrations,
+    // admin-api host (§23.2, backend S23 BR-16): A-USR-02 Vehicles; other hosts skip it.
+    AdminUserVehiclesHandler,
   ],
   exports: [VehicleCards, VehicleService, VehicleCreator],
 })

@@ -195,6 +195,16 @@ export class AdminRegistrations implements OnModuleInit {
       ['admin.user_get', pathRecord('user', 'user_id')],
       ['admin.org_get', pathRecord('organization', 'org_id')],
       ['admin.org_history', pathRecord('organization', 'org_id')],
+      // Backend S23 (BR-16): the A-USR-02 and A-ORG-02 tabs read only the user or organization of the purpose item.
+      ['admin.user_vehicles', pathRecord('user', 'user_id')],
+      ['admin.user_appointments', pathRecord('user', 'user_id')],
+      ['admin.user_consents', pathRecord('user', 'user_id')],
+      ['admin.user_sessions', pathRecord('user', 'user_id')],
+      ['admin.org_capabilities', pathRecord('organization', 'org_id')],
+      ['admin.org_portfolio', pathRecord('organization', 'org_id')],
+      ['admin.org_inventory_quality', pathRecord('organization', 'org_id')],
+      ['admin.org_members', pathRecord('organization', 'org_id')],
+      ['admin.org_plan_history', pathRecord('organization', 'org_id')],
       ['admin.users_search', async () => 'scoped'],
     ];
     for (const [opId, binding] of recordBindings) this.bindings.register(opId, binding);

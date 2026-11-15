@@ -5,7 +5,8 @@
 import type { Route } from '#libs/contract/index.js';
 import { expect } from 'vitest';
 import { vehicleBody } from '../../s5-support.js';
-import { ok, type Actor, type Harness, type Json, type Resolvers } from '../harness.js';
+import { openCase, purpose } from '../../s8-support.js';
+import { ok, sql, type Actor, type Harness, type Json, type Resolvers } from '../harness.js';
 
 const issueBody = (o: Json = {}) => ({
   title: 'Brake noise',
@@ -351,5 +352,21 @@ export const resolvers: Resolvers = {
     const o = await h.vehicleOwner(route);
     const r = ok(await o.as.c.post(`${o.base}/reminders`, reminderBody), 'reminder');
     return { as: o.as, params: { vehicle_id: o.vehicleId, reminder_id: r.id as string } };
+  },
+  // Backend S23 (BR-16): A-USR-02 Vehicles under a case about the owner; the plate is masked, documents never listed.
+  'admin.user_vehicles': async (h) => {
+    const owner = await h.user();
+    const id = await h.vehicle(owner);
+    await h.q(sql`UPDATE vehicle.vehicles SET license_plate = 'S23-PLATE-77' WHERE id = ${id}::uuid`);
+    const caseId = await openCase(h.api, { targetId: owner.user.id });
+    return {
+      as: await h.staff('platform_support'),
+      params: { user_id: owner.user.id },
+      headers: purpose('case', caseId),
+      check: (res) => {
+        expect(res.body.items).toEqual([expect.objectContaining({ id, plate_masked: '•••• 77', status: 'active' })]);
+        expect(res.text).not.toContain('S23-PLATE');
+      },
+    };
   },
 };

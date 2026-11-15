@@ -22,6 +22,7 @@ import { DbAppointmentFacts } from './infrastructure/appointment-facts.js';
 import { AppointmentFacts } from './interface/appointments.js';
 import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
 import { appointmentOrgReferences } from './application/org-references.js';
+import { AdminUserAppointmentsHandler } from './application/admin-ops.js';
 
 /** An appointment of the provider (provider context, RLS party_all) as a visit of its requester. */
 async function appointmentVisit(scope: TxScope, providerOrgId: string, id: string): Promise<VisitInfo | null> {
@@ -180,7 +181,13 @@ export class AppointmentRegistrations implements OnModuleInit {
 
 @Global()
 @Module({
-  providers: [{ provide: AppointmentFacts, useClass: DbAppointmentFacts }, AppointmentRegistrations, AppointmentAiRegistrations],
+  providers: [
+    { provide: AppointmentFacts, useClass: DbAppointmentFacts },
+    AppointmentRegistrations,
+    AppointmentAiRegistrations,
+    // admin-api host (§23.2, backend S23 BR-16): A-USR-02 Appointments; other hosts skip it.
+    AdminUserAppointmentsHandler,
+  ],
   exports: [AppointmentFacts],
 })
 export class AppointmentModule {}

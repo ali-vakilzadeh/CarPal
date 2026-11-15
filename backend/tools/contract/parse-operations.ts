@@ -98,6 +98,14 @@ export function moduleFor(opId: string, h1: Section): string {
   if (h1.number === '21') return 'ai-mcp';
   if (h1.number === '22') return { events: 'analytics', reports: 'admin' }[prefix] ?? 'platform';
   if (h1.number === '23') {
+    // Backend S23 (BR-16): staff tab reads served by the module that owns the records.
+    const s23: Record<string, string> = {
+      user_vehicles: 'vehicle',
+      user_appointments: 'appointment',
+      org_inventory_quality: 'inventory',
+      org_plan_history: 'billing',
+    };
+    if (s23[name]) return s23[name];
     if (/^(users_search|user_|platform_role_|onboarding_reset|dsr_|policies_list|policy_version_)/.test(name)) return 'identity';
     if (/^(orgs_search|org_|verifications_queue|verification_decide|verification_assign|location_correct)/.test(name))
       return 'organization';

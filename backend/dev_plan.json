@@ -4969,6 +4969,96 @@
           "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
         }
       }
+    },
+    {
+      "id": "S23",
+      "title": "Extended staff reads for users and organizations: the A-USR-02 and A-ORG-02 tabs",
+      "status": "done",
+      "depends_on": [
+        "S13",
+        "S14"
+      ],
+      "plan": "backend/BR-update-plan.json action_plan.stages S23 (admin console refinement S13-S25).",
+      "goal": "Staff read the user tabs (vehicles, appointments, consents, sessions and devices) and organization tabs (capabilities and badges, portfolio, inventory quality, members, plan history) under a purpose bound to the record (admin console BR-16, DI-06, DI-07).",
+      "scope": {
+        "contract_sections": [
+          "§23.1 eleven staff types",
+          "§23.2 nine operations",
+          "Appendix D \"Contract 1.4.0\" (two S23 rows)"
+        ],
+        "modules": [
+          "identity",
+          "vehicle",
+          "appointment",
+          "organization",
+          "inventory",
+          "billing",
+          "trust",
+          "notification",
+          "admin",
+          "apps/testing"
+        ],
+        "ops_target": 9,
+        "ops_note": "9 new admin-api operations, all PURP (six PII). Registry after S23: 479 operations, 531 routes, 55 error codes; 478 served (auth.social_start deferred)."
+      },
+      "tasks": [
+        {
+          "id": "S23.T1",
+          "status": "done",
+          "title": "User tabs: admin.user_vehicles, user_appointments, user_consents, user_sessions (PURP PII, bound to the user; S23-D1..D5)."
+        },
+        {
+          "id": "S23.T2",
+          "status": "done",
+          "title": "Organization tabs: admin.org_capabilities, org_portfolio, org_inventory_quality, org_members, org_plan_history (PURP, bound to the organization; S23-D6..D8)."
+        }
+      ],
+      "deliverables": [
+        "contract 1.4.0 additions (Docs/40, libs/contract/generated, shared/api-contracts, console generated contract)",
+        "handlers in identity, vehicle, appointment, organization, inventory and billing; PushDevicesRead (notification) and TrustAdmin.badges",
+        "apps/testing/s23.int.test.ts, nine sweep resolvers, the S23 static projection check"
+      ],
+      "report": {
+        "started_at": "2026-11-15",
+        "completed_at": "2026-11-15",
+        "summary": "Nine purpose-bound staff reads for the user and organization tabs of the admin console; six are PII reads with a pii.read entry. Every acceptance criterion is met. Details and deviations S23-D1..D9 are in backend/BR-update-plan.json action_plan.stages S23.report.",
+        "ops_implemented": [
+          "admin.user_vehicles",
+          "admin.user_appointments",
+          "admin.user_consents",
+          "admin.user_sessions",
+          "admin.org_capabilities",
+          "admin.org_portfolio",
+          "admin.org_inventory_quality",
+          "admin.org_members",
+          "admin.org_plan_history"
+        ],
+        "ops_changed": [],
+        "files_created": [
+          "backend/modules/identity/application/staff-tabs.ts",
+          "backend/modules/vehicle/application/admin-ops.ts",
+          "backend/modules/appointment/application/admin-ops.ts",
+          "backend/modules/organization/application/staff-tabs.ts",
+          "backend/modules/inventory/application/admin-ops.ts",
+          "backend/modules/notification/{interface,infrastructure}/push-devices.ts",
+          "backend/apps/testing/s23.int.test.ts"
+        ],
+        "files_changed": [
+          "See backend/BR-update-plan.json action_plan.stages S23.report.files_changed."
+        ],
+        "tests": {
+          "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 564 modules), typecheck, prettier on the changed files: pass",
+          "backend_unit": "323 passed (47 files), including the registry pin (479 operations, 531 routes) and the new S23 static projection check in contract-sweep.test.ts",
+          "backend_contract": "contract:check up to date (1.4.0, 479 operations, 55 error codes); contract sweep suites up to date (17 modules, 6 regenerated); openapi:check: 531 operations on 429 paths; contract:coverage 478/479 served (auth.social_start deferred), 0 unexplained 501s",
+          "backend_s23": "12 passed (apps/testing/s23.int.test.ts): binding of the four user reads and the five organization reads (400 without a purpose, 403 PURPOSE_RECORD_MISMATCH under a case about someone else, 404 for a community reviewer, 200 under the record's case; pii.read entries for the six PII reads only, naming the subject); a verification purpose admits its organization and submitter, not another member; vehicles (own only, masked plate, no notes, status filter, paging); appointments (requested by the user, provider and vehicle card, no description, status filter); consents (history with withdrawn, active and type filters, no write route); sessions (two sessions without current, push devices active first, no token); capabilities (strongest first, badges in every status with evaluation_snapshot); portfolio (consent record by display name, open cases, no customer email); inventory quality (counts, flags open_case, possible_duplicate, pending_review; zeros for a provider); members (owner, manager, invitation, status filter); plan history (newest first, assigned by, the plan request answered, paging)",
+          "backend_affected": "9 files, 353 passed: identity, vehicle, appointment, organization, inventory and billing sweeps (the nine new routes with their resolvers and the unrelated-purpose probe), s14 (27 PURP bindings), s18 (ShowcaseConsent moved), routes (BFLA across staff roles)",
+          "backend_integration_full": "965 tests in 64 files (about 30 minutes): 963 passed, 2 failed, both known from S22 and unrelated to S23: tools/db/baseline.int.test.ts baseline hash (Docs/43 changed in earlier stages and the local database was migrated, not reset; passes after pnpm db:reset; S23 changes no schema) and the seed check (94 non-fixture accounts, expected 2; R-15).",
+          "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck, lint and i18n:check (3175 keys) pass; 691 unit tests passed (76 files); nothing else changed (admin-plane operations only)",
+          "admin_console": "contract:generate (117 admin-api operations), contract:check, typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files) after the pins 108 -> 117",
+          "environment": "Node 20.10 is still the machine Node; this session used the portable Node 24.22.3 from session 84fe488f's scratchpad on PATH; nothing was installed system-wide. No migration in S23.",
+          "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
+        }
+      }
     }
   ],
   "coverage_summary": {

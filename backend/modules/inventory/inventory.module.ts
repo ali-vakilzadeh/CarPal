@@ -18,6 +18,7 @@ import { ConsentScopes } from '#modules/identity/interface/identity.js';
 import { AttachmentTargets, MediaService } from '#modules/media/interface/media.js';
 import { OrganizationExtensions } from '#modules/organization/interface/extensions.js';
 import { repointColumns, TaxonomyReferences } from '#modules/taxonomy/interface/taxonomy-resolver.js';
+import { AdminOrgInventoryQualityHandler } from './application/admin-ops.js';
 import { CatalogQuality, ItemReferences } from './application/common.js';
 import { InventoryBulkUpdater, InventoryImporter } from './application/importer.js';
 import { rateString } from './domain/rules.js';
@@ -136,6 +137,8 @@ export class InventoryRegistrations implements OnModuleInit {
     InventoryBulkUpdater,
     InventoryRegistrations,
     InventoryAiRegistrations,
+    // admin-api host (§23.2, backend S23 BR-16): A-ORG-02 Inventory; other hosts skip it.
+    AdminOrgInventoryQualityHandler,
   ],
   exports: [InventoryRead, CatalogQuality, ItemReferences, InventoryImporter, InventoryBulkUpdater],
 })

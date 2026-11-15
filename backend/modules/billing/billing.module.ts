@@ -5,6 +5,7 @@ import { Global, Injectable, Module, Optional, type OnModuleInit } from '@nestjs
 import { EntitlementChecker } from '#libs/entitlements/index.js';
 import { FourEyesExecutors, WorkQueues } from '#modules/admin/interface/admin.js';
 import {
+  AdminOrgPlanHistoryHandler,
   AdminPlansListHandler,
   AdminPlanUpdateHandler,
   AdminSubscriptionAssignHandler,
@@ -66,6 +67,8 @@ export class BillingAdminRegistrations implements OnModuleInit {
     AdminPlanUpdateHandler,
     AdminSubscriptionsListHandler,
     AdminSubscriptionChangeRequestsListHandler,
+    // Backend S23 (BR-16): A-ORG-02 Plan history.
+    AdminOrgPlanHistoryHandler,
   ],
   exports: [UsageCounters, SubscriptionReader, SubscriptionWriter, EntitlementChecker],
 })

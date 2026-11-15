@@ -33,7 +33,7 @@
     },
     "counts": {
       "recommendations": 35,
-      "todo": 3,
+      "todo": 2,
       "r_item_actions_for_backend": 12,
       "unlinked_open_doc_issues": 4,
       "stages": 15,
@@ -46,12 +46,12 @@
         "closed": 6
       },
       "by_priority_note": "Recommendations only. mixed = BR-35 (part 1 row P0, part 2 P1, parts 1-filters and 3 P2). R-items are planned in r_item_actions_for_backend and are not counted here.",
-      "done_in_refinement": 31,
+      "done_in_refinement": 32,
       "partly_done": 0,
       "counts_note": "todo, done_in_refinement and partly_done follow the recommendation status; by_priority keeps the planning view of 2026-11-12."
     },
     "status": "in_progress",
-    "status_note": "Prioritised and staged from the Admin Console items (2026-11-12). S13 done on 2026-11-12 (contract 1.4.0 opened), S14 done on 2026-11-13 (purpose bound to the record). PWA items and the backend next_iteration items are not merged yet; they join through action_plan.intake_rules. Stages run as backend S13-S25 and are logged in backend/dev_plan.json when started. S15 done on 2026-11-13 (versioned legal texts and acceptance). S16a done on 2026-11-13 (staff recovery codes, own keys, break glass). S16b done on 2026-11-13 (staff account recovery with two ADM approvals). S17 done on 2026-11-14 (notification templates and rules, staff notices). S18 done on 2026-11-14 (moderation queues and content context). S15b done on 2026-11-14 (consent texts as versioned documents, re-consent of granted consents). S20 done on 2026-11-14 (dispute message threads, target snapshots and withdrawal; reduce_weight, edit_request and downgrade_fitment), run before S19 at the owner's request. S19 done on 2026-11-14 (organization search filters, request more info with resubmission and a paused review clock, verification assignment, profile corrections with history, assist sessions list), after S20. S21 done on 2026-11-15 (plan status and defaults, subscriptions and plan requests lists, retention create and dry run, flag and rate ids, system health and the work summary). S22 done on 2026-11-15 (organization merge through the OrganizationReferences registry: preview, the merge job after four eyes, every module's rule; apply_redaction on images).",
+    "status_note": "Prioritised and staged from the Admin Console items (2026-11-12). S13 done on 2026-11-12 (contract 1.4.0 opened), S14 done on 2026-11-13 (purpose bound to the record). PWA items and the backend next_iteration items are not merged yet; they join through action_plan.intake_rules. Stages run as backend S13-S25 and are logged in backend/dev_plan.json when started. S15 done on 2026-11-13 (versioned legal texts and acceptance). S16a done on 2026-11-13 (staff recovery codes, own keys, break glass). S16b done on 2026-11-13 (staff account recovery with two ADM approvals). S17 done on 2026-11-14 (notification templates and rules, staff notices). S18 done on 2026-11-14 (moderation queues and content context). S15b done on 2026-11-14 (consent texts as versioned documents, re-consent of granted consents). S20 done on 2026-11-14 (dispute message threads, target snapshots and withdrawal; reduce_weight, edit_request and downgrade_fitment), run before S19 at the owner's request. S19 done on 2026-11-14 (organization search filters, request more info with resubmission and a paused review clock, verification assignment, profile corrections with history, assist sessions list), after S20. S21 done on 2026-11-15 (plan status and defaults, subscriptions and plan requests lists, retention create and dry run, flag and rate ids, system health and the work summary). S22 done on 2026-11-15 (organization merge through the OrganizationReferences registry: preview, the merge job after four eyes, every module's rule; apply_redaction on images). S23 done on 2026-11-15 (the A-USR-02 and A-ORG-02 tab reads: vehicles, appointments, consents, sessions and devices; capabilities and badges, portfolio, inventory quality, members, plan history).",
     "last_updated": "2026-11-15",
     "progress": {
       "as_of": "2026-11-15",
@@ -67,12 +67,13 @@
         "S19",
         "S20",
         "S21",
-        "S22"
+        "S22",
+        "S23"
       ],
       "stages_in_progress": [],
-      "next_stage": "S23 (extended staff reads for users and organizations). The console can take the S15b and S17-S22 additions into AC9 (merge) and AC13/AC14.",
-      "contract": "Docs/40 1.4.0 open (470 operations, 522 routes; 469 served, auth.social_start deferred; 55 error codes). Frozen at S25.",
-      "summary": "S22 done: admin.org_merge runs as a job after approval (organization_merge, read by admin.job_get) that applies every module's registered organization references by rule (move, keep_target, merge, retire, refuse, history) in one transaction; admin.org_merge_preview counts them with their conflicts; an open assist session refuses the merge; the duplicate's members lose access and are not added. case_action apply_redaction boxes an image in the media worker and replaces the public copy. BR-08 and BR-15 done, DI-67 closed. Next, S23. Open decisions: DQ-20 items 3-4 (strategy proposed); defaults applied and awaiting confirmation: DQ-01, DQ-05, DQ-06, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15, DQ-21."
+      "next_stage": "S24 (support tickets and AI review decisions). The console can take the S15b and S17-S23 additions into AC9 (merge), AC10 (user tabs) and AC13/AC14.",
+      "contract": "Docs/40 1.4.0 open (479 operations, 531 routes; 478 served, auth.social_start deferred; 55 error codes). Frozen at S25.",
+      "summary": "S23 done: nine staff reads behind the A-USR-02 tabs (admin.user_vehicles, user_appointments, user_consents, user_sessions) and the A-ORG-02 tabs (admin.org_capabilities, org_portfolio, org_inventory_quality, org_members, org_plan_history), each PURP and bound per S14 to the user or organization in its path; six are PII reads with a pii.read entry. BR-16 done (DI-06, DI-07). Next, S24. Open decisions: DQ-20 items 3-4 (strategy proposed); defaults applied and awaiting confirmation: DQ-01, DQ-05, DQ-06, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15, DQ-21."
     },
     "decisions_from_owner_2026_11_13": [
       "DQ-04 answered: the recommended staff recovery process (own recovery codes, requester proof, two ADM approvals in the console with an out-of-band check, 72-hour restriction, break glass). S16 split into S16a and S16b; R-11 and R-15 moved to S25.",
@@ -95,7 +96,8 @@
     ],
     "decisions_from_owner_2026_11_15": [
       "S21 run at the owner's request (\"execute stage 21\"), after S19 and S20.",
-      "S22 run at the owner's request (\"execute stage 22\", after a 200-minute timer), after S21."
+      "S22 run at the owner's request (\"execute stage 22\", after a 200-minute timer), after S21.",
+      "S23 run at the owner's request (\"review the file backend/BR-update-plan.json and execute the stage 23\"), after S22."
     ]
   },
   "recommendations": [
@@ -736,7 +738,7 @@
       },
       "priority": "should",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "Extended staff reads for user and organization tabs (vehicles summary, appointments, consents history, sessions, capabilities/badges with rule evaluation, portfolio with consent, inventory quality, members, plan history), each PURP.",
       "source_notes": {},
@@ -765,7 +767,8 @@
         "stage": [
           "S23"
         ],
-        "why": "Should. Nine read areas across many modules; each needs a staff projection and PURP. The console shows the core views meanwhile."
+        "why": "Should. Nine read areas across many modules; each needs a staff projection and PURP. The console shows the core views meanwhile.",
+        "note": "Done in S23 (2026-11-15): nine PURP staff reads bound to the user or organization of the purpose item (S23-D1..D9)."
       }
     },
     {
@@ -4936,7 +4939,7 @@
       {
         "id": "S23",
         "title": "Extended staff reads for users and organizations",
-        "status": "not_started",
+        "status": "done",
         "items": [
           "BR-16"
         ],
@@ -4961,14 +4964,18 @@
             "items": [
               "BR-16"
             ],
-            "task": "User tabs (PURP): admin.user_vehicles (summary), admin.user_appointments, admin.user_consents (history), admin.user_sessions (devices)."
+            "task": "User tabs (PURP): admin.user_vehicles (summary), admin.user_appointments, admin.user_consents (history), admin.user_sessions (devices).",
+            "status": "done",
+            "result": "admin.user_vehicles (StaffVehicleRow: masked plate and VIN), admin.user_appointments (StaffAppointmentRow, no description or contact), admin.user_consents (ConsentRecord history), admin.user_sessions (StaffUserSessions with push devices through PushDevicesRead); each PURP PII bound to the user (S23-D1..D5)."
           },
           {
             "id": "S23.T2",
             "items": [
               "BR-16"
             ],
-            "task": "Organization tabs (PURP): admin.org_capabilities (capabilities and badges with the rule evaluation), admin.org_portfolio (with consent), admin.org_inventory_quality, admin.org_members, admin.org_plan_history."
+            "task": "Organization tabs (PURP): admin.org_capabilities (capabilities and badges with the rule evaluation), admin.org_portfolio (with consent), admin.org_inventory_quality, admin.org_members, admin.org_plan_history.",
+            "status": "done",
+            "result": "admin.org_capabilities (matrix and badges with evaluation_snapshot, TrustAdmin.badges), admin.org_portfolio (StaffPortfolioItem with ShowcaseConsent and open cases, PII), admin.org_inventory_quality (counts, data and catalog quality computed now, flagged items), admin.org_members (OrgMember, PII), admin.org_plan_history (subscriptions with the plan request they answered); each PURP bound to the organization (S23-D6..D8)."
           }
         ],
         "contract_changes": "Additive.",
@@ -4977,7 +4984,149 @@
         "acceptance_criteria": [
           "Every read is PURP and bound per S14.",
           "Sweep projection checks cover each new view."
-        ]
+        ],
+        "report": {
+          "started_at": "2026-11-15",
+          "completed_at": "2026-11-15",
+          "note_on_order": "Run at the owner's request (\"execute the stage 23\") after S22; its dependencies (S13 badges list, S14 purpose binding) were done.",
+          "summary": "The admin console can now fill the user and organization tabs that only had placeholders. On a user (A-USR-02): the vehicles the user owns with brand, model, year and status (the VIN shows its last four characters, the plate its last two, documents and notes are never read); the appointments the user requested with the business, vehicle, type, status and dates (never the description or contact data); the full consent history, read-only; and the active sessions and push devices (never a token). On an organization (A-ORG-02): the capability matrix and every badge with the rule evaluation that awarded it; the showcases with consent status, the customer's consent record by display name and open cases; the inventory quality (counts, data quality, confirmed fitment, inquiry fulfillment, the catalog quality score computed now and the flagged items); the members and pending invitations; and the plan history with who assigned each plan and the plan request it answered. Every read needs a purpose naming a work item about that user or organization (403 PURPOSE_RECORD_MISMATCH otherwise, S14); the six reads with personal data write a pii.read audit entry naming the case and the subject. Contract 1.4.0: 479 operations, 531 routes, 55 error codes. No migration. Every acceptance criterion is met.",
+          "acceptance_criteria": [
+            {
+              "criterion": "Every read is PURP and bound per S14.",
+              "met": true,
+              "evidence": "s23.int.test.ts: for each of the nine routes no purpose answers 400, a case about another user or organization 403 PURPOSE_RECORD_MISMATCH, a community reviewer 404, and the purpose of a case about the record 200; the PII reads wrote pii.read \"<group>; subject user:<id>\" (or organization) under that case and nothing under the other; a verification purpose admits its organization and its submitter, not another member. s14.int.test.ts: all 27 PURP operations have a binding (pin 18 -> 27); the sweep probes every new PURP route with an unrelated purpose (403)."
+            },
+            {
+              "criterion": "Sweep projection checks cover each new view.",
+              "met": true,
+              "evidence": "contract-sweep.test.ts (unit): new static check that the nine responses are PURP, admin-api only, and cannot carry the plate, notes, documents, mileage, the appointment description, contact or exact address, session tokens or IPs, customer contact or trade prices; the existing SEC-OUT-1, VIN and price_trade checks run over them too. The generated sweep suites (vehicle, appointment, identity, organization, inventory, billing) run each new route with a resolver whose check asserts the masked plate, no description, no token, the badge and consent blocks, and the dynamic projection scan."
+            }
+          ],
+          "ops_added": [
+            "admin.user_vehicles (GET {adm}/users/{user_id}/vehicles, STF(ADM, MOD, SUP) PURP PII)",
+            "admin.user_appointments (GET {adm}/users/{user_id}/appointments, STF(ADM, MOD, SUP) PURP PII)",
+            "admin.user_consents (GET {adm}/users/{user_id}/consents, STF(ADM, MOD, SUP) PURP PII)",
+            "admin.user_sessions (GET {adm}/users/{user_id}/sessions, STF(ADM, MOD, SUP) PURP PII)",
+            "admin.org_capabilities (GET {adm}/orgs/{org_id}/capabilities, STF(ADM, MOD, SUP) PURP)",
+            "admin.org_portfolio (GET {adm}/orgs/{org_id}/portfolio, STF(ADM, MOD, SUP) PURP PII)",
+            "admin.org_inventory_quality (GET {adm}/orgs/{org_id}/inventory-quality, STF(ADM, MOD, SUP) PURP)",
+            "admin.org_members (GET {adm}/orgs/{org_id}/members, STF(ADM, MOD, SUP) PURP PII)",
+            "admin.org_plan_history (GET {adm}/orgs/{org_id}/plan-history, STF(ADM, MOD, SUP) PURP)"
+          ],
+          "ops_changed": [],
+          "contract": "Docs/40 1.4.0 (still open): §23.1 StaffVehicleRow, StaffAppointmentRow, StaffUserSession, StaffPushDevice, StaffUserSessions, StaffOrgCapabilities, StaffPortfolioItem, InventoryFlag, StaffFlaggedItem, StaffInventoryQuality, StaffPlanHistoryItem; §23.2 nine operations; Appendix D two S23 rows. 479 operations, 531 routes (478 served; auth.social_start deferred), 55 error codes.",
+          "files_created": [
+            "backend/modules/identity/application/staff-tabs.ts",
+            "backend/modules/vehicle/application/admin-ops.ts",
+            "backend/modules/appointment/application/admin-ops.ts",
+            "backend/modules/organization/application/staff-tabs.ts",
+            "backend/modules/inventory/application/admin-ops.ts",
+            "backend/modules/notification/{interface,infrastructure}/push-devices.ts",
+            "backend/apps/testing/s23.int.test.ts"
+          ],
+          "files_changed": [
+            "Docs/40.API contract.md (§23.1, §23.2, Appendix D)",
+            "Docs/23.Admin_WebUI_screens.md (A-USR-02 and A-ORG-02 tab rows name the S23 reads)",
+            "backend/tools/contract/parse-operations.ts (module of four S23 operations)",
+            "backend/modules/admin/admin.module.ts (nine record bindings)",
+            "backend/modules/identity/{identity-admin.module.ts, application/consent-ops.ts (listConsents exported)}",
+            "backend/modules/{vehicle/vehicle.module.ts, appointment/appointment.module.ts, inventory/inventory.module.ts, notification/notification.module.ts} (handlers, PushDevicesRead)",
+            "backend/modules/organization/{organization-admin.module.ts, application/admin-registrations.ts (showcaseConsentView)}",
+            "backend/modules/billing/{billing.module.ts, application/admin-ops.ts (AdminOrgPlanHistoryHandler)}",
+            "backend/modules/trust/{interface/trust.ts, application/admin-ops.ts} (TrustAdmin.badges)",
+            "backend/libs/contract/generated/*, libs/contract/contract.test.ts (479/531)",
+            "backend/apps/testing/{s14.int.test.ts (27 PURP), contract/contract-sweep.test.ts (S23 static check), contract/resolvers/{vehicle,appointment,identity,organization,inventory,billing}.ts, contract/generated (6 suites)}",
+            "shared/api-contracts/{openapi.yaml, generated/*}",
+            "frontend/admin-console: src/lib/api/generated/*, tools/contract/generate.test.ts and src/server/bff/allowlist.test.ts (117 admin operations)"
+          ],
+          "tests": {
+            "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 564 modules), typecheck, prettier on the changed files: pass",
+            "backend_unit": "323 passed (47 files), including the registry pin (479 operations, 531 routes) and the new S23 static projection check in contract-sweep.test.ts",
+            "backend_contract": "contract:check up to date (1.4.0, 479 operations, 55 error codes); contract sweep suites up to date (17 modules, 6 regenerated); openapi:check: 531 operations on 429 paths; contract:coverage 478/479 served (auth.social_start deferred), 0 unexplained 501s",
+            "backend_s23": "12 passed (apps/testing/s23.int.test.ts): binding of the four user reads and the five organization reads (400 without a purpose, 403 PURPOSE_RECORD_MISMATCH under a case about someone else, 404 for a community reviewer, 200 under the record's case; pii.read entries for the six PII reads only, naming the subject); a verification purpose admits its organization and submitter, not another member; vehicles (own only, masked plate, no notes, status filter, paging); appointments (requested by the user, provider and vehicle card, no description, status filter); consents (history with withdrawn, active and type filters, no write route); sessions (two sessions without current, push devices active first, no token); capabilities (strongest first, badges in every status with evaluation_snapshot); portfolio (consent record by display name, open cases, no customer email); inventory quality (counts, flags open_case, possible_duplicate, pending_review; zeros for a provider); members (owner, manager, invitation, status filter); plan history (newest first, assigned by, the plan request answered, paging)",
+            "backend_affected": "9 files, 353 passed: identity, vehicle, appointment, organization, inventory and billing sweeps (the nine new routes with their resolvers and the unrelated-purpose probe), s14 (27 PURP bindings), s18 (ShowcaseConsent moved), routes (BFLA across staff roles)",
+            "backend_integration_full": "965 tests in 64 files (about 30 minutes): 963 passed, 2 failed, both known from S22 and unrelated to S23: tools/db/baseline.int.test.ts baseline hash (Docs/43 changed in earlier stages and the local database was migrated, not reset; passes after pnpm db:reset; S23 changes no schema) and the seed check (94 non-fixture accounts, expected 2; R-15).",
+            "pwa": "contract:generate (shared/api-contracts regenerated), contract:check up to date, typecheck, lint and i18n:check (3175 keys) pass; 691 unit tests passed (76 files); nothing else changed (admin-plane operations only)",
+            "admin_console": "contract:generate (117 admin-api operations), contract:check, typecheck, lint and i18n:check (1554 keys) pass; 430 unit and DOM tests passed (44 files) after the pins 108 -> 117",
+            "environment": "Node 20.10 is still the machine Node; this session used the portable Node 24.22.3 from session 84fe488f's scratchpad on PATH; nothing was installed system-wide. No migration in S23.",
+            "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25 (PD-03, DQ-08)."
+          },
+          "deviations": [
+            {
+              "id": "S23-D1",
+              "task": "S23.T1, S23.T2",
+              "item": "BR-16",
+              "deviation": "Roles: all nine reads are STF(ADM, MOD, SUP), as admin.user_get and admin.org_get; a community reviewer (or any role the operation does not name) gets 404 like other admin routes. admin.user_sessions is not limited to ADM and SUP (the roles of admin.user_sessions_revoke): moderators investigate review fraud patterns (the same device), and the purpose binding limits the read to the users of their own work item.",
+              "impact": "Console: show the A-USR-02 and A-ORG-02 tabs to administrators, moderators and support; hide them for community reviewers."
+            },
+            {
+              "id": "S23-D2",
+              "task": "S23.T1, S23.T2",
+              "item": "BR-16",
+              "deviation": "PII tagging: six reads carry personal data and are PURP PII with a pii.read entry naming the bound subject (user_vehicles \"vehicles (summary)\", user_appointments \"appointments (summary)\", user_consents \"consent history\", user_sessions \"sessions and devices\", org_portfolio \"portfolio with customer consents\", org_members \"members and invitations\"). org_capabilities, org_inventory_quality and org_plan_history are PURP only: business data, and the staff and member display names of the plan history are what admin.subscriptions_list already shows without a purpose.",
+              "impact": "None (the console sends the work item purpose on every tab, GD-10)."
+            },
+            {
+              "id": "S23-D3",
+              "task": "S23.T1",
+              "item": "BR-16",
+              "deviation": "admin.user_vehicles lists the vehicles the user owns (owner_type user), newest first, with q status. Fleet vehicles the user drives belong to the fleet organization and are not listed. StaffVehicleRow carries brand, model, series, year, status, vin_last4 (as the owner's own Vehicle) and plate_masked (\"•••• \" and the plate's last two characters, new); never the plate, VIN, notes, mileage, photos or documents.",
+              "impact": "Console: A-USR-02 Vehicles shows the rows as they are; there is no link to a vehicle record (no staff vehicle read)."
+            },
+            {
+              "id": "S23-D4",
+              "task": "S23.T1",
+              "item": "BR-16",
+              "deviation": "admin.user_appointments lists the appointments the user requested (requester_user_id), including those requested for a fleet (requester_organization), newest first, with q status. Appointments where the user works on the provider side are not listed (they are the business's). There is no staff read of the full appointment record that Docs/23 links to, so StaffAppointmentRow carries no description, notes, contact data or exact address; Docs/23 now says the row links to the business.",
+              "impact": "Console: A-USR-02 Appointments links the provider (OrgSummary) instead of an appointment record."
+            },
+            {
+              "id": "S23-D5",
+              "task": "S23.T1",
+              "item": "BR-16",
+              "deviation": "admin.user_consents answers Page<ConsentRecord> exactly as consents.list (q consent_type, active), newest first; the \"current state per type\" of Docs/23 is the newest record of each type, derived by the console. admin.user_sessions answers one StaffUserSessions object instead of a page: at most 100 sessions newest first with sessions_total, each a Session without current (meaningless for staff) and with staff (an admin-plane session); push devices (at most 50, active first) come from the notification module through the new PushDevicesRead port and never carry the token.",
+              "impact": "Console: Sessions & devices shows \"more than 100 sessions\" when sessions_total > 100 and offers Force sign-out (admin.user_sessions_revoke)."
+            },
+            {
+              "id": "S23-D6",
+              "task": "S23.T2",
+              "item": "BR-16",
+              "deviation": "admin.org_capabilities answers one StaffOrgCapabilities object: up to 500 capabilities strongest first (confidence_score) with capabilities_total, and up to 100 badges in every status newest first (TrustAdmin.badges, new). \"The rule evaluation that awarded each\" is the stored ProviderBadge.evaluation_snapshot; nothing is re-evaluated, and Recalculate (Docs/23) has no operation. Coverage rows (provider.coverage_list) are not included.",
+              "impact": "Console: render evaluation_snapshot as the rule evaluation; leave Recalculate out until an operation exists."
+            },
+            {
+              "id": "S23-D7",
+              "task": "S23.T2",
+              "item": "BR-16",
+              "deviation": "admin.org_inventory_quality computes the 54 §7.2 catalog quality score now without writing it (the vendor profile keeps its stored value until the daily rule). Flagged items are those with an open moderation case, pending review, hidden, or a possible duplicate (duplicate_of_item_id); low_quality (data_quality_score below 50) only marks a listed item and is counted as low_quality_active, so a catalog of thin listings does not drown the real flags. At most 50 flagged items, newest change first, with flagged_total. Every organization type answers (zeros without inventory).",
+              "impact": "Console: show the Inventory tab for vendors and hybrids; the flagged list links to the items' cases where open_case is set."
+            },
+            {
+              "id": "S23-D8",
+              "task": "S23.T2",
+              "item": "BR-16",
+              "deviation": "admin.org_plan_history lists the organization's subscriptions newest first as StaffSubscriptionRow with change_request, the plan request whose resulting_subscription_id is that subscription. Open, declined and withdrawn requests are not history entries (admin.subscription_change_requests_list with organization_id lists them). A subscription keeps no end date of its own; status and expires_at say how it ended.",
+              "impact": "Console: the Plan tab shows the current plan from admin.org_get and this list under it."
+            },
+            {
+              "id": "S23-D9",
+              "task": "-",
+              "item": "-",
+              "deviation": "Each read is served by the module that owns the records: vehicle (user_vehicles), appointment (user_appointments), identity (user_consents, user_sessions), organization (org_capabilities, org_portfolio, org_members), inventory (org_inventory_quality), billing (org_plan_history); tools/contract/parse-operations.ts maps the four whose name prefix pointed elsewhere, so their sweep suites sit with their module. New ports: PushDevicesRead (notification interface) and TrustAdmin.badges; the ShowcaseConsent projection moved to organization/application/staff-tabs.ts (showcaseConsentView) and is shared with the S18 snapshot. No migration, no table or column.",
+              "impact": "None."
+            }
+          ],
+          "notes_for_next": [
+            "Admin console (AC10 user tabs, AC9 and AC14 organization tabs): Vehicles, Appointments, Consents and Sessions & devices on A-USR-02; Capabilities & badges, Portfolio, Inventory, Members and Plan history on A-ORG-02; send the work item purpose on each (a record outside the item answers 403 PURPOSE_RECORD_MISMATCH); hide the tabs for community reviewers (404). Console contract regenerated (117 operations); only the two pins changed.",
+            "Docs/23 rows still without an operation: the full appointment record behind A-USR-02 Appointments, Recalculate on Capabilities & badges, and the user tabs Reviews & content, Privacy requests, Cases & disputes and Audit (not in BR-16; DSRs, cases and the audit search have their own lists).",
+            "Owner: confirm DQ-21 and the earlier defaults (DQ-01, DQ-05, DQ-06, DQ-09, DQ-10, DQ-12, DQ-13, DQ-14, DQ-15); DQ-20 items 3 and 4.",
+            "Environment: Node 24 is still not installed on the machine; this session used the portable Node 24.22.3 from session 84fe488f's scratchpad.",
+            "Next backend stage: S24 (support tickets and AI review decisions)."
+          ],
+          "open_after_stage": [
+            "Nothing committed (commit only when the owner asks)."
+          ]
+        }
       },
       {
         "id": "S24",

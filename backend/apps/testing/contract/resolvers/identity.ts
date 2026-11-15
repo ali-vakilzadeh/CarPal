@@ -689,4 +689,30 @@ export const resolvers: Resolvers = {
       check: (res) => h.rejectChange(res.body.change_id as string),
     };
   },
+  // Backend S23 (BR-16): A-USR-02 Consents and Sessions & devices under a case about the user.
+  'admin.user_consents': async (h) => {
+    const target = await h.user();
+    ok(await target.c.post('/v1/me/consents', { consent_type: 'marketing', policy_version: '1.0' }), 'consent');
+    const caseId = await openCase(h.api, { targetId: target.user.id });
+    return {
+      as: await h.staff('platform_support'),
+      params: { user_id: target.user.id },
+      headers: purpose('case', caseId),
+      check: (res) => expect(res.body.items).toEqual([expect.objectContaining({ consent_type: 'marketing', granted: true })]),
+    };
+  },
+  'admin.user_sessions': async (h) => {
+    const target = await h.user();
+    const caseId = await openCase(h.api, { targetId: target.user.id });
+    return {
+      as: await h.staff('platform_support'),
+      params: { user_id: target.user.id },
+      headers: purpose('case', caseId),
+      check: (res) => {
+        expect(res.body.sessions_total).toBeGreaterThan(0);
+        expect((res.body.sessions as Json[])[0]).toEqual(expect.objectContaining({ staff: false }));
+        expect((res.body.sessions as Json[])[0]).not.toHaveProperty('current');
+      },
+    };
+  },
 };

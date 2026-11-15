@@ -85,6 +85,36 @@ describe('projection rules over every response schema (40 Appendix C.4)', () => 
     expect(reachable('admin.orgs_search').map((p) => p.name)).toEqual(expect.arrayContaining(['city', 'plan_key', 'member_count']));
   });
 
+  it('the S23 staff tab reads are PURP and carry no plates, notes, documents, tokens, addresses or customer contact (BR-16)', () => {
+    // Backend S23: each tab of A-USR-02 and A-ORG-02 is read under a purpose bound to its user or organization (S14), and
+    // shows a summary: the console never gets more of a user's or business's records than the tab names.
+    const NEVER: Record<string, string[]> = {
+      'admin.user_vehicles': ['license_plate', 'notes', 'documents', 'mileage_km', 'owner_id', 'primary_photo_url'],
+      'admin.user_appointments': ['description', 'customer_expectations', 'requester_contact', 'provider_location_exact', 'point'],
+      'admin.user_consents': [],
+      'admin.user_sessions': ['token', 'refresh_token', 'ip', 'ip_address', 'current'],
+      'admin.org_capabilities': [],
+      'admin.org_portfolio': ['email', 'phone', 'customer_user_id'],
+      'admin.org_inventory_quality': ['price_trade', 'notes'],
+      'admin.org_members': ['phone'],
+      'admin.org_plan_history': ['email', 'phone'],
+    };
+    for (const [opId, never] of Object.entries(NEVER)) {
+      const op = registry.operations.find((o) => o.opId === opId)!;
+      expect(op.sec, opId).toContain('PURP');
+      expect(
+        op.routes.map((r) => r.host),
+        opId,
+      ).toEqual(['admin-api']);
+      const names = new Set(reachable(opId).map((p) => p.name));
+      expect(
+        never.filter((n) => names.has(n)),
+        opId,
+      ).toEqual([]);
+    }
+    expect(reachable('admin.user_vehicles').map((p) => p.name)).toEqual(expect.arrayContaining(['vin_last4', 'plate_masked']));
+  });
+
   it('only vehicles.vin_reveal can return a full VIN (SEC-OUT-2)', () => {
     const hits = registry.operations
       .filter((o) => !VIN_OPERATIONS.has(o.opId) && reachable(o.opId).some((p) => p.name === 'vin'))

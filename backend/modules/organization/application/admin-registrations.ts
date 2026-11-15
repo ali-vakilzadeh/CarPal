@@ -17,7 +17,7 @@ import {
   WorkQueues,
   type ContentAction,
 } from '#modules/admin/interface/admin.js';
-import { authorDisplayName, ConsentGrants, PersonalDataRegistry, UserCards } from '#modules/identity/interface/identity.js';
+import { ConsentGrants, PersonalDataRegistry, UserCards } from '#modules/identity/interface/identity.js';
 import { MediaService } from '#modules/media/interface/media.js';
 import { MetricGauges } from '#modules/analytics/interface/analytics.js';
 import { repointColumns, TaxonomyReferences } from '#modules/taxonomy/interface/taxonomy-resolver.js';
@@ -26,6 +26,7 @@ import { JobService } from '#libs/jobs/index.js';
 import { OrganizationReferences } from '../interface/org-references.js';
 import { organizationReferences, startOrganizationMerge } from './merge.js';
 import { registerOrganizationWork } from './work-queue.js';
+import { showcaseConsentView } from './staff-tabs.js';
 
 @Injectable()
 export class OrganizationAdminRegistrations implements OnModuleInit {
@@ -47,18 +48,7 @@ export class OrganizationAdminRegistrations implements OnModuleInit {
 
   /** 40 ShowcaseConsent of a showcase (S18, BR-33): the customer's consent record, by display name only. */
   private async showcaseConsent(scope: TxScope, consentId: string | null, locale: string) {
-    const c = consentId ? await this.consents?.record(scope, consentId) : null;
-    if (!c) return null;
-    const card = c.subjectType === 'user' ? (await this.users?.cards(scope, [c.subjectId]))?.get(c.subjectId) : undefined;
-    return {
-      customer_display_name: authorDisplayName(card, locale),
-      consent_type: c.consentType,
-      scope: c.scope,
-      granted: c.granted,
-      granted_at: c.grantedAt ? c.grantedAt.toISOString() : null,
-      withdrawn_at: c.withdrawnAt ? c.withdrawnAt.toISOString() : null,
-      expires_at: c.expiresAt ? c.expiresAt.toISOString() : null,
-    };
+    return showcaseConsentView(scope, this.consents, this.users, consentId, locale);
   }
 
   /** Moderator decisions on a showcase item (52 PortfolioItem: published only after moderation approves). */

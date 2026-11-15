@@ -14,6 +14,8 @@ import { NotificationDispatchConsumer } from './events/dispatch.consumer.js';
 import { NotificationAdminRegistrations } from './application/admin-registrations.js';
 import { DbNotificationRules } from './infrastructure/notification-store.js';
 import { NotificationRulesRead } from './interface/notification-rules.js';
+import { DbPushDevices } from './infrastructure/push-devices.js';
+import { PushDevicesRead } from './interface/push-devices.js';
 
 @Global()
 @Module({
@@ -22,7 +24,9 @@ import { NotificationRulesRead } from './interface/notification-rules.js';
     NotificationDispatcher,
     NotificationDispatchConsumer,
     { provide: NotificationRulesRead, useClass: DbNotificationRules },
+    // Backend S23 (BR-16): push devices on admin.user_sessions.
+    { provide: PushDevicesRead, useClass: DbPushDevices },
   ],
-  exports: [NotificationDispatcher, NotificationRulesRead],
+  exports: [NotificationDispatcher, NotificationRulesRead, PushDevicesRead],
 })
 export class NotificationModule {}

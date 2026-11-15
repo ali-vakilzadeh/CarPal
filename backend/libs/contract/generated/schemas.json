@@ -7133,6 +7133,16 @@
       ],
       "additionalProperties": false
     },
+    "InventoryFlag": {
+      "type": "string",
+      "enum": [
+        "open_case",
+        "pending_review",
+        "hidden",
+        "possible_duplicate",
+        "low_quality"
+      ]
+    },
     "InventoryImportBatch": {
       "type": "object",
       "properties": {
@@ -22917,6 +22927,214 @@
       ],
       "additionalProperties": false
     },
+    "StaffAppointmentRow": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrgSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "null when the business is gone"
+        },
+        "requester_type": {
+          "$ref": "#/$defs/RequesterType"
+        },
+        "requester_organization": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OrgSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the fleet of a fleet appointment"
+        },
+        "vehicle": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "brand": {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "locale": {
+                      "type": "string",
+                      "enum": [
+                        "en",
+                        "fa"
+                      ],
+                      "x-locale-config": true
+                    }
+                  },
+                  "required": [
+                    "text",
+                    "locale"
+                  ],
+                  "additionalProperties": false
+                },
+                "model": {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "locale": {
+                      "type": "string",
+                      "enum": [
+                        "en",
+                        "fa"
+                      ],
+                      "x-locale-config": true
+                    }
+                  },
+                  "required": [
+                    "text",
+                    "locale"
+                  ],
+                  "additionalProperties": false
+                },
+                "year": {
+                  "type": "integer",
+                  "minimum": 1950,
+                  "maximum": 2100
+                }
+              },
+              "required": [
+                "id",
+                "brand",
+                "model",
+                "year"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "appointment_type": {
+          "$ref": "#/$defs/AppointmentType"
+        },
+        "service_mode": {
+          "$ref": "#/$defs/ServiceMode"
+        },
+        "service_system": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "locale": {
+                  "type": "string",
+                  "enum": [
+                    "en",
+                    "fa"
+                  ],
+                  "x-locale-config": true
+                }
+              },
+              "required": [
+                "text",
+                "locale"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/AppointmentSource"
+        },
+        "urgency_level": {
+          "$ref": "#/$defs/UrgencyLevel"
+        },
+        "safety_flag": {
+          "type": "boolean"
+        },
+        "status": {
+          "$ref": "#/$defs/AppointmentStatus"
+        },
+        "cancelled_by": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "requester",
+            "provider",
+            "system",
+            null
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "confirmed_start_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "provider",
+        "requester_type",
+        "requester_organization",
+        "vehicle",
+        "appointment_type",
+        "service_mode",
+        "service_system",
+        "source",
+        "urgency_level",
+        "safety_flag",
+        "status",
+        "cancelled_by",
+        "created_at",
+        "confirmed_start_at",
+        "completed_at"
+      ],
+      "additionalProperties": false,
+      "description": "no description, notes, contact or address"
+    },
     "StaffDecision": {
       "type": "object",
       "properties": {
@@ -23492,6 +23710,207 @@
       ],
       "additionalProperties": false
     },
+    "StaffFlaggedItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "sku": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "name_translations": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "en",
+              "fa"
+            ]
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "minProperties": 1
+        },
+        "status": {
+          "$ref": "#/$defs/InventoryStatus"
+        },
+        "visibility": {
+          "$ref": "#/$defs/InventoryVisibility"
+        },
+        "data_quality_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InventoryFlag"
+          },
+          "maxItems": 5,
+          "uniqueItems": true
+        },
+        "updated_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "id",
+        "sku",
+        "name_translations",
+        "status",
+        "visibility",
+        "data_quality_score",
+        "flags",
+        "updated_at"
+      ],
+      "additionalProperties": false
+    },
+    "StaffInventoryQuality": {
+      "type": "object",
+      "properties": {
+        "counts": {
+          "type": "object",
+          "properties": {
+            "draft": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000000
+            },
+            "active": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000000
+            },
+            "pending_review": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000000
+            },
+            "hidden": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000000
+            },
+            "discontinued": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000000
+            },
+            "removed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000000
+            }
+          },
+          "required": [
+            "draft",
+            "active",
+            "pending_review",
+            "hidden",
+            "discontinued",
+            "removed"
+          ],
+          "additionalProperties": false
+        },
+        "low_quality_active": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000,
+          "description": "active items with data_quality_score below 50"
+        },
+        "average_data_quality": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "of active items; null without any"
+        },
+        "confirmed_fitment_items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000,
+          "description": "active items with an active confirmed fitment row"
+        },
+        "inquiries_90d": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        "inquiry_fulfillment_percent": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "54 §3.2; null without decidable inquiries"
+        },
+        "measured_response_time_minutes": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "catalog_quality_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "54 §7.2, computed now (the profile keeps the last stored value)"
+        },
+        "flagged": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StaffFlaggedItem"
+          },
+          "maxItems": 50,
+          "description": "items with an open case, pending review, hidden or a possible duplicate; newest change first"
+        },
+        "flagged_total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000
+        }
+      },
+      "required": [
+        "counts",
+        "low_quality_active",
+        "average_data_quality",
+        "confirmed_fitment_items",
+        "inquiries_90d",
+        "inquiry_fulfillment_percent",
+        "measured_response_time_minutes",
+        "catalog_quality_score",
+        "flagged",
+        "flagged_total"
+      ],
+      "additionalProperties": false,
+      "description": "every count is 0 for an organization without inventory"
+    },
     "StaffMe": {
       "type": "object",
       "properties": {
@@ -23651,6 +24070,39 @@
       ],
       "additionalProperties": false,
       "description": "C: email_masked to last_sign_in_at only for platform_admin callers"
+    },
+    "StaffOrgCapabilities": {
+      "type": "object",
+      "properties": {
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Capability"
+          },
+          "maxItems": 500,
+          "description": "strongest confidence first"
+        },
+        "capabilities_total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000,
+          "description": "more than 500: the weakest are not listed"
+        },
+        "badges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProviderBadge"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "capabilities",
+        "capabilities_total",
+        "badges"
+      ],
+      "additionalProperties": false,
+      "description": "every status, newest first; evaluation_snapshot is the rule evaluation that awarded it"
     },
     "StaffOrgSearchRow": {
       "type": "object",
@@ -24184,6 +24636,223 @@
       "additionalProperties": false,
       "description": "new organizations of the audience, and ended trials, get this plan"
     },
+    "StaffPlanHistoryItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "subscriber": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "user",
+                "organization"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            "display": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "pattern": "^[^\\r\\n]*$"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "display"
+          ],
+          "additionalProperties": false,
+          "description": "public name"
+        },
+        "plan_key": {
+          "type": "string",
+          "enum": [
+            "individual_free",
+            "fleet_20",
+            "fleet_50",
+            "fleet_100",
+            "fleet_custom",
+            "provider_basic",
+            "provider_pro",
+            "vendor_basic",
+            "vendor_pro"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "trial",
+            "active",
+            "expired",
+            "cancelled"
+          ]
+        },
+        "started_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "trial_ends_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "overrides": {
+          "type": "object",
+          "properties": {
+            "vehicle_limit": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "user_limit": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "entitlements": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/EntitlementValue"
+              },
+              "maxItems": 20
+            }
+          },
+          "required": [
+            "vehicle_limit",
+            "user_limit",
+            "entitlements"
+          ],
+          "additionalProperties": false,
+          "description": "empty: no entitlement override"
+        },
+        "assigned_by_display": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 50,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "change_request": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "requested_plan_key": {
+                  "type": "string",
+                  "enum": [
+                    "individual_free",
+                    "fleet_20",
+                    "fleet_50",
+                    "fleet_100",
+                    "fleet_custom",
+                    "provider_basic",
+                    "provider_pro",
+                    "vendor_basic",
+                    "vendor_pro"
+                  ]
+                },
+                "requested_by_display": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 50,
+                  "pattern": "^[^\\r\\n]*$"
+                },
+                "note": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+                }
+              },
+              "required": [
+                "id",
+                "requested_plan_key",
+                "requested_by_display",
+                "note",
+                "created_at"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "subscriber",
+        "plan_key",
+        "status",
+        "started_at",
+        "trial_ends_at",
+        "expires_at",
+        "overrides",
+        "assigned_by_display",
+        "change_request"
+      ],
+      "additionalProperties": false,
+      "description": "the organization's plan request this subscription answered"
+    },
     "StaffPolicyDocument": {
       "type": "object",
       "properties": {
@@ -24567,6 +25236,265 @@
         "published_at"
       ],
       "additionalProperties": false
+    },
+    "StaffPortfolioItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "updated_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 140,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3000
+        },
+        "content_locale": {
+          "type": "string",
+          "enum": [
+            "en",
+            "fa"
+          ],
+          "x-locale-config": true
+        },
+        "brand_node_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "x-node-type": "vehicle_brand"
+        },
+        "model_node_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "x-node-type": "vehicle_model"
+        },
+        "series_node_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "x-node-type": "vehicle_series"
+        },
+        "service_system_node_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "x-node-type": "service_system"
+        },
+        "service_task_node_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "x-node-type": "service_task"
+        },
+        "tag_node_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "job_date": {
+          "type": "string",
+          "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$"
+        },
+        "job_log_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "service_record_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "appointment_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "caption": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "caption_source": {
+          "type": "string",
+          "enum": [
+            "manual",
+            "ai_approved"
+          ],
+          "x-conditional": "required with caption; ai_approved needs an accepted insight",
+          "description": "C: required with caption; ai_approved needs an accepted insight"
+        },
+        "ai_caption_insight_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "visibility": {
+          "$ref": "#/$defs/ContentVisibility"
+        },
+        "customer_consent_status": {
+          "$ref": "#/$defs/MediaConsentStatus"
+        },
+        "consent_reference_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "moderation_status": {
+          "$ref": "#/$defs/ModerationStatus"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "pending_review",
+            "published",
+            "rejected",
+            "archived"
+          ]
+        },
+        "media": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MediaAttachmentView"
+          },
+          "maxItems": 40
+        },
+        "consent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ShowcaseConsent"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the customer's consent record; null: none recorded"
+        },
+        "open_cases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "id",
+        "created_at",
+        "updated_at",
+        "version",
+        "title",
+        "content_locale",
+        "service_system_node_id",
+        "visibility",
+        "customer_consent_status",
+        "consent_reference_id",
+        "moderation_status",
+        "status",
+        "media",
+        "consent",
+        "open_cases"
+      ],
+      "additionalProperties": false,
+      "description": "open moderation cases about the showcase"
+    },
+    "StaffPushDevice": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "platform": {
+          "type": "string",
+          "enum": [
+            "ios",
+            "android",
+            "web"
+          ]
+        },
+        "app_version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "locale": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "en",
+                "fa"
+              ],
+              "x-locale-config": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "revoked"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "last_seen_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "platform",
+        "app_version",
+        "locale",
+        "status",
+        "created_at",
+        "last_seen_at"
+      ],
+      "additionalProperties": false,
+      "description": "never the device token"
     },
     "StaffRecoveryDecision": {
       "type": "object",
@@ -25405,6 +26333,102 @@
       "additionalProperties": false,
       "description": "If-Match of admin.taxonomy_node_update"
     },
+    "StaffUserSession": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "client_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "device_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^\\r\\n]*$"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "last_seen_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "country": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acr": {
+          "type": "string",
+          "enum": [
+            "aal1",
+            "aal2",
+            "aal3"
+          ]
+        },
+        "staff": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "client_id",
+        "device_label",
+        "created_at",
+        "last_seen_at",
+        "country",
+        "acr",
+        "staff"
+      ],
+      "additionalProperties": false,
+      "description": "staff: a session on the admin plane"
+    },
+    "StaffUserSessions": {
+      "type": "object",
+      "properties": {
+        "sessions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StaffUserSession"
+          },
+          "maxItems": 100,
+          "description": "newest first"
+        },
+        "sessions_total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000,
+          "description": "more than 100: the oldest are not listed"
+        },
+        "push_devices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StaffPushDevice"
+          },
+          "maxItems": 50
+        }
+      },
+      "required": [
+        "sessions",
+        "sessions_total",
+        "push_devices"
+      ],
+      "additionalProperties": false,
+      "description": "active first, then newest"
+    },
     "StaffUserView": {
       "type": "object",
       "properties": {
@@ -25561,6 +26585,136 @@
       ],
       "additionalProperties": false,
       "description": "a timed suspension; lifted automatically once passed"
+    },
+    "StaffVehicleRow": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "brand": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "locale": {
+              "type": "string",
+              "enum": [
+                "en",
+                "fa"
+              ],
+              "x-locale-config": true
+            }
+          },
+          "required": [
+            "text",
+            "locale"
+          ],
+          "additionalProperties": false
+        },
+        "model": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "locale": {
+              "type": "string",
+              "enum": [
+                "en",
+                "fa"
+              ],
+              "x-locale-config": true
+            }
+          },
+          "required": [
+            "text",
+            "locale"
+          ],
+          "additionalProperties": false
+        },
+        "series": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "locale": {
+                  "type": "string",
+                  "enum": [
+                    "en",
+                    "fa"
+                  ],
+                  "x-locale-config": true
+                }
+              },
+              "required": [
+                "text",
+                "locale"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "year": {
+          "type": "integer",
+          "minimum": 1950,
+          "maximum": 2100
+        },
+        "status": {
+          "$ref": "#/$defs/VehicleStatus"
+        },
+        "vin_last4": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 4,
+              "maxLength": 4,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plate_masked": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20,
+              "pattern": "^[^\\r\\n]*$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the last two characters only (\"•••• 42\"); never the plate, VIN, notes or documents"
+        },
+        "created_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      },
+      "required": [
+        "id",
+        "brand",
+        "model",
+        "series",
+        "year",
+        "status",
+        "vin_last4",
+        "plate_masked",
+        "created_at"
+      ],
+      "additionalProperties": false
     },
     "StaffVerificationItem": {
       "type": "object",

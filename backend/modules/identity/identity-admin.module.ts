@@ -25,7 +25,9 @@ import {
   AdminPolicyVersionUpdateHandler,
   PolicyStaffViews,
 } from './application/policy-ops.js';
+import { ConsentViews } from './application/consent-ops.js';
 import { DsrViews } from './application/privacy-ops.js';
+import { AdminUserConsentsHandler, AdminUserSessionsHandler } from './application/staff-tabs.js';
 import { AdminStaffDisableHandler, AdminStaffEnableHandler, AdminStaffListHandler } from './application/staff-ops.js';
 import {
   AdminStaffPasskeyRegisterHandler,
@@ -64,6 +66,10 @@ import { WebAuthnService } from './application/webauthn.js';
     AdminUserGetHandler,
     AdminUserStatusHandler,
     AdminUserSessionsRevokeHandler,
+    // Backend S23 (BR-16): A-USR-02 Consents and Sessions & devices.
+    ConsentViews,
+    AdminUserConsentsHandler,
+    AdminUserSessionsHandler,
     AdminPlatformRoleGrantHandler,
     AdminPlatformRoleRevokeHandler,
     AdminOnboardingResetHandler,

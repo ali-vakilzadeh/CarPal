@@ -5,6 +5,7 @@
 import type { Route } from '#libs/contract/index.js';
 import { expect } from 'vitest';
 import { localDay } from '../../s7-support.js';
+import { openCase, purpose } from '../../s8-support.js';
 import { sharedProvider } from '../domain.js';
 import { ok, type Actor, type Harness, type Json, type Published, type Resolvers } from '../harness.js';
 
@@ -309,5 +310,21 @@ export const resolvers: Resolvers = {
       'time off',
     );
     return { as: p.as, params: { time_off_id: off.time_off.id as string } };
+  },
+  // Backend S23 (BR-16): A-USR-02 Appointments under a case about the requester; no description or contact data.
+  'admin.user_appointments': async (h) => {
+    const r = await requested(h, 'me');
+    const caseId = await openCase(h.api, { targetId: r.as.user.id });
+    return {
+      as: await h.staff('platform_moderator'),
+      params: { user_id: r.as.user.id },
+      headers: purpose('case', caseId),
+      check: (res) => {
+        expect(res.body.items).toEqual([
+          expect.objectContaining({ id: r.a.id, status: 'requested', provider: expect.objectContaining({ id: r.p.id }) }),
+        ]);
+        expect(res.text).not.toContain('Front brakes squeal');
+      },
+    };
   },
 };

@@ -567,4 +567,36 @@ export const resolvers: Resolvers = {
       body: { pin: { lat: p.point.lat + 0.001, lng: p.point.lng }, reason: REASON },
     };
   },
+  // Backend S23 (BR-16): A-ORG-02 Capabilities & badges, Portfolio and Members under a case about the organization.
+  'admin.org_capabilities': async (h) => {
+    const p = await sharedProvider(h);
+    const caseId = await openCase(h.api, { type: 'organization', targetId: p.id });
+    return {
+      as: await h.staff('platform_moderator'),
+      params: { org_id: p.id },
+      headers: purpose('case', caseId),
+      check: (res) => expect(res.body).toEqual(expect.objectContaining({ capabilities: expect.any(Array), badges: expect.any(Array) })),
+    };
+  },
+  'admin.org_portfolio': async (h) => {
+    const p = await sharedProvider(h);
+    const item = await showcase(h, p);
+    const caseId = await openCase(h.api, { type: 'organization', targetId: p.id });
+    return {
+      as: await h.staff('platform_support'),
+      params: { org_id: p.id },
+      headers: purpose('case', caseId),
+      check: (res) => expect((res.body.items as Json[]).some((i) => i.id === item && i.open_cases === 0 && 'consent' in i)).toBe(true),
+    };
+  },
+  'admin.org_members': async (h) => {
+    const p = await sharedProvider(h);
+    const caseId = await openCase(h.api, { type: 'organization', targetId: p.id });
+    return {
+      as: await h.staff('platform_support'),
+      params: { org_id: p.id },
+      headers: purpose('case', caseId),
+      check: (res) => expect((res.body.items as Json[]).some((m) => m.role === 'provider_owner' && m.status === 'active')).toBe(true),
+    };
+  },
 };
