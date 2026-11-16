@@ -151,6 +151,12 @@ export abstract class FourEyes {
    * number rejected.
    */
   abstract rejectRequestsOf(scope: TxScope, requesterUserId: string, decidedBy: string, reason: string): Promise<number>;
+
+  /**
+   * The live pending change of `opId` for each of `targetIds` (pending and not expired), by target id (backend S25a,
+   * DQ-22: a dispute whose resolution awaits an administrator's approval).
+   */
+  abstract pendingFor(scope: TxScope, opId: string, targetIds: string[]): Promise<Map<string, { changeId: string; expiresAt: Date }>>;
 }
 
 /** Executors of approved changes by operation id (registered in onModuleInit; an unknown op cannot be approved). */

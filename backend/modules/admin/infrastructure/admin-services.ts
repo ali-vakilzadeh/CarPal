@@ -97,6 +97,22 @@ export class DbFourEyes extends FourEyes {
       });
     return rows.length;
   }
+
+  async pendingFor(scope: TxScope, opId: string, targetIds: string[]): Promise<Map<string, { changeId: string; expiresAt: Date }>> {
+    const out = new Map<string, { changeId: string; expiresAt: Date }>();
+    if (targetIds.length === 0) return out;
+    const rows = await scope.db
+      .selectFrom('admin.pending_admin_changes')
+      .select(['id', 'target_entity_id', 'expires_at'])
+      .where('op_id', '=', opId)
+      .where('target_entity_id', 'in', [...new Set(targetIds)])
+      .where('status', '=', 'pending')
+      .where('expires_at', '>', new Date())
+      .where('deleted_at', 'is', null)
+      .execute();
+    for (const r of rows) out.set(r.target_entity_id, { changeId: r.id, expiresAt: r.expires_at });
+    return out;
+  }
 }
 
 @Injectable()

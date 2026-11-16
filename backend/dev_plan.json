@@ -2,7 +2,7 @@
   "meta": {
     "title": "CarPal backend — scratch build plan and stage log",
     "created": "2026-10-10",
-    "last_updated": "2026-11-15",
+    "last_updated": "2026-11-16",
     "status": "scratch_build_done",
     "progress": {
       "as_of": "2026-11-13",
@@ -5140,6 +5140,171 @@
           "see": "backend/BR-update-plan.json action_plan.stages S24.report.tests",
           "backend_integration_full": "990 tests in 65 files: 976 passed, 14 failed in the first full run, none caused by S24 logic: the table-count pin of tools/db/baseline.int.test.ts (117 -> 119, updated; S24 adds two tables), apps/testing/media.int.test.ts (its MediaHarness hook timed out at 120 s while the PWA and console suites ran on the same machine, so all 11 media tests failed) and one S19 verification-queue test (a timing-dependent list read under the same load). Rerun alone after the pin update: media, s19 and baseline 32 passed (3 files), including the baseline hash and seed checks."
         }
+      }
+    },
+    {
+      "id": "S25a",
+      "title": "Owner decisions of 2026-11-16: staff step-up window, notification rules and Delivery health, verification and appeal fixes, ticket auto-close",
+      "status": "done",
+      "depends_on": [
+        "S16a",
+        "S17",
+        "S19",
+        "S20",
+        "S24"
+      ],
+      "plan": "backend/BR-update-plan.json action_plan.stages S25a (S25 split into S25a and S25b on 2026-11-16).",
+      "goal": "Build the owner's decisions of 2026-11-16 before the contract freeze: S16a-D4, S17-D4, the S19 rejection notice, the S20 author bug, DQ-22 and DQ-23.",
+      "scope": {
+        "contract_sections": [
+          "§0.4 AAL row",
+          "§23.1 types",
+          "§23.2, §23.4, §23.5, §23.6 operation texts",
+          "Appendix A one event, Appendix D six S25a rows"
+        ],
+        "modules": [
+          "libs/auth",
+          "libs/infra",
+          "admin",
+          "notification",
+          "organization",
+          "trust",
+          "vehicle",
+          "apps/testing"
+        ],
+        "ops_target": 1,
+        "ops_note": "One new admin-api read (admin.notif_delivery_health); behaviour changes on six operations. Registry after S25a: 490 operations, 542 routes, 55 error codes; 489 served (auth.social_start deferred)."
+      },
+      "tasks": [
+        {
+          "id": "S25a.T1",
+          "status": "done",
+          "title": "Admin-plane AAL3 window = 5 minutes (SEC-ADM-2) for every operation that carries AAL3 on the admin plane, including the conditional ones (admin.case_action suspend_account, apply_trust_penalty, merge_"
+        },
+        {
+          "id": "S25a.T2",
+          "status": "done",
+          "title": "The rest of the A-NOTIF-01 rules (owner: build all rules): (a) reminders to businesses for review-approval requests (Path 2, still pending_approval; default days 3 and 6 after the request, a list of d"
+        },
+        {
+          "id": "S25a.T3",
+          "status": "done",
+          "title": "A rejected verification notifies the organization's owners and managers with the rejection reason (category and the note meant for the business, \"what to fix\"): admin.verification_decide publishes the"
+        },
+        {
+          "id": "S25a.T4",
+          "status": "done",
+          "title": "Content actions (hide, remove, request_changes and the other actions on authored content) record the author as user_id in the moderation log, so admin.moderation_action_affects names the author and di"
+        },
+        {
+          "id": "S25a.T5",
+          "status": "done",
+          "title": "Removal outcomes wait for an administrator's fairness approval: when admin.dispute_resolve would resolve upheld with an outcome that removes something from public view (outcomeAction remove for fake_r"
+        },
+        {
+          "id": "S25a.T6",
+          "status": "done",
+          "title": "Support tickets waiting on the user with no requester reply for N days are solved by the system with outcome no_response (scheduled sweep, audit actor system, the support.ticket_solved notice); the 14"
+        },
+        {
+          "id": "S25a.T7",
+          "status": "done",
+          "title": "Definition of done for the stage: Docs/40 Appendix D rows for S25a, Docs/23/52 texts, contract:check and openapi:check green, console contract regenerated (pins), PWA template classification and pins,"
+        }
+      ],
+      "deliverables": [
+        "contract 1.4.0 additions (Docs/40, libs/contract/generated, shared/api-contracts, console generated contract)",
+        "migration 0115 and Docs/43 (rules columns, delivery provider, review reminder count)",
+        "Authenticator 5-minute staff window; trust ApprovalReminderRule and the dispute fairness approval; admin SupportAutoCloseRule; notification Delivery health",
+        "apps/testing/s25a.int.test.ts, one sweep resolver"
+      ],
+      "report": {
+        "started_at": "2026-11-16",
+        "completed_at": "2026-11-16",
+        "summary": "The owner's decisions of 2026-11-16 are built. Staff re-authenticate within 5 minutes for every AAL3 action on the admin plane (four-eyes decisions, the heavy case actions, recovery approval, own keys), as SEC-ADM-2 says; consumers keep 10 minutes. The notification rules now hold the reminders to businesses about reviews waiting for their approval (default days 3 and 6, sent by a new sweep), and how early maintenance reminders become due by date and by mileage (default 14 days and 500 km, the old code values; the vehicle sweep follows them). Administrators get a Delivery health read: attempts, failures and the failure rate per channel and provider over 24 hours, 7 and 30 days. A rejected verification now tells the owners and managers what to fix. The author of hidden or removed content is recorded on the moderation action and can appeal it. An upheld dispute that would remove a review or revoke a badge no longer applies at once: it waits for a different administrator's fairness approval, and the content stays until then. Support tickets left waiting on the user for 7 days are closed as no_response by the system. Contract 1.4.0: 490 operations, 542 routes, 55 error codes. Migration 0115. Every acceptance criterion is met.",
+        "ops_implemented": [
+          "admin.notif_delivery_health (GET {adm}/notification-delivery-health, STF(ADM))"
+        ],
+        "ops_changed": [
+          "admin.case_action, admin.four_eyes_decide, admin.staff_recovery_approve and the staff key and code operations: AAL3 within 5 minutes (max_age=300)",
+          "admin.notif_rules_get / admin.notif_rules_update: review_approval_reminder_days, maintenance_due_window_days, mileage_due_window_km (required on update)",
+          "admin.verification_decide: rejected emits organization.verification.rejected (owners and managers notified)",
+          "admin.case_action: content actions record the author (moderation_appeal accepted)",
+          "admin.dispute_resolve: 200 StaffDispute | 202 PendingChange for removal outcomes, 409 DUPLICATE; StaffDispute.pending_change_id; four-eyes executor admin.dispute_resolve (platform_admin)",
+          "support tickets: automatic no_response close after 7 days waiting on the user (sweep admin.support_auto_close)"
+        ],
+        "files_created": [
+          "database/migrations/0115_s25a_rules_and_delivery_health.sql",
+          "backend/apps/testing/s25a.int.test.ts"
+        ],
+        "files_changed": [
+          "Docs/40.API contract.md (§0.4, §23.1, §23.2, §23.4, §23.5, §23.6, Appendix A, Appendix D)",
+          "Docs/43.db_setup.sql (notification_rules +3 columns, notification_deliveries.provider and index, trust.reviews.business_reminder_count)",
+          "Docs/42.db schema.md (S25a rule row), Docs/52.MVP Data Dictionary.md (NotificationDelivery, NotificationRules, Review, Dispute, SupportTicket)",
+          "Docs/23.Admin_WebUI_screens.md (A-VER-02, A-DSP-01, A-NOTIF-01 Rules and Delivery health)",
+          "backend/libs/auth/{authenticator.ts, index.ts, auth.test.ts} (ADMIN_STEP_UP_MAX_AGE_S, stepUpMaxAge)",
+          "backend/libs/infra/{ports.ts, full/skeletons.ts, lite/sinks.ts} (sender provider names)",
+          "backend/modules/admin/{interface/admin.ts (FourEyes.pendingFor), infrastructure/admin-services.ts, application/moderation-ops.ts (author on content actions), application/support-ops.ts (SupportAutoCloseRule), admin.module.ts}",
+          "backend/modules/notification/{interface/notification-rules.ts, infrastructure/notification-store.ts, application/admin-ops.ts (rules fields, NotifDeliveryHealthHandler), application/dispatcher.ts (provider), domain/routing.ts, domain/templates.ts, domain/template-catalog.ts, notification-admin.module.ts}",
+          "backend/modules/organization/application/admin-ops.ts (organization.verification.rejected)",
+          "backend/modules/trust/{application/admin-ops.ts (resolveDispute, applyApprovedResolution, awaitsFairnessApproval, pending_change_id), application/admin-registrations.ts (executor), application/review-workflow.ts (ApprovalReminderRule), trust-worker.module.ts}",
+          "backend/modules/vehicle/{domain/rules.ts (DueWindow), application/reminder-rule.ts (rule windows)}",
+          "backend/libs/contract/generated/*, libs/contract/contract.test.ts (490/542), libs/db/generated/db.ts",
+          "backend/apps/testing/contract/{resolvers/notification.ts, generated/notification.contract.int.test.ts}",
+          "shared/api-contracts/{openapi.yaml, generated/*}",
+          "pwa/src/features/notifications/catalog.ts (BUSINESS_TEMPLATE_KEYS +2)",
+          "frontend/admin-console: src/lib/api/generated/*, tools/contract/generate.test.ts and src/server/bff/allowlist.test.ts (124), src/features/disputes/disputes.test.tsx (pending_change_id)",
+          "backend/BR-update-plan.json, backend/dev_plan.json"
+        ],
+        "tests": {
+          "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 569 modules), typecheck, format:check: pass",
+          "backend_unit": "324 passed (47 files), including the registry pin (490 operations, 542 routes) and the new staff step-up test in libs/auth/auth.test.ts",
+          "backend_contract": "contract:check up to date (1.4.0, 490 operations, 55 error codes); sweep suites up to date (17 modules, notification regenerated with the admin.notif_delivery_health resolver); openapi:check: 542 operations on 439 paths; contract:coverage --strict 489/490 served (auth.social_start deferred), 0 unexplained 501s",
+          "backend_s25a": "13 passed (apps/testing/s25a.int.test.ts): T1 five-minute window (four-eyes decide, conditional case action, consumer unchanged); T2 rules fields and validation, approval reminders on days 3 and 6 once each, vehicle due window without going back, Delivery health; T3 rejection notice to owners and managers; T4 author appeal and organization route, upheld appeal restores at once; T5 fake_review 202 / approve / reject / expire, badge challenge waits; T6 auto-close as no_response, audit, notice, reopen",
+          "backend_integration_full": "1004 tests in 66 files: 1001 passed, 3 failed in the full run: s17 rules test (its PUT body lacked the three new required fields; updated, passes), tools/db/baseline.int.test.ts (Docs/43 changed, so the installed baseline hash differs until pnpm db:reset; expected) and one s23 test that asserts the response text has no '345' (a random UUID contained it; passes on rerun, not S25a). Rerun: s17 and s23 22 passed.",
+          "pwa": "contract:generate, contract:check, typecheck, lint and i18n:check (3179 keys) pass; 691 unit and DOM tests passed (76 files) after the two business templates in BUSINESS_TEMPLATE_KEYS",
+          "admin_console": "contract:generate (124 admin-api operations), contract:check, typecheck, lint pass; 430 unit and DOM tests passed (44 files) after the pins 123 -> 124 and pending_change_id in the dispute fixture",
+          "environment": "Node 24.21.0 from backend/.tools/node; migration 0115 applied with pnpm db:setup and db:codegen run",
+          "not_run": "Strict cross-component runs (console and PWA test:int and E2E) wait for the whole-plan test run after S25b (PD-03, DQ-08)."
+        },
+        "deviations": [
+          {
+            "id": "S25a-D1",
+            "summary": "The window lives in the Authenticator: a staff principal's step-up defaults to 300 s (ADMIN_STEP_UP_MAX_AGE_S) and a caller may only shorten it, so every AAL3 check on the admin plane uses 5 minutes: the AAL3 tag (admin.four_eyes_decide, admin.staff_recovery_approve, the five staff key and code operations), the conditional AAL3 of admin.case_action (suspend_account, apply_trust_penalty, merge_dupl"
+          },
+          {
+            "id": "S25a-D2",
+            "summary": "The maintenance and mileage \"reminder cadence\" of Docs/23 is read, as the plan says, as the due windows the vehicle code had hard-coded: a maintenance reminder becomes due 14 days before its date or 500 km before its mileage (now NotificationRules.maintenance_due_window_days 1-90 and mileage_due_window_km 50-5000). The hourly vehicle sweep applies them and never takes a due reminder back to upcomi"
+          },
+          {
+            "id": "S25a-D3",
+            "summary": "Path 2 approval reminders: a new 15-minute sweep trust.approval_reminders sends review.approval.reminded for a review still pending_approval with business_confirmation_status pending on each day of NotificationRules.review_approval_reminder_days (0-3 days, each 1-6, default 3 and 6). The request time is business_confirmation_due_at minus the 7-day window (also right for reviews staff moved to Path"
+          },
+          {
+            "id": "S25a-D4",
+            "summary": "Delivery health is a new admin.notif_delivery_health (STF(ADM): A-NOTIF-01 is an administrator screen). The sender ports name their provider (optional Mailer/SmsSender/PushSender.provider: file in lite mode, smtp, sms_gateway, push_gateway in full mode) and the dispatcher stores it on each attempt (notification_deliveries.provider; digests too); deliveries attempted before S25a show provider unkno"
+          },
+          {
+            "id": "S25a-D5",
+            "summary": "A rejected check publishes organization.verification.rejected (organization, check id, type and rejection_reason, never the reviewer); the owners and managers (ORG_ADMINS) get organization.verification_rejected in the app, by email and by push. The email and the in-app params carry rejection_reason, the text written for the business (OrganizationVerification.rejection_reason, which the business al"
+          },
+          {
+            "id": "S25a-D6",
+            "summary": "admin.case_action records the author as params.user_id on every content action (approve, hide, remove, restore, request_changes) and on the target actions (reduce_weight, edit_request, apply_redaction, downgrade_fitment) when the target has an author, so admin.moderation_action_affects names the author and disputes.create accepts the author's moderation_appeal. The subject organization keeps its r"
+          },
+          {
+            "id": "S25a-D7",
+            "summary": "Removal outcomes, confirmed from outcomeAction: remove (fake_review upheld) and revoke_badge (badge_challenge upheld). admin.dispute_resolve then answers 202 PendingChange (op admin.dispute_resolve, target the dispute, required role platform_admin), applies nothing, assigns the dispute to the resolver when it had no assignee and writes dispute.resolution_requested; a second request while one is pe"
+          },
+          {
+            "id": "S25a-D8",
+            "summary": "N is a constant (NO_RESPONSE_DAYS = 7 in support-ops.ts), not a setting: Docs/23 names no rule for it and the plan default is 7. An hourly sweep admin.support_auto_close solves tickets waiting_on_user whose last message (the staff answer that handed it to the user) is 7 days old: outcome no_response, solved_by null, audited as actor system with a fixed reason, and support.ticket.solved notifies th"
+          },
+          {
+            "id": "S25a-D9",
+            "summary": "Clients kept green as in S20-S24: the PWA classifies review.approval_reminder and organization.verification_rejected as business templates (no consumer text needed); the console regenerated 124 admin-api operations (pins) and its dispute fixture gained pending_change_id. admin.notif_rules_update now requires the three new rule fields (breaking for the console only; the console has no Rules form ye"
+          }
+        ]
       }
     }
   ],

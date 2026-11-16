@@ -45,6 +45,7 @@ function dispute(id: string, o: Partial<StaffDispute> = {}): StaffDispute {
     raised_by_organization: org,
     assigned_to_display: null,
     moderator_notes: null,
+    pending_change_id: null,
     ...o,
   };
 }

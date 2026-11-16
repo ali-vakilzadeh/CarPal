@@ -206,6 +206,34 @@ describe('Authenticator', () => {
     }
   });
 
+  it('staff step-up on the admin plane is 5 minutes (SEC-ADM-2, S25a.T1); a caller may only shorten it', async () => {
+    const auth = make();
+    const now = Math.floor(Date.now() / 1000);
+    const staffAt = async (authTime: number) =>
+      auth.authenticate(
+        req(`Bearer ${(await userToken({ audience: ADMIN, staff: true, acr: 'aal3', authTime })).token}`, { host: 'admin-api' }),
+      );
+    const fresh = await staffAt(now - 290);
+    expect(() => auth.requireAssurance(fresh, 'aal3')).not.toThrow();
+    expect(() => auth.requireAssurance(fresh, 'aal3', 600)).not.toThrow();
+    expect(() => auth.requireAssurance(fresh, 'aal3', 120)).toThrow(expect.objectContaining({ code: 'STEP_UP_REQUIRED' }));
+    const late = await staffAt(now - 301);
+    for (const maxAge of [undefined, 600]) {
+      try {
+        auth.requireAssurance(late, 'aal3', maxAge);
+        expect.unreachable();
+      } catch (e) {
+        expect(e).toMatchObject({
+          code: 'STEP_UP_REQUIRED',
+          headers: { 'www-authenticate': 'DPoP error="insufficient_user_authentication", acr_values="aal3", max_age=300' },
+        });
+      }
+    }
+    // Consumer step-up is unchanged (10 minutes).
+    const user = await auth.authenticate(req(`DPoP ${(await userToken({ acr: 'aal2', authTime: now - 400 })).token}`));
+    expect(() => auth.requireAssurance(user, 'aal2')).not.toThrow();
+  });
+
   it('accounts without a second factor meet AAL2 with a fresh sign-in only (DI-11); AAL3 never', async () => {
     const auth = make();
     const now = Math.floor(Date.now() / 1000);

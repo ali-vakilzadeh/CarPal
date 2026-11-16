@@ -153,7 +153,11 @@ describe('LocalObjectStorage', () => {
       expect(await res.text()).toBe('hello media');
       expect(res.headers.get('content-disposition')).toBe('attachment');
       expect(res.headers.get('x-content-type-options')).toBe('nosniff');
-      expect((await fetch(get.replace(/sig=[^&]+/, 'sig=AAAA'))).status).toBe(403);
+      // R-23 (backend S25b): display copies load in <img> on admin.<domain> and pwa.<domain>, so never same-origin.
+      expect(res.headers.get('cross-origin-resource-policy')).toBe('cross-origin');
+      const refused = await fetch(get.replace(/sig=[^&]+/, 'sig=AAAA'));
+      expect(refused.status).toBe(403);
+      expect(refused.headers.get('cross-origin-resource-policy')).toBe('cross-origin');
       await expect(storage.put('../escape', body, 'text/plain')).rejects.toThrow(/invalid object key/);
     } finally {
       server.close();

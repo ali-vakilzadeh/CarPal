@@ -59,6 +59,9 @@ export const s3ObjectStorage = (url: string): ObjectStorage =>
   skeleton<ObjectStorage>('S3', url, ['put', 'get', 'head', 'delete', 'presignPut', 'presignGet']);
 /** Written to the port in S6 but unverified (OQ-01). */
 export const openSearchIndex = (url: string): SearchIndex => new OpenSearchIndex(url);
-export const smtpMailer = (url: string): Mailer => skeleton<Mailer>('SMTP', url, ['send']);
-export const smsGateway = (url: string): SmsSender => skeleton<SmsSender>('SMS gateway', url, ['send']);
-export const pushGateway = (url: string): PushSender => skeleton<PushSender>('push gateway', url, ['send']);
+export const smtpMailer = (url: string): Mailer => ({ ...skeleton<Mailer>('SMTP', url, ['send']), provider: 'smtp' });
+export const smsGateway = (url: string): SmsSender => ({ ...skeleton<SmsSender>('SMS gateway', url, ['send']), provider: 'sms_gateway' });
+export const pushGateway = (url: string): PushSender => ({
+  ...skeleton<PushSender>('push gateway', url, ['send']),
+  provider: 'push_gateway',
+});

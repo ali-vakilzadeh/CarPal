@@ -271,13 +271,20 @@ export interface PushMessage {
   data?: Record<string, string>;
 }
 
+/**
+ * Senders name their provider (a short machine key, e.g. smtp, sms_gateway, push_gateway, file) so the notification
+ * module can record which provider took each delivery attempt (A-NOTIF-01 Delivery health, backend S25a).
+ */
 export interface Mailer {
+  readonly provider?: string;
   send(message: EmailMessage): Promise<void>;
 }
 export interface SmsSender {
+  readonly provider?: string;
   send(message: SmsMessage): Promise<void>;
 }
 export interface PushSender {
+  readonly provider?: string;
   send(message: PushMessage): Promise<void>;
 }
 

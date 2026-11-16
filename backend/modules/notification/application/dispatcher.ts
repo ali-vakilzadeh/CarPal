@@ -31,6 +31,11 @@ export const pushTokenAad = (id: string): string => `notification.push_token:${i
 
 const MAX_ATTEMPTS = 3;
 
+/** The provider key recorded on a delivery attempt (Delivery health, S25a): the sender's own name, else unknown. */
+export function providerKey(name: string | undefined): string {
+  return name && /^[a-z0-9_]{1,40}$/.test(name) ? name : 'unknown';
+}
+
 @Injectable()
 export class NotificationDispatcher {
   constructor(
@@ -206,6 +211,8 @@ export class NotificationDispatcher {
       const text = renderWith(r.template_key, r.locale, channel, params, overrides);
       const c = contacts.get(r.recipient_user_id);
       let error: string | null = null;
+      const sender = r.channel === 'email' ? this.infra.mailer : r.channel === 'sms' ? this.infra.sms : this.infra.push;
+      const provider = providerKey(sender.provider);
       try {
         // A delivery held by quiet hours can outlive the account's active state.
         if (c?.status !== 'active') throw new Error('recipient not active');
@@ -243,8 +250,8 @@ export class NotificationDispatcher {
           .updateTable('notification.notification_deliveries')
           .set(
             error
-              ? { status: 'failed', attempt_count: r.attempt_count + 1, last_error: error }
-              : { status: 'sent', attempt_count: r.attempt_count + 1, sent_at: sql<Date>`now()`, last_error: null },
+              ? { status: 'failed', attempt_count: r.attempt_count + 1, last_error: error, provider }
+              : { status: 'sent', attempt_count: r.attempt_count + 1, sent_at: sql<Date>`now()`, last_error: null, provider },
           )
           .where('id', '=', r.id)
           .execute();
@@ -343,7 +350,11 @@ export class NotificationDispatcher {
       await this.tx.run({ actorType: 'system' }, ({ db }) =>
         db
           .updateTable('notification.notification_deliveries')
-          .set(c?.email ? { status: 'sent', sent_at: sql<Date>`now()` } : { suppressed_reason: 'no_destination' })
+          .set(
+            c?.email
+              ? { status: 'sent', sent_at: sql<Date>`now()`, provider: providerKey(this.infra.mailer.provider) }
+              : { suppressed_reason: 'no_destination' },
+          )
           .where(
             'id',
             'in',

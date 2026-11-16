@@ -42,6 +42,10 @@ export interface AuthenticatorOptions {
 
 /** Step-up window (SEC-AU-10): the session must have authenticated at the level within 10 minutes. */
 export const STEP_UP_MAX_AGE_S = 600;
+/** Admin-plane step-up window (SEC-ADM-2): staff re-authenticate at aal3 within 5 minutes (backend S25a.T1). */
+export const ADMIN_STEP_UP_MAX_AGE_S = 300;
+/** The default window of a principal: 5 minutes for staff (admin plane), 10 minutes for everyone else. */
+export const stepUpMaxAge = (principal: Principal): number => (principal.kind === 'staff' ? ADMIN_STEP_UP_MAX_AGE_S : STEP_UP_MAX_AGE_S);
 const ACR_RANK: Record<Acr, number> = { aal1: 1, aal2: 2, aal3: 3 };
 
 const challenge = (acr: Acr, maxAge: number): Record<string, string> => ({
@@ -113,7 +117,7 @@ export class Authenticator {
     if (req.host === 'admin-api') {
       // SEC-ADM-2: staff sessions are aal3 (hardware-bound WebAuthn) on every request.
       if (!session.staff) throw new ApiError('UNAUTHENTICATED', { detail: 'not a staff session' });
-      if (principal.acr !== 'aal3') throw new ApiError('STEP_UP_REQUIRED', { headers: challenge('aal3', STEP_UP_MAX_AGE_S) });
+      if (principal.acr !== 'aal3') throw new ApiError('STEP_UP_REQUIRED', { headers: challenge('aal3', ADMIN_STEP_UP_MAX_AGE_S) });
     }
     return principal;
   }
@@ -126,9 +130,13 @@ export class Authenticator {
    * sign-in within the step-up window satisfies AAL2: re-authentication at the
    * strongest level the account has (S3 deviation, DI-11). Staff and aal3 are
    * unaffected.
+   * The window defaults to 10 minutes, and to 5 minutes for staff on the admin
+   * plane (SEC-ADM-2, backend S25a.T1); a caller may only shorten it.
    */
-  requireAssurance(principal: Principal, level: Acr, maxAgeSeconds = STEP_UP_MAX_AGE_S, now = Math.floor(Date.now() / 1000)): void {
+  requireAssurance(principal: Principal, level: Acr, maxAgeSeconds?: number, now = Math.floor(Date.now() / 1000)): void {
     if (principal.kind !== 'user' && principal.kind !== 'staff') throw new ApiError('UNAUTHENTICATED', { detail: 'step-up needs a user' });
+    const defaultAge = stepUpMaxAge(principal);
+    maxAgeSeconds = maxAgeSeconds === undefined ? defaultAge : Math.min(maxAgeSeconds, defaultAge);
     const fresh = now - principal.authTime <= maxAgeSeconds;
     const noSecondFactor = principal.kind === 'user' && level === 'aal2' && principal.mfaEnrolled === false;
     if (!fresh || (ACR_RANK[principal.acr] < ACR_RANK[level] && !noSecondFactor)) {

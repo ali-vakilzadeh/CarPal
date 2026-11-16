@@ -39,6 +39,7 @@ export const OPERATION_IDS = [
   'admin.mcp_clients_list',
   'admin.media_download_url',
   'admin.my_decisions_list',
+  'admin.notif_delivery_health',
   'admin.notif_rules_get',
   'admin.notif_rules_update',
   'admin.notif_template_preview',

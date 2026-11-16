@@ -61,6 +61,8 @@ export const ROUTED_EVENTS = [
   'review.invitation.sent',
   'review.invitation.reminded',
   'review.approval.requested',
+  // S25a: the business is reminded of a Path 2 review still waiting for its answer (days of the notification rules)
+  'review.approval.reminded',
   'review.published',
   'review.response.published',
   'inquiry.status_changed',
@@ -77,6 +79,8 @@ export const ROUTED_EVENTS = [
   // S19: CarPal asks a business for more information on a verification check; staff corrected its profile
   'organization.verification.info_requested',
   'organization.profile.corrected',
+  // S25a: a rejected verification check (the owners and managers learn what to fix)
+  'organization.verification.rejected',
   'dsr.deadline.approaching',
   // S9: an AI result the member or user asked for is ready (in-app only, OQ-13 default for AI suggestions)
   'ai.insight.generated',
@@ -201,17 +205,20 @@ function routeS7(e: RoutedEvent): Intent[] {
         },
       ];
     }
-    case 'review.approval.requested': {
+    case 'review.approval.requested':
+    case 'review.approval.reminded': {
       const org = str(p.subject_organization_id);
       if (!org || p.business_confirmation_status !== 'pending') return [];
+      // S25a.T2: a reminder names the days left before the answer counts as no objection.
+      const reminder = e.type === 'review.approval.reminded';
       return [
         {
           audience: { kind: 'members', orgId: org, roles: REVIEW_MANAGERS },
           event_type: 'review_approval_needed',
           category: 'reviews',
           priority: 'normal',
-          template_key: 'review.approval_needed',
-          params: {},
+          template_key: reminder ? 'review.approval_reminder' : 'review.approval_needed',
+          params: reminder ? { days_left: Math.min(7, Math.max(1, num(p.days_left))) } : {},
           reference: { type: 'review', id: e.aggregateId },
           organization_context_id: org,
           channels: ALL,
@@ -602,6 +609,27 @@ export function routeS8(e: RoutedEvent): Intent[] {
             : { type: 'organization', id: org },
           organization_context_id: org,
           channels: ['in_app', 'email'],
+        },
+      ];
+    }
+    case 'organization.verification.rejected': {
+      // S25a.T3 (Docs/23 A-VER-02): the reason written for the business, never the reviewer's name.
+      const org = str(p.organization_id);
+      if (!org) return [];
+      return [
+        {
+          audience: { kind: 'members', orgId: org, roles: ORG_ADMINS },
+          event_type: 'moderation_update',
+          category: 'moderation',
+          priority: 'normal',
+          template_key: 'organization.verification_rejected',
+          params: {
+            verification_type: str(p.verification_type) ?? 'business_identity',
+            rejection_reason: (str(p.rejection_reason) ?? '').slice(0, 500),
+          },
+          reference: { type: 'organization_verification', id: str(p.verification_id) ?? e.aggregateId },
+          organization_context_id: org,
+          channels: ['in_app', 'email', 'push'],
         },
       ];
     }

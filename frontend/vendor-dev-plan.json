@@ -1,0 +1,448 @@
+{
+  "meta": {
+    "title": "CarPal vendor portal (parts sellers): web-first business portal with phone-ready inquiry pages — plan and proposals",
+    "created": "2026-11-16",
+    "last_updated": "2026-11-16",
+    "status": "proposal",
+    "status_note": "Nothing is built yet: frontend/vendor-portal/ holds only this plan's mockup. The buyer side of the vendor flow is already built in the consumer PWA (pwa P5 public vendor and part pages W-PUB-03/W-PUB-08, P9 inquiry detail in My Activity, P11 vendor review W-REV-03), so this plan covers the seller's side only. It shares its foundation stage with the provider portal plan (PP1).",
+    "owner": "project owner",
+    "mockup": "frontend/vendor-portal/mockup.html (open it in a browser: desktop portal frames for every main screen, three phone frames for the inquiry answered from a push, theme and RTL switches)",
+    "purpose": "Turn the parts-vendor requirements (Docs/12 Mina's story, Docs/22 where the consumer web touches the seller, Docs/90 §7 V- screens) into a stage plan for the vendor area of the business app at web.<DOMAIN>, and list what the contract and the docs still miss.",
+    "sources_of_truth": [
+      "Docs/12.User Story - Parts Vendor.md (chapters 1-8 and its open points 1-8)",
+      "Docs/22.Social_WebUI_user_screens.md (W-PUB-03 public vendor profile, W-PUB-08 public part page, W-SRCH-01 / W-MAP-01 parts layer and seller pins, W-REV-03 vendor review, W-ME-01 inquiries tab: the buyer side this portal answers)",
+      "Docs/90.CarPal Screen Map.md §3.3 (vendor navigation; portal installable as a PWA with web push for new inquiries and review approval requests) and §7 (V-ONB, V-DASH, V-INV, V-INQ, V-PROF, V-REV, V-INS)",
+      "Docs/40.API contract.md §0.5 (V* = vendor_owner, vendor_staff; V+ = vendor_owner), §9 vendor.*, §10 plans (vendor_basic, vendor_pro, max_inventory_items, inventory_bulk_import_enabled), §13 inventory.*, fitment.*, inventory.import_*, trade_accounts.*, inquiries.vendor_*, §15.3 reviews.org_*, review_responses.*, review_approvals.*, review_invitations.*, §21 ai.inventory_normalize, ai.fitment_suggest, ai.inventory_gaps, ai.review_response_draft, ai.suggestions_*, ai.suggestion_decide",
+      "Docs/52.MVP Data Dictionary.md (InventoryItem, InventoryFitment, VendorTradeAccount, StockInquiry, InquiryMessage, InventoryImportBatch)",
+      "Docs/54.Scoring Protocol.md §3.2 (vendor trust score: review quality 40 %, inquiry responsiveness 25 %, catalogue quality 20 %, profile integrity 15 %) and §7.2 (catalogue quality)",
+      "Docs/carpal-design-system (tokens, themes, RTL rules)",
+      "frontend/provider-dev-plan.json (PP1 shared business-app foundation, PRV-GD-01/03/06, PRV-BR-06 web push sender)",
+      "frontend/public-ui-dev-plan.json (PU-P01 onboarding wizard incl. V-ONB-01..03, PU-P02 plan pages, PU-OQ-01 shared package)",
+      "backend/modules/notification/domain/template-catalog.ts (inquiry.received, inquiry.answered, inventory.import_finished, review.approval_needed, review.received exist today)"
+    ],
+    "how_to_use": "Stages VP1-VP12 build the vendor area. VP1 sits on the provider plan's PP1 foundation; if the vendor area is scheduled first, PP1 is done under this plan instead. The recommended order (build_order) gets a seller live with a catalogue and answering inquiries before the import, AI and insight stages. Backend needs are listed in backend_requests with the same entry shape as the other frontend plans and join backend/BR-update-plan.json through its intake rules. When a proposal is accepted, set its status and record the decision in progress_log."
+  },
+
+  "requirements_summary": {
+    "note": "What a parts vendor must be able to do, by chapter of Docs/12, the screens that serve it, and whether the contract is ready. 'ready' = every operation exists in Docs/40; 'gap' = needs a backend request; 'new screen' = no V- spec in Docs/90 yet.",
+    "items": [
+      { "id": "VRQ-01", "chapter": "Ch.1 Signing up", "need": "Sign up with business email and password (or code), choose Parts vendor, grant the organization consent vendor_inventory_ai_use with the 'used only for your shop, never for another vendor' text; a hybrid provider+vendor organization enables the vendor module separately.", "screens": ["S-AUTH-03", "S-AUTH-04", "S-AUTH-05"], "contract": "ready (auth.signup, org.create, org.consents_grant)" },
+      { "id": "VRQ-02", "chapter": "Ch.2 Shop basics", "need": "Name, vendor type, description, phone, hours, address with a map pin checked against the address, delivery options (pickup, same-day local delivery), categories, brands, focus (OEM/aftermarket/used), trade customers supported, default price visibility, business registration upload; prepare the profile while verification is pending; publish.", "screens": ["V-ONB-01", "V-ONB-02", "V-ONB-04 Pricing visibility (new id)", "V-ONB-05 Verification (new id)"], "contract": "ready (vendor.profile_put, vendor.coverage_create, org.location_*, org.location_pin_check, org.verification_submit, vendor.publish)" },
+      { "id": "VRQ-03", "chapter": "Ch.2 Inventory setup", "need": "Choose upload, manual, sample items or later; upload the spreadsheet, map columns (guessed from the header, part brand vs car brand), preview with validation counts (no price, duplicate SKUs, text in quantity), choose 'no price → Price on request' and 'skip broken rows', see a sample of AI suggestions, confirm, keep working while it runs, get a notification, download the skipped-rows report; plan limit tells how many items fit and offers the Pro trial.", "screens": ["V-ONB-03", "V-INV-04"], "contract": "gap (no header read, mapping guess, dry-run validation, row policies, AI sample or plan-fit count before import_create: VND-BR-01)" },
+      { "id": "VRQ-04", "chapter": "Ch.2 AI normalisation and fitment", "need": "Review batches of AI suggestions (rename, category, merge duplicate, fitment, missing image, condition), accept/edit/reject, 'Apply to similar items', reject a merge; fitment rows labelled Likely until confirmed; confirm a fitment range; Uncertain rows left for later.", "screens": ["V-INV-05", "V-INV-06"], "contract": "partly ready (ai.inventory_normalize, ai.suggestions_list, ai.suggestion_decide, ai.fitment_suggest, fitment.*); 'Apply to similar items' needs a grouped decision (VND-BR-02)" },
+      { "id": "VRQ-05", "chapter": "Ch.2 + Ch.8 Catalogue quality", "need": "Catalogue quality score with the top fixes (items without images, without fitment, without warranty) and links that open the inventory list filtered to each fix; low data quality alert after a big import.", "screens": ["V-DASH-01", "V-INV-01"], "contract": "partly ready (catalog_quality_score, items_missing_fitment, items_missing_images; missing warranty count and the quality alert: VND-BR-07, VND-BR-09)" },
+      { "id": "VRQ-06", "chapter": "Ch.3 Daily login and team", "need": "Stay signed in on the counter computer, sign in with an email code on the phone; dashboard with open inquiries, quality, reviews, AI suggestions waiting, popular searches near you; invite a staff member limited to inventory and inquiries (no prices, reviews or settings); staff actions recorded under their own user.", "screens": ["S-AUTH-02", "V-DASH-01", "V-TEAM-01 (new id)"], "contract": "partly ready (org.members_*, org.member_invite); staff without prices needs WP0 narrowing (VND-BR-05); popular search phrases need VND-BR-07" },
+      { "id": "VRQ-07", "chapter": "Ch.4 Keeping the catalogue honest", "need": "Evening bulk stock update from the counter screen; weekly re-import that matches existing SKUs; add an item by hand with a phone photo and AI category/fitment hints; data quality alerts; discontinue items (leave search, stay in records); edit hours and delivery note.", "screens": ["V-INV-01", "V-INV-02", "V-INV-03", "V-INV-04 (re-import)", "V-PROF-01"], "contract": "gap (bulk stock quantities VND-BR-04; re-import by SKU VND-BR-01; item activity log VND-BR-10)" },
+      { "id": "VRQ-08", "chapter": "Ch.4 Trade customers", "need": "See trade access requests, approve, reject with a note, revoke at any time; only approved trade customers see trade-only items and trade prices.", "screens": ["V-TRADE-01 Trade accounts (new id, Docs/12 open point 1)"], "contract": "ready (trade_accounts.vendor_list, trade_accounts.vendor_decide); notification to the vendor on a new request is missing (VND-BR-09)" },
+      { "id": "VRQ-09", "chapter": "Ch.4 Moderation", "need": "When an admin flags an item (counterfeit concern, fitment complaint) the item goes to pending_review and the vendor sees the reason.", "screens": ["V-INV-01", "V-INV-02"], "contract": "gap (no reason on the item, no notification: VND-BR-08, VND-BR-09)" },
+      { "id": "VRQ-10", "chapter": "Ch.5 Getting found", "need": "Insights: most searched parts, searches with no matching stock nearby, frequently viewed items missing fitment or images, popular categories, map pin opens and Directions taps; a link to the public vendor page as buyers see it.", "screens": ["V-INS-01", "W-PUB-03 (public preview)"], "contract": "partly ready (vendor.insights_get has categories and map counts; search phrases, no-stock demand and most-viewed weak items need VND-BR-07; ai.inventory_gaps is a Should)" },
+      { "id": "VRQ-11", "chapter": "Ch.6 Reza's inquiry", "need": "Push and dashboard for a new inquiry; list (open, answered, reserved, closed); detail with item, stock and fitment, requester (approved trade customer), vehicle context without VIN/plate, message, quantity; Reserve until a time with a reply; the reserved unit lowers the public stock; Suggest an alternative item; Mark unavailable which also sets the item out of stock; ask for the old part number; reservation expiry returns to answered and tells both sides.", "screens": ["V-INQ-01", "V-INQ-02"], "contract": "partly ready (inquiries.vendor_list/get/message/transition); reserved quantity VND-BR-03, alternative item VND-BR-06, unavailable + out of stock VND-BR-03, expiry notifications VND-BR-09" },
+      { "id": "VRQ-12", "chapter": "Ch.7 The handover", "need": "Mark Completed (either side may) and reduce stock; cancel a reservation when the buyer does not come; completion makes the buyer eligible for an inquiry-verified review.", "screens": ["V-INQ-02"], "contract": "partly ready (transition completed/cancelled); stock reduction on completion VND-BR-03" },
+      { "id": "VRQ-13", "chapter": "Ch.8 Reviews", "need": "Review inbox with vendor sub-ratings and the label 'linked to a completed inquiry'; public reply (AI draft allowed for V+); report a fake review; 'Do you recognise this customer?' with display name, date and kind of part only, 7 days, no answer = no objection; trend.", "screens": ["V-REV-01", "V-REV-02"], "contract": "ready (reviews.org_*, review_responses.*, ai.review_response_draft ORG(P+, V+), review_approvals.*, reports.create)" },
+      { "id": "VRQ-14", "chapter": "Ch.8 Her numbers", "need": "Trust score and its four parts, median first response, catalogue quality over time, indexed items, search appearances per week, inquiries, fitment completion over time, demand insights.", "screens": ["V-DASH-01", "V-INS-01"], "contract": "gap (trust score parts, search appearances and time series: VND-BR-07)" }
+    ]
+  },
+
+  "global_decisions": [
+    {
+      "id": "VND-GD-01",
+      "status": "proposed",
+      "decision": "The vendor portal is the route group /<locale>/vendor/... of the one business app at web.<DOMAIN> (WP20), beside /provider and the fleet pages, with the same BFF and OAuth client cp-web-portal, generated contract, design system and i18n (provider plan PRV-GD-01 and PP1). A hybrid provider+vendor organization sees both route groups after the organization switcher.",
+      "why": "Docs/90 §3.3 and frontend/README.md: one business app with role-based routing. Components such as the review inbox, AI reply editor, approval card, team page and plan pages are built once for provider and vendor."
+    },
+    {
+      "id": "VND-GD-02",
+      "status": "proposed",
+      "decision": "Web-first, no separate compact app. The portal is designed for the counter desktop (≥ 1200 px: left navigation, master–detail, wide tables). The pages a seller opens from a push on the phone — inquiry list, inquiry detail with Reserve / Unavailable / Alternative / Complete, review approval answer, trade request decision — are built mobile-first and tested at 360 px. The rest only needs to work, not shine, on a phone.",
+      "why": "Docs/12 persona: 'Desktop at the counter (vendor portal is web-first); her phone for notifications'. Unlike the Workshop PWA for mechanics, a parts shop has a computer; the phone's job is to answer an inquiry fast."
+    },
+    {
+      "id": "VND-GD-03",
+      "status": "proposed",
+      "decision": "The portal is installable as a PWA (manifest scope /<locale>/vendor/, name 'CarPal Parts' / «کارپال قطعات») with web push for new inquiries, reservation expiry, trade requests and review approval requests; in-app and email are the fallbacks. Business pushes never go to the consumer app.",
+      "why": "Docs/90 line 141 and Docs/12 Ch.3 ('web push from the vendor portal installed as a PWA')."
+    },
+    {
+      "id": "VND-GD-04",
+      "status": "proposed",
+      "decision": "Trade prices are shown only where they belong: the vendor's own inventory pages for roles allowed to see prices, and the trade price column of an inquiry from an approved trade customer. No preview, export, share link, page title, notification text or client log ever contains price_trade. The 'View as buyer' preview opens the public page (W-PUB-03 / W-PUB-08) as an anonymous visitor would see it.",
+      "why": "Docs/12 'What she fears: competitors seeing her trade prices'; Docs/52 price_trade 'never exposed in public projections'; WP8 'search index documents never contain trade prices'."
+    },
+    {
+      "id": "VND-GD-05",
+      "status": "proposed",
+      "decision": "AI suggests, the vendor decides. Every AI output (normalised name, category, duplicate, fitment, review reply draft, demand gap) carries the AI suggestion label; nothing changes until a person accepts. AI fitment shows Likely or Uncertain until the vendor confirms; only fitment.decide or a vendor-entered confirmed row makes it Confirmed. When AI is off (vendor.ai_import.enabled, ENT(ai_tools_enabled) or the consent withdrawn) the import, inventory and fitment pages work without suggestions.",
+      "why": "Docs/12 Ch.2, Docs/52 InventoryFitment rules, MVP §8.5 (no use of one vendor's data for another)."
+    },
+    {
+      "id": "VND-GD-06",
+      "status": "proposed",
+      "decision": "Large catalogues stay fast: the inventory table is virtualised, paged through the cursor API, filters live in the URL, bulk selection works on the current filter ('select all 310 matching') through background jobs, and the browser never holds the whole catalogue. Budgets: first view of the inventory list ≤ 2.5 s with 10,000 items, row actions ≤ 300 ms perceived (optimistic with undo where the operation allows).",
+      "why": "WP7 acceptance '10k-row import with progress and error report'; Mina has 3,400 lines and Kaveh edits stock every evening."
+    },
+    {
+      "id": "VND-GD-07",
+      "status": "proposed",
+      "decision": "The server decides access. Actions show by role (V* / V+ and the WP0 matrix), plan entitlements (max_inventory_items, inventory_bulk_import_enabled, ai_tools_enabled, advanced_analytics_enabled) and the inquiry's allowed transitions (Docs/40 §13.1 table). A 403 shows 'Ask the owner' for staff; an entitlement error shows the plan limit and the Pro trial offer.",
+      "why": "Same rule as PRV-GD-03 and the fleet ?fleet option."
+    }
+  ],
+
+  "surface": {
+    "host_and_routes": "web.<DOMAIN>/<locale>/vendor/... (dashboard, inventory, inventory/import, inventory/ai-queue, inventory/<id>, inventory/<id>/fitment, inquiries, inquiries/<id>, trade, profile, reviews, reviews/approvals, insights, team, settings)",
+    "users": "vendor_owner (V+) and vendor_staff (V*), narrowed by the WP0 permission matrix (VND-OQ-02)",
+    "navigation": "Docs/90 §3.3 left navigation: Dashboard · Inventory (List, Import, AI queue) · Inquiries · Trade customers (new) · Profile · Reviews · Insights · Team · Settings. Top bar: organization switcher (S-SHARED-06), global item search (SKU or part number, '/' shortcut), notifications bell, account menu. Banners: Verification pending, Pro trial days left, import running.",
+    "screens": [
+      { "id": "V-ONB-01", "name": "Vendor Basics", "spec": "Docs/90", "content": "Name, vendor type, description, phone, hours, address, map pin with the pin check warning ('The pin is 2.4 km from the typed address'), delivery options (pickup, same-day local delivery with a cut-off note)." },
+      { "id": "V-ONB-02", "name": "Categories and Brands", "spec": "Docs/90", "content": "Part categories (taxonomy tree with search), brands carried (chips with search), focus OEM / aftermarket / used / performance, 'We supply trade customers'." },
+      { "id": "V-ONB-03", "name": "Inventory Setup", "spec": "Docs/90", "content": "Upload a file (recommended) · Add manually · Start with sample items (VND-OQ-04) · Import later (publishes with 'Catalogue coming soon')." },
+      { "id": "V-ONB-04", "name": "Pricing Visibility (new id)", "spec": "Docs/90 §7.1 lists the step without a spec", "content": "Default visibility by condition: new parts public price, trade price for approved trade customers only, used parts price on request; a preview of what a car owner, an unknown garage and an approved trade customer see." },
+      { "id": "V-ONB-05", "name": "Verification (new id)", "spec": "Docs/90 §7.1 lists the step without a spec", "content": "Business registration upload, status (Not submitted, Pending, Approved, Needs more information), 'You can publish while we check'." },
+      { "id": "V-DASH-01", "name": "Vendor Dashboard", "spec": "Docs/90", "content": "Open inquiries with the oldest age and median first response; reserved items with hold end; catalogue quality with the top three fixes; AI suggestions waiting; review approvals with days left; recent reviews; trade requests; popular searches near you; import status." },
+      { "id": "V-INV-01", "name": "Inventory List", "spec": "Docs/90", "content": "Virtualised table (image, name, SKU, category, condition, public price, trade price (role), stock with inline quantity edit, fitment confidence, visibility, status, quality); filter rail (category, brand, condition, stock status, fitment missing, images missing, AI flagged, visibility, duplicate candidate, pending review); bulk bar (stock status, visibility, discontinue, price on request); 'Stock update' mode for the evening count; saved views." },
+      { "id": "V-INV-02", "name": "Inventory Item Detail", "spec": "Docs/90", "content": "Images, basics, pricing, stock and reserved units, fitment summary with confidence counts, notes, visibility, AI quality suggestions, moderation notice when pending_review, open inquiries for the item, activity log (who changed what), View as buyer." },
+      { "id": "V-INV-03", "name": "Add/Edit Item", "spec": "Docs/90", "content": "Two-column form; photo upload (phone camera via the upload kit) with drag and drop; AI category and normalised-name hints as chips; duplicate warning by SKU and part number; missing image / warranty warnings; fitment rows inline or 'Open fitment editor'." },
+      { "id": "V-INV-04", "name": "Bulk Import Wizard", "spec": "Docs/90", "content": "1 Upload (CSV, template download, previous imports) · 2 Map columns (guessed mapping with confidence, sample values, required fields marked) · 3 Preview and validation (row counts per problem with row policies) · 4 AI sample (5-10 rows before/after) · 5 Confirm (mode: add new / update existing by SKU, plan fit) · 6 Progress in the background · 7 Results with the downloadable error report." },
+      { "id": "V-INV-05", "name": "AI Normalization Queue", "spec": "Docs/90", "content": "Tabs by suggestion type with counts; batch cards raw → suggested with confidence; Accept, Edit, Reject, Apply to similar items (shows how many and which); keyboard A / E / R / J-K; progress meter." },
+      { "id": "V-INV-06", "name": "Fitment Editor", "spec": "Docs/90", "content": "Item header with OE numbers; fitment rows table (brand, model, series, years, engine/fuel, notes, confidence, source) with Confirm / Reject for AI rows; add range (brand → model → series → years); 'Uncertain' list across items; 'Copy fitment from another of my items'." },
+      { "id": "V-INQ-01", "name": "Inquiry List", "spec": "Docs/90", "content": "Groups Open · Answered · Reserved · Closed with counts; rows with requester type and trade badge, item, vehicle context, age, quantity, reserved-until; phone layout as cards." },
+      { "id": "V-INQ-02", "name": "Inquiry Detail", "spec": "Docs/90", "content": "Item card (stock, reserved, fitment for the requester's vehicle), requester (user / garage / fleet, approved trade customer), vehicle context snapshot (brand, model, series, year, engine — never VIN or plate), message thread, quick replies, actions Reply · Reserve (quantity, until ≤ 14 days) · Suggest alternative (pick from own items) · Mark unavailable (+ set item out of stock) · Mark completed (+ reduce stock) · Cancel reservation." },
+      { "id": "V-TRADE-01", "name": "Trade Customers (new id, Docs/12 open point 1)", "spec": "new", "content": "Tabs Requests · Approved · Rejected and revoked; request card with the organization's public card (type, verified, city, rating) and note; Approve · Reject with note; revoke with a confirmation; who decided and when." },
+      { "id": "V-PROF-01", "name": "Vendor Profile Editor", "spec": "Docs/90", "content": "Sections Overview · Categories and brands · Locations (map pin) · Hours · Delivery and pickup · Return and warranty policy · Price visibility defaults · Verification; profile completeness; View public page; Publish / Unpublish." },
+      { "id": "V-REV-01", "name": "Vendor Reviews", "spec": "Docs/90", "content": "Rating summary with five vendor sub-ratings and trend; list with confirmation label (Verified purchase / Approved by the business and CarPal), context (part, inquiry), reply status; reply editor with AI draft (V+, labelled); Report." },
+      { "id": "V-REV-02", "name": "Review Approval Request", "spec": "Docs/90", "content": "'Do you recognise this customer?' with display name, date and kind of part only; Yes · No · Not sure; note for CarPal; days left; 'A low rating is never a reason to say no'." },
+      { "id": "V-INS-01", "name": "Vendor Insights", "spec": "Docs/90", "content": "Period picker; search appearances, pin opens, Directions taps; most searched parts near you; searches with no matching stock nearby (AI demand gaps, Should); frequently viewed items missing fitment or images with Fix links; popular categories; inquiry response and fulfilment; fitment completion over time." },
+      { "id": "V-TEAM-01", "name": "Team (new id)", "spec": "vendor equivalent of P-TEAM-01", "content": "Members with role and areas (Inventory, Inquiries, Prices, Reviews, Settings per the WP0 matrix), invite by email, pending invitations, remove; last activity." },
+      { "id": "V-SET-01", "name": "Settings (new id)", "spec": "Docs/90 §3.3 lists Settings without a spec", "content": "Notifications matrix (in-app, web push, email), consents (vendor_inventory_ai_use with withdraw), plan and limits (PU-P02 copy), data export (if export_enabled), language." }
+    ],
+    "push_and_deep_links": [
+      "New inquiry → /vendor/inquiries/<id>",
+      "Buyer replied, cancelled or marked 'I picked it up' → /vendor/inquiries/<id> (VND-BR-09)",
+      "Reservation ends in 1 hour / ended → /vendor/inquiries/<id> (VND-BR-09)",
+      "Trade access request → /vendor/trade?tab=requests (VND-BR-09)",
+      "Import finished → /vendor/inventory/import/<batch_id>",
+      "Review received → /vendor/reviews/<id>; review approval needed → /vendor/reviews/approvals/<id>",
+      "Item flagged by moderation → /vendor/inventory/<id> (VND-BR-08, VND-BR-09)",
+      "Data quality alert → /vendor/inventory?missing_images=true&sort=views_desc (VND-BR-07, VND-BR-09)"
+    ]
+  },
+
+  "build_order": {
+    "recommended": ["VP1", "VP2", "VP3", "VP6", "VP7", "VP4", "VP5", "VP8", "VP9", "VP10", "VP11", "VP12"],
+    "why": "A seller must exist (VP2) and have items (VP3, manual entry is the Must-have fallback) before anything else. Inquiries (VP6) and trade customers (VP7) come next because the buyer side is already live in the consumer PWA: garages and drivers can send 'Ask about part' today and need someone to answer. The bulk import (VP4) and AI queue (VP5) then make large catalogues practical. Profile, reviews, insights and team follow; VP12 closes with Mina's story end to end.",
+    "pilot_blockers_outside_this_plan": [
+      "Web push sender in the backend (pwa DI-72 / OQ-26, provider plan PRV-BR-06): without it 'her phone buzzes' (Docs/12 Ch.6) falls back to email.",
+      "VND-BR-03 (reserved quantity and stock effects of inquiry transitions): without it Reserve does not lower public stock and the 3-star 'website said in stock' review of Ch.8 is the expected outcome.",
+      "VND-BR-01 (import preview): without it the import wizard cannot show validation before the import starts; the fallback runs import_create and shows errors only afterwards."
+    ]
+  },
+
+  "stages": [
+    {
+      "id": "VP1",
+      "title": "Vendor route group on the business app: shell, navigation, role gating, PWA manifest and web push",
+      "status": "proposed",
+      "depends_on": ["PP1 (provider plan: package, cp-web-portal BFF, generated contract, design system, i18n, org switcher)"],
+      "goal": "A vendor_owner or vendor_staff member signs in at web.<DOMAIN>, lands on /vendor/dashboard (counts only) and sees the navigation their role allows; the portal installs as 'CarPal Parts' and registers for web push after a user tap.",
+      "tasks": [
+        "Route group /<locale>/vendor with layout, left navigation (Docs/90 §3.3 + Trade customers), top bar with global SKU/part-number search (inventory.search) and notifications bell.",
+        "Contract generator includes ORG(V*/V+) operations and the {vnd} alias; role table from sec lines; entitlement helper reading subscription.org_get.",
+        "Manifest per locale with scope /<locale>/vendor/; service worker from PP1 (app shell only, no API caching, wiped at sign-out); push registration (push_tokens.register) offered after the first inquiry answer or from settings.",
+        "Banners: Verification pending, Pro trial with days left, import running (polls inventory.imports_list while a batch is processing).",
+        "Hybrid organizations: the org switcher shows provider and vendor areas of one organization."
+      ],
+      "operations": ["me.memberships_list", "subscription.org_get", "inventory.search", "notifications.list/unread_count/mark_read", "push_tokens.register/revoke", "inquiries.vendor_list (counts)", "vendor.profile_get"],
+      "acceptance": ["vendor_staff cannot open Team, Settings or a V+ action; the server's 403 shows S-SHARED-07", "Install prompt and push permission never appear on page load", "A provider-only member gets 'No access' on /vendor"]
+    },
+    {
+      "id": "VP2",
+      "title": "Vendor onboarding V-ONB-01..05 (= public-ui PU-P01 vendor steps) and first publish",
+      "status": "proposed",
+      "depends_on": ["VP1"],
+      "goal": "Mina's Ch.1-2 path up to the inventory choice: account, consent, shop basics with pin check, categories and brands, price visibility defaults, registration upload, publish with Verification pending or Catalogue coming soon.",
+      "screens": ["S-AUTH-03/04/05 vendor path", "V-ONB-01", "V-ONB-02", "V-ONB-03", "V-ONB-04", "V-ONB-05"],
+      "operations": ["org.create", "onboarding.list/update/accept_terms", "org.consents_grant (vendor_inventory_ai_use)", "vendor.profile_put", "vendor.coverage_create", "taxonomy reads (part_category, vehicle_brand)", "org.location_create", "org.location_pin_check", "geo.*", "org.verification_submit", "media.upload_*", "vendor.publish"],
+      "rules": [
+        "The consent step shows the exact vendor_inventory_ai_use text; declining keeps every manual path and hides AI steps (VND-GD-05).",
+        "The pin check warns, it does not block; the warning text names the distance.",
+        "delivery_options accepts pickup and local_delivery only (shipping is rejected in the MVP).",
+        "409 PUBLISH_REQUIREMENTS_UNMET lists the missing items in plain words with links to the step."
+      ],
+      "acceptance": ["Mina's Ch.1-2 (without the import) in FA and EN on desktop and at 360 px", "Publishing with 'Import later' shows the vendor page with 'Catalogue coming soon' in the consumer PWA"]
+    },
+    {
+      "id": "VP3",
+      "title": "Inventory core: list, item detail, add/edit, photos, bulk actions, evening stock update, discontinue",
+      "status": "proposed",
+      "depends_on": ["VP1"],
+      "goal": "Kaveh adds the Meyle sway bar links by hand with a phone photo, and updates the evening stock counts in one pass; Mina discontinues 60 items.",
+      "screens": ["V-INV-01", "V-INV-02", "V-INV-03"],
+      "operations": ["inventory.list", "inventory.search", "inventory.create", "inventory.get", "inventory.update", "inventory.delete", "inventory.bulk_update + jobs.get", "inventory.duplicate_mark", "media.upload_init/put/complete", "media.attach", "ai.inventory_normalize (item_ids, single item hints)", "fitment.list", "public.inventory_get (View as buyer)"],
+      "tasks": [
+        "Virtualised table with cursor paging, column chooser, URL filters, saved views (VND-GD-06).",
+        "Stock update mode: quantity cells editable in place, Tab/Enter moves down, changed rows highlighted, one Save sends the batch (VND-BR-04; until it lands, one PATCH per changed row with ETAG and a retry list).",
+        "Stock status derived in the form from quantity (0 → Out of stock, < 3 → Low stock) with a manual override for 'available on request'; the low-stock threshold per vendor is VND-OQ-05.",
+        "Upload kit shared with the provider portal (HEIC conversion, resize, scan polling).",
+        "Price fields and the trade price column hidden for roles without the price permission (VND-BR-05).",
+        "pending_review items show the moderation reason and cannot be re-activated by the vendor (VND-BR-08)."
+      ],
+      "acceptance": ["409 INVENTORY_LIMIT_REACHED shows the limit, the count and the Pro trial offer", "409 DUPLICATE(sku) links to the existing item", "Discontinued items disappear from the consumer search and still open in the portal", "price_trade never appears in any public response or page (security test)"]
+    },
+    {
+      "id": "VP4",
+      "title": "Bulk import wizard and re-import by SKU",
+      "status": "proposed",
+      "depends_on": ["VP3"],
+      "goal": "Mina's 3,412-row spreadsheet becomes 3,388 items with 24 skipped rows explained, while she keeps working; the weekly re-import updates quantities instead of creating duplicates.",
+      "screens": ["V-INV-04"],
+      "operations": ["media.upload_init/put/complete (text/csv)", "inventory.import_preview (VND-BR-01)", "inventory.import_create", "inventory.imports_list", "inventory.import_get", "inventory.import_error_report", "subscription.org_get (fit count)", "ai.inventory_normalize (import_batch_id)"],
+      "rules": [
+        "Steps 2-4 need VND-BR-01; until it lands the wizard reads only the header row in the browser for mapping (no row data leaves the upload), and validation shows after the import as the error report.",
+        "Mapping requires SKU, name and either a price column or the 'no price → Price on request' policy; 'Mapping incomplete' blocks Confirm.",
+        "Confirm shows the plan fit ('3,388 of 5,000 items used after this import') and ENT(inventory_bulk_import_enabled) failures as the Pro trial offer.",
+        "Progress is a background job: the wizard can be closed; the banner and the inventory.import_finished notification bring the vendor back to the results.",
+        "The error report downloads through the 5-minute signed URL; it is never rendered as HTML."
+      ],
+      "acceptance": ["10,000-row file imports with progress and error report (WP7)", "Wrong file type and empty file show 'File invalid' with the template", "Re-import of the same file with changed quantities updates the items and creates none (after VND-BR-01)"]
+    },
+    {
+      "id": "VP5",
+      "title": "AI normalisation queue and fitment editor",
+      "status": "proposed",
+      "depends_on": ["VP4"],
+      "goal": "Mina accepts most suggestions in bulk with Apply to similar items, rejects the oxygen-sensor merge, and confirms the Lemförder control arm for E90-E93 2005-2012.",
+      "screens": ["V-INV-05", "V-INV-06"],
+      "operations": ["ai.suggestions_list (target_type inventory_item)", "ai.suggestion_decide", "ai.suggestions_decide_group (VND-BR-02)", "ai.insight_feedback", "ai.fitment_suggest + jobs.get", "fitment.list/create/update/delete", "fitment.decide", "inventory.duplicate_mark", "taxonomy reads (vehicle_brand, vehicle_model, vehicle_series, engine_type, fuel_type)"],
+      "rules": [
+        "Merge suggestions show both items side by side (SKU, part numbers, notes, images) before Accept; a rejection records feedback.",
+        "Fitment confidence labels: Confirmed (vendor), Likely (AI, pending), Uncertain (AI asks to check); only Confirm or a vendor-entered confirmed row produces Confirmed.",
+        "Apply to similar items always shows the count and a list before applying; it applies the same edit, not a new AI guess."
+      ],
+      "acceptance": ["No AI suggestion changes an item until accepted", "With the consent withdrawn the queue is empty with an explanation and fitment editing still works", "Keyboard-only review of 50 suggestions"]
+    },
+    {
+      "id": "VP6",
+      "title": "Inquiries: list, detail, reply, reserve, unavailable, alternative, complete, cancel — phone-ready",
+      "status": "proposed",
+      "depends_on": ["VP3"],
+      "goal": "Mina reserves one control arm for Reza until Friday 12:00 from her phone after the push, in under a minute, and the public stock drops to 1; Kaveh completes it on Friday at the counter.",
+      "screens": ["V-INQ-01", "V-INQ-02"],
+      "operations": ["inquiries.vendor_list", "inquiries.vendor_get", "inquiries.vendor_message", "inquiries.vendor_transition", "inventory.get", "inventory.update (fallback for stock effects)", "inventory.search (pick an alternative)", "fitment.list", "trade_accounts.vendor_list (trade badge)", "review_invitations.send (optional, after completion)"],
+      "rules": [
+        "Actions come from the §13.1 transition table for the vendor side; INVALID_TRANSITION (e.g. the buyer cancelled meanwhile) reloads the inquiry and says what changed.",
+        "Reserve needs a time ≤ 14 days ahead and a quantity (VND-BR-03); the reply text is prefilled ('Held for you until …') and editable.",
+        "Mark unavailable asks 'Also set this item to Out of stock?' (default yes) — one call with VND-BR-03, two calls before it.",
+        "Suggest alternative picks one of the vendor's own items and sends it as a part card (VND-BR-06); before it lands, the message carries the item's public link.",
+        "The vehicle context shows only brand, model, series, year and engine, and only when the requester shared it (CNS(vendor_fitment_context)); otherwise 'Vehicle not shared'.",
+        "First response time is shown on the list ('You usually reply in 25 min')."
+      ],
+      "acceptance": ["Reza's Ch.6-7 path from a push on a 360 px phone and on desktop", "The buyer side (pwa inquiry detail) shows reply, reservation, alternative and completion", "A completed inquiry makes the buyer's review Verified purchase (inquiry_verified)"]
+    },
+    {
+      "id": "VP7",
+      "title": "Trade customers and price visibility",
+      "status": "proposed",
+      "depends_on": ["VP3"],
+      "goal": "Mina approves Reza Auto Suspension's trade request; Reza sees trade prices, nobody else does; she can revoke at any time.",
+      "screens": ["V-TRADE-01 (new)", "V-ONB-04 / V-PROF-01 price visibility section"],
+      "operations": ["trade_accounts.vendor_list", "trade_accounts.vendor_decide", "public.org_get (requester card)", "vendor.profile_put (default_price_visibility)", "inventory.bulk_update (visibility)"],
+      "acceptance": ["Approve, reject with note and revoke are audited with the deciding user", "After revoke the garage no longer sees trade-only items or trade prices (checked from the provider side)", "Only V+ can decide; staff see the list read-only"]
+    },
+    {
+      "id": "VP8",
+      "title": "Vendor profile editor, locations, hours, policies, verification, publish",
+      "status": "proposed",
+      "depends_on": ["VP2"],
+      "screens": ["V-PROF-01", "V-ONB-05 status inside the profile"],
+      "operations": ["vendor.profile_get/put", "vendor.coverage_*", "vendor.publish", "vendor.unpublish", "org.update", "org.location_*", "org.location_pin_check", "org.verifications_list", "org.verification_resubmit", "availability or hours operations used by org locations"],
+      "notes": ["Same map pin component as the provider portal (P-PROF-03).", "View public page opens W-PUB-03 in a new tab as an anonymous visitor."]
+    },
+    {
+      "id": "VP9",
+      "title": "Vendor reviews: inbox, reply with AI draft, approval requests, report, review invitations",
+      "status": "proposed",
+      "depends_on": ["VP1", "PP6 or the shared review components (PU-OQ-01)"],
+      "screens": ["V-REV-01", "V-REV-02"],
+      "operations": ["reviews.org_list", "reviews.org_get", "review_responses.create/update/publish/delete", "ai.review_response_draft + jobs.get", "review_approvals.list", "review_approvals.answer", "reports.create", "disputes.* (after a rejected approval)", "review_invitations.send/org_list/cancel"],
+      "rules": ["Vendor sub-ratings: part accuracy, availability accuracy, price fairness, service speed, communication.", "Approval answers show display name, date and kind of part only; no reply and no edit at that step.", "AI drafts only for V+ and with ENT(ai_tools_enabled); reply recorded as AI-assisted and edited."],
+      "acceptance": ["Mina's Ch.8 reviews: thank-you reply to Reza, polite answer to the 3-star review, approval of the counter customer", "An approval answer cannot be sent twice"]
+    },
+    {
+      "id": "VP10",
+      "title": "Dashboard and insights: catalogue quality, demand, map and search visibility, quality alerts",
+      "status": "proposed",
+      "depends_on": ["VP3", "VP6"],
+      "screens": ["V-DASH-01", "V-INS-01"],
+      "operations": ["vendor.profile_get (catalog_quality_score, measured_response_time_minutes)", "vendor.insights_get", "vendor.insights_get extensions (VND-BR-07)", "ai.inventory_gaps + jobs.get (Should, ENT(advanced_analytics_enabled))", "ai.suggestions_list (count)", "review_approvals.list (count)", "trade_accounts.vendor_list (requested count)"],
+      "notes": ["Every quality fix links to the inventory list with the matching filter.", "Popular searches and demand gaps are aggregates with a minimum audience (VND-BR-07); they never name a searcher or another vendor.", "Insights beyond the Basic plan show read-only after the trial with the Pro offer."]
+    },
+    {
+      "id": "VP11",
+      "title": "Team, settings, consents, plan and limits",
+      "status": "proposed",
+      "depends_on": ["VP1"],
+      "screens": ["V-TEAM-01 (new)", "V-SET-01 (new)", "PU-P02 plan pages"],
+      "operations": ["org.members_list", "org.member_invite", "org.member_update", "org.member_remove", "notification_prefs.get/put", "org.consents_list/grant/withdraw", "plans.list (audience vendor)", "subscription.org_get", "subscription.change_request"],
+      "notes": ["Vendor roles follow the WP0 matrix (VND-OQ-02); the Team page shows what each role can do in plain words."]
+    },
+    {
+      "id": "VP12",
+      "title": "Hardening: Mina's story end to end, large catalogue performance, security, accessibility, RTL",
+      "status": "proposed",
+      "depends_on": ["VP2", "VP3", "VP4", "VP5", "VP6", "VP7", "VP8", "VP9", "VP10", "VP11"],
+      "tasks": [
+        "Playwright: Docs/12 Ch.1-8 in FA and EN on desktop; Ch.6-7 from a notification click on a 360 px phone; with AI on and off.",
+        "Performance with 10,000 items: list, filters, stock update mode, import of 10,000 rows (VND-GD-06 budgets).",
+        "Security: trade price absent from every public page, share preview, notification text and search document; vendor_staff masks (after VND-BR-05); tenant isolation (another vendor's item id answers 404).",
+        "axe on every /vendor route × EN/FA × three themes; keyboard paths for the AI queue and stock update mode.",
+        "States: offline banner, expired session returns to the same page, import failed, AI unavailable, plan limit reached, item pending review."
+      ],
+      "acceptance": ["Docs/12 Ch.1-8 green in FA and EN", "All budgets met", "No security test finds price_trade outside the allowed pages"]
+    }
+  ],
+
+  "backend_requests": [
+    {
+      "id": "VND-BR-01",
+      "for": "VP4 (import wizard steps 2-5, re-import)",
+      "request": "inventory.import_preview: POST {vnd}/inventory/imports/preview (ORG(V+), ASYNC) with { source_media_asset_id; column_mapping? } returning the header columns, a guessed mapping with confidence (rules, plus AI when CNS(vendor_inventory_ai_use)), the first 20 rows, counts per problem (missing_price, duplicate_sku_in_file, invalid_quantity, missing_required, sku_exists), the plan fit ({ active_after_import, limit }) and, when requested, 5-10 AI normalisation samples. ImportCreate gains { mode: 'create_only'|'upsert_by_sku'; missing_price_policy: 'price_on_request'|'skip_row'; invalid_row_policy: 'skip_row'|'fail'; rows_absent_from_file: 'keep'|'mark_out_of_stock' }.",
+      "why": "Docs/12 Ch.2 (preview with 41 rows without price, 18 duplicate SKUs, 6 broken rows; AI sample before confirming; plan limit says how many fit) and Ch.4 (weekly re-import matches SKUs). Docs/12 open point 5. import_create today only takes a mapping and reports errors afterwards."
+    },
+    {
+      "id": "VND-BR-02",
+      "for": "VP5 (Apply to similar items)",
+      "request": "AiSuggestion carries group_key (same rule applied to similar raw values, e.g. the same category mapping or name pattern) and group_size; new ai.suggestions_decide_group POST {org}/ai/suggestions/groups/{group_key}/decision (ORG(V*), IDEM, AUD, ASYNC above 50) with the same SuggestionDecision, applied to every pending suggestion of the group.",
+      "why": "Docs/90 V-INV-05 and Docs/12 Ch.2 'Apply to similar items'; ai.suggestion_decide takes one suggestion, so 3,000 suggestions would be 3,000 calls."
+    },
+    {
+      "id": "VND-BR-03",
+      "for": "VP6 (reservations and stock), VP3",
+      "request": "InventoryItem gets reserved_quantity (sum of active reservations) and available_quantity (derived); public projections and search show available_quantity. InquiryTransition to reserved takes reserved_quantity (default the inquiry quantity or 1, ≤ available); expiry (reserved_until passed), cancellation and unavailable release it; completed takes reduce_stock: boolean (default true) and subtracts the reserved or inquired quantity; unavailable takes set_item_out_of_stock: boolean. A scheduler expires reservations and moves the inquiry back to answered.",
+      "why": "Docs/12 Ch.6 ('public stock count drops to 1', 'Mark Unavailable updates the item's stock to 0'), Ch.7 ('marks Completed and reduces stock'), the expiry rule in Ch.6 other paths, and Docs/12 open point 3. Docs/52 has no reserved quantity."
+    },
+    {
+      "id": "VND-BR-04",
+      "for": "VP3 (evening stock update)",
+      "request": "inventory.stock_bulk_set: POST {vnd}/inventory/stock (ORG(V*), IDEM) with { items: List<{ item_id; stock_quantity; stock_status?; etag? }, 500> } returning per-row results; stock_status derived from the quantity unless given.",
+      "why": "Docs/12 Ch.4 'Kaveh updates stock in bulk every evening'; InventoryBulkUpdate can only set one stock_status for many items, not a quantity per item."
+    },
+    {
+      "id": "VND-BR-05",
+      "for": "VP3, VP11 (staff without prices)",
+      "request": "WP0 permission matrix narrowing for vendor_staff: a per-member permission set (inventory, inquiries, prices, reviews, settings) or a fixed staff profile without prices; without the prices permission inventory.get/list omit price_trade and price_public edits are refused with 403 FORBIDDEN(price_permission). Narrowing only, as Docs/40 §0.5 allows.",
+      "why": "Docs/12 Ch.3: Kaveh has Inventory and Inquiries 'but not prices, reviews or settings'; today V* includes vendor_staff on inventory.get (which returns price_trade) and inventory.update (which can change prices). Docs/12 open point 6."
+    },
+    {
+      "id": "VND-BR-06",
+      "for": "VP6 (suggest alternative)",
+      "request": "inquiries.vendor_message accepts suggested_item_id (an active item of the same vendor, visible to the requester); InquiryMessage carries suggested_item: PublicInventoryCard | null; the requester can send a new inquiry for it in one tap.",
+      "why": "Docs/90 V-INQ-02 'Suggest alternative item' and Docs/12 Ch.6 (ATE pads instead of the out-of-stock ones); a message today is text only."
+    },
+    {
+      "id": "VND-BR-07",
+      "for": "VP10 (dashboard and insights)",
+      "request": "VendorInsights adds: top_search_terms near the vendor (normalised phrase + vehicle series, shown only with ≥ 5 distinct searchers), no_stock_demand (searched part category × vehicle series with no matching stock within the vendor's radius, same threshold), most_viewed_weak_items (top 50 items by views with missing fitment, images or warranty), items_missing_warranty, search_appearances, fitment_completion_rate, a weekly series for search_appearances, catalog_quality_score and fitment_completion_rate, and trust score parts (review quality, inquiry responsiveness, catalogue quality, profile integrity) per Docs/54 §3.2.",
+      "why": "Docs/12 Ch.3 'Popular searches near you', Ch.4 'items among your most viewed', Ch.5 Insights, Ch.8 'Her numbers' (fitment completion 64 % → 91 %, search appearances per week, trust score). VendorInsights today has only category ids and totals."
+    },
+    {
+      "id": "VND-BR-08",
+      "for": "VP3 (moderation notice)",
+      "request": "InventoryItem carries moderation: { reason_code; note_for_vendor; flagged_at; can_appeal } | null while status is pending_review, and an appeal path (reports or disputes) for the vendor.",
+      "why": "Docs/12 Ch.4 other paths: 'Mina is notified with the reason' (A-INV-01); the item has no reason field."
+    },
+    {
+      "id": "VND-BR-09",
+      "for": "VP1 push, VP6, VP7, VP3, VP10",
+      "request": "Notification templates and events for vendor members: trade_account.requested (to V+), trade_account.decided (to the requesting organization), inquiry.message_from_requester, inquiry.cancelled_by_requester, inquiry.completed_by_requester, inquiry.reservation_ending (1 h before), inquiry.reservation_expired (both sides), inventory.item_flagged, inventory.quality_alert (after an import or weekly), with the deep links of this plan.",
+      "why": "template-catalog.ts has inquiry.received, inquiry.answered and inventory.import_finished only; Docs/12 promises notifications for expiry ('both sides are notified'), trade requests and quality alerts."
+    },
+    {
+      "id": "VND-BR-10",
+      "for": "VP3 (item activity log), VP6 (inquiries of an item)",
+      "request": "inventory.activity_list GET {vnd}/inventory/{item_id}/activity (ORG(V*)): who changed what and when (price, stock, visibility, status, fitment decisions, imports), from the audit trail; and inquiries.vendor_list accepts inventory_item_id.",
+      "why": "Docs/90 V-INV-02 sections 'Activity log' and action 'View inquiries'; Docs/12 Ch.3 'Kaveh's actions are recorded with his own user ID' needs to be visible to the owner."
+    },
+    {
+      "id": "VND-BR-11",
+      "for": "VP2 / VP3 (only if VND-OQ-04 is answered 'yes')",
+      "request": "inventory.sample_seed POST {vnd}/inventory/samples (ORG(V+)): creates up to 20 draft items from a CarPal sample set for the vendor's categories, marked as samples and never published until edited.",
+      "why": "Docs/90 V-ONB-03 option 'Start with sample items' and Docs/12 Ch.2 other paths; no operation exists."
+    },
+    {
+      "id": "VND-BR-12",
+      "for": "VP1 (dependency, not new)",
+      "request": "Web push sender with VAPID keys for web.<DOMAIN> (pwa DI-72 / OQ-26, provider plan PRV-BR-06).",
+      "why": "Docs/12 Ch.6 'her phone buzzes'."
+    }
+  ],
+
+  "doc_issues": [
+    { "id": "VND-DI-01", "issue": "Docs/12 open point 2 (AI reply drafts for vendors) is settled by Docs/40: ai.review_response_draft is ORG(P+, V+). Close it in Docs/12 and mention it in Docs/90 V-REV-01.", "status": "open" },
+    { "id": "VND-DI-02", "issue": "Docs/12 open points 7 (approval screen) and 8 (map statistics) are covered by Docs/90 V-REV-02 and V-INS-01 and by VendorInsights.map_pin_views / directions_taps. Close them in Docs/12.", "status": "open" },
+    { "id": "VND-DI-03", "issue": "Docs/12 open point 4 says the Review verified-status enum still needs inquiry_verified; Docs/52 §line 197 and Docs/40 VerifiedStatus already have it. Close it in Docs/12.", "status": "open" },
+    { "id": "VND-DI-04", "issue": "Docs/90 §7.1 lists 'Pricing Visibility' and 'Verification' onboarding steps and §3.3 lists Team and Settings, without V- ids or specs; Docs/12 open point 1 asks for a trade screen. This plan proposes V-ONB-04, V-ONB-05, V-TRADE-01, V-TEAM-01 and V-SET-01; Docs/90 §7 needs their specs and §3.3 the Trade customers entry.", "status": "open" },
+    { "id": "VND-DI-05", "issue": "Docs/12 Ch.2 says Mina uploads 'a spreadsheet exported from her accounting software'; Docs/40 import accepts text/csv only (SEC-IN-11). Either the story says 'CSV export' or the contract accepts .xlsx (VND-OQ-01).", "status": "open" },
+    { "id": "VND-DI-06", "issue": "Docs/12 Ch.4 uses thresholds 'Out of stock at 0, Low stock under 3'; Docs/52 has StockStatus but no rule or per-vendor threshold. Decide whether stock_status is derived by the server from stock_quantity (VND-OQ-05).", "status": "open" },
+    { "id": "VND-DI-07", "issue": "Docs/12 Ch.3 'Kaveh … not prices, reviews or settings' conflicts with Docs/40 V* rights (inventory.get returns price_trade to vendor_staff; reviews.org_list is V*). The WP0 matrix must narrow it (VND-BR-05).", "status": "open" },
+    { "id": "VND-DI-08", "issue": "Docs/12 Ch.2 lists delivery 'same-day courier within the city' and Ch.4 'same day if ordered before 14:00'; VendorProfileWrite.delivery_options has no cut-off or note field. Add delivery_note_translations or a cut-off time to the profile.", "status": "open" },
+    { "id": "VND-DI-09", "issue": "Docs/12 Ch.2 'price visibility: used parts price on request' is a rule by condition; VendorProfileWrite has one default_price_visibility. Either the import applies a per-condition default (VND-BR-01 policy) or the profile stores defaults per condition.", "status": "open" }
+  ],
+
+  "open_questions": [
+    {
+      "id": "VND-OQ-01",
+      "question": "Accept Excel (.xlsx) uploads in the import, or CSV only?",
+      "default": "CSV only in the MVP, with a template and a 'Save as CSV from Excel' help line in the wizard. XLSX parsing adds a large attack surface (SEC-IN-11 formula safety, zip bombs) to a public upload.",
+      "trade_off": "Most accounting exports open in Excel; some sellers will need one extra step."
+    },
+    {
+      "id": "VND-OQ-02",
+      "question": "Vendor staff roles: keep vendor_owner + vendor_staff with a per-member permission set (inventory, inquiries, prices, reviews, settings), or add fixed roles (e.g. vendor_manager, vendor_counter)?",
+      "default": "Two roles plus a small permission set on the membership, decided in the WP0 matrix (VND-BR-05). It covers Kaveh without a new role and stays a narrowing of V*."
+    },
+    {
+      "id": "VND-OQ-03",
+      "question": "Does a reservation lower the public stock count automatically (Docs/12 open point 3)?",
+      "default": "Yes, through reserved_quantity and available_quantity (VND-BR-03). Public pages show the available count; the vendor sees on hand, reserved and available."
+    },
+    {
+      "id": "VND-OQ-04",
+      "question": "Keep 'Start with sample items' in V-ONB-03?",
+      "default": "No in the MVP: drop the option (manual add and upload cover the need) unless a sample set per category exists. VND-BR-11 is the path if yes."
+    },
+    {
+      "id": "VND-OQ-05",
+      "question": "Who sets stock_status: the server from stock_quantity with a per-vendor low-stock threshold (default 3), or the vendor by hand?",
+      "default": "The server derives it when a quantity is given; the vendor can set 'available on request' by hand for items without a count."
+    },
+    {
+      "id": "VND-OQ-06",
+      "question": "A separate compact phone app for sellers (like the Workshop PWA for mechanics)?",
+      "default": "No (VND-GD-02): the inquiry and approval pages are phone-ready inside the installable portal. Revisit if pilot sellers have no computer at the counter."
+    },
+    {
+      "id": "VND-OQ-07",
+      "question": "Should completing an inquiry offer to send a review invitation to the buyer from the portal?",
+      "default": "Yes, as an optional checkbox on 'Mark completed' (review_invitations.send is V*), off by default so sellers do not spam; the buyer can review anyway from the completed inquiry."
+    },
+    {
+      "id": "VND-OQ-08",
+      "question": "Name and manifest of the installed portal: 'CarPal Parts' / «کارپال قطعات», or 'CarPal Business' shared by provider and vendor?",
+      "default": "'CarPal Parts' for the /vendor scope, so a hybrid organization's provider and vendor apps do not capture each other's links; WP0 approves."
+    }
+  ],
+
+  "deferred": [
+    { "item": "Checkout and payment for reserved parts", "note": "MVP §5.9: the reservation is the end of the online flow; 'reserved' is the hook for future parts commerce (Plan §8.4)." },
+    { "item": "Live chat in inquiries", "note": "InquiryMessage is thread-ready (Plan §8.4); the MVP thread refreshes on open and on push." },
+    { "item": "Accounting-software connectors (automatic stock sync)", "note": "Twice-weekly re-import by SKU covers Ch.8; a connector API is post-MVP." },
+    { "item": "Inventory export", "note": "Docs/90 V-INV-01 'Export optional'; only with ENT(export_enabled), never including trade prices for staff without the price permission." }
+  ],
+
+  "progress_log": [
+    {
+      "date": "2026-11-16",
+      "summary": "Plan created from Docs/12, Docs/22, Docs/90 §3.3 and §7, Docs/40 §9, §10, §13, §15.3, §21 and Docs/52: requirements VRQ-01..14, decisions VND-GD-01..07, stages VP1-VP12 (VP1 on the provider plan's PP1 foundation), backend requests VND-BR-01..12, doc issues VND-DI-01..09, open questions VND-OQ-01..08. Mockup at frontend/vendor-portal/mockup.html."
+    }
+  ]
+}

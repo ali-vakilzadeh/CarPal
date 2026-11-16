@@ -4532,6 +4532,107 @@
       ],
       "additionalProperties": false
     },
+    "DeliveryHealth": {
+      "type": "object",
+      "properties": {
+        "generated_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DeliveryHealthRow"
+          },
+          "maxItems": 30
+        }
+      },
+      "required": [
+        "generated_at",
+        "rows"
+      ],
+      "additionalProperties": false,
+      "description": "by channel, then provider"
+    },
+    "DeliveryHealthRow": {
+      "type": "object",
+      "properties": {
+        "channel": {
+          "$ref": "#/$defs/NotificationTemplateChannel"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "the sender that took the attempt, e.g. smtp, sms_gateway, push_gateway; unknown before S25a"
+        },
+        "last_24h": {
+          "$ref": "#/$defs/DeliveryHealthWindow"
+        },
+        "last_7d": {
+          "$ref": "#/$defs/DeliveryHealthWindow"
+        },
+        "last_30d": {
+          "$ref": "#/$defs/DeliveryHealthWindow"
+        },
+        "last_failure_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "channel",
+        "provider",
+        "last_24h",
+        "last_7d",
+        "last_30d",
+        "last_failure_at"
+      ],
+      "additionalProperties": false,
+      "description": "within the last 30 days"
+    },
+    "DeliveryHealthWindow": {
+      "type": "object",
+      "properties": {
+        "attempted": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000,
+          "description": "deliveries whose last attempt fell in the window (sent, delivered or failed)"
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "failure_rate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{1,5}(\\.\\d{1,4})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "attempted",
+        "failed",
+        "failure_rate"
+      ],
+      "additionalProperties": false,
+      "description": "failed / attempted; null when nothing was attempted"
+    },
     "Dispute": {
       "type": "object",
       "properties": {
@@ -11628,6 +11729,28 @@
           "maximum": 7,
           "description": "ISO weekday of weekly digests (1 Monday)"
         },
+        "review_approval_reminder_days": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "maxItems": 3,
+          "description": "backend S25a: reminders to the business about a Path 2 approval request, days after the request, strictly ascending; it has 7 days to answer"
+        },
+        "maintenance_due_window_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90,
+          "description": "backend S25a: a maintenance reminder is due this many days before its date"
+        },
+        "mileage_due_window_km": {
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 5000,
+          "description": "backend S25a: … or this many km before its mileage"
+        },
         "updated_by_display": {
           "anyOf": [
             {
@@ -11657,6 +11780,9 @@
         "default_quiet_hours",
         "digest_hour",
         "weekly_digest_day",
+        "review_approval_reminder_days",
+        "maintenance_due_window_days",
+        "mileage_due_window_km",
         "updated_by_display",
         "updated_at",
         "version"
@@ -11706,6 +11832,28 @@
           "maximum": 7,
           "description": "ISO weekday of weekly digests (1 Monday)"
         },
+        "review_approval_reminder_days": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "maxItems": 3,
+          "description": "backend S25a: reminders to the business about a Path 2 approval request, days after the request, strictly ascending; it has 7 days to answer"
+        },
+        "maintenance_due_window_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90,
+          "description": "backend S25a: a maintenance reminder is due this many days before its date"
+        },
+        "mileage_due_window_km": {
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 5000,
+          "description": "backend S25a: … or this many km before its mileage"
+        },
         "reason": {
           "type": "string",
           "minLength": 3,
@@ -11719,6 +11867,9 @@
         "default_quiet_hours",
         "digest_hour",
         "weekly_digest_day",
+        "review_approval_reminder_days",
+        "maintenance_due_window_days",
+        "mileage_due_window_km",
         "reason"
       ],
       "additionalProperties": false
@@ -23374,6 +23525,17 @@
               "type": "null"
             }
           ]
+        },
+        "pending_change_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -23390,9 +23552,11 @@
         "raised_by_display",
         "raised_by_organization",
         "assigned_to_display",
-        "moderator_notes"
+        "moderator_notes",
+        "pending_change_id"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "a resolution awaiting an administrator's fairness approval (backend S25a, DQ-22)"
     },
     "StaffDisputeDetail": {
       "type": "object",
@@ -23513,6 +23677,17 @@
             }
           ]
         },
+        "pending_change_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "target_snapshot": {
           "$ref": "#/$defs/DisputeTargetSnapshot"
         },
@@ -23580,6 +23755,7 @@
         "raised_by_organization",
         "assigned_to_display",
         "moderator_notes",
+        "pending_change_id",
         "target_snapshot",
         "respondent"
       ],

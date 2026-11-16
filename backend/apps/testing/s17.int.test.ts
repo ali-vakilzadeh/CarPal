@@ -249,6 +249,10 @@ describe('notification rules (A-NOTIF-01 Rules)', () => {
       default_quiet_hours: null,
       digest_hour: 8,
       weekly_digest_day: 1,
+      // S25a: approval reminders and the reminder due windows (the defaults).
+      review_approval_reminder_days: [3, 6],
+      maintenance_due_window_days: 14,
+      mileage_due_window_km: 500,
       reason: REASON,
     };
     expect(

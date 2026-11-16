@@ -10,7 +10,8 @@
 //     invitation to the requester (in-app, 7 days); an appointment's waits for
 //     the invitation delay of the notification rules (S17, A-NOTIF-01) and is
 //     then sent by the 15-minute sweep.
-//   - W15 rules: Path 2 business deadline → no_response (every 5 min),
+//   - W15 rules: Path 2 business deadline → no_response (every 5 min), Path 2
+//     approval reminders to the business on the days of the notification rules (S25a, every 15 min),
 //     invitation reminders (days of the notification rules) and expiry plus invitations for appointments that
 //     took place without being closed (every 15 min), and the nightly trust
 //     recomputation (W3 sweep, staleness).
@@ -29,7 +30,7 @@ import {
   type NotificationRulesValues,
 } from '#modules/notification/interface/notification-rules.js';
 import { PublicProfiles } from '#modules/organization/interface/public-profiles.js';
-import { autoCheck } from '../domain/reviews.js';
+import { autoCheck, BUSINESS_CONFIRMATION_MS } from '../domain/reviews.js';
 import { reviewTrustWeight } from '../domain/scoring.js';
 import { Invitations } from './invitation-ops.js';
 import { tookPlace } from './review-ops.js';
@@ -277,6 +278,67 @@ export class ApprovalDeadlineRule extends ScheduledRule {
           payload: { subject_organization_id: r.subject_organization_id, answer: 'no_response' },
         });
       return rows.length;
+    });
+  }
+}
+
+/**
+ * S25a.T2 (S17-D4, Docs/23 A-NOTIF-01): reminders to the business about a Path 2 review still waiting for its answer,
+ * on the days after the request that the notification rules name (default 3 and 6; the business has 7 days). The
+ * request time is the deadline minus the 7-day window (also for reviews moved to Path 2 by staff); a reminder already
+ * sent is never repeated (business_reminder_count), and one whose day passed while the sweep was down is sent once.
+ */
+@Injectable()
+export class ApprovalReminderRule extends ScheduledRule {
+  readonly name = 'trust.approval_reminders';
+  readonly everyMs = 15 * 60_000;
+
+  constructor(
+    private readonly tx: TxRunner,
+    private readonly workflow: ReviewWorkflow,
+  ) {
+    super();
+  }
+
+  async run(now = new Date()): Promise<number> {
+    return this.tx.run({ actorType: 'system' }, async (scope) => {
+      const days = (await this.workflow.notificationRules(scope)).approvalReminderDays;
+      if (days.length === 0) return 0;
+      const due = await scope.db
+        .selectFrom('trust.reviews')
+        .select(['id', 'subject_organization_id', 'business_confirmation_due_at', 'business_reminder_count'])
+        .where('status', '=', 'pending_approval')
+        .where('business_confirmation_status', '=', 'pending')
+        .where('business_confirmation_due_at', '>', now)
+        .where('business_reminder_count', '<', days.length)
+        .where('deleted_at', 'is', null)
+        .orderBy('id')
+        .limit(1000)
+        .execute();
+      let n = 0;
+      for (const r of due) {
+        const requestedAt = new Date(r.business_confirmation_due_at!).getTime() - BUSINESS_CONFIRMATION_MS;
+        // The latest reminder day that has passed; earlier missed days are not sent on top of it.
+        let reached = 0;
+        while (reached < days.length && requestedAt + days[reached]! * 86_400_000 <= now.getTime()) reached++;
+        if (reached <= r.business_reminder_count) continue;
+        await scope.db.updateTable('trust.reviews').set({ business_reminder_count: reached }).where('id', '=', r.id).execute();
+        await publishEvent(scope, {
+          type: 'review.approval.reminded',
+          aggregateType: 'review',
+          aggregateId: r.id,
+          payload: {
+            subject_organization_id: r.subject_organization_id,
+            organization_id: r.subject_organization_id,
+            business_confirmation_status: 'pending',
+            reminder: reached,
+            due_at: new Date(r.business_confirmation_due_at!).toISOString(),
+            days_left: Math.max(1, Math.ceil((new Date(r.business_confirmation_due_at!).getTime() - now.getTime()) / 86_400_000)),
+          },
+        });
+        n++;
+      }
+      return n;
     });
   }
 }

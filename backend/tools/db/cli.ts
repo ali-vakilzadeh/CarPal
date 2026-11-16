@@ -48,7 +48,19 @@ async function main(): Promise<void> {
       log(`Server: ${cfg.host}:${cfg.port} (${cfg.mode}), env=${cfg.env}`);
       for (const [db, ok] of Object.entries(s.databases)) log(`Database ${db}: ${ok ? 'installed' : 'missing'}`);
       if (s.baseline) {
-        log(`Baseline: ${s.baseline.upToDate ? 'up to date' : 'Docs/43.db_setup.sql changed since install -> pnpm db:reset'}`);
+        // 2-build.sh reads these lines: "changed since install" without pending migrations stops a deployment.
+        const pending = s.migrations.pending.length;
+        log(
+          `Baseline: ${
+            s.baseline.upToDate
+              ? s.baseline.current === s.baseline.installed
+                ? 'up to date'
+                : 'up to date (Docs/43 in step with the migrations applied)'
+              : pending > 0
+                ? `Docs/43.db_setup.sql changed since install; ${pending} pending migration(s) should carry the change -> pnpm db:setup`
+                : 'Docs/43.db_setup.sql changed since install -> pnpm db:reset (dev) or a migration (shared environments)'
+          }`,
+        );
       }
       if (s.liteShims) log(`Lite shims: ${s.liteShims}`);
       log(

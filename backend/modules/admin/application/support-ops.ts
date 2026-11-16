@@ -23,8 +23,9 @@ import {
   type OperationHandler,
   type OperationResult,
 } from '#libs/http-pipeline/index.js';
+import { ScheduledRule } from '#libs/jobs/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
-import type { TxScope } from '#libs/tenancy/index.js';
+import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
 import { SubscriptionWriter } from '#modules/billing/interface/billing.js';
 import { AccountAdmin } from '#modules/identity/interface/identity.js';
 import { OrgCards, toOrgSummary } from '#modules/organization/interface/org-cards.js';
@@ -758,5 +759,67 @@ export class AdminSupportTicketCloseHandler implements OperationHandler {
       return this.views.one(scope, row, ctx.locale);
     });
     return { body };
+  }
+}
+
+/**
+ * S25a.T6 (owner decision DQ-23, S24-D8): a ticket waiting on the user without a reply from the requester for
+ * NO_RESPONSE_DAYS days (since the last staff message) is solved by the system with outcome no_response, audited with
+ * actor system, and the requester gets the support.ticket_solved notice. A constant, not a setting: Docs/23 names no
+ * rule for it. The 14-day reopen after solved_at is unchanged, so a late reply still reopens the ticket.
+ */
+export const NO_RESPONSE_DAYS = 7;
+const AUTO_CLOSE_BATCH = 500;
+
+@Injectable()
+export class SupportAutoCloseRule extends ScheduledRule {
+  readonly name = 'admin.support_auto_close';
+  readonly everyMs = 3_600_000;
+
+  constructor(private readonly tx: TxRunner) {
+    super();
+  }
+
+  async run(now = new Date()): Promise<number> {
+    const cutoff = new Date(now.getTime() - NO_RESPONSE_DAYS * 86_400_000);
+    return this.tx.run({ actorType: 'system' }, async (scope) => {
+      const rows = await scope.db
+        .updateTable('admin.support_tickets')
+        .set({ status: 'solved', outcome: 'no_response', solved_at: now, solved_by: null, clock_started_at: null })
+        .where('status', '=', 'waiting_on_user')
+        .where('last_message_at', '<=', cutoff)
+        .where('deleted_at', 'is', null)
+        .where(
+          'id',
+          'in',
+          scope.db
+            .selectFrom('admin.support_tickets')
+            .select('id')
+            .where('status', '=', 'waiting_on_user')
+            .where('last_message_at', '<=', cutoff)
+            .where('deleted_at', 'is', null)
+            .orderBy('last_message_at')
+            .limit(AUTO_CLOSE_BATCH),
+        )
+        .returning(['id', 'requester_user_id'])
+        .execute();
+      for (const t of rows) {
+        await writeAudit(scope, {
+          action: 'support.ticket_solved',
+          entityType: 'support_ticket',
+          entityId: t.id,
+          reason: `No reply from the requester for ${NO_RESPONSE_DAYS} days`,
+          previous: 'waiting_on_user',
+          next: 'solved: no_response (automatic)',
+        });
+        await publishEvent(scope, {
+          type: 'support.ticket.solved',
+          aggregateType: 'support_ticket',
+          aggregateId: t.id,
+          payload: { ticket_id: t.id, outcome: 'no_response', requester_user_id: t.requester_user_id },
+        });
+      }
+      return rows.length;
+    });
   }
 }

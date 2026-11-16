@@ -1623,6 +1623,7 @@ export interface NotificationNotificationDeliveries {
   last_error: string | null;
   not_before: Timestamp | null;
   notification_id: string;
+  provider: string | null;
   provider_message_id: string | null;
   push_device_token_id: string | null;
   sent_at: Timestamp | null;
@@ -1658,7 +1659,10 @@ export interface NotificationNotificationRules {
   deletion_reason: string | null;
   digest_hour: Generated<number>;
   id: Generated<string>;
+  maintenance_due_window_days: Generated<number>;
+  mileage_due_window_km: Generated<number>;
   reason: string | null;
+  review_approval_reminder_days: Generated<number[]>;
   review_invitation_delay_minutes: Generated<number>;
   review_invitation_reminder_days: Generated<number[]>;
   rule_set: Generated<string>;
@@ -2311,6 +2315,7 @@ export interface TrustReviews {
   business_confirmation_status: string | null;
   business_confirmed_at: Timestamp | null;
   business_confirmed_by_user_id: string | null;
+  business_reminder_count: Generated<number>;
   confirmation_path: string | null;
   content_locale: string;
   context_appointment_id: string | null;

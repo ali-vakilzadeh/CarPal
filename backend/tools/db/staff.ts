@@ -7,7 +7,7 @@
 // through admin.platform_role_grant with a second approver (4EYES). It runs in every environment; outside dev the
 // accounts come from a spec file and get a generated one-time password that is printed once.
 //
-// create / list: development helpers (create refuses outside dev; list is read-only and runs anywhere).
+// create / list / prune: development helpers (create and prune refuse outside dev; list is read-only and runs anywhere).
 //
 // break-glass: resets one staff account's security keys and recovery codes from the server shell, with a reason
 // (backend S16a, DQ-04; deploy.md "Lost security key, fewer than two other admins").
@@ -103,7 +103,11 @@ export type StaffCommand =
   | { kind: 'bootstrap'; file?: string }
   | { kind: 'create'; spec: StaffSpec }
   | { kind: 'list' }
+  | { kind: 'prune'; domain: string; prefixes: string[] }
   | { kind: 'break-glass'; email: string; reason: string };
+
+/** Prefixes of the accounts the console's tests create (bff.int.test.ts, tests/e2e/staff.ts). */
+export const TEST_STAFF_PREFIXES = ['e2e-', 'bff-int-'] as const;
 
 const USAGE = [
   'Usage:',
@@ -111,6 +115,7 @@ const USAGE = [
   '                                              without --file: the development accounts, dev only)',
   '  pnpm dev:staff create --email <e> --name <n> --roles ADM,MOD,SUP,CRV [--locale fa|en] [--password <p>]   (dev only)',
   '  pnpm dev:staff list                         staff accounts and their roles',
+  '  pnpm dev:staff prune --domain <d> --prefix e2e-[,bff-int-]   (dev only) retire the test accounts <prefix>…@<d>',
   "  pnpm staff:break-glass --email <e> --reason <text>   reset a staff account's security keys and recovery codes",
   '                                              (any environment, on the server shell; DQ-04, deploy.md)',
 ].join('\n');
@@ -152,6 +157,23 @@ export function parseStaffArgs(argv: readonly string[]): StaffCommand {
     case 'list':
       only();
       return { kind: 'list' };
+    case 'prune': {
+      only('domain', 'prefix');
+      const domain = (flags.get('domain') ?? '').trim().toLowerCase();
+      const prefixes = [
+        ...new Set(
+          (flags.get('prefix') ?? '')
+            .split(',')
+            .map((p) => p.trim().toLowerCase())
+            .filter(Boolean),
+        ),
+      ];
+      // A domain alone would match every staff account of it (the development accounts too): a prefix is required.
+      if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(domain)) throw new Error(`prune needs --domain <domain>, e.g. staff.carpals.test\n${USAGE}`);
+      if (prefixes.length === 0 || prefixes.some((p) => !/^[a-z0-9][a-z0-9._-]{1,30}$/.test(p)))
+        throw new Error(`prune needs --prefix of 2-31 letters, digits, '.', '_' or '-' (comma-separated), e.g. e2e-\n${USAGE}`);
+      return { kind: 'prune', domain, prefixes };
+    }
     case 'break-glass': {
       only('email', 'reason');
       const email = (flags.get('email') ?? '').trim().toLowerCase();
@@ -285,6 +307,89 @@ export async function listStaff(deps: Pick<StaffDeps, 'tx'>): Promise<{ email: s
     },
     { readOnly: true },
   );
+}
+
+const likeLiteral = (s: string): string => s.replace(/[\\%_]/g, (c) => `\\${c}`);
+
+/**
+ * Development only (R-15): retires the staff accounts the console's tests leave behind (one per run, e.g.
+ * e2e-adm-…@staff.carpals.test), so `pnpm dev:staff list` and the console's staff directory stay readable. Nothing is
+ * deleted physically, because audit entries, four-eyes requests and moderation rows still name these accounts: their
+ * platform roles are removed, their keys and passwords disabled, their pending four-eyes requests expired and the
+ * account marked deleted (the address can be used again). Audited as actor system, one entry per account.
+ */
+export async function pruneStaff(
+  deps: Pick<StaffDeps, 'tx' | 'env'>,
+  domain: string,
+  prefixes: readonly string[],
+): Promise<{ email: string; roles: RoleCode[] }[]> {
+  assertDev(deps.env, 'dev:staff prune');
+  if (prefixes.length === 0) throw new Error('prune needs at least one prefix');
+  const suffix = `@${domain}`;
+  return deps.tx.run({ actorType: 'system' }, async (scope) => {
+    const candidates = await scope.db
+      .selectFrom('identity.user_accounts')
+      .select(['id', 'email'])
+      .where((eb) => eb.or(prefixes.map((p) => eb('email', 'like', `${likeLiteral(p)}%${likeLiteral(suffix)}`))))
+      .where('deleted_at', 'is', null)
+      .where('status', '<>', 'deleted')
+      .orderBy('email')
+      .forUpdate()
+      .execute();
+    const out: { email: string; roles: RoleCode[] }[] = [];
+    for (const u of candidates) {
+      // LIKE is checked again here: only an exact "<prefix>…@<domain>" address (no subdomain) is pruned.
+      if (!u.email.endsWith(suffix) || !prefixes.some((p) => u.email.startsWith(p))) continue;
+      const memberships = await scope.db
+        .selectFrom('identity.role_memberships')
+        .select(['id', 'role'])
+        .where('user_id', '=', u.id)
+        .where('organization_id', 'is', null)
+        .where('role', 'like', 'platform\\_%')
+        .where('deleted_at', 'is', null)
+        .execute();
+      if (memberships.length === 0) continue; // not a staff account
+      const now = new Date();
+      const reason = 'dev:staff prune (test account)';
+      await scope.db
+        .updateTable('identity.role_memberships')
+        .set({ status: 'removed', deleted_at: now, deletion_reason: reason })
+        .where(
+          'id',
+          'in',
+          memberships.map((m) => m.id),
+        )
+        .execute();
+      await scope.db
+        .updateTable('identity.authentication_methods')
+        .set({ status: 'disabled' })
+        .where('user_id', '=', u.id)
+        .where('deleted_at', 'is', null)
+        .execute();
+      await scope.db
+        .updateTable('admin.pending_admin_changes')
+        .set({ status: 'expired' })
+        .where('requested_by', '=', u.id)
+        .where('status', '=', 'pending')
+        .execute();
+      await scope.db
+        .updateTable('identity.user_accounts')
+        .set({ status: 'deleted', deleted_at: now, deletion_reason: reason })
+        .where('id', '=', u.id)
+        .execute();
+      const roles = [...new Set(memberships.map((m) => CODE_OF[m.role]).filter((c): c is RoleCode => !!c))].sort();
+      await writeAudit(scope, {
+        action: 'staff.dev_pruned',
+        entityType: 'user_account',
+        entityId: u.id,
+        reason,
+        previous: roles.join(','),
+        next: 'deleted',
+      });
+      out.push({ email: u.email, roles });
+    }
+    return out;
+  });
 }
 
 export interface BreakGlassResult {

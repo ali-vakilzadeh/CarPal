@@ -90,11 +90,24 @@ fi
 if grep -q 'changed since install' <<<"$status"; then
   # Docs/43 is the baseline of a fresh install only. Once a database holds data, every schema change
   # must be a numbered file in database/migrations (database/migrations/README.md); db:reset would erase it.
-  [[ "${ALLOW_BASELINE_DRIFT:-0}" == "1" ]] || die "Docs/43.db_setup.sql changed since this database was installed, and no migration covers it.
+  # Every migration keeps Docs/43 in step, so pending migrations explain the change (db:status says so).
+  if grep -q 'pending migration(s) should carry the change' <<<"$status"; then
+    warn "Docs/43 changed since the last install or migration; the pending migrations above carry the change"
+  else
+    [[ "${ALLOW_BASELINE_DRIFT:-0}" == "1" ]] || die "Docs/43.db_setup.sql changed since this database was installed, and no migration covers it.
   Add the change as database/migrations/NNNN_name.sql (and keep Docs/43 in step), upload, sync and build again.
   Set ALLOW_BASELINE_DRIFT=1 only if you know the change is already applied."
-  warn "baseline drift accepted (ALLOW_BASELINE_DRIFT=1)"
+    warn "baseline drift accepted (ALLOW_BASELINE_DRIFT=1)"
+  fi
 fi
 run_db pnpm -s db:setup
-ok "databases installed / migrated"
+# Every migration in database/migrations (0100 onwards) must now be applied, and Docs/43 in step with them.
+after="$(run_db pnpm -s db:status 2>&1)" || die "pnpm db:status failed after db:setup:
+$after"
+printf '%s\n' "$after" | grep -E '^(Baseline|Migrations):' | sed 's/^/    /'
+grep -qE '^Migrations: [0-9]+ applied, 0 pending' <<<"$after" || die "migrations still pending after db:setup (output above)"
+if ! grep -q '^Baseline: up to date' <<<"$after"; then
+  [[ "${ALLOW_BASELINE_DRIFT:-0}" == "1" ]] || die "Docs/43.db_setup.sql still differs from the installed and migrated schema after db:setup"
+fi
+ok "databases installed / migrated ($(ls "$SRC_DIR/database/migrations" | grep -cE '^[0-9]{4}_[a-z0-9_]+\.sql$') migrations in database/migrations)"
 finish

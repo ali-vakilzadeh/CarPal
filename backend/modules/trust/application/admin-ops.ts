@@ -385,6 +385,7 @@ export class StaffDisputeViews {
     private readonly vehicles: VehicleCards,
     private readonly appointments: AppointmentFacts,
     private readonly parties: DisputeParties,
+    private readonly fourEyes: FourEyes,
   ) {}
 
   /** 40 StaffDisputeDetail (S20, BR-28): the dispute with a snapshot of its target and the other party. */
@@ -514,6 +515,12 @@ export class StaffDisputeViews {
       scope,
       rows.map((d) => d.raised_by_organization_id).filter((x): x is string => !!x),
     );
+    // S25a.T5 (DQ-22): a resolution waiting for an administrator's fairness approval ("Awaiting administrator approval").
+    const pending = await this.fourEyes.pendingFor(
+      scope,
+      DISPUTE_RESOLVE_OP,
+      rows.map((d) => d.id),
+    );
     return rows.map((d) => {
       const org = d.raised_by_organization_id ? orgs.get(d.raised_by_organization_id) : undefined;
       return {
@@ -522,6 +529,7 @@ export class StaffDisputeViews {
         raised_by_organization: org ? toOrgSummary(org) : null,
         assigned_to_display: d.assigned_to ? (names.get(d.assigned_to) ?? null) : null,
         moderator_notes: d.moderator_notes,
+        pending_change_id: pending.get(d.id)?.changeId ?? null,
       };
     });
   }
@@ -586,6 +594,188 @@ type Resolution = {
   reason: string;
 };
 
+/**
+ * S25a.T5 (owner decision DQ-22): an upheld dispute whose outcome takes something out of public view (outcomeAction
+ * remove for fake_review, revoke_badge for badge_challenge) is not applied by its resolver: a different administrator
+ * approves it as fair through four eyes (admin.dispute_resolve, required role platform_admin). Outcomes that restore
+ * (moderation_appeal upheld) or change nothing apply at once.
+ */
+export const REMOVAL_OUTCOMES: readonly string[] = ['remove', 'revoke_badge'];
+
+export function awaitsFairnessApproval(disputeType: string, status: Resolution['status']): boolean {
+  const action = status === 'resolved_upheld' ? outcomeAction(disputeType, true) : null;
+  return !!action && REMOVAL_OUTCOMES.includes(action);
+}
+
+export const DISPUTE_RESOLVE_OP = 'admin.dispute_resolve';
+
+/** Separation of duties (52 Dispute, SEC-AZ-10): the decider is not the raiser nor whoever made the decision under dispute. */
+async function assertDecider(scope: TxScope, log: ModerationLog, d: DisputeRow, review: ReviewRow | null, staffId: string) {
+  if (d.raised_by_user_id === staffId) throw new ApiError('SELF_APPROVAL_FORBIDDEN', { detail: 'own dispute' });
+  if (review && review.reviewer_user_id === staffId) throw new ApiError('SELF_APPROVAL_FORBIDDEN', { detail: 'first reviewer' });
+  if (d.target_entity_type === 'moderation_action' && (await log.get(scope, d.target_entity_id))?.actorUserId === staffId)
+    throw new ApiError('SELF_APPROVAL_FORBIDDEN', { detail: 'own moderation action' });
+}
+
+export interface DisputeResolverDeps {
+  log: ModerationLog;
+  targets: ModerationTargets;
+  trust: TrustAdmin;
+}
+
+/**
+ * Resolves (or moves to mediation, or withdraws) a locked open dispute, applies the outcome to its target, records the
+ * moderation action and the audit entry, and publishes moderation.action.taken. `resolverId` is the deciding staff
+ * member (resolved_by); `approverId` the administrator who approved a removal outcome (S25a.T5), recorded in the
+ * moderation action and the audit entry.
+ */
+export async function resolveDispute(
+  scope: TxScope,
+  deps: DisputeResolverDeps,
+  d: DisputeRow,
+  review: ReviewRow | null,
+  b: Resolution,
+  resolverId: string,
+  o: { approverId?: string; accessPurpose?: string | null } = {},
+): Promise<DisputeRow> {
+  const withdrawing = b.status === 'withdrawn';
+  const resolving = b.status !== 'in_mediation' && !withdrawing;
+  const row = await scope.db
+    .updateTable('trust.disputes')
+    .set({
+      status: b.status,
+      assigned_to: d.assigned_to ?? resolverId,
+      ...(b.resolution !== undefined ? { resolution: b.resolution } : {}),
+      ...(b.moderator_notes !== undefined ? { moderator_notes: b.moderator_notes } : {}),
+      // S18 (BR-29): the decider, for admin.my_decisions_list (S20: also who withdrew it on request).
+      ...(resolving || withdrawing ? { resolved_at: sql<Date>`now()`, resolved_by: resolverId } : {}),
+    })
+    .where('id', '=', d.id)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+  let subjectOrg: string | null = review?.subject_organization_id ?? null;
+  if (resolving) subjectOrg = (await disputeOutcome(scope, deps, d, review, b, resolverId)) ?? subjectOrg;
+  // An outcome that changes the target is a moderation action (52 ModerationAction); the fake flag feeds 54 §3.3.
+  const actionType = resolving ? outcomeAction(d.dispute_type, b.status === 'resolved_upheld') : null;
+  const actionId = actionType
+    ? await deps.log.record(scope, {
+        targetType: d.target_entity_type,
+        targetId: d.target_entity_id,
+        actionType,
+        reason: b.reason,
+        params: {
+          dispute_id: d.id,
+          dispute_type: d.dispute_type,
+          outcome: b.status,
+          ...(subjectOrg ? { subject_organization_id: subjectOrg } : {}),
+          ...(actionType === 'remove' ? { fake: true } : {}),
+          ...(o.approverId ? { approved_by: o.approverId } : {}),
+        },
+        actorUserId: resolverId,
+      })
+    : null;
+  const approval = o.approverId ? ` (resolved by ${resolverId}, approved by ${o.approverId})` : '';
+  await writeAudit(scope, {
+    action: 'dispute.status_changed',
+    entityType: 'dispute',
+    entityId: d.id,
+    reason: b.reason,
+    previous: d.status,
+    next: `${b.status}${b.resolution ? `: ${b.resolution}` : ''}${approval}`.slice(0, 2000),
+    ...(o.accessPurpose ? { accessPurpose: o.accessPurpose } : {}),
+  });
+  await publishEvent(scope, {
+    type: 'moderation.action.taken',
+    aggregateType: actionId ? 'moderation_action' : 'dispute',
+    aggregateId: actionId ?? d.id,
+    payload: {
+      action_type: actionType ?? 'dispute_update',
+      dispute_id: d.id,
+      outcome: b.status,
+      target_type: d.target_entity_type,
+      target_id: d.target_entity_id,
+      organization_id: subjectOrg,
+    },
+  });
+  return row;
+}
+
+/** Effects of a resolved dispute on its target; returns the organization concerned. */
+async function disputeOutcome(
+  scope: TxScope,
+  deps: DisputeResolverDeps,
+  d: DisputeRow,
+  review: ReviewRow | null,
+  b: Resolution,
+  staffId: string,
+): Promise<string | null> {
+  const upheld = b.status === 'resolved_upheld';
+  if (d.dispute_type === 'review_approval_objection' && review && review.status === 'pending_approval') {
+    if (upheld)
+      // 52 §11: upheld → published with "Disputed by the business" (the dispute decider is the second reviewer).
+      await publishApproved(scope, review, {
+        disputed_by_business: true,
+        reviewer_decision: 'approved',
+        reviewer_user_id: staffId,
+        reviewer_decided_at: sql<Date>`now()`,
+        reviewer_reason_code: 'objection_upheld',
+      });
+    else
+      await scope.db
+        .updateTable('trust.reviews')
+        .set({
+          status: 'rejected',
+          verified_status: 'rejected',
+          reviewer_decision: 'rejected',
+          reviewer_user_id: staffId,
+          reviewer_decided_at: sql<Date>`now()`,
+          reviewer_reason_code: 'objection_sustained',
+        })
+        .where('id', '=', review.id)
+        .execute();
+    return review.subject_organization_id;
+  }
+  if (!upheld) return null;
+  if (d.dispute_type === 'fake_review' && review) {
+    await deps.targets.get('review')?.apply?.(scope, review.id, 'remove');
+    return review.subject_organization_id;
+  }
+  if (d.dispute_type === 'badge_challenge' && d.target_entity_type === 'badge') {
+    const r = await deps.trust.revokeBadge(scope, d.target_entity_id, `badge challenge upheld (dispute ${d.id})`);
+    return r?.organizationId ?? null;
+  }
+  if (d.dispute_type === 'moderation_appeal' && d.target_entity_type === 'moderation_action') {
+    const a = await deps.log.get(scope, d.target_entity_id);
+    if (a && ['hide', 'remove'].includes(a.actionType)) await deps.targets.get(a.targetType)?.apply?.(scope, a.targetId, 'restore');
+    return typeof a?.params.subject_organization_id === 'string' ? a.params.subject_organization_id : null;
+  }
+  return null;
+}
+
+/**
+ * Four-eyes executor of admin.dispute_resolve (S25a.T5): the approving administrator's transaction applies the removal
+ * outcome the resolver chose and resolves the dispute with the resolver as resolved_by. The dispute must still be open;
+ * the approver may not be a party to the decision under dispute.
+ */
+export async function applyApprovedResolution(
+  scope: TxScope,
+  deps: DisputeResolverDeps,
+  c: { targetId: string; payload: Record<string, unknown>; requestedBy: string; approvedBy: string },
+): Promise<void> {
+  const d = await loadDispute(scope, c.targetId, true);
+  if (!OPEN_DISPUTE.includes(d.status)) throw new ApiError('INVALID_TRANSITION', { detail: d.status });
+  const review = d.target_entity_type === 'review' ? await loadReview(scope, d.target_entity_id, true) : null;
+  await assertDecider(scope, deps.log, d, review, c.approvedBy);
+  const p = c.payload;
+  const b: Resolution = {
+    status: p.status as Resolution['status'],
+    reason: String(p.reason),
+    ...(typeof p.resolution === 'string' ? { resolution: p.resolution } : {}),
+    ...(typeof p.moderator_notes === 'string' ? { moderator_notes: p.moderator_notes } : {}),
+  };
+  await resolveDispute(scope, deps, d, review, b, c.requestedBy, { approverId: c.approvedBy });
+}
+
 @Injectable()
 @Operation('admin.dispute_resolve')
 export class DisputeResolveHandler implements OperationHandler {
@@ -594,6 +784,7 @@ export class DisputeResolveHandler implements OperationHandler {
     private readonly log: ModerationLog,
     private readonly targets: ModerationTargets,
     private readonly trust: TrustAdmin,
+    private readonly fourEyes: FourEyes,
   ) {}
 
   async handle(ctx: OperationContext<Resolution>): Promise<OperationResult> {
@@ -603,118 +794,55 @@ export class DisputeResolveHandler implements OperationHandler {
     const withdrawing = b.status === 'withdrawn';
     const resolving = b.status !== 'in_mediation' && !withdrawing;
     if ((resolving || withdrawing) && !b.resolution?.trim()) failIf([{ pointer: '/resolution', code: 'conditional_required' }]);
+    let status = 200;
     const body = await ctx.tx(async (scope) => {
       const d = await loadDispute(scope, ctx.params.dispute_id!, true);
       if (!OPEN_DISPUTE.includes(d.status) || d.status === b.status) throw new ApiError('INVALID_TRANSITION', { detail: d.status });
-      if (d.raised_by_user_id === s.userId) throw new ApiError('SELF_APPROVAL_FORBIDDEN', { detail: 'own dispute' });
       const review = d.target_entity_type === 'review' ? await loadReview(scope, d.target_entity_id, true) : null;
       // The decider differs from whoever made the decision under dispute (52 Dispute, SEC-AZ-10).
-      if (review && review.reviewer_user_id === s.userId) throw new ApiError('SELF_APPROVAL_FORBIDDEN', { detail: 'first reviewer' });
-      if (d.target_entity_type === 'moderation_action' && (await this.log.get(scope, d.target_entity_id))?.actorUserId === s.userId)
-        throw new ApiError('SELF_APPROVAL_FORBIDDEN', { detail: 'own moderation action' });
-      const row = await scope.db
-        .updateTable('trust.disputes')
-        .set({
-          status: b.status,
-          assigned_to: d.assigned_to ?? s.userId,
-          ...(b.resolution !== undefined ? { resolution: b.resolution } : {}),
-          ...(b.moderator_notes !== undefined ? { moderator_notes: b.moderator_notes } : {}),
-          // S18 (BR-29): the decider, for admin.my_decisions_list (S20: also who withdrew it on request).
-          ...(resolving || withdrawing ? { resolved_at: sql<Date>`now()`, resolved_by: s.userId } : {}),
-        })
-        .where('id', '=', d.id)
-        .returningAll()
-        .executeTakeFirstOrThrow();
-      let subjectOrg: string | null = review?.subject_organization_id ?? null;
-      if (resolving) subjectOrg = (await this.outcome(scope, d, review, b, s.userId)) ?? subjectOrg;
-      // An outcome that changes the target is a moderation action (52 ModerationAction); the fake flag feeds 54 §3.3.
-      const actionType = resolving ? outcomeAction(d.dispute_type, b.status === 'resolved_upheld') : null;
-      const actionId = actionType
-        ? await this.log.record(scope, {
-            targetType: d.target_entity_type,
-            targetId: d.target_entity_id,
-            actionType,
-            reason: b.reason,
-            params: {
+      await assertDecider(scope, this.log, d, review, s.userId);
+      if (awaitsFairnessApproval(d.dispute_type, b.status)) {
+        // S25a.T5 (DQ-22): nothing changes until a different administrator approves the removal as fair; the dispute
+        // stays open with its assignee (the resolver when it had none), also when the change is rejected or expires.
+        if (!d.assigned_to) await scope.db.updateTable('trust.disputes').set({ assigned_to: s.userId }).where('id', '=', d.id).execute();
+        const action = outcomeAction(d.dispute_type, true);
+        const pending = await this.fourEyes.request(
+          scope,
+          s.userId,
+          {
+            opId: DISPUTE_RESOLVE_OP,
+            targetType: 'dispute',
+            targetId: d.id,
+            payload: {
               dispute_id: d.id,
-              dispute_type: d.dispute_type,
-              outcome: b.status,
-              ...(subjectOrg ? { subject_organization_id: subjectOrg } : {}),
-              ...(actionType === 'remove' ? { fake: true } : {}),
+              status: b.status,
+              reason: b.reason,
+              ...(b.resolution !== undefined ? { resolution: b.resolution } : {}),
+              ...(b.moderator_notes !== undefined ? { moderator_notes: b.moderator_notes } : {}),
             },
-            actorUserId: s.userId,
-          })
-        : null;
-      await writeAudit(scope, {
-        action: 'dispute.status_changed',
-        entityType: 'dispute',
-        entityId: d.id,
-        reason: b.reason,
-        previous: d.status,
-        next: `${b.status}${b.resolution ? `: ${b.resolution}` : ''}`.slice(0, 2000),
-        accessPurpose: s.purpose,
-      });
-      await publishEvent(scope, {
-        type: 'moderation.action.taken',
-        aggregateType: actionId ? 'moderation_action' : 'dispute',
-        aggregateId: actionId ?? d.id,
-        payload: {
-          action_type: actionType ?? 'dispute_update',
-          dispute_id: d.id,
-          outcome: b.status,
-          target_type: d.target_entity_type,
-          target_id: d.target_entity_id,
-          organization_id: subjectOrg,
-        },
-      });
+            summary: `Uphold ${d.dispute_type} dispute ${d.id}: ${action} on ${d.target_entity_type} ${d.target_entity_id} (fairness approval)`,
+            reason: b.reason,
+            requiredRole: 'platform_admin',
+          },
+          ctx.locale,
+        );
+        await writeAudit(scope, {
+          action: 'dispute.resolution_requested',
+          entityType: 'dispute',
+          entityId: d.id,
+          reason: b.reason,
+          previous: d.status,
+          next: `${b.status} awaiting administrator approval (change ${pending.change_id})`,
+          accessPurpose: s.purpose,
+        });
+        status = 202;
+        return pending;
+      }
+      const deps = { log: this.log, targets: this.targets, trust: this.trust };
+      const row = await resolveDispute(scope, deps, d, review, b, s.userId, { accessPurpose: s.purpose });
       return (await this.views.many(scope, [row], ctx.locale))[0]!;
     });
-    return { body };
-  }
-
-  /** Effects of a resolved dispute on its target; returns the organization concerned. */
-  private async outcome(scope: TxScope, d: DisputeRow, review: ReviewRow | null, b: Resolution, staffId: string): Promise<string | null> {
-    const upheld = b.status === 'resolved_upheld';
-    if (d.dispute_type === 'review_approval_objection' && review && review.status === 'pending_approval') {
-      if (upheld)
-        // 52 §11: upheld → published with "Disputed by the business" (the dispute decider is the second reviewer).
-        await publishApproved(scope, review, {
-          disputed_by_business: true,
-          reviewer_decision: 'approved',
-          reviewer_user_id: staffId,
-          reviewer_decided_at: sql<Date>`now()`,
-          reviewer_reason_code: 'objection_upheld',
-        });
-      else
-        await scope.db
-          .updateTable('trust.reviews')
-          .set({
-            status: 'rejected',
-            verified_status: 'rejected',
-            reviewer_decision: 'rejected',
-            reviewer_user_id: staffId,
-            reviewer_decided_at: sql<Date>`now()`,
-            reviewer_reason_code: 'objection_sustained',
-          })
-          .where('id', '=', review.id)
-          .execute();
-      return review.subject_organization_id;
-    }
-    if (!upheld) return null;
-    if (d.dispute_type === 'fake_review' && review) {
-      await this.targets.get('review')?.apply?.(scope, review.id, 'remove');
-      return review.subject_organization_id;
-    }
-    if (d.dispute_type === 'badge_challenge' && d.target_entity_type === 'badge') {
-      const r = await this.trust.revokeBadge(scope, d.target_entity_id, `badge challenge upheld (dispute ${d.id})`);
-      return r?.organizationId ?? null;
-    }
-    if (d.dispute_type === 'moderation_appeal' && d.target_entity_type === 'moderation_action') {
-      const a = await this.log.get(scope, d.target_entity_id);
-      if (a && ['hide', 'remove'].includes(a.actionType)) await this.targets.get(a.targetType)?.apply?.(scope, a.targetId, 'restore');
-      return typeof a?.params.subject_organization_id === 'string' ? a.params.subject_organization_id : null;
-    }
-    return null;
+    return { status, body };
   }
 }
 

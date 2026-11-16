@@ -6,8 +6,8 @@ info:
   title: "CarPal API"
   version: "1.4.0"
   summary: "CarPal MVP API: consumer, business, admin plane and authorization server."
-  description: "Generated from Docs/40.API contract.md (contract 1.4.0, sha256 88efa9c33ce8721970b48fe79789c6bb14638f4800c213b507c67facdb6615a7); the contract is authoritative.\n\nConventions (40 §0-§4): every schema is closed (additionalProperties false); unknown body members are 422 UNKNOWN_FIELD and unknown query parameters 400 UNKNOWN_QUERY_PARAM.\n\nRequest bodies are application/json except the OAuth forms of /oauth/* and the raw storage PUT. Personal or location data never appears in URLs (TR-7): searches use POST and page in the body.\n\nErrors are application/problem+json (Problem, RFC 9457) with a stable code; /oauth/* answer RFC 6749 error bodies (ProtocolError). Authorization failures are 404, never 403 (SEC-AZ-2).\n\nx-carpal-sec is the contract sec line (40 §0.4): PUB, USR, ORG(role groups), DRV, STF, LNK, AAL2/AAL3, ATT, IDEM, ETAG, RL, ENT, CNS, FLAG, ASYNC, AUD, RSN, 4EYES, PURP, PII.\n\nSchema keywords: x-node-type (taxonomy node type the id must have), x-conditional (rule of a conditional field), x-locale-config (enabled locales), x-vin (VIN normalization), x-external (standard document).\n\n4EYES operations answer 202 PendingChange until a second staff member approves (admin.four_eyes_decide); ASYNC operations answer 202 Job (jobs.get)."
-  x-carpal-contract-sha256: "88efa9c33ce8721970b48fe79789c6bb14638f4800c213b507c67facdb6615a7"
+  description: "Generated from Docs/40.API contract.md (contract 1.4.0, sha256 05b24e5d0305f553410ffc36e1bda85760aebd7ea5b6e750af7293f628947af6); the contract is authoritative.\n\nConventions (40 §0-§4): every schema is closed (additionalProperties false); unknown body members are 422 UNKNOWN_FIELD and unknown query parameters 400 UNKNOWN_QUERY_PARAM.\n\nRequest bodies are application/json except the OAuth forms of /oauth/* and the raw storage PUT. Personal or location data never appears in URLs (TR-7): searches use POST and page in the body.\n\nErrors are application/problem+json (Problem, RFC 9457) with a stable code; /oauth/* answer RFC 6749 error bodies (ProtocolError). Authorization failures are 404, never 403 (SEC-AZ-2).\n\nx-carpal-sec is the contract sec line (40 §0.4): PUB, USR, ORG(role groups), DRV, STF, LNK, AAL2/AAL3, ATT, IDEM, ETAG, RL, ENT, CNS, FLAG, ASYNC, AUD, RSN, 4EYES, PURP, PII.\n\nSchema keywords: x-node-type (taxonomy node type the id must have), x-conditional (rule of a conditional field), x-locale-config (enabled locales), x-vin (VIN normalization), x-external (standard document).\n\n4EYES operations answer 202 PendingChange until a second staff member approves (admin.four_eyes_decide); ASYNC operations answer 202 Job (jobs.get)."
+  x-carpal-contract-sha256: "05b24e5d0305f553410ffc36e1bda85760aebd7ea5b6e750af7293f628947af6"
 servers:
   - url: "https://api.carpals.ir"
     description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
@@ -977,7 +977,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6202
+        line: 6222
   "/v1/admin/analytics/{dashboard_key}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1081,7 +1081,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6236
+        line: 6256
   /v1/admin/assist-sessions:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1209,7 +1209,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5647
+        line: 5660
   "/v1/admin/assist-sessions/{assist_session_id}/end":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1309,7 +1309,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5639
+        line: 5652
   /v1/admin/audit-logs/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1447,7 +1447,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6141
+        line: 6161
   /v1/admin/badges:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1663,7 +1663,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5937
+        line: 5950
   "/v1/admin/badges/{badge_id}/approve":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1767,7 +1767,7 @@ paths:
         - badge.awarded
       x-carpal-contract:
         section: "23.4"
-        line: 5945
+        line: 5958
   /v1/admin/data-requests:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1975,7 +1975,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6150
+        line: 6170
   "/v1/admin/data-requests/{request_id}/execute-deletion":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2097,7 +2097,7 @@ paths:
         - user.deletion.completed
       x-carpal-contract:
         section: "23.5"
-        line: 6183
+        line: 6203
   "/v1/admin/data-requests/{request_id}/export":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2218,7 +2218,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6167
+        line: 6187
   "/v1/admin/data-requests/{request_id}/status":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2348,7 +2348,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6158
+        line: 6178
   /v1/admin/disputes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2471,7 +2471,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5891
+        line: 5904
   "/v1/admin/disputes/{dispute_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2569,7 +2569,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5899
+        line: 5912
   "/v1/admin/disputes/{dispute_id}/messages":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2679,7 +2679,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5918
+        line: 5931
     post:
       operationId: admin.dispute_message_post
       summary: "Writes a templated message to one party of an open dispute; the party is notified and can answer in its thread."
@@ -2797,7 +2797,7 @@ paths:
         - dispute.message.posted
       x-carpal-contract:
         section: "23.4"
-        line: 5927
+        line: 5940
   "/v1/admin/disputes/{dispute_id}/resolution":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2805,7 +2805,7 @@ paths:
     post:
       operationId: admin.dispute_resolve
       summary: "Moves a dispute to mediation, resolves it, or withdraws it on the raiser's request; the decider must differ from whoe…"
-      description: "Moves a dispute to mediation, resolves it, or withdraws it on the raiser's request; the decider must differ from whoever made the decision under dispute. `resolved_upheld` accepts the raiser's claim and `resolved_rejected` keeps the target as it is, except for a `review_approval_objection` (raised by the business against a Path 2 review), where the outcome is named by its effect on the review: `resolved_upheld` publishes the review with \"Disputed by the business\" (the objection is overruled) and `resolved_rejected` rejects the review (the objection is sustained). `withdrawn` closes the dispute without an outcome; its `resolution` records the raiser's request.\n\nInput: C: required unless in_mediation"
+      description: "Moves a dispute to mediation, resolves it, or withdraws it on the raiser's request; the decider must differ from whoever made the decision under dispute. `resolved_upheld` accepts the raiser's claim and `resolved_rejected` keeps the target as it is, except for a `review_approval_objection` (raised by the business against a Path 2 review), where the outcome is named by its effect on the review: `resolved_upheld` publishes the review with \"Disputed by the business\" (the objection is overruled) and `resolved_rejected` rejects the review (the objection is sustained). `withdrawn` closes the dispute without an outcome; its `resolution` records the raiser's request. An upheld outcome that takes something out of public view (`fake_review`: the review is removed; `badge_challenge`: the badge is revoked) is not applied by the resolver (owner decision DQ-22, backend S25a): the answer is `202 PendingChange` (four eyes, required role `platform_admin`), nothing changes and the dispute stays open with its assignee (`StaffDispute.pending_change_id`). An administrator other than the resolver, and not a party to the decision under dispute, approves it through `admin.four_eyes_decide`: the outcome is applied and the dispute resolved with the resolver as decider and the approver recorded. A rejected or expired change leaves the dispute open. Restoring outcomes (an upheld `moderation_appeal`) and outcomes that change nothing apply at once.\n\nInput: C: required unless in_mediation"
       tags:
         - trust
       parameters:
@@ -2866,6 +2866,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StaffDispute"
+        "202":
+          description: PendingChange
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+            Location:
+              $ref: "#/components/headers/Location"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PendingChange"
         "400":
           $ref: "#/components/responses/Problem400"
         "401":
@@ -2890,7 +2903,7 @@ paths:
         "405":
           $ref: "#/components/responses/Problem405"
         "409":
-          description: "Problem (RFC 9457): INVALID_TRANSITION, IDEMPOTENCY_IN_PROGRESS"
+          description: "Problem (RFC 9457): INVALID_TRANSITION, DUPLICATE, IDEMPOTENCY_IN_PROGRESS"
           headers:
             CarPal-Request-Id:
               $ref: "#/components/headers/CarPal-Request-Id"
@@ -2902,6 +2915,7 @@ paths:
                 $ref: "#/components/schemas/Problem"
           x-carpal-error-codes:
             - INVALID_TRANSITION
+            - DUPLICATE
             - IDEMPOTENCY_IN_PROGRESS
         "412":
           $ref: "#/components/responses/Problem412"
@@ -2946,7 +2960,7 @@ paths:
         - review.published
       x-carpal-contract:
         section: "23.4"
-        line: 5907
+        line: 5920
   /v1/admin/exchange-rates:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3029,7 +3043,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5972
+        line: 5985
   "/v1/admin/exchange-rates/{currency}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3155,7 +3169,7 @@ paths:
         - exchange_rate.changed
       x-carpal-contract:
         section: "23.5"
-        line: 5979
+        line: 5992
   /v1/admin/flags:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3281,7 +3295,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5956
+        line: 5969
   "/v1/admin/flags/{key}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3448,7 +3462,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5964
+        line: 5977
   /v1/admin/four-eyes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3572,7 +3586,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6258
+        line: 6278
   "/v1/admin/four-eyes/{change_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3580,7 +3594,7 @@ paths:
     post:
       operationId: admin.four_eyes_decide
       summary: "Approves or rejects a pending change; approval executes the original operation with the original requester recorded a…"
-      description: "Approves or rejects a pending change; approval executes the original operation with the original requester recorded as initiator and the caller as approver."
+      description: "Approves or rejects a pending change; approval executes the original operation with the original requester recorded as initiator and the caller as approver. Needs a sign-in at `aal3` within the last 5 minutes (SEC-ADM-2, `max_age=300`). A dispute resolution waiting for a fairness approval (`admin.dispute_resolve`, backend S25a) needs an administrator other than the resolver; moderators do not see it."
       tags:
         - admin
       parameters:
@@ -3708,7 +3722,7 @@ paths:
         - four_eyes.decided
       x-carpal-contract:
         section: "23.5"
-        line: 6266
+        line: 6286
   "/v1/admin/jobs/{job_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3791,7 +3805,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6176
+        line: 6196
   /v1/admin/mcp/access-logs/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3933,7 +3947,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6227
+        line: 6247
   /v1/admin/mcp/clients:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4040,7 +4054,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6211
+        line: 6231
   "/v1/admin/mcp/clients/{client_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4191,7 +4205,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6218
+        line: 6238
   /v1/admin/me:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4268,7 +4282,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5285
+        line: 5297
   /v1/admin/me/decisions:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4363,7 +4377,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5798
+        line: 5811
   /v1/admin/me/notifications:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4478,7 +4492,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6044
+        line: 6064
   /v1/admin/me/notifications/read:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4573,7 +4587,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6059
+        line: 6079
   /v1/admin/me/notifications/unread-count:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4658,7 +4672,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6052
+        line: 6072
   /v1/admin/me/passkeys:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4744,7 +4758,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5353
+        line: 5365
     post:
       operationId: admin.staff_passkey_register
       summary: "Stores the key created with `admin.staff_passkey_register_options` (fresh `aal3` within 5 minutes)."
@@ -4864,7 +4878,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5369
+        line: 5381
   /v1/admin/me/passkeys/options:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4974,7 +4988,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5360
+        line: 5372
   "/v1/admin/me/passkeys/{method_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5073,7 +5087,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5378
+        line: 5390
   /v1/admin/me/recovery-codes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5170,7 +5184,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5386
+        line: 5398
   "/v1/admin/media/{media_id}/download-url":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5285,7 +5299,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6193
+        line: 6213
   /v1/admin/moderation/cases:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5451,7 +5465,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5840
+        line: 5853
   "/v1/admin/moderation/cases/{case_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5562,7 +5576,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5849
+        line: 5862
   "/v1/admin/moderation/cases/{case_id}/actions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5570,7 +5584,7 @@ paths:
     post:
       operationId: admin.case_action
       summary: "Takes a moderation action on the case target (hide, remove, restore, warn, suspend, revoke badge, trust penalty, merg…"
-      description: "Takes a moderation action on the case target (hide, remove, restore, warn, suspend, revoke badge, trust penalty, merge duplicate …); every action needs a reason, and account suspension, trust penalties and weight reductions need step-up. On a review, `reduce_weight` keeps it visible at a share of its weight (`weight_factor`, applied at the next trust scoring; 1 restores it) and `edit_request` hides a published review until a moderator checks the author's edit (`edit_spans`, `edit_message`; the author is notified and has 7 days, after which the case queue shows it again; `approve` publishes the edited review, `remove` removes it). On a fitment row, `downgrade_fitment` lowers its confidence (confirmed → likely or uncertain, likely → uncertain). On an image (`media_asset`, backend S22), `apply_redaction` draws opaque boxes (`redaction_regions`): the file leaves public serving at once, the media worker writes the redacted copy that replaces the public one (`redaction_status` pending → completed; failed keeps it off public serving), and the original keeps its owner-only and purpose-bound staff access until retention removes it."
+      description: "Takes a moderation action on the case target (hide, remove, restore, warn, suspend, revoke badge, trust penalty, merge duplicate …); every action needs a reason, and account suspension, trust penalties, duplicate merges and weight reductions need a sign-in at `aal3` within the last 5 minutes (SEC-ADM-2, `max_age=300`). A content action on authored content (hide, remove, restore, request changes, and the review and image actions) names the author as a party, so the author can appeal it (`moderation_appeal`, backend S25a). On a review, `reduce_weight` keeps it visible at a share of its weight (`weight_factor`, applied at the next trust scoring; 1 restores it) and `edit_request` hides a published review until a moderator checks the author's edit (`edit_spans`, `edit_message`; the author is notified and has 7 days, after which the case queue shows it again; `approve` publishes the edited review, `remove` removes it). On a fitment row, `downgrade_fitment` lowers its confidence (confirmed → likely or uncertain, likely → uncertain). On an image (`media_asset`, backend S22), `apply_redaction` draws opaque boxes (`redaction_regions`): the file leaves public serving at once, the media worker writes the redacted copy that replaces the public one (`redaction_status` pending → completed; failed keeps it off public serving), and the original keeps its owner-only and purpose-bound staff access until retention removes it."
       tags:
         - admin
       parameters:
@@ -5693,7 +5707,7 @@ paths:
         - trust.score.changed
       x-carpal-contract:
         section: "23.4"
-        line: 5873
+        line: 5886
   "/v1/admin/moderation/cases/{case_id}/assign":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5798,7 +5812,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5865
+        line: 5878
   "/v1/admin/moderation/cases/{case_id}/close":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5912,7 +5926,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5883
+        line: 5896
   "/v1/admin/moderation/cases/{case_id}/context":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6008,15 +6022,89 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5857
+        line: 5870
+  /v1/admin/notification-delivery-health:
+    servers:
+      - url: "https://admin-api.carpals.ir"
+        description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
+    get:
+      operationId: admin.notif_delivery_health
+      summary: "Returns the A-NOTIF-01 Delivery health tab (backend S25a): per channel (email, push, SMS) and provider, the deliverie…"
+      description: "Returns the A-NOTIF-01 Delivery health tab (backend S25a): per channel (email, push, SMS) and provider, the deliveries attempted and failed in the last 24 hours, 7 days and 30 days with the failure rate, and the last failure. Aggregates only: no recipients, texts or errors."
+      tags:
+        - notification
+      parameters:
+        - $ref: "#/components/parameters/CarPalClient"
+        - $ref: "#/components/parameters/DPoP"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - $ref: "#/components/parameters/CarPalTimezone"
+        - $ref: "#/components/parameters/CarPalRequestId"
+      responses:
+        "200":
+          description: DeliveryHealth
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryHealth"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "405":
+          $ref: "#/components/responses/Problem405"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "412":
+          $ref: "#/components/responses/Problem412"
+        "413":
+          $ref: "#/components/responses/Problem413"
+        "415":
+          $ref: "#/components/responses/Problem415"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "428":
+          $ref: "#/components/responses/Problem428"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "500":
+          $ref: "#/components/responses/Problem500"
+        "503":
+          $ref: "#/components/responses/Problem503"
+      security:
+        - dpop: []
+        - bffBearer: []
+          bffMutualTls: []
+      x-carpal-op-id: admin.notif_delivery_health
+      x-carpal-host: admin-api
+      x-carpal-scope: single
+      x-carpal-sec: "STF(ADM)"
+      x-carpal-security:
+        principals:
+          - - tag: STF
+              args:
+                - ADM
+        tags: []
+      x-carpal-status: implemented
+      x-carpal-contract:
+        section: "23.5"
+        line: 6057
   /v1/admin/notification-rules:
     servers:
       - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.notif_rules_get
-      summary: "Returns the notification rules (A-NOTIF-01 Rules): review invitation delay and reminders, default quiet hours and the…"
-      description: "Returns the notification rules (A-NOTIF-01 Rules): review invitation delay and reminders, default quiet hours and the digest schedule."
+      summary: "Returns the notification rules (A-NOTIF-01 Rules): review invitation delay and reminders, default quiet hours, the di…"
+      description: "Returns the notification rules (A-NOTIF-01 Rules): review invitation delay and reminders, default quiet hours, the digest schedule, and (backend S25a) the reminders to businesses about Path 2 approval requests and the due windows of maintenance reminders by date and by mileage."
       tags:
         - notification
       parameters:
@@ -6084,11 +6172,11 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6029
+        line: 6042
     put:
       operationId: admin.notif_rules_update
       summary: "Replaces the notification rules."
-      description: "Replaces the notification rules. The review invitation sweep and the notification dispatcher read them at their next run; a reminder already sent is never repeated.\n\nInput: reminder days strictly ascending (422 order)"
+      description: "Replaces the notification rules. The review invitation and approval sweeps, the vehicle reminder sweep and the notification dispatcher read them at their next run; a reminder already sent is never repeated, and a maintenance reminder already due stays due.\n\nInput: reminder days strictly ascending (422 order)"
       tags:
         - notification
       parameters:
@@ -6169,7 +6257,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6036
+        line: 6049
   /v1/admin/notification-templates:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6280,7 +6368,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5995
+        line: 6008
   "/v1/admin/notification-templates/{template_key}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6390,7 +6478,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6003
+        line: 6016
   "/v1/admin/notification-templates/{template_key}/preview":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6518,7 +6606,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6020
+        line: 6033
   "/v1/admin/notification-templates/{template_key}/reset":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6634,7 +6722,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6012
+        line: 6025
   /v1/admin/orgs/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6735,7 +6823,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5487
+        line: 5499
   "/v1/admin/orgs/{org_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6836,7 +6924,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5495
+        line: 5507
   "/v1/admin/orgs/{org_id}/assist-sessions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6956,7 +7044,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5630
+        line: 5643
   "/v1/admin/orgs/{org_id}/capabilities":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7053,7 +7141,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5587
+        line: 5600
   "/v1/admin/orgs/{org_id}/correct":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7158,7 +7246,7 @@ paths:
         - organization.profile.corrected
       x-carpal-contract:
         section: "23.2"
-        line: 5569
+        line: 5582
   "/v1/admin/orgs/{org_id}/history":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7290,7 +7378,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5579
+        line: 5592
   "/v1/admin/orgs/{org_id}/inventory-quality":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7387,7 +7475,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5604
+        line: 5617
   "/v1/admin/orgs/{org_id}/locations/{location_id}/correct":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7543,7 +7631,7 @@ paths:
         - organization.location.corrected
       x-carpal-contract:
         section: "23.2"
-        line: 5559
+        line: 5572
   "/v1/admin/orgs/{org_id}/members":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7685,7 +7773,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5612
+        line: 5625
   "/v1/admin/orgs/{org_id}/merge":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7825,7 +7913,7 @@ paths:
         - organization.merged
       x-carpal-contract:
         section: "23.2"
-        line: 5512
+        line: 5524
   "/v1/admin/orgs/{org_id}/merge-preview":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7939,7 +8027,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5522
+        line: 5534
   "/v1/admin/orgs/{org_id}/plan-history":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8069,7 +8157,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5621
+        line: 5634
   "/v1/admin/orgs/{org_id}/portfolio":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8212,7 +8300,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5595
+        line: 5608
   "/v1/admin/orgs/{org_id}/status":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8323,7 +8411,7 @@ paths:
         - moderation.action.taken
       x-carpal-contract:
         section: "23.2"
-        line: 5503
+        line: 5515
   /v1/admin/plans:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8430,7 +8518,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5680
+        line: 5693
   "/v1/admin/plans/{plan_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8544,7 +8632,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5687
+        line: 5700
   /v1/admin/policies:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8627,7 +8715,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6099
+        line: 6119
   "/v1/admin/policies/{policy_key}/versions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8732,7 +8820,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6113
+        line: 6133
   "/v1/admin/policy-versions/{version_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8814,7 +8902,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6106
+        line: 6126
     patch:
       operationId: admin.policy_version_update
       summary: "Changes a draft; a version that was published (or is scheduled) is read-only."
@@ -8969,7 +9057,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6122
+        line: 6142
   "/v1/admin/policy-versions/{version_id}/publish":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9093,7 +9181,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6132
+        line: 6152
   /v1/admin/region:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9170,7 +9258,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5988
+        line: 6001
   /v1/admin/reports:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9298,7 +9386,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5824
+        line: 5837
   "/v1/admin/reports/{report_id}/triage":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9416,7 +9504,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5832
+        line: 5845
   /v1/admin/retention-policies:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9523,7 +9611,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6067
+        line: 6087
     post:
       operationId: admin.retention_create
       summary: "Adds a retention policy; needs a second approver, who creates it."
@@ -9619,7 +9707,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6082
+        line: 6102
   "/v1/admin/retention-policies/{policy_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9713,7 +9801,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6074
+        line: 6094
   "/v1/admin/retention-policies/{policy_id}/dry-run":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9799,7 +9887,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6091
+        line: 6111
   /v1/admin/review-approvals:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9916,7 +10004,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5782
+        line: 5795
   "/v1/admin/review-approvals/{review_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10012,7 +10100,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5790
+        line: 5803
   "/v1/admin/review-approvals/{review_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10156,7 +10244,7 @@ paths:
         - moderation.action.taken
       x-carpal-contract:
         section: "23.4"
-        line: 5806
+        line: 5819
   "/v1/admin/reviews/{review_id}/move-to-approval-path":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10259,7 +10347,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5816
+        line: 5829
   /v1/admin/staff:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10387,7 +10475,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5292
+        line: 5304
   /v1/admin/staff/recoveries:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10505,7 +10593,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5318
+        line: 5330
   "/v1/admin/staff/recoveries/{request_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10585,7 +10673,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5326
+        line: 5338
   "/v1/admin/staff/recoveries/{request_id}/approve":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10724,7 +10812,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5333
+        line: 5345
   "/v1/admin/staff/recoveries/{request_id}/reject":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10835,7 +10923,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5344
+        line: 5356
   "/v1/admin/staff/{user_id}/disable":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10958,7 +11046,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5300
+        line: 5312
   "/v1/admin/staff/{user_id}/enable":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11085,7 +11173,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5309
+        line: 5321
   /v1/admin/subscription-change-requests:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11209,7 +11297,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5672
+        line: 5685
   /v1/admin/subscriptions:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11295,7 +11383,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5655
+        line: 5668
     get:
       operationId: admin.subscriptions_list
       summary: "Lists subscriptions for A-PLAN-01 Assignments: the subscriber (organization or individual, by public name), plan, sta…"
@@ -11443,7 +11531,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5663
+        line: 5676
   /v1/admin/support/tickets:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11578,7 +11666,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.6"
-        line: 6280
+        line: 6300
   "/v1/admin/support/tickets/{ticket_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11678,7 +11766,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.6"
-        line: 6288
+        line: 6308
   "/v1/admin/support/tickets/{ticket_id}/assign":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11795,7 +11883,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.6"
-        line: 6296
+        line: 6316
   "/v1/admin/support/tickets/{ticket_id}/close":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11803,7 +11891,7 @@ paths:
     post:
       operationId: admin.support_ticket_close
       summary: "Marks a ticket solved with an outcome; the requester is notified and can reopen it by replying within 14 days."
-      description: "Marks a ticket solved with an outcome; the requester is notified and can reopen it by replying within 14 days."
+      description: "Marks a ticket solved with an outcome; the requester is notified and can reopen it by replying within 14 days. A ticket waiting on the user without a reply from the requester for 7 days is solved by the system with outcome `no_response` (audited as actor system, the requester is notified; backend S25a, DQ-23)."
       tags:
         - admin
       parameters:
@@ -11917,7 +12005,7 @@ paths:
         - support.ticket.solved
       x-carpal-contract:
         section: "23.6"
-        line: 6325
+        line: 6345
   "/v1/admin/support/tickets/{ticket_id}/conversions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12057,7 +12145,7 @@ paths:
         - review.reported
       x-carpal-contract:
         section: "23.6"
-        line: 6315
+        line: 6335
   "/v1/admin/support/tickets/{ticket_id}/messages":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12179,7 +12267,7 @@ paths:
         - support.message.posted
       x-carpal-contract:
         section: "23.6"
-        line: 6305
+        line: 6325
   /v1/admin/system-health:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12255,7 +12343,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6244
+        line: 6264
   /v1/admin/taxonomy/mappings:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12394,7 +12482,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5763
+        line: 5776
     put:
       operationId: admin.mapping_upsert
       summary: "Creates or updates a weighted mapping (unique per source, target and type; node types must match the mapping type)."
@@ -12497,7 +12585,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5771
+        line: 5784
   /v1/admin/taxonomy/nodes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12626,7 +12714,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5697
+        line: 5710
     post:
       operationId: admin.taxonomy_node_create
       summary: "Creates a node with labels in every enabled locale; parent rules and cycles are checked."
@@ -12743,7 +12831,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5705
+        line: 5718
   "/v1/admin/taxonomy/nodes/{node_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12895,7 +12983,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5714
+        line: 5727
   "/v1/admin/taxonomy/nodes/{node_id}/merge":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13006,7 +13094,7 @@ paths:
         - taxonomy.node.merged
       x-carpal-contract:
         section: "23.3"
-        line: 5722
+        line: 5735
   "/v1/admin/taxonomy/nodes/{node_id}/synonyms":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13138,7 +13226,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5731
+        line: 5744
     post:
       operationId: admin.synonym_create
       summary: "Adds a synonym, alias, misspelling, local term, abbreviation or transliteration."
@@ -13245,7 +13333,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5739
+        line: 5752
   "/v1/admin/taxonomy/synonyms/{synonym_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13330,7 +13418,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5756
+        line: 5769
   "/v1/admin/taxonomy/synonyms/{synonym_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13438,7 +13526,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5748
+        line: 5761
   /v1/admin/users/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13544,7 +13632,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5394
+        line: 5406
   "/v1/admin/users/{user_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13643,7 +13731,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5402
+        line: 5414
   "/v1/admin/users/{user_id}/appointments":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13780,7 +13868,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5419
+        line: 5431
   "/v1/admin/users/{user_id}/consents":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13922,7 +14010,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5428
+        line: 5440
   "/v1/admin/users/{user_id}/onboarding/{flow_type}/reset":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14034,7 +14122,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5479
+        line: 5491
   "/v1/admin/users/{user_id}/platform-roles":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14157,7 +14245,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5462
+        line: 5474
   "/v1/admin/users/{user_id}/platform-roles/{role}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14259,7 +14347,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5471
+        line: 5483
   "/v1/admin/users/{user_id}/sessions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14358,7 +14446,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5437
+        line: 5449
   "/v1/admin/users/{user_id}/sessions/revoke":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14458,7 +14546,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5454
+        line: 5466
   "/v1/admin/users/{user_id}/status":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14570,7 +14658,7 @@ paths:
         - moderation.action.taken
       x-carpal-contract:
         section: "23.2"
-        line: 5445
+        line: 5457
   "/v1/admin/users/{user_id}/vehicles":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14707,7 +14795,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5410
+        line: 5422
   /v1/admin/verifications:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14849,7 +14937,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5531
+        line: 5543
   "/v1/admin/verifications/{verification_id}/assign":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14982,7 +15070,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5540
+        line: 5552
   "/v1/admin/verifications/{verification_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14990,7 +15078,7 @@ paths:
     post:
       operationId: admin.verification_decide
       summary: "Verifies or rejects a check, or asks the business for more information; an organization is verified only when busines…"
-      description: "Verifies or rejects a check, or asks the business for more information; an organization is verified only when business identity and location are verified (Verified Business badge rule), and a `far_apart` pin must be resolved first. `info_requested` keeps the check `pending`, pauses its review clock until the business answers with `org.verification_resubmit`, assigns it to the caller when unassigned and notifies the business with the missing items and the message (backend S19); a later `verified` or `rejected` closes an unanswered request."
+      description: "Verifies or rejects a check, or asks the business for more information; an organization is verified only when business identity and location are verified (Verified Business badge rule), and a `far_apart` pin must be resolved first. `info_requested` keeps the check `pending`, pauses its review clock until the business answers with `org.verification_resubmit`, assigns it to the caller when unassigned and notifies the business with the missing items and the message (backend S19); a later `verified` or `rejected` closes an unanswered request. `rejected` notifies the owners and managers with `rejection_reason`, the text written for the business (backend S25a; in the app, by email and by push)."
       tags:
         - organization
       parameters:
@@ -15103,9 +15191,10 @@ paths:
       x-carpal-emits:
         - organization.verified
         - organization.verification.info_requested
+        - organization.verification.rejected
       x-carpal-contract:
         section: "23.2"
-        line: 5549
+        line: 5561
   /v1/admin/work-summary:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -15182,7 +15271,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6251
+        line: 6271
   "/v1/ai/suggestions/{suggestion_id}/decision":
     servers:
       - url: "https://api.carpals.ir"
@@ -63702,6 +63791,76 @@ components:
       required:
         - request_type
       additionalProperties: false
+    DeliveryHealth:
+      type: object
+      properties:
+        generated_at:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryHealthRow"
+          maxItems: 30
+      required:
+        - generated_at
+        - rows
+      additionalProperties: false
+      description: "by channel, then provider"
+    DeliveryHealthRow:
+      type: object
+      properties:
+        channel:
+          $ref: "#/components/schemas/NotificationTemplateChannel"
+        provider:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: "^[^\\r\\n]*$"
+          description: "the sender that took the attempt, e.g. smtp, sms_gateway, push_gateway; unknown before S25a"
+        last_24h:
+          $ref: "#/components/schemas/DeliveryHealthWindow"
+        last_7d:
+          $ref: "#/components/schemas/DeliveryHealthWindow"
+        last_30d:
+          $ref: "#/components/schemas/DeliveryHealthWindow"
+        last_failure_at:
+          anyOf:
+            - type: string
+              pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+            - type: "null"
+      required:
+        - channel
+        - provider
+        - last_24h
+        - last_7d
+        - last_30d
+        - last_failure_at
+      additionalProperties: false
+      description: "within the last 30 days"
+    DeliveryHealthWindow:
+      type: object
+      properties:
+        attempted:
+          type: integer
+          minimum: 0
+          maximum: 100000000
+          description: "deliveries whose last attempt fell in the window (sent, delivered or failed)"
+        failed:
+          type: integer
+          minimum: 0
+          maximum: 100000000
+        failure_rate:
+          anyOf:
+            - type: string
+              pattern: "^\\d{1,5}(\\.\\d{1,4})?$"
+            - type: "null"
+      required:
+        - attempted
+        - failed
+        - failure_rate
+      additionalProperties: false
+      description: "failed / attempted; null when nothing was attempted"
     Dispute:
       type: object
       properties:
@@ -68851,6 +69010,24 @@ components:
           minimum: 1
           maximum: 7
           description: "ISO weekday of weekly digests (1 Monday)"
+        review_approval_reminder_days:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 6
+          maxItems: 3
+          description: "backend S25a: reminders to the business about a Path 2 approval request, days after the request, strictly ascending; it has 7 days to answer"
+        maintenance_due_window_days:
+          type: integer
+          minimum: 1
+          maximum: 90
+          description: "backend S25a: a maintenance reminder is due this many days before its date"
+        mileage_due_window_km:
+          type: integer
+          minimum: 50
+          maximum: 5000
+          description: "backend S25a: … or this many km before its mileage"
         updated_by_display:
           anyOf:
             - type: string
@@ -68871,6 +69048,9 @@ components:
         - default_quiet_hours
         - digest_hour
         - weekly_digest_day
+        - review_approval_reminder_days
+        - maintenance_due_window_days
+        - mileage_due_window_km
         - updated_by_display
         - updated_at
         - version
@@ -68907,6 +69087,24 @@ components:
           minimum: 1
           maximum: 7
           description: "ISO weekday of weekly digests (1 Monday)"
+        review_approval_reminder_days:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 6
+          maxItems: 3
+          description: "backend S25a: reminders to the business about a Path 2 approval request, days after the request, strictly ascending; it has 7 days to answer"
+        maintenance_due_window_days:
+          type: integer
+          minimum: 1
+          maximum: 90
+          description: "backend S25a: a maintenance reminder is due this many days before its date"
+        mileage_due_window_km:
+          type: integer
+          minimum: 50
+          maximum: 5000
+          description: "backend S25a: … or this many km before its mileage"
         reason:
           type: string
           minLength: 3
@@ -68918,6 +69116,9 @@ components:
         - default_quiet_hours
         - digest_hour
         - weekly_digest_day
+        - review_approval_reminder_days
+        - maintenance_due_window_days
+        - mileage_due_window_km
         - reason
       additionalProperties: false
     NotificationTemplate:
@@ -77027,6 +77228,11 @@ components:
               minLength: 1
               maxLength: 3000
             - type: "null"
+        pending_change_id:
+          anyOf:
+            - type: string
+              pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            - type: "null"
       required:
         - id
         - created_at
@@ -77042,7 +77248,9 @@ components:
         - raised_by_organization
         - assigned_to_display
         - moderator_notes
+        - pending_change_id
       additionalProperties: false
+      description: "a resolution awaiting an administrator's fairness approval (backend S25a, DQ-22)"
     StaffDisputeDetail:
       type: object
       properties:
@@ -77118,6 +77326,11 @@ components:
               minLength: 1
               maxLength: 3000
             - type: "null"
+        pending_change_id:
+          anyOf:
+            - type: string
+              pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            - type: "null"
         target_snapshot:
           $ref: "#/components/schemas/DisputeTargetSnapshot"
         respondent:
@@ -77167,6 +77380,7 @@ components:
         - raised_by_organization
         - assigned_to_display
         - moderator_notes
+        - pending_change_id
         - target_snapshot
         - respondent
       additionalProperties: false

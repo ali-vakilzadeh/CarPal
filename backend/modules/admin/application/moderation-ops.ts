@@ -565,6 +565,8 @@ export class CaseActionHandler implements OperationHandler {
         throw new ApiError('INVALID_TRANSITION', { detail: 'transition' in r ? r.transition : a });
       }
       Object.assign(o.params, r.params);
+      // S25a.T4: the author of the content is a party to the action (admin.moderation_action_affects), so they can appeal.
+      if (o.author) o.params.user_id = o.author;
       return;
     }
     if ((CONTENT_ACTIONS as string[]).includes(a)) {
@@ -572,6 +574,9 @@ export class CaseActionHandler implements OperationHandler {
         throw new ApiError('INVALID_TRANSITION', { detail: `${a} does not apply to this ${target.type}` });
       // A confirmed fake (case reason fake) removed from an organization's page carries the 54 §3.3 fake penalty.
       if (o.fake && (a === 'remove' || a === 'hide') && o.subjectOrg) o.params.fake = true;
+      // S25a.T4 (S20 "found while testing"): record the author so the action names them and their moderation_appeal is
+      // accepted; the subject organization keeps its own appeal route (subject_organization_id).
+      if (o.author) o.params.user_id = o.author;
       return;
     }
     switch (a) {

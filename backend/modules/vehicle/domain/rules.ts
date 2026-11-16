@@ -62,15 +62,24 @@ export interface ReminderState {
  * reminders keep their status; a snoozed reminder stays upcoming until the
  * snooze ends.
  */
-export function reminderStatus(r: ReminderState, mileage: number | null, today: string): ReminderStatus {
+/** How early a reminder becomes due (A-NOTIF-01 Rules since S25a: maintenance and mileage due windows). */
+export interface DueWindow {
+  days: number;
+  km: number;
+}
+export const DEFAULT_DUE_WINDOW: DueWindow = { days: DUE_WINDOW_DAYS, km: DUE_WINDOW_KM };
+
+export function reminderStatus(
+  r: ReminderState,
+  mileage: number | null,
+  today: string,
+  window: DueWindow = DEFAULT_DUE_WINDOW,
+): ReminderStatus {
   if (r.status === 'completed' || r.status === 'dismissed') return r.status;
   if (r.snoozed_until && r.snoozed_until > today) return 'upcoming';
   const km = r.due_by_mileage_km;
   if ((r.due_by_date && r.due_by_date < today) || (km !== null && mileage !== null && mileage >= km)) return 'overdue';
-  if (
-    (r.due_by_date && r.due_by_date <= addDays(today, DUE_WINDOW_DAYS)) ||
-    (km !== null && mileage !== null && mileage >= km - DUE_WINDOW_KM)
-  )
+  if ((r.due_by_date && r.due_by_date <= addDays(today, window.days)) || (km !== null && mileage !== null && mileage >= km - window.km))
     return 'due';
   return 'upcoming';
 }

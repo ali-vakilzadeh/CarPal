@@ -2,13 +2,24 @@
 // upcoming → due → overdue by date and mileage, and documents that expire
 // within 30 days get a document_expiry reminder. Reminders that become due
 // or overdue publish vehicle.reminder.due for the notification module (S6
-// delivers them; not in 40 Appendix A yet, DI-36). System context.
-import { Injectable } from '@nestjs/common';
+// delivers them; not in 40 Appendix A yet, DI-36). System context. Since S25a the due windows (days before the due
+// date, km before the due mileage) are the notification rules' (A-NOTIF-01, default 14 days and 500 km); the sweep
+// never moves a due reminder back to upcoming when the window shrinks (snoozes and edits do that in the operations).
+import { Injectable, Optional } from '@nestjs/common';
 import { sql } from 'kysely';
 import { ScheduledRule } from '#libs/jobs/index.js';
 import { publishEvent } from '#libs/outbox/index.js';
 import { TxRunner } from '#libs/tenancy/index.js';
-import { addDays, DOCUMENT_EXPIRY_NOTICE_DAYS, reminderStatus, todayUtc, type ReminderStatus } from '../domain/rules.js';
+import { NotificationRulesRead } from '#modules/notification/interface/notification-rules.js';
+import {
+  addDays,
+  DEFAULT_DUE_WINDOW,
+  DOCUMENT_EXPIRY_NOTICE_DAYS,
+  reminderStatus,
+  todayUtc,
+  type DueWindow,
+  type ReminderStatus,
+} from '../domain/rules.js';
 
 const BATCH = 500;
 const IMPORTANT_DOCUMENTS = ['insurance', 'registration', 'inspection_report'];
@@ -18,12 +29,23 @@ export class VehicleReminderRule extends ScheduledRule {
   readonly name = 'vehicle.reminders';
   readonly everyMs = 3_600_000;
 
-  constructor(private readonly tx: TxRunner) {
+  constructor(
+    private readonly tx: TxRunner,
+    @Optional() private readonly rules?: NotificationRulesRead,
+  ) {
     super();
+  }
+
+  /** The due windows of the notification rules (the defaults without the notification module). */
+  async dueWindow(): Promise<DueWindow> {
+    if (!this.rules) return DEFAULT_DUE_WINDOW;
+    const r = await this.tx.run({ actorType: 'system' }, (scope) => this.rules!.get(scope), { readOnly: true });
+    return { days: r.maintenanceDueWindowDays, km: r.mileageDueWindowKm };
   }
 
   async run(now = new Date()): Promise<{ created: number; changed: number }> {
     const today = todayUtc(now);
+    const window = await this.dueWindow();
     const created = await this.#documentReminders(today);
     let changed = 0;
     let after: string | null = null;
@@ -61,8 +83,11 @@ export class VehicleReminderRule extends ScheduledRule {
             },
             r.mileage_km,
             today,
+            window,
           );
           if (next === r.status) continue;
+          // S25a: a narrower window never takes a due reminder back (it was announced already).
+          if (r.status === 'due' && next === 'upcoming') continue;
           await scope.db.updateTable('vehicle.maintenance_reminders').set({ status: next }).where('id', '=', r.id).execute();
           n++;
           if (next === 'due' || next === 'overdue')

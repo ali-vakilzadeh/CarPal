@@ -35,5 +35,12 @@ check auth "http://127.0.0.1:8082/.well-known/openid-configuration" 200
 check admin-api "http://127.0.0.1:8081/v1/admin/flags" 401
 check storage "http://127.0.0.1:8083/o/health-check" 403
 
+# R-23: the admin console (admin.<domain>) and the PWA show display copies in <img> from the media host, so the storage
+# listener answers Cross-Origin-Resource-Policy: cross-origin (never same-origin, which would block them). nginx
+# passes it through; do not add a CORP header in the media server block.
+corp="$(curl -s -o /dev/null -D - --max-time 3 "http://127.0.0.1:8083/o/health-check" | tr -d '\r' |
+  sed -n 's/^[Cc]ross-[Oo]rigin-[Rr]esource-[Pp]olicy: *//p' | head -n 1)"
+if [[ "$corp" == "cross-origin" ]]; then ok "storage: Cross-Origin-Resource-Policy: cross-origin"; else warn "storage: Cross-Origin-Resource-Policy is '${corp:-missing}' (expected cross-origin, R-23)"; fi
+
 systemctl --no-pager --lines=0 status "$SERVICE_NAME" | head -n 5 || true
 finish

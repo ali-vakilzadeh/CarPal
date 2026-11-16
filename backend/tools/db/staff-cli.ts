@@ -1,4 +1,4 @@
-// pnpm staff:bootstrap [--file <spec.json>] | pnpm dev:staff create … | pnpm dev:staff list | pnpm staff:break-glass …
+// pnpm staff:bootstrap [--file <spec.json>] | pnpm dev:staff create … | list | prune … | pnpm staff:break-glass …
 // See staff.ts. Connects as carpal_worker with the role passwords of the environment (backend/.env in dev; on a
 // server deploy/staff-bootstrap.sh loads /carpal/config/backend.env first).
 import { readFileSync } from 'node:fs';
@@ -14,6 +14,7 @@ import {
   listStaff,
   parseSpec,
   parseStaffArgs,
+  pruneStaff,
   shortfall,
   type StaffResult,
 } from './staff.js';
@@ -37,6 +38,12 @@ async function main(): Promise<void> {
   try {
     if (command.kind === 'list') {
       for (const s of await listStaff(deps)) console.log(`${s.email}  ${s.roles.join(',')}  passkeys: ${s.passkeys}`);
+      return;
+    }
+    if (command.kind === 'prune') {
+      const pruned = await pruneStaff(deps, command.domain, command.prefixes);
+      for (const p of pruned) console.log(`pruned  ${p.email}  ${p.roles.join(',')}`);
+      console.log(`${pruned.length} test staff account(s) retired (${command.prefixes.map((p) => `${p}…@${command.domain}`).join(', ')}).`);
       return;
     }
     if (command.kind === 'break-glass') {

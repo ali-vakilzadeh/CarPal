@@ -5,6 +5,10 @@
 //                   carpal_migrator with SET ROLE carpal_owner (42 §10).
 // The baseline's SHA-256 and every applied migration are recorded in
 // core.schema_info, so `db:status` can tell when Docs/43 changed after install.
+// Every migration keeps Docs/43 in step, so after a run that applied migrations
+// the SHA-256 of the Docs/43 it ran with is recorded too (baseline.migrated_sha256):
+// a database migrated to today's schema is up to date, not "changed since install"
+// (backend S25b: an existing server takes migrations 0100 onwards by update.sh).
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -176,7 +180,32 @@ export async function applyMigrations(cfg: DbConfig, log: Log): Promise<string[]
     );
     log(`Migration applied: ${file}`);
   }
+  if (pending.length > 0) await recordMigratedBaseline(cfg, pending.at(-1)!);
   return pending;
+}
+
+/** core.schema_info row of the Docs/43 that a database matches after its migrations ran (see the file header). */
+export const MIGRATED_BASELINE = 'baseline.migrated_sha256';
+
+async function recordMigratedBaseline(cfg: DbConfig, lastMigration: string): Promise<void> {
+  const c = await connect(cfg, { database: cfg.dbName });
+  try {
+    await c.query(
+      `INSERT INTO core.schema_info (component, version, note) VALUES ($1, $2, $3)
+       ON CONFLICT (component) DO UPDATE SET version = EXCLUDED.version, note = EXCLUDED.note, installed_at = now()`,
+      [MIGRATED_BASELINE, sha256File(dbSetupScript), `Docs/43 in step with database/migrations up to ${lastMigration}`],
+    );
+  } finally {
+    await c.end();
+  }
+}
+
+/**
+ * Is the installed schema the one Docs/43 describes today? Yes when Docs/43 is the file installed, or the file in
+ * step with the migrations applied last. Otherwise Docs/43 changed without a migration (or before the pending ones).
+ */
+export function baselineUpToDate(current: string, installed: string, migrated: string | undefined): boolean {
+  return current === installed || current === migrated;
 }
 
 // --------------------------------------------------------------- setup / reset
@@ -208,7 +237,7 @@ export async function dropDatabases(cfg: DbConfig, log: Log): Promise<void> {
 
 export interface DbStatus {
   databases: Record<string, boolean>;
-  baseline?: { installed: string; current: string; upToDate: boolean };
+  baseline?: { installed: string; current: string; migrated?: string; upToDate: boolean };
   liteShims?: string;
   migrations: { applied: string[]; pending: string[] };
 }
@@ -226,7 +255,8 @@ export async function status(cfg: DbConfig): Promise<DbStatus> {
     const info = new Map(r.rows.map((row) => [row.component, row.version]));
     const installed = info.get('baseline.sha256') ?? 'unknown';
     const current = sha256File(dbSetupScript);
-    out.baseline = { installed, current, upToDate: installed === current };
+    const migrated = info.get(MIGRATED_BASELINE);
+    out.baseline = { installed, current, ...(migrated ? { migrated } : {}), upToDate: baselineUpToDate(current, installed, migrated) };
     out.liteShims = info.get('runtime.lite_shims');
     const applied = [...info.keys()].filter((k) => k.startsWith('migration:')).map((k) => k.slice(10));
     out.migrations = { applied, pending: migrationFiles().filter((f) => !applied.includes(f)) };

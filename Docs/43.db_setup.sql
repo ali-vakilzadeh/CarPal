@@ -2775,6 +2775,7 @@ CREATE TABLE trust.reviews (
   reviewer_decided_at           timestamptz,
   reviewer_reason_code          text CHECK (char_length(reviewer_reason_code) BETWEEN 1 AND 60),
   disputed_by_business          boolean NOT NULL DEFAULT false,
+  business_reminder_count       integer NOT NULL DEFAULT 0 CHECK (business_reminder_count BETWEEN 0 AND 3),   -- Path 2 reminders sent (backend S25a)
   trust_weight                  numeric(4,3) CHECK (trust_weight BETWEEN 0 AND 1),          -- internal (40 SEC-OUT-1)
   weight_factor                 numeric(4,3) NOT NULL DEFAULT 1 CHECK (weight_factor BETWEEN 0 AND 1),   -- internal: moderation reduce_weight (backend S20)
   counts_toward_core_score      boolean NOT NULL DEFAULT false,
@@ -4031,12 +4032,15 @@ CREATE TABLE notification.notification_deliveries (
   sent_at              timestamptz,
   delivered_at         timestamptz,
   not_before           timestamptz,
+  provider             text CHECK (provider ~ '^[a-z0-9_]{1,40}$'),   -- sender of the last attempt (Delivery health, backend S25a)
   CHECK (channel <> 'push' OR push_device_token_id IS NOT NULL),
   CHECK (status <> 'suppressed' OR suppressed_reason IS NOT NULL)
 );
 CREATE INDEX notification_deliveries_idx ON notification.notification_deliveries (notification_id);
 CREATE INDEX notification_deliveries_queue_idx ON notification.notification_deliveries (created_at) WHERE status = 'queued';
 CREATE INDEX notification_deliveries_failed_idx ON notification.notification_deliveries (updated_at) WHERE status = 'failed';   -- admin.system_health (S21)
+CREATE INDEX notification_deliveries_attempted_idx ON notification.notification_deliveries (updated_at)
+  WHERE status IN ('sent','delivered','failed');   -- admin.notif_delivery_health (S25a)
 COMMENT ON TABLE notification.notification_deliveries IS '52 NotificationDelivery';
 
 CREATE TABLE notification.notification_preferences (
@@ -4089,11 +4093,18 @@ CREATE TABLE notification.notification_rules (
   digest_hour                     integer NOT NULL DEFAULT 9 CHECK (digest_hour BETWEEN 0 AND 23),
   weekly_digest_day               integer NOT NULL DEFAULT 6 CHECK (weekly_digest_day BETWEEN 1 AND 7),   -- ISO: 1 Monday, 6 Saturday
   reason                          text CHECK (char_length(reason) BETWEEN 3 AND 500),
+  -- Backend S25a (S17-D4): Path 2 approval reminders to businesses (days after the request), and the due windows of
+  -- maintenance reminders by date and by mileage (the values the vehicle code used before S25a).
+  review_approval_reminder_days   integer[] NOT NULL DEFAULT '{3,6}' CHECK (
+    cardinality(review_approval_reminder_days) <= 3 AND array_position(review_approval_reminder_days, NULL) IS NULL
+    AND 1 <= ALL (review_approval_reminder_days) AND 6 >= ALL (review_approval_reminder_days)),
+  maintenance_due_window_days     integer NOT NULL DEFAULT 14 CHECK (maintenance_due_window_days BETWEEN 1 AND 90),
+  mileage_due_window_km           integer NOT NULL DEFAULT 500 CHECK (mileage_due_window_km BETWEEN 50 AND 5000),
   CHECK ((default_quiet_hours_start IS NULL) = (default_quiet_hours_end IS NULL)),
   CHECK (default_quiet_hours_start IS DISTINCT FROM default_quiet_hours_end OR default_quiet_hours_start IS NULL)
 );
 COMMENT ON TABLE notification.notification_rules IS
-  '52 NotificationRules — invitation timing, reminders, default quiet hours and digest schedule (backend S17)';
+  '52 NotificationRules — invitation timing, reminders, default quiet hours and digest schedule (backend S17); approval reminders and reminder due windows (backend S25a)';
 
 \echo '== 18. admin (WP15)'
 

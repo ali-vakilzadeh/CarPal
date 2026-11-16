@@ -42,6 +42,8 @@ export const BUSINESS_TEMPLATE_KEYS = [
   'appointment.request_received',
   'appointment.delay',
   'review.approval_needed',
+  // backend S25a: reminders about a review waiting for the business's answer (days of the notification rules).
+  'review.approval_reminder',
   'review.received',
   'inquiry.received',
   'inventory.import_finished',
@@ -54,6 +56,8 @@ export const BUSINESS_TEMPLATE_KEYS = [
   // backend S19: CarPal asks for more information on a verification check; staff corrected the business profile.
   'organization.verification_info_requested',
   'organization.profile_corrected',
+  // backend S25a: a rejected verification check, with the reason written for the business.
+  'organization.verification_rejected',
   'admin.dsr_deadline',
   // Staff only (backend S17, contract 1.4.0): staff notices listed on the admin plane (admin.notifications_list);
   // notifications.list never returns them.

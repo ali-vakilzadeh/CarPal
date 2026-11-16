@@ -1,7 +1,8 @@
-// Notification operations of the admin plane (40 §23.5, backend S17) on admin-api: templates, rules and the caller's
-// staff notices.
+// Notification operations of the admin plane (40 §23.5, backend S17) on admin-api: templates, rules, Delivery health
+// (S25a) and the caller's staff notices.
 import { Module } from '@nestjs/common';
 import {
+  NotifDeliveryHealthHandler,
   NotifRulesGetHandler,
   NotifRulesUpdateHandler,
   NotifTemplatePreviewHandler,
@@ -21,6 +22,7 @@ import {
     NotifTemplatePreviewHandler,
     NotifRulesGetHandler,
     NotifRulesUpdateHandler,
+    NotifDeliveryHealthHandler,
     StaffNotificationsListHandler,
     StaffNotificationsUnreadCountHandler,
     StaffNotificationsMarkReadHandler,

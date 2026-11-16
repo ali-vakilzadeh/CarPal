@@ -787,6 +787,20 @@ export class AdminVerificationDecideHandler implements OperationHandler {
           aggregateId: v.organization_id,
           payload: { organization_id: v.organization_id },
         });
+      // S25a.T3 (Docs/23 A-VER-02): the owners and managers learn of a rejection and what to fix (the reason written for
+      // the business; OrganizationVerification.rejection_reason is theirs to read). Never the reviewer's name.
+      if (b.decision === 'rejected')
+        await publishEvent(scope, {
+          type: 'organization.verification.rejected',
+          aggregateType: 'organization_verification',
+          aggregateId: v.id,
+          payload: {
+            organization_id: v.organization_id,
+            verification_id: v.id,
+            verification_type: v.verification_type,
+            rejection_reason: b.rejection_reason!,
+          },
+        });
       return toVerification(row, (await latestInfoRequests(scope, [v.id])).get(v.id) ?? null);
     });
     return { body };

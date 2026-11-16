@@ -57,6 +57,7 @@ import {
   SupportTicketCreateHandler,
   SupportTicketGetHandler,
   SupportTicketReplyHandler,
+  SupportAutoCloseRule,
   SupportTicketsListHandler,
   SupportViews,
 } from './application/support-ops.js';
@@ -395,7 +396,7 @@ export class AdminApiModule {}
 })
 export class AdminPublicModule {}
 
-@Module({ providers: [AdminExpiryRule, RetentionRule, ModerationIntakeRule], exports: [ModerationIntakeRule] })
+@Module({ providers: [AdminExpiryRule, RetentionRule, ModerationIntakeRule, SupportAutoCloseRule], exports: [ModerationIntakeRule] })
 export class AdminWorkerModule {}
 
-export { AdminExpiryRule, ModerationIntakeRule, RetentionRule };
+export { AdminExpiryRule, ModerationIntakeRule, RetentionRule, SupportAutoCloseRule };

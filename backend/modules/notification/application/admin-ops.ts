@@ -2,7 +2,9 @@
 //   templates   list every code template per channel and language with the text in use, its variables and the
 //               translation flags; staff overrides (ETAG(if exists)), reset to the code text, preview with samples.
 //               Transactional texts and critical alerts are locked.
-//   rules       the one rule row (invitation delay and reminders, default quiet hours, digest schedule).
+//   rules       the one rule row (invitation delay and reminders, default quiet hours, digest schedule; S25a: approval
+//               reminders to businesses and the maintenance and mileage due windows).
+//   delivery    Delivery health (S25a): attempts and failures by channel and provider over 24 h, 7 and 30 days.
 //   notices     the caller's staff notices (four-eyes outcome, staff security, kill switch, DSR deadlines).
 import { Injectable } from '@nestjs/common';
 import { sql } from 'kysely';
@@ -18,6 +20,8 @@ import {
   type OperationHandler,
   type OperationResult,
 } from '#libs/http-pipeline/index.js';
+import type { Infra } from '#libs/infra/index.js';
+import { InjectInfra } from '#libs/runtime/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { StaffNames, staffOf } from '#modules/admin/interface/admin.js';
 import { STAFF_EVENT_TYPES } from '../domain/routing.js';
@@ -37,6 +41,7 @@ import {
   type TemplateChannel,
   type TemplateLocale,
 } from '../domain/template-catalog.js';
+import { providerKey } from './dispatcher.js';
 import { liveOverrides, rulesRow, type OverrideRow, type RulesRow } from '../infrastructure/notification-store.js';
 
 registerConstraintErrors({ notification_template_overrides_uq: 'VERSION_MISMATCH' });
@@ -293,6 +298,9 @@ function toRules(row: RulesRow, updatedBy: string | null) {
         : null,
     digest_hour: row.digest_hour,
     weekly_digest_day: row.weekly_digest_day,
+    review_approval_reminder_days: [...row.review_approval_reminder_days].map(Number),
+    maintenance_due_window_days: row.maintenance_due_window_days,
+    mileage_due_window_km: row.mileage_due_window_km,
     updated_by_display: updatedBy,
     updated_at: iso(row.updated_at),
     version: row.version,
@@ -328,6 +336,9 @@ type RulesWrite = {
   default_quiet_hours: { start: string; end: string } | null;
   digest_hour: number;
   weekly_digest_day: number;
+  review_approval_reminder_days: number[];
+  maintenance_due_window_days: number;
+  mileage_due_window_km: number;
   reason: string;
 };
 
@@ -335,10 +346,10 @@ const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export function rulesErrors(b: RulesWrite): FieldError[] {
   const errors: FieldError[] = [];
-  b.review_invitation_reminder_days.forEach((d, i) => {
-    if (i > 0 && d <= b.review_invitation_reminder_days[i - 1]!)
-      errors.push({ pointer: `/review_invitation_reminder_days/${i}`, code: 'order' });
-  });
+  for (const key of ['review_invitation_reminder_days', 'review_approval_reminder_days'] as const)
+    b[key].forEach((d, i) => {
+      if (i > 0 && d <= b[key][i - 1]!) errors.push({ pointer: `/${key}/${i}`, code: 'order' });
+    });
   if (b.default_quiet_hours) {
     for (const k of ['start', 'end'] as const)
       if (!HH_MM.test(b.default_quiet_hours[k])) errors.push({ pointer: `/default_quiet_hours/${k}`, code: 'pattern' });
@@ -370,6 +381,9 @@ export class NotifRulesUpdateHandler implements OperationHandler {
           default_quiet_hours_end: b.default_quiet_hours?.end ?? null,
           digest_hour: b.digest_hour,
           weekly_digest_day: b.weekly_digest_day,
+          review_approval_reminder_days: b.review_approval_reminder_days,
+          maintenance_due_window_days: b.maintenance_due_window_days,
+          mileage_due_window_km: b.mileage_due_window_km,
           reason: b.reason,
         })
         .where('id', '=', row.id)
@@ -388,6 +402,92 @@ export class NotifRulesUpdateHandler implements OperationHandler {
       return rulesView(scope, updated, this.names, ctx.locale);
     });
     return { body };
+  }
+}
+
+// ------------------------------------------------------------------ delivery health (S25a)
+
+const DELIVERY_CHANNELS = ['email', 'push', 'sms'] as const;
+const HOUR_MS = 3_600_000;
+
+type HealthWindow = { attempted: number; failed: number; failure_rate: string | null };
+const healthWindow = (attempted: number, failed: number): HealthWindow => ({
+  attempted,
+  failed,
+  failure_rate: attempted > 0 ? (failed / attempted).toFixed(4) : null,
+});
+
+/**
+ * admin.notif_delivery_health (A-NOTIF-01 Delivery health, backend S25a, S17-D4): per channel and provider, the
+ * deliveries whose last attempt (sent, delivered or failed) fell in the last 24 hours, 7 and 30 days, how many of them
+ * failed, and the last failure. Every channel is listed, with the current sender's provider when it had no attempt.
+ * Aggregates only.
+ */
+@Injectable()
+@Operation('admin.notif_delivery_health')
+export class NotifDeliveryHealthHandler implements OperationHandler {
+  constructor(@InjectInfra() private readonly infra: Infra) {}
+
+  async handle(ctx: OperationContext): Promise<OperationResult> {
+    staffOf(ctx);
+    const now = new Date();
+    const since = (ms: number) => new Date(now.getTime() - ms);
+    const rows = await ctx.tx(
+      async (scope) =>
+        (
+          await sql<{
+            channel: string;
+            provider: string;
+            a24: string;
+            f24: string;
+            a7: string;
+            f7: string;
+            a30: string;
+            f30: string;
+            last_failure_at: Date | null;
+          }>`
+          SELECT channel::text AS channel, coalesce(provider, 'unknown') AS provider,
+                 count(*) FILTER (WHERE updated_at > ${since(24 * HOUR_MS)}) AS a24,
+                 count(*) FILTER (WHERE updated_at > ${since(24 * HOUR_MS)} AND status = 'failed') AS f24,
+                 count(*) FILTER (WHERE updated_at > ${since(7 * 24 * HOUR_MS)}) AS a7,
+                 count(*) FILTER (WHERE updated_at > ${since(7 * 24 * HOUR_MS)} AND status = 'failed') AS f7,
+                 count(*) AS a30,
+                 count(*) FILTER (WHERE status = 'failed') AS f30,
+                 max(updated_at) FILTER (WHERE status = 'failed') AS last_failure_at
+            FROM notification.notification_deliveries
+           WHERE status IN ('sent','delivered','failed') AND updated_at > ${since(30 * 24 * HOUR_MS)}
+             AND channel::text IN ('email','push','sms')
+           GROUP BY 1, 2
+           ORDER BY 1, 2
+           LIMIT 30`.execute(scope.db)
+        ).rows,
+      { readOnly: true },
+    );
+    const sender = { email: this.infra.mailer, push: this.infra.push, sms: this.infra.sms };
+    const out = rows.map((r) => ({
+      channel: r.channel,
+      provider: r.provider,
+      last_24h: healthWindow(Number(r.a24), Number(r.f24)),
+      last_7d: healthWindow(Number(r.a7), Number(r.f7)),
+      last_30d: healthWindow(Number(r.a30), Number(r.f30)),
+      last_failure_at: isoOrNull(r.last_failure_at),
+    }));
+    for (const channel of DELIVERY_CHANNELS)
+      if (!out.some((r) => r.channel === channel))
+        out.push({
+          channel,
+          provider: providerKey(sender[channel].provider),
+          last_24h: healthWindow(0, 0),
+          last_7d: healthWindow(0, 0),
+          last_30d: healthWindow(0, 0),
+          last_failure_at: null,
+        });
+    out.sort(
+      (a, b) =>
+        DELIVERY_CHANNELS.indexOf(a.channel as never) - DELIVERY_CHANNELS.indexOf(b.channel as never) ||
+        a.provider.localeCompare(b.provider),
+    );
+    return { body: { generated_at: now.toISOString(), rows: out.slice(0, 30) } };
   }
 }
 

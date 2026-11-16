@@ -296,6 +296,17 @@ export const TEMPLATES: Catalog = {
     },
     fa: { subject: 'آیا این مشتری را می‌شناسید؟', text: 'یک نظر منتظر پاسخ شماست. اگر تا ۷ روز پاسخ ندهید، به معنی نبود اعتراض است.' },
   },
+  // S25a.T2 (Docs/23 A-NOTIF-01): reminders on the days of the notification rules (default day 3 and day 6).
+  'review.approval_reminder': {
+    en: {
+      subject: 'A review still waits for your answer',
+      text: 'A customer review still waits for your answer. Days left: {days_left}. Without an answer it counts as no objection.',
+    },
+    fa: {
+      subject: 'یک نظر هنوز منتظر پاسخ شماست',
+      text: 'یک نظر مشتری هنوز منتظر پاسخ شماست. روزهای باقی‌مانده: {days_left}. اگر پاسخ ندهید، به معنی نبود اعتراض است.',
+    },
+  },
   'review.received': {
     en: { subject: 'New review published', text: 'A new review about your business was published. You can reply publicly.' },
     fa: { subject: 'نظر تازه منتشر شد', text: 'نظر تازه‌ای درباره کسب‌وکار شما منتشر شد. می‌توانید پاسخ عمومی بدهید.' },
@@ -448,6 +459,19 @@ export const TEMPLATES: Catalog = {
     fa: {
       subject: 'کارپال برای تأیید کسب‌وکار شما اطلاعات بیشتری لازم دارد',
       text: 'برای پایان بررسی کسب‌وکار شما ({verification_type})، کارپال به چند مورد دیگر نیاز دارد. بخش تأیید را در حساب کسب‌وکار خود باز کنید، موارد خواسته‌شده را ببینید و بفرستید.',
+    },
+  },
+  // S25a.T3 (Docs/23 A-VER-02): a rejected check names the reason written for the business; push stays short.
+  'organization.verification_rejected': {
+    en: {
+      subject: 'CarPal could not verify your business',
+      text: 'CarPal could not accept the {verification_type} check of your business. What to fix: {rejection_reason} Open Verification in your business account to correct it and send it again.',
+      push: 'CarPal could not accept a verification check of your business. Open Verification to see what to fix.',
+    },
+    fa: {
+      subject: 'کارپال نتوانست کسب‌وکار شما را تأیید کند',
+      text: 'کارپال بررسی {verification_type} کسب‌وکار شما را نپذیرفت. آنچه باید اصلاح شود: {rejection_reason} بخش تأیید را در حساب کسب‌وکار خود باز کنید، آن را اصلاح کنید و دوباره بفرستید.',
+      push: 'کارپال یکی از بررسی‌های تأیید کسب‌وکار شما را نپذیرفت. بخش تأیید را باز کنید تا ببینید چه چیزی باید اصلاح شود.',
     },
   },
   'organization.profile_corrected': {

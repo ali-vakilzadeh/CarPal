@@ -7,6 +7,8 @@ export { SessionStore, type Session } from './sessions.js';
 export {
   Authenticator,
   STEP_UP_MAX_AGE_S,
+  ADMIN_STEP_UP_MAX_AGE_S,
+  stepUpMaxAge,
   type AuthRequest,
   type AuthenticatorOptions,
   type AttestationVerifier,

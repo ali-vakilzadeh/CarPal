@@ -157,6 +157,12 @@ export const resolvers: Resolvers = {
     const { updated_by_display: _by, updated_at: _at, version, ...values } = rules;
     return { as, version: version as number, body: { ...values, reason: REASON }, bola: 'one platform-wide rule set' };
   },
+  // S25a: Delivery health lists every channel (email, push, SMS) with its provider and three windows.
+  'admin.notif_delivery_health': async (h) => ({
+    as: await h.staff('platform_admin'),
+    check: (res) =>
+      expect([...new Set((res.body.rows as Json[]).map((r) => r.channel))]).toEqual(expect.arrayContaining(['email', 'push', 'sms'])),
+  }),
   'admin.notifications_list': async (h) => {
     const as = await h.staff('platform_moderator');
     await staffNotice(h, as);

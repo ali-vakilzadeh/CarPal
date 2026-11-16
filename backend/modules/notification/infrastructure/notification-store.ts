@@ -21,6 +21,9 @@ export function rulesValues(row: RulesRow | undefined): NotificationRulesValues 
         : null,
     digestHour: row.digest_hour,
     weeklyDigestDay: row.weekly_digest_day,
+    approvalReminderDays: [...row.review_approval_reminder_days].map(Number),
+    maintenanceDueWindowDays: row.maintenance_due_window_days,
+    mileageDueWindowKm: row.mileage_due_window_km,
   };
 }
 

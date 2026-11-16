@@ -23,6 +23,7 @@ class JsonlSink<T> {
 }
 
 export class FileMailer extends JsonlSink<EmailMessage> implements Mailer {
+  readonly provider = 'file';
   constructor(dir: string | null) {
     super(dir, 'outbox-mail.jsonl');
   }
@@ -32,6 +33,7 @@ export class FileMailer extends JsonlSink<EmailMessage> implements Mailer {
 }
 
 export class FileSmsSender extends JsonlSink<SmsMessage> implements SmsSender {
+  readonly provider = 'file';
   constructor(dir: string | null) {
     super(dir, 'outbox-sms.jsonl');
   }
@@ -41,6 +43,7 @@ export class FileSmsSender extends JsonlSink<SmsMessage> implements SmsSender {
 }
 
 export class FilePushSender extends JsonlSink<PushMessage> implements PushSender {
+  readonly provider = 'file';
   constructor(dir: string | null) {
     super(dir, 'outbox-push.jsonl');
   }

@@ -27,7 +27,8 @@ import { AppointmentFacts } from '#modules/appointment/interface/appointments.js
 import { VehicleCards } from '#modules/vehicle/interface/vehicles.js';
 import { PersonalDataRegistry } from '#modules/identity/interface/identity.js';
 import { repointColumns, TaxonomyReferences } from '#modules/taxonomy/interface/taxonomy-resolver.js';
-import { moveToApprovalPath } from './admin-ops.js';
+import { TrustAdmin } from '../interface/trust.js';
+import { applyApprovedResolution, DISPUTE_RESOLVE_OP, moveToApprovalPath } from './admin-ops.js';
 import { registerTrustWork } from './work-queues.js';
 import { OrganizationReferences } from '#modules/organization/interface/org-references.js';
 import { trustOrgReferences } from './org-references.js';
@@ -249,6 +250,7 @@ export class TrustAdminRegistrations implements OnModuleInit {
     @Optional() private readonly moderation?: ModerationLog,
     @Optional() private readonly work?: WorkQueues,
     @Optional() private readonly orgRefs?: OrganizationReferences,
+    @Optional() private readonly trustAdmin?: TrustAdmin,
   ) {}
 
   /** The parties of a dispute target, as disputes.create checks them (S14 purpose subjects). */
@@ -370,6 +372,11 @@ export class TrustAdminRegistrations implements OnModuleInit {
       },
     });
     this.executors?.register('admin.review_move_to_approval_path', async (scope, c) => moveToApprovalPath(scope, c.targetId, c.reason));
+    // S25a.T5 (DQ-22): an upheld dispute that removes something waits for a different administrator's approval.
+    if (this.executors && this.moderation && this.targets && this.trustAdmin) {
+      const deps = { log: this.moderation, targets: this.targets, trust: this.trustAdmin };
+      this.executors.register(DISPUTE_RESOLVE_OP, async (scope, c) => applyApprovedResolution(scope, deps, c));
+    }
 
     this.targets?.register('review', {
       exists: async (scope, id) =>
