@@ -2,9 +2,9 @@
   "meta": {
     "title": "CarPal public Web UI (WP20: provider, vendor and fleet portals at web.<DOMAIN>) — plan and proposals",
     "created": "2026-11-13",
-    "last_updated": "2026-11-13",
+    "last_updated": "2026-11-16",
     "status": "proposal",
-    "status_note": "No stage plan yet: the public Web UI is not scheduled. This file collects the proposals and decisions that must hold when its stage plan is written. The first two proposals (PU-P01, PU-P02) are copies of admin console pages, asked for by the owner on 2026-11-13.",
+    "status_note": "No stage plan yet: the public Web UI is not scheduled. This file collects the proposals and decisions that must hold when its stage plan is written. The first two proposals (PU-P01, PU-P02) are copies of admin console pages, asked for by the owner on 2026-11-13. 2026-11-16 (backend S25b): PU-BR-03 and the rest of PU-BR-04 are accepted intake (owner, backend S21-D3); PU-BR-01/02 deferred (backend NP-09); business follow-ups of the backend refinement recorded in backend_follow_ups_for_business_screens.",
     "owner": "project owner",
     "purpose": "The public Web UI is the business web app for service providers, parts sellers and fleet managers (Docs/02 §1.4 and WP20). It is completely separate from the admin console (owner decision DQ-03): its own app, its own BFF and OAuth client (cp-web-portal), the api host only, and organization roles (ORG) decided by the server.",
     "sources_of_truth": [
@@ -112,25 +112,34 @@
       "id": "PU-BR-01",
       "for": "PU-P01 (console side of the identical wizard)",
       "request": "Define and serve the assisted routes {adm}/assist/{assist_session_id}/... for the allowlisted operations (backend DI-05), with the same bodies and answers as the api-host operations, each call audited as assist_onboarding.",
-      "why": "Without them the console's copy of the wizard cannot exist and the two copies cannot be identical."
+      "why": "Without them the console's copy of the wizard cannot exist and the two copies cannot be identical.",
+      "status": "deferred",
+      "backend_status": "Deferred to the next phase with the business web app (backend BR-update-plan.json deferred_to_next_phase NP-09, backend DI-05)."
     },
     {
       "id": "PU-BR-02",
       "for": "PU-P01 (owner side)",
       "request": "The assist history on the owner's side: OnboardingProgress (onboarding.list) carries the assisted sessions of the flow (staff display name, started, ended, steps done by staff).",
-      "why": "Docs/23 A-USR-02 promises a banner on the owner's side; nothing in the api-host contract tells the owner that staff assisted."
+      "why": "Docs/23 A-USR-02 promises a banner on the owner's side; nothing in the api-host contract tells the owner that staff assisted.",
+      "status": "deferred",
+      "backend_status": "Deferred to the next phase with PU-BR-01 (NP-09)."
     },
     {
       "id": "PU-BR-03",
       "for": "PU-P02",
       "request": "GET {org}/subscription/change-requests (ORG(O+)): the organization's own plan requests with status, requested plan, note, handled_at.",
-      "why": "subscription.change_request answers 202 Ack only; the owner cannot see what happened to a request."
+      "why": "subscription.change_request answers 202 Ack only; the owner cannot see what happened to a request.",
+      "status": "accepted_intake",
+      "backend_status": "Not built in the backend refinement. Accepted intake of this plan (owner, 2026-11-16, backend S21-D3); the backend operation is built when the public Web UI is scheduled."
     },
     {
       "id": "PU-BR-04",
       "for": "PU-P02 (console side)",
       "request": "admin.subscription_change_requests_list (STF(ADM)) and closing a request when admin.subscription_assign assigns it or an administrator declines it (SubscriptionChangeRequest.status assigned | declined, handled_by, handled_at), with a notification to the requester.",
-      "why": "The console has no read of change requests today, so a request from the Web UI would never reach the administrator who assigns plans."
+      "why": "The console has no read of change requests today, so a request from the Web UI would never reach the administrator who assigns plans.",
+      "status": "partly_done",
+      "backend_status": "Built in backend S21 (contract 1.4.0): admin.subscription_change_requests_list (STF(ADM)), and admin.subscription_assign closes the request it assigns. The rest is accepted intake of this plan (owner, 2026-11-16, backend S21-D3): declining a request with a notice to the requester.",
+      "remaining": "Decline a plan request with a reason and a notification to the requester (SubscriptionChangeRequest.status declined, handled_by, handled_at)."
     }
   ],
   "open_questions": [
@@ -161,6 +170,37 @@
     {
       "date": "2026-11-13",
       "summary": "File created with PU-P01 and PU-P02 (copies of the admin console's assisted onboarding and plan assignment pages, which stay in the console) and the backend requests they need (PU-BR-01..04)."
+    },
+    {
+      "date": "2026-11-16",
+      "summary": "Backend S25b.T7: PU-BR-03 and PU-BR-04 rest recorded as accepted intake (owner decision 2026-11-16, backend S21-D3); PU-BR-04 list part built in backend S21; PU-BR-01/02 deferred (NP-09); backend follow-ups for the business screens recorded (proposed)."
     }
-  ]
+  ],
+  "backend_follow_ups_for_business_screens": {
+    "status": "proposed (not accepted yet)",
+    "recorded": "2026-11-16, backend S25b.T7",
+    "note": "Business-facing screens that backend refinement stages made possible. Business notices are shown in the business portals, not in the consumer PWA (DI-16), so the screens land here when the public Web UI is planned. pwa/BR-update-plan.json PB-06 points here.",
+    "items": [
+      {
+        "source": "backend S15b notes_for_next",
+        "what": "Confirm action on organization consents with reconsent_required (org.consents_confirm)."
+      },
+      {
+        "source": "backend S19 notes_for_next",
+        "what": "Show OrganizationVerification.info_request (missing items, message, status) with a resubmit form (org.verification_resubmit: documents, registration number, note) and the registration number on the identity submission; organization.verification_info_requested opens that page, organization.profile_corrected the profile."
+      },
+      {
+        "source": "backend S25a (S25a-D5)",
+        "what": "A rejected verification check shows rejection_reason (\"what to fix\"); the notice organization.verification_rejected opens the verification page."
+      },
+      {
+        "source": "backend S25a (S25a-D3)",
+        "what": "The review approval page (Path 2) opened by the reminder review.approval_reminder (days_left), sent on days 3 and 6 by default."
+      },
+      {
+        "source": "backend S24",
+        "what": "Support requests in a business context (support.ticket_create with organization_id), as in the PWA item PB-04."
+      }
+    ]
+  }
 }

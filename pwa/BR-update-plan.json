@@ -3,7 +3,7 @@
     "title": "PWA update plan - refinement proposals collected from other components",
     "created": "2026-11-12",
     "status": "partial_collecting",
-    "status_note": "Proposal only. Collected from the Admin Console plan (on hold after AC9); to be converted into a comprehensive PWA plan later. Nothing here is scheduled or built. 2026-11-16: the owner scheduled a PWA refinement round for these items and the backend follow-ups (meta.pending_intake_from_backend).",
+    "status_note": "Proposal only. Collected from the Admin Console plan (on hold after AC9); to be converted into a comprehensive PWA plan later. Nothing here is scheduled or built. 2026-11-16: the owner scheduled a PWA refinement round for these items and the backend follow-ups (meta.pending_intake_from_backend). 2026-11-16 (backend S25b): the backend follow-ups are items PB-01..PB-08; nothing is scheduled or built yet.",
     "format": "Machine-readable. raw_text is the source recommendation verbatim; proposal is a first, unreviewed suggestion.",
     "decisions_from_owner_2026_11_12": [
       "No part of backend, admin console or PWA goes to a test run until the whole plan is complete (PD-03). Test-related items below therefore wait for the full test run.",
@@ -11,10 +11,11 @@
     ],
     "sibling_file": "backend/BR-update-plan.json",
     "counts": {
-      "items": 6
+      "items": 14
     },
     "decisions_from_owner_2026_11_16": [
-      "The PWA goes through another round of refinement that implements the recommendations from the admin console development and the backend development (owner, 2026-11-16, Notice 2)."
+      "The PWA goes through another round of refinement that implements the recommendations from the admin console development and the backend development (owner, 2026-11-16, Notice 2).",
+      "Backend S25b.T7 (2026-11-16) turned the backend and admin console follow-ups into items PB-01..PB-08 for the PWA refinement round; with R-01, R-10, R-11, R-12, R-13 and R-24 they are the round's intake."
     ],
     "pending_intake_from_backend": {
       "note": "Not yet items here. Backend S25b.T7 turns these into items of this file (id, origin, raw_text, proposal), after S25a adds its own.",
@@ -22,8 +23,11 @@
         "backend/BR-update-plan.json action_plan.handed_off_follow_ups.pwa and .pwa_refinement_round",
         "backend/BR-update-plan.json stage reports, notes_for_next lines starting \"PWA follow-up\" (S19, S20, S24) and pwa_impact of S25a"
       ],
-      "recorded": "2026-11-16"
-    }
+      "recorded": "2026-11-16",
+      "status": "done",
+      "done": "2026-11-16, backend S25b.T7: items PB-01..PB-08 (origin.component backend or admin-console)."
+    },
+    "last_updated": "2026-11-16"
   },
   "items": [
     {
@@ -113,7 +117,8 @@
       ],
       "related": [
         "R-04 (root script that runs both apps checks)"
-      ]
+      ],
+      "backend_part_done": "backend S25b (2026-11-16): backend/tools/int-env.mjs (pnpm int:env init | backend | clients | env): one git-ignored source (backend/.env.test, backend/.env.test-clients) with strict auth and the three clients' keys; the console's test:int runs strict with one command, then dev:staff prune. The PWA half is PB-08."
     },
     {
       "id": "R-12",
@@ -193,6 +198,187 @@
       ],
       "related": [
         "backend NI-22 (region-config CDN host)"
+      ],
+      "note_2026_11_16": "Still infra and owner preparation (backend pilot_prep_checklist_non_code); not part of the backend refinement."
+    },
+    {
+      "id": "PB-01",
+      "action_id": "PWA-PB-01",
+      "origin": {
+        "component": "backend",
+        "file": "backend/BR-update-plan.json",
+        "raised_in": "S15",
+        "source": "action_plan.stages[S15].report.notes_for_next"
+      },
+      "status": "proposed",
+      "raw_text": "PWA (follow-up S15): take the sign-up texts from policy.current and send their policy_version as terms_version and privacy_policy_version (instead of CARPAL_PWA_TERMS_VERSION / CARPAL_PWA_PRIVACY_VERSION); on 409 POLICY_VERSION_OUTDATED reload the text; read Me.policy_reconsent after sign-in and on app start: a blocking dialog for terms and privacy, a one-time notice for the guidelines, both answered with policy.accept; render the body as Markdown without HTML. Reconcile pwa legal:check and the bundled legal texts with the backend texts.",
+      "type": "feature",
+      "components": [
+        "pwa"
+      ],
+      "trigger": "PWA refinement round (owner Notice 2, 2026-11-16); before the final legal texts are published",
+      "test_run_required": false,
+      "proposal": "Sign-up shows the terms and privacy texts from policy.current (region, locale) and sends their policy_version; on 409 POLICY_VERSION_OUTDATED reload the text and ask again. After sign-in and on app start read Me.policy_reconsent: a blocking dialog for terms and privacy, a one-time notice for the community guidelines (DQ-02, DQ-17), answered with policy.accept. Render the bodies as Markdown without HTML. Retire CARPAL_PWA_TERMS_VERSION / CARPAL_PWA_PRIVACY_VERSION and reconcile pwa legal:check and the bundled legal pages with the backend texts. Build together with PB-02 (one prompt).",
+      "known_pwa_context": [
+        "pwa legal:check and the bundled legal pages (P13)",
+        "CARPAL_PWA_TERMS_VERSION / CARPAL_PWA_PRIVACY_VERSION env labels"
+      ],
+      "depends_on": [
+        "PWA-PB-02 (same prompt)"
+      ],
+      "owner_note": "The owner publishes the final EN and FA texts only together with this item, because sign-up refuses a version that is not in force (backend S15-D5)."
+    },
+    {
+      "id": "PB-02",
+      "action_id": "PWA-PB-02",
+      "origin": {
+        "component": "backend",
+        "file": "backend/BR-update-plan.json",
+        "raised_in": "S15b",
+        "source": "action_plan.stages[S15b].report.notes_for_next"
+      },
+      "status": "proposed",
+      "raw_text": "PWA (follow-up S15 + S15b, build once): next to each consent switch and prompt show the consent text from policy.current/{consent_type} and send its policy_version (consents.grant, consents.request_respond, share_history with vehicle_data_policy_version, share_vehicle_context), instead of CARPAL_PWA_PRIVACY_VERSION; on 409 POLICY_VERSION_OUTDATED reload the text. The re-consent prompt also lists Me.policy_reconsent entries of mode consent: confirm with policy.accept (all consents of that type) or withdraw single consents (consent_ids); say that the feature is paused when paused is true. Settings: show reconsent_required, paused and confirmed_policy_version on consent rows.",
+      "type": "feature",
+      "components": [
+        "pwa"
+      ],
+      "trigger": "PWA refinement round; with PB-01",
+      "test_run_required": false,
+      "proposal": "Next to each consent switch and consent prompt show the text from policy.current/{consent_type} and send its policy_version (consents.grant, consents.request_respond, share_history with vehicle_data_policy_version, share_vehicle_context). The re-consent prompt of PB-01 also lists the Me.policy_reconsent entries of mode consent: confirm with policy.accept or withdraw single consents (consent_ids); say that the feature is paused when paused is true (DQ-19). Settings shows reconsent_required, paused and confirmed_policy_version on the consent rows.",
+      "depends_on": [
+        "PWA-PB-01"
+      ],
+      "owner_note": "The final consent texts of the 13 consent types are published together with this item (backend S15b-D1)."
+    },
+    {
+      "id": "PB-03",
+      "action_id": "PWA-PB-03",
+      "origin": {
+        "component": "backend",
+        "file": "backend/BR-update-plan.json",
+        "raised_in": "S20",
+        "source": "action_plan.stages[S20].report.notes_for_next"
+      },
+      "status": "proposed",
+      "raw_text": "PWA follow-up: the dispute thread screen for both parties (disputes.messages_list, disputes.message_post with evidence uploads); the edit request on the author's review (Review.edit_request with the highlighted text) and the edit form; the notification dispute.message_received already links to Activity > Reports.",
+      "type": "feature",
+      "components": [
+        "pwa"
+      ],
+      "trigger": "PWA refinement round",
+      "test_run_required": false,
+      "proposal": "Activity > Reports: a dispute thread screen for the user's side (disputes.messages_list, disputes.message_post with evidence uploads through the media pipeline), opened by the dispute.message_received notice. The review author's edit after a moderator's edit request: show Review.edit_request with the highlighted text and the message, and an edit form; the review stays hidden until a moderator checks the edit (backend S20).",
+      "known_pwa_context": [
+        "catalog.ts already lists dispute.message_received as a consumer template (the thread screen is the missing part)"
+      ]
+    },
+    {
+      "id": "PB-04",
+      "action_id": "PWA-PB-04",
+      "origin": {
+        "component": "backend",
+        "file": "backend/BR-update-plan.json",
+        "raised_in": "S24",
+        "source": "action_plan.stages[S24].report.notes_for_next"
+      },
+      "status": "proposed",
+      "raw_text": "PWA follow-up: Settings > Help files tickets (support.ticket_create with optional diagnostics; organization_id in a business context) instead of the support email address, lists them (support.tickets_list) and shows the thread with replies (support.ticket_get, support.ticket_reply); the support notices then link to the request itself (reference support_ticket).",
+      "type": "feature",
+      "components": [
+        "pwa"
+      ],
+      "trigger": "PWA refinement round",
+      "test_run_required": false,
+      "proposal": "Settings > Help files in-app support requests (support.ticket_create with optional diagnostics) instead of the support email address (DQ-07: in the apps only), lists them (support.tickets_list) and shows the thread with replies (support.ticket_get, support.ticket_reply). The support.reply_received and support.ticket_solved notices link to the request (reference support_ticket). A request solved as no_response after 7 days waiting on the user (backend S25a, DQ-23) is reopened by a reply within 14 days. Attachments (screenshots) are not available yet (backend NP-08).",
+      "known_pwa_context": [
+        "catalog.ts already lists support.reply_received and support.ticket_solved (the Help screens are the missing part)"
+      ]
+    },
+    {
+      "id": "PB-05",
+      "action_id": "PWA-PB-05",
+      "origin": {
+        "component": "backend",
+        "file": "backend/BR-update-plan.json",
+        "raised_in": "S25a",
+        "source": "action_plan.stages[S25a].pwa_impact and report.deviations S25a-D6"
+      },
+      "status": "proposed",
+      "raw_text": "PWA follow-up: the \"you can appeal\" link of a moderation notice now works for authors.",
+      "type": "feature",
+      "components": [
+        "pwa"
+      ],
+      "trigger": "PWA refinement round",
+      "test_run_required": false,
+      "proposal": "The moderation.action_taken notice to the author of hidden or removed content offers \"Appeal\": disputes.create with dispute_type moderation_appeal against the moderation action (backend S25a: the author is recorded on the action, so the appeal is accepted). Show the appeal in Activity > Reports with its thread (PB-03). An upheld appeal restores the content at once; removals never apply before an administrator's fairness approval (DQ-22).",
+      "depends_on": [
+        "PWA-PB-03 (thread screen)"
+      ]
+    },
+    {
+      "id": "PB-06",
+      "action_id": "PWA-PB-06",
+      "origin": {
+        "component": "backend",
+        "file": "backend/BR-update-plan.json",
+        "raised_in": "S19, S25a",
+        "source": "stages[S19].report.notes_for_next, stages[S25a].report.notes_for_next, handed_off_follow_ups.pwa (S19, S25a)"
+      },
+      "status": "proposed",
+      "raw_text": "Business follow-up (public Web UI WP20 / PWA business screens): show OrganizationVerification.info_request (missing items, message, status) with a resubmit form (org.verification_resubmit: documents, registration number, note) and the registration number on the business identity submission; the notification organization.verification_info_requested should open that page; organization.profile_corrected the profile. || PWA refinement round: business notices organization.verification_rejected (verification page, show rejection_reason) and review.approval_reminder (review approval page); the moderation notice's appeal link now works for authors (moderation_appeal).",
+      "type": "feature",
+      "components": [
+        "pwa (classification only)",
+        "public-web-ui (business screens)"
+      ],
+      "trigger": "PWA refinement round (classification); the business web app WP20 (screens)",
+      "test_run_required": false,
+      "proposal": "Business notices are shown in the business portals, not in the consumer PWA (DI-16; catalog.ts BUSINESS_TEMPLATE_KEYS already holds organization.verification_rejected and review.approval_reminder since backend S25a). The PWA round only confirms the classification of organization.verification_info_requested, organization.verification_rejected, organization.profile_corrected and review.approval_reminder. The screens themselves (the verification page with info_request and the resubmit form org.verification_resubmit, rejection_reason on a rejected check, the review approval page opened by the reminder with days_left) belong to the public Web UI (frontend/public-ui-dev-plan.json backend_follow_ups_for_business_screens).",
+      "routing_note": "Kept here because handed_off_follow_ups.pwa names them; the round decides whether the PWA shows any business screen at all (Docs/02 section 1.4: business users use web.<DOMAIN>)."
+    },
+    {
+      "id": "PB-07",
+      "action_id": "PWA-PB-07",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "raised_in": "AC1",
+        "source": "DI-11, R-04; backend BR-update-plan.json unlinked_open_doc_issues DI-11"
+      },
+      "status": "proposed",
+      "raw_text": "Recommendation R-04: run the console's `pnpm i18n:check` (or its whole `pnpm check`) whenever shared/ changes, and mention the console in shared/i18n/package.json 'description' at the next PWA stage that touches shared/i18n.",
+      "type": "tooling",
+      "components": [
+        "pwa",
+        "admin-console"
+      ],
+      "trigger": "the next PWA stage that touches shared/i18n",
+      "test_run_required": false,
+      "proposal": "Mention the admin console (namespaces common and format) in shared/i18n/package.json 'description'. The order of checks is now one command: in backend/, pnpm check:clients (backend S25b: backend contract:check, PWA and console contract:generate, pnpm check in both); run it whenever shared/ or Docs/40 changes.",
+      "done_part": "pnpm check:clients exists (backend S25b, the R-04 root script)."
+    },
+    {
+      "id": "PB-08",
+      "action_id": "PWA-PB-08",
+      "origin": {
+        "component": "backend",
+        "file": "backend/BR-update-plan.json",
+        "raised_in": "S25b",
+        "source": "action_plan.stages[S25b].report.deviations S25b-D3; R-11 PWA half"
+      },
+      "status": "proposed",
+      "raw_text": "R-11 (PWA half): the PWA's two integration suites (src/server/bff/bff.int.test.ts, hosted-signin.int.test.ts) build a lite BFF (strict: false) and call /oauth/token and the search directly without a client assertion or DPoP, so they cannot run against the strict backend of `pnpm int:env backend`.",
+      "type": "test",
+      "components": [
+        "pwa"
+      ],
+      "trigger": "before the whole-plan test run (PD-03)",
+      "test_run_required": false,
+      "proposal": "Read CARPAL_STRICT_AUTH and CARPAL_PWA_CLIENT_PRIVATE_JWKS in the two suites as the console's bff.int.test.ts does: strict BFF config with privateKeyJwt for cp-web-consumer and cp-ssr; sign the direct /oauth/token calls (refresh reuse, revoked token) with the client assertion and a DPoP proof, and call the search with a DPoP-bound token. Then `pnpm int:env clients pwa` (in backend/) runs them against the one strict backend; until then `pnpm int:env backend --lite` and `clients --lite`.",
+      "depends_on": [
+        "PWA-R-11 (backend part done in S25b)"
       ]
     }
   ]

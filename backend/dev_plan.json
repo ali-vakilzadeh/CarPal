@@ -5,8 +5,8 @@
     "last_updated": "2026-11-16",
     "status": "scratch_build_done",
     "progress": {
-      "as_of": "2026-11-13",
-      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list. S10 is DONE (2026-10-26): contract 1.1.0 served — search.session_get (406/407 operations served), search facets, the soonest sort with next_available_slot, search.page limit and the map.pins changes; the 1.1.0 text was corrected before use (DI-74). Next: the next_iteration list; the PWA continues with P7 and adopts 1.1.0 in P14. 2026-11-04: plan aligned with the closed PWA scratch build (pwa/dev_plan.json P1-P14, meta.status scratch_build_done). Rule GD-43: where the two plans disagree, the newer PWA decision wins and the backend follows. The PWA's pilot blockers that need the backend are now stage S11 'Pilot readiness: PWA integration 2' (strict auth for the BFF clients by DPoP + private_key_jwt, contract 1.2.0 for the profile and settings fields of PWA DI-55, USD prices with an admin-set exchange rate, the carpals.ir production setup). Backend-owned PWA follow-ups that do not block the pilot are NI-19..NI-22. Next: S11, then the next_iteration list. S11 is DONE in code (2026-11-05): strict auth for the BFF clients (DPoP-bound tokens + private_key_jwt, CARPAL_OAUTH_CLIENT_JWKS, no mTLS), contract 1.2.0 (411 operations, 410 served; me.deactivate, auth.reactivate, admin.exchange_rates_list, admin.exchange_rate_update, the profile and settings fields of PWA DI-55), USD as the base currency with an admin rate served by config.client, the carpals.ir deploy kit with strict mode on by default. The first server deployment (S11.T4 c) is still to be done by the user: see S11.report.open_after_stage. Next: the deployment, then the next_iteration list. 2026-11-09: S12 'Admin console prerequisites' is DONE in code (frontend/admin-console/dev-plan.json AC2): contract 1.3.0 (414 operations, 413 served; auth.passkey_enrol_options, auth.passkey_enrol, admin.staff_me, AuthNext 'enrol_passkey', error PASSKEY_NOT_DEVICE_BOUND), cp-web-admin DPoP-bound with private_key_jwt, the staff passkey enrolment inside the cp-web-admin sign-in, the first-run staff bootstrap (pnpm staff:bootstrap, deploy/staff-bootstrap.sh) and dev:staff, the admin key pair in its own file. Next: the admin console builds its BFF (AC3), then the next_iteration list. 2026-11-12: S13 'Admin console unblockers' is DONE in code (backend/BR-update-plan.json, the first stage of the admin console refinement S13-S25): contract 1.4.0 opened (421 operations, 420 served; admin.job_get, admin.staff_list, admin.staff_disable, admin.staff_enable, admin.taxonomy_snapshot, admin.region_settings, admin.badges_list; admin.four_eyes_list mine=true; PendingChange decision fields and job_id with migration 0102). Next: S14 of BR-update-plan.json (purpose bound to the record, NI-02), while the console resumes AC10 and AC12. 2026-11-13: S14 'Staff access to personal data, and suspension correctness' is DONE in code (BR-update-plan.json S14): staff access purposes bound to the record on every PURP operation (403 PURPOSE_RECORD_MISMATCH, scoped user search, case actions bound; RCP-01 mitigated, NI-02 done), admin.orgs_search answers StaffOrgSearchRow without contact data or points (console regenerated), timed suspensions lifted by the scheduler (suspended_until, migration 0103, DI-66 closed). Next: S15 of BR-update-plan.json, while the console resumes AC10 and AC12. 2026-11-13: S15 'Policies and consent texts' is DONE in code (BR-update-plan.json S15): versioned legal texts per region with four-eyes publish, effective date and re-consent flag (migration 0104), policy.current, policy.accept, Me.policy_reconsent, sign-up bound to the versions in force; contract 1.4.0 at 428 operations. Next: S16a of BR-update-plan.json. 2026-11-13: S16a 'Staff passkeys and recovery codes' is DONE in code (BR-update-plan.json S16a): staff recovery codes (migration 0105), the caller's own keys on the admin plane (five admin.staff_* operations, fresh aal3 within 5 minutes, LAST_PASSKEY), break glass (pnpm staff:break-glass, deploy/staff-break-glass.sh) and DQ-11; contract 1.4.0 at 433 operations. Next: S15b, then S16b of BR-update-plan.json.",
+      "as_of": "2026-11-16",
+      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list. S10 is DONE (2026-10-26): contract 1.1.0 served — search.session_get (406/407 operations served), search facets, the soonest sort with next_available_slot, search.page limit and the map.pins changes; the 1.1.0 text was corrected before use (DI-74). Next: the next_iteration list; the PWA continues with P7 and adopts 1.1.0 in P14. 2026-11-04: plan aligned with the closed PWA scratch build (pwa/dev_plan.json P1-P14, meta.status scratch_build_done). Rule GD-43: where the two plans disagree, the newer PWA decision wins and the backend follows. The PWA's pilot blockers that need the backend are now stage S11 'Pilot readiness: PWA integration 2' (strict auth for the BFF clients by DPoP + private_key_jwt, contract 1.2.0 for the profile and settings fields of PWA DI-55, USD prices with an admin-set exchange rate, the carpals.ir production setup). Backend-owned PWA follow-ups that do not block the pilot are NI-19..NI-22. Next: S11, then the next_iteration list. S11 is DONE in code (2026-11-05): strict auth for the BFF clients (DPoP-bound tokens + private_key_jwt, CARPAL_OAUTH_CLIENT_JWKS, no mTLS), contract 1.2.0 (411 operations, 410 served; me.deactivate, auth.reactivate, admin.exchange_rates_list, admin.exchange_rate_update, the profile and settings fields of PWA DI-55), USD as the base currency with an admin rate served by config.client, the carpals.ir deploy kit with strict mode on by default. The first server deployment (S11.T4 c) is still to be done by the user: see S11.report.open_after_stage. Next: the deployment, then the next_iteration list. 2026-11-09: S12 'Admin console prerequisites' is DONE in code (frontend/admin-console/dev-plan.json AC2): contract 1.3.0 (414 operations, 413 served; auth.passkey_enrol_options, auth.passkey_enrol, admin.staff_me, AuthNext 'enrol_passkey', error PASSKEY_NOT_DEVICE_BOUND), cp-web-admin DPoP-bound with private_key_jwt, the staff passkey enrolment inside the cp-web-admin sign-in, the first-run staff bootstrap (pnpm staff:bootstrap, deploy/staff-bootstrap.sh) and dev:staff, the admin key pair in its own file. Next: the admin console builds its BFF (AC3), then the next_iteration list. 2026-11-12: S13 'Admin console unblockers' is DONE in code (backend/BR-update-plan.json, the first stage of the admin console refinement S13-S25): contract 1.4.0 opened (421 operations, 420 served; admin.job_get, admin.staff_list, admin.staff_disable, admin.staff_enable, admin.taxonomy_snapshot, admin.region_settings, admin.badges_list; admin.four_eyes_list mine=true; PendingChange decision fields and job_id with migration 0102). Next: S14 of BR-update-plan.json (purpose bound to the record, NI-02), while the console resumes AC10 and AC12. 2026-11-13: S14 'Staff access to personal data, and suspension correctness' is DONE in code (BR-update-plan.json S14): staff access purposes bound to the record on every PURP operation (403 PURPOSE_RECORD_MISMATCH, scoped user search, case actions bound; RCP-01 mitigated, NI-02 done), admin.orgs_search answers StaffOrgSearchRow without contact data or points (console regenerated), timed suspensions lifted by the scheduler (suspended_until, migration 0103, DI-66 closed). Next: S15 of BR-update-plan.json, while the console resumes AC10 and AC12. 2026-11-13: S15 'Policies and consent texts' is DONE in code (BR-update-plan.json S15): versioned legal texts per region with four-eyes publish, effective date and re-consent flag (migration 0104), policy.current, policy.accept, Me.policy_reconsent, sign-up bound to the versions in force; contract 1.4.0 at 428 operations. Next: S16a of BR-update-plan.json. 2026-11-13: S16a 'Staff passkeys and recovery codes' is DONE in code (BR-update-plan.json S16a): staff recovery codes (migration 0105), the caller's own keys on the admin plane (five admin.staff_* operations, fresh aal3 within 5 minutes, LAST_PASSKEY), break glass (pnpm staff:break-glass, deploy/staff-break-glass.sh) and DQ-11; contract 1.4.0 at 433 operations. Next: S15b, then S16b of BR-update-plan.json. Backend refinement for the admin console (BR-update-plan.json S13-S25b) closed on 2026-11-16: contract 1.4.0 frozen with 490 operations on 542 routes (489 served), 55 error codes, migrations 0100-0115; the deferred work is next_iteration NP-01..NP-12.",
       "stages": [
         {
           "stage": "S1",
@@ -5306,6 +5306,174 @@
           }
         ]
       }
+    },
+    {
+      "id": "S25b",
+      "title": "Refinement closure: contract 1.4.0 freeze, deploy kit for migrations 0100-0115, integration-test settings and staff prune, deferred register and hand-offs",
+      "status": "done",
+      "depends_on": [
+        "S25a"
+      ],
+      "plan": "backend/BR-update-plan.json action_plan.stages S25b (S25 split into S25a and S25b on 2026-11-16).",
+      "goal": "Freeze contract 1.4.0 after the last operation change, make the server update and the strict whole-plan test run work without hand work, and hand every follow-up and deferred item to the plan that continues it.",
+      "scope": {
+        "contract_sections": [
+          "header",
+          "Appendix D Contract 1.4.0 (frozen)"
+        ],
+        "modules": [
+          "tools/db",
+          "tools",
+          "deploy",
+          "libs/infra (test)",
+          "apps/testing"
+        ],
+        "ops_target": 0,
+        "ops_note": "No operation change. Registry at the freeze: 490 operations, 542 routes, 55 error codes; 489 served (auth.social_start deferred)."
+      },
+      "tasks": [
+        {
+          "id": "S25b.T1",
+          "status": "done",
+          "title": "Freeze contract 1.4.0 (DQ-01 confirmed): Docs/40 changelog final, openapi:check, contract:coverage --strict with zero unexplained 501, full lite integration suite and contract sweep."
+        },
+        {
+          "id": "S25b.T2",
+          "status": "done",
+          "title": "Regenerate the console contract and bump the PWA pins; console and PWA contract:check green (R-04 root script if the PWA plan has not added it)."
+        },
+        {
+          "id": "S25b.T3",
+          "status": "done",
+          "title": "Deploy kit: migrations 0100 onwards (0114 and any of S25a) in the update script; the storage host does not send Cross-Origin-Resource-Policy: same-origin on display copies (R-23); deploy.md \"Exchange "
+        },
+        {
+          "id": "S25b.T4",
+          "status": "done",
+          "title": "Integration-test settings (strict auth, client keys, env) in a git-ignored backend/.env.test or a small script, so console and PWA test:int run against one strict backend with one command; README \"Int"
+        },
+        {
+          "id": "S25b.T5",
+          "status": "done",
+          "title": "pnpm dev:staff prune --domain staff.carpals.test --prefix e2e- (refused unless CARPAL_ENV=dev)."
+        },
+        {
+          "id": "S25b.T6",
+          "status": "done",
+          "title": "Logs and the deferred register: backend dev_plan.json stage reports; next_iteration NI-02 done, NI-04 done except DI-05; copy every deferred_to_next_phase item (with its source and decision) into back"
+        },
+        {
+          "id": "S25b.T7",
+          "status": "done",
+          "title": "Hand-offs: (a) PWA refinement round (owner Notice 2): turn action_plan.handed_off_follow_ups.pwa and pwa_refinement_round into items of pwa/BR-update-plan.json (same entry shape: id, origin, raw_text,"
+        }
+      ],
+      "deliverables": [
+        "Docs/40 1.4.0 frozen; generated contract files (hash only)",
+        "deploy: 2-build.sh migration path and post-check, 4-start.sh CORP check, deploy.md",
+        "tools/db: baseline.migrated_sha256, dev:staff prune; tools/int-env.mjs, tools/check-clients.mjs",
+        "apps/testing/s25b.int.test.ts, tools/db/install.test.ts",
+        "plans: deferred register NP-01..NP-12 in next_iteration, PWA PB-01..PB-08, console and public Web UI hand-offs, RCP-05"
+      ],
+      "report": {
+        "started_at": "2026-11-16",
+        "completed_at": "2026-11-16",
+        "summary": "The backend refinement is closed. Contract 1.4.0 is frozen (490 operations, 542 routes, 489 served, 55 error codes); the backend, the PWA and the admin console all pass their contract checks against it, and pnpm check:clients now runs both clients' regeneration and checks in one command (R-04). An existing server takes migrations 0100-0115 with update.sh: the build no longer stops on the expected Docs/43 change while migrations are pending, and it checks afterwards that none is left. The storage host is checked for Cross-Origin-Resource-Policy: cross-origin at every start (R-23); deploy.md covers the rate change approver, the redacted-image CDN limit (NP-06) and the migrations. The strict whole-plan test run needs no hand-set variables: pnpm int:env writes the git-ignored settings and keys, starts a strict backend and runs the console's integration tests (7 of 7 passed strict), then retires the test staff accounts with the new pnpm dev:staff prune (R-15). The 12 deferred items are in dev_plan.json next_iteration, the PWA refinement round has its items (PB-01..PB-08), the console has its AC13/AC14 list and the public Web UI its accepted intake. One owner question stays open: DQ-24 (S25a-D2, the monthly odometer prompt).",
+        "contract": "Docs/40 1.4.0 frozen on 2026-11-16 (header and Appendix D \"Contract 1.4.0 (2026-11-16; opened 2026-11-12)\"): 490 operations, 542 routes (489 served; auth.social_start deferred), 55 error codes. No operation changed in S25b; the generated files changed only in the Docs/40 hash.",
+        "files_created": [
+          "backend/tools/int-env.mjs (pnpm int:env, R-11)",
+          "backend/tools/check-clients.mjs (pnpm check:clients, R-04)",
+          "backend/tools/db/install.test.ts",
+          "backend/apps/testing/s25b.int.test.ts",
+          "backend/.env.test and backend/.env.test-clients (git-ignored, made by pnpm int:env init on this machine)"
+        ],
+        "files_changed": [
+          "Docs/40.API contract.md (header, Appendix D 1.4.0 frozen)",
+          "backend/deploy/{2-build.sh, 4-start.sh, deploy.md, templates/nginx-carpal.conf}",
+          "backend/tools/db/{install.ts (baseline.migrated_sha256, baselineUpToDate), cli.ts (status text), staff.ts (prune), staff-cli.ts, staff.test.ts}",
+          "backend/libs/infra/infra.test.ts (CORP cross-origin)",
+          "backend/tools/db/baseline.int.test.ts (seed count skips deleted accounts)",
+          "backend/package.json (int:env, check:clients), backend/README.md (commands, \"Integration tests of the clients\", coverage 490)",
+          "backend/libs/contract/generated/operations.json, shared/api-contracts/{openapi.yaml, generated/*}, frontend/admin-console/src/lib/api/generated/* (Docs/40 hash only)",
+          "frontend/admin-console/src/server/bff/bff.int.test.ts (recovery codes in the first enrolment, S16a), frontend/admin-console/README.md (Integration tests)",
+          "backend/BR-update-plan.json, backend/dev_plan.json, backend/risk_control_plan.json, pwa/BR-update-plan.json, frontend/public-ui-dev-plan.json"
+        ],
+        "deviations": [
+          {
+            "id": "S25b-D1",
+            "task": "S25b.T3",
+            "item": "migrations 0100 onwards in the update script",
+            "deviation": "update.sh already applied every pending migration through pnpm db:setup, but on a server installed before 0100 the build would have stopped first: every migration also changes Docs/43, so db:status reported \"changed since install\" and 2-build.sh refused to go on (and would refuse again after every later migration). db:setup now records the Docs/43 it migrated to (core.schema_info baseline.migrated_sha256), db:status counts that as up to date and names pending migrations, and 2-build.sh accepts the change while migrations are pending, then stops unless 0 are pending and the baseline is up to date.",
+            "impact": "Server: the next update.sh applies 0100-0115 (build log: Migrations: 16 applied, 0 pending). Developers: a database migrated with this code reads \"up to date (Docs/43 in step with the migrations applied)\"; the local database migrated to 0115 before this change still reads \"changed since install\" until the next migration run or pnpm db:reset (the baseline test fails until then, as in S25a)."
+          },
+          {
+            "id": "S25b-D2",
+            "task": "S25b.T3",
+            "item": "R-23",
+            "deviation": "The storage listener already sent Cross-Origin-Resource-Policy: cross-origin (libs/infra/lite/local-storage.ts) and nginx adds no header on the media host, so nothing was wrong; S25b makes it checked: a unit test on a signed GET and on a refused one, a 4-start.sh check after every restart, a comment in the nginx template and deploy.md Known limitations 7. The console half (CARPAL_STORAGE_URL, CARPAL_ADMIN_PUBLIC_WEB_URL) stays with AC11.",
+            "impact": "None."
+          },
+          {
+            "id": "S25b-D3",
+            "task": "S25b.T4",
+            "item": "R-11",
+            "deviation": "The settings live in two git-ignored files made by pnpm int:env init (backend/.env.test for the backend, backend/.env.test-clients with the private keys for the clients), not in backend/.env, so a developer's own .env stays untouched and the backend never reads a private key. The console's integration suite runs strict with one command. The PWA's two integration suites build a lite BFF and call /oauth/token and the search directly without a client assertion or DPoP, so they cannot pass against a strict backend; they run with backend --lite / clients --lite until the PWA round item PB-08. Running the console suite found one stale assertion: since S16a the first passkey enrolment answers with the 10 recovery codes; the test now checks them (frontend/admin-console bff.int.test.ts).",
+            "impact": "PWA refinement round: PB-08. Whole-plan test run (PD-03): start with pnpm int:env."
+          },
+          {
+            "id": "S25b-D4",
+            "task": "S25b.T5",
+            "item": "R-15",
+            "deviation": "prune retires instead of deleting: audit entries, four-eyes requests and moderation rows still name the accounts, so rows are kept and the account is marked deleted with its platform roles removed, sign-in methods disabled and pending four-eyes requests expired (audited staff.dev_pruned, actor system). The sign-in identifier stays taken (authentication_methods has no partial unique index), which is fine because test addresses are unique per run. --prefix takes a comma-separated list; the console's tests use e2e- and bff-int-.",
+            "impact": "None."
+          },
+          {
+            "id": "S25b-D5",
+            "task": "S25b.T2",
+            "item": "R-04",
+            "deviation": "The \"root script\" of R-04 is backend/tools/check-clients.mjs (pnpm check:clients in backend/): the repository root has no package.json and each app keeps its own lockfile (console GD-01), and Docs/40 changes start in the backend anyway.",
+            "impact": "PWA PB-07 (the shared/i18n description) is the rest of DI-11."
+          },
+          {
+            "id": "S25b-D6",
+            "task": "S25b.T6",
+            "item": "deferred register",
+            "deviation": "The deferred items keep their NP ids in dev_plan.json next_iteration (not new NI numbers), so the register and the next phase name them alike. S25a-D2 (monthly odometer prompt) is not a deferral: the owner has not answered, so it is DQ-24 (open) and named in next_iteration.note. risk_control_plan.json gains RCP-05 for NP-06 (a redacted image may stay in a CDN cache); lite mode has no CDN.",
+            "impact": "Owner: DQ-24."
+          },
+          {
+            "id": "S25b-D7",
+            "task": "S25b.T1",
+            "item": "full lite integration suite",
+            "deviation": "The baseline seed count (tools/db/baseline.int.test.ts) now skips accounts with status deleted, because pnpm dev:staff prune marks the console's test staff accounts deleted and a seeded account never is. The first version of the S25b prune test used its own prune-<tag>.carpals.test addresses, which broke that count in the shared dev database; the test now uses the fixture domain, and the 30 rows its earlier runs left were relabelled into @test.carpal.app (email and sign-in identifier) in the local database.",
+            "impact": "None for other developers; the local database still needs pnpm db:reset for the baseline-hash test (S25b-D1)."
+          }
+        ],
+        "notes_for_next": [
+          "The backend refinement is closed. Next, as planned: the admin console AC13, AC14 and AC15 (admin_console_resume.status_2026_11_16), the PWA refinement round (pwa/BR-update-plan.json PB-01..PB-08 with R-01, R-10..R-13, R-24), then the whole-plan test run (PD-03).",
+          "Whole-plan test run: in backend/, pnpm int:env init (once), pnpm int:env backend, then pnpm int:env clients; the PWA suites need PB-08 first (or --lite); E2E runs take the keys from pnpm int:env env; pnpm dev:staff prune --domain staff.carpals.test --prefix e2e-,bff-int- after E2E.",
+          "Contract 1.4.0 is frozen: any operation, type, rule or error-code change opens 1.5.0 (Docs/40 Appendix D). After a Docs/40 or shared/ change run pnpm check:clients.",
+          "Server: the next update.sh applies migrations 0100-0115; expect \"Migrations: 16 applied, 0 pending\" and \"Baseline: up to date\" in the build log.",
+          "Owner: answer DQ-24 (S25a-D2, monthly odometer prompt); pilot preparation in pilot_prep_checklist_non_code (R-05 staff, R-07 keys, R-19, R-21 the real IRR rate, R-24 tile host, final legal and consent texts with PB-01/PB-02).",
+          "Local developers: pnpm db:reset once if the baseline test must pass locally (the database migrated to 0115 before S25b); later migration runs keep it up to date."
+        ],
+        "open_after_stage": [
+          "Nothing committed by S25b itself (commit only when the owner asks); part of S25b is in the owner's S25a commit 1e5739e.",
+          "DQ-24 open (owner)."
+        ],
+        "tests": {
+          "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 574 modules), typecheck, format:check: pass",
+          "backend_unit": "325 passed (48 files), including tools/db/install.test.ts (baseline freshness), the prune arguments in staff.test.ts and the CORP header in libs/infra/infra.test.ts",
+          "backend_contract": "contract:generate (490 operations, 542 routes, 55 errors), contract:tests (17 suites, 0 changed), openapi:generate (542 operations on 439 paths); contract:check, openapi:check up to date; contract:coverage --strict 489/490, 0 unexplained 501s",
+          "backend_integration_full": "1005 tests in 67 files: 1003 passed, 2 failed in tools/db/baseline.int.test.ts. (1) \"records the baseline hash\": expected, the local database was migrated to 0115 before S25b recorded migrated hashes (passes after pnpm db:reset or the next migration run). (2) \"seeds the primary records\": the non-fixture account count was 33 instead of 2, from this stage's own runs (the first prune test used prune-<tag>.carpals.test addresses; the console runs left bff-int-...@staff.carpals.test accounts, now deleted by prune). Fixed: the prune test uses @test.carpal.app with a per-run prefix, the seed count skips deleted accounts (a seed is never deleted), and the 30 leftover rows of the earlier prune-test runs were relabelled into the fixture domain. Rerun of s25b and baseline: 13 passed, 1 failed (the expected hash).",
+          "backend_s25b": "1 passed (apps/testing/s25b.int.test.ts): prune retires only the prefixed staff accounts (roles removed, methods disabled, pending four-eyes request expired, account deleted, audited as system), keeps other staff and a non-staff user with a matching address, refuses outside dev, finds nothing the second time",
+          "strict_wiring": "pnpm int:env init, pnpm int:env backend (strict, no GD-06 warning, no pending migrations), pnpm int:env clients: frontend/admin-console bff.int.test.ts 7 passed in strict mode (private_key_jwt, DPoP, aal3 with a device-bound passkey) after the S16a recovery-code assertion fix; prune retired 5 bff-int accounts. A wiring check of R-11, not the whole-plan test run.",
+          "pwa": "pnpm check (via pnpm check:clients): lint, typecheck, 691 tests (76 files), contract:check, i18n:check, ds:check, sw:check, legal:check pass",
+          "admin_console": "pnpm check (via pnpm check:clients): lint, typecheck, 430 tests (44 files), contract:check (124 admin-api operations, 1.4.0), i18n:check, ds:check pass; lint and typecheck again after the integration-test change",
+          "environment": "Node 24.21.0 from backend/.tools/node; embedded PostgreSQL; no migration in S25b",
+          "not_run": "The PWA integration suites (lite-only until PB-08) and the E2E suites: the whole-plan test run (PD-03)."
+        }
+      }
     }
   ],
   "coverage_summary": {
@@ -5458,6 +5626,17 @@
       "ai-mcp": "27/27",
       "analytics": "3/3",
       "admin": "16/16"
+    },
+    "after_backend_refinement": {
+      "date": "2026-11-16",
+      "contract": "1.4.0 (frozen)",
+      "operations": 490,
+      "routes": 542,
+      "served": 489,
+      "returning_501": 1,
+      "deferred": "auth.social_start (NP-11, NI-16)",
+      "error_codes": 55,
+      "admin_api_operations_in_console": 124
     }
   },
   "deviations_log": [
@@ -6921,7 +7100,7 @@
   "next_iteration": {
     "written_after": "S9c",
     "date": "2026-10-24",
-    "note": "Consolidates the deviations_log (S1-S9c), the open recommendations, the open doc issues and questions, risk_control_plan.json and the post-MVP backlog into the work of the first iteration after the scratch build. Sources name deviation entries by stage and index (#n = position in deviations_log), DI/OQ/RCP/PM ids. Priorities are proposals for planning.",
+    "note": "Consolidates the deviations_log (S1-S9c), the open recommendations, the open doc issues and questions, risk_control_plan.json and the post-MVP backlog into the work of the first iteration after the scratch build. Sources name deviation entries by stage and index (#n = position in deviations_log), DI/OQ/RCP/PM ids. Priorities are proposals for planning. 2026-11-16 (backend S25b): NP-01..NP-12 are the work the owner deferred out of the admin console refinement (S13-S25b), copied with source, decision and resume point; read them with BR-update-plan.json deferred_to_next_phase. Open owner question, not a deferral yet: DQ-24 (S25a-D2, the Docs/21 monthly odometer prompt). Items moved elsewhere: PU-BR-03 and PU-BR-04 rest (public Web UI), the PWA refinement round (pwa/BR-update-plan.json).",
     "items": [
       {
         "id": "NI-01",
@@ -6958,7 +7137,8 @@
           "deviations S8 #95, S9b #138"
         ],
         "status": "done",
-        "done_in": "S14 (2026-11-13, BR-update-plan.json BR-09): purpose bound to the record on every PURP operation; RCP-01 mitigated."
+        "done_in": "S14 (2026-11-13, BR-update-plan.json BR-09): purpose bound to the record on every PURP operation; RCP-01 mitigated.",
+        "note_2026_11_16": "Confirmed done at the refinement closure (S25b)."
       },
       {
         "id": "NI-03",
@@ -6989,11 +7169,12 @@
           "DI-67",
           "deviations S8 #97, #99, #100"
         ],
-        "status": "not_started",
+        "status": "partly_done",
         "note_2026_11_09": "S12 done: staff WebAuthn sign-in through the hosted UI end to end, including the first passkey (contract 1.3.0). DI-66, DI-67 and DI-05 remain (admin console BR-07, BR-08, DI-08).",
         "note_2026_11_12": "Admin console refinement S13 done (BR-update-plan.json); DI-66 is S14, DI-67 is S22, DI-05 stays out.",
         "note_2026_11_13": "S14 done: DI-66 closed (timed suspensions lifted by identity.suspension_expiry). DI-67 is S22, DI-05 stays out.",
-        "note_2026_11_15": "Admin console refinement S22 done: DI-67 closed (organization merge re-pointing). DI-05 (assist routes) stays out (DI-08)."
+        "note_2026_11_15": "Admin console refinement S22 done: DI-67 closed (organization merge re-pointing). DI-05 (assist routes) stays out (DI-08).",
+        "note_2026_11_16": "Backend refinement closed (S25b): done except DI-05 (assist routes), which is NP-09 below (deferred with the business web app)."
       },
       {
         "id": "NI-05",
@@ -7186,7 +7367,8 @@
           "PM-01",
           "OQ-06"
         ],
-        "status": "not_started"
+        "status": "not_started",
+        "note_2026_11_16": "Same item as NP-11 (auth.social_start, the only 501 of contract 1.4.0)."
       },
       {
         "id": "NI-17",
@@ -7291,6 +7473,222 @@
         ],
         "status": "partly_done",
         "note": "2026-11-06: the code defaults, tests, .env.example, Docs/40, Docs/41 and the OpenAPI servers now name carpals.ir (pwa., web., api., id., admin-api., admin., docs.); contract stays 1.2.0 because no field or rule changed. Still open: cdn.carpal.app in shared/region-config/ir-pilot.json and the CARPAL_I18N_BASE_URL default (the PWA's CSP and E2E follow it) until a real CDN host exists; media.carpal-usercontent.app in Docs/40 and OpenAPI (deployments use media.<DOMAIN>, see deploy.md Known limitations). Left on purpose: @test.carpal.app fixture addresses (existing test data and the baseline test key on them), admin@carpal.app in Docs/43 and tools/db (editing Docs/43 trips the baseline drift check; deployments set admin@<DOMAIN>), and the schemas.carpal.app JSON Schema $id (an identifier, never fetched)."
+      },
+      {
+        "id": "NP-01",
+        "theme": "Deferred from the backend refinement (BR-update-plan.json deferred_to_next_phase)",
+        "priority": "per owner decision",
+        "title": "AI output review decisions, AI safety triage queue, evaluation set",
+        "work": [
+          "admin.ai_insight_review (ok / wrong with a category, note, add to the evaluation set), admin.ai_safety_queue (A-AI-03), admin.ai_eval_set_list; A-AI-02 stays read-only until then."
+        ],
+        "sources": [
+          "BR-14, S24.T2, S24-D1"
+        ],
+        "status": "not_started",
+        "decided": "owner, 2026-11-15",
+        "resume_with": "The AI build (backend NI-09, NI-10).",
+        "estimate": "M, about 4 points",
+        "copied_from": "backend/BR-update-plan.json deferred_to_next_phase (S25b.T6, 2026-11-16)",
+        "picked_up_by": null
+      },
+      {
+        "id": "NP-02",
+        "theme": "Deferred from the backend refinement (BR-update-plan.json deferred_to_next_phase)",
+        "priority": "per owner decision",
+        "title": "Fraud and suspicious-pattern signals for reviews",
+        "work": [
+          "The two A-REV-01 tabs and fraud_signals in the review views once a signal source exists."
+        ],
+        "sources": [
+          "BR-27 (A-REV-01 suspicious-pattern and automatic-check-failed tabs), BR-29 (fraud_signals), S18-D9"
+        ],
+        "status": "not_started",
+        "decided": "owner, 2026-11-16 (S18-D9); earlier deferred_out_of_scope",
+        "resume_with": "SEC-BF-1 signals (backend NI-05).",
+        "estimate": "M",
+        "copied_from": "backend/BR-update-plan.json deferred_to_next_phase (S25b.T6, 2026-11-16)",
+        "picked_up_by": null
+      },
+      {
+        "id": "NP-03",
+        "theme": "Deferred from the backend refinement (BR-update-plan.json deferred_to_next_phase)",
+        "priority": "per owner decision",
+        "title": "Geo-IP country for staff recovery requests and sessions",
+        "work": [
+          "StaffRecoveryRequest.ip_country and Session.country stay null until an IP-to-country lookup is added; the console shows them only when present."
+        ],
+        "sources": [
+          "S16b-D3"
+        ],
+        "status": "not_started",
+        "decided": "owner, 2026-11-16: leave empty",
+        "resume_with": "Any phase that adds a geo-IP lookup.",
+        "estimate": "S-M",
+        "copied_from": "backend/BR-update-plan.json deferred_to_next_phase (S25b.T6, 2026-11-16)",
+        "picked_up_by": null
+      },
+      {
+        "id": "NP-04",
+        "theme": "Deferred from the backend refinement (BR-update-plan.json deferred_to_next_phase)",
+        "priority": "per owner decision",
+        "title": "More verification request types and the AI pre-check",
+        "work": [
+          "Certifications, location changes and wrong-location reports as verification request types; the AI pre-check of verifications (StaffVerificationItem.ai_precheck stays null)."
+        ],
+        "sources": [
+          "S19 notes_for_next (DI-30)"
+        ],
+        "status": "not_started",
+        "decided": "owner, 2026-11-16",
+        "resume_with": "The next verification work or the AI build.",
+        "estimate": "M-L",
+        "copied_from": "backend/BR-update-plan.json deferred_to_next_phase (S25b.T6, 2026-11-16)",
+        "picked_up_by": null
+      },
+      {
+        "id": "NP-05",
+        "theme": "Deferred from the backend refinement (BR-update-plan.json deferred_to_next_phase)",
+        "priority": "per owner decision",
+        "title": "Retention handlers and pilot retention policies",
+        "work": [
+          "Module handlers (and counters) for UserAccount (anonymize), McpAccessLog, AnalyticsEvent and InventoryImportBatch, which the daily run logs and skips today (dry run: no_handler); the retention policies to set for the pilot, including SupportTicket (e.g. solved tickets after 24 months)."
+        ],
+        "sources": [
+          "S21 notes_for_next, S24-D10"
+        ],
+        "status": "not_started",
+        "decided": "owner, 2026-11-16",
+        "resume_with": "Next phase; before real personal data piles up.",
+        "estimate": "M",
+        "copied_from": "backend/BR-update-plan.json deferred_to_next_phase (S25b.T6, 2026-11-16)",
+        "picked_up_by": null
+      },
+      {
+        "id": "NP-06",
+        "theme": "Deferred from the backend refinement (BR-update-plan.json deferred_to_next_phase)",
+        "priority": "per owner decision",
+        "title": "CDN purge of redacted images",
+        "work": [
+          "In full mode, after apply_redaction, purge the CDN entries of the file's display and thumbnail keys. Until then a redacted image may stay in the CDN cache until it expires (deploy.md note, S25b.T3). Lite mode has no CDN."
+        ],
+        "sources": [
+          "S22-D9, S22 notes_for_next"
+        ],
+        "status": "not_started",
+        "decided": "owner, 2026-11-16",
+        "resume_with": "Full-mode deployment with a CDN.",
+        "estimate": "S",
+        "copied_from": "backend/BR-update-plan.json deferred_to_next_phase (S25b.T6, 2026-11-16)",
+        "picked_up_by": null
+      },
+      {
+        "id": "NP-07",
+        "theme": "Deferred from the backend refinement (BR-update-plan.json deferred_to_next_phase)",
+        "priority": "per owner decision",
+        "title": "Docs/23 user and organization tabs still without an operation",
+        "work": [
+          "The full appointment record behind A-USR-02 Appointments; Recalculate on A-ORG-02 Capabilities & badges; the A-USR-02 tabs Reviews & content, Privacy requests, Cases & disputes and Audit (today the DSR, case and audit lists serve them)."
+        ],
+        "sources": [
+          "S23 notes_for_next"
+        ],
+        "status": "not_started",
+        "decided": "owner, 2026-11-16",
+        "resume_with": "Next admin console phase.",
+        "estimate": "M",
+        "copied_from": "backend/BR-update-plan.json deferred_to_next_phase (S25b.T6, 2026-11-16)",
+        "picked_up_by": null
+      },
+      {
+        "id": "NP-08",
+        "theme": "Deferred from the backend refinement (BR-update-plan.json deferred_to_next_phase)",
+        "priority": "per owner decision",
+        "title": "Support ticket attachments",
+        "work": [
+          "An upload purpose support_attachment (private, scanned) attached to a ticket message, as dispute evidence is; C-PROF-09 \"optional screenshot\"."
+        ],
+        "sources": [
+          "S24-D4, DQ-23"
+        ],
+        "status": "not_started",
+        "decided": "owner, 2026-11-16",
+        "resume_with": "Next phase.",
+        "estimate": "S-M",
+        "copied_from": "backend/BR-update-plan.json deferred_to_next_phase (S25b.T6, 2026-11-16)",
+        "picked_up_by": null
+      },
+      {
+        "id": "NP-09",
+        "theme": "Deferred from the backend refinement (BR-update-plan.json deferred_to_next_phase)",
+        "priority": "per owner decision",
+        "title": "Assisted onboarding routes",
+        "work": [
+          "The {adm}/assist/... routes the assisted wizard needs, the business web app pages (public-ui-dev-plan PU-P01), the owner-side assist history."
+        ],
+        "sources": [
+          "DI-08, backend NI-04 DI-05, PU-BR-01, PU-BR-02"
+        ],
+        "status": "not_started",
+        "decided": "earlier deferral (deferred_out_of_scope, DQ-20 items 1-2)",
+        "resume_with": "The public Web UI / business web app (WP20).",
+        "estimate": "L",
+        "copied_from": "backend/BR-update-plan.json deferred_to_next_phase (S25b.T6, 2026-11-16)",
+        "picked_up_by": null
+      },
+      {
+        "id": "NP-10",
+        "theme": "Deferred from the backend refinement (BR-update-plan.json deferred_to_next_phase)",
+        "priority": "per owner decision",
+        "title": "Featured placements",
+        "work": [
+          "Out of every plan until payments and placements are decided; then the console keeps the control half and the Web UI gets the selling half. featured.enabled stays off."
+        ],
+        "sources": [
+          "DQ-20 row 3"
+        ],
+        "status": "not_started",
+        "decided": "owner, 2026-11-15",
+        "resume_with": "After payments are decided.",
+        "estimate": "L",
+        "copied_from": "backend/BR-update-plan.json deferred_to_next_phase (S25b.T6, 2026-11-16)",
+        "picked_up_by": null
+      },
+      {
+        "id": "NP-11",
+        "theme": "Deferred from the backend refinement (BR-update-plan.json deferred_to_next_phase)",
+        "priority": "per owner decision",
+        "title": "Social sign-in",
+        "work": [
+          "The only contract operation answering 501."
+        ],
+        "sources": [
+          "auth.social_start (contract, deferred since S9)"
+        ],
+        "status": "not_started",
+        "decided": "earlier deferral (post-MVP)",
+        "resume_with": "Post-MVP.",
+        "estimate": "M",
+        "copied_from": "backend/BR-update-plan.json deferred_to_next_phase (S25b.T6, 2026-11-16)",
+        "picked_up_by": null
+      },
+      {
+        "id": "NP-12",
+        "theme": "Deferred from the backend refinement (BR-update-plan.json deferred_to_next_phase)",
+        "priority": "per owner decision",
+        "title": "Escalating a bug ticket to engineering",
+        "work": [
+          "Docs/23 A-SUP-01 \"escalate to engineering (bug)\" has no operation; bugs are answered and closed and tracked outside the console."
+        ],
+        "sources": [
+          "S24-D6 (deviation, not an owner decision)"
+        ],
+        "status": "not_started",
+        "decided": "S24 default, recorded here so it is not lost",
+        "resume_with": "When an engineering tracker is chosen.",
+        "estimate": "S",
+        "copied_from": "backend/BR-update-plan.json deferred_to_next_phase (S25b.T6, 2026-11-16)",
+        "picked_up_by": null
       }
     ]
   }

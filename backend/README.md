@@ -19,21 +19,24 @@ curl http://127.0.0.1:8080/v1/health # {"status":"ok"}
 
 The system Node may stay older (another project pins 20.10); the backend needs Node ≥ 24.7 (`crypto.argon2`) and is developed on the local Node 24 from `.node-version`.
 
-| Command                                                 | Does                                                                                      |
-| :------------------------------------------------------ | :---------------------------------------------------------------------------------------- |
-| `pnpm dev`                                              | Lite mode: db:setup, build, then every deployable in one process (shared lite adapters)   |
-| `pnpm start:api` / `:admin-api` / `:auth` / `:worker`   | One deployable from `dist/` (full mode; lite adapters are per process)                    |
-| `pnpm build` / `pnpm typecheck`                         | Compile to `dist/` / type-check everything (sources, tools, tests)                        |
-| `pnpm lint`                                             | ESLint + dependency-cruiser module-boundary rules (41 §4.2)                               |
-| `pnpm test` / `pnpm test:int` / `pnpm test:all`         | Vitest: unit (`*.test.ts`), integration (`*.int.test.ts`, needs the DB), both             |
-| `pnpm db:start` / `db:stop` / `db:status`               | Embedded PostgreSQL 16 on `127.0.0.1:54329`, data in `.data/pg`                           |
-| `pnpm db:setup` / `db:reset`                            | Install the baseline (`Docs/43.db_setup.sql`) and pending migrations / drop and reinstall |
-| `pnpm db:codegen [--verify]`                            | Regenerate Kysely table types in `libs/db/generated/` from the installed DB               |
-| `pnpm dev:flags list` / `set <key\|community>… on\|off` | Dev only (`CARPAL_ENV=dev`): feature flags of the dev environment (PWA DI-18)             |
-| `pnpm contract:generate` / `contract:check`             | Regenerate / verify `libs/contract/generated/` and the sweep suites from Docs/40          |
-| `pnpm contract:tests`                                   | Regenerate the contract sweep suites (`apps/testing/contract/generated/`)                 |
-| `pnpm contract:coverage [--strict]`                     | Operations served vs. the 411 of the contract; `--strict` fails on an unexplained 501     |
-| `pnpm openapi:generate` / `openapi:check`               | Write / verify `shared/api-contracts/openapi.yaml` (OpenAPI 3.1) against registry, router |
+| Command                                                 | Does                                                                                                |
+| :------------------------------------------------------ | :-------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                                              | Lite mode: db:setup, build, then every deployable in one process (shared lite adapters)             |
+| `pnpm start:api` / `:admin-api` / `:auth` / `:worker`   | One deployable from `dist/` (full mode; lite adapters are per process)                              |
+| `pnpm build` / `pnpm typecheck`                         | Compile to `dist/` / type-check everything (sources, tools, tests)                                  |
+| `pnpm lint`                                             | ESLint + dependency-cruiser module-boundary rules (41 §4.2)                                         |
+| `pnpm test` / `pnpm test:int` / `pnpm test:all`         | Vitest: unit (`*.test.ts`), integration (`*.int.test.ts`, needs the DB), both                       |
+| `pnpm db:start` / `db:stop` / `db:status`               | Embedded PostgreSQL 16 on `127.0.0.1:54329`, data in `.data/pg`                                     |
+| `pnpm db:setup` / `db:reset`                            | Install the baseline (`Docs/43.db_setup.sql`) and pending migrations / drop and reinstall           |
+| `pnpm db:codegen [--verify]`                            | Regenerate Kysely table types in `libs/db/generated/` from the installed DB                         |
+| `pnpm dev:flags list` / `set <key\|community>… on\|off` | Dev only (`CARPAL_ENV=dev`): feature flags of the dev environment (PWA DI-18)                       |
+| `pnpm dev:staff list` / `create …` / `prune …`          | Dev only (list: anywhere): staff accounts; `prune` retires the test accounts (R-15)                 |
+| `pnpm int:env init` / `backend` / `clients` / `env`     | One strict backend for the console and PWA integration tests (R-11, see below)                      |
+| `pnpm check:clients [--no-generate]`                    | After a Docs/40 or shared/ change: regenerate the PWA and console contracts, run both checks (R-04) |
+| `pnpm contract:generate` / `contract:check`             | Regenerate / verify `libs/contract/generated/` and the sweep suites from Docs/40                    |
+| `pnpm contract:tests`                                   | Regenerate the contract sweep suites (`apps/testing/contract/generated/`)                           |
+| `pnpm contract:coverage [--strict]`                     | Operations served vs. the 490 of the contract; `--strict` fails on an unexplained 501               |
+| `pnpm openapi:generate` / `openapi:check`               | Write / verify `shared/api-contracts/openapi.yaml` (OpenAPI 3.1) against registry, router           |
 
 ## Local infrastructure ("lite" and "full" mode)
 
@@ -101,7 +104,22 @@ Docs/40 is the single source. `pnpm contract:generate` turns it into the registr
 - **Router**: only registry routes exist on each host (the request pipeline above).
 - **Contract sweep** (S9b, 40 Appendix C): `pnpm contract:tests` generates one suite per module (`apps/testing/contract/generated/<module>.contract.int.test.ts`, every HTTP route). For each route a hand-written **resolver** in `apps/testing/contract/resolvers/<module>.ts` builds real fixtures and describes the owner's call; the runner (`apps/testing/contract/runner.ts`) derives the checks from the sec line: closed schemas, the success response, admin-plane mechanics (purpose, reason, four-eyes), same-organization BFLA, fleet drivers without an assignment (SEC-AZ-7), BOLA (refusals other than 404 must name their code, carry no data and answer a non-existent record alike), the AI kill switch and SEC-OUT-1 projections. **Every new operation needs a resolver** — its generated suite fails without one — and a changed operation needs `pnpm contract:generate && pnpm contract:tests`. `pnpm vitest run apps/testing/contract --reporter=verbose` prints one stats line per module (owner calls, negatives, BFLA, fleet-driver, BOLA and existence-oracle checks).
 - **OpenAPI**: `pnpm openapi:generate` writes `shared/api-contracts/openapi.yaml` (OpenAPI 3.1, JSON Schema 2020-12) from the registry and schemas plus the server-defined `Json<…>` schemas (AI payloads from `modules/ai-mcp/domain/payloads.ts`, analytics event properties from `modules/analytics/domain/events.ts`). Never edit it; `pnpm openapi:check` fails when it is stale, when a schema does not compile or a reference does not resolve, or when it and the router of any host disagree. Each operation carries `x-carpal-op-id`, `x-carpal-host`, `x-carpal-sec` (the raw sec line), `x-carpal-security` and `x-carpal-status` (`implemented`, `deferred-post-mvp`, `storage-listener`).
-- **Coverage**: `pnpm contract:coverage --strict` — 410 of 411 operations are served (media.upload_put by the storage listener); `auth.social_start` answers 501 by decision (PM-01). A deferred operation is listed with its reason in `tools/contract/coverage.ts` (`DEFERRED_OPERATIONS`), never left silent.
+- **Coverage**: `pnpm contract:coverage --strict` — 489 of the 490 operations of contract 1.4.0 (frozen at backend S25b) are served (media.upload_put by the storage listener); `auth.social_start` answers 501 by decision (PM-01, NP-11). A deferred operation is listed with its reason in `tools/contract/coverage.ts` (`DEFERRED_OPERATIONS`), never left silent.
+
+## Integration tests of the clients (strict, R-11)
+
+The admin console's and the PWA's `pnpm test:int` run against a live backend. `pnpm int:env` gives them one strict backend without hand-set variables:
+
+```bash
+pnpm int:env init        # once: backend/.env.test and backend/.env.test-clients (git-ignored), with new client keys
+pnpm int:env backend     # pnpm dev with strict auth, the three clients' public keys, the dev redirect URIs
+                         # (PWA :3000/:3100, console :3200/:3300), WebAuthn origins and CARPAL_RATE_LIMIT_SCALE=100
+pnpm int:env clients     # second shell: the console's test:int with its private key, then dev:staff prune
+```
+
+`clients console pwa --lite` (with `backend --lite`) runs both suites with strict auth off: the PWA's two integration suites still build a lite BFF and call `/oauth/token` directly without a client assertion, so they are lite-only until the PWA refinement round makes them strict-aware (`pwa/BR-update-plan.json`). The PWA's strict acceptance is its E2E run (`pwa/README.md` "Strict mode"); `eval "$(pnpm -s int:env env)"` (PowerShell: `pnpm -s int:env env --powershell | Invoke-Expression`) puts the same keys in the shell for it and for the console's E2E. The variables of `.env.test` win over `backend/.env`.
+
+The console's tests create one staff account per run (`bff-int-…`, `e2e-…@staff.carpals.test`). `clients` ends with `pnpm dev:staff prune --domain staff.carpals.test --prefix e2e-,bff-int-` (`--keep` skips it); run it by hand after E2E runs. It refuses outside `CARPAL_ENV=dev`, removes the accounts' platform roles, disables their keys and passwords, expires their pending four-eyes requests and marks them deleted (audited as `staff.dev_pruned`); nothing is deleted physically.
 
 ## CI
 

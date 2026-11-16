@@ -2,7 +2,7 @@
   "meta": {
     "title": "CarPal backend — risk control plan",
     "created": "2026-10-24",
-    "last_updated": "2026-10-24",
+    "last_updated": "2026-11-16",
     "owner": "Backend lead (security owner until a dedicated role exists)",
     "purpose": "Register of security and privacy risks that are known but not (fully) closed by the scratch build: what can go wrong, which controls exist, what is still missing, and the plan and owner for closing each one. Started after S9b at the user's request (2026-10-24) with the staff access-purpose issue; risks found while closing S9c are added with their source.",
     "how_to_use": [
@@ -151,6 +151,10 @@
         {
           "date": "2026-11-13",
           "note": "Treated in backend S14 (BR-update-plan.json BR-09, NI-02): A1-A4 done, A5 superseded; status mitigated."
+        },
+        {
+          "date": "2026-11-16",
+          "note": "Reviewed at the backend refinement closure (S25b): status unchanged."
         }
       ],
       "residual_current": {
@@ -191,8 +195,18 @@
       "gaps": [
         "Media attached to other fleet records (appointments, stock inquiries) only reaches a driver through their own uploads; no driver-specific rule beyond vehicles and issues exists yet."
       ],
-      "inherent": { "likelihood": 3, "impact": 3, "rating": 9, "band": "medium" },
-      "residual_after_treatment": { "likelihood": 1, "impact": 3, "rating": 3, "band": "low" },
+      "inherent": {
+        "likelihood": 3,
+        "impact": 3,
+        "rating": 9,
+        "band": "medium"
+      },
+      "residual_after_treatment": {
+        "likelihood": 1,
+        "impact": 3,
+        "rating": 3,
+        "band": "low"
+      },
       "treatment": {
         "strategy": "reduce",
         "actions": [
@@ -208,7 +222,16 @@
       },
       "decision_needed": null,
       "review_date": "With RCP-03",
-      "history": [{ "date": "2026-10-24", "note": "Found and fixed in S9c (DI-71)." }]
+      "history": [
+        {
+          "date": "2026-10-24",
+          "note": "Found and fixed in S9c (DI-71)."
+        },
+        {
+          "date": "2026-11-16",
+          "note": "Reviewed at the backend refinement closure (S25b): status unchanged."
+        }
+      ]
     },
     {
       "id": "RCP-03",
@@ -228,7 +251,12 @@
         "Operators and in-house mechanics would have to be given fleet_driver (one vehicle at a time) or an organization-wide role (over-sharing).",
         "One active assignment per vehicle: shift work or a mechanic linked to several vehicles is not representable."
       ],
-      "inherent": { "likelihood": 3, "impact": 3, "rating": 9, "band": "medium" },
+      "inherent": {
+        "likelihood": 3,
+        "impact": 3,
+        "rating": 9,
+        "band": "medium"
+      },
       "residual_after_treatment": null,
       "treatment": {
         "strategy": "decide, then reduce",
@@ -254,7 +282,14 @@
       "decision_needed": "OQ-18 in dev_plan.json",
       "review_date": "Next iteration planning",
       "history": [
-        { "date": "2026-10-24", "note": "Opened in S9c from the user's statement; implementation waits for the role-model decision." }
+        {
+          "date": "2026-10-24",
+          "note": "Opened in S9c from the user's statement; implementation waits for the role-model decision."
+        },
+        {
+          "date": "2026-11-16",
+          "note": "Reviewed at the backend refinement closure (S25b): status unchanged."
+        }
       ]
     },
     {
@@ -272,8 +307,18 @@
         "Rate limits on link operations; single-use links are consumed by the recipient."
       ],
       "gaps": ["A person who obtains someone else's link (forwarded mail) learns that it is still valid."],
-      "inherent": { "likelihood": 2, "impact": 1, "rating": 2, "band": "low" },
-      "residual_after_treatment": { "likelihood": 2, "impact": 1, "rating": 2, "band": "low" },
+      "inherent": {
+        "likelihood": 2,
+        "impact": 1,
+        "rating": 2,
+        "band": "low"
+      },
+      "residual_after_treatment": {
+        "likelihood": 2,
+        "impact": 1,
+        "rating": 2,
+        "band": "low"
+      },
       "treatment": {
         "strategy": "accept",
         "actions": [],
@@ -282,7 +327,73 @@
       "accepted_by": "Pending confirmation by the product owner (proposed in S9c)",
       "decision_needed": null,
       "review_date": "When link flows change",
-      "history": [{ "date": "2026-10-24", "note": "Proposed for acceptance in S9c after the integrity check." }]
+      "history": [
+        {
+          "date": "2026-10-24",
+          "note": "Proposed for acceptance in S9c after the integrity check."
+        },
+        {
+          "date": "2026-11-16",
+          "note": "Reviewed at the backend refinement closure (S25b): status unchanged."
+        }
+      ]
+    },
+    {
+      "id": "RCP-05",
+      "title": "A redacted image may stay in a CDN cache after apply_redaction (full mode)",
+      "category": "privacy (media)",
+      "status": "open",
+      "owner": "Backend lead; media module owner",
+      "source": "Backend S22-D9 (apply_redaction on images), deferred by the owner on 2026-11-16 as NP-06; registered at the refinement closure (S25b).",
+      "rules": ["40 SEC-UP", "52 MediaAsset (redaction)", "Docs/23 A-CON-02 Apply redaction"],
+      "description": "admin.case_action apply_redaction replaces a media file's display copy and thumbnail. In lite mode they are served by the storage listener with signed, no-store links, so the old copy disappears at once. Once media is served through a CDN (full mode), the CDN may keep serving the old display and thumbnail copies until its cache entry expires, because the backend does not purge the CDN.",
+      "scenario": "A moderator redacts a licence plate in a public showcase photo. A visitor who loaded the photo shortly before (or anyone with the cached URL) still gets the unredacted copy from the CDN edge until the entry expires.",
+      "current_controls": [
+        "Lite mode (the only deployable mode today) has no CDN; signed links are private, no-store.",
+        "deploy.md Known limitations 9: keep the CDN cache time of media short, or purge the display and thumbnail keys by hand after a redaction."
+      ],
+      "gaps": ["No automatic CDN purge after apply_redaction (NP-06)."],
+      "inherent": {
+        "likelihood": 2,
+        "impact": 3,
+        "rating": 6,
+        "band": "medium"
+      },
+      "residual_after_treatment": {
+        "likelihood": 1,
+        "impact": 3,
+        "rating": 3,
+        "band": "low"
+      },
+      "treatment": {
+        "strategy": "reduce",
+        "actions": [
+          {
+            "id": "A1",
+            "action": "Document the limit and the manual purge in deploy.md.",
+            "owner": "Backend lead",
+            "target": "S25b",
+            "status": "done",
+            "acceptance": "deploy.md Known limitations 9."
+          },
+          {
+            "id": "A2",
+            "action": "Purge the CDN entries of the display and thumbnail keys after apply_redaction (CDN port in full mode).",
+            "owner": "Backend lead",
+            "target": "next phase (NP-06), before media is served through a CDN",
+            "status": "not_started",
+            "acceptance": "Integration test: apply_redaction calls the CDN purge port with both keys; the full-mode deploy checks the purge credentials."
+          }
+        ]
+      },
+      "decision_needed": null,
+      "review_date": "Before the first full-mode deployment with a CDN",
+      "history": [
+        {
+          "date": "2026-11-16",
+          "note": "Registered at the backend refinement closure (S25b); CDN purge deferred by the owner (NP-06)."
+        }
+      ]
     }
   ]
 }

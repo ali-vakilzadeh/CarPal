@@ -316,7 +316,8 @@ const likeLiteral = (s: string): string => s.replace(/[\\%_]/g, (c) => `\\${c}`)
  * e2e-adm-…@staff.carpals.test), so `pnpm dev:staff list` and the console's staff directory stay readable. Nothing is
  * deleted physically, because audit entries, four-eyes requests and moderation rows still name these accounts: their
  * platform roles are removed, their keys and passwords disabled, their pending four-eyes requests expired and the
- * account marked deleted (the address can be used again). Audited as actor system, one entry per account.
+ * account marked deleted (its sign-in identifier stays taken; test addresses are unique per run). Audited as actor
+ * system, one entry per account.
  */
 export async function pruneStaff(
   deps: Pick<StaffDeps, 'tx' | 'env'>,

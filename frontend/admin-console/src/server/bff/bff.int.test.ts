@@ -158,7 +158,11 @@ async function signIn(): Promise<RecordingBrowser> {
     attestation: key.register((await options.json()) as Record<string, unknown>),
   });
   expect(enrolled.status, await enrolled.clone().text()).toBe(200);
-  expect(await enrolled.json()).toEqual({ next: 'mfa', mfa_methods: ['webauthn'] });
+  // Backend S16a (contract 1.4.0): the first enrolment shows the sheet of 10 recovery codes once.
+  const enrolledBody = (await enrolled.json()) as { recovery_codes?: string[] };
+  expect(enrolledBody).toEqual({ next: 'mfa', mfa_methods: ['webauthn'], recovery_codes: expect.any(Array) });
+  expect(enrolledBody.recovery_codes).toHaveLength(10);
+  for (const code of enrolledBody.recovery_codes!) expect(code).toMatch(/^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){4}$/);
   const o = (await (await post('/id/v1/auth/webauthn/options', { purpose: 'mfa' })).json()) as Record<string, unknown>;
   const verified = await post('/id/v1/auth/mfa/verify', { method: 'webauthn', assertion: key.assert(o) });
   expect(verified.status, await verified.clone().text()).toBe(200);

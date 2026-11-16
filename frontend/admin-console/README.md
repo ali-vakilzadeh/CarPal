@@ -295,6 +295,12 @@ run `pnpm test:int` with `CARPAL_STRICT_AUTH=1` and `CARPAL_ADMIN_CLIENT_PRIVATE
 `admin-keys.json`. The test creates its account with backend `pnpm dev:staff create` (dev only), or uses
 `CARPAL_INT_STAFF_EMAIL` (password `admin-console-int-password`, no passkey yet).
 
+Without hand-set variables (backend S25b, R-11): in `backend/`, `pnpm int:env init` once, `pnpm int:env backend`, then
+`pnpm int:env clients` in a second shell runs this `pnpm test:int` in strict mode with the console's key and ends with
+`pnpm dev:staff prune --domain staff.carpals.test --prefix e2e-,bff-int-`, which retires the test staff accounts
+(backend README "Integration tests of the clients"). For the E2E runs, `eval "$(pnpm -C ../../backend -s int:env env)"`
+puts the same keys in the shell.
+
 ## End-to-end tests
 
 `pnpm e2e` builds and runs Playwright on :3300. `tests/e2e/smoke.spec.ts` and `bff.spec.ts` need no backend.

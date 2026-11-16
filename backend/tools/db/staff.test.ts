@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertDev, DEV_STAFF, MINIMUM, parseSpec, parseStaffArgs, shortfall } from './staff.js';
+import { assertDev, DEV_STAFF, MINIMUM, parseSpec, parseStaffArgs, shortfall, TEST_STAFF_PREFIXES } from './staff.js';
 
 describe('staff tool (backend S12, admin console OQ-10 / BR-05)', () => {
   it('parses the commands', () => {
@@ -13,6 +13,18 @@ describe('staff tool (backend S12, admin console OQ-10 / BR-05)', () => {
       spec: { email: 'a@b.test', name: 'Ann', roles: ['ADM', 'CRV'] },
     });
     expect(parseStaffArgs(['list'])).toEqual({ kind: 'list' });
+    // R-15 (backend S25b): dev:staff prune of the console's test accounts.
+    expect(parseStaffArgs(['prune', '--domain', 'Staff.Carpals.Test', '--prefix', 'e2e-, bff-int-,e2e-'])).toEqual({
+      kind: 'prune',
+      domain: 'staff.carpals.test',
+      prefixes: ['e2e-', 'bff-int-'],
+    });
+    expect(TEST_STAFF_PREFIXES).toEqual(['e2e-', 'bff-int-']);
+    expect(() => parseStaffArgs(['prune', '--domain', 'staff.carpals.test'])).toThrow(/--prefix/);
+    expect(() => parseStaffArgs(['prune', '--domain', 'staff.carpals.test', '--prefix', '%'])).toThrow(/--prefix/);
+    expect(() => parseStaffArgs(['prune', '--domain', 'staff.carpals.test', '--prefix', 'e'])).toThrow(/--prefix/);
+    expect(() => parseStaffArgs(['prune', '--domain', 'localhost', '--prefix', 'e2e-'])).toThrow(/--domain/);
+    expect(() => parseStaffArgs(['prune', '--prefix', 'e2e-'])).toThrow(/--domain/);
     expect(parseStaffArgs(['break-glass', '--email', ' Adm1@Staff.Test ', '--reason', 'lost key, one other ADM'])).toEqual({
       kind: 'break-glass',
       email: 'adm1@staff.test',
