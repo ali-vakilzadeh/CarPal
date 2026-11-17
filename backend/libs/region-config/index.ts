@@ -40,6 +40,10 @@ export interface RegionConfig {
   map: {
     style_url: string;
     tiles_url: string;
+    /** S26b: who serves the basemap (Neshan since DQ-29). */
+    provider: 'neshan' | 'self_hosted';
+    /** S26b: every origin the basemap loads from (style, tiles, sprites, glyphs); the clients' CSP lists them. */
+    origins: string[];
     attribution: string;
     default_center: { lat: number; lng: number };
     default_zoom: number;

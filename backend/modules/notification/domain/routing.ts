@@ -47,6 +47,8 @@ export const ROUTED_EVENTS = [
   'inquiry.sent',
   'vendor.inventory.imported',
   'vehicle.reminder.due',
+  // S26b: the monthly odometer prompt (personal vehicles; voluntary)
+  'vehicle.odometer_prompt.due',
   'fleet.approval.requested',
   'community.post.published',
   'media.scan.completed',
@@ -381,6 +383,25 @@ export function route(e: RoutedEvent): Intent[] {
           reference: { type: 'maintenance_reminder', id: e.aggregateId },
           organization_context_id: fleet ? owner : null,
           channels: ALL,
+        },
+      ];
+    }
+    case 'vehicle.odometer_prompt.due': {
+      // S26b (DQ-24): in app and push; email off (not in the channel list); the person can switch it off with the
+      // service_reminders category; quiet hours apply (normal priority). The vehicle is the reference (C-GARAGE-08).
+      const owner = str(p.owner_id);
+      if (!owner) return [];
+      return [
+        {
+          audience: { kind: 'users', ids: [owner] },
+          event_type: 'odometer_prompt',
+          category: 'service_reminders',
+          priority: 'normal',
+          template_key: 'vehicle.odometer_prompt',
+          params: {},
+          reference: { type: 'vehicle', id: e.aggregateId },
+          organization_context_id: null,
+          channels: ['in_app', 'push'],
         },
       ];
     }

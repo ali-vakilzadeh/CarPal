@@ -7,7 +7,7 @@ const PROD = {
   CARPAL_ADMIN_ORIGIN: 'https://admin.carpals.ir',
   CARPAL_STRICT_AUTH: '1',
   CARPAL_ADMIN_CLIENT_PRIVATE_JWKS: KEY,
-  CARPAL_STORAGE_URL: 'https://media.carpal-usercontent.app',
+  CARPAL_STORAGE_URL: 'https://media.carpals.ir',
   CARPAL_ADMIN_PUBLIC_WEB_URL: 'https://pwa.carpals.ir',
 };
 

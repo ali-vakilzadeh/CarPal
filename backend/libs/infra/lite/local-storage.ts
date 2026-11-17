@@ -1,6 +1,6 @@
 // Lite ObjectStorage: files under backend/.data/objects with a JSON sidecar,
 // and HMAC-signed URLs served by a tiny local listener (CARPAL_STORAGE_PORT),
-// standing in for media.carpal-usercontent.app (40 §1.1, SEC-UP-1/4).
+// standing in for media.carpals.ir (40 §1.1, SEC-UP-1/4).
 // Signed PUT URLs fix Content-Type, Content-Length and SHA-256; signed GET
 // URLs expire and carry the Content-Disposition. Objects put with
 // { encrypt: true } are stored AES-256-GCM encrypted (iv | tag | ciphertext)

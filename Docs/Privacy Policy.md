@@ -25,7 +25,7 @@ It applies to everyone who uses CarPal: car owners and enthusiasts, fleet staff 
 | We do not sell your personal information | We do not sell or rent it, and we do not share it for cross-context behavioral advertising. |
 | Businesses see only what a service needs | A provider sees your vehicle and issue details when you request an appointment. A vendor sees vehicle context only for a part inquiry. |
 | AI uses the minimum context | AI features receive only what a task needs. Every AI action is logged. AI never publishes anything on your behalf. |
-| Your position stays private by default | Precise location is used only with your consent. Map tiles come from our own servers, not a third party. |
+| Your position stays private by default | Precise location is used only with your consent. The map is drawn from Neshan, a map provider in Iran; Neshan sees your IP address and the part of the map you view, not your account. |
 | Consent is recorded and can be withdrawn | Sharing service history, publishing photos, AI personalization and review emails each need your consent, and you can change your mind. |
 | Fleet data stays inside the fleet | Each organization's data is isolated from every other organization's. |
 | Paid placement never buys trust | Rankings and badges come from evidence, not payment. |
@@ -149,7 +149,7 @@ Your VIN, license plate, contact details, documents and service history are neve
 ## 7. Location and maps
 
 - **Precise location needs your permission.** We use it to find nearby businesses, sort by distance and center the map. It goes only to our search service. We do not keep a history of your movements. Search logs store only a rounded location of about \[1 km\]. Without permission, the map opens on a city you choose.
-- **Map tiles and address search run on our own servers.** They are built from OpenStreetMap data (© OpenStreetMap contributors). The part of the map you are viewing is not sent to a third-party map company.
+- **Map tiles and address search come from Neshan (www.neshan.org).** Your browser loads the map from Neshan, so Neshan receives your IP address and the area of the map you are viewing; when a business searches or checks an address, our servers send that address text or map point to Neshan, never an account or vehicle. Map data © Neshan, © OpenStreetMap contributors.
 - **Directions open another app.** When you tap Directions, we open the map app you choose, such as Google Maps, Apple Maps, Waze or a regional app. We send it only the destination, never your identity or your vehicle. That app's own privacy policy then applies. Your choice of app is remembered on your device.
 - **Distances are approximate.** CarPal shows straight-line distances. The external app shows the real route.
 - **No vehicle or driver tracking.** CarPal does not track the location of vehicles or drivers. A driver can choose to add a location when reporting an issue, so the fleet can find help nearby.

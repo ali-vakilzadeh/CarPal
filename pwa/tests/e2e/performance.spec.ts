@@ -16,7 +16,7 @@ import { decideCookies } from './support';
 test.describe.configure({ mode: 'serial' });
 test.use({ ...devices['Galaxy A55'] });
 
-const STYLE_HOST = 'https://cdn.carpal.app';
+const STYLE_HOST = 'https://cdn.carpals.ir';
 const FONT = { fa: '/ds/fonts/Vazirmatn-Arabic-Variable.woff2', en: '/ds/fonts/AtkinsonHyperlegibleNext-Latin-Variable.woff2' };
 
 let up = false;

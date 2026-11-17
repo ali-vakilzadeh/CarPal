@@ -39,7 +39,8 @@ export function fallbackConfig(locale: Locale, file: RegionFile = region): Clien
     exchange_rates: [],
     calendar_default: file.calendar_default as RegionConfig['calendar_default'],
     distance_unit_default: file.distance_unit_default as RegionConfig['distance_unit_default'],
-    map: file.map,
+    // Contract 1.5.0 (backend S26b, DQ-29): the pilot file names Neshan; the region file is typed as a plain string.
+    map: { ...file.map, provider: file.map.provider as RegionConfig['map']['provider'] },
     cities: file.cities.map((c) => ({ city_key: c.city_key, label: label(c.label, locale), center: c.center })),
     navigation_apps: file.navigation_apps.map((a) => ({
       key: a.key,

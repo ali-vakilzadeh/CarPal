@@ -475,6 +475,7 @@ export const OPERATION_IDS = [
   'vehicles.list',
   'vehicles.mileage_add',
   'vehicles.mileage_list',
+  'vehicles.odometer_prompt_skip',
   'vehicles.status_change',
   'vehicles.status_history',
   'vehicles.transfer_cancel',

@@ -2059,6 +2059,11 @@ BEGIN
    WHERE v.id = NEW.vehicle_id
      AND NOT EXISTS (SELECT 1 FROM vehicle.vehicle_mileage_logs m
                       WHERE m.vehicle_id = NEW.vehicle_id AND m.recorded_at > NEW.recorded_at AND m.deleted_at IS NULL);
+  -- S26b: a reading that is the newest by recorded_at answers an open monthly odometer prompt.
+  UPDATE vehicle.odometer_prompt_state s SET prompted_at = NULL, updated_at = now()
+   WHERE s.vehicle_id = NEW.vehicle_id AND s.prompted_at IS NOT NULL
+     AND NOT EXISTS (SELECT 1 FROM vehicle.vehicle_mileage_logs m
+                      WHERE m.vehicle_id = NEW.vehicle_id AND m.recorded_at > NEW.recorded_at AND m.deleted_at IS NULL);
   RETURN NULL;
 END
 $$;
@@ -2195,6 +2200,17 @@ CREATE INDEX maintenance_reminders_vehicle_idx ON vehicle.maintenance_reminders 
 CREATE INDEX maintenance_reminders_due_idx ON vehicle.maintenance_reminders (due_by_date)
   WHERE status IN ('upcoming','due','overdue');
 COMMENT ON TABLE vehicle.maintenance_reminders IS '52 MaintenanceReminder';
+
+-- Monthly odometer prompt (backend S26b, DQ-24): when the owner was last asked and when they last skipped. No reading is
+-- stored here; the cycle starts at the newest reading, the skip or the vehicle's creation, whichever is latest.
+CREATE TABLE vehicle.odometer_prompt_state (
+  vehicle_id  uuid PRIMARY KEY REFERENCES vehicle.vehicles (id),
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  prompted_at timestamptz,
+  skipped_at  timestamptz
+);
+COMMENT ON TABLE vehicle.odometer_prompt_state IS 'S26b monthly odometer prompt: last prompt and last skip per vehicle';
 
 -- Minimal vehicle card for providers and vendors in an appointment or inquiry:
 -- taxonomy, year and nickname only. Never VIN, plate, notes or owner.
@@ -3988,7 +4004,8 @@ CREATE TABLE notification.notifications (
     'driver_issue_reported','fleet_approval_needed','repair_completed','vehicle_due_for_service','monthly_report_ready',
     'moderation_update','system_announcement','marketing','review_awaiting_approval','support_update',   -- support: S24
     'four_eyes_outcome','staff_security_alert','ai_kill_switch_changed',   -- staff notices (backend S17)
-    'exchange_rate_reminder')),                                            -- the morning rate reminder (backend S26a)
+    'exchange_rate_reminder',                                              -- the morning rate reminder (backend S26a)
+    'odometer_prompt')),                                                   -- the monthly odometer prompt (backend S26b)
   category                core.notification_category NOT NULL,
   priority                text NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal','critical')),
   template_key            text NOT NULL CHECK (template_key ~ '^[a-z0-9_.]{1,120}$'),
@@ -4107,6 +4124,8 @@ CREATE TABLE notification.notification_rules (
     AND 1 <= ALL (review_approval_reminder_days) AND 6 >= ALL (review_approval_reminder_days)),
   maintenance_due_window_days     integer NOT NULL DEFAULT 14 CHECK (maintenance_due_window_days BETWEEN 1 AND 90),
   mileage_due_window_km           integer NOT NULL DEFAULT 500 CHECK (mileage_due_window_km BETWEEN 50 AND 5000),
+  -- Backend S26b (DQ-24): days without a reading before the owner is asked for one; 0 switches the prompt off.
+  odometer_prompt_days            integer NOT NULL DEFAULT 30 CHECK (odometer_prompt_days = 0 OR odometer_prompt_days BETWEEN 14 AND 90),
   CHECK ((default_quiet_hours_start IS NULL) = (default_quiet_hours_end IS NULL)),
   CHECK (default_quiet_hours_start IS DISTINCT FROM default_quiet_hours_end OR default_quiet_hours_start IS NULL)
 );
@@ -4836,7 +4855,7 @@ DECLARE
   t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY['vehicle_mileage_logs','vehicle_documents','vehicle_issues','vehicle_service_records',
-                           'maintenance_reminders','vehicle_status_history']
+                           'maintenance_reminders','vehicle_status_history','odometer_prompt_state']
   LOOP
     EXECUTE format($p$CREATE POLICY via_vehicle ON vehicle.%I FOR ALL
       USING (EXISTS (SELECT 1 FROM vehicle.vehicles v WHERE v.id = vehicle_id))

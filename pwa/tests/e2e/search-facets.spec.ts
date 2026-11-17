@@ -24,7 +24,7 @@ import { decideCookies, expectNoAxeViolations, gotoReady } from './support';
 
 test.describe.configure({ mode: 'serial' });
 
-const STYLE_HOST = 'https://cdn.carpal.app';
+const STYLE_HOST = 'https://cdn.carpals.ir';
 /** The backend's cluster cell at a zoom (clustering.ts cellDegrees); at 11 the three shops share one cell. */
 const cellDegrees = (zoom: number) => (360 / 2 ** zoom) * (60 / 256);
 const CELL_11 = cellDegrees(11);

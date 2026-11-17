@@ -21,6 +21,8 @@ export interface NotificationRulesValues {
   maintenanceDueWindowDays: number;
   /** S25a: a maintenance reminder becomes due this many km before its due mileage (50-5000). */
   mileageDueWindowKm: number;
+  /** S26b: days without a reading before the owner is asked for one (0: no prompt, otherwise 14-90). */
+  odometerPromptDays: number;
 }
 
 /** The behaviour before S17 (and the seed): no delay, reminders on days 2 and 5, no platform quiet hours; S25a: approval
@@ -34,6 +36,7 @@ export const DEFAULT_NOTIFICATION_RULES: NotificationRulesValues = {
   approvalReminderDays: [3, 6],
   maintenanceDueWindowDays: 14,
   mileageDueWindowKm: 500,
+  odometerPromptDays: 30,
 };
 
 export abstract class NotificationRulesRead {

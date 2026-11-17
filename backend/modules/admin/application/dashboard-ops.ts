@@ -3,6 +3,7 @@
 // the SystemHealthSignals and WorkQueues registries, in the caller's read-only staff transaction.
 import { Injectable } from '@nestjs/common';
 import type { CarpalConfig } from '#libs/config/index.js';
+import { Geocoder } from '#libs/geo/index.js';
 import type { Infra } from '#libs/infra/index.js';
 import { InjectConfig, InjectInfra } from '#libs/runtime/index.js';
 import { Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
@@ -21,6 +22,7 @@ export class SystemHealthHandler implements OperationHandler {
     private readonly signals: SystemHealthSignals,
     @InjectInfra() private readonly infra: Infra,
     @InjectConfig() private readonly config: CarpalConfig,
+    private readonly geocoder: Geocoder,
   ) {}
 
   async handle(ctx: OperationContext): Promise<OperationResult> {
@@ -58,6 +60,8 @@ export class SystemHealthHandler implements OperationHandler {
         sms_provider: this.infra.smsGateway.provider,
         sms_simulated: this.infra.smsGateway.simulated,
         mail_transport: this.config.mail.transport,
+        // 1.5.0 (S26b, DQ-29): the geocoder and the provider requests of today and of 30 days (quota and cost).
+        geocoder: await this.geocoder.usage(),
       },
     };
   }

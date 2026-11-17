@@ -56,7 +56,7 @@ const EnvSchema = z
     CARPAL_MEDIA_BASE_URL: z.url().optional(),
     /** Base of the link-token URLs in emails (<base>/<type>#<token>, SEC-LT-2): the consumer PWA's /l pages. */
     CARPAL_LINK_BASE_URL: z.url().default('https://pwa.carpals.ir/l'),
-    CARPAL_I18N_BASE_URL: z.url().default('https://cdn.carpal.app/i18n'),
+    CARPAL_I18N_BASE_URL: z.url().default('https://cdn.carpals.ir/i18n'),
     CARPAL_I18N_VERSION: z.string().min(1).max(40).default('dev'),
     /** Minimum supported app version per client_id (40 §1.3), e.g. {"cp-mobile":"1.2.0"}. */
     CARPAL_CLIENT_MIN_VERSIONS: jsonRecord(z.string().regex(/^\d+\.\d+\.\d+$/)).default({}),
@@ -99,6 +99,10 @@ const EnvSchema = z
     /** Dev only: accept a self-signed SMTP certificate (a local test server). Refused outside dev. */
     CARPAL_SMTP_TLS_INSECURE: bool.default(false),
 
+    // --- Geocoder (backend S26b, DQ-29): fixture (dev and tests) | neshan | unconfigured (answers 503). Unset: fixture in dev (lite), otherwise unconfigured.
+    CARPAL_GEOCODER: z.enum(['fixture', 'neshan', 'unconfigured']).optional(),
+    /** Neshan service key (server side only, never sent to a client). */
+    CARPAL_NESHAN_SERVICE_KEY: z.string().min(8).max(200).optional(),
     // --- SMS (backend S26a, DQ-28): the SmsGateway port and its provider.
     /** mock: behaves like a provider without sending (outbox-sms.jsonl); file: the old sink; vendors are added as adapters. */
     CARPAL_SMS_PROVIDER: z.enum(['mock', 'file']).default('mock'),
@@ -217,6 +221,10 @@ const EnvSchema = z
     }
     if (env.CARPAL_ENV !== 'dev' && env.CARPAL_SMTP_TLS_INSECURE)
       ctx.addIssue({ code: 'custom', path: ['CARPAL_SMTP_TLS_INSECURE'], message: 'is dev only: the certificate must verify' });
+    if (env.CARPAL_GEOCODER === 'neshan' && !env.CARPAL_NESHAN_SERVICE_KEY)
+      ctx.addIssue({ code: 'custom', path: ['CARPAL_NESHAN_SERVICE_KEY'], message: 'is required when CARPAL_GEOCODER=neshan' });
+    if (env.CARPAL_ENV !== 'dev' && env.CARPAL_GEOCODER === 'fixture')
+      ctx.addIssue({ code: 'custom', path: ['CARPAL_GEOCODER'], message: 'fixture is for dev and tests only' });
     const transport = env.CARPAL_MAIL_TRANSPORT ?? (env.CARPAL_INFRA === 'full' ? 'smtp' : 'file');
     if (transport === 'smtp') {
       const problem = smtpUrlProblem(env.CARPAL_SMTP_URL, env.CARPAL_ENV);
@@ -327,6 +335,7 @@ export interface CarpalConfig {
     /** Dev only (a local test server with a self-signed certificate). */
     tlsInsecure: boolean;
   };
+  geocoder: { provider: 'fixture' | 'neshan' | 'unconfigured'; neshanServiceKey: string | null };
   sms: {
     provider: 'mock' | 'file';
     apiKey: string | null;
@@ -458,6 +467,11 @@ export function loadConfig(overrides: Record<string, string | undefined> = {}): 
       replyTo: e.CARPAL_MAIL_REPLY_TO ?? null,
       maxPerHour: e.CARPAL_MAIL_MAX_PER_HOUR,
       tlsInsecure: e.CARPAL_SMTP_TLS_INSECURE,
+    },
+    geocoder: {
+      // The fixture list is for dev only: staging and prod without a provider answer 503 rather than serve fake addresses.
+      provider: e.CARPAL_GEOCODER ?? (e.CARPAL_ENV === 'dev' && e.CARPAL_INFRA === 'lite' ? 'fixture' : 'unconfigured'),
+      neshanServiceKey: e.CARPAL_NESHAN_SERVICE_KEY ?? null,
     },
     sms: {
       provider: e.CARPAL_SMS_PROVIDER,

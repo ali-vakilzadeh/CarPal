@@ -4,21 +4,21 @@ import { REMOTE_BACKOFF_MS, RemoteDictionaries, remoteDictionaryUrl } from './i1
 
 describe('remoteDictionaryUrl', () => {
   it('builds <base>/<version>/<locale>.json for https bases and real versions', () => {
-    expect(remoteDictionaryUrl('https://cdn.carpal.app/i18n', 'v2', 'fa')).toBe('https://cdn.carpal.app/i18n/v2/fa.json');
-    expect(remoteDictionaryUrl('https://cdn.carpal.app/i18n/', '2026.10.1', 'en')).toBe('https://cdn.carpal.app/i18n/2026.10.1/en.json');
+    expect(remoteDictionaryUrl('https://cdn.carpals.ir/i18n', 'v2', 'fa')).toBe('https://cdn.carpals.ir/i18n/v2/fa.json');
+    expect(remoteDictionaryUrl('https://cdn.carpals.ir/i18n/', '2026.10.1', 'en')).toBe('https://cdn.carpals.ir/i18n/2026.10.1/en.json');
   });
 
   it('uses the bundled copy for dev, fallback, odd versions and non-https bases', () => {
-    expect(remoteDictionaryUrl('https://cdn.carpal.app/i18n', 'dev', 'fa')).toBeNull();
+    expect(remoteDictionaryUrl('https://cdn.carpals.ir/i18n', 'dev', 'fa')).toBeNull();
     expect(remoteDictionaryUrl('', 'bundled', 'fa')).toBeNull();
-    expect(remoteDictionaryUrl('https://cdn.carpal.app/i18n', '../x', 'fa')).toBeNull();
-    expect(remoteDictionaryUrl('http://cdn.carpal.app/i18n', 'v2', 'fa')).toBeNull();
+    expect(remoteDictionaryUrl('https://cdn.carpals.ir/i18n', '../x', 'fa')).toBeNull();
+    expect(remoteDictionaryUrl('http://cdn.carpals.ir/i18n', 'v2', 'fa')).toBeNull();
     expect(remoteDictionaryUrl('not a url', 'v2', 'fa')).toBeNull();
   });
 });
 
 describe('RemoteDictionaries', () => {
-  const url = 'https://cdn.carpal.app/i18n/v2/fa.json';
+  const url = 'https://cdn.carpals.ir/i18n/v2/fa.json';
 
   it('fetches once per version and lays the file over the bundled dictionary', async () => {
     const fetch = vi.fn(async () => new Response(JSON.stringify({ common: { appName: 'کارپال ۲' } })));

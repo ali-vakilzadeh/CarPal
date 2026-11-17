@@ -93,6 +93,9 @@ export const FORWARDED_EVENTS: Record<string, readonly string[]> = {
   'portfolio.published': [],
   'qna.question.created': [],
   'user.deletion.completed': [],
+  // S26b: the monthly odometer prompt (vehicle id only; analytics events odometer_prompt.skipped / .answered)
+  'odometer_prompt.skipped': ['was_open'],
+  'odometer_prompt.answered': [],
   // S9: AI quality (insight type and visibility only; no subject or owner ids).
   'ai.insight.generated': ['insight_type', 'visibility', 'suggestion_count'],
 };

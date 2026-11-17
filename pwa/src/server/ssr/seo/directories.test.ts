@@ -53,10 +53,12 @@ describe('directories sitemap', () => {
 
 describe('map origins in the CSP', () => {
   it('admits the env style and the pilot region file’s style and tile hosts', () => {
-    expect(mapTileOrigins({ CARPAL_PWA_MAP_STYLE_URL: undefined })).toEqual(['https://cdn.carpal.app']);
+    expect(mapTileOrigins({ CARPAL_PWA_MAP_STYLE_URL: undefined })).toEqual(['https://cdn.carpals.ir', 'https://vts.neshan.org', 'https://static.neshan.org']);
     expect(mapTileOrigins({ CARPAL_PWA_MAP_STYLE_URL: 'https://tiles.carpal.test/style.json' })).toEqual([
       'https://tiles.carpal.test',
-      'https://cdn.carpal.app',
+      'https://cdn.carpals.ir',
+      'https://vts.neshan.org',
+      'https://static.neshan.org',
     ]);
   });
 });

@@ -26,7 +26,7 @@ describe('service worker routes', () => {
   it('never answers other methods or other origins from a cache', () => {
     expect(req('/api/v1/me/vehicles', { method: 'POST' })).toBe('network');
     expect(req('/fa/garage', { method: 'POST', mode: 'navigate' })).toBe('network');
-    expect(req('/x.png', { origin: 'https://media.carpal-usercontent.app' })).toBe('network');
+    expect(req('/x.png', { origin: 'https://media.carpals.ir' })).toBe('network');
   });
 
   it('caches hashed build files first and revalidates design-system files, icons and manifests', () => {

@@ -26,9 +26,22 @@ export interface AddressQuery {
   country: string;
 }
 
+/** Requests that left the server for the provider (S26b: quota and cost for the owner, admin.system_health). */
+export interface GeocoderUsage {
+  provider: string;
+  requests_today: number | null;
+  requests_30d: number | null;
+}
+
 export abstract class Geocoder {
-  /** Address search in one country, best first (≤ `limit`). */
-  abstract search(query: string, country: string, limit?: number): Promise<GeocodeCandidate[]>;
+  /** Provider key: fixture, neshan or unconfigured. */
+  readonly provider: string = 'fixture';
+  /** Provider requests per day (null where the adapter does not count). */
+  usage(): Promise<GeocoderUsage> {
+    return Promise.resolve({ provider: this.provider, requests_today: null, requests_30d: null });
+  }
+  /** Address search in one country, best first (up to `limit`); `near` centres the results (S26b, Neshan). */
+  abstract search(query: string, country: string, limit?: number, near?: GeoPoint): Promise<GeocodeCandidate[]>;
   /** The nearest address of a point, or null when nothing is close. */
   abstract reverse(point: GeoPoint): Promise<GeocodeCandidate | null>;
   /** The point of a typed street address; null when it cannot be placed more precisely than a city. */
@@ -37,6 +50,7 @@ export abstract class Geocoder {
 
 /** Full mode until the regional geocoder adapter exists. */
 export class UnconfiguredGeocoder extends Geocoder {
+  override readonly provider = 'unconfigured';
   #fail(): never {
     throw new ApiError('UNAVAILABLE', { detail: 'geocoder not configured', retryAfterMs: 60_000 });
   }
@@ -153,6 +167,7 @@ const REVERSE_STREET_M = 500;
 const REVERSE_CITY_M = 25_000;
 
 export class FixtureGeocoder extends Geocoder {
+  override readonly provider = 'fixture';
   constructor(
     private readonly addresses: FixtureAddress[] = FIXTURE_ADDRESSES,
     private readonly cities: FixtureCity[] = CITIES,

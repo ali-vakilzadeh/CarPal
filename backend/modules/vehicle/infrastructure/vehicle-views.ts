@@ -7,6 +7,7 @@ import { sql } from 'kysely';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { FleetDrivers } from '#modules/fleet/interface/fleet.js';
 import { MediaService } from '#modules/media/interface/media.js';
+import { promptView } from '../domain/odometer-prompt.js';
 import { toVehicle, type VehicleDerived, type VehicleRow } from '../api/projections.js';
 
 @Injectable()
@@ -37,6 +38,14 @@ export class VehicleViews {
       .where('deleted_at', 'is', null)
       .groupBy('vehicle_id')
       .execute();
+    // S26b: the open monthly odometer prompt (personal vehicles only).
+    const prompts = await scope.db
+      .selectFrom('vehicle.odometer_prompt_state')
+      .select(['vehicle_id', 'prompted_at'])
+      .where('vehicle_id', 'in', ids)
+      .where('prompted_at', 'is not', null)
+      .execute();
+    const promptedAt = new Map(prompts.map((p) => [p.vehicle_id, p.prompted_at]));
     const { rows: dup } = await sql<{ id: string }>`SELECT id FROM vehicle.duplicate_vin_flags(${sql.val(ids)}::uuid[])`.execute(scope.db);
     const photos = await this.media.assetUrls(
       scope,
@@ -55,6 +64,7 @@ export class VehicleViews {
         nextReminderDue: next.get(r.id) ?? null,
         primaryPhotoUrl: r.primary_photo_media_id ? (photos.get(r.primary_photo_media_id) ?? null) : null,
         duplicateVinWarning: duplicates.has(r.id),
+        odometerPrompt: promptView(r.owner_type === 'user' ? (promptedAt.get(r.id) ?? null) : null),
       });
     return out;
   }

@@ -12,7 +12,8 @@ import { serverEnv } from './env';
 
 /** Origins of the map style and tiles that the page CSP admits. */
 export function mapTileOrigins(env: { CARPAL_PWA_MAP_STYLE_URL?: string | undefined } = serverEnv()): string[] {
-  return originsOf(env.CARPAL_PWA_MAP_STYLE_URL, region.map.style_url, region.map.tiles_url);
+  // S26b (DQ-29): the region file also lists the origins of sprites and glyphs (Neshan's static host).
+  return originsOf(env.CARPAL_PWA_MAP_STYLE_URL, region.map.style_url, region.map.tiles_url, ...region.map.origins);
 }
 
 /** The style URL a page hands to the map component, or null for the built-in style. */

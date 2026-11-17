@@ -46,7 +46,7 @@ const SERVERS: Record<Host, { url: string; description: string }> = {
     description: 'Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1).',
   },
   storage: {
-    url: 'https://media.carpal-usercontent.app',
+    url: 'https://media.carpals.ir',
     description: 'Signed upload and download of media; separate registrable domain, cookieless (SEC-UP).',
   },
 };

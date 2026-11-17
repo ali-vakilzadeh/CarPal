@@ -30,6 +30,7 @@ export interface VehicleDerived {
   nextReminderDue: string | null;
   primaryPhotoUrl: string | null;
   duplicateVinWarning: boolean;
+  odometerPrompt: { due: boolean; due_since: string | null };
 }
 
 /** 40 Vehicle. */
@@ -68,6 +69,7 @@ export function toVehicle(v: VehicleRow, d: VehicleDerived) {
     next_reminder_due: d.nextReminderDue,
     primary_photo_url: d.primaryPhotoUrl,
     duplicate_vin_warning: d.duplicateVinWarning,
+    odometer_prompt: d.odometerPrompt,
   };
 }
 

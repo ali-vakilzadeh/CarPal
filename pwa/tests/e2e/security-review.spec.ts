@@ -117,7 +117,7 @@ test('no CSP or Trusted Types violation on the public pages of both languages', 
   page.on('console', (m) => {
     if (m.type() === 'error' && m.text().startsWith('CSP violation')) violations.push(`${page.url()} ${m.text()}`);
   });
-  await page.route('https://cdn.carpal.app/**', (r) => r.abort());
+  await page.route('https://cdn.carpals.ir/**', (r) => r.abort());
   for (const l of ['en', 'fa'])
     for (const path of [
       '',

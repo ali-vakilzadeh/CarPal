@@ -46,6 +46,7 @@ import {
   ServiceRecordsUpdateHandler,
   ServiceRecordViews,
 } from './application/service-record-ops.js';
+import { VehiclesOdometerPromptSkipHandler } from './application/odometer-ops.js';
 import {
   VehiclesCreateHandler,
   VehiclesGetHandler,
@@ -91,6 +92,7 @@ import { LocalVinDecoder, UnconfiguredVinDecoder, VinDecoder } from './infrastru
     VehiclesStatusHistoryHandler,
     VehiclesMileageListHandler,
     VehiclesMileageAddHandler,
+    VehiclesOdometerPromptSkipHandler,
     // documents
     VehicleDocumentsListHandler,
     VehicleDocumentCreateHandler,

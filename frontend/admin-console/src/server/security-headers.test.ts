@@ -31,10 +31,10 @@ describe('page security headers (AC1.T5)', () => {
       nonce: 'n',
       dev: false,
       https: true,
-      mediaOrigins: originsOf('https://media.carpal-usercontent.app/x?y=1'),
+      mediaOrigins: originsOf('https://media.carpals.ir/x?y=1'),
     });
-    expect(csp).toContain("img-src 'self' data: blob: https://media.carpal-usercontent.app");
-    expect(csp).toContain("media-src 'self' https://media.carpal-usercontent.app");
+    expect(csp).toContain("img-src 'self' data: blob: https://media.carpals.ir");
+    expect(csp).toContain("media-src 'self' https://media.carpals.ir");
     expect(csp).toContain("connect-src 'self'");
     expect(csp).not.toContain("connect-src 'self' https://media");
     expect(contentSecurityPolicy({ nonce: 'n', dev: false, https: true })).not.toContain('media-src');

@@ -13,7 +13,7 @@ describe('consumer allowlist (SEC-WEB-5, GD-08 amendment)', () => {
     const fleet = allowlist.routes.filter((r) => r.route.path.startsWith('/v1/orgs/'));
     expect(fleet).toHaveLength(18);
     expect(fleet.every((r) => r.route.path.startsWith('/v1/orgs/{org_id}/fleet/'))).toBe(true);
-    expect(allowlist.routes.length - fleet.length).toBe(180); // + search.session_get (1.1.0), me.deactivate (1.2.0), policy.current and policy.accept (1.4.0, backend S15), disputes.messages_list and disputes.message_post (1.4.0, backend S20), support.ticket_create, support.tickets_list, support.ticket_get and support.ticket_reply (1.4.0, backend S24)
+    expect(allowlist.routes.length - fleet.length).toBe(181); // + vehicles.odometer_prompt_skip (1.5.0, backend S26b), search.session_get (1.1.0), me.deactivate (1.2.0), policy.current and policy.accept (1.4.0, backend S15), disputes.messages_list and disputes.message_post (1.4.0, backend S20), support.ticket_create, support.tickets_list, support.ticket_get and support.ticket_reply (1.4.0, backend S24)
     expect(allowlist.routes.every((r) => r.route.host === 'api')).toBe(true);
   });
 

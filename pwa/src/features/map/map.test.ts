@@ -156,10 +156,10 @@ describe('map style', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('uses a style URL only when the page CSP allows its origin', () => {
-    expect(usableStyleUrl('https://cdn.carpal.app/tiles/ir-pilot/style.json', ['https://cdn.carpal.app'])).toBe(
-      'https://cdn.carpal.app/tiles/ir-pilot/style.json',
+    expect(usableStyleUrl('https://cdn.carpals.ir/tiles/ir-pilot/style.json', ['https://cdn.carpals.ir'])).toBe(
+      'https://cdn.carpals.ir/tiles/ir-pilot/style.json',
     );
-    expect(usableStyleUrl('https://tiles.example.org/style.json', ['https://cdn.carpal.app'])).toBeNull();
+    expect(usableStyleUrl('https://tiles.example.org/style.json', ['https://cdn.carpals.ir'])).toBeNull();
     expect(usableStyleUrl('http://tiles.example.org/style.json', ['http://tiles.example.org'])).toBeNull();
     expect(usableStyleUrl(null, [])).toBeNull();
   });
@@ -171,11 +171,11 @@ describe('map style', () => {
     const store = new Map<string, string>();
     vi.stubGlobal('sessionStorage', { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v) });
     const failing = vi.fn(async () => new Response('nope', { status: 404 }));
-    expect(await loadStyle('https://cdn.carpal.app/s.json', failing as unknown as typeof fetch, 1000)).toBeNull();
-    expect(await loadStyle('https://cdn.carpal.app/s.json', failing as unknown as typeof fetch, 2000)).toBeNull();
+    expect(await loadStyle('https://cdn.carpals.ir/s.json', failing as unknown as typeof fetch, 1000)).toBeNull();
+    expect(await loadStyle('https://cdn.carpals.ir/s.json', failing as unknown as typeof fetch, 2000)).toBeNull();
     expect(failing).toHaveBeenCalledTimes(1);
     const ok = vi.fn(async () => Response.json({ version: 8, sources: {}, layers: [] }));
-    expect(await loadStyle('https://cdn.carpal.app/other.json', ok as unknown as typeof fetch, 3000)).toEqual({
+    expect(await loadStyle('https://cdn.carpals.ir/other.json', ok as unknown as typeof fetch, 3000)).toEqual({
       version: 8,
       sources: {},
       layers: [],

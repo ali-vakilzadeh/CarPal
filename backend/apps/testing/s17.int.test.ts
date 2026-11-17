@@ -253,6 +253,7 @@ describe('notification rules (A-NOTIF-01 Rules)', () => {
       review_approval_reminder_days: [3, 6],
       maintenance_due_window_days: 14,
       mileage_due_window_km: 500,
+      odometer_prompt_days: 30, // S26b
       reason: REASON,
     };
     expect(

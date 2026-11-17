@@ -7,7 +7,7 @@ export interface CspOptions {
   /** next dev: React needs eval for its debug stacks and HMR talks over a WebSocket. */
   dev: boolean;
   https: boolean;
-  /** Signed media and upload URLs (storage listener in dev, media.carpal-usercontent.app in prod; BA-06). */
+  /** Signed media and upload URLs (storage listener in dev, media.carpals.ir in prod; BA-06). */
   mediaOrigins: readonly string[];
   /** Vector tiles and the map style (GD-12); empty until a style URL is configured. */
   tileOrigins: readonly string[];

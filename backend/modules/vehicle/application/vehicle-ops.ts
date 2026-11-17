@@ -20,6 +20,7 @@ import { MediaService } from '#modules/media/interface/media.js';
 import { TaxonomyResolver } from '#modules/taxonomy/interface/taxonomy-resolver.js';
 import { toMileage, toStatusHistory, type VehicleRow } from '../api/projections.js';
 import { counts, maxModelYear, profileCompleteness, todayUtc } from '../domain/rules.js';
+import { closeOdometerNotices } from './odometer-notices.js';
 import { VinDecoder } from '../infrastructure/vin-decoder.js';
 import { VehicleViews } from '../infrastructure/vehicle-views.js';
 import {
@@ -559,6 +560,8 @@ export class VehiclesMileageAddHandler implements OperationHandler {
     if (new Date(b.recorded_at).getTime() > Date.now() + CLOCK_SKEW_MS) failIf([{ pointer: '/recorded_at', code: 'in_future' }]);
     const row = await ctx.tx(async (scope) => {
       const v = await loadVehicle(scope, a, ctx.params.vehicle_id!, true);
+      // S26b: a reading that is the newest by recorded_at answers an open odometer prompt (the database trigger clears it).
+      const open = a.fleet ? undefined : await openOdometerPrompt(scope, v.id, new Date(b.recorded_at));
       // 52: a lower reading than the previous one is accepted with a warning (the trigger sets lower_than_previous).
       const log = await scope.db
         .insertInto('vehicle.vehicle_mileage_logs')
@@ -572,10 +575,32 @@ export class VehiclesMileageAddHandler implements OperationHandler {
         .returningAll()
         .executeTakeFirstOrThrow();
       if (v.mileage_km === null) await refreshCompleteness(scope, v.id);
+      if (open) {
+        await closeOdometerNotices(scope, a.userId, v.id);
+        await publishEvent(scope, { type: 'odometer_prompt.answered', aggregateType: 'vehicle', aggregateId: v.id, payload: {} });
+      }
       return log;
     });
     return created(toMileage(row), `${vehiclesPath(a)}/${ctx.params.vehicle_id}/mileage`);
   }
+}
+
+/** True when the vehicle has an open odometer prompt and a reading at `recordedAt` would be its newest. */
+async function openOdometerPrompt(scope: TxScope, vehicleId: string, recordedAt: Date): Promise<boolean> {
+  const s = await scope.db
+    .selectFrom('vehicle.odometer_prompt_state')
+    .select('prompted_at')
+    .where('vehicle_id', '=', vehicleId)
+    .executeTakeFirst();
+  if (!s?.prompted_at) return false;
+  const newer = await scope.db
+    .selectFrom('vehicle.vehicle_mileage_logs')
+    .select('id')
+    .where('vehicle_id', '=', vehicleId)
+    .where('recorded_at', '>', recordedAt)
+    .where('deleted_at', 'is', null)
+    .executeTakeFirst();
+  return !newer;
 }
 
 /** Recomputes profile_completeness after a change made outside vehicles.update (first mileage reading). */

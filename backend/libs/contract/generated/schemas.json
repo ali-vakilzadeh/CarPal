@@ -11682,6 +11682,7 @@
         "four_eyes_outcome",
         "staff_security_alert",
         "ai_kill_switch_changed",
+        "odometer_prompt",
         "exchange_rate_reminder"
       ],
       "description": "staff notice (backend S26a): the display rate was not set today"
@@ -11779,6 +11780,12 @@
           "maximum": 5000,
           "description": "backend S25a: … or this many km before its mileage"
         },
+        "odometer_prompt_days": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 90,
+          "description": "backend S26b: days without a reading before the owner is asked for one; 0: no prompt, otherwise 14-90 (default 30)"
+        },
         "updated_by_display": {
           "anyOf": [
             {
@@ -11811,6 +11818,7 @@
         "review_approval_reminder_days",
         "maintenance_due_window_days",
         "mileage_due_window_km",
+        "odometer_prompt_days",
         "updated_by_display",
         "updated_at",
         "version"
@@ -11882,6 +11890,12 @@
           "maximum": 5000,
           "description": "backend S25a: … or this many km before its mileage"
         },
+        "odometer_prompt_days": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 90,
+          "description": "backend S26b: days without a reading before the owner is asked for one; 0: no prompt, otherwise 14-90 (default 30)"
+        },
         "reason": {
           "type": "string",
           "minLength": 3,
@@ -11898,6 +11912,7 @@
         "review_approval_reminder_days",
         "maintenance_due_window_days",
         "mileage_due_window_km",
+        "odometer_prompt_days",
         "reason"
       ],
       "additionalProperties": false
@@ -19692,6 +19707,23 @@
             "max_bbox_deg": {
               "type": "string",
               "pattern": "^\\d{1,2}(\\.\\d{1,2})?$"
+            },
+            "provider": {
+              "type": "string",
+              "enum": [
+                "neshan",
+                "self_hosted"
+              ],
+              "description": "1.5.0 (backend S26b, DQ-29): who serves the basemap; the web map key is never here"
+            },
+            "origins": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 2048,
+                "pattern": "^https://[^\\s@#/?]+([/?][^\\s#]*)?$"
+              },
+              "maxItems": 10
             }
           },
           "required": [
@@ -19700,9 +19732,12 @@
             "attribution",
             "default_center",
             "default_zoom",
-            "max_bbox_deg"
+            "max_bbox_deg",
+            "provider",
+            "origins"
           ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "description": "1.5.0: the origins the basemap loads from (style, tiles, sprites, glyphs) for the clients' CSP"
         },
         "cities": {
           "type": "array",
@@ -29158,7 +29193,51 @@
           "enum": [
             "file",
             "smtp"
-          ]
+          ],
+          "description": "1.5.0: file = mail is only written to the server's outbox file"
+        },
+        "geocoder": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "pattern": "^[^\\r\\n]*$",
+              "description": "1.5.0 (backend S26b): fixture, neshan or unconfigured"
+            },
+            "requests_today": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "requests that left the server for the provider (null: the adapter does not count)"
+            },
+            "requests_30d": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "provider",
+            "requests_today",
+            "requests_30d"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -29166,10 +29245,10 @@
         "signals",
         "sms_provider",
         "sms_simulated",
-        "mail_transport"
+        "mail_transport",
+        "geocoder"
       ],
-      "additionalProperties": false,
-      "description": "1.5.0: file = mail is only written to the server's outbox file"
+      "additionalProperties": false
     },
     "SystemHealthKey": {
       "type": "string",
@@ -30320,7 +30399,7 @@
           "type": "string",
           "maxLength": 2048,
           "pattern": "^https://[^\\s@#/?]+([/?][^\\s#]*)?$",
-          "description": "media.carpal-usercontent.app, single object key"
+          "description": "media.carpals.ir, single object key"
         },
         "headers": {
           "type": "object",
@@ -30956,7 +31035,32 @@
           ]
         },
         "duplicate_vin_warning": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "derived: same VIN exists for another owner (always false since GD-33: one owner per VIN)"
+        },
+        "odometer_prompt": {
+          "type": "object",
+          "properties": {
+            "due": {
+              "type": "boolean"
+            },
+            "due_since": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "due",
+            "due_since"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -30979,10 +31083,11 @@
         "open_issue_count",
         "next_reminder_due",
         "primary_photo_url",
-        "duplicate_vin_warning"
+        "duplicate_vin_warning",
+        "odometer_prompt"
       ],
       "additionalProperties": false,
-      "description": "derived: same VIN exists for another owner (always false since GD-33: one owner per VIN)"
+      "description": "backend S26b: the owner is asked for a reading (personal active vehicles; fleet vehicles: always due false)"
     },
     "VehicleDocument": {
       "type": "object",

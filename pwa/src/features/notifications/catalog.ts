@@ -24,6 +24,7 @@ export const CONSUMER_TEMPLATE_KEYS = [
   'review.response_published',
   'inquiry.answered',
   'vehicle.reminder_due',
+  'vehicle.odometer_prompt',
   'vehicle.transfer_requested',
   'vehicle.transfer_decided',
   'community.followed_update',

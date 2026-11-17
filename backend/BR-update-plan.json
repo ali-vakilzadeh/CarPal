@@ -77,7 +77,7 @@
         "S26a"
       ],
       "stages_in_progress": [],
-      "next_stage": "S26b",
+      "next_stage": "S26c",
       "contract": "Docs/40 1.5.0 open since S26a (2026-11-17): 491 operations, 543 routes (490 served; auth.social_start deferred), 55 error codes. 1.4.0 frozen 2026-11-16 is the baseline; 1.5.0 freezes at S26c.",
       "summary": "S26a done on 2026-11-17 (contract 1.5.0 opened): S26a is built and tested (contract 1.5.0 opened). Staff accounts seeded with the owner's initial password (CARPAL_STAFF_INITIAL_PASSWORD, never printed or committed) must enter the code sent to their email and choose a new 12+ character password before their key; no token is issued before that, and the initial password expires after 7 days (staff:bootstrap --reissue). Email goes through the carpals.ir cPanel mailbox by authenticated SMTP (CARPAL_MAIL_TRANSPORT=smtp, TLS required, hourly cap, 4xx retried, 5xx permanent, provider smtp in Delivery health); pnpm mail:test and deploy/email_setup_guide.md cover the setup. Every SMS goes through the new SmsGateway port; the mock provider gives ids, statuses, failures and a balance, a sweep records delivered/failed, System health and config.client say SMS is simulated, and the log warns hourly outside dev. The IRR rate is never blank (created from CARPAL_DEFAULT_IRR_PER_USD when missing), ExchangeRate has set_today and age_hours, and administrators get one morning reminder on days the rate was not set. pnpm seed:consent-texts loads the 13 reviewed texts as drafts. DQ-25, DQ-26 and DQ-28 were built on their defaults and wait for the owner's confirmation. Contract 1.5.0: 491 operations, 543 routes (490 served), 55 error codes. Migration 0116. Next: S26b (DQ-27, DQ-29 open).",
       "after_refinement": "S26a, S26b, S26c (contract 1.5.0); then admin console AC13, AC14, AC14b, AC15 and AC11 deploy; PWA refinement round (pwa/BR-update-plan.json, PB-01..PB-11); then the whole-plan test run (PD-03)."
@@ -6193,7 +6193,7 @@
       {
         "id": "S26b",
         "title": "S26b - Monthly odometer prompt, Neshan geocoding and map configuration, carpals.ir rename",
-        "status": "not_started",
+        "status": "done",
         "items": [
           "DQ-24 / S25a-D2 (monthly odometer prompt, voluntary; DQ-27)",
           "Owner decision: Neshan maps and geocoding (DQ-29; replaces R-24 tile host)",
@@ -6224,7 +6224,7 @@
               "S25a-D2"
             ],
             "task": "Monthly odometer prompt (voluntary). (a) Rule: NotificationRules.odometer_prompt_days, default 30, 0 = off, otherwise 14-90 (admin.notif_rules_get/update, If-Match; A-NOTIF-01 Rules). (b) A daily sweep vehicle.odometer_prompts at the rules' digest_hour in the region time zone: for every active personal vehicle (DQ-27) whose newest reading (by recorded_at; the vehicle's created_at when it has none) is older than odometer_prompt_days, and that was not prompted or skipped in the current cycle, publish vehicle.odometer_prompt.due -> template vehicle.odometer_prompt to the owner (in app and push; email off by default; category reminders, so the person can switch it off in notification preferences; quiet hours respected), reference the vehicle, deep link C-GARAGE-08. One prompt per vehicle per cycle; an ignored prompt is not repeated until the next cycle. (c) Skip: new operation vehicles.odometer_prompt_skip (POST, the vehicle owner, no body, idempotent within the cycle) records the skip, writes no reading, marks the in-app notice done and moves the next prompt one interval ahead; analytics event odometer_prompt.skipped (vehicle id only). (d) Answer: any vehicles.mileage_add whose recorded_at is the newest reading ends the cycle (the next prompt is due odometer_prompt_days after it); analytics odometer_prompt.answered when the reading arrives while a prompt is open. (e) Vehicle view: odometer_prompt { due: boolean, due_since: datetime|null } so the PWA can show a garage card without push. (f) Historical order (owner: \"record data in historical sequence\"): confirm and test that vehicles.mileage_add stores recorded_at as given (back-dated readings allowed, at most 5 minutes in the future), vehicles.mileage_list returns readings newest first by recorded_at, Vehicle.mileage_km mirrors the newest reading by recorded_at (not the newest insert), lower_than_previous is judged against the reading before it in time, and a back-dated reading does not end the current cycle. Tests: due after 30 days, not due after a reading, skip moves the cycle, off at 0, ignored prompt not repeated, sold/inactive vehicles skipped, back-dated insert order.",
-            "status": "not_started"
+            "status": "done"
           },
           {
             "id": "S26b.T2",
@@ -6233,7 +6233,7 @@
               "NI-07 (regional geocoder)"
             ],
             "task": "NeshanGeocoder implements the Geocoder port (search, reverse, locate) server-side with the Neshan service key (CARPAL_NESHAN_SERVICE_KEY in backend.env, never sent to clients; CARPAL_GEOCODER = fixture (dev and tests) | neshan | unconfigured). First confirm from the docs the endpoints and versions; as known before the docs went down (to be verified, not taken as fact): base https://api.neshan.org, header Api-Key: <service key>, search GET /v1/search?term=&lat=&lng= (results near a point; use the city centre or the map centre the caller gives), geocoding GET /v4/geocoding?address= (or a newer version), reverse GET /v5/reverse?lat=&lng=. Map the answers to GeocodeCandidate (label, point, address_line_1, city, region, postal_code null when absent, country IR) and validate them like client input (SEC-IN-10). Timeouts (3 s), a circuit breaker and 503 UNAVAILABLE with retry-after on provider failure, so the location editor keeps working by typed address; results cached in KV for 24 h per normalized query (confirm the terms allow it); no consumer search-as-you-type through this port (Plan §2 rule kept: the clients call geo.* on submit or with a debounce of at least 500 ms and 3 characters). Usage counters per day for the owner (quota and cost), visible in admin.system_health. Tests: adapter against recorded Neshan answers (fixtures), errors, timeouts, cache, the pin-versus-address check with Neshan results.",
-            "status": "not_started",
+            "status": "done",
             "neshan_findings_2026_11_16": "Docs site down (HTTP 503 from Neshan's CDN). From Neshan's own npm package @neshan-maps-platform/mapbox-gl 1.1.5 (read as data, not run): the web SDK is a fork of mapbox-gl 1.13.2 and needs a \"web map\" key (mapKey); its vector styles (neshanVector, neshanVectorNight; raster variants exist) use tiles from https://vts.neshan.org/basemap/v2/{z}/{x}/{y}/platform and https://vts.neshan.org/poi/v3/{z}/{x}/{y}/platform, traffic from https://tvts.neshan.org/traffic/v4/..., sprites https://static.neshan.org/sdk/mapboxgl/sprites/sprite, glyphs https://static.neshan.org/sdk/mapboxgl/fontstack/{fontstack}/{range}.pbf, the RTL text plugin https://static.neshan.org/sdk/mapboxgl/mapbox-gl-rtl-text.js, raster hosts tile1-8.neshan.org, and an attribution/watermark linking platform.neshan.org. The SDK stores the key in localStorage (which the console's GD-12 rule forbids), and how the key is attached to tile requests is obfuscated in the bundle: confirm from the docs before choosing between MapLibre with a Neshan style (preferred: keeps the existing map code and CSP) and Neshan's SDK."
           },
           {
@@ -6243,7 +6243,7 @@
               "R-24 (superseded)"
             ],
             "task": "Map configuration for Neshan. (a) shared/region-config/ir-pilot.json map block: provider neshan, the style (a Neshan-based style the clients build, or Neshan's style URL if the docs give one), the tile, sprite and glyph origins listed for the clients' CSP (vts.neshan.org, static.neshan.org; tvts.neshan.org only if traffic is shown; tile1-8.neshan.org only for raster), the attribution \"© Neshan\" with the link the terms ask for (and © OpenStreetMap contributors if Neshan requires it). The web map key is not in config.client: the PWA and the console read it from their own env (CARPAL_PWA_NESHAN_MAP_KEY, CARPAL_ADMIN_NESHAN_MAP_KEY), restricted in the Neshan panel to their hosts. (b) Documents: Docs/02 §1 WP8, §3.5, §9.7 and §15 (provider decision; the self-hosted tile build and geocoder leave the pilot plan), Docs/40 RegionConfig map fields if they change, Docs/52, the Privacy Policy draft lines 28 and 152 (map tiles and address search now come from Neshan, which receives the viewed map area and the searched address, not the account) - legal text for the owner's review, CarPal_WP_Checklist.xml WP8 note. (c) Hand-offs: PWA PB-10 and console AC14b.T6 (basemap and CSP), R-24 marked superseded in both plans.",
-            "status": "not_started"
+            "status": "done"
           },
           {
             "id": "S26b.T4",
@@ -6252,12 +6252,12 @@
               "Owner decision: rename in S26"
             ],
             "task": "Finish NI-22 (backend half of PWA NI-P14-08): cdn.carpal.app in shared/region-config/ir-pilot.json (the map URLs go to Neshan in T3; the i18n base and CARPAL_I18N_BASE_URL default to a carpals.ir host, e.g. https://cdn.carpals.ir/i18n, or to the API host if no CDN exists - with the PWA CSP and E2E updated in the same change), media.carpal-usercontent.app in Docs/40 and the OpenAPI servers (media.carpals.ir), and a repo-wide search for carpal.app with each remaining hit either changed or listed as kept on purpose: @test.carpal.app fixture addresses (the baseline test keys on them), admin@carpal.app in Docs/43 and tools/db (the baseline drift check; deployments set admin@<DOMAIN>), the schemas.carpal.app JSON Schema $id (an identifier, never fetched) - unless the owner wants those changed too, which needs pnpm db:reset and a new baseline hash. Run pnpm check:clients so the PWA and console are re-verified once.",
-            "status": "not_started"
+            "status": "done"
           },
           {
             "id": "S26b.T5",
             "task": "Definition of done for S26b: Docs/40 Appendix D rows (1.5.0), Docs/21 C-GARAGE-08 (Skip this month; prompt cadence), Docs/23 (A-NOTIF-01 odometer rule; System health geocoder usage), Docs/52 (NotificationRules.odometer_prompt_days, Vehicle prompt fields), Docs/43 and migration 0117, deploy.md (Neshan keys, geocoder settings), contract:check, openapi:check, pnpm check:clients (the PWA classifies vehicle.odometer_prompt as a consumer template), stage report here and in backend/dev_plan.json.",
-            "status": "not_started"
+            "status": "done"
           }
         ],
         "contract_changes": "Within 1.5.0. Additive for the PWA: vehicles.odometer_prompt_skip, Vehicle.odometer_prompt, template vehicle.odometer_prompt; RegionConfig map fields may change with T3 (attribution, provider). Admin plane: NotificationRules.odometer_prompt_days (required on update; console only).",
@@ -6268,7 +6268,70 @@
           "With CARPAL_GEOCODER=neshan, geo.geocode, geo.reverse and org.location_pin_check answer from Neshan (recorded-answer tests; one live check on staging with the owner's key); a Neshan outage answers 503 without breaking the location editor.",
           "No carpal.app host is left in code defaults, region config, Docs/40 or OpenAPI except the listed identifiers kept on purpose."
         ],
-        "report": null
+        "report": {
+          "started_at": "2026-11-17",
+          "completed_at": "2026-11-17",
+          "summary": "S26b is built and tested within contract 1.5.0. T1: the monthly odometer prompt (voluntary): rule NotificationRules.odometer_prompt_days (default 30, 0 off, 14-90), an hourly worker rule vehicle.odometer_prompts that from the digest hour (Asia/Tehran) asks the owner of every active personal vehicle once per cycle (event vehicle.odometer_prompt.due -> notice odometer_prompt, template vehicle.odometer_prompt, in app and push, category service_reminders), vehicles.odometer_prompt_skip, Vehicle.odometer_prompt { due, due_since }, readings kept in recorded_at order (already true; now tested). T2: NeshanGeocoder behind the Geocoder port (CARPAL_GEOCODER, CARPAL_NESHAN_SERVICE_KEY), 24 h cache, circuit breaker, 503 on provider failure, request counters in SystemHealth.geocoder. T3: region config map block for Neshan (provider, origins), documents (Docs/02, Privacy Policy draft, WP checklist) changed, hand-offs written. T4: carpal.app -> carpals.ir finished. THE NESHAN DOCS WERE STILL DOWN (503) ON 2026-11-17: endpoints, answer shapes and test fixtures are from earlier knowledge, not recorded from the live service.",
+          "files_created": [
+            "database/migrations/0117_s26b_odometer_prompt.sql",
+            "backend/modules/vehicle/domain/odometer-prompt.ts",
+            "backend/modules/vehicle/application/{odometer-prompt-rule.ts, odometer-ops.ts, odometer-notices.ts}",
+            "backend/libs/geo/{neshan-geocoder.ts, neshan-geocoder.test.ts}",
+            "backend/apps/testing/s26b.int.test.ts"
+          ],
+          "files_changed": [
+            "Docs/40 (NotificationEventType, NotificationRules, Vehicle, vehicles.odometer_prompt_skip, SystemHealth.geocoder, RegionConfig.map provider and origins, Appendix A events, Appendix D S26b row, media and cdn hosts), Docs/43, Docs/42, Docs/52, Docs/21 C-GARAGE-08, Docs/23, Docs/02, Docs/Privacy Policy.md (draft, owner legal review), CarPal_WP_Checklist.xml",
+            "backend: libs/config, libs/runtime/platform.module.ts, libs/geo (geocoder.ts, index.ts), libs/region-config, libs/contract/generated/*, libs/db/generated/db.ts, modules/vehicle, modules/notification (routing, templates, template-catalog, rules store and admin ops), modules/admin/application/dashboard-ops.ts, modules/analytics/domain/events.ts, tools/contract/openapi.ts, deploy/deploy.md, deploy templates, .env.example, tests (s17, baseline 120 tables, contract.test 492/545, vehicle resolver)",
+            "shared/region-config/ir-pilot.json, shared/api-contracts/*, shared/i18n/locales/{en,fa}.json (vehicle.odometer_prompt)",
+            "pwa: server/config.ts, server/map-config.ts, features/notifications/catalog.ts, legal generated texts, tests and e2e style hosts, fixtures; frontend/admin-console tests and generated files; pwa/BR-update-plan.json and frontend/admin-console/dev-plan.json (hand-off notes)"
+          ],
+          "tests": {
+            "backend_static": "pnpm lint (eslint + dependency-cruiser, 598 modules), typecheck and format:check pass",
+            "backend_unit_and_integration": "pnpm test: 357 unit tests passed. pnpm test:all: 1381 tests, 1380 passed, 1 failed: s25a 'an upheld badge challenge waits too' (the badge is already revoked before the approval). It fails in full runs also with s26b excluded (1018 of 1019 passed) and passes when s25a runs alone or with s26b, s17, routes and baseline. S26a's full run passed it. Cause NOT found: open, to check before trusting the suite. The migration path was tested: 0117 applied alone on an existing database (table dropped first) and s26b passed.",
+            "backend_s26b": "5 integration tests (s26b.int.test.ts) and 6 unit tests (neshan-geocoder.test.ts, fixtures written from earlier knowledge, not recordings)",
+            "clients": "pnpm check:clients: PWA 691 tests, i18n 3181 keys; admin console 430 tests, 1554 keys, all passed"
+          },
+          "deviations": [
+            {
+              "id": "S26b-D1",
+              "deviation": "Neshan docs unreachable (503) on 2026-11-16 and 2026-11-17, so the adapter paths (/v1/search, /v4/geocoding, /v5/reverse, header Api-Key), answer shapes, the vector tile and static origins, the attribution and the caching terms are unverified; fixtures are synthesized, not recorded. How the web map key is attached to tile requests is unknown, so no client basemap was built.",
+              "impact": "One live check on staging with the owner's service key before go-live; fix parse* in libs/geo/neshan-geocoder.ts if answers differ. PWA PB-10 and console AC14b.T6 need the docs."
+            },
+            {
+              "id": "S26b-D2",
+              "deviation": "Region map block: style_url is https://cdn.carpals.ir/tiles/ir-pilot/style.json, a style CarPal must publish over Neshan's tiles (built with PB-10/AC14b.T6; until then the clients fall back to the built-in style). RegionConfig.map gained provider and origins (additive).",
+              "impact": "PWA map-config.ts now also admits region.map.origins in the CSP."
+            },
+            {
+              "id": "S26b-D3",
+              "deviation": "Media host media.carpals.ir shares the registrable domain with the apps, so the separate-domain isolation of SEC-UP-4 is not met; deploy.md and Docs/40 say so.",
+              "impact": "Owner point: register a second domain for media before public launch."
+            },
+            {
+              "id": "S26b-D4",
+              "deviation": "The skip and an answering reading close the in-app notice with a direct update of notification.notifications from the vehicle module (the statement of notifications.mark_read), not through a notification-module interface. An answer by vehicles.update or a service record clears the prompt (database trigger) but does not close the notice or emit odometer_prompt.answered. Email is not offered for the prompt (template channel push only). Back-dated newest readings older than the interval can prompt again at the next sweep. Skip on a fleet vehicle is accepted and does nothing (DQ-27 default).",
+              "impact": "Small; listed for the owner."
+            },
+            {
+              "id": "S26b-D5",
+              "deviation": "DQ-27 and DQ-29 were open: their defaults were applied. S26b.T4 kept admin@carpal.app (tools/db, Docs/43), @test.carpal.app fixtures and the schemas.carpal.app $id on purpose (baseline hash). CARPAL_I18N_BASE_URL now defaults to https://cdn.carpals.ir/i18n.",
+              "impact": "None."
+            },
+            {
+              "id": "S26b-D6",
+              "deviation": "CARPAL_GEOCODER unset now means fixture only when CARPAL_ENV=dev (lite); staging and prod answer 503 until neshan is configured. An explicit fixture outside dev is refused at start. Docs/Privacy Policy.md was changed (Neshan) without review markers, because it is copied into the PWA (legal:sync); the owner's legal review is an open item below. Migration 0117 also has explicit grants.",
+              "impact": "Staging and prod need CARPAL_GEOCODER=neshan and the service key before address search works."
+            }
+          ],
+          "open_after_stage": [
+            "Owner: create the Neshan service key and the web map key (restricted to pwa., admin., web. and fleet.carpals.ir) and make the one live check; answer DQ-27 and DQ-29 or accept the defaults; review the Privacy Policy and Docs/02 changes about Neshan (legal text).",
+            "Owner: review the changed Privacy Policy lines 28 and 152 and Docs/02 (Neshan as a third-party map provider) before the policy is published; the PWA copy was regenerated.",
+            "Owner: decide a separate media domain (S26b-D3).",
+            "PWA PB-09 (odometer prompt UI), PB-10 (Neshan basemap and style); console AC14b.T4 (odometer rule), AC14b.T6 (basemap, System health geocoder).",
+            "Find the cause of the s25a badge-challenge failure in full runs (not caused by S26b: it also fails with s26b excluded).",
+            "Nothing committed (commit only when the owner asks)."
+          ]
+        }
       },
       {
         "id": "S26c",
@@ -6634,7 +6697,7 @@
         "id": "DQ-27",
         "raised_in": "S26 planning",
         "before": "S26b.T1",
-        "status": "open",
+        "status": "default_applied_awaiting_owner_confirmation",
         "question": "Should the monthly odometer prompt also go to fleet drivers for the fleet vehicles assigned to them?",
         "default": "No, personal vehicles only in S26 (vehicles owned by a person, status active). Fleet vehicles keep their own readings through the fleet flows; a fleet rule can be added later."
       },
@@ -6651,7 +6714,7 @@
         "id": "DQ-29",
         "raised_in": "S26 scope (Neshan)",
         "before": "S26b.T2",
-        "status": "open",
+        "status": "default_applied_awaiting_owner_confirmation",
         "question": "Neshan is a third party: the browser loads the map from Neshan (Neshan sees the person's IP and the map area viewed) and the backend sends searched addresses and pin points to Neshan. The plan (Docs/02) and the Privacy Policy draft say tiles and address search run on CarPal's own servers. Confirm the change of documents, and which Neshan features to use.",
         "default": "Confirmed as the owner's decision: Docs/02 and the Privacy Policy draft are changed to name Neshan as the map and address-search provider (the account and vehicle data are never sent; the backend sends only the address text or the point). Use the vector basemap (day and night) without the traffic layer and without Neshan's POI layer (CarPal shows its own businesses), and geocoding, reverse geocoding and search; no routing (navigation stays with the navigation_apps list, Neshan included). The PWA and console keep MapLibre with a Neshan style if the docs allow it; otherwise they move to Neshan's SDK with a written exception to the no-Web-Storage rule."
       }

@@ -14,7 +14,7 @@ import { decideCookies, expectNoAxeViolations, expectNoHorizontalScroll, gotoRea
 
 test.describe.configure({ mode: 'serial' });
 
-const STYLE_HOST = 'https://cdn.carpal.app';
+const STYLE_HOST = 'https://cdn.carpals.ir';
 const SSR = 'cp-ssr/0.1.0 (web 1.0)';
 
 let up = false;

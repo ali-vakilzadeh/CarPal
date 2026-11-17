@@ -1,5 +1,5 @@
 {
-  "$comment": "Pilot region (Plan §3.5: Iran, FA first, Jalali calendar, tiles and geocoder on project servers). Loaded by backend/libs/region-config and validated against 40 §22.1 RegionConfig; label values are Translations resolved per Accept-Language. Map URLs are placeholders until the WP1/WP8 tile build publishes them.",
+  "$comment": "Pilot region (Plan §3.5: Iran, FA first, Jalali calendar). Loaded by backend/libs/region-config and validated against 40 §22.1 RegionConfig; label values are Translations resolved per Accept-Language. Backend S26b (owner decision 2026-11-16, DQ-29): the basemap and the address search come from Neshan, not from tiles and a geocoder on project servers. style_url is the style CarPal publishes at cdn.carpals.ir (built by the clients' basemap work, PWA PB-10 and console AC14b.T6) over the Neshan vector tiles; tiles_url and origins are known from Neshan's own web SDK package and are to be confirmed against the docs (down on 2026-11-16 and 2026-11-17). The web map key is not here: each client reads its own (CARPAL_PWA_NESHAN_MAP_KEY, CARPAL_ADMIN_NESHAN_MAP_KEY).",
   "region_key": "ir-pilot",
   "default_locale": "fa",
   "locales": ["fa", "en"],
@@ -8,9 +8,11 @@
   "calendar_default": "jalali",
   "distance_unit_default": "km",
   "map": {
-    "style_url": "https://cdn.carpal.app/tiles/ir-pilot/style.json",
-    "tiles_url": "https://cdn.carpal.app/tiles/ir-pilot/{z}/{x}/{y}.pbf",
-    "attribution": "© OpenStreetMap contributors",
+    "style_url": "https://cdn.carpals.ir/tiles/ir-pilot/style.json",
+    "tiles_url": "https://vts.neshan.org/basemap/v2/{z}/{x}/{y}/platform",
+    "provider": "neshan",
+    "origins": ["https://cdn.carpals.ir", "https://vts.neshan.org", "https://static.neshan.org"],
+    "attribution": "© Neshan, © OpenStreetMap contributors",
     "default_center": { "lat": 35.6892, "lng": 51.389 },
     "default_zoom": 11,
     "max_bbox_deg": "0.6"

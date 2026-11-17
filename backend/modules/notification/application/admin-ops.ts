@@ -301,6 +301,7 @@ function toRules(row: RulesRow, updatedBy: string | null) {
     review_approval_reminder_days: [...row.review_approval_reminder_days].map(Number),
     maintenance_due_window_days: row.maintenance_due_window_days,
     mileage_due_window_km: row.mileage_due_window_km,
+    odometer_prompt_days: row.odometer_prompt_days,
     updated_by_display: updatedBy,
     updated_at: iso(row.updated_at),
     version: row.version,
@@ -339,6 +340,7 @@ type RulesWrite = {
   review_approval_reminder_days: number[];
   maintenance_due_window_days: number;
   mileage_due_window_km: number;
+  odometer_prompt_days: number;
   reason: string;
 };
 
@@ -350,6 +352,8 @@ export function rulesErrors(b: RulesWrite): FieldError[] {
     b[key].forEach((d, i) => {
       if (i > 0 && d <= b[key][i - 1]!) errors.push({ pointer: `/${key}/${i}`, code: 'order' });
     });
+  // S26b: 0 switches the odometer prompt off, otherwise 14-90 days (the contract allows 0-90).
+  if (b.odometer_prompt_days !== 0 && b.odometer_prompt_days < 14) errors.push({ pointer: '/odometer_prompt_days', code: 'out_of_range' });
   if (b.default_quiet_hours) {
     for (const k of ['start', 'end'] as const)
       if (!HH_MM.test(b.default_quiet_hours[k])) errors.push({ pointer: `/default_quiet_hours/${k}`, code: 'pattern' });
@@ -384,6 +388,7 @@ export class NotifRulesUpdateHandler implements OperationHandler {
           review_approval_reminder_days: b.review_approval_reminder_days,
           maintenance_due_window_days: b.maintenance_due_window_days,
           mileage_due_window_km: b.mileage_due_window_km,
+          odometer_prompt_days: b.odometer_prompt_days,
           reason: b.reason,
         })
         .where('id', '=', row.id)

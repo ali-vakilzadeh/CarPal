@@ -26,7 +26,7 @@ const BACKEND = join(import.meta.dirname, '..', '..', '..', 'backend');
 const VIN_CHARS = 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789';
 const MCP_UNAVAILABLE = process.env.CARPAL_E2E_MCP_UNAVAILABLE === '1';
 const POINT = quietPoint();
-const STYLE_HOST = 'https://cdn.carpal.app';
+const STYLE_HOST = 'https://cdn.carpals.ir';
 
 let up = false;
 let shop: SeededProvider;

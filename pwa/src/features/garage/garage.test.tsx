@@ -71,6 +71,7 @@ function vehicle(o: Partial<Vehicle> = {}): Vehicle {
     next_reminder_due: null,
     primary_photo_url: null,
     duplicate_vin_warning: false,
+    odometer_prompt: { due: false, due_since: null },
     ...o,
   };
 }

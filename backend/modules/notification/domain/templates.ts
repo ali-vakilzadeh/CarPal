@@ -350,6 +350,16 @@ export const TEMPLATES: Catalog = {
     en: { subject: 'Your car needs attention', text: 'A {reminder_type} reminder for one of your vehicles is {status}.' },
     fa: { subject: 'خودروی شما نیاز به رسیدگی دارد', text: 'یادآوری {reminder_type} برای یکی از خودروهای شما {status} است.' },
   },
+  'vehicle.odometer_prompt': {
+    en: {
+      subject: 'Update your odometer',
+      text: 'A month has passed since the last reading of your car. Enter the current odometer, or skip this month.',
+    },
+    fa: {
+      subject: 'کیلومترشمار خودرو را به‌روز کنید',
+      text: 'یک ماه از آخرین ثبت کیلومتر خودروی شما گذشته است. کیلومتر فعلی را وارد کنید یا این ماه را رد کنید.',
+    },
+  },
   'fleet.vehicle_due': {
     en: { subject: 'Fleet vehicle due for service', text: 'A {reminder_type} reminder of a fleet vehicle is {status}.' },
     fa: { subject: 'خودروی ناوگان نیاز به سرویس دارد', text: 'یادآوری {reminder_type} یکی از خودروهای ناوگان {status} است.' },

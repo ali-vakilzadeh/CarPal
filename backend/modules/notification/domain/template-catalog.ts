@@ -70,6 +70,7 @@ const NOTIFICATION_CHANNELS: Record<string, TemplateChannel[]> = {
   'inquiry.received': EMAIL_PUSH,
   'inventory.import_finished': EMAIL_PUSH,
   'vehicle.reminder_due': EMAIL_PUSH_SMS,
+  'vehicle.odometer_prompt': ['push'],
   'fleet.vehicle_due': EMAIL_PUSH_SMS,
   'fleet.approval_needed': EMAIL_PUSH_SMS,
   'fleet.approval_decided': EMAIL_PUSH,

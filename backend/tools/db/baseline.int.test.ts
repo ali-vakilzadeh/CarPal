@@ -68,7 +68,7 @@ describe('installation', () => {
     expect(s.baseline?.upToDate).toBe(true);
   });
 
-  it('has 17 schemas and 119 tables (42 §2; S11 exchange_rates, S15 policy texts, S16a staff recovery codes, S16b staff recovery requests, S17 notification templates and rules, S15b consent confirmations, S20 review edit requests and dispute messages, S19 verification info requests and organization profile changes, S24 support tickets and messages)', async () => {
+  it('has 17 schemas and 120 tables (42 §2; S26b odometer prompt state, S11 exchange_rates, S15 policy texts, S16a staff recovery codes, S16b staff recovery requests, S17 notification templates and rules, S15b consent confirmations, S20 review edit requests and dispute messages, S19 verification info requests and organization profile changes, S24 support tickets and messages)', async () => {
     expect(await count(su, 'SELECT count(*) AS n FROM pg_namespace WHERE nspname = ANY($1)', [MODULE_SCHEMAS])).toBe(17);
     const tables = await count(
       su,
@@ -76,7 +76,7 @@ describe('installation', () => {
         WHERE s.nspname = ANY($1) AND c.relkind IN ('r', 'p') AND NOT c.relispartition`,
       [MODULE_SCHEMAS],
     );
-    expect(tables).toBe(119);
+    expect(tables).toBe(120);
   });
 
   it('enables row-level security on every module table', async () => {

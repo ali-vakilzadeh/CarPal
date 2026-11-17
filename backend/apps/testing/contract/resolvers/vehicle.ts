@@ -151,6 +151,10 @@ export const resolvers: Resolvers = {
       body: { mileage_km: 50_000, recorded_at: new Date(Date.now() - 3_600_000).toISOString() },
     };
   },
+  'vehicles.odometer_prompt_skip': async (h, route) => {
+    const o = await h.vehicleOwner(route);
+    return { as: o.as, params: { vehicle_id: o.vehicleId } };
+  },
   'vehicles.documents_list': async (h, route) => {
     const o = await h.vehicleOwner(route);
     return { as: o.as, params: { vehicle_id: o.vehicleId } };

@@ -94,7 +94,7 @@ describe('server env', () => {
       parseServerEnv({
         CARPAL_ENV: 'prod',
         CARPAL_PWA_ORIGIN: 'https://pwa.carpals.ir',
-        CARPAL_STORAGE_URL: 'https://media.carpal-usercontent.app',
+        CARPAL_STORAGE_URL: 'https://media.carpals.ir',
         CARPAL_PWA_SESSION_STORE: 'redis',
         CARPAL_PWA_REDIS_URL: 'redis://cache:6379',
       }).CARPAL_ENV,
@@ -103,7 +103,7 @@ describe('server env', () => {
       parseServerEnv({
         CARPAL_ENV: 'prod',
         CARPAL_PWA_ORIGIN: 'https://pwa.carpals.ir',
-        CARPAL_STORAGE_URL: 'https://media.carpal-usercontent.app',
+        CARPAL_STORAGE_URL: 'https://media.carpals.ir',
         CARPAL_PWA_SESSION_STORE: 'redis',
         CARPAL_PWA_REDIS_URL: 'redis://cache:6379',
         CARPAL_PWA_DEMO: '1',

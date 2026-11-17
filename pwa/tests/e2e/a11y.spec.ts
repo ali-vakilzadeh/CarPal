@@ -12,7 +12,7 @@ import { decideCookies, expectNoAxeViolations, expectNoHorizontalScroll, gotoRea
 
 test.describe.configure({ mode: 'parallel' });
 
-const STYLE_HOST = 'https://cdn.carpal.app';
+const STYLE_HOST = 'https://cdn.carpals.ir';
 const THEMES = ['light', 'sun', 'dark'] as const;
 
 let up = false;

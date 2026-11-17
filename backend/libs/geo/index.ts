@@ -20,7 +20,9 @@ export {
   pinCheck,
   type AddressQuery,
   type GeocodeCandidate,
+  type GeocoderUsage,
   type LocationCheckStatus,
 } from './geocoder.js';
+export { NeshanGeocoder, parseGeocode, parseReverse, parseSearch, type FetchLike, type NeshanGeocoderOptions } from './neshan-geocoder.js';
 export * from './points.js';
 export { openNow, localParts, zonedToUtc, addDays, type HoursSpec } from './hours.js';

@@ -24,6 +24,7 @@ export function rulesValues(row: RulesRow | undefined): NotificationRulesValues 
     approvalReminderDays: [...row.review_approval_reminder_days].map(Number),
     maintenanceDueWindowDays: row.maintenance_due_window_days,
     mileageDueWindowKm: row.mileage_due_window_km,
+    odometerPromptDays: row.odometer_prompt_days,
   };
 }
 

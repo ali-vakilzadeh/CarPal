@@ -1663,6 +1663,7 @@ export interface NotificationNotificationRules {
   id: Generated<string>;
   maintenance_due_window_days: Generated<number>;
   mileage_due_window_km: Generated<number>;
+  odometer_prompt_days: Generated<number>;
   reason: string | null;
   review_approval_reminder_days: Generated<number[]>;
   review_invitation_delay_minutes: Generated<number>;
@@ -2430,6 +2431,14 @@ export interface VehicleMaintenanceReminders {
   version: Generated<number>;
 }
 
+export interface VehicleOdometerPromptState {
+  created_at: Generated<Timestamp>;
+  prompted_at: Timestamp | null;
+  skipped_at: Timestamp | null;
+  updated_at: Generated<Timestamp>;
+  vehicle_id: string;
+}
+
 export interface VehicleServiceRecordEvidence {
   created_at: Generated<Timestamp>;
   created_by: Generated<string | null>;
@@ -2726,6 +2735,7 @@ export interface DB {
   "trust.reviews": TrustReviews;
   "trust.trust_signals": TrustTrustSignals;
   "vehicle.maintenance_reminders": VehicleMaintenanceReminders;
+  "vehicle.odometer_prompt_state": VehicleOdometerPromptState;
   "vehicle.service_record_evidence": VehicleServiceRecordEvidence;
   "vehicle.vehicle_documents": VehicleVehicleDocuments;
   "vehicle.vehicle_issues": VehicleVehicleIssues;
