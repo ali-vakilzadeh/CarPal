@@ -4,10 +4,10 @@ openapi: "3.1.0"
 jsonSchemaDialect: "https://json-schema.org/draft/2020-12/schema"
 info:
   title: "CarPal API"
-  version: "1.4.0"
+  version: "1.5.0"
   summary: "CarPal MVP API: consumer, business, admin plane and authorization server."
-  description: "Generated from Docs/40.API contract.md (contract 1.4.0, sha256 96d971e4920e67a07844bf0c6175076f8442db2e406908306df932b3d8842e8d); the contract is authoritative.\n\nConventions (40 §0-§4): every schema is closed (additionalProperties false); unknown body members are 422 UNKNOWN_FIELD and unknown query parameters 400 UNKNOWN_QUERY_PARAM.\n\nRequest bodies are application/json except the OAuth forms of /oauth/* and the raw storage PUT. Personal or location data never appears in URLs (TR-7): searches use POST and page in the body.\n\nErrors are application/problem+json (Problem, RFC 9457) with a stable code; /oauth/* answer RFC 6749 error bodies (ProtocolError). Authorization failures are 404, never 403 (SEC-AZ-2).\n\nx-carpal-sec is the contract sec line (40 §0.4): PUB, USR, ORG(role groups), DRV, STF, LNK, AAL2/AAL3, ATT, IDEM, ETAG, RL, ENT, CNS, FLAG, ASYNC, AUD, RSN, 4EYES, PURP, PII.\n\nSchema keywords: x-node-type (taxonomy node type the id must have), x-conditional (rule of a conditional field), x-locale-config (enabled locales), x-vin (VIN normalization), x-external (standard document).\n\n4EYES operations answer 202 PendingChange until a second staff member approves (admin.four_eyes_decide); ASYNC operations answer 202 Job (jobs.get)."
-  x-carpal-contract-sha256: "96d971e4920e67a07844bf0c6175076f8442db2e406908306df932b3d8842e8d"
+  description: "Generated from Docs/40.API contract.md (contract 1.5.0, sha256 b94153360d875b2077e542b606e4d6c89a8bcf79ab1e9ae77a07fcbe9ad3005a); the contract is authoritative.\n\nConventions (40 §0-§4): every schema is closed (additionalProperties false); unknown body members are 422 UNKNOWN_FIELD and unknown query parameters 400 UNKNOWN_QUERY_PARAM.\n\nRequest bodies are application/json except the OAuth forms of /oauth/* and the raw storage PUT. Personal or location data never appears in URLs (TR-7): searches use POST and page in the body.\n\nErrors are application/problem+json (Problem, RFC 9457) with a stable code; /oauth/* answer RFC 6749 error bodies (ProtocolError). Authorization failures are 404, never 403 (SEC-AZ-2).\n\nx-carpal-sec is the contract sec line (40 §0.4): PUB, USR, ORG(role groups), DRV, STF, LNK, AAL2/AAL3, ATT, IDEM, ETAG, RL, ENT, CNS, FLAG, ASYNC, AUD, RSN, 4EYES, PURP, PII.\n\nSchema keywords: x-node-type (taxonomy node type the id must have), x-conditional (rule of a conditional field), x-locale-config (enabled locales), x-vin (VIN normalization), x-external (standard document).\n\n4EYES operations answer 202 PendingChange until a second staff member approves (admin.four_eyes_decide); ASYNC operations answer 202 Job (jobs.get)."
+  x-carpal-contract-sha256: b94153360d875b2077e542b606e4d6c89a8bcf79ab1e9ae77a07fcbe9ad3005a
 servers:
   - url: "https://api.carpals.ir"
     description: "Consumer and business API. Web clients call the same paths on their own origin through their BFF (SEC-WEB-1)."
@@ -274,7 +274,7 @@ paths:
       x-carpal-status: storage-listener
       x-carpal-contract:
         section: "17.2"
-        line: 3864
+        line: 3873
   /oauth/authorize:
     servers:
       - url: "https://id.carpals.ir"
@@ -977,7 +977,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6222
+        line: 6238
   "/v1/admin/analytics/{dashboard_key}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1081,7 +1081,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6256
+        line: 6272
   /v1/admin/assist-sessions:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1209,7 +1209,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5660
+        line: 5676
   "/v1/admin/assist-sessions/{assist_session_id}/end":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1309,7 +1309,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5652
+        line: 5668
   /v1/admin/audit-logs/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1447,7 +1447,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6161
+        line: 6177
   /v1/admin/badges:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1663,7 +1663,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5950
+        line: 5966
   "/v1/admin/badges/{badge_id}/approve":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1767,7 +1767,7 @@ paths:
         - badge.awarded
       x-carpal-contract:
         section: "23.4"
-        line: 5958
+        line: 5974
   /v1/admin/data-requests:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -1975,7 +1975,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6170
+        line: 6186
   "/v1/admin/data-requests/{request_id}/execute-deletion":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2097,7 +2097,7 @@ paths:
         - user.deletion.completed
       x-carpal-contract:
         section: "23.5"
-        line: 6203
+        line: 6219
   "/v1/admin/data-requests/{request_id}/export":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2218,7 +2218,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6187
+        line: 6203
   "/v1/admin/data-requests/{request_id}/status":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2348,7 +2348,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6178
+        line: 6194
   /v1/admin/disputes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2471,7 +2471,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5904
+        line: 5920
   "/v1/admin/disputes/{dispute_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2569,7 +2569,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5912
+        line: 5928
   "/v1/admin/disputes/{dispute_id}/messages":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2679,7 +2679,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5931
+        line: 5947
     post:
       operationId: admin.dispute_message_post
       summary: "Writes a templated message to one party of an open dispute; the party is notified and can answer in its thread."
@@ -2797,7 +2797,7 @@ paths:
         - dispute.message.posted
       x-carpal-contract:
         section: "23.4"
-        line: 5940
+        line: 5956
   "/v1/admin/disputes/{dispute_id}/resolution":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -2960,15 +2960,15 @@ paths:
         - review.published
       x-carpal-contract:
         section: "23.4"
-        line: 5920
+        line: 5936
   /v1/admin/exchange-rates:
     servers:
       - url: "https://admin-api.carpals.ir"
         description: "Admin plane ({adm}); reachable only through the admin BFF on the private network (SEC-ADM-1)."
     get:
       operationId: admin.exchange_rates_list
-      summary: "Lists the USD exchange rates that clients use to show prices in a display currency."
-      description: "Lists the USD exchange rates that clients use to show prices in a display currency."
+      summary: "Lists the USD exchange rates that clients use to show prices in a display currency, with whether each was set today (…"
+      description: "Lists the USD exchange rates that clients use to show prices in a display currency, with whether each was set today (the region's time zone) and its age, for the daily rate workflow. When the rate was not set by the reminder hour (09:00 region time by default), the active administrators get one `exchange_rate_reminder` staff notice that day (in the console and by email). A missing display-currency rate is created at start from the deployment's default (`CARPAL_DEFAULT_IRR_PER_USD`), so `config.client` always serves a rate."
       tags:
         - admin
       parameters:
@@ -3043,7 +3043,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5985
+        line: 6001
   "/v1/admin/exchange-rates/{currency}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3169,7 +3169,7 @@ paths:
         - exchange_rate.changed
       x-carpal-contract:
         section: "23.5"
-        line: 5992
+        line: 6008
   /v1/admin/flags:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3295,7 +3295,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5969
+        line: 5985
   "/v1/admin/flags/{key}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3462,7 +3462,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 5977
+        line: 5993
   /v1/admin/four-eyes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3586,7 +3586,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6278
+        line: 6294
   "/v1/admin/four-eyes/{change_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3722,7 +3722,7 @@ paths:
         - four_eyes.decided
       x-carpal-contract:
         section: "23.5"
-        line: 6286
+        line: 6302
   "/v1/admin/jobs/{job_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3805,7 +3805,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6196
+        line: 6212
   /v1/admin/mcp/access-logs/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -3947,7 +3947,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6247
+        line: 6263
   /v1/admin/mcp/clients:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4054,7 +4054,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6231
+        line: 6247
   "/v1/admin/mcp/clients/{client_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4205,7 +4205,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6238
+        line: 6254
   /v1/admin/me:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4282,7 +4282,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5297
+        line: 5313
   /v1/admin/me/decisions:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4377,7 +4377,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5811
+        line: 5827
   /v1/admin/me/notifications:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4492,7 +4492,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6064
+        line: 6080
   /v1/admin/me/notifications/read:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4587,7 +4587,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6079
+        line: 6095
   /v1/admin/me/notifications/unread-count:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4672,7 +4672,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6072
+        line: 6088
   /v1/admin/me/passkeys:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4758,7 +4758,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5365
+        line: 5381
     post:
       operationId: admin.staff_passkey_register
       summary: "Stores the key created with `admin.staff_passkey_register_options` (fresh `aal3` within 5 minutes)."
@@ -4878,7 +4878,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5381
+        line: 5397
   /v1/admin/me/passkeys/options:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -4988,7 +4988,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5372
+        line: 5388
   "/v1/admin/me/passkeys/{method_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5087,7 +5087,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5390
+        line: 5406
   /v1/admin/me/recovery-codes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5184,7 +5184,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5398
+        line: 5414
   "/v1/admin/media/{media_id}/download-url":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5299,7 +5299,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6213
+        line: 6229
   /v1/admin/moderation/cases:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5465,7 +5465,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5853
+        line: 5869
   "/v1/admin/moderation/cases/{case_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5576,7 +5576,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5862
+        line: 5878
   "/v1/admin/moderation/cases/{case_id}/actions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5707,7 +5707,7 @@ paths:
         - trust.score.changed
       x-carpal-contract:
         section: "23.4"
-        line: 5886
+        line: 5902
   "/v1/admin/moderation/cases/{case_id}/assign":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5812,7 +5812,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5878
+        line: 5894
   "/v1/admin/moderation/cases/{case_id}/close":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -5926,7 +5926,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5896
+        line: 5912
   "/v1/admin/moderation/cases/{case_id}/context":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6022,7 +6022,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5870
+        line: 5886
   /v1/admin/notification-delivery-health:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6096,7 +6096,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6057
+        line: 6073
   /v1/admin/notification-rules:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6172,7 +6172,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6042
+        line: 6058
     put:
       operationId: admin.notif_rules_update
       summary: "Replaces the notification rules."
@@ -6257,7 +6257,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6049
+        line: 6065
   /v1/admin/notification-templates:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6368,7 +6368,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6008
+        line: 6024
   "/v1/admin/notification-templates/{template_key}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6478,7 +6478,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6016
+        line: 6032
   "/v1/admin/notification-templates/{template_key}/preview":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6606,7 +6606,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6033
+        line: 6049
   "/v1/admin/notification-templates/{template_key}/reset":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6722,7 +6722,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6025
+        line: 6041
   /v1/admin/orgs/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6823,7 +6823,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5499
+        line: 5515
   "/v1/admin/orgs/{org_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -6924,7 +6924,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5507
+        line: 5523
   "/v1/admin/orgs/{org_id}/assist-sessions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7044,7 +7044,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5643
+        line: 5659
   "/v1/admin/orgs/{org_id}/capabilities":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7141,7 +7141,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5600
+        line: 5616
   "/v1/admin/orgs/{org_id}/correct":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7246,7 +7246,7 @@ paths:
         - organization.profile.corrected
       x-carpal-contract:
         section: "23.2"
-        line: 5582
+        line: 5598
   "/v1/admin/orgs/{org_id}/history":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7378,7 +7378,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5592
+        line: 5608
   "/v1/admin/orgs/{org_id}/inventory-quality":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7475,7 +7475,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5617
+        line: 5633
   "/v1/admin/orgs/{org_id}/locations/{location_id}/correct":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7631,7 +7631,7 @@ paths:
         - organization.location.corrected
       x-carpal-contract:
         section: "23.2"
-        line: 5572
+        line: 5588
   "/v1/admin/orgs/{org_id}/members":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7773,7 +7773,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5625
+        line: 5641
   "/v1/admin/orgs/{org_id}/merge":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -7913,7 +7913,7 @@ paths:
         - organization.merged
       x-carpal-contract:
         section: "23.2"
-        line: 5524
+        line: 5540
   "/v1/admin/orgs/{org_id}/merge-preview":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8027,7 +8027,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5534
+        line: 5550
   "/v1/admin/orgs/{org_id}/plan-history":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8157,7 +8157,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5634
+        line: 5650
   "/v1/admin/orgs/{org_id}/portfolio":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8300,7 +8300,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5608
+        line: 5624
   "/v1/admin/orgs/{org_id}/status":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8411,7 +8411,7 @@ paths:
         - moderation.action.taken
       x-carpal-contract:
         section: "23.2"
-        line: 5515
+        line: 5531
   /v1/admin/plans:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8518,7 +8518,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5693
+        line: 5709
   "/v1/admin/plans/{plan_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8632,7 +8632,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5700
+        line: 5716
   /v1/admin/policies:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8715,7 +8715,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6119
+        line: 6135
   "/v1/admin/policies/{policy_key}/versions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8820,7 +8820,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6133
+        line: 6149
   "/v1/admin/policy-versions/{version_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -8902,7 +8902,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6126
+        line: 6142
     patch:
       operationId: admin.policy_version_update
       summary: "Changes a draft; a version that was published (or is scheduled) is read-only."
@@ -9057,7 +9057,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6142
+        line: 6158
   "/v1/admin/policy-versions/{version_id}/publish":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9181,7 +9181,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6152
+        line: 6168
   /v1/admin/region:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9258,7 +9258,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6001
+        line: 6017
   /v1/admin/reports:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9386,7 +9386,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5837
+        line: 5853
   "/v1/admin/reports/{report_id}/triage":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9504,7 +9504,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5845
+        line: 5861
   /v1/admin/retention-policies:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9611,7 +9611,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6087
+        line: 6103
     post:
       operationId: admin.retention_create
       summary: "Adds a retention policy; needs a second approver, who creates it."
@@ -9707,7 +9707,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6102
+        line: 6118
   "/v1/admin/retention-policies/{policy_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9801,7 +9801,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6094
+        line: 6110
   "/v1/admin/retention-policies/{policy_id}/dry-run":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -9887,7 +9887,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6111
+        line: 6127
   /v1/admin/review-approvals:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10004,7 +10004,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5795
+        line: 5811
   "/v1/admin/review-approvals/{review_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10100,7 +10100,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5803
+        line: 5819
   "/v1/admin/review-approvals/{review_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10244,7 +10244,7 @@ paths:
         - moderation.action.taken
       x-carpal-contract:
         section: "23.4"
-        line: 5819
+        line: 5835
   "/v1/admin/reviews/{review_id}/move-to-approval-path":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10347,7 +10347,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.4"
-        line: 5829
+        line: 5845
   /v1/admin/staff:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10475,7 +10475,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5304
+        line: 5320
   /v1/admin/staff/recoveries:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10593,7 +10593,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5330
+        line: 5346
   "/v1/admin/staff/recoveries/{request_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10673,7 +10673,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5338
+        line: 5354
   "/v1/admin/staff/recoveries/{request_id}/approve":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10812,7 +10812,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5345
+        line: 5361
   "/v1/admin/staff/recoveries/{request_id}/reject":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -10923,7 +10923,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5356
+        line: 5372
   "/v1/admin/staff/{user_id}/disable":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11046,7 +11046,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5312
+        line: 5328
   "/v1/admin/staff/{user_id}/enable":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11173,7 +11173,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5321
+        line: 5337
   /v1/admin/subscription-change-requests:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11297,7 +11297,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5685
+        line: 5701
   /v1/admin/subscriptions:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11383,7 +11383,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5668
+        line: 5684
     get:
       operationId: admin.subscriptions_list
       summary: "Lists subscriptions for A-PLAN-01 Assignments: the subscriber (organization or individual, by public name), plan, sta…"
@@ -11531,7 +11531,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5676
+        line: 5692
   /v1/admin/support/tickets:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11666,7 +11666,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.6"
-        line: 6300
+        line: 6316
   "/v1/admin/support/tickets/{ticket_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11766,7 +11766,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.6"
-        line: 6308
+        line: 6324
   "/v1/admin/support/tickets/{ticket_id}/assign":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -11883,7 +11883,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.6"
-        line: 6316
+        line: 6332
   "/v1/admin/support/tickets/{ticket_id}/close":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12005,7 +12005,7 @@ paths:
         - support.ticket.solved
       x-carpal-contract:
         section: "23.6"
-        line: 6345
+        line: 6361
   "/v1/admin/support/tickets/{ticket_id}/conversions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12145,7 +12145,7 @@ paths:
         - review.reported
       x-carpal-contract:
         section: "23.6"
-        line: 6335
+        line: 6351
   "/v1/admin/support/tickets/{ticket_id}/messages":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12267,7 +12267,7 @@ paths:
         - support.message.posted
       x-carpal-contract:
         section: "23.6"
-        line: 6325
+        line: 6341
   /v1/admin/system-health:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12275,7 +12275,7 @@ paths:
     get:
       operationId: admin.system_health
       summary: "Returns the A-DASH-01 System widget: failed inventory and fleet imports, failed notification deliveries and files the…"
-      description: "Returns the A-DASH-01 System widget: failed inventory and fleet imports, failed notification deliveries and files the virus scan could not check, in the last 24 hours, 7 days and 30 days, with the last failure. Aggregates only."
+      description: "Returns the A-DASH-01 System widget: failed inventory and fleet imports, failed notification deliveries and files the virus scan could not check, in the last 24 hours, 7 days and 30 days, with the last failure; and (1.5.0) the SMS provider, whether SMS is simulated, and the mail transport. Aggregates only."
       tags:
         - admin
       parameters:
@@ -12343,7 +12343,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6264
+        line: 6280
   /v1/admin/taxonomy/mappings:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12482,7 +12482,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5776
+        line: 5792
     put:
       operationId: admin.mapping_upsert
       summary: "Creates or updates a weighted mapping (unique per source, target and type; node types must match the mapping type)."
@@ -12585,7 +12585,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5784
+        line: 5800
   /v1/admin/taxonomy/nodes:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12714,7 +12714,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5710
+        line: 5726
     post:
       operationId: admin.taxonomy_node_create
       summary: "Creates a node with labels in every enabled locale; parent rules and cycles are checked."
@@ -12831,7 +12831,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5718
+        line: 5734
   "/v1/admin/taxonomy/nodes/{node_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -12983,7 +12983,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5727
+        line: 5743
   "/v1/admin/taxonomy/nodes/{node_id}/merge":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13094,7 +13094,7 @@ paths:
         - taxonomy.node.merged
       x-carpal-contract:
         section: "23.3"
-        line: 5735
+        line: 5751
   "/v1/admin/taxonomy/nodes/{node_id}/synonyms":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13226,7 +13226,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5744
+        line: 5760
     post:
       operationId: admin.synonym_create
       summary: "Adds a synonym, alias, misspelling, local term, abbreviation or transliteration."
@@ -13333,7 +13333,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5752
+        line: 5768
   "/v1/admin/taxonomy/synonyms/{synonym_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13418,7 +13418,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5769
+        line: 5785
   "/v1/admin/taxonomy/synonyms/{synonym_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13526,7 +13526,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.3"
-        line: 5761
+        line: 5777
   /v1/admin/users/search:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13632,7 +13632,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5406
+        line: 5422
   "/v1/admin/users/{user_id}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13731,7 +13731,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5414
+        line: 5430
   "/v1/admin/users/{user_id}/appointments":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -13868,7 +13868,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5431
+        line: 5447
   "/v1/admin/users/{user_id}/consents":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14010,7 +14010,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5440
+        line: 5456
   "/v1/admin/users/{user_id}/onboarding/{flow_type}/reset":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14122,7 +14122,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5491
+        line: 5507
   "/v1/admin/users/{user_id}/platform-roles":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14245,7 +14245,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5474
+        line: 5490
   "/v1/admin/users/{user_id}/platform-roles/{role}":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14347,7 +14347,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5483
+        line: 5499
   "/v1/admin/users/{user_id}/sessions":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14446,7 +14446,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5449
+        line: 5465
   "/v1/admin/users/{user_id}/sessions/revoke":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14546,7 +14546,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5466
+        line: 5482
   "/v1/admin/users/{user_id}/status":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14658,7 +14658,7 @@ paths:
         - moderation.action.taken
       x-carpal-contract:
         section: "23.2"
-        line: 5457
+        line: 5473
   "/v1/admin/users/{user_id}/vehicles":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14795,7 +14795,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5422
+        line: 5438
   /v1/admin/verifications:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -14937,7 +14937,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5543
+        line: 5559
   "/v1/admin/verifications/{verification_id}/assign":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -15070,7 +15070,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.2"
-        line: 5552
+        line: 5568
   "/v1/admin/verifications/{verification_id}/decision":
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -15194,7 +15194,7 @@ paths:
         - organization.verification.rejected
       x-carpal-contract:
         section: "23.2"
-        line: 5561
+        line: 5577
   /v1/admin/work-summary:
     servers:
       - url: "https://admin-api.carpals.ir"
@@ -15271,7 +15271,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "23.5"
-        line: 6271
+        line: 6287
   "/v1/ai/suggestions/{suggestion_id}/decision":
     servers:
       - url: "https://api.carpals.ir"
@@ -15394,7 +15394,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.4"
-        line: 4687
+        line: 4697
   "/v1/answers/{answer_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -15473,7 +15473,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4391
+        line: 4400
   "/v1/approval-requests/{approval_id}/decision":
     servers:
       - url: "https://api.carpals.ir"
@@ -15606,7 +15606,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.4"
-        line: 4704
+        line: 4714
   /v1/auth/email/verify:
     servers:
       - url: "https://id.carpals.ir"
@@ -15711,7 +15711,7 @@ paths:
         - user.registered
       x-carpal-contract:
         section: "6.2"
-        line: 1025
+        line: 1034
   /v1/auth/mfa/verify:
     servers:
       - url: "https://id.carpals.ir"
@@ -16382,7 +16382,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.2"
-        line: 1035
+        line: 1044
   /v1/auth/password-reset/complete:
     servers:
       - url: "https://id.carpals.ir"
@@ -16509,7 +16509,135 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.2"
-        line: 1043
+        line: 1052
+  /v1/auth/password/initial:
+    servers:
+      - url: "https://id.carpals.ir"
+        description: "OAuth 2.1 / OIDC authorization server and hosted sign-in UI."
+    post:
+      operationId: auth.password_set_initial
+      summary: "Only after a staff password sign-in on `cp-web-admin` answered `next: 'change_password'` (the account's password is a…"
+      description: "Only after a staff password sign-in on `cp-web-admin` answered `next: 'change_password'` (the account's password is an initial or one-time password set by `pnpm staff:bootstrap`; contract 1.5.0): checks the code that step sent to the account's verified email and replaces the password with `new_password` (SEC-AU-7: 12-128 characters, not a breached password, `pattern`; not the initial password, `not_unique`). Nothing else of the sign-in is open before it, and no token is issued for the account while its password waits to be changed. Five wrong codes end the interaction. The account is told by email and its other sessions end. The answer is `next: 'enrol_passkey'` for an account without a device-bound key (the same code then opens `auth.passkey_enrol_options` until it expires) or `next: 'mfa'` with `mfa_methods: ['webauthn']`."
+      tags:
+        - identity
+      parameters:
+        - $ref: "#/components/parameters/CarPalClient"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - $ref: "#/components/parameters/CarPalTimezone"
+        - $ref: "#/components/parameters/CarPalRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                interaction_id:
+                  type: string
+                  pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                code:
+                  type: string
+                  pattern: "^[0-9]{6}$"
+                new_password:
+                  type: string
+                  minLength: 12
+                  maxLength: 128
+                  pattern: "^[^\\r\\n]*$"
+              required:
+                - interaction_id
+                - code
+                - new_password
+              additionalProperties: false
+      responses:
+        "200":
+          description: AuthNext
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthNext"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          description: "Problem (RFC 9457): INVALID_CREDENTIALS, STEP_UP_REQUIRED, UNAUTHENTICATED"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            "application/problem+json":
+              schema:
+                $ref: "#/components/schemas/Problem"
+          x-carpal-error-codes:
+            - INVALID_CREDENTIALS
+            - STEP_UP_REQUIRED
+            - UNAUTHENTICATED
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "405":
+          $ref: "#/components/responses/Problem405"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "412":
+          $ref: "#/components/responses/Problem412"
+        "413":
+          $ref: "#/components/responses/Problem413"
+        "415":
+          $ref: "#/components/responses/Problem415"
+        "422":
+          description: "Problem (RFC 9457): CODE_INVALID, VALIDATION_FAILED, IDEMPOTENCY_KEY_REUSED, READ_ONLY_FIELD, REFERENCE_NOT_FOUND, UNKNOWN_FIELD, VALIDATION_FAILED"
+          headers:
+            CarPal-Request-Id:
+              $ref: "#/components/headers/CarPal-Request-Id"
+            CarPal-Contract:
+              $ref: "#/components/headers/CarPal-Contract"
+          content:
+            "application/problem+json":
+              schema:
+                $ref: "#/components/schemas/Problem"
+          x-carpal-error-codes:
+            - CODE_INVALID
+            - VALIDATION_FAILED
+            - IDEMPOTENCY_KEY_REUSED
+            - READ_ONLY_FIELD
+            - REFERENCE_NOT_FOUND
+            - UNKNOWN_FIELD
+            - VALIDATION_FAILED
+        "428":
+          $ref: "#/components/responses/Problem428"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "500":
+          $ref: "#/components/responses/Problem500"
+        "503":
+          $ref: "#/components/responses/Problem503"
+      security: []
+      x-carpal-op-id: auth.password_set_initial
+      x-carpal-host: auth
+      x-carpal-scope: single
+      x-carpal-sec: "PUB(no token) RL(auth.signin) AUD"
+      x-carpal-security:
+        principals:
+          - - tag: PUB
+              args: []
+              qualifier: "no token"
+        tags:
+          - tag: RL
+            args:
+              - auth.signin
+          - tag: AUD
+            args: []
+      x-carpal-status: implemented
+      x-carpal-contract:
+        section: "6.2"
+        line: 970
   /v1/auth/reactivate:
     servers:
       - url: "https://id.carpals.ir"
@@ -16987,7 +17115,7 @@ paths:
       x-carpal-status-reason: "Google/Apple sign-in is post-MVP (OQ-06, PM-01); the route stays registered and answers 501 NOT_IMPLEMENTED."
       x-carpal-contract:
         section: "6.2"
-        line: 1017
+        line: 1026
   /v1/auth/staff-recovery:
     servers:
       - url: "https://id.carpals.ir"
@@ -17116,7 +17244,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.2"
-        line: 970
+        line: 979
   /v1/auth/staff-recovery/key:
     servers:
       - url: "https://id.carpals.ir"
@@ -17249,7 +17377,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.2"
-        line: 1008
+        line: 1017
   /v1/auth/staff-recovery/key/options:
     servers:
       - url: "https://id.carpals.ir"
@@ -17391,7 +17519,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.2"
-        line: 998
+        line: 1007
   /v1/auth/staff-recovery/status:
     servers:
       - url: "https://id.carpals.ir"
@@ -17491,7 +17619,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.2"
-        line: 989
+        line: 998
   /v1/auth/staff-recovery/verify:
     servers:
       - url: "https://id.carpals.ir"
@@ -17605,7 +17733,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.2"
-        line: 980
+        line: 989
   /v1/auth/webauthn/options:
     servers:
       - url: "https://id.carpals.ir"
@@ -17831,7 +17959,7 @@ paths:
         - appointment.status_changed
       x-carpal-contract:
         section: "16.2"
-        line: 3636
+        line: 3645
   /v1/comments:
     servers:
       - url: "https://api.carpals.ir"
@@ -17959,7 +18087,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4302
+        line: 4311
     post:
       operationId: comments.create
       summary: "Adds a comment where the target allows comments; it is moderated before it becomes visible to others."
@@ -18089,7 +18217,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4310
+        line: 4319
   "/v1/comments/{comment_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -18168,7 +18296,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4319
+        line: 4328
   /v1/config/client:
     servers:
       - url: "https://api.carpals.ir"
@@ -18244,7 +18372,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "22.2"
-        line: 4762
+        line: 4773
   /v1/consent-requests/respond:
     servers:
       - url: "https://api.carpals.ir"
@@ -18398,7 +18526,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.4"
-        line: 1257
+        line: 1266
   /v1/consent-requests/view:
     servers:
       - url: "https://api.carpals.ir"
@@ -18512,7 +18640,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.4"
-        line: 1248
+        line: 1257
   /v1/disputes:
     servers:
       - url: "https://api.carpals.ir"
@@ -18615,7 +18743,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3394
+        line: 3403
     get:
       operationId: disputes.mine_list
       summary: "Lists disputes raised by the caller or by organizations where the caller is a manager or owner."
@@ -18728,7 +18856,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3403
+        line: 3412
   "/v1/disputes/{dispute_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -18809,7 +18937,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3411
+        line: 3420
   "/v1/disputes/{dispute_id}/messages":
     servers:
       - url: "https://api.carpals.ir"
@@ -18894,7 +19022,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3427
+        line: 3436
     post:
       operationId: disputes.message_post
       summary: "Replies in the caller's thread of an open dispute, optionally with evidence files."
@@ -19016,7 +19144,7 @@ paths:
         - dispute.message.posted
       x-carpal-contract:
         section: "15.3"
-        line: 3435
+        line: 3444
   "/v1/disputes/{dispute_id}/withdraw":
     servers:
       - url: "https://api.carpals.ir"
@@ -19114,7 +19242,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3418
+        line: 3427
   /v1/events:
     servers:
       - url: "https://api.carpals.ir"
@@ -19234,7 +19362,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "22.2"
-        line: 4785
+        line: 4796
   /v1/feed/discover:
     servers:
       - url: "https://api.carpals.ir"
@@ -19351,7 +19479,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4239
+        line: 4248
   /v1/health:
     servers:
       - url: "https://api.carpals.ir"
@@ -19427,7 +19555,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "22.2"
-        line: 4838
+        line: 4849
   "/v1/insights/{insight_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -19509,7 +19637,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.4"
-        line: 4656
+        line: 4666
   "/v1/insights/{insight_id}/feedback":
     servers:
       - url: "https://api.carpals.ir"
@@ -19607,7 +19735,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.4"
-        line: 4663
+        line: 4673
   /v1/invitations/accept:
     servers:
       - url: "https://api.carpals.ir"
@@ -19731,7 +19859,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1490
+        line: 1499
   "/v1/jobs/{job_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -19815,7 +19943,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "22.2"
-        line: 4769
+        line: 4780
   "/v1/jobs/{job_id}/cancel":
     servers:
       - url: "https://api.carpals.ir"
@@ -19916,7 +20044,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "22.2"
-        line: 4776
+        line: 4787
   /v1/map/pins:
     servers:
       - url: "https://api.carpals.ir"
@@ -20019,7 +20147,7 @@ paths:
         - map.opened
       x-carpal-contract:
         section: "14.2"
-        line: 3050
+        line: 3059
   /v1/me:
     servers:
       - url: "https://api.carpals.ir"
@@ -20096,7 +20224,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1054
+        line: 1063
     patch:
       operationId: me.update
       summary: "Updates the caller's own name, display name, locale, timezone, country, profile photo and preferred contact channel."
@@ -20204,7 +20332,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1062
+        line: 1071
   /v1/me/ai/suggestions:
     servers:
       - url: "https://api.carpals.ir"
@@ -20321,7 +20449,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.4"
-        line: 4679
+        line: 4689
   /v1/me/appointments:
     servers:
       - url: "https://api.carpals.ir"
@@ -20455,7 +20583,7 @@ paths:
         - appointment.requested
       x-carpal-contract:
         section: "16.2"
-        line: 3573
+        line: 3582
     get:
       operationId: appointments.list.me
       summary: "Lists the requester's appointments grouped as upcoming, past, requested or cancelled."
@@ -20573,7 +20701,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3583
+        line: 3592
   "/v1/me/appointments/{appointment_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -20654,7 +20782,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3591
+        line: 3600
     patch:
       operationId: appointments.update.me
       summary: "Edits a draft or a request that the provider has not started reviewing."
@@ -20752,7 +20880,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3598
+        line: 3607
   "/v1/me/appointments/{appointment_id}/check-in":
     servers:
       - url: "https://api.carpals.ir"
@@ -20852,7 +20980,7 @@ paths:
         - appointment.status_changed
       x-carpal-contract:
         section: "16.2"
-        line: 3626
+        line: 3635
   "/v1/me/appointments/{appointment_id}/delay":
     servers:
       - url: "https://api.carpals.ir"
@@ -20964,7 +21092,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3617
+        line: 3626
   "/v1/me/appointments/{appointment_id}/history":
     servers:
       - url: "https://api.carpals.ir"
@@ -21076,7 +21204,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3646
+        line: 3655
   "/v1/me/appointments/{appointment_id}/notes":
     servers:
       - url: "https://api.carpals.ir"
@@ -21188,7 +21316,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3653
+        line: 3662
     post:
       operationId: appointments.note_create.me
       summary: "Adds a customer-visible note from the requester side."
@@ -21293,7 +21421,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3660
+        line: 3669
   "/v1/me/appointments/{appointment_id}/pre-visit-report":
     servers:
       - url: "https://api.carpals.ir"
@@ -21374,7 +21502,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3668
+        line: 3677
   "/v1/me/appointments/{appointment_id}/transitions":
     servers:
       - url: "https://api.carpals.ir"
@@ -21483,7 +21611,7 @@ paths:
         - appointment.confirmed
       x-carpal-contract:
         section: "16.2"
-        line: 3607
+        line: 3616
   /v1/me/consents:
     servers:
       - url: "https://api.carpals.ir"
@@ -21599,7 +21727,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.4"
-        line: 1221
+        line: 1230
     post:
       operationId: consents.grant
       summary: "Records a new consent, optionally scoped to one record and granted to one party; records are immutable except withdra…"
@@ -21697,7 +21825,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.4"
-        line: 1229
+        line: 1238
   "/v1/me/consents/{consent_id}/withdraw":
     servers:
       - url: "https://api.carpals.ir"
@@ -21787,7 +21915,7 @@ paths:
         - consent.withdrawn
       x-carpal-contract:
         section: "6.4"
-        line: 1239
+        line: 1248
   /v1/me/data-requests:
     servers:
       - url: "https://api.carpals.ir"
@@ -21894,7 +22022,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.5"
-        line: 1302
+        line: 1311
     get:
       operationId: dsr.list
       summary: "Lists the caller's data subject requests."
@@ -21996,7 +22124,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.5"
-        line: 1311
+        line: 1320
   "/v1/me/data-requests/{request_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -22077,7 +22205,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.5"
-        line: 1318
+        line: 1327
   "/v1/me/data-requests/{request_id}/download":
     servers:
       - url: "https://api.carpals.ir"
@@ -22188,7 +22316,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.5"
-        line: 1325
+        line: 1334
   /v1/me/deactivate:
     servers:
       - url: "https://api.carpals.ir"
@@ -22285,7 +22413,7 @@ paths:
         - user.deactivated
       x-carpal-contract:
         section: "6.3"
-        line: 1105
+        line: 1114
   /v1/me/email-change:
     servers:
       - url: "https://api.carpals.ir"
@@ -22386,7 +22514,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1071
+        line: 1080
   /v1/me/favorites:
     servers:
       - url: "https://api.carpals.ir"
@@ -22492,7 +22620,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4217
+        line: 4226
   "/v1/me/favorites/{org_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -22574,7 +22702,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4224
+        line: 4233
     delete:
       operationId: favorites.delete
       summary: "Removes a favourite."
@@ -22649,7 +22777,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4232
+        line: 4241
   /v1/me/follows:
     servers:
       - url: "https://api.carpals.ir"
@@ -22755,7 +22883,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4195
+        line: 4204
   "/v1/me/follows/{org_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -22853,7 +22981,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4202
+        line: 4211
     delete:
       operationId: follows.delete
       summary: "Unfollows an organization."
@@ -22928,7 +23056,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4210
+        line: 4219
   /v1/me/inquiries:
     servers:
       - url: "https://api.carpals.ir"
@@ -23046,7 +23174,7 @@ paths:
         - inquiry.sent
       x-carpal-contract:
         section: "13.3"
-        line: 2797
+        line: 2806
     get:
       operationId: inquiries.list.me
       summary: "Lists the requester's inquiries."
@@ -23153,7 +23281,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.3"
-        line: 2807
+        line: 2816
   "/v1/me/inquiries/{inquiry_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -23244,7 +23372,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.3"
-        line: 2815
+        line: 2824
   "/v1/me/inquiries/{inquiry_id}/messages":
     servers:
       - url: "https://api.carpals.ir"
@@ -23363,7 +23491,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.3"
-        line: 2822
+        line: 2831
   "/v1/me/inquiries/{inquiry_id}/transitions":
     servers:
       - url: "https://api.carpals.ir"
@@ -23476,7 +23604,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.3"
-        line: 2831
+        line: 2840
   /v1/me/memberships:
     servers:
       - url: "https://api.carpals.ir"
@@ -23587,7 +23715,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1131
+        line: 1140
   "/v1/me/memberships/{membership_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -23682,7 +23810,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1139
+        line: 1148
   /v1/me/mfa-methods:
     servers:
       - url: "https://api.carpals.ir"
@@ -23788,7 +23916,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1172
+        line: 1181
   /v1/me/mfa-methods/totp:
     servers:
       - url: "https://api.carpals.ir"
@@ -23897,7 +24025,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1179
+        line: 1188
   /v1/me/mfa-methods/webauthn/options:
     servers:
       - url: "https://api.carpals.ir"
@@ -23991,7 +24119,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1187
+        line: 1196
   "/v1/me/mfa-methods/{method_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -24074,7 +24202,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1204
+        line: 1213
   "/v1/me/mfa-methods/{method_id}/confirm":
     servers:
       - url: "https://api.carpals.ir"
@@ -24200,7 +24328,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1195
+        line: 1204
   /v1/me/mfa-recovery-codes:
     servers:
       - url: "https://api.carpals.ir"
@@ -24294,7 +24422,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1211
+        line: 1220
   /v1/me/notification-preferences:
     servers:
       - url: "https://api.carpals.ir"
@@ -24376,7 +24504,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "20.2"
-        line: 4450
+        line: 4460
     put:
       operationId: notification_prefs.put
       summary: "Replaces preferences; critical notifications are always delivered in-app, and marketing needs the marketing consent."
@@ -24481,7 +24609,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "20.2"
-        line: 4457
+        line: 4467
   /v1/me/notifications:
     servers:
       - url: "https://api.carpals.ir"
@@ -24603,7 +24731,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "20.2"
-        line: 4426
+        line: 4436
   /v1/me/notifications/read:
     servers:
       - url: "https://api.carpals.ir"
@@ -24694,7 +24822,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "20.2"
-        line: 4442
+        line: 4452
   /v1/me/notifications/unread-count:
     servers:
       - url: "https://api.carpals.ir"
@@ -24781,7 +24909,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "20.2"
-        line: 4434
+        line: 4444
   /v1/me/onboarding:
     servers:
       - url: "https://api.carpals.ir"
@@ -24887,7 +25015,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.6"
-        line: 1339
+        line: 1348
   "/v1/me/onboarding/{flow_type}":
     servers:
       - url: "https://api.carpals.ir"
@@ -24981,7 +25109,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.6"
-        line: 1346
+        line: 1355
   "/v1/me/onboarding/{flow_type}/accept-terms":
     servers:
       - url: "https://api.carpals.ir"
@@ -25090,7 +25218,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.6"
-        line: 1354
+        line: 1363
   /v1/me/password:
     servers:
       - url: "https://api.carpals.ir"
@@ -25204,7 +25332,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1096
+        line: 1105
   /v1/me/phone-change:
     servers:
       - url: "https://api.carpals.ir"
@@ -25297,7 +25425,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1079
+        line: 1088
   /v1/me/phone-change/verify:
     servers:
       - url: "https://api.carpals.ir"
@@ -25406,7 +25534,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1087
+        line: 1096
   /v1/me/policy-acceptances:
     servers:
       - url: "https://api.carpals.ir"
@@ -25528,7 +25656,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.7"
-        line: 1375
+        line: 1384
   /v1/me/preferences:
     servers:
       - url: "https://api.carpals.ir"
@@ -25603,7 +25731,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1114
+        line: 1123
     patch:
       operationId: me.preferences_update
       summary: "Updates preferences; enabling AI personalization (and the personalised Help Me and matching switches), marketing or e…"
@@ -25711,7 +25839,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1122
+        line: 1131
   /v1/me/push-tokens:
     servers:
       - url: "https://api.carpals.ir"
@@ -25807,7 +25935,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "20.2"
-        line: 4466
+        line: 4476
   "/v1/me/push-tokens/{push_token_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -25886,7 +26014,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "20.2"
-        line: 4474
+        line: 4484
   /v1/me/review-invitations:
     servers:
       - url: "https://api.carpals.ir"
@@ -25992,7 +26120,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.2"
-        line: 3275
+        line: 3284
   /v1/me/reviews:
     servers:
       - url: "https://api.carpals.ir"
@@ -26103,7 +26231,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.2"
-        line: 3235
+        line: 3244
   "/v1/me/reviews/{review_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -26184,7 +26312,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.2"
-        line: 3243
+        line: 3252
     patch:
       operationId: reviews.mine_update
       summary: "Edits a review before it is published; the edit restarts the automatic checks."
@@ -26282,7 +26410,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.2"
-        line: 3250
+        line: 3259
     delete:
       operationId: reviews.mine_withdraw
       summary: "Withdraws the caller's review (status `removed`, kept for audit and hidden)."
@@ -26359,7 +26487,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.2"
-        line: 3259
+        line: 3268
   "/v1/me/reviews/{review_id}/evidence":
     servers:
       - url: "https://api.carpals.ir"
@@ -26475,7 +26603,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.2"
-        line: 3266
+        line: 3275
   /v1/me/sessions:
     servers:
       - url: "https://api.carpals.ir"
@@ -26581,7 +26709,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1148
+        line: 1157
   /v1/me/sessions/revoke-all:
     servers:
       - url: "https://api.carpals.ir"
@@ -26670,7 +26798,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1164
+        line: 1173
   "/v1/me/sessions/{session_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -26749,7 +26877,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.3"
-        line: 1156
+        line: 1165
   /v1/me/subscription:
     servers:
       - url: "https://api.carpals.ir"
@@ -26824,7 +26952,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "10.2"
-        line: 2091
+        line: 2100
   /v1/me/triage-sessions:
     servers:
       - url: "https://api.carpals.ir"
@@ -26964,7 +27092,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.2"
-        line: 4520
+        line: 4530
   "/v1/me/triage-sessions/{session_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -27043,7 +27171,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.2"
-        line: 4538
+        line: 4548
   "/v1/me/triage-sessions/{session_id}/complete":
     servers:
       - url: "https://api.carpals.ir"
@@ -27152,7 +27280,7 @@ paths:
         - vehicle.issue.reported
       x-carpal-contract:
         section: "21.2"
-        line: 4545
+        line: 4555
   "/v1/me/triage-sessions/{session_id}/turns":
     servers:
       - url: "https://api.carpals.ir"
@@ -27268,7 +27396,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.2"
-        line: 4529
+        line: 4539
   /v1/me/vehicle-transfers:
     servers:
       - url: "https://api.carpals.ir"
@@ -27405,7 +27533,7 @@ paths:
         - vehicle.transfer.requested
       x-carpal-contract:
         section: "12.2"
-        line: 2294
+        line: 2303
     get:
       operationId: vehicles.transfers_list.me
       summary: "Lists transfer requests the caller made (outgoing) or received as current owner (incoming)."
@@ -27526,7 +27654,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2304
+        line: 2313
   "/v1/me/vehicle-transfers/{transfer_id}/cancel":
     servers:
       - url: "https://api.carpals.ir"
@@ -27624,7 +27752,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2322
+        line: 2331
   "/v1/me/vehicle-transfers/{transfer_id}/decision":
     servers:
       - url: "https://api.carpals.ir"
@@ -27742,7 +27870,7 @@ paths:
         - vehicle.transferred
       x-carpal-contract:
         section: "12.2"
-        line: 2312
+        line: 2321
   /v1/me/vehicles:
     servers:
       - url: "https://api.carpals.ir"
@@ -27869,7 +27997,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2241
+        line: 2250
     post:
       operationId: vehicles.create.me
       summary: "Adds a vehicle by VIN or manual entry; active vehicles cannot exceed the plan's `max_vehicles` (Individual Free 5), c…"
@@ -27990,7 +28118,7 @@ paths:
         - vehicle.created
       x-carpal-contract:
         section: "12.2"
-        line: 2249
+        line: 2258
   "/v1/me/vehicles/{vehicle_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -28071,7 +28199,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2259
+        line: 2268
     patch:
       operationId: vehicles.update.me
       summary: "Updates any vehicle field (manual override always allowed, even after VIN decoding); a new VIN re-runs duplicate dete…"
@@ -28270,7 +28398,7 @@ paths:
         - vehicle.updated
       x-carpal-contract:
         section: "12.2"
-        line: 2266
+        line: 2275
   "/v1/me/vehicles/{vehicle_id}/ai/service-history":
     servers:
       - url: "https://api.carpals.ir"
@@ -28369,7 +28497,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4566
+        line: 4576
   "/v1/me/vehicles/{vehicle_id}/ai/suggestions":
     servers:
       - url: "https://api.carpals.ir"
@@ -28488,7 +28616,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4558
+        line: 4568
   "/v1/me/vehicles/{vehicle_id}/documents":
     servers:
       - url: "https://api.carpals.ir"
@@ -28600,7 +28728,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2361
+        line: 2370
     post:
       operationId: vehicles.document_create.me
       summary: "Stores a document as private encrypted media; sharing with a provider needs an active `vehicle_data_sharing` consent …"
@@ -28718,7 +28846,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2368
+        line: 2377
   "/v1/me/vehicles/{vehicle_id}/documents/{document_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -28851,7 +28979,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2377
+        line: 2386
     delete:
       operationId: vehicles.document_delete.me
       summary: "Removes a document; its media follows the retention policy."
@@ -28934,7 +29062,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2385
+        line: 2394
   "/v1/me/vehicles/{vehicle_id}/issues":
     servers:
       - url: "https://api.carpals.ir"
@@ -29057,7 +29185,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2458
+        line: 2467
     post:
       operationId: issues.create.me
       summary: "Reports an issue; the server runs the shared safety keyword check, and a fleet driver's report starts the fleet appro…"
@@ -29162,7 +29290,7 @@ paths:
         - fleet.approval.requested
       x-carpal-contract:
         section: "12.2"
-        line: 2466
+        line: 2475
   "/v1/me/vehicles/{vehicle_id}/issues/{issue_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -29249,7 +29377,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2476
+        line: 2485
     patch:
       operationId: issues.update.me
       summary: "Edits the issue text, symptom or urgency; urgency cannot be set below the level the safety check set."
@@ -29371,7 +29499,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2483
+        line: 2492
   "/v1/me/vehicles/{vehicle_id}/issues/{issue_id}/status":
     servers:
       - url: "https://api.carpals.ir"
@@ -29494,7 +29622,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2491
+        line: 2500
   "/v1/me/vehicles/{vehicle_id}/mileage":
     servers:
       - url: "https://api.carpals.ir"
@@ -29606,7 +29734,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2346
+        line: 2355
     post:
       operationId: vehicles.mileage_add.me
       summary: "Records a mileage reading and updates the vehicle's current mileage; a lower reading is accepted with a warning flag."
@@ -29696,7 +29824,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2353
+        line: 2362
   "/v1/me/vehicles/{vehicle_id}/reminders":
     servers:
       - url: "https://api.carpals.ir"
@@ -29819,7 +29947,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2500
+        line: 2509
     post:
       operationId: reminders.create.me
       summary: "Adds a manual reminder due by date, mileage or both."
@@ -29909,7 +30037,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2508
+        line: 2517
   "/v1/me/vehicles/{vehicle_id}/reminders/{reminder_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -30051,7 +30179,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2516
+        line: 2525
     delete:
       operationId: reminders.delete.me
       summary: "Deletes a manual reminder."
@@ -30132,7 +30260,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2524
+        line: 2533
   "/v1/me/vehicles/{vehicle_id}/service-records":
     servers:
       - url: "https://api.carpals.ir"
@@ -30270,7 +30398,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2392
+        line: 2401
     post:
       operationId: service_records.create.me
       summary: "Adds a manual or invoice-based service record; an invoice upload starts the invoice verification path."
@@ -30362,7 +30490,7 @@ paths:
         - service_record.created
       x-carpal-contract:
         section: "12.2"
-        line: 2400
+        line: 2409
   "/v1/me/vehicles/{vehicle_id}/service-records/{record_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -30449,7 +30577,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2409
+        line: 2418
     patch:
       operationId: service_records.update.me
       summary: "Edits a record the caller created; provider-created and appointment records can only be disputed (`disputes.create`)."
@@ -30611,7 +30739,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2416
+        line: 2425
     delete:
       operationId: service_records.delete.me
       summary: "Removes a record the caller created; records used as review or capability evidence are kept for audit and hidden."
@@ -30694,7 +30822,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2425
+        line: 2434
   "/v1/me/vehicles/{vehicle_id}/service-records/{record_id}/evidence":
     servers:
       - url: "https://api.carpals.ir"
@@ -30818,7 +30946,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2432
+        line: 2441
   "/v1/me/vehicles/{vehicle_id}/service-records/{record_id}/evidence/{evidence_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -30909,7 +31037,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2441
+        line: 2450
   "/v1/me/vehicles/{vehicle_id}/status":
     servers:
       - url: "https://api.carpals.ir"
@@ -31018,7 +31146,7 @@ paths:
         - vehicle.updated
       x-carpal-contract:
         section: "12.2"
-        line: 2276
+        line: 2285
   "/v1/me/vehicles/{vehicle_id}/status-history":
     servers:
       - url: "https://api.carpals.ir"
@@ -31130,7 +31258,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2339
+        line: 2348
   "/v1/me/vehicles/{vehicle_id}/vin-decode":
     servers:
       - url: "https://api.carpals.ir"
@@ -31241,7 +31369,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2330
+        line: 2339
   "/v1/me/vehicles/{vehicle_id}/vin-reveal":
     servers:
       - url: "https://api.carpals.ir"
@@ -31338,7 +31466,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2286
+        line: 2295
   /v1/media/attachments:
     servers:
       - url: "https://api.carpals.ir"
@@ -31455,7 +31583,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "17.2"
-        line: 3898
+        line: 3907
   "/v1/media/attachments/{attachment_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -31565,7 +31693,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "17.2"
-        line: 3907
+        line: 3916
     delete:
       operationId: media.detach
       summary: "Removes an attachment; the asset remains for its other uses."
@@ -31643,7 +31771,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "17.2"
-        line: 3915
+        line: 3924
   /v1/media/uploads:
     servers:
       - url: "https://api.carpals.ir"
@@ -31751,7 +31879,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "17.2"
-        line: 3855
+        line: 3864
   "/v1/media/uploads/{upload_id}/complete":
     servers:
       - url: "https://api.carpals.ir"
@@ -31873,7 +32001,7 @@ paths:
         - media.scan.completed
       x-carpal-contract:
         section: "17.2"
-        line: 3872
+        line: 3881
   "/v1/media/{media_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -31957,7 +32085,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "17.2"
-        line: 3882
+        line: 3891
     delete:
       operationId: media.delete
       summary: "Removes an asset and all its attachments; deletion follows the retention policy."
@@ -32037,7 +32165,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "17.2"
-        line: 3922
+        line: 3931
   "/v1/media/{media_id}/download-url":
     servers:
       - url: "https://api.carpals.ir"
@@ -32150,7 +32278,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "17.2"
-        line: 3889
+        line: 3898
   "/v1/media/{media_id}/redaction":
     servers:
       - url: "https://api.carpals.ir"
@@ -32249,7 +32377,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "17.2"
-        line: 3929
+        line: 3938
   /v1/orgs:
     servers:
       - url: "https://api.carpals.ir"
@@ -32354,7 +32482,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1448
+        line: 1457
   "/v1/orgs/{org_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -32436,7 +32564,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1457
+        line: 1466
     patch:
       operationId: org.update
       summary: "Updates the organization's names, contacts, description and slug."
@@ -32537,7 +32665,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1464
+        line: 1473
   "/v1/orgs/{org_id}/ai/review-insights":
     servers:
       - url: "https://api.carpals.ir"
@@ -32658,7 +32786,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4598
+        line: 4608
   "/v1/orgs/{org_id}/ai/suggestions":
     servers:
       - url: "https://api.carpals.ir"
@@ -32790,7 +32918,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.4"
-        line: 4671
+        line: 4681
   "/v1/orgs/{org_id}/approval-requests":
     servers:
       - url: "https://api.carpals.ir"
@@ -32913,7 +33041,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.4"
-        line: 4696
+        line: 4706
   "/v1/orgs/{org_id}/consents":
     servers:
       - url: "https://api.carpals.ir"
@@ -33035,7 +33163,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.4"
-        line: 1266
+        line: 1275
     post:
       operationId: org.consents_grant
       summary: "Records an organization-level consent; only the organization owner can give it."
@@ -33142,7 +33270,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.4"
-        line: 1274
+        line: 1283
   "/v1/orgs/{org_id}/consents/{consent_id}/confirm":
     servers:
       - url: "https://api.carpals.ir"
@@ -33267,7 +33395,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.4"
-        line: 1283
+        line: 1292
   "/v1/orgs/{org_id}/consents/{consent_id}/withdraw":
     servers:
       - url: "https://api.carpals.ir"
@@ -33364,7 +33492,7 @@ paths:
         - consent.withdrawn
       x-carpal-contract:
         section: "6.4"
-        line: 1292
+        line: 1301
   "/v1/orgs/{org_id}/fleet/ai/suggestions":
     servers:
       - url: "https://api.carpals.ir"
@@ -33482,7 +33610,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4646
+        line: 4656
   "/v1/orgs/{org_id}/fleet/appointments":
     servers:
       - url: "https://api.carpals.ir"
@@ -33623,7 +33751,7 @@ paths:
         - appointment.requested
       x-carpal-contract:
         section: "16.2"
-        line: 3573
+        line: 3582
     get:
       operationId: appointments.list.fleet
       summary: "Lists the requester's appointments grouped as upcoming, past, requested or cancelled."
@@ -33750,7 +33878,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3583
+        line: 3592
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -33840,7 +33968,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3591
+        line: 3600
     patch:
       operationId: appointments.update.fleet
       summary: "Edits a draft or a request that the provider has not started reviewing."
@@ -33945,7 +34073,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3598
+        line: 3607
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}/check-in":
     servers:
       - url: "https://api.carpals.ir"
@@ -34054,7 +34182,7 @@ paths:
         - appointment.status_changed
       x-carpal-contract:
         section: "16.2"
-        line: 3626
+        line: 3635
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}/delay":
     servers:
       - url: "https://api.carpals.ir"
@@ -34175,7 +34303,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3617
+        line: 3626
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}/history":
     servers:
       - url: "https://api.carpals.ir"
@@ -34296,7 +34424,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3646
+        line: 3655
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}/notes":
     servers:
       - url: "https://api.carpals.ir"
@@ -34417,7 +34545,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3653
+        line: 3662
     post:
       operationId: appointments.note_create.fleet
       summary: "Adds a customer-visible note from the requester side."
@@ -34529,7 +34657,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3660
+        line: 3669
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}/pre-visit-report":
     servers:
       - url: "https://api.carpals.ir"
@@ -34617,7 +34745,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.2"
-        line: 3668
+        line: 3677
   "/v1/orgs/{org_id}/fleet/appointments/{appointment_id}/transitions":
     servers:
       - url: "https://api.carpals.ir"
@@ -34733,7 +34861,7 @@ paths:
         - appointment.confirmed
       x-carpal-contract:
         section: "16.2"
-        line: 3607
+        line: 3616
   "/v1/orgs/{org_id}/fleet/approvals":
     servers:
       - url: "https://api.carpals.ir"
@@ -34872,7 +35000,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4056
+        line: 4065
     post:
       operationId: fleet.approval_create
       summary: "Requests an approval, for example a coordinator proposing a provider for a driver's issue."
@@ -34965,7 +35093,7 @@ paths:
         - fleet.approval.requested
       x-carpal-contract:
         section: "18.2"
-        line: 4064
+        line: 4073
   "/v1/orgs/{org_id}/fleet/approvals/{approval_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -35054,7 +35182,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4073
+        line: 4082
   "/v1/orgs/{org_id}/fleet/approvals/{approval_id}/decision":
     servers:
       - url: "https://api.carpals.ir"
@@ -35181,7 +35309,7 @@ paths:
         - fleet.approval.decided
       x-carpal-contract:
         section: "18.2"
-        line: 4080
+        line: 4089
   "/v1/orgs/{org_id}/fleet/assignments":
     servers:
       - url: "https://api.carpals.ir"
@@ -35318,7 +35446,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4007
+        line: 4016
   "/v1/orgs/{org_id}/fleet/dashboard":
     servers:
       - url: "https://api.carpals.ir"
@@ -35400,7 +35528,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4000
+        line: 4009
   "/v1/orgs/{org_id}/fleet/exports":
     servers:
       - url: "https://api.carpals.ir"
@@ -35506,7 +35634,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4098
+        line: 4107
     get:
       operationId: fleet.exports_list
       summary: "Lists exports and their status."
@@ -35616,7 +35744,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4106
+        line: 4115
   "/v1/orgs/{org_id}/fleet/exports/{export_id}/download":
     servers:
       - url: "https://api.carpals.ir"
@@ -35720,7 +35848,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4113
+        line: 4122
   "/v1/orgs/{org_id}/fleet/partners":
     servers:
       - url: "https://api.carpals.ir"
@@ -35841,7 +35969,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4031
+        line: 4040
     post:
       operationId: fleet.partner_create
       summary: "Adds a preferred provider or approved vendor, optionally for one service system or part category."
@@ -35946,7 +36074,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4039
+        line: 4048
   "/v1/orgs/{org_id}/fleet/partners/{partner_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -36074,7 +36202,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4048
+        line: 4057
   "/v1/orgs/{org_id}/fleet/profile":
     servers:
       - url: "https://api.carpals.ir"
@@ -36156,7 +36284,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 3985
+        line: 3994
     put:
       operationId: fleet.profile_put
       summary: "Creates or updates the fleet profile; enabling the approval workflow needs the `fleet_approval_workflow_enabled` enti…"
@@ -36256,7 +36384,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 3992
+        line: 4001
   "/v1/orgs/{org_id}/fleet/reports/{report_type}":
     servers:
       - url: "https://api.carpals.ir"
@@ -36368,7 +36496,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4090
+        line: 4099
   "/v1/orgs/{org_id}/fleet/vehicle-imports":
     servers:
       - url: "https://api.carpals.ir"
@@ -36485,7 +36613,7 @@ paths:
         - vehicle.created
       x-carpal-contract:
         section: "18.2"
-        line: 4122
+        line: 4131
     get:
       operationId: fleet.imports_list
       summary: "Lists vehicle import batches."
@@ -36594,7 +36722,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4132
+        line: 4141
   "/v1/orgs/{org_id}/fleet/vehicle-imports/{batch_id}/error-report":
     servers:
       - url: "https://api.carpals.ir"
@@ -36680,7 +36808,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4139
+        line: 4148
   "/v1/orgs/{org_id}/fleet/vehicle-transfers":
     servers:
       - url: "https://api.carpals.ir"
@@ -36824,7 +36952,7 @@ paths:
         - vehicle.transfer.requested
       x-carpal-contract:
         section: "12.2"
-        line: 2294
+        line: 2303
     get:
       operationId: vehicles.transfers_list.fleet
       summary: "Lists transfer requests the caller made (outgoing) or received as current owner (incoming)."
@@ -36952,7 +37080,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2304
+        line: 2313
   "/v1/orgs/{org_id}/fleet/vehicle-transfers/{transfer_id}/cancel":
     servers:
       - url: "https://api.carpals.ir"
@@ -37057,7 +37185,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2322
+        line: 2331
   "/v1/orgs/{org_id}/fleet/vehicle-transfers/{transfer_id}/decision":
     servers:
       - url: "https://api.carpals.ir"
@@ -37182,7 +37310,7 @@ paths:
         - vehicle.transferred
       x-carpal-contract:
         section: "12.2"
-        line: 2312
+        line: 2321
   "/v1/orgs/{org_id}/fleet/vehicles":
     servers:
       - url: "https://api.carpals.ir"
@@ -37318,7 +37446,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2241
+        line: 2250
     post:
       operationId: vehicles.create.fleet
       summary: "Adds a vehicle by VIN or manual entry; active vehicles cannot exceed the plan's `max_vehicles` (Individual Free 5), c…"
@@ -37446,7 +37574,7 @@ paths:
         - vehicle.created
       x-carpal-contract:
         section: "12.2"
-        line: 2249
+        line: 2258
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -37536,7 +37664,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2259
+        line: 2268
     patch:
       operationId: vehicles.update.fleet
       summary: "Updates any vehicle field (manual override always allowed, even after VIN decoding); a new VIN re-runs duplicate dete…"
@@ -37742,7 +37870,7 @@ paths:
         - vehicle.updated
       x-carpal-contract:
         section: "12.2"
-        line: 2266
+        line: 2275
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/ai/service-history":
     servers:
       - url: "https://api.carpals.ir"
@@ -37848,7 +37976,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4566
+        line: 4576
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/ai/suggestions":
     servers:
       - url: "https://api.carpals.ir"
@@ -37974,7 +38102,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4558
+        line: 4568
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/assignment":
     servers:
       - url: "https://api.carpals.ir"
@@ -38098,7 +38226,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4015
+        line: 4024
     delete:
       operationId: fleet.assignment_end
       summary: "Ends the vehicle's active assignment."
@@ -38182,7 +38310,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "18.2"
-        line: 4024
+        line: 4033
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/documents":
     servers:
       - url: "https://api.carpals.ir"
@@ -38302,7 +38430,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2361
+        line: 2370
     post:
       operationId: vehicles.document_create.fleet
       summary: "Stores a document as private encrypted media; sharing with a provider needs an active `vehicle_data_sharing` consent …"
@@ -38427,7 +38555,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2368
+        line: 2377
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/documents/{document_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -38567,7 +38695,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2377
+        line: 2386
     delete:
       operationId: vehicles.document_delete.fleet
       summary: "Removes a document; its media follows the retention policy."
@@ -38657,7 +38785,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2385
+        line: 2394
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/issues":
     servers:
       - url: "https://api.carpals.ir"
@@ -38789,7 +38917,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2458
+        line: 2467
     post:
       operationId: issues.create.fleet
       summary: "Reports an issue; the server runs the shared safety keyword check, and a fleet driver's report starts the fleet appro…"
@@ -38903,7 +39031,7 @@ paths:
         - fleet.approval.requested
       x-carpal-contract:
         section: "12.2"
-        line: 2466
+        line: 2475
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/issues/{issue_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -38999,7 +39127,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2476
+        line: 2485
     patch:
       operationId: issues.update.fleet
       summary: "Edits the issue text, symptom or urgency; urgency cannot be set below the level the safety check set."
@@ -39131,7 +39259,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2483
+        line: 2492
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/issues/{issue_id}/status":
     servers:
       - url: "https://api.carpals.ir"
@@ -39261,7 +39389,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2491
+        line: 2500
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/mileage":
     servers:
       - url: "https://api.carpals.ir"
@@ -39382,7 +39510,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2346
+        line: 2355
     post:
       operationId: vehicles.mileage_add.fleet
       summary: "Records a mileage reading and updates the vehicle's current mileage; a lower reading is accepted with a warning flag."
@@ -39481,7 +39609,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2353
+        line: 2362
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/reminders":
     servers:
       - url: "https://api.carpals.ir"
@@ -39613,7 +39741,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2500
+        line: 2509
     post:
       operationId: reminders.create.fleet
       summary: "Adds a manual reminder due by date, mileage or both."
@@ -39710,7 +39838,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2508
+        line: 2517
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/reminders/{reminder_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -39859,7 +39987,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2516
+        line: 2525
     delete:
       operationId: reminders.delete.fleet
       summary: "Deletes a manual reminder."
@@ -39947,7 +40075,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2524
+        line: 2533
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/service-records":
     servers:
       - url: "https://api.carpals.ir"
@@ -40094,7 +40222,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2392
+        line: 2401
     post:
       operationId: service_records.create.fleet
       summary: "Adds a manual or invoice-based service record; an invoice upload starts the invoice verification path."
@@ -40193,7 +40321,7 @@ paths:
         - service_record.created
       x-carpal-contract:
         section: "12.2"
-        line: 2400
+        line: 2409
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/service-records/{record_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -40289,7 +40417,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2409
+        line: 2418
     patch:
       operationId: service_records.update.fleet
       summary: "Edits a record the caller created; provider-created and appointment records can only be disputed (`disputes.create`)."
@@ -40458,7 +40586,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2416
+        line: 2425
     delete:
       operationId: service_records.delete.fleet
       summary: "Removes a record the caller created; records used as review or capability evidence are kept for audit and hidden."
@@ -40548,7 +40676,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2425
+        line: 2434
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/service-records/{record_id}/evidence":
     servers:
       - url: "https://api.carpals.ir"
@@ -40679,7 +40807,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2432
+        line: 2441
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/service-records/{record_id}/evidence/{evidence_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -40777,7 +40905,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2441
+        line: 2450
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/status":
     servers:
       - url: "https://api.carpals.ir"
@@ -40893,7 +41021,7 @@ paths:
         - vehicle.updated
       x-carpal-contract:
         section: "12.2"
-        line: 2276
+        line: 2285
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/status-history":
     servers:
       - url: "https://api.carpals.ir"
@@ -41014,7 +41142,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2339
+        line: 2348
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/vin-decode":
     servers:
       - url: "https://api.carpals.ir"
@@ -41132,7 +41260,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2330
+        line: 2339
   "/v1/orgs/{org_id}/fleet/vehicles/{vehicle_id}/vin-reveal":
     servers:
       - url: "https://api.carpals.ir"
@@ -41236,7 +41364,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "12.2"
-        line: 2286
+        line: 2295
   "/v1/orgs/{org_id}/geo/geocode":
     servers:
       - url: "https://api.carpals.ir"
@@ -41347,7 +41475,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1556
+        line: 1565
   "/v1/orgs/{org_id}/geo/resolve-map-link":
     servers:
       - url: "https://api.carpals.ir"
@@ -41494,7 +41622,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1572
+        line: 1581
   "/v1/orgs/{org_id}/geo/reverse":
     servers:
       - url: "https://api.carpals.ir"
@@ -41610,7 +41738,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1564
+        line: 1573
   "/v1/orgs/{org_id}/inquiries":
     servers:
       - url: "https://api.carpals.ir"
@@ -41736,7 +41864,7 @@ paths:
         - inquiry.sent
       x-carpal-contract:
         section: "13.3"
-        line: 2797
+        line: 2806
     get:
       operationId: inquiries.list.org
       summary: "Lists the requester's inquiries."
@@ -41851,7 +41979,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.3"
-        line: 2807
+        line: 2816
   "/v1/orgs/{org_id}/inquiries/{inquiry_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -41950,7 +42078,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.3"
-        line: 2815
+        line: 2824
   "/v1/orgs/{org_id}/inquiries/{inquiry_id}/messages":
     servers:
       - url: "https://api.carpals.ir"
@@ -42077,7 +42205,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.3"
-        line: 2822
+        line: 2831
   "/v1/orgs/{org_id}/inquiries/{inquiry_id}/transitions":
     servers:
       - url: "https://api.carpals.ir"
@@ -42198,7 +42326,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.3"
-        line: 2831
+        line: 2840
   "/v1/orgs/{org_id}/locations":
     servers:
       - url: "https://api.carpals.ir"
@@ -42311,7 +42439,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1516
+        line: 1525
     post:
       operationId: org.location_create
       summary: "Adds a location with its exact point (shops and sellers must give their exact location: a map pin, or a map link reso…"
@@ -42418,7 +42546,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1523
+        line: 1532
   "/v1/orgs/{org_id}/locations/pin-check":
     servers:
       - url: "https://api.carpals.ir"
@@ -42547,7 +42675,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1548
+        line: 1557
   "/v1/orgs/{org_id}/locations/{location_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -42739,7 +42867,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1532
+        line: 1541
     delete:
       operationId: org.location_delete
       summary: "Deactivates a location; the primary location cannot be removed while it is the only active one."
@@ -42835,7 +42963,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1540
+        line: 1549
   "/v1/orgs/{org_id}/members":
     servers:
       - url: "https://api.carpals.ir"
@@ -42961,7 +43089,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1473
+        line: 1482
   "/v1/orgs/{org_id}/members/invitations":
     servers:
       - url: "https://api.carpals.ir"
@@ -43096,7 +43224,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1481
+        line: 1490
   "/v1/orgs/{org_id}/members/{membership_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -43218,7 +43346,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1499
+        line: 1508
     delete:
       operationId: org.member_remove
       summary: "Removes a member or revokes an invitation; their sessions lose this organization context immediately (SEC-AU-3)."
@@ -43316,7 +43444,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1508
+        line: 1517
   "/v1/orgs/{org_id}/posts":
     servers:
       - url: "https://api.carpals.ir"
@@ -43443,7 +43571,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4254
+        line: 4263
     post:
       operationId: posts.create
       summary: "Creates a post draft; showcase and job-completion posts must link a portfolio item with the required customer consent."
@@ -43538,7 +43666,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4262
+        line: 4271
   "/v1/orgs/{org_id}/posts/{post_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -43693,7 +43821,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4270
+        line: 4279
     delete:
       operationId: posts.delete
       summary: "Removes a post."
@@ -43776,7 +43904,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4287
+        line: 4296
   "/v1/orgs/{org_id}/posts/{post_id}/publish":
     servers:
       - url: "https://api.carpals.ir"
@@ -43894,7 +44022,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4278
+        line: 4287
   "/v1/orgs/{org_id}/provider/ai/profile-helper":
     servers:
       - url: "https://api.carpals.ir"
@@ -43997,7 +44125,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4574
+        line: 4584
   "/v1/orgs/{org_id}/provider/ai/skill-heatmap":
     servers:
       - url: "https://api.carpals.ir"
@@ -44109,7 +44237,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4582
+        line: 4592
   "/v1/orgs/{org_id}/provider/appointments":
     servers:
       - url: "https://api.carpals.ir"
@@ -44256,7 +44384,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3677
+        line: 3686
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -44346,7 +44474,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3686
+        line: 3695
     patch:
       operationId: provider.appointments_update
       summary: "Sets duration, estimated completion window, parts note, location or cost estimate; a fleet estimate above the thresho…"
@@ -44441,7 +44569,7 @@ paths:
         - fleet.approval.requested
       x-carpal-contract:
         section: "16.3"
-        line: 3693
+        line: 3702
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}/ai/suggestions":
     servers:
       - url: "https://api.carpals.ir"
@@ -44547,7 +44675,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4614
+        line: 4624
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}/notes":
     servers:
       - url: "https://api.carpals.ir"
@@ -44666,7 +44794,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3735
+        line: 3744
     post:
       operationId: provider.note_create
       summary: "Adds an internal or customer-visible note."
@@ -44763,7 +44891,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3742
+        line: 3751
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}/participants":
     servers:
       - url: "https://api.carpals.ir"
@@ -44882,7 +45010,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3712
+        line: 3721
     post:
       operationId: provider.participant_add
       summary: "Assigns a staff member as service advisor or technician."
@@ -44993,7 +45121,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3719
+        line: 3728
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}/participants/{participant_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -45085,7 +45213,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3728
+        line: 3737
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}/pre-visit-report":
     servers:
       - url: "https://api.carpals.ir"
@@ -45178,7 +45306,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3750
+        line: 3759
   "/v1/orgs/{org_id}/provider/appointments/{appointment_id}/transitions":
     servers:
       - url: "https://api.carpals.ir"
@@ -45294,7 +45422,7 @@ paths:
         - appointment.completed
       x-carpal-contract:
         section: "16.3"
-        line: 3702
+        line: 3711
   "/v1/orgs/{org_id}/provider/availability-rules":
     servers:
       - url: "https://api.carpals.ir"
@@ -45413,7 +45541,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3765
+        line: 3774
     post:
       operationId: availability.rule_create
       summary: "Adds a weekly rule (hours, slot length, appointment types, concurrency, buffer) for a location."
@@ -45508,7 +45636,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3773
+        line: 3782
   "/v1/orgs/{org_id}/provider/availability-rules/{rule_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -45649,7 +45777,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3781
+        line: 3790
     delete:
       operationId: availability.rule_delete
       summary: "Deactivates a rule."
@@ -45731,7 +45859,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3789
+        line: 3798
   "/v1/orgs/{org_id}/provider/badges":
     servers:
       - url: "https://api.carpals.ir"
@@ -45854,7 +45982,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3445
+        line: 3454
   "/v1/orgs/{org_id}/provider/calendar":
     servers:
       - url: "https://api.carpals.ir"
@@ -45952,7 +46080,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3757
+        line: 3766
   "/v1/orgs/{org_id}/provider/capabilities":
     servers:
       - url: "https://api.carpals.ir"
@@ -46082,7 +46210,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1794
+        line: 1803
     post:
       operationId: provider.capability_create
       summary: "Declares a capability (`self_declared`, confidence level 0); confidence grows only from evidence, and self-declared c…"
@@ -46201,7 +46329,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1802
+        line: 1811
   "/v1/orgs/{org_id}/provider/capabilities/{capability_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -46304,7 +46432,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1811
+        line: 1820
     delete:
       operationId: provider.capability_delete
       summary: "Deactivates a capability; its evidence links stay for audit."
@@ -46386,7 +46514,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1819
+        line: 1828
   "/v1/orgs/{org_id}/provider/capabilities/{capability_id}/evidence":
     servers:
       - url: "https://api.carpals.ir"
@@ -46514,7 +46642,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1826
+        line: 1835
   "/v1/orgs/{org_id}/provider/certifications":
     servers:
       - url: "https://api.carpals.ir"
@@ -46627,7 +46755,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1708
+        line: 1717
     post:
       operationId: provider.certification_create
       summary: "Adds a certification; with a clean private document it enters the admin verification queue, and only verified certifi…"
@@ -46730,7 +46858,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1715
+        line: 1724
   "/v1/orgs/{org_id}/provider/certifications/{certification_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -46869,7 +46997,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1724
+        line: 1733
     delete:
       operationId: provider.certification_delete
       summary: "Removes a certification; linked capability evidence is revoked."
@@ -46953,7 +47081,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1732
+        line: 1741
   "/v1/orgs/{org_id}/provider/coverage":
     servers:
       - url: "https://api.carpals.ir"
@@ -47077,7 +47205,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1771
+        line: 1780
     post:
       operationId: provider.coverage_create
       summary: "Adds up to 200 coverage rows in one request (unlimited in total, MVP Module C); each row is validated independently a…"
@@ -47199,7 +47327,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1779
+        line: 1788
   "/v1/orgs/{org_id}/provider/coverage/{coverage_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -47285,7 +47413,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1787
+        line: 1796
   "/v1/orgs/{org_id}/provider/customer-notes":
     servers:
       - url: "https://api.carpals.ir"
@@ -47406,7 +47534,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1876
+        line: 1885
     post:
       operationId: provider.customer_note_create
       summary: "Adds a private note about a customer who has an appointment or service record with this provider."
@@ -47513,7 +47641,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1884
+        line: 1893
   "/v1/orgs/{org_id}/provider/customer-notes/{note_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -47618,7 +47746,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1893
+        line: 1902
     delete:
       operationId: provider.customer_note_delete
       summary: "Removes a note."
@@ -47700,7 +47828,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1901
+        line: 1910
   "/v1/orgs/{org_id}/provider/insights":
     servers:
       - url: "https://api.carpals.ir"
@@ -47792,7 +47920,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1959
+        line: 1968
   "/v1/orgs/{org_id}/provider/job-logs":
     servers:
       - url: "https://api.carpals.ir"
@@ -47923,7 +48051,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1844
+        line: 1853
     post:
       operationId: provider.job_log_create
       summary: "Logs a completed job as evidence; a customer vehicle can be linked only with the customer's consent."
@@ -48029,7 +48157,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1852
+        line: 1861
   "/v1/orgs/{org_id}/provider/job-logs/{job_log_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -48166,7 +48294,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1861
+        line: 1870
     delete:
       operationId: provider.job_log_delete
       summary: "Removes a job log and revokes its evidence."
@@ -48250,7 +48378,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1869
+        line: 1878
   "/v1/orgs/{org_id}/provider/portfolio":
     servers:
       - url: "https://api.carpals.ir"
@@ -48374,7 +48502,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1908
+        line: 1917
     post:
       operationId: provider.portfolio_create
       summary: "Creates a portfolio item in `draft`; media are attached with `media.attach` (roles `before`/`after` paired by `pair_g…"
@@ -48465,7 +48593,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1916
+        line: 1925
   "/v1/orgs/{org_id}/provider/portfolio/{item_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -48634,7 +48762,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1924
+        line: 1933
   "/v1/orgs/{org_id}/provider/portfolio/{item_id}/ai/compose":
     servers:
       - url: "https://api.carpals.ir"
@@ -48756,7 +48884,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4606
+        line: 4616
   "/v1/orgs/{org_id}/provider/portfolio/{item_id}/archive":
     servers:
       - url: "https://api.carpals.ir"
@@ -48849,7 +48977,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1951
+        line: 1960
   "/v1/orgs/{org_id}/provider/portfolio/{item_id}/consent-request":
     servers:
       - url: "https://api.carpals.ir"
@@ -48971,7 +49099,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1932
+        line: 1941
   "/v1/orgs/{org_id}/provider/portfolio/{item_id}/publish":
     servers:
       - url: "https://api.carpals.ir"
@@ -49091,7 +49219,7 @@ paths:
         - portfolio.published
       x-carpal-contract:
         section: "8.2"
-        line: 1941
+        line: 1950
   "/v1/orgs/{org_id}/provider/profile":
     servers:
       - url: "https://api.carpals.ir"
@@ -49173,7 +49301,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1675
+        line: 1684
     put:
       operationId: provider.profile_put
       summary: "Creates or replaces the provider profile fields; system fields (completeness, measured response time, activity) are c…"
@@ -49267,7 +49395,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1682
+        line: 1691
   "/v1/orgs/{org_id}/provider/publish":
     servers:
       - url: "https://api.carpals.ir"
@@ -49368,7 +49496,7 @@ paths:
         - provider.profile.published
       x-carpal-contract:
         section: "8.2"
-        line: 1690
+        line: 1699
   "/v1/orgs/{org_id}/provider/service-categories":
     servers:
       - url: "https://api.carpals.ir"
@@ -49486,7 +49614,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1739
+        line: 1748
     post:
       operationId: provider.service_category_create
       summary: "Adds a service system or task to the catalog (unique per node), with source `self_declared`."
@@ -49605,7 +49733,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1747
+        line: 1756
   "/v1/orgs/{org_id}/provider/service-categories/{category_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -49745,7 +49873,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1756
+        line: 1765
     delete:
       operationId: provider.service_category_delete
       summary: "Deactivates a catalog entry."
@@ -49827,7 +49955,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1764
+        line: 1773
   "/v1/orgs/{org_id}/provider/service-records":
     servers:
       - url: "https://api.carpals.ir"
@@ -49940,7 +50068,7 @@ paths:
         - service_record.created
       x-carpal-contract:
         section: "12.2"
-        line: 2448
+        line: 2457
   "/v1/orgs/{org_id}/provider/time-off":
     servers:
       - url: "https://api.carpals.ir"
@@ -50065,7 +50193,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3796
+        line: 3805
     post:
       operationId: availability.time_off_create
       summary: "Blocks a period for one location or all locations; overlapping confirmed appointments are listed for the provider to …"
@@ -50167,7 +50295,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3804
+        line: 3813
   "/v1/orgs/{org_id}/provider/time-off/{time_off_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -50253,7 +50381,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "16.3"
-        line: 3812
+        line: 3821
   "/v1/orgs/{org_id}/provider/unpublish":
     servers:
       - url: "https://api.carpals.ir"
@@ -50355,7 +50483,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1700
+        line: 1709
   "/v1/orgs/{org_id}/provider/{collection}/{record_id}/decision":
     servers:
       - url: "https://api.carpals.ir"
@@ -50480,7 +50608,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "8.2"
-        line: 1834
+        line: 1843
   "/v1/orgs/{org_id}/review-approvals":
     servers:
       - url: "https://api.carpals.ir"
@@ -50594,7 +50722,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3377
+        line: 3386
   "/v1/orgs/{org_id}/review-approvals/{review_id}/answer":
     servers:
       - url: "https://api.carpals.ir"
@@ -50722,7 +50850,7 @@ paths:
         - review.approval.objected
       x-carpal-contract:
         section: "15.3"
-        line: 3384
+        line: 3393
   "/v1/orgs/{org_id}/review-invitations":
     servers:
       - url: "https://api.carpals.ir"
@@ -50856,7 +50984,7 @@ paths:
         - review.invitation.sent
       x-carpal-contract:
         section: "15.3"
-        line: 3303
+        line: 3312
     get:
       operationId: review_invitations.org_list
       summary: "Lists the organization's invitations with conversion status."
@@ -50979,7 +51107,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3313
+        line: 3322
   "/v1/orgs/{org_id}/review-invitations/{invitation_id}/cancel":
     servers:
       - url: "https://api.carpals.ir"
@@ -51073,7 +51201,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3321
+        line: 3330
   "/v1/orgs/{org_id}/reviews":
     servers:
       - url: "https://api.carpals.ir"
@@ -51207,7 +51335,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3329
+        line: 3338
   "/v1/orgs/{org_id}/reviews/{review_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -51294,7 +51422,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3337
+        line: 3346
   "/v1/orgs/{org_id}/reviews/{review_id}/ai/response-draft":
     servers:
       - url: "https://api.carpals.ir"
@@ -51423,7 +51551,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4590
+        line: 4600
   "/v1/orgs/{org_id}/reviews/{review_id}/responses":
     servers:
       - url: "https://api.carpals.ir"
@@ -51537,7 +51665,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3344
+        line: 3353
   "/v1/orgs/{org_id}/reviews/{review_id}/responses/{response_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -51653,7 +51781,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3353
+        line: 3362
     delete:
       operationId: review_responses.delete
       summary: "Removes a response (draft or published)."
@@ -51744,7 +51872,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3370
+        line: 3379
   "/v1/orgs/{org_id}/reviews/{review_id}/responses/{response_id}/publish":
     servers:
       - url: "https://api.carpals.ir"
@@ -51858,7 +51986,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3361
+        line: 3370
   "/v1/orgs/{org_id}/subscription":
     servers:
       - url: "https://api.carpals.ir"
@@ -51940,7 +52068,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "10.2"
-        line: 2098
+        line: 2107
   "/v1/orgs/{org_id}/subscription/change-requests":
     servers:
       - url: "https://api.carpals.ir"
@@ -52056,7 +52184,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "10.2"
-        line: 2105
+        line: 2114
   "/v1/orgs/{org_id}/trade-accounts":
     servers:
       - url: "https://api.carpals.ir"
@@ -52195,7 +52323,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.3"
-        line: 2840
+        line: 2849
     get:
       operationId: trade_accounts.customer_list
       summary: "Lists the organization's trade accounts with vendors."
@@ -52305,7 +52433,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.3"
-        line: 2849
+        line: 2858
   "/v1/orgs/{org_id}/trust-signals":
     servers:
       - url: "https://api.carpals.ir"
@@ -52430,7 +52558,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.3"
-        line: 3453
+        line: 3462
   "/v1/orgs/{org_id}/vendor/ai/inventory-gaps":
     servers:
       - url: "https://api.carpals.ir"
@@ -52530,7 +52658,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4638
+        line: 4648
   "/v1/orgs/{org_id}/vendor/ai/normalize":
     servers:
       - url: "https://api.carpals.ir"
@@ -52651,7 +52779,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4622
+        line: 4632
   "/v1/orgs/{org_id}/vendor/coverage":
     servers:
       - url: "https://api.carpals.ir"
@@ -52764,7 +52892,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "9.2"
-        line: 2026
+        line: 2035
     post:
       operationId: vendor.coverage_create
       summary: "Adds up to 200 coverage rows; duplicates are skipped."
@@ -52886,7 +53014,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "9.2"
-        line: 2033
+        line: 2042
   "/v1/orgs/{org_id}/vendor/coverage/{coverage_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -52972,7 +53100,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "9.2"
-        line: 2041
+        line: 2050
   "/v1/orgs/{org_id}/vendor/inquiries":
     servers:
       - url: "https://api.carpals.ir"
@@ -53095,7 +53223,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2760
+        line: 2769
   "/v1/orgs/{org_id}/vendor/inquiries/{inquiry_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -53197,7 +53325,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2768
+        line: 2777
   "/v1/orgs/{org_id}/vendor/inquiries/{inquiry_id}/messages":
     servers:
       - url: "https://api.carpals.ir"
@@ -53323,7 +53451,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2775
+        line: 2784
   "/v1/orgs/{org_id}/vendor/inquiries/{inquiry_id}/transitions":
     servers:
       - url: "https://api.carpals.ir"
@@ -53434,7 +53562,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2784
+        line: 2793
   "/v1/orgs/{org_id}/vendor/insights":
     servers:
       - url: "https://api.carpals.ir"
@@ -53526,7 +53654,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "9.2"
-        line: 2048
+        line: 2057
   "/v1/orgs/{org_id}/vendor/inventory":
     servers:
       - url: "https://api.carpals.ir"
@@ -53680,7 +53808,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2597
+        line: 2606
     post:
       operationId: inventory.create
       summary: "Creates an item; active items are limited by `max_inventory_items`, and the SKU is unique within the vendor."
@@ -53789,7 +53917,7 @@ paths:
         - inventory.updated
       x-carpal-contract:
         section: "13.2"
-        line: 2615
+        line: 2624
   "/v1/orgs/{org_id}/vendor/inventory/bulk":
     servers:
       - url: "https://api.carpals.ir"
@@ -53888,7 +54016,7 @@ paths:
         - inventory.updated
       x-carpal-contract:
         section: "13.2"
-        line: 2649
+        line: 2658
   "/v1/orgs/{org_id}/vendor/inventory/imports":
     servers:
       - url: "https://api.carpals.ir"
@@ -54005,7 +54133,7 @@ paths:
         - vendor.inventory.imported
       x-carpal-contract:
         section: "13.2"
-        line: 2710
+        line: 2719
     get:
       operationId: inventory.imports_list
       summary: "Lists import batches."
@@ -54114,7 +54242,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2720
+        line: 2729
   "/v1/orgs/{org_id}/vendor/inventory/imports/{batch_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -54202,7 +54330,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2727
+        line: 2736
   "/v1/orgs/{org_id}/vendor/inventory/imports/{batch_id}/error-report":
     servers:
       - url: "https://api.carpals.ir"
@@ -54300,7 +54428,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2734
+        line: 2743
   "/v1/orgs/{org_id}/vendor/inventory/search":
     servers:
       - url: "https://api.carpals.ir"
@@ -54424,7 +54552,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2607
+        line: 2616
   "/v1/orgs/{org_id}/vendor/inventory/{item_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -54512,7 +54640,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2625
+        line: 2634
     patch:
       operationId: inventory.update
       summary: "Updates an item; price and visibility changes reach the public projection through `inventory.updated`."
@@ -54718,7 +54846,7 @@ paths:
         - inventory.updated
       x-carpal-contract:
         section: "13.2"
-        line: 2632
+        line: 2641
     delete:
       operationId: inventory.delete
       summary: "Marks an item `removed`; it leaves public search at once."
@@ -54804,7 +54932,7 @@ paths:
         - inventory.updated
       x-carpal-contract:
         section: "13.2"
-        line: 2641
+        line: 2650
   "/v1/orgs/{org_id}/vendor/inventory/{item_id}/ai/fitment":
     servers:
       - url: "https://api.carpals.ir"
@@ -54913,7 +55041,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "21.3"
-        line: 4630
+        line: 4640
   "/v1/orgs/{org_id}/vendor/inventory/{item_id}/duplicate":
     servers:
       - url: "https://api.carpals.ir"
@@ -55021,7 +55149,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2658
+        line: 2667
   "/v1/orgs/{org_id}/vendor/inventory/{item_id}/fitment":
     servers:
       - url: "https://api.carpals.ir"
@@ -55145,7 +55273,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2666
+        line: 2675
     post:
       operationId: fitment.create
       summary: "Adds up to 100 fitment rows (`source = manual`); `confirmed` requires the vendor's own confirmation, which this opera…"
@@ -55275,7 +55403,7 @@ paths:
         - inventory.updated
       x-carpal-contract:
         section: "13.2"
-        line: 2674
+        line: 2683
   "/v1/orgs/{org_id}/vendor/inventory/{item_id}/fitment/{fitment_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -55421,7 +55549,7 @@ paths:
         - inventory.updated
       x-carpal-contract:
         section: "13.2"
-        line: 2683
+        line: 2692
     delete:
       operationId: fitment.delete
       summary: "Deactivates a fitment row."
@@ -55511,7 +55639,7 @@ paths:
         - inventory.updated
       x-carpal-contract:
         section: "13.2"
-        line: 2692
+        line: 2701
   "/v1/orgs/{org_id}/vendor/inventory/{item_id}/fitment/{fitment_id}/decision":
     servers:
       - url: "https://api.carpals.ir"
@@ -55641,7 +55769,7 @@ paths:
         - inventory.updated
       x-carpal-contract:
         section: "13.2"
-        line: 2700
+        line: 2709
   "/v1/orgs/{org_id}/vendor/profile":
     servers:
       - url: "https://api.carpals.ir"
@@ -55723,7 +55851,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "9.2"
-        line: 1994
+        line: 2003
     put:
       operationId: vendor.profile_put
       summary: "Creates or replaces the vendor profile fields."
@@ -55817,7 +55945,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "9.2"
-        line: 2001
+        line: 2010
   "/v1/orgs/{org_id}/vendor/publish":
     servers:
       - url: "https://api.carpals.ir"
@@ -55916,7 +56044,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "9.2"
-        line: 2009
+        line: 2018
   "/v1/orgs/{org_id}/vendor/trade-accounts":
     servers:
       - url: "https://api.carpals.ir"
@@ -56039,7 +56167,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2743
+        line: 2752
   "/v1/orgs/{org_id}/vendor/trade-accounts/{trade_account_id}/decision":
     servers:
       - url: "https://api.carpals.ir"
@@ -56167,7 +56295,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "13.2"
-        line: 2751
+        line: 2760
   "/v1/orgs/{org_id}/vendor/unpublish":
     servers:
       - url: "https://api.carpals.ir"
@@ -56269,7 +56397,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "9.2"
-        line: 2018
+        line: 2027
   "/v1/orgs/{org_id}/verifications":
     servers:
       - url: "https://api.carpals.ir"
@@ -56382,7 +56510,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1581
+        line: 1590
     post:
       operationId: org.verification_submit
       summary: "Submits a verification check with private documents for admin review (MVP §13)."
@@ -56488,7 +56616,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1588
+        line: 1597
   "/v1/orgs/{org_id}/verifications/{verification_id}/resubmit":
     servers:
       - url: "https://api.carpals.ir"
@@ -56602,7 +56730,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "7.2"
-        line: 1597
+        line: 1606
   /v1/plans:
     servers:
       - url: "https://api.carpals.ir"
@@ -56701,7 +56829,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "10.2"
-        line: 2083
+        line: 2092
   "/v1/policies/{policy_key}":
     servers:
       - url: "https://api.carpals.ir"
@@ -56782,7 +56910,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "6.7"
-        line: 1368
+        line: 1377
   "/v1/public/inventory/{item_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -56870,7 +56998,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "14.3"
-        line: 3106
+        line: 3115
   "/v1/public/orgs/{org_id}/availability":
     servers:
       - url: "https://api.carpals.ir"
@@ -56986,7 +57114,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "14.3"
-        line: 3114
+        line: 3123
   "/v1/public/orgs/{org_id}/inventory/search":
     servers:
       - url: "https://api.carpals.ir"
@@ -57151,7 +57279,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "14.3"
-        line: 3095
+        line: 3104
   "/v1/public/orgs/{org_id}/portfolio":
     servers:
       - url: "https://api.carpals.ir"
@@ -57278,7 +57406,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "14.3"
-        line: 3087
+        line: 3096
   "/v1/public/orgs/{org_id}/posts":
     servers:
       - url: "https://api.carpals.ir"
@@ -57409,7 +57537,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4294
+        line: 4303
   "/v1/public/orgs/{org_id}/reviews":
     servers:
       - url: "https://api.carpals.ir"
@@ -57551,7 +57679,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "14.3"
-        line: 3079
+        line: 3088
   "/v1/public/orgs/{slug}":
     servers:
       - url: "https://api.carpals.ir"
@@ -57633,7 +57761,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "14.3"
-        line: 3072
+        line: 3081
   "/v1/public/showcases/{item_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -57715,7 +57843,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4247
+        line: 4256
   /v1/questions:
     servers:
       - url: "https://api.carpals.ir"
@@ -57809,7 +57937,7 @@ paths:
         - qna.question.created
       x-carpal-contract:
         section: "19.2"
-        line: 4342
+        line: 4351
   /v1/questions/search:
     servers:
       - url: "https://api.carpals.ir"
@@ -57944,7 +58072,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4351
+        line: 4360
   "/v1/questions/{question_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -58054,7 +58182,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4360
+        line: 4369
     patch:
       operationId: questions.update
       summary: "Edits or closes the caller's own question."
@@ -58151,7 +58279,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4367
+        line: 4376
   "/v1/questions/{question_id}/accept":
     servers:
       - url: "https://api.carpals.ir"
@@ -58248,7 +58376,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4383
+        line: 4392
   "/v1/questions/{question_id}/answers":
     servers:
       - url: "https://api.carpals.ir"
@@ -58346,7 +58474,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4375
+        line: 4384
   /v1/reactions:
     servers:
       - url: "https://api.carpals.ir"
@@ -58448,7 +58576,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4326
+        line: 4335
   /v1/reactions/remove:
     servers:
       - url: "https://api.carpals.ir"
@@ -58547,7 +58675,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "19.2"
-        line: 4334
+        line: 4343
   /v1/reports:
     servers:
       - url: "https://api.carpals.ir"
@@ -58660,7 +58788,7 @@ paths:
         - review.reported
       x-carpal-contract:
         section: "22.2"
-        line: 4793
+        line: 4804
   /v1/review-invitations/open:
     servers:
       - url: "https://api.carpals.ir"
@@ -58772,7 +58900,7 @@ paths:
         - review.invitation.opened
       x-carpal-contract:
         section: "15.2"
-        line: 3282
+        line: 3291
   /v1/review-invitations/verify:
     servers:
       - url: "https://api.carpals.ir"
@@ -58926,7 +59054,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.2"
-        line: 3292
+        line: 3301
   /v1/reviews:
     servers:
       - url: "https://api.carpals.ir"
@@ -59063,7 +59191,7 @@ paths:
         - review.approval.requested
       x-carpal-contract:
         section: "15.2"
-        line: 3225
+        line: 3234
   /v1/reviews/eligibility:
     servers:
       - url: "https://api.carpals.ir"
@@ -59152,7 +59280,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "15.2"
-        line: 3217
+        line: 3226
   /v1/safety/check:
     servers:
       - url: "https://api.carpals.ir"
@@ -59248,7 +59376,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "14.2"
-        line: 3060
+        line: 3069
   /v1/search:
     servers:
       - url: "https://api.carpals.ir"
@@ -59358,7 +59486,7 @@ paths:
         - search.zero_result
       x-carpal-contract:
         section: "14.2"
-        line: 3005
+        line: 3014
   "/v1/search/{session_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -59460,7 +59588,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "14.2"
-        line: 3023
+        line: 3032
   "/v1/search/{session_id}/refine":
     servers:
       - url: "https://api.carpals.ir"
@@ -59564,7 +59692,7 @@ paths:
         - search.chip_edited
       x-carpal-contract:
         section: "14.2"
-        line: 3032
+        line: 3041
   "/v1/search/{session_id}/results":
     servers:
       - url: "https://api.carpals.ir"
@@ -59679,7 +59807,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "14.2"
-        line: 3015
+        line: 3024
   "/v1/search/{session_id}/results/{result_id}/events":
     servers:
       - url: "https://api.carpals.ir"
@@ -59782,7 +59910,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "14.2"
-        line: 3042
+        line: 3051
   /v1/support/tickets:
     servers:
       - url: "https://api.carpals.ir"
@@ -59885,7 +60013,7 @@ paths:
         - support.ticket.created
       x-carpal-contract:
         section: "22.2"
-        line: 4803
+        line: 4814
     get:
       operationId: support.tickets_list
       summary: "Lists the caller's own support tickets, newest first."
@@ -59992,7 +60120,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "22.2"
-        line: 4813
+        line: 4824
   "/v1/support/tickets/{ticket_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -60071,7 +60199,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "22.2"
-        line: 4821
+        line: 4832
   "/v1/support/tickets/{ticket_id}/messages":
     servers:
       - url: "https://api.carpals.ir"
@@ -60180,7 +60308,7 @@ paths:
         - support.message.posted
       x-carpal-contract:
         section: "22.2"
-        line: 4828
+        line: 4839
   /v1/taxonomy/nodes:
     servers:
       - url: "https://api.carpals.ir"
@@ -60303,7 +60431,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "11.2"
-        line: 2141
+        line: 2150
   "/v1/taxonomy/nodes/{node_id}":
     servers:
       - url: "https://api.carpals.ir"
@@ -60384,7 +60512,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "11.2"
-        line: 2149
+        line: 2158
   /v1/taxonomy/suggest:
     servers:
       - url: "https://api.carpals.ir"
@@ -60494,7 +60622,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "11.2"
-        line: 2156
+        line: 2165
   /v1/taxonomy/version:
     servers:
       - url: "https://api.carpals.ir"
@@ -60582,7 +60710,7 @@ paths:
       x-carpal-status: implemented
       x-carpal-contract:
         section: "11.2"
-        line: 2134
+        line: 2143
 components:
   schemas:
     Ack:
@@ -62249,6 +62377,7 @@ components:
             - consent
             - reactivate
             - enrol_passkey
+            - change_password
         mfa_methods:
           type: array
           items:
@@ -63002,6 +63131,15 @@ components:
             additionalProperties: false
           maxItems: 200
           description: "evaluated for the caller; no targeting rules exposed"
+        auth:
+          type: object
+          properties:
+            phone_signin_available:
+              type: boolean
+          required:
+            - phone_signin_available
+          additionalProperties: false
+          description: "false while no text message leaves the server (1.5.0, DQ-28)"
         region:
           $ref: "#/components/schemas/RegionConfig"
       required:
@@ -63011,6 +63149,7 @@ components:
         - i18n
         - taxonomy_version
         - flags
+        - auth
         - region
       additionalProperties: false
     Comment:
@@ -64307,6 +64446,14 @@ components:
           minLength: 2
           maxLength: 50
           pattern: "^[^\\r\\n]*$"
+        set_today:
+          type: boolean
+          description: "1.5.0: updated since 00:00 of today in the region's time zone"
+        age_hours:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          description: "1.5.0: whole hours since updated_at"
         version:
           type: integer
           minimum: 1
@@ -64317,6 +64464,8 @@ components:
         - per_usd
         - updated_at
         - updated_by_display
+        - set_today
+        - age_hours
         - version
       additionalProperties: false
       description: "version: If-Match of admin.exchange_rate_update"
@@ -68957,7 +69106,8 @@ components:
         - four_eyes_outcome
         - staff_security_alert
         - ai_kill_switch_changed
-      description: "staff notices (backend S17): admin plane only"
+        - exchange_rate_reminder
+      description: "staff notice (backend S26a): the display rate was not set today"
     NotificationPreference:
       type: object
       properties:
@@ -81097,10 +81247,28 @@ components:
           items:
             $ref: "#/components/schemas/SystemHealthSignal"
           maxItems: 10
+        sms_provider:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: "^[^\\r\\n]*$"
+          description: "1.5.0: the SMS gateway's provider key (mock until one is chosen)"
+        sms_simulated:
+          type: boolean
+          description: "1.5.0: true while no text message leaves the server (mock, file; DQ-28)"
+        mail_transport:
+          type: string
+          enum:
+            - file
+            - smtp
       required:
         - generated_at
         - signals
+        - sms_provider
+        - sms_simulated
+        - mail_transport
       additionalProperties: false
+      description: "1.5.0: file = mail is only written to the server's outbox file"
     SystemHealthKey:
       type: string
       enum:

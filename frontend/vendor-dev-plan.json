@@ -388,6 +388,18 @@
     { "id": "VND-DI-09", "issue": "Docs/12 Ch.2 'price visibility: used parts price on request' is a rule by condition; VendorProfileWrite has one default_price_visibility. Either the import applies a per-condition default (VND-BR-01 policy) or the profile stores defaults per condition.", "status": "open" }
   ],
 
+  "blocking_requirements": [
+    {
+      "id": "VND-BLK-01",
+      "added": "2026-11-16",
+      "by": "project owner (provider plan decision PRV-DI-05)",
+      "status": "open",
+      "requirement": "When this plan is settled, coordinate the provider side of the vendor flow with frontend/provider-dev-plan.json before its stage PX1 can start: write the Docs/90 specs of P-JOB-01 (job log), P-PART-01 (parts search from an appointment, with the vehicle context and trade prices) and P-PART-02 (request trade access), and plan PX1 in the provider Web UI.",
+      "depends_on_here": ["VP6 (inquiries: the answers the garage sees)", "VP7 (trade customers: approve, reject, revoke)", "VND-BR-03 (reserved quantity)", "VND-BR-06 (alternative item)", "VND-BR-09 (trade_account.decided and inquiry notices to the requesting organization)"],
+      "blocks": "Provider plan stage PX1 (Docs/11 Ch.6 parts flow, walk-in job log, vendor review by the garage). PX1 is not part of the pilot (owner 2026-11-16): it runs in the slow delivery phase, and the pilot shows its areas greyed out."
+    }
+  ],
+
   "open_questions": [
     {
       "id": "VND-OQ-01",

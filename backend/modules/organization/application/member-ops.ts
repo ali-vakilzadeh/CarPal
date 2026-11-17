@@ -80,7 +80,9 @@ export class OrgMemberInviteHandler implements OperationHandler {
       scope.afterCommit(() =>
         this.messenger
           ? this.messenger.email(email, 'organization.member_invitation', ctx.locale, variables)
-          : this.infra.mailer.send({ to: email, template: 'organization.member_invitation', locale: ctx.locale, variables }),
+          : this.infra.mailer
+              .send({ to: email, template: 'organization.member_invitation', locale: ctx.locale, variables })
+              .then(() => undefined),
       );
       return { invitation_id: id, expires_at: link.expiresAt!.toISOString() };
     });

@@ -169,6 +169,7 @@ export const OPERATION_IDS = [
   'auth.passkey_enrol_options',
   'auth.password_reset_complete',
   'auth.password_reset_start',
+  'auth.password_set_initial',
   'auth.pow_challenge',
   'auth.reactivate',
   'auth.revoke',

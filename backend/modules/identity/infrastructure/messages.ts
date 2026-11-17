@@ -37,13 +37,13 @@ export class IdentityMessages {
     @Optional() private readonly messenger?: Messenger,
   ) {}
 
-  email(to: string, template: MailTemplate, locale: string, variables: Record<string, string> = {}): Promise<void> {
-    return this.messenger
-      ? this.messenger.email(to, template, locale, variables)
-      : this.infra.mailer.send({ to, template, locale, variables });
+  async email(to: string, template: MailTemplate, locale: string, variables: Record<string, string> = {}): Promise<void> {
+    if (this.messenger) await this.messenger.email(to, template, locale, variables);
+    else await this.infra.mailer.send({ to, template, locale, variables });
   }
 
-  sms(to: string, template: 'identity.otp_code', locale: string, variables: Record<string, string>): Promise<void> {
-    return this.messenger ? this.messenger.sms(to, template, locale, variables) : this.infra.sms.send({ to, template, locale, variables });
+  async sms(to: string, template: 'identity.otp_code', locale: string, variables: Record<string, string>): Promise<void> {
+    if (this.messenger) await this.messenger.sms(to, template, locale, variables);
+    else await this.infra.sms.send({ to, template, locale, variables });
   }
 }

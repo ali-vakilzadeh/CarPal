@@ -12,6 +12,13 @@
 // break-glass: resets one staff account's security keys and recovery codes from the server shell, with a reason
 // (backend S16a, DQ-04; deploy.md "Lost security key, fewer than two other admins").
 //
+// Passwords (backend S26a, DQ-25): with --file, a new account gets the owner's initial password from
+// CARPAL_STAFF_INITIAL_PASSWORD (backend.env; never printed or logged), else a generated one-time password printed
+// once. Either way the account must change it at its first console sign-in (password_change_required, after the code
+// sent to its email) within 7 days; after that the initial password is refused and `pnpm staff:bootstrap --reissue
+// <email>` sets a new one. The development accounts (no --file, dev only), and dev without an initial password, keep
+// DEV_STAFF_PASSWORD without the flag.
+//
 // New accounts are active with a verified email (the bootstrap is the operator's statement that the address is
 // right), a password and the platform roles. They have no passkey: the first sign-in on the console asks for the
 // password, a code sent to that email and a device-bound passkey (contract 1.3.0, auth.passkey_enrol). Rows are
@@ -101,6 +108,7 @@ export function shortfall(specs: readonly { roles: readonly string[] }[]): strin
 
 export type StaffCommand =
   | { kind: 'bootstrap'; file?: string }
+  | { kind: 'reissue'; email: string }
   | { kind: 'create'; spec: StaffSpec }
   | { kind: 'list' }
   | { kind: 'prune'; domain: string; prefixes: string[] }
@@ -113,6 +121,8 @@ const USAGE = [
   'Usage:',
   '  pnpm staff:bootstrap [--file <spec.json>]   create the base staff accounts that do not exist (any environment;',
   '                                              without --file: the development accounts, dev only)',
+  '  pnpm staff:bootstrap --reissue <email>      a new initial password for a staff account that has not changed',
+  '                                              its initial one yet (expired after 7 days; any environment)',
   '  pnpm dev:staff create --email <e> --name <n> --roles ADM,MOD,SUP,CRV [--locale fa|en] [--password <p>]   (dev only)',
   '  pnpm dev:staff list                         staff accounts and their roles',
   '  pnpm dev:staff prune --domain <d> --prefix e2e-[,bff-int-]   (dev only) retire the test accounts <prefix>…@<d>',
@@ -134,9 +144,16 @@ export function parseStaffArgs(argv: readonly string[]): StaffCommand {
     if (extra.length) throw new Error(`Unknown option --${extra[0]} for ${command}\n${USAGE}`);
   };
   switch (command) {
-    case 'bootstrap':
-      only('file');
+    case 'bootstrap': {
+      only('file', 'reissue');
+      if (flags.has('reissue')) {
+        if (flags.has('file')) throw new Error(`--reissue and --file do not go together\n${USAGE}`);
+        const email = flags.get('reissue')!.trim().toLowerCase();
+        if (!z.email().max(254).safeParse(email).success) throw new Error(`--reissue needs a staff email\n${USAGE}`);
+        return { kind: 'reissue', email };
+      }
       return flags.has('file') ? { kind: 'bootstrap', file: flags.get('file')! } : { kind: 'bootstrap' };
+    }
     case 'create': {
       only('email', 'name', 'roles', 'locale', 'password');
       const roles = (flags.get('roles') ?? '')
@@ -191,25 +208,62 @@ export interface StaffResult {
   email: string;
   roles: RoleCode[];
   status: 'created' | 'exists';
-  /** Created accounts only: the password to hand over (dev: the known development password). */
+  /** Created accounts only: the password to hand over (dev: the known development password; never the initial one). */
   password?: string;
+  /** Created accounts only: where the password came from (S26a). initial and generated must be changed at first sign-in. */
+  passwordSource?: PasswordSource;
 }
+
+/** dev: the development password or the spec's (dev only); initial: CARPAL_STAFF_INITIAL_PASSWORD; generated: printed once. */
+export type PasswordSource = 'dev' | 'initial' | 'generated';
+
+/** DQ-25: how long an initial or one-time password may be used before it must be reissued. */
+export const INITIAL_PASSWORD_DAYS = 7;
 
 export interface StaffDeps {
   tx: TxRunner;
   crypto: CryptoServices;
   env: CarpalEnv;
+  /**
+   * The owner's initial password (CARPAL_STAFF_INITIAL_PASSWORD, S26a, DQ-25): 8-128 characters, accepted below
+   * SEC-AU-7 only as a password that must be changed at the first sign-in. Never printed or logged.
+   */
+  initialPassword?: string | null;
+  now?: () => Date;
 }
 
-/** Creates every spec'd account that does not exist yet; existing accounts are left exactly as they are. */
-export async function bootstrapStaff(deps: StaffDeps, specs: readonly Spec[]): Promise<StaffResult[]> {
+/** DQ-25 limits of the initial password itself (the new one must meet SEC-AU-7). */
+export function checkInitialPassword(p: string | null | undefined): string | null {
+  if (p === undefined || p === null || p === '') return null;
+  if (p.length < 8 || p.length > 128) throw new Error('CARPAL_STAFF_INITIAL_PASSWORD must have 8-128 characters');
+  if (/^\s|\s$/.test(p)) throw new Error('CARPAL_STAFF_INITIAL_PASSWORD must not start or end with a space');
+  return p;
+}
+
+/**
+ * Creates every spec'd account that does not exist yet; existing accounts are left exactly as they are. `devAccounts`:
+ * the built-in development list (dev only), which keeps DEV_STAFF_PASSWORD without a forced change.
+ */
+export async function bootstrapStaff(deps: StaffDeps, specs: readonly Spec[], o: { devAccounts?: boolean } = {}): Promise<StaffResult[]> {
   const out: StaffResult[] = [];
-  for (const spec of specs) out.push(await createOne(deps, spec));
+  for (const spec of specs) out.push(await createOne(deps, spec, o.devAccounts ?? false));
   return out;
 }
 
-async function createOne(deps: StaffDeps, spec: Spec): Promise<StaffResult> {
-  const password = spec.password ?? (deps.env === 'dev' ? DEV_STAFF_PASSWORD : randomBytes(18).toString('base64url'));
+function passwordFor(deps: StaffDeps, spec: Spec, devAccounts: boolean): { password: string; source: PasswordSource } {
+  if (spec.password !== undefined) return { password: spec.password, source: 'dev' };
+  if (devAccounts && deps.env === 'dev') return { password: DEV_STAFF_PASSWORD, source: 'dev' };
+  const initial = checkInitialPassword(deps.initialPassword);
+  if (initial) return { password: initial, source: 'initial' };
+  // Dev without an initial password keeps the known development password (no forced change), as before S26a.
+  if (deps.env === 'dev') return { password: DEV_STAFF_PASSWORD, source: 'dev' };
+  return { password: randomBytes(18).toString('base64url'), source: 'generated' };
+}
+
+async function createOne(deps: StaffDeps, spec: Spec, devAccounts: boolean): Promise<StaffResult> {
+  const { password, source } = passwordFor(deps, spec, devAccounts);
+  const forced = source !== 'dev';
+  const now = deps.now?.() ?? new Date();
   const hash = await deps.crypto.passwords.hash(password);
   return deps.tx.run({ actorType: 'system' }, async (scope) => {
     const existing = await scope.db
@@ -238,7 +292,16 @@ async function createOne(deps: StaffDeps, spec: Spec): Promise<StaffResult> {
       .execute();
     await scope.db
       .insertInto('identity.authentication_methods')
-      .values({ user_id: id, method_type: 'email_password', identifier: spec.email, credential_reference: hash, status: 'active' })
+      .values({
+        user_id: id,
+        method_type: 'email_password',
+        identifier: spec.email,
+        credential_reference: hash,
+        status: 'active',
+        // S26a (DQ-25): changed at the first console sign-in, within 7 days.
+        password_change_required: forced,
+        initial_password_expires_at: forced ? new Date(now.getTime() + INITIAL_PASSWORD_DAYS * 86_400_000) : null,
+      })
       .execute();
     for (const code of spec.roles)
       await scope.db
@@ -249,10 +312,76 @@ async function createOne(deps: StaffDeps, spec: Spec): Promise<StaffResult> {
       action: 'staff.bootstrap_created',
       entityType: 'user_account',
       entityId: id,
-      reason: 'first-run staff bootstrap (admin console OQ-10)',
+      reason: `first-run staff bootstrap (admin console OQ-10); password ${source}${forced ? ', change required at first sign-in' : ''}`,
       next: spec.roles.join(','),
     });
-    return { email: spec.email, roles: spec.roles, status: 'created' as const, password };
+    // The owner's initial password is never handed back (it is known to the owner and lives in backend.env only).
+    return {
+      email: spec.email,
+      roles: spec.roles,
+      status: 'created' as const,
+      passwordSource: source,
+      ...(source === 'initial' ? {} : { password }),
+    };
+  });
+}
+
+export interface ReissueResult {
+  email: string;
+  roles: RoleCode[];
+  passwordSource: Exclude<PasswordSource, 'dev'>;
+  /** Generated passwords only (printed once). */
+  password?: string;
+  expiresAt: Date;
+}
+
+/**
+ * S26a (DQ-25): a new initial password, valid 7 more days, for a staff account that has not yet changed its initial or
+ * one-time password (e.g. it expired). Refused for an account that already chose its own password: that one recovers
+ * through the console (auth.staff_recovery_*) or break glass. Audited as actor system (staff.initial_password_reissued).
+ */
+export async function reissueInitialPassword(deps: StaffDeps, email: string): Promise<ReissueResult> {
+  const initial = checkInitialPassword(deps.initialPassword);
+  const password = initial ?? randomBytes(18).toString('base64url');
+  const source: 'initial' | 'generated' = initial ? 'initial' : 'generated';
+  const hash = await deps.crypto.passwords.hash(password);
+  const expiresAt = new Date((deps.now?.() ?? new Date()).getTime() + INITIAL_PASSWORD_DAYS * 86_400_000);
+  return deps.tx.run({ actorType: 'system' }, async (scope) => {
+    const user = await scope.db
+      .selectFrom('identity.user_accounts')
+      .select(['id'])
+      .where('email', '=', email.trim().toLowerCase())
+      .where('deleted_at', 'is', null)
+      .where('status', '<>', 'deleted')
+      .forUpdate()
+      .executeTakeFirst();
+    if (!user) throw new Error(`no account with the email ${email}`);
+    const roles = await rolesOf(scope, user.id);
+    if (roles.length === 0) throw new Error(`${email} has no active platform role (not staff, or disabled)`);
+    const method = await scope.db
+      .selectFrom('identity.authentication_methods')
+      .select(['id', 'password_change_required'])
+      .where('user_id', '=', user.id)
+      .where('method_type', '=', 'email_password')
+      .where('status', '=', 'active')
+      .where('deleted_at', 'is', null)
+      .forUpdate()
+      .executeTakeFirst();
+    if (!method?.password_change_required)
+      throw new Error(`${email} already chose its own password; use the console account recovery or pnpm staff:break-glass`);
+    await scope.db
+      .updateTable('identity.authentication_methods')
+      .set({ credential_reference: hash, initial_password_expires_at: expiresAt })
+      .where('id', '=', method.id)
+      .execute();
+    await writeAudit(scope, {
+      action: 'staff.initial_password_reissued',
+      entityType: 'user_account',
+      entityId: user.id,
+      reason: 'server command staff:bootstrap --reissue (DQ-25)',
+      next: `password ${source}; valid until ${expiresAt.toISOString()}`,
+    });
+    return { email, roles, passwordSource: source, ...(source === 'generated' ? { password } : {}), expiresAt };
   });
 }
 

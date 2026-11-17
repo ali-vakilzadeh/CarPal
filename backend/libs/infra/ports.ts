@@ -3,6 +3,8 @@
 //   lite  in-process adapters (single process, data under backend/.data/)
 //   full  Redis, NATS JetStream, BullMQ, OpenSearch, S3/MinIO, SMTP (docker compose)
 
+import type { SmsGateway } from '#libs/sms/index.js';
+
 // ------------------------------------------------------------------ key-value
 
 export interface SetOptions {
@@ -251,6 +253,13 @@ export interface EmailMessage {
   /** Rendered subject and plain-text body (notification module templates, S6); the sink sends these. */
   subject?: string;
   text?: string;
+  /**
+   * The SMTP hourly cap may hold this message (S26a.T2): the notification dispatcher sets it on normal-priority
+   * deliveries. Sign-in codes, security notices and other direct sends never wait.
+   */
+  deferrable?: boolean;
+  /** Optional mail (marketing, digests the person subscribed to): adds List-Unsubscribe (S26a.T2). */
+  unsubscribeUrl?: string;
 }
 export interface SmsMessage {
   to: string;
@@ -259,6 +268,29 @@ export interface SmsMessage {
   variables: Record<string, string>;
   /** Rendered text (notification module templates, S6). */
   text?: string;
+  /** The same key never sends twice (a retried delivery); the notification dispatcher uses the delivery id (S26a). */
+  idempotencyKey?: string;
+}
+
+/** What a sender learned from its provider (S26a): the provider's message id, for status lookups. */
+export interface SendReceipt {
+  providerMessageId?: string;
+}
+
+/**
+ * A send that failed in a way the caller should handle (S26a): permanent (the provider refused this message for good:
+ * SMTP 5xx, an invalid number; no retry) or held (retryAt: the hourly cap; send again then, it is not an attempt).
+ * Any other error is temporary and retried.
+ */
+export class SendError extends Error {
+  constructor(
+    message: string,
+    readonly permanent: boolean,
+    readonly retryAt: Date | null = null,
+  ) {
+    super(message);
+    this.name = 'SendError';
+  }
 }
 export interface PushMessage {
   /** Device token reference (never the raw token in logs). */
@@ -277,11 +309,11 @@ export interface PushMessage {
  */
 export interface Mailer {
   readonly provider?: string;
-  send(message: EmailMessage): Promise<void>;
+  send(message: EmailMessage): Promise<SendReceipt | void>;
 }
 export interface SmsSender {
   readonly provider?: string;
-  send(message: SmsMessage): Promise<void>;
+  send(message: SmsMessage): Promise<SendReceipt | void>;
 }
 export interface PushSender {
   readonly provider?: string;
@@ -299,6 +331,8 @@ export interface Infra {
   search: SearchIndex;
   mailer: Mailer;
   sms: SmsSender;
+  /** The SMS provider behind `sms` (S26a): delivery status, balance, and whether it is simulated (mock). */
+  smsGateway: SmsGateway;
   push: PushSender;
   close(): Promise<void>;
 }

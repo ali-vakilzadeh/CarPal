@@ -22,6 +22,7 @@ export function fallbackConfigForTests(locale: Locale): ClientConfig {
     i18n: { version: 'bundled', base_url: '' },
     taxonomy_version: 't1',
     flags: [],
+    auth: { phone_signin_available: false },
     region: r,
   };
 }

@@ -95,6 +95,7 @@ const NOTIFICATION_CHANNELS: Record<string, TemplateChannel[]> = {
   'staff.recovery_waiting': [],
   'staff.recovery_done': [],
   'staff.break_glass_notice': [],
+  'staff.exchange_rate_reminder': [],
 };
 
 /** Critical alerts (routing priority critical): marked "Always delivered" and locked. */

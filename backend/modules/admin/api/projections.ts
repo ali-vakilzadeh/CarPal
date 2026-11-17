@@ -2,6 +2,7 @@
 // reports, moderation cases and actions, feature flags and retention
 // policies. Staff are shown by display name only; reporters' contact data
 // never appears (MVP Module M).
+import { rateFreshness } from '../application/exchange-rate-daily.js';
 import type { Selectable } from 'kysely';
 import type { DB } from '#libs/db/index.js';
 import { iso, isoOrNull, meta } from '#libs/http-pipeline/index.js';
@@ -124,6 +125,7 @@ export function toExchangeRate(r: ExchangeRateRow, updatedBy: string) {
     per_usd: String(r.per_usd),
     updated_at: iso(r.updated_at),
     updated_by_display: updatedBy,
+    ...rateFreshness(r.updated_at), // 1.5.0 (S26a.T4): set_today in the region's time zone, age_hours
     version: r.version,
   };
 }

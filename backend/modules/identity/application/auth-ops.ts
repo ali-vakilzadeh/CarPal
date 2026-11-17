@@ -487,6 +487,7 @@ export class SigninPasswordHandler implements OperationHandler {
   constructor(
     private readonly auth: AuthServer,
     private readonly crypto: CryptoServices,
+    @InjectLogger() private readonly log: Logger,
   ) {}
 
   async handle(ctx: OperationContext<{ interaction_id: string; email: string; password: string }>): Promise<OperationResult> {
@@ -502,6 +503,15 @@ export class SigninPasswordHandler implements OperationHandler {
         // Every failure is the same 401 (SEC-AU-11), including suspended accounts.
         if (!user || !method || !ok || (user.status !== 'active' && user.status !== 'pending_verification' && !selfDeactivated(user)))
           throw new ApiError('INVALID_CREDENTIALS');
+        // S26a (DQ-25): an initial password is refused after its expiry, with the same generic answer.
+        if (
+          method.password_change_required &&
+          method.initial_password_expires_at &&
+          method.initial_password_expires_at.getTime() < Date.now()
+        ) {
+          this.log.warn({ security_event: 'staff_initial_password_expired' }, 'expired initial password refused');
+          throw new ApiError('INVALID_CREDENTIALS');
+        }
         if (this.crypto.passwords.needsRehash(method.credential_reference!))
           await scope.db
             .updateTable('identity.authentication_methods')
@@ -708,7 +718,7 @@ export class PasskeyEnrolOptionsHandler implements OperationHandler {
   async handle(ctx: OperationContext<{ interaction_id: string; code: string }>): Promise<OperationResult> {
     const i = await this.auth.interaction(ctx, ctx.body.interaction_id);
     const userId = i.userId;
-    if (!userId || !i.enrol || i.clientId !== 'cp-web-admin') throw new ApiError('INVALID_CREDENTIALS');
+    if (!userId || !i.enrol || i.pwdChange || i.clientId !== 'cp-web-admin') throw new ApiError('INVALID_CREDENTIALS');
     await ctx.rateLimit('auth.signin', 'account', userId);
     if (!(await this.auth.checkEnrolmentCode(i, ctx.body.code))) throw new ApiError('CODE_INVALID');
     const r = await ctx.tx(async (scope) => {
@@ -749,7 +759,7 @@ export class PasskeyEnrolHandler implements OperationHandler {
     const i = await this.auth.interaction(ctx, ctx.body.interaction_id);
     const userId = i.userId;
     const methodId = i.enrol?.methodId;
-    if (!userId || !methodId || i.clientId !== 'cp-web-admin') throw new ApiError('INVALID_CREDENTIALS');
+    if (!userId || !methodId || i.pwdChange || i.clientId !== 'cp-web-admin') throw new ApiError('INVALID_CREDENTIALS');
     await ctx.rateLimit('auth.signin', 'account', userId);
     const { user, codes } = await ctx.tx(async (scope) => {
       const pending = (await methods(scope, userId, ['webauthn'], true)).find((m) => m.id === methodId && m.status === 'pending');
@@ -780,6 +790,61 @@ export class PasskeyEnrolHandler implements OperationHandler {
     if (user) await this.messages.email(user.email, 'identity.staff_passkey_added', user.locale);
     this.log.info({ security_event: 'staff_passkey_enrolled', client_id: i.clientId }, 'staff passkey enrolled');
     return { body: { ...(await this.auth.afterEnrolment(i)), recovery_codes: codes } };
+  }
+}
+
+// ------------------------------------------------------------------ first sign-in password change (S26a, DQ-25)
+
+/**
+ * auth.password_set_initial: after a staff password sign-in on cp-web-admin answered change_password (the password is
+ * an initial or one-time password), the code sent to the account email and a new password (twice in the UI; SEC-AU-7:
+ * 12-128 characters, not breached, not the initial one) replace it. The flag ends once; the account is told by email.
+ * Five wrong codes end the interaction. Then the enrolment (no device-bound key yet; the same code opens
+ * auth.passkey_enrol_options) or the key (aal3) follows.
+ */
+@Injectable()
+@Operation('auth.password_set_initial')
+export class PasswordSetInitialHandler implements OperationHandler {
+  constructor(
+    private readonly auth: AuthServer,
+    private readonly crypto: CryptoServices,
+    private readonly sessions: SessionStore,
+    private readonly messages: IdentityMessages,
+    @InjectLogger() private readonly log: Logger,
+  ) {}
+
+  async handle(ctx: OperationContext<{ interaction_id: string; code: string; new_password: string }>): Promise<OperationResult> {
+    const b = ctx.body;
+    const i = await this.auth.interaction(ctx, b.interaction_id);
+    const userId = i.userId;
+    if (!userId || !i.pwdChange || !i.enrol || i.clientId !== 'cp-web-admin') throw new ApiError('INVALID_CREDENTIALS');
+    await ctx.rateLimit('auth.signin', 'account', userId);
+    if (!(await this.auth.checkEnrolmentCode(i, b.code))) {
+      // Five wrong codes end the interaction (checkEnrolmentCode drops the code at the fifth).
+      if (!i.enrol) await this.auth.state.dropInteraction(i.id);
+      throw new ApiError('CODE_INVALID');
+    }
+    if (isBreachedPassword(b.new_password)) throw ApiError.validation([{ pointer: '/new_password', code: 'pattern' }]);
+    const newHash = await this.crypto.passwords.hash(b.new_password);
+    const out = await ctx.tx(async (scope) => {
+      const user = await getUser(scope, userId);
+      const [method] = (await methods(scope, userId, ['email_password'], true)).filter((m) => m.status === 'active');
+      if (!user || user.status !== 'active' || !method?.password_change_required) throw new ApiError('INVALID_CREDENTIALS');
+      if (await this.crypto.passwords.verify(b.new_password, method.credential_reference!))
+        throw ApiError.validation([{ pointer: '/new_password', code: 'not_unique' }]);
+      await scope.db
+        .updateTable('identity.authentication_methods')
+        .set({ credential_reference: newHash, password_change_required: false, initial_password_expires_at: null })
+        .where('id', '=', method.id)
+        .execute();
+      await writeAudit(scope, { action: 'staff.initial_password_changed', entityType: 'user_account', entityId: userId });
+      const keys = await methods(scope, userId, ['webauthn']);
+      return { user, hasKey: keys.some((m) => m.status === 'active' && isDeviceBoundPasskey(m)) };
+    });
+    await this.sessions.revokeAll(userId);
+    await this.messages.email(out.user.email, 'identity.password_changed', out.user.locale);
+    this.log.info({ security_event: 'staff_initial_password_changed', client_id: i.clientId }, 'staff initial password changed');
+    return { body: await this.auth.afterInitialPasswordChange(i, out.hasKey) };
   }
 }
 
@@ -911,7 +976,8 @@ export class PasswordResetCompleteHandler implements OperationHandler {
       if (method)
         await scope.db
           .updateTable('identity.authentication_methods')
-          .set({ credential_reference: newHash })
+          // A reset by link is a password of the person's own choosing (S26a: the initial-password flag ends too).
+          .set({ credential_reference: newHash, password_change_required: false, initial_password_expires_at: null })
           .where('id', '=', method.id)
           .execute();
       else

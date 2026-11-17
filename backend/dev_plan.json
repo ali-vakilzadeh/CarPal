@@ -2,11 +2,11 @@
   "meta": {
     "title": "CarPal backend — scratch build plan and stage log",
     "created": "2026-10-10",
-    "last_updated": "2026-11-16",
+    "last_updated": "2026-11-17",
     "status": "scratch_build_done",
     "progress": {
-      "as_of": "2026-11-16",
-      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list. S10 is DONE (2026-10-26): contract 1.1.0 served — search.session_get (406/407 operations served), search facets, the soonest sort with next_available_slot, search.page limit and the map.pins changes; the 1.1.0 text was corrected before use (DI-74). Next: the next_iteration list; the PWA continues with P7 and adopts 1.1.0 in P14. 2026-11-04: plan aligned with the closed PWA scratch build (pwa/dev_plan.json P1-P14, meta.status scratch_build_done). Rule GD-43: where the two plans disagree, the newer PWA decision wins and the backend follows. The PWA's pilot blockers that need the backend are now stage S11 'Pilot readiness: PWA integration 2' (strict auth for the BFF clients by DPoP + private_key_jwt, contract 1.2.0 for the profile and settings fields of PWA DI-55, USD prices with an admin-set exchange rate, the carpals.ir production setup). Backend-owned PWA follow-ups that do not block the pilot are NI-19..NI-22. Next: S11, then the next_iteration list. S11 is DONE in code (2026-11-05): strict auth for the BFF clients (DPoP-bound tokens + private_key_jwt, CARPAL_OAUTH_CLIENT_JWKS, no mTLS), contract 1.2.0 (411 operations, 410 served; me.deactivate, auth.reactivate, admin.exchange_rates_list, admin.exchange_rate_update, the profile and settings fields of PWA DI-55), USD as the base currency with an admin rate served by config.client, the carpals.ir deploy kit with strict mode on by default. The first server deployment (S11.T4 c) is still to be done by the user: see S11.report.open_after_stage. Next: the deployment, then the next_iteration list. 2026-11-09: S12 'Admin console prerequisites' is DONE in code (frontend/admin-console/dev-plan.json AC2): contract 1.3.0 (414 operations, 413 served; auth.passkey_enrol_options, auth.passkey_enrol, admin.staff_me, AuthNext 'enrol_passkey', error PASSKEY_NOT_DEVICE_BOUND), cp-web-admin DPoP-bound with private_key_jwt, the staff passkey enrolment inside the cp-web-admin sign-in, the first-run staff bootstrap (pnpm staff:bootstrap, deploy/staff-bootstrap.sh) and dev:staff, the admin key pair in its own file. Next: the admin console builds its BFF (AC3), then the next_iteration list. 2026-11-12: S13 'Admin console unblockers' is DONE in code (backend/BR-update-plan.json, the first stage of the admin console refinement S13-S25): contract 1.4.0 opened (421 operations, 420 served; admin.job_get, admin.staff_list, admin.staff_disable, admin.staff_enable, admin.taxonomy_snapshot, admin.region_settings, admin.badges_list; admin.four_eyes_list mine=true; PendingChange decision fields and job_id with migration 0102). Next: S14 of BR-update-plan.json (purpose bound to the record, NI-02), while the console resumes AC10 and AC12. 2026-11-13: S14 'Staff access to personal data, and suspension correctness' is DONE in code (BR-update-plan.json S14): staff access purposes bound to the record on every PURP operation (403 PURPOSE_RECORD_MISMATCH, scoped user search, case actions bound; RCP-01 mitigated, NI-02 done), admin.orgs_search answers StaffOrgSearchRow without contact data or points (console regenerated), timed suspensions lifted by the scheduler (suspended_until, migration 0103, DI-66 closed). Next: S15 of BR-update-plan.json, while the console resumes AC10 and AC12. 2026-11-13: S15 'Policies and consent texts' is DONE in code (BR-update-plan.json S15): versioned legal texts per region with four-eyes publish, effective date and re-consent flag (migration 0104), policy.current, policy.accept, Me.policy_reconsent, sign-up bound to the versions in force; contract 1.4.0 at 428 operations. Next: S16a of BR-update-plan.json. 2026-11-13: S16a 'Staff passkeys and recovery codes' is DONE in code (BR-update-plan.json S16a): staff recovery codes (migration 0105), the caller's own keys on the admin plane (five admin.staff_* operations, fresh aal3 within 5 minutes, LAST_PASSKEY), break glass (pnpm staff:break-glass, deploy/staff-break-glass.sh) and DQ-11; contract 1.4.0 at 433 operations. Next: S15b, then S16b of BR-update-plan.json. Backend refinement for the admin console (BR-update-plan.json S13-S25b) closed on 2026-11-16: contract 1.4.0 frozen with 490 operations on 542 routes (489 served), 55 error codes, migrations 0100-0115; the deferred work is next_iteration NP-01..NP-12.",
+      "as_of": "2026-11-17",
+      "summary": "S1-S8 are DONE. The backend has its foundation (local Node 24, embedded PostgreSQL with the full Docs/43 install, generated contract), the contract-driven request pipeline with all platform libraries and four deployables, identity + the auth server, billing and taxonomy, organizations, provider and vendor profiles, media (W6), vehicles, inventory, discovery, community, notifications, appointments, reviews and trust, and now fleets (assignments, approvals wired into issues/appointments/cost estimates, partners in search, reports, CSV exports W8 and imports W7), the admin plane on admin-api (aal3 staff, purpose-bound PII reads with audit, four-eyes changes, moderation with cases and an intake of held content, Path 2 reviewer decisions, disputes, badges, verification, locations, organization status/merge, billing, taxonomy with merge jobs, flags and kill switch, retention, audit search, MCP records, assist sessions), DSR execution (export bundle W8, deletion across modules in the worker) and product analytics (events.ingest → W12 pseudonymized → daily metrics → dashboards). 375 of 402 operations are implemented; 27 answer 501 (23 §21 AI operations for S9, 3 deferred S3 identity operations, and media.upload_put which is the storage listener's PUT). Next: S9 (AI/MCP facade, contract test sweep, OpenAPI, hardening). S9a is DONE: the AI facade and workers, WebAuthn, the media policy, one owner per VIN with transfers, and fleet data sharing (404 of 406 operations). S9b is DONE: the contract sweep (L22) — one generated suite per module from operations.json (pnpm contract:tests, checked by pnpm contract:check) with a hand-written resolver per operation, 457 HTTP routes swept for schema conformance, BOLA, same-organization BFLA, admin-plane mechanics, the kill switch and SEC-OUT-1 projections; it found and fixed a slug defect and tightened VinDecodeResult. S9c is DONE and with it S9 and the scratch build: shared/api-contracts/openapi.yaml (OpenAPI 3.1, generated from the registry, pnpm openapi:check against the registry and every host router), a GitHub Actions workflow (static checks + integration tests in lite mode), contract:coverage --strict with zero unexplained 501s (405/406 served; auth.social_start deferred post-MVP), fleet-driver visibility fixed (status history, fleet media, fleet AI records; sweep dimension added), a no-existence-oracle check of the non-404 BOLA refusals, risk_control_plan.json, the next_iteration list and the README. Next: the next_iteration list. On 2026-10-26 Docs/40 was raised to contract 1.1.0 (additive under TR-3) for gaps found by the consumer PWA (pwa/dev_plan.json DI-42..DI-46; backend DI-72, DI-73, DI-46): search facets, the soonest sort with a filled next_available_slot, the new search.session_get, search.page limit, MapPin profile fields and open_now on map.pins. The new stage S10 'PWA integration' implements it. Next: S10, then the next_iteration list. S10 is DONE (2026-10-26): contract 1.1.0 served — search.session_get (406/407 operations served), search facets, the soonest sort with next_available_slot, search.page limit and the map.pins changes; the 1.1.0 text was corrected before use (DI-74). Next: the next_iteration list; the PWA continues with P7 and adopts 1.1.0 in P14. 2026-11-04: plan aligned with the closed PWA scratch build (pwa/dev_plan.json P1-P14, meta.status scratch_build_done). Rule GD-43: where the two plans disagree, the newer PWA decision wins and the backend follows. The PWA's pilot blockers that need the backend are now stage S11 'Pilot readiness: PWA integration 2' (strict auth for the BFF clients by DPoP + private_key_jwt, contract 1.2.0 for the profile and settings fields of PWA DI-55, USD prices with an admin-set exchange rate, the carpals.ir production setup). Backend-owned PWA follow-ups that do not block the pilot are NI-19..NI-22. Next: S11, then the next_iteration list. S11 is DONE in code (2026-11-05): strict auth for the BFF clients (DPoP-bound tokens + private_key_jwt, CARPAL_OAUTH_CLIENT_JWKS, no mTLS), contract 1.2.0 (411 operations, 410 served; me.deactivate, auth.reactivate, admin.exchange_rates_list, admin.exchange_rate_update, the profile and settings fields of PWA DI-55), USD as the base currency with an admin rate served by config.client, the carpals.ir deploy kit with strict mode on by default. The first server deployment (S11.T4 c) is still to be done by the user: see S11.report.open_after_stage. Next: the deployment, then the next_iteration list. 2026-11-09: S12 'Admin console prerequisites' is DONE in code (frontend/admin-console/dev-plan.json AC2): contract 1.3.0 (414 operations, 413 served; auth.passkey_enrol_options, auth.passkey_enrol, admin.staff_me, AuthNext 'enrol_passkey', error PASSKEY_NOT_DEVICE_BOUND), cp-web-admin DPoP-bound with private_key_jwt, the staff passkey enrolment inside the cp-web-admin sign-in, the first-run staff bootstrap (pnpm staff:bootstrap, deploy/staff-bootstrap.sh) and dev:staff, the admin key pair in its own file. Next: the admin console builds its BFF (AC3), then the next_iteration list. 2026-11-12: S13 'Admin console unblockers' is DONE in code (backend/BR-update-plan.json, the first stage of the admin console refinement S13-S25): contract 1.4.0 opened (421 operations, 420 served; admin.job_get, admin.staff_list, admin.staff_disable, admin.staff_enable, admin.taxonomy_snapshot, admin.region_settings, admin.badges_list; admin.four_eyes_list mine=true; PendingChange decision fields and job_id with migration 0102). Next: S14 of BR-update-plan.json (purpose bound to the record, NI-02), while the console resumes AC10 and AC12. 2026-11-13: S14 'Staff access to personal data, and suspension correctness' is DONE in code (BR-update-plan.json S14): staff access purposes bound to the record on every PURP operation (403 PURPOSE_RECORD_MISMATCH, scoped user search, case actions bound; RCP-01 mitigated, NI-02 done), admin.orgs_search answers StaffOrgSearchRow without contact data or points (console regenerated), timed suspensions lifted by the scheduler (suspended_until, migration 0103, DI-66 closed). Next: S15 of BR-update-plan.json, while the console resumes AC10 and AC12. 2026-11-13: S15 'Policies and consent texts' is DONE in code (BR-update-plan.json S15): versioned legal texts per region with four-eyes publish, effective date and re-consent flag (migration 0104), policy.current, policy.accept, Me.policy_reconsent, sign-up bound to the versions in force; contract 1.4.0 at 428 operations. Next: S16a of BR-update-plan.json. 2026-11-13: S16a 'Staff passkeys and recovery codes' is DONE in code (BR-update-plan.json S16a): staff recovery codes (migration 0105), the caller's own keys on the admin plane (five admin.staff_* operations, fresh aal3 within 5 minutes, LAST_PASSKEY), break glass (pnpm staff:break-glass, deploy/staff-break-glass.sh) and DQ-11; contract 1.4.0 at 433 operations. Next: S15b, then S16b of BR-update-plan.json. Backend refinement for the admin console (BR-update-plan.json S13-S25b) closed on 2026-11-16: contract 1.4.0 frozen with 490 operations on 542 routes (489 served), 55 error codes, migrations 0100-0115; the deferred work is next_iteration NP-01..NP-12. 2026-11-17: S26a 'Pilot access and messages' is DONE in code (BR-update-plan.json S26a): contract 1.5.0 opened (491 operations, 543 routes, 490 served): forced first-sign-in password change for seeded staff (auth.password_set_initial), email through the carpals.ir cPanel mailbox (SMTP), the SMS gateway with a mock provider, the daily IRR rate with its morning reminder, and the consent-text seed; migration 0116. DQ-25, DQ-26 and DQ-28 were built on their defaults and wait for the owner. Next: S26b.",
       "stages": [
         {
           "stage": "S1",
@@ -5474,6 +5474,132 @@
           "not_run": "The PWA integration suites (lite-only until PB-08) and the E2E suites: the whole-plan test run (PD-03)."
         }
       }
+    },
+    {
+      "id": "S26a",
+      "title": "S26a - Pilot access and messages: admin seed with a forced password change, email through cPanel SMTP, SMS gateway with a mock provider, daily IRR rate, consent-text seed (contract 1.5.0 opens)",
+      "status": "done",
+      "depends_on": [
+        "S25b"
+      ],
+      "plan": "backend/BR-update-plan.json action_plan.stages S26a (S26 split into S26a, S26b and S26c on 2026-11-16).",
+      "goal": "Pilot access and messages before go-live: seeded administrators change their initial password at the first sign-in, real email through the carpals.ir cPanel mailbox, an SMS gateway with a mock provider, a daily IRR rate that is never blank, and the consent-text seed (contract 1.5.0 opens).",
+      "scope": {
+        "contract_sections": [
+          "header",
+          "§2.14 SEC-ADM-2",
+          "§6.1 AuthNext",
+          "§6.2 auth.password_set_initial",
+          "§20.1",
+          "§22.1 ClientConfig",
+          "§23.1",
+          "§23.5",
+          "Appendix A",
+          "Appendix D 1.5.0"
+        ],
+        "modules": [
+          "libs/config",
+          "libs/infra",
+          "libs/sms (new)",
+          "libs/platform",
+          "identity",
+          "notification",
+          "admin",
+          "tools/db",
+          "deploy",
+          "apps/testing"
+        ],
+        "ops_target": 1,
+        "ops_note": "One new auth-host operation (auth.password_set_initial). Registry after S26a: 491 operations, 543 routes, 55 error codes; 490 served (auth.social_start deferred)."
+      },
+      "tasks": [
+        {
+          "id": "S26a.T1",
+          "status": "done",
+          "title": "Pilot administrators with a forced password change. (a) Seed: deploy/templates/staff-bootstrap.json.example lists admin100, admin200, admin300 (ADM, DQ-26 addresses) as the three main administrators, "
+        },
+        {
+          "id": "S26a.T2",
+          "status": "done",
+          "title": "Email through the carpals.ir mailbox (meta.email_check_2026_11_16). (a) A real SMTP Mailer (nodemailer, pooled, timeouts 10/20/30 s) replaces the full-mode skeleton and can also be chosen in lite mode"
+        },
+        {
+          "id": "S26a.T3",
+          "status": "done",
+          "title": "SMS gateway module with a mock provider. (a) A port SmsGateway in libs/sms (used by the existing SmsSender path and the OTP code): sendText(to, text, {category, idempotencyKey}) -> {provider_message_i"
+        },
+        {
+          "id": "S26a.T4",
+          "status": "done",
+          "title": "IRR rate set every morning. (a) Default from configuration: CARPAL_DEFAULT_IRR_PER_USD (decimal string, default 1000000; .env.example, deploy/templates/backend.env.template, README). At start the back"
+        },
+        {
+          "id": "S26a.T5",
+          "status": "done",
+          "title": "Consent-text seed. New command pnpm seed:consent-texts --file <json> [--region ir-pilot] (tools/db; runs on the server like staff:bootstrap, deploy/seed-consent-texts.sh). It validates the file agains"
+        },
+        {
+          "id": "S26a.T6",
+          "status": "done",
+          "title": "Definition of done for S26a: contract 1.5.0 opened in Docs/40 Appendix D (rows for S26a; 1.4.0 stays the frozen baseline), Docs/23 (A-AUTH-01 first sign-in password change; Exchange rates set_today an"
+        }
+      ],
+      "deliverables": [
+        "contract 1.5.0 opened (Docs/40, libs/contract/generated, shared/api-contracts, console and PWA regenerated)",
+        "migration 0116 and Docs/43 (staff password flags, staff notice type, SMS status index)",
+        "SMTP mailer, libs/sms gateway with the mock provider, first-sign-in password change, daily rate reminder, consent-text seed",
+        "deploy: email_setup_guide.md, mail-test.sh, seed-consent-texts.sh, staff-bootstrap.sh --reissue, env templates"
+      ],
+      "report": {
+        "started_at": "2026-11-17",
+        "completed_at": "2026-11-17",
+        "summary": "S26a is built and tested (contract 1.5.0 opened). Staff accounts seeded with the owner's initial password (CARPAL_STAFF_INITIAL_PASSWORD, never printed or committed) must enter the code sent to their email and choose a new 12+ character password before their key; no token is issued before that, and the initial password expires after 7 days (staff:bootstrap --reissue). Email goes through the carpals.ir cPanel mailbox by authenticated SMTP (CARPAL_MAIL_TRANSPORT=smtp, TLS required, hourly cap, 4xx retried, 5xx permanent, provider smtp in Delivery health); pnpm mail:test and deploy/email_setup_guide.md cover the setup. Every SMS goes through the new SmsGateway port; the mock provider gives ids, statuses, failures and a balance, a sweep records delivered/failed, System health and config.client say SMS is simulated, and the log warns hourly outside dev. The IRR rate is never blank (created from CARPAL_DEFAULT_IRR_PER_USD when missing), ExchangeRate has set_today and age_hours, and administrators get one morning reminder on days the rate was not set. pnpm seed:consent-texts loads the 13 reviewed texts as drafts. DQ-25, DQ-26 and DQ-28 were built on their defaults and wait for the owner's confirmation. Contract 1.5.0: 491 operations, 543 routes (490 served), 55 error codes. Migration 0116.",
+        "tests": {
+          "backend_static": "pnpm lint (eslint + dependency-cruiser: no violations, 591 modules), typecheck, format:check: pass",
+          "backend_unit": "351 passed (52 files), including libs/sms/sms.test.ts (port contract against the mock, segments, E.164, opt-out, GatewaySmsSender), libs/infra/smtp-mailer.test.ts (local smtp-server: implicit TLS and login, STARTTLS required, Persian subject and Message-ID, List-Unsubscribe on optional mail only, 4xx temporary / 5xx permanent / EAUTH temporary, certificate refused outside dev, hourly cap order), tools/db/consent-texts.test.ts, staff.test.ts (--reissue, initial password limits), exchange-rate-daily.test.ts (Tehran midnight) and the registry pin (491 operations, 543 routes)",
+          "backend_contract": "contract:check up to date (1.5.0, 491 operations, 55 error codes); sweep suites up to date (17 modules, identity regenerated with the auth.password_set_initial resolver); openapi:check: 543 operations on 440 paths; contract:coverage --strict 490/491 served (auth.social_start deferred), 0 unexplained 501s",
+          "backend_s26a": "11 passed (apps/testing/s26a.int.test.ts): T1 step order, nothing opens before the change, wrong code / short / equal password refused, flag cleared once with audit and email, enrolment with the same code to aal3, initial password refused afterwards, reissue refused after the change, flagged account with a key goes to mfa, no token while flagged (issueForSession), five wrong codes end the interaction, expiry and reissue; T3 SMS status sweep (delivered, failed, older than 24 h untouched), permanent refusal not retried, held message keeps its attempts, provider id stored; System health and config.client fields; T4 default rate created/untouched with audit, set_today and age_hours, one reminder per day, none before the hour or once set, rate row untouched, routing to administrators; T5 13 drafts, second run none",
+          "backend_integration_full": "1017 tests in 68 files: 1016 passed, 1 failed (s11 asserted contract_version 1.4.0; pin updated to 1.5.0, as were platform-ops and pipeline). Rerun of s11, platform-ops and pipeline: 50 passed.",
+          "pwa": "pnpm check:clients: contract:generate, typecheck, lint, i18n:check (3179 keys) and 691 unit and DOM tests passed (76 files) after the fallback ClientConfig auth field and the staff.exchange_rate_reminder classification",
+          "admin_console": "pnpm check:clients: contract:generate (124 admin-api operations), typecheck, lint, i18n (1554 keys) and 430 tests passed (44 files) after EXPECTED_CONTRACT 1.5.0 and the rates fixture",
+          "environment": "Node 24.21.0 from backend/.tools/node; migration 0116 applied with pnpm db:setup (17 applied, 0 pending, baseline up to date) and db:codegen run",
+          "not_run": "Live SMTP to mail.carpals.ir (needs the owner's mailbox and backend.env on the API server: deploy/mail-test.sh); strict cross-component runs (console and PWA test:int, E2E) wait for the whole-plan test run (PD-03)."
+        },
+        "deviations": [
+          {
+            "id": "S26a-D1",
+            "summary": "The stage ran at the owner's scheduled request (\"wait until 2:20am computer time, then review the file backend/BR-update-plan.json and execute the stage S-26a\") while DQ-25, DQ-26 and DQ-28 were still open. Their stated defaults were applied, as depends_on allows: the initial password may be shorter"
+          },
+          {
+            "id": "S26a-D2",
+            "summary": "auth.password_set_initial (POST /v1/auth/password/initial) takes the emailed code and the new password in one call. The code check counts toward the same five attempts as the enrolment code; the fifth wrong code ends the interaction (410 LINK_EXPIRED afterwards). After the change the same code stays"
+          },
+          {
+            "id": "S26a-D3",
+            "summary": "CARPAL_STAFF_INITIAL_PASSWORD (8-128 characters, no leading or trailing space) is read only by the staff command, never by the running backend, and is never printed, logged or audited. In dev the development accounts, dev:staff create, and bootstrap --file without an initial password keep DEV_STAFF_"
+          },
+          {
+            "id": "S26a-D4",
+            "summary": "nodemailer 10.6 (it ships its own types; @types/nodemailer is not used); smtp-server 3 for the tests (dev dependency). CARPAL_MAIL_TRANSPORT defaults to file in lite mode and smtp in full mode. Dev may use plain SMTP to a loopback test server and CARPAL_SMTP_TLS_INSECURE; staging and prod refuse bot"
+          },
+          {
+            "id": "S26a-D5",
+            "summary": "libs/sms holds the port (SmsGateway), the helpers (assertE164, smsSegments, isOptOut), the mock and file providers and the registry; libs/infra GatewaySmsSender adapts the existing SmsSender port (identity.otp_code goes through sendOtp, everything else through sendText) and Infra gains smsGateway. T"
+          },
+          {
+            "id": "S26a-D6",
+            "summary": "The once-per-day marker is the day's exchange_rate.reminder_due event in the outbox, not a column: any UPDATE of admin.exchange_rates fires core.tg_touch, which moves updated_at and version, so a marker on the row would make the rate look set today and break the console's If-Match (found while testi"
+          },
+          {
+            "id": "S26a-D7",
+            "summary": "The seed also stores requires_reconsent from the file on the draft (the console's publish step still decides). Placeholder detection ignores Markdown links ([text](url)) and finds nested placeholders; meta.status must be approved unless --allow-placeholders (dev only, which accepts the template as i"
+          },
+          {
+            "id": "S26a-D8",
+            "summary": "pnpm check:clients needed, as at earlier minor versions: the console's EXPECTED_CONTRACT 1.5.0 (generate.test, bff.int.test header), its rates fixture with set_today/age_hours; the PWA's fallback ClientConfig (server and tests) with auth.phone_signin_available false, and staff.exchange_rate_reminder"
+          }
+        ]
+      }
     }
   ],
   "coverage_summary": {
@@ -7100,7 +7226,7 @@
   "next_iteration": {
     "written_after": "S9c",
     "date": "2026-10-24",
-    "note": "Consolidates the deviations_log (S1-S9c), the open recommendations, the open doc issues and questions, risk_control_plan.json and the post-MVP backlog into the work of the first iteration after the scratch build. Sources name deviation entries by stage and index (#n = position in deviations_log), DI/OQ/RCP/PM ids. Priorities are proposals for planning. 2026-11-16 (backend S25b): NP-01..NP-12 are the work the owner deferred out of the admin console refinement (S13-S25b), copied with source, decision and resume point; read them with BR-update-plan.json deferred_to_next_phase. Open owner question, not a deferral yet: DQ-24 (S25a-D2, the Docs/21 monthly odometer prompt). Items moved elsewhere: PU-BR-03 and PU-BR-04 rest (public Web UI), the PWA refinement round (pwa/BR-update-plan.json).",
+    "note": "Consolidates the deviations_log (S1-S9c), the open recommendations, the open doc issues and questions, risk_control_plan.json and the post-MVP backlog into the work of the first iteration after the scratch build. Sources name deviation entries by stage and index (#n = position in deviations_log), DI/OQ/RCP/PM ids. Priorities are proposals for planning. 2026-11-16 (backend S25b): NP-01..NP-12 are the work the owner deferred out of the admin console refinement (S13-S25b), copied with source, decision and resume point; read them with BR-update-plan.json deferred_to_next_phase. DQ-24 (S25a-D2, the Docs/21 monthly odometer prompt) was answered on 2026-11-16 after the closure: built in this phase as BR-update-plan.json stages S26a-S26c (with the pilot admin seed, the consent-text seed and the daily IRR rate; contract 1.5.0), so it is not a next-iteration item. Items moved elsewhere: PU-BR-03 and PU-BR-04 rest (public Web UI), the PWA refinement round (pwa/BR-update-plan.json).",
     "items": [
       {
         "id": "NI-01",
@@ -7227,7 +7353,8 @@
           "deviations S4 #34-36, S5 #51"
         ],
         "status": "not_started",
-        "note_2026_11_04": "PWA follow-ups (next iteration, PWA NI-P13-07): web push sender with a VAPID pair (PWA OQ-26 still open: until decided no deployment sets CARPAL_PWA_VAPID_PUBLIC_KEY), push payload with reference and organization_context_id (PWA DI-71, DI-72), consumer and portal web tokens kept apart so business pushes never reach the consumer PWA (PWA DI-16). Real email/SMS providers are needed before go-live (S11.T4)."
+        "note_2026_11_04": "PWA follow-ups (next iteration, PWA NI-P13-07): web push sender with a VAPID pair (PWA OQ-26 still open: until decided no deployment sets CARPAL_PWA_VAPID_PUBLIC_KEY), push payload with reference and organization_context_id (PWA DI-71, DI-72), consumer and portal web tokens kept apart so business pushes never reach the consumer PWA (PWA DI-16). Real email/SMS providers are needed before go-live (S11.T4).",
+        "note_2026_11_16": "Planned in BR-update-plan.json S26 (owner, 2026-11-16): email through the carpals.ir cPanel mailbox (S26a.T2), an SMS gateway port with a mock provider until a provider is chosen (S26a.T3), Neshan as the regional geocoder (S26b.T2). Push, VIN decoder and the W6 tools stay here."
       },
       {
         "id": "NI-08",
@@ -7397,7 +7524,8 @@
           "deviations S1 #4, S2 #13, S4 #33, #35",
           "DI-26"
         ],
-        "status": "not_started"
+        "status": "not_started",
+        "note_2026_11_16": "Planned in BR-update-plan.json S26c.T1 (owner, 2026-11-16: every Must item into S26)."
       },
       {
         "id": "NI-19",
@@ -7418,7 +7546,8 @@
           "PWA DI-26",
           "PWA DI-28"
         ],
-        "status": "not_started"
+        "status": "not_started",
+        "note_2026_11_16": "Planned in BR-update-plan.json S26c.T2 (owner, 2026-11-16)."
       },
       {
         "id": "NI-20",
@@ -7472,7 +7601,8 @@
           "PWA OQ-18"
         ],
         "status": "partly_done",
-        "note": "2026-11-06: the code defaults, tests, .env.example, Docs/40, Docs/41 and the OpenAPI servers now name carpals.ir (pwa., web., api., id., admin-api., admin., docs.); contract stays 1.2.0 because no field or rule changed. Still open: cdn.carpal.app in shared/region-config/ir-pilot.json and the CARPAL_I18N_BASE_URL default (the PWA's CSP and E2E follow it) until a real CDN host exists; media.carpal-usercontent.app in Docs/40 and OpenAPI (deployments use media.<DOMAIN>, see deploy.md Known limitations). Left on purpose: @test.carpal.app fixture addresses (existing test data and the baseline test key on them), admin@carpal.app in Docs/43 and tools/db (editing Docs/43 trips the baseline drift check; deployments set admin@<DOMAIN>), and the schemas.carpal.app JSON Schema $id (an identifier, never fetched)."
+        "note": "2026-11-06: the code defaults, tests, .env.example, Docs/40, Docs/41 and the OpenAPI servers now name carpals.ir (pwa., web., api., id., admin-api., admin., docs.); contract stays 1.2.0 because no field or rule changed. Still open: cdn.carpal.app in shared/region-config/ir-pilot.json and the CARPAL_I18N_BASE_URL default (the PWA's CSP and E2E follow it) until a real CDN host exists; media.carpal-usercontent.app in Docs/40 and OpenAPI (deployments use media.<DOMAIN>, see deploy.md Known limitations). Left on purpose: @test.carpal.app fixture addresses (existing test data and the baseline test key on them), admin@carpal.app in Docs/43 and tools/db (editing Docs/43 trips the baseline drift check; deployments set admin@<DOMAIN>), and the schemas.carpal.app JSON Schema $id (an identifier, never fetched).",
+        "note_2026_11_16": "Rest planned in BR-update-plan.json S26b.T4 (owner, 2026-11-16); the map hosts move to Neshan (S26b.T3)."
       },
       {
         "id": "NP-01",

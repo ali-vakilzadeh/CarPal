@@ -12,11 +12,11 @@ describe('generated contract', () => {
     }
   });
 
-  it('declares 490 operations and 542 routes (S25a: Delivery health, contract 1.4.0)', () => {
+  it('declares 491 operations and 543 routes (S26a: auth.password_set_initial, contract 1.5.0)', () => {
     const r = loadRegistry();
-    expect(r.operationCount).toBe(490);
-    expect(OPERATION_IDS).toHaveLength(490);
-    expect(r.routeCount).toBe(542);
+    expect(r.operationCount).toBe(491);
+    expect(OPERATION_IDS).toHaveLength(491);
+    expect(r.routeCount).toBe(543);
     for (const op of r.operations) {
       expect(op.routes.length, op.opId).toBeGreaterThan(0);
       for (const route of op.routes) {

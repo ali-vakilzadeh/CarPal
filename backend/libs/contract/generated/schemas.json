@@ -2434,7 +2434,8 @@
             "complete",
             "consent",
             "reactivate",
-            "enrol_passkey"
+            "enrol_passkey",
+            "change_password"
           ]
         },
         "mfa_methods": {
@@ -3432,6 +3433,19 @@
           "maxItems": 200,
           "description": "evaluated for the caller; no targeting rules exposed"
         },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "phone_signin_available": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "phone_signin_available"
+          ],
+          "additionalProperties": false,
+          "description": "false while no text message leaves the server (1.5.0, DQ-28)"
+        },
         "region": {
           "$ref": "#/$defs/RegionConfig"
         }
@@ -3443,6 +3457,7 @@
         "i18n",
         "taxonomy_version",
         "flags",
+        "auth",
         "region"
       ],
       "additionalProperties": false
@@ -5252,6 +5267,16 @@
           "maxLength": 50,
           "pattern": "^[^\\r\\n]*$"
         },
+        "set_today": {
+          "type": "boolean",
+          "description": "1.5.0: updated since 00:00 of today in the region's time zone"
+        },
+        "age_hours": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000,
+          "description": "1.5.0: whole hours since updated_at"
+        },
         "version": {
           "type": "integer",
           "minimum": 1,
@@ -5264,6 +5289,8 @@
         "per_usd",
         "updated_at",
         "updated_by_display",
+        "set_today",
+        "age_hours",
         "version"
       ],
       "additionalProperties": false,
@@ -11654,9 +11681,10 @@
         "support_update",
         "four_eyes_outcome",
         "staff_security_alert",
-        "ai_kill_switch_changed"
+        "ai_kill_switch_changed",
+        "exchange_rate_reminder"
       ],
-      "description": "staff notices (backend S17): admin plane only"
+      "description": "staff notice (backend S26a): the display rate was not set today"
     },
     "NotificationPreference": {
       "type": "object",
@@ -29113,13 +29141,35 @@
             "$ref": "#/$defs/SystemHealthSignal"
           },
           "maxItems": 10
+        },
+        "sms_provider": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[^\\r\\n]*$",
+          "description": "1.5.0: the SMS gateway's provider key (mock until one is chosen)"
+        },
+        "sms_simulated": {
+          "type": "boolean",
+          "description": "1.5.0: true while no text message leaves the server (mock, file; DQ-28)"
+        },
+        "mail_transport": {
+          "type": "string",
+          "enum": [
+            "file",
+            "smtp"
+          ]
         }
       },
       "required": [
         "generated_at",
-        "signals"
+        "signals",
+        "sms_provider",
+        "sms_simulated",
+        "mail_transport"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "1.5.0: file = mail is only written to the server's outbox file"
     },
     "SystemHealthKey": {
       "type": "string",

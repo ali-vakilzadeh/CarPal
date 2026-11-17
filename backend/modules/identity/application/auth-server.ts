@@ -15,7 +15,7 @@ import type { Logger } from '#libs/observability/index.js';
 import { InjectConfig, InjectInfra, InjectLogger } from '#libs/runtime/index.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 import { constantTimeEqual, newOtpCode } from '../domain/credentials.js';
-import { activeSecondFactors, platformRoles, type MethodRow, type UserRow } from '../infrastructure/accounts.js';
+import { activeSecondFactors, methods, platformRoles, type MethodRow, type UserRow } from '../infrastructure/accounts.js';
 import { AuthState, OTP_MAX_ATTEMPTS, OTP_RESEND_MS, OTP_TTL_MS, type Interaction } from '../infrastructure/auth-state.js';
 import { IdentityMessages } from '../infrastructure/messages.js';
 
@@ -26,7 +26,7 @@ const CLIENT_ASSERTION_MAX_S = 300;
 const CLIENT_ASSERTION_SKEW_S = 30;
 
 export type AuthNext = {
-  next: 'verify_email' | 'verify_phone' | 'mfa' | 'complete' | 'consent' | 'reactivate' | 'enrol_passkey';
+  next: 'verify_email' | 'verify_phone' | 'mfa' | 'complete' | 'consent' | 'reactivate' | 'enrol_passkey' | 'change_password';
   mfa_methods?: ('totp_mfa' | 'webauthn')[];
 };
 
@@ -99,6 +99,15 @@ export class AuthServer {
     const factors = await activeSecondFactors(scope, user.id);
     i.mfaEnrolled = factors.length > 0;
     if (i.clientId === 'cp-web-admin') {
+      // S26a (DQ-25): an initial or one-time staff password is changed first, after the code sent to the account
+      // email, so the shared initial password alone never opens the account (also when it already has a key).
+      if (
+        amr === 'pwd' &&
+        user.email_verified_at &&
+        (await passwordChangeRequired(scope, user.id)) &&
+        (await platformRoles(scope, user.id)).length > 0
+      )
+        return this.#startPasswordChange(i, user);
       // SEC-ADM-2: staff complete every sign-in with a device-bound WebAuthn credential (aal3, auth.mfa_verify).
       i.mfaPending = true;
       // Contract 1.3.0: a staff account without one enrols it first, after its password (never after a one-time
@@ -125,15 +134,45 @@ export class AuthServer {
 
   /** Sends the enrolment code (SEC-AU-8: a new code only after 60 s; the earlier one stays valid until then). */
   async #startEnrolment(i: Interaction, user: UserRow): Promise<AuthNext> {
+    await this.#sendStaffCode(i, user);
+    this.logger.info({ security_event: 'staff_passkey_enrolment_started', client_id: i.clientId }, 'staff passkey enrolment');
+    await this.state.saveInteraction(i);
+    return { next: 'enrol_passkey' };
+  }
+
+  /** S26a: the first sign-in of a staff account with an initial password: the code first, then a new password. */
+  async #startPasswordChange(i: Interaction, user: UserRow): Promise<AuthNext> {
+    i.mfaPending = false;
+    i.pwdChange = true;
+    await this.#sendStaffCode(i, user);
+    this.logger.info({ security_event: 'staff_initial_password_change_started', client_id: i.clientId }, 'staff password change');
+    await this.state.saveInteraction(i);
+    return { next: 'change_password' };
+  }
+
+  async #sendStaffCode(i: Interaction, user: UserRow): Promise<void> {
     const now = Date.now();
     if (!i.enrol || now - i.enrol.sentAt >= OTP_RESEND_MS) {
       const code = newOtpCode();
       i.enrol = { codeHash: this.state.otpHash(code, `enrol:${i.id}`), attempts: 0, expiresAt: now + OTP_TTL_MS, sentAt: now };
       await this.messages.email(user.email, 'identity.otp_code', user.locale, { code });
     }
-    this.logger.info({ security_event: 'staff_passkey_enrolment_started', client_id: i.clientId }, 'staff passkey enrolment');
+  }
+
+  /**
+   * After auth.password_set_initial (S26a): the emailed code stays valid for the enrolment of an account without a
+   * device-bound key (the same code opens auth.passkey_enrol_options); an account with one goes on to its key (aal3).
+   */
+  async afterInitialPasswordChange(i: Interaction, hasDeviceBoundKey: boolean): Promise<AuthNext> {
+    delete i.pwdChange;
+    i.mfaPending = true;
+    if (!hasDeviceBoundKey) {
+      await this.state.saveInteraction(i);
+      return { next: 'enrol_passkey' };
+    }
+    delete i.enrol;
     await this.state.saveInteraction(i);
-    return { next: 'enrol_passkey' };
+    return { next: 'mfa', mfa_methods: ['webauthn'] };
   }
 
   /** The enrolment code of the interaction; wrong codes count, five end the enrolment (and the interaction's way to it). */
@@ -281,6 +320,9 @@ export class AuthServer {
     const staff = (await platformRoles(scope, o.userId)).length > 0;
     if (o.clientId === 'cp-web-admin' && (!staff || o.acr !== 'aal3'))
       throw new ProtocolError(400, 'invalid_grant', { description: 'staff aal3 required' });
+    // S26a: no token while an initial or one-time password waits to be changed (any client).
+    if (await passwordChangeRequired(scope, o.userId))
+      throw new ProtocolError(400, 'invalid_grant', { description: 'password change required' });
     const sid = uuidv7();
     const now = new Date();
     await this.sessions.create(
@@ -433,4 +475,9 @@ export async function completePasskeySignin(state: AuthState, i: Interaction, us
   delete i.webauthn;
   await state.saveInteraction(i);
   return { next: 'complete' };
+}
+
+/** S26a (DQ-25): the account's password is an initial or one-time password that must be changed first. */
+export async function passwordChangeRequired(scope: TxScope, userId: string): Promise<boolean> {
+  return (await methods(scope, userId, ['email_password'])).some((m) => m.status === 'active' && m.password_change_required);
 }

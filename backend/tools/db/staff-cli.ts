@@ -15,6 +15,7 @@ import {
   parseSpec,
   parseStaffArgs,
   pruneStaff,
+  reissueInitialPassword,
   shortfall,
   type StaffResult,
 } from './staff.js';
@@ -22,19 +23,34 @@ import {
 function print(results: readonly StaffResult[]): void {
   for (const r of results)
     console.log(`${r.status === 'created' ? 'created' : 'exists '}  ${r.email}  ${r.roles.join(',') || '(no platform role)'}`);
+  const initial = results.filter((r) => r.passwordSource === 'initial');
+  if (initial.length)
+    console.log(
+      `\n${initial.length} account(s) got the initial password from CARPAL_STAFF_INITIAL_PASSWORD (not shown); give it to each holder over a separate channel.`,
+    );
   const created = results.filter((r) => r.password);
-  if (created.length === 0) return;
-  console.log('\nOne-time passwords (shown once; hand each to its owner over a separate channel):');
-  for (const r of created) console.log(`  ${r.email}  ${r.password}`);
-  console.log('\nFirst sign-in on the admin console: email + this password, then the code sent to the email, then a');
-  console.log('security key or a passkey kept on that device only (synced passkeys are refused for staff, SEC-ADM-2).');
+  if (created.length) {
+    console.log('\nOne-time passwords (shown once; hand each to its owner over a separate channel):');
+    for (const r of created) console.log(`  ${r.email}  ${r.password}`);
+  }
+  if (initial.length === 0 && created.length === 0) return;
+  console.log('\nFirst sign-in on the admin console: email + this password, then the code sent to the email, then a new');
+  console.log('password of 12+ characters, then a security key or a passkey kept on that device only (synced passkeys');
+  console.log('are refused for staff, SEC-ADM-2). Initial and one-time passwords expire after 7 days (pnpm staff:bootstrap');
+  console.log('--reissue <email> sets a new one).');
 }
 
 async function main(): Promise<void> {
   const command = parseStaffArgs(process.argv.slice(2));
   const config = loadConfig();
   const database = new Database(config, 'carpal_worker', { applicationName: 'carpal-staff-cli', max: 2 });
-  const deps = { tx: new TxRunner(database), crypto: new CryptoServices(config.secrets.master), env: config.env };
+  const deps = {
+    tx: new TxRunner(database),
+    crypto: new CryptoServices(config.secrets.master),
+    env: config.env,
+    // S26a (DQ-25): read here only, never from the config of the running backend; never printed.
+    initialPassword: process.env.CARPAL_STAFF_INITIAL_PASSWORD?.trim() || null,
+  };
   try {
     if (command.kind === 'list') {
       for (const s of await listStaff(deps)) console.log(`${s.email}  ${s.roles.join(',')}  passkeys: ${s.passkeys}`);
@@ -57,9 +73,17 @@ async function main(): Promise<void> {
       if (r.otherAdmins < 2) console.log(`Note: ${r.otherAdmins} other active administrator(s); an ADM recovery needs two (DQ-16).`);
       return;
     }
+    if (command.kind === 'reissue') {
+      const r = await reissueInitialPassword(deps, command.email);
+      console.log(`reissued  ${r.email}  ${r.roles.join(',')}  valid until ${r.expiresAt.toISOString()}`);
+      if (r.password) console.log(`One-time password (shown once; hand it over a separate channel): ${r.password}`);
+      else console.log('The password is CARPAL_STAFF_INITIAL_PASSWORD (not shown).');
+      console.log('Audited as actor system (action staff.initial_password_reissued).');
+      return;
+    }
     if (command.kind === 'create') {
       assertDev(config.env, 'dev:staff create');
-      const [result] = await bootstrapStaff(deps, parseSpec([command.spec], config.env));
+      const [result] = await bootstrapStaff(deps, parseSpec([command.spec], config.env), { devAccounts: true });
       if (result!.status === 'exists') throw new Error(`${result!.email} exists already (roles: ${result!.roles.join(',') || 'none'})`);
       print([result!]);
       return;
@@ -69,7 +93,7 @@ async function main(): Promise<void> {
     const missing = shortfall(specs);
     if (missing.length)
       console.warn(`Warning: below the pilot minimum (four ADM: three main and one backup; one MOD, one CRV): ${missing.join('; ')}`);
-    print(await bootstrapStaff(deps, specs));
+    print(await bootstrapStaff(deps, specs, { devAccounts: !command.file }));
   } finally {
     await database.close();
   }

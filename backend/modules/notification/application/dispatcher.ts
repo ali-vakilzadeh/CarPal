@@ -13,7 +13,7 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import { sql } from 'kysely';
 import { CryptoServices } from '#libs/crypto/index.js';
-import type { EventEnvelope, Infra } from '#libs/infra/index.js';
+import { SendError, type EventEnvelope, type Infra } from '#libs/infra/index.js';
 import type { Logger } from '#libs/observability/index.js';
 import { InjectInfra, InjectLogger } from '#libs/runtime/index.js';
 import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
@@ -30,6 +30,8 @@ import { NotificationRulesRead } from '../interface/notification-rules.js';
 export const pushTokenAad = (id: string): string => `notification.push_token:${id}`;
 
 const MAX_ATTEMPTS = 3;
+/** The SMS status sweep asks the provider about a message for 24 hours after it was sent (S26a.T3). */
+const SMS_STATUS_WINDOW_MS = 24 * 3_600_000;
 
 /** The provider key recorded on a delivery attempt (Delivery health, S25a): the sender's own name, else unknown. */
 export function providerKey(name: string | undefined): string {
@@ -183,6 +185,7 @@ export class NotificationDispatcher {
           'n.template_key',
           'n.template_params',
           'n.locale',
+          'n.priority',
           't.id as token_id',
           't.token_encrypted',
           't.platform',
@@ -211,6 +214,10 @@ export class NotificationDispatcher {
       const text = renderWith(r.template_key, r.locale, channel, params, overrides);
       const c = contacts.get(r.recipient_user_id);
       let error: string | null = null;
+      // S26a: a permanent refusal is not retried; a held message (SMTP hourly cap) waits without spending an attempt.
+      let permanent = false;
+      let heldUntil: Date | null = null;
+      let providerMessageId: string | null = null;
       const sender = r.channel === 'email' ? this.infra.mailer : r.channel === 'sms' ? this.infra.sms : this.infra.push;
       const provider = providerKey(sender.provider);
       try {
@@ -218,17 +225,27 @@ export class NotificationDispatcher {
         if (c?.status !== 'active') throw new Error('recipient not active');
         if (r.channel === 'email') {
           if (!c?.email) throw new Error('no destination');
-          await this.infra.mailer.send({
+          const receipt = await this.infra.mailer.send({
             to: c.email,
             template: r.template_key,
             locale: r.locale,
             variables: Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)])),
             subject: text.subject,
             text: text.text,
+            deferrable: r.priority !== 'critical',
           });
+          providerMessageId = receipt?.providerMessageId ?? null;
         } else if (r.channel === 'sms') {
           if (!c?.phone) throw new Error('no destination');
-          await this.infra.sms.send({ to: c.phone, template: r.template_key, locale: r.locale, variables: {}, text: text.text });
+          const receipt = await this.infra.sms.send({
+            to: c.phone,
+            template: r.template_key,
+            locale: r.locale,
+            variables: {},
+            text: text.text,
+            idempotencyKey: `delivery:${r.id}:${r.attempt_count}`,
+          });
+          providerMessageId = receipt?.providerMessageId ?? null;
         } else if (r.channel === 'push') {
           if (!r.token_id || !r.token_encrypted || r.token_status !== 'active') throw new Error('token revoked');
           const token = this.crypto.envelope.decryptString(r.token_encrypted, pushTokenAad(r.token_id));
@@ -243,15 +260,28 @@ export class NotificationDispatcher {
         }
       } catch (err) {
         error = (err as Error).message?.slice(0, 500) || 'send failed';
-        this.logger.warn({ delivery_id: r.id, channel: r.channel, err: error }, 'notification delivery failed');
+        if (err instanceof SendError) {
+          permanent = err.permanent;
+          heldUntil = err.retryAt;
+        }
+        if (!heldUntil) this.logger.warn({ delivery_id: r.id, channel: r.channel, err: error, permanent }, 'notification delivery failed');
       }
       await this.tx.run({ actorType: 'system' }, async ({ db }) => {
         await db
           .updateTable('notification.notification_deliveries')
           .set(
-            error
-              ? { status: 'failed', attempt_count: r.attempt_count + 1, last_error: error, provider }
-              : { status: 'sent', attempt_count: r.attempt_count + 1, sent_at: sql<Date>`now()`, last_error: null, provider },
+            heldUntil
+              ? { status: 'queued', not_before: heldUntil, last_error: error }
+              : error
+                ? { status: 'failed', attempt_count: permanent ? MAX_ATTEMPTS : r.attempt_count + 1, last_error: error, provider }
+                : {
+                    status: 'sent',
+                    attempt_count: r.attempt_count + 1,
+                    sent_at: sql<Date>`now()`,
+                    last_error: null,
+                    provider,
+                    provider_message_id: providerMessageId?.slice(0, 200) ?? null,
+                  },
           )
           .where('id', '=', r.id)
           .execute();
@@ -263,6 +293,7 @@ export class NotificationDispatcher {
           .execute();
       });
       if (!error) sent++;
+      if (heldUntil) this.logger.info({ delivery_id: r.id, until: heldUntil.toISOString() }, 'email held by the hourly cap');
     }
     // Notifications whose every delivery was decided without sending are dispatched too.
     if (notificationIds)
@@ -275,6 +306,59 @@ export class NotificationDispatcher {
           .execute(),
       );
     return sent;
+  }
+
+  /**
+   * SMS delivery status (S26a.T3): asks the provider about SMS deliveries sent in the last 24 hours that it has not
+   * answered for yet (at most once a minute each) and records delivered or failed on the delivery row, so Delivery
+   * health counts them. Only rows sent by the current provider are asked. Returns the number of rows that changed.
+   */
+  async pollSmsStatus(now = new Date()): Promise<number> {
+    const gateway = this.infra.smsGateway;
+    const rows = await this.tx.run(
+      { actorType: 'system' },
+      ({ db }) =>
+        db
+          .selectFrom('notification.notification_deliveries')
+          .select(['id', 'provider_message_id'])
+          .where('channel', '=', 'sms')
+          .where('status', '=', 'sent')
+          .where('provider_message_id', 'is not', null)
+          .where('provider', '=', gateway.provider)
+          .where('sent_at', '>', new Date(now.getTime() - SMS_STATUS_WINDOW_MS))
+          .where('updated_at', '<', new Date(now.getTime() - 60_000))
+          .where('deleted_at', 'is', null)
+          .orderBy('sent_at')
+          .limit(200)
+          .execute(),
+      { readOnly: true },
+    );
+    let changed = 0;
+    for (const r of rows) {
+      let status: string;
+      try {
+        status = await gateway.status(r.provider_message_id!);
+      } catch (err) {
+        this.logger.warn({ delivery_id: r.id, err: (err as Error).message }, 'SMS status lookup failed');
+        continue;
+      }
+      await this.tx.run({ actorType: 'system' }, ({ db }) =>
+        db
+          .updateTable('notification.notification_deliveries')
+          .set(
+            status === 'delivered'
+              ? { status: 'delivered', delivered_at: now }
+              : status === 'failed'
+                ? { status: 'failed', attempt_count: MAX_ATTEMPTS, last_error: 'provider reported the message undelivered' }
+                : { updated_at: now },
+          )
+          .where('id', '=', r.id)
+          .where('status', '=', 'sent')
+          .execute(),
+      );
+      if (status === 'delivered' || status === 'failed') changed++;
+    }
+    return changed;
   }
 
   /**

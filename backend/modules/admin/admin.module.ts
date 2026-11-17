@@ -10,6 +10,7 @@
 //   AdminPublicModule  reports.create and the support.* tickets (backend S24) on the api host.
 //   AdminWorkerModule  W15 rules: expiry of pending changes and assist
 //                      sessions, the daily retention run.
+import { ExchangeRateReminderRule } from './application/exchange-rate-daily.js';
 import {
   Global,
   Inject,
@@ -396,7 +397,10 @@ export class AdminApiModule {}
 })
 export class AdminPublicModule {}
 
-@Module({ providers: [AdminExpiryRule, RetentionRule, ModerationIntakeRule, SupportAutoCloseRule], exports: [ModerationIntakeRule] })
+@Module({
+  providers: [AdminExpiryRule, RetentionRule, ModerationIntakeRule, SupportAutoCloseRule, ExchangeRateReminderRule],
+  exports: [ModerationIntakeRule],
+})
 export class AdminWorkerModule {}
 
-export { AdminExpiryRule, ModerationIntakeRule, RetentionRule, SupportAutoCloseRule };
+export { AdminExpiryRule, ExchangeRateReminderRule, ModerationIntakeRule, RetentionRule, SupportAutoCloseRule };

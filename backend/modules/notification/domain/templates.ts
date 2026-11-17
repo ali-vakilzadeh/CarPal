@@ -553,6 +553,16 @@ export const TEMPLATES: Catalog = {
       text: 'کلیدهای امنیتی و کدهای بازیابی {staff_name} از روی سرور بازنشانی شد. اگر کسی انتظار این را نداشت، حساب را غیرفعال و موضوع را بررسی کنید.',
     },
   },
+  'staff.exchange_rate_reminder': {
+    en: {
+      subject: "Set today's exchange rate",
+      text: "The {currency} rate was not set today (now {per_usd} per US dollar). Open Exchange rates in the admin console and set today's rate. A change of more than 20 % waits for a second administrator.",
+    },
+    fa: {
+      subject: 'نرخ ارز امروز را ثبت کنید',
+      text: 'نرخ {currency} امروز ثبت نشده است (اکنون {per_usd} برای هر دلار آمریکا). در کنسول مدیریت «نرخ ارز» را باز کنید و نرخ امروز را ثبت کنید. تغییر بیش از ۲۰ درصد منتظر تأیید مدیر دوم می‌ماند.',
+    },
+  },
   'notification.digest': {
     en: { subject: 'Your CarPal summary', text: 'You have {count} new notifications:\n{items}' },
     fa: { subject: 'خلاصه کارپال شما', text: 'شما {count} اعلان تازه دارید:\n{items}' },

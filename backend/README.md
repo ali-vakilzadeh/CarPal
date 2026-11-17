@@ -33,6 +33,9 @@ The system Node may stay older (another project pins 20.10); the backend needs N
 | `pnpm dev:staff list` / `create …` / `prune …`          | Dev only (list: anywhere): staff accounts; `prune` retires the test accounts (R-15)                 |
 | `pnpm int:env init` / `backend` / `clients` / `env`     | One strict backend for the console and PWA integration tests (R-11, see below)                      |
 | `pnpm check:clients [--no-generate]`                    | After a Docs/40 or shared/ change: regenerate the PWA and console contracts, run both checks (R-04) |
+| `pnpm staff:bootstrap --reissue <email>`                | A new initial password (7 days) for a staff account that has not changed its first one (S26a)       |
+| `pnpm seed:consent-texts --file <json>`                 | Load the reviewed consent texts as drafts; `--allow-placeholders` on the template, dev only (S26a)  |
+| `pnpm mail:test --to <address>`                         | Send one test message with this environment's SMTP settings (S26a, deploy/email_setup_guide.md)     |
 | `pnpm contract:generate` / `contract:check`             | Regenerate / verify `libs/contract/generated/` and the sweep suites from Docs/40                    |
 | `pnpm contract:tests`                                   | Regenerate the contract sweep suites (`apps/testing/contract/generated/`)                           |
 | `pnpm contract:coverage [--strict]`                     | Operations served vs. the 490 of the contract; `--strict` fails on an unexplained 501               |

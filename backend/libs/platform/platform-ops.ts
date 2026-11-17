@@ -14,7 +14,8 @@ import {
 } from '#libs/http-pipeline/index.js';
 import { JobService, toJobView, type JobRow } from '#libs/jobs/index.js';
 import { ExchangeRates, RegionConfigService } from '#libs/region-config/index.js';
-import { CARPAL_CONFIG } from '#libs/runtime/tokens.js';
+import type { Infra } from '#libs/infra/index.js';
+import { CARPAL_CONFIG, INFRA } from '#libs/runtime/tokens.js';
 import type { TxScope } from '#libs/tenancy/index.js';
 
 /** Version of the taxonomy dictionary the clients cache (taxonomy module, S3). */
@@ -41,6 +42,7 @@ export class ClientConfigHandler implements OperationHandler {
     private readonly flags: FlagService,
     private readonly region: RegionConfigService,
     private readonly rates: ExchangeRates,
+    @Inject(INFRA) private readonly infra: Infra,
     @Optional() @Inject(TaxonomyVersion) private readonly taxonomy?: TaxonomyVersion,
   ) {}
 
@@ -59,6 +61,8 @@ export class ClientConfigHandler implements OperationHandler {
         i18n: { version: this.config.http.i18n.version, base_url: this.config.http.i18n.baseUrl },
         taxonomy_version: (await this.taxonomy?.current()) ?? SEEDED_TAXONOMY_VERSION,
         flags,
+        // 1.5.0 (S26a, DQ-28): phone sign-up and sign-in only when a code can reach a phone (dev reads the outbox file).
+        auth: { phone_signin_available: this.config.env === 'dev' || !this.infra.smsGateway.simulated },
         region: { ...this.region.forLocale(ctx.locale), exchange_rates: await this.rates.all() },
       },
       // Cacheable for 5 min per locale for anonymous callers (the pipeline keeps user responses private).

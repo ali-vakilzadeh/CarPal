@@ -2,9 +2,9 @@
 // consumer itself is provided by NotificationModule and subscribed by the
 // worker's consumer registry.
 import { Module } from '@nestjs/common';
-import { DeliveryRetryRule, DigestRule } from './application/notification-rules.js';
+import { DeliveryRetryRule, DigestRule, SmsSimulatedWarningRule, SmsStatusRule } from './application/notification-rules.js';
 
-export { DeliveryRetryRule, DigestRule } from './application/notification-rules.js';
+export { DeliveryRetryRule, DigestRule, SmsSimulatedWarningRule, SmsStatusRule } from './application/notification-rules.js';
 
-@Module({ providers: [DeliveryRetryRule, DigestRule] })
+@Module({ providers: [DeliveryRetryRule, DigestRule, SmsSimulatedWarningRule, SmsStatusRule] })
 export class NotificationWorkerModule {}

@@ -14,6 +14,7 @@ import {
   PasskeyEnrolHandler,
   PasskeyEnrolOptionsHandler,
   PasswordResetCompleteHandler,
+  PasswordSetInitialHandler,
   PasswordResetStartHandler,
   PowChallengeHandler,
   ReactivateHandler,
@@ -60,6 +61,7 @@ import { AuthServer } from './application/auth-server.js';
     EmailVerifyHandler,
     PasswordResetStartHandler,
     PasswordResetCompleteHandler,
+    PasswordSetInitialHandler,
   ],
 })
 export class IdentityAuthModule {}

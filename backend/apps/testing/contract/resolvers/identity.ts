@@ -47,9 +47,19 @@ async function interaction(h: Harness): Promise<{ id: string; cookie: string }> 
 }
 
 /** A cp-web-admin interaction (contract 1.3.0): a staff member with a password and no passkey, at enrol_passkey. */
-async function staffEnrolment(h: Harness): Promise<{ id: string; cookie: string; code: string }> {
+async function staffEnrolment(h: Harness, o: { initialPassword?: boolean } = {}): Promise<{ id: string; cookie: string; code: string }> {
   const staff = await h.fx.staff('platform_moderator');
   await h.fx.withPassword(staff, PASSWORD);
+  // Contract 1.5.0 (S26a): an initial password that must be changed first.
+  if (o.initialPassword)
+    await h.sys((db) =>
+      db
+        .updateTable('identity.authentication_methods')
+        .set({ password_change_required: true, initial_password_expires_at: new Date(Date.now() + 86_400_000) })
+        .where('user_id', '=', staff.id)
+        .where('method_type', '=', 'email_password')
+        .execute(),
+    );
   const p = pkce();
   const q = {
     ...authorizeQuery(p),
@@ -67,7 +77,7 @@ async function staffEnrolment(h: Harness): Promise<{ id: string; cookie: string;
     await authPost(h, '/v1/auth/signin', ia.cookie, { interaction_id: ia.id, email: staff.email, password: PASSWORD }),
     'signin',
   );
-  expect(next).toEqual({ next: 'enrol_passkey' });
+  expect(next).toEqual({ next: o.initialPassword ? 'change_password' : 'enrol_passkey' });
   return { ...ia, code: h.auth.mail(staff.email, 'identity.otp_code').at(-1)!.variables.code! };
 }
 
@@ -282,6 +292,16 @@ export const resolvers: Resolvers = {
         expect(res.body).toMatchObject({ next: 'mfa', mfa_methods: ['webauthn'] });
         expect(res.body.recovery_codes).toHaveLength(10);
       },
+    };
+  },
+  // Contract 1.5.0 (backend S26a): the first sign-in of a staff account seeded with an initial password.
+  'auth.password_set_initial': async (h) => {
+    const ia = await staffEnrolment(h, { initialPassword: true });
+    return {
+      as: none,
+      headers: { cookie: ia.cookie },
+      body: { interaction_id: ia.id, code: ia.code, new_password: 'a fresh staff passphrase 2026' },
+      check: (res) => expect(res.body).toEqual({ next: 'enrol_passkey' }),
     };
   },
   // Contract 1.4.0 (backend S16b): staff account recovery on the auth host.

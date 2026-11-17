@@ -89,6 +89,41 @@ const EnvSchema = z
     CARPAL_S3_ENDPOINT: z.string().default('http://127.0.0.1:9000'),
     CARPAL_SMTP_URL: z.string().default('smtp://127.0.0.1:1025'),
 
+    // --- Email (backend S26a, NI-07): the carpals.ir mailbox on the cPanel host, through authenticated SMTP submission.
+    /** file: backend/.data/outbox-mail.jsonl (dev, tests); smtp: CARPAL_SMTP_URL. Default: file in lite mode, smtp in full mode. */
+    CARPAL_MAIL_TRANSPORT: z.enum(['file', 'smtp']).optional(),
+    CARPAL_MAIL_FROM: z.string().min(3).max(200).default('CarPal <no-reply@carpals.ir>'),
+    CARPAL_MAIL_REPLY_TO: z.string().min(3).max(200).optional(),
+    /** Messages per hour through SMTP (shared hosting quota): above it non-critical mail waits; codes and security notices go. */
+    CARPAL_MAIL_MAX_PER_HOUR: z.coerce.number().int().min(1).max(100_000).default(300),
+    /** Dev only: accept a self-signed SMTP certificate (a local test server). Refused outside dev. */
+    CARPAL_SMTP_TLS_INSECURE: bool.default(false),
+
+    // --- SMS (backend S26a, DQ-28): the SmsGateway port and its provider.
+    /** mock: behaves like a provider without sending (outbox-sms.jsonl); file: the old sink; vendors are added as adapters. */
+    CARPAL_SMS_PROVIDER: z.enum(['mock', 'file']).default('mock'),
+    /** Reserved for the chosen vendor's adapter (unused by mock and file). */
+    CARPAL_SMS_API_KEY: z.string().min(1).max(500).optional(),
+    CARPAL_SMS_SENDER_LINE: z
+      .string()
+      .regex(/^\+?[0-9]{3,20}$/)
+      .optional(),
+    CARPAL_SMS_OTP_TEMPLATE: z.string().min(1).max(100).optional(),
+    /** Mock: delay before a sent message reports delivered. */
+    CARPAL_SMS_MOCK_DELIVERY_MS: z.coerce.number().int().min(0).max(3_600_000).default(5_000),
+    /** Mock: E.164 numbers (comma-separated) that fail permanently / temporarily, to test retries and Delivery health. */
+    CARPAL_SMS_MOCK_FAIL_PERMANENT: z.string().max(2000).default(''),
+    CARPAL_SMS_MOCK_FAIL_TEMPORARY: z.string().max(2000).default(''),
+
+    // --- Exchange rate (backend S26a): the default when the region's display-currency row is missing, and the reminder.
+    CARPAL_DEFAULT_IRR_PER_USD: z
+      .string()
+      .regex(/^[0-9]{1,10}(\.[0-9]{1,4})?$/)
+      .refine((v) => Number(v) > 0, 'must be > 0')
+      .default('1000000'),
+    /** Hour (0-23, region time) of the morning reminder to administrators when the rate was not set that day. */
+    CARPAL_RATE_REMINDER_HOUR: z.coerce.number().int().min(0).max(23).default(9),
+
     // --- Secrets (40 §2.17). Dev derives every key from one master secret; real environments use the secret manager.
     CARPAL_MASTER_SECRET: z.string().min(32).default(DEV_MASTER_SECRET),
     /** Optional private Ed25519 JWKs (JSON array) for token signing; derived from the master secret when absent. */
@@ -180,6 +215,13 @@ const EnvSchema = z
     if (env.CARPAL_ENV !== 'dev' && env.CARPAL_MASTER_SECRET === DEV_MASTER_SECRET) {
       ctx.addIssue({ code: 'custom', path: ['CARPAL_MASTER_SECRET'], message: `must be set outside dev (CARPAL_ENV=${env.CARPAL_ENV})` });
     }
+    if (env.CARPAL_ENV !== 'dev' && env.CARPAL_SMTP_TLS_INSECURE)
+      ctx.addIssue({ code: 'custom', path: ['CARPAL_SMTP_TLS_INSECURE'], message: 'is dev only: the certificate must verify' });
+    const transport = env.CARPAL_MAIL_TRANSPORT ?? (env.CARPAL_INFRA === 'full' ? 'smtp' : 'file');
+    if (transport === 'smtp') {
+      const problem = smtpUrlProblem(env.CARPAL_SMTP_URL, env.CARPAL_ENV);
+      if (problem) ctx.addIssue({ code: 'custom', path: ['CARPAL_SMTP_URL'], message: problem });
+    }
     if (env.CARPAL_ENV === 'prod' && !env.CARPAL_STRICT_AUTH) {
       ctx.addIssue({ code: 'custom', path: ['CARPAL_STRICT_AUTH'], message: 'must be 1 in prod (GD-06)' });
     }
@@ -196,6 +238,25 @@ const EnvSchema = z
           message: `${client}: private key material, register public keys only`,
         });
   });
+
+/**
+ * SMTP URL rule (S26a.T2): smtps:// (implicit TLS, port 465) or smtp:// with STARTTLS required (port 587); credentials
+ * in the URL. Plain SMTP is accepted in dev only, to a loopback test server. Returns the problem, or null.
+ */
+export function smtpUrlProblem(raw: string, env: 'dev' | 'staging' | 'prod'): string | null {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return 'must be a URL like smtps://user:password@mail.carpals.ir:465';
+  }
+  if (u.protocol !== 'smtps:' && u.protocol !== 'smtp:') return 'must start with smtps:// or smtp://';
+  if (!u.hostname) return 'needs a host';
+  const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(u.hostname);
+  if (env !== 'dev' && (!u.username || !u.password)) return `needs the mailbox login (smtps://user:password@host:465) outside dev`;
+  if (env !== 'dev' && loopback) return 'points at this machine; outside dev it must be the mail server';
+  return null;
+}
 
 export type RawEnv = z.infer<typeof EnvSchema>;
 
@@ -258,7 +319,29 @@ export interface CarpalConfig {
   search: { rebuildOnStart: boolean };
   mcp: { mode: 'stub' | 'unavailable'; timeoutMs: number };
   webauthn: { rpId: string; rpName: string; origins: string[] };
+  mail: {
+    transport: 'file' | 'smtp';
+    from: string;
+    replyTo: string | null;
+    maxPerHour: number;
+    /** Dev only (a local test server with a self-signed certificate). */
+    tlsInsecure: boolean;
+  };
+  sms: {
+    provider: 'mock' | 'file';
+    apiKey: string | null;
+    senderLine: string | null;
+    otpTemplate: string | null;
+    mock: { deliveryMs: number; failPermanent: string[]; failTemporary: string[] };
+  };
+  rates: { defaultIrrPerUsd: string; reminderHour: number };
 }
+
+const numberList = (s: string): string[] =>
+  s
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
 
 /** Development web origins of the consumer PWA (pnpm dev :3000, pnpm e2e :3100) for the storage listener's CORS. */
 export const DEV_MEDIA_CORS_ORIGINS = ['http://localhost:3000', 'https://localhost:3000', 'http://localhost:3100'];
@@ -369,6 +452,25 @@ export function loadConfig(overrides: Record<string, string | undefined> = {}): 
       rpName: 'CarPal',
       origins: e.CARPAL_WEBAUTHN_ORIGINS ?? ['https://pwa.carpals.ir', 'https://web.carpals.ir', 'https://admin.carpals.ir'],
     },
+    mail: {
+      transport: e.CARPAL_MAIL_TRANSPORT ?? (e.CARPAL_INFRA === 'full' ? 'smtp' : 'file'),
+      from: e.CARPAL_MAIL_FROM,
+      replyTo: e.CARPAL_MAIL_REPLY_TO ?? null,
+      maxPerHour: e.CARPAL_MAIL_MAX_PER_HOUR,
+      tlsInsecure: e.CARPAL_SMTP_TLS_INSECURE,
+    },
+    sms: {
+      provider: e.CARPAL_SMS_PROVIDER,
+      apiKey: e.CARPAL_SMS_API_KEY ?? null,
+      senderLine: e.CARPAL_SMS_SENDER_LINE ?? null,
+      otpTemplate: e.CARPAL_SMS_OTP_TEMPLATE ?? null,
+      mock: {
+        deliveryMs: e.CARPAL_SMS_MOCK_DELIVERY_MS,
+        failPermanent: numberList(e.CARPAL_SMS_MOCK_FAIL_PERMANENT),
+        failTemporary: numberList(e.CARPAL_SMS_MOCK_FAIL_TEMPORARY),
+      },
+    },
+    rates: { defaultIrrPerUsd: e.CARPAL_DEFAULT_IRR_PER_USD, reminderHour: e.CARPAL_RATE_REMINDER_HOUR },
   };
   return deepFreeze(config);
 }

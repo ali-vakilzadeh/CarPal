@@ -1081,9 +1081,11 @@ export interface IdentityAuthenticationMethods {
   deletion_reason: string | null;
   id: Generated<string>;
   identifier: string;
+  initial_password_expires_at: Timestamp | null;
   label: string | null;
   last_used_at: Timestamp | null;
   method_type: string;
+  password_change_required: Generated<boolean>;
   provider_name: string | null;
   status: Generated<string>;
   updated_at: Generated<Timestamp>;

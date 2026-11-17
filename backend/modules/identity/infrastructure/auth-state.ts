@@ -63,6 +63,12 @@ export interface Interaction {
    */
   enrol?: PendingEnrolment;
   /**
+   * cp-web-admin, backend S26a (DQ-25): the staff account signed in with an initial or one-time password that must be
+   * changed first. The code in `enrol` (sent to the account email) and a new password go to auth.password_set_initial;
+   * nothing else of the sign-in (enrolment, second factor, token) is open until then.
+   */
+  pwdChange?: boolean;
+  /**
    * cp-web-admin, backend S16b (SEC-ADM-2): the staff recovery request started in this interaction, waiting for its
    * emailed code (auth.staff_recovery_verify). `live` is false when no request was opened: the code can never match.
    */

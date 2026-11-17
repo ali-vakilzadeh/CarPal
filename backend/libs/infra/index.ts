@@ -9,9 +9,12 @@ import { LocalObjectStorage, objectsDir } from './lite/local-storage.js';
 import { MemoryEventBus, type BusLogger } from './lite/memory-bus.js';
 import { MemoryKeyValueStore } from './lite/memory-kv.js';
 import { MemoryJobQueue } from './lite/memory-queue.js';
-import { FileDeadLetterStore, FileMailer, FilePushSender, FileSmsSender } from './lite/sinks.js';
+import { FileDeadLetterStore, FileMailer, FilePushSender } from './lite/sinks.js';
 import { MemorySearchIndex } from './lite/memory-search.js';
-import type { Infra } from './ports.js';
+import { createSmsGateway } from '#libs/sms/index.js';
+import { GatewaySmsSender } from './sms-sender.js';
+import { SmtpMailer } from './smtp-mailer.js';
+import type { Infra, KeyValueStore, Mailer } from './ports.js';
 
 export type * from './ports.js';
 export { MemoryKeyValueStore } from './lite/memory-kv.js';
@@ -21,28 +24,58 @@ export { MemorySearchIndex, matchesFilter, tokenMatch, withinOneEdit } from './l
 export { LocalObjectStorage } from './lite/local-storage.js';
 export { FileDeadLetterStore, FileMailer, FilePushSender, FileSmsSender } from './lite/sinks.js';
 export { NotConfiguredError } from './full/skeletons.js';
+export { SendError } from './ports.js';
+export { SmtpMailer, addressOf, classify as classifySmtpError, type SmtpMailerOptions } from './smtp-mailer.js';
+export { GatewaySmsSender } from './sms-sender.js';
 
 export interface InfraOptions {
   /** Where lite adapters keep files; null keeps everything in memory (tests). */
   dataDir: string | null;
   logger?: BusLogger;
+  /** Region SMS country codes for the gateway's E.164 check (callers also check them, SEC-AU-8). */
+  smsCountryCodes?: readonly string[];
+}
+
+/** CARPAL_MAIL_TRANSPORT (S26a.T2): the file sink, or SMTP submission to the mailbox. */
+function mailerFor(config: CarpalConfig, dir: string | null, kv: KeyValueStore, logger?: BusLogger): Mailer {
+  if (config.mail.transport === 'file') return new FileMailer(dir);
+  return new SmtpMailer({
+    url: config.services.smtpUrl,
+    from: config.mail.from,
+    replyTo: config.mail.replyTo,
+    maxPerHour: config.mail.maxPerHour,
+    env: config.env,
+    tlsInsecure: config.mail.tlsInsecure,
+    kv,
+    ...(logger ? { logger: { warn: (o, m) => logger.warn(o, m), error: (o, m) => logger.error(o, m) } } : {}),
+  });
 }
 
 export function createInfra(config: CarpalConfig, options: InfraOptions): Infra {
   if (config.infra === 'full') {
     const s = config.services;
+    const kv = full.redisKeyValueStore(s.redisUrl);
+    const gateway = createSmsGateway(config, {
+      dataDir: null,
+      ...(options.smsCountryCodes ? { countryCodes: options.smsCountryCodes } : {}),
+    });
+    const mailer = mailerFor(config, null, kv, options.logger);
     return {
       mode: 'full',
-      kv: full.redisKeyValueStore(s.redisUrl),
+      kv,
       bus: full.natsEventBus(s.natsUrl),
       deadLetters: full.natsDeadLetters(s.natsUrl),
       jobs: full.bullJobQueue(s.redisUrl),
       storage: full.s3ObjectStorage(s.s3Endpoint),
       search: full.openSearchIndex(s.searchUrl),
-      mailer: full.smtpMailer(s.smtpUrl),
-      sms: full.smsGateway('sms'),
+      mailer,
+      sms: new GatewaySmsSender(gateway, config.sms.otpTemplate),
+      smsGateway: gateway,
       push: full.pushGateway('push'),
-      close: () => Promise.resolve(),
+      close: () => {
+        if (mailer instanceof SmtpMailer) mailer.close();
+        return Promise.resolve();
+      },
     };
   }
   const dir = options.dataDir;
@@ -58,6 +91,8 @@ export function createInfra(config: CarpalConfig, options: InfraOptions): Infra 
     new KeyRing(config.secrets.master).derive('storage-sse'),
     config.media.corsOrigins,
   );
+  const gateway = createSmsGateway(config, { dataDir: dir, ...(options.smsCountryCodes ? { countryCodes: options.smsCountryCodes } : {}) });
+  const mailer = mailerFor(config, dir, kv, options.logger);
   return {
     mode: 'lite',
     kv,
@@ -66,10 +101,12 @@ export function createInfra(config: CarpalConfig, options: InfraOptions): Infra 
     jobs,
     storage,
     search: new MemorySearchIndex(),
-    mailer: new FileMailer(dir),
-    sms: new FileSmsSender(dir),
+    mailer,
+    sms: new GatewaySmsSender(gateway, config.sms.otpTemplate),
+    smsGateway: gateway,
     push: new FilePushSender(dir),
     async close() {
+      if (mailer instanceof SmtpMailer) mailer.close();
       await bus.close();
       await jobs.close();
       await kv.close();

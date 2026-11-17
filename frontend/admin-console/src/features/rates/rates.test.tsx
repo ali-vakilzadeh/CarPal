@@ -18,6 +18,8 @@ const irr = (o: Partial<ExchangeRate> = {}): ExchangeRate => ({
   per_usd: '1000000.0000',
   updated_at: '2026-11-01T08:00:00Z',
   updated_by_display: 'Ali Admin',
+  set_today: false, // contract 1.5.0 (backend S26a); the daily workflow is console AC14b.T3
+  age_hours: 384,
   version: 3,
   ...o,
 });

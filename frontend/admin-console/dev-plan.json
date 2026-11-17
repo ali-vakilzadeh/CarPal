@@ -2,7 +2,7 @@
   "meta": {
     "title": "CarPal admin console (WP15 UI, WP20 admin part; frontend/admin-console/) — build plan and stage log",
     "created": "2026-11-08",
-    "last_updated": "2026-11-13",
+    "last_updated": "2026-11-16",
     "status": "partial_on_hold",
     "owner": "ali-vakilzadeh",
     "purpose": "Build the internal staff console that operates the platform: Path 2 review approvals, moderation, disputes, verification, privacy requests, plans, flags and the AI kill switch, the USD exchange rate, taxonomy, audit, AI/MCP oversight and analytics. Without it the pilot cannot run without direct API or database work (backend S11 open_after_stage, NI-08).",
@@ -3220,6 +3220,86 @@
       "report": null
     },
     {
+      "id": "AC14b",
+      "title": "Backend S26 follow-ups (contract 1.5.0): first sign-in password change, daily exchange rate, Neshan basemap, edge changes",
+      "status": "not_started",
+      "depends_on": [
+        "Backend S26a (contract 1.5.0) for T1-T3; S26b for T4 and T6; S26c for T7",
+        "AC6 (Exchange rates page)",
+        "AC4 (/id/signin)",
+        "AC9 (Locations tab)"
+      ],
+      "goal": "An administrator seeded with the initial password changes it at the first sign-in, and an administrator sets the IRR rate every morning in a few clicks (owner decisions 2026-11-16, backend/BR-update-plan.json meta.decisions_from_owner_2026_11_16_after_closure).",
+      "owner_decision": "Owner, 2026-11-16: \"IRR exchange rate: the exchange rate is very volatile, we have to update it on a daily basis. add a relevant setting in Admin console so an admin can set it every morning. add a default rate (in .env setting) like 1USD = 1e6 IRR so the setting is not left blank.\" And: \"seed 3 main admin accounts (admin100, admin200, admin300) with a default password, and mandate admin to change password immediately on first login.\"",
+      "scope": {
+        "docs": [
+          "Docs/23 A-AUTH-01 (first sign-in), Exchange rates page notes, A-DASH-01, A-NOTIF-01 Rules",
+          "Docs/40 1.5.0 changelog (backend S26)"
+        ],
+        "screens": [
+          "/id/signin change_password step",
+          "/rates daily workflow",
+          "Dashboard and My work rate card",
+          "A-NOTIF-01 Rules field (with AC14.T3)"
+        ],
+        "operations": [
+          "auth.password_set_initial (auth host, through the /id proxy)",
+          "admin.exchange_rates_list (set_today, age_hours)",
+          "admin.exchange_rate_update",
+          "admin.notif_rules_get / admin.notif_rules_update (odometer_prompt_days)"
+        ]
+      },
+      "tasks": [
+        {
+          "id": "AC14b.T1",
+          "task": "Regenerate the contract at 1.5.0 (pnpm check:clients in backend/); handle the new sign-in step change_password and the staff notice exchange_rate.reminder in the op-label and notice maps.",
+          "status": "not_started"
+        },
+        {
+          "id": "AC14b.T2",
+          "task": "/id/signin: after the emailed code, a seeded account gets \"Choose your own password\" (new password twice, the SEC-AU-7 rules shown before typing, strength hint, show/hide, the server's field errors such as too short, breached or same as the initial one), then the security-key registration as today. No way to skip; an expired initial password shows the generic sign-in error and the line \"ask the server operator for a new initial password\". EN/FA, keyboard, axe.",
+          "status": "not_started"
+        },
+        {
+          "id": "AC14b.T3",
+          "task": "Exchange rates daily workflow: the /rates page shows when the rate was set and by whom, a \"Not set today\" badge from set_today, and \"Set today's rate\" as the main action (prefilled reason \"Daily rate DD/MM\", editable; preview of sample prices at the current and the new rate; the 20 % four-eyes warning as in AC6). A rate card on the dashboard and in My work for ADMs (today's rate, age, the action) while it is not set today; the morning notice (backend S26a.T4) opens /rates. The per-rate history stays in the AuditDrawer (flag and rate ids, backend S21).",
+          "status": "not_started"
+        },
+        {
+          "id": "AC14b.T4",
+          "task": "A-NOTIF-01 Rules: odometer_prompt_days (0 = off, 14-90; required on update since 1.5.0), built with the Rules form of AC14.T3.",
+          "status": "not_started"
+        },
+        {
+          "id": "AC14b.T6",
+          "task": "Neshan basemap in the Locations tab (backend S26b.T3; replaces R-24): MapLibre with the Neshan style from the region config, the web map key from CARPAL_ADMIN_NESHAN_MAP_KEY attached as the Neshan docs require and never put in Web Storage (GD-12), the Neshan origins added to the console CSP (security-headers.ts), attribution, the blank fallback kept. If only Neshan's SDK works, stop and ask (it stores the key in localStorage).",
+          "status": "not_started"
+        },
+        {
+          "id": "AC14b.T7",
+          "task": "Console BFF edge changes of backend S26c.T2: send the forwarded client IP with the client assertion, and the CSRF token on the auth routes through the /id proxy.",
+          "status": "not_started"
+        },
+        {
+          "id": "AC14b.T5",
+          "task": "Unit and DOM tests for the new step and the rate workflow; E2E with the other screens in the whole-plan test run (PD-03).",
+          "status": "not_started"
+        }
+      ],
+      "deliverables": [
+        "First sign-in password change in /id/signin",
+        "Daily exchange rate workflow",
+        "Neshan basemap in Locations",
+        "BFF edge changes"
+      ],
+      "acceptance_criteria": [
+        "A seeded administrator cannot reach the shell before setting a new password that the server accepts.",
+        "An ADM sees on the dashboard when the rate was not set today and sets it in one form; a change over 20 % goes to Pending approvals.",
+        "contract:check green at 1.5.0."
+      ],
+      "report": null
+    },
+    {
       "id": "AC15",
       "title": "Hardening and closure: full E2E, accessibility, RTL visuals, performance, security review, handoff",
       "status": "not_started",
@@ -3970,7 +4050,8 @@
     {
       "id": "R-24",
       "raised_in": "AC9",
-      "text": "Publish the region tile host (WP1/WP8) before the pilot and set CARPAL_ADMIN_MAP_STYLE_URL in the console (and the PWA's style URL): without a basemap, staff correcting a pin see the pins on a blank map and must rely on the typed coordinates and the distance."
+      "text": "Publish the region tile host (WP1/WP8) before the pilot and set CARPAL_ADMIN_MAP_STYLE_URL in the console (and the PWA's style URL): without a basemap, staff correcting a pin see the pins on a blank map and must rely on the typed coordinates and the distance.",
+      "note_2026_11_16": "Superseded: the owner chose Neshan (backend S26b.T3); built in AC14b.T6."
     },
     {
       "id": "R-25",
@@ -4329,6 +4410,15 @@
       "Staff corrections of public business data (location pin and address, AC9; admin.location_correct): data-quality control",
       "Reset onboarding and resend verification (A-USR-02, AC10): account control",
       "Platform-wide analytics of providers, vendors and fleets (A-ANL-01, A-DASH-01): monitoring"
+    ]
+  },
+  "decisions_2026_11_16_after_backend_closure": {
+    "date": "2026-11-16",
+    "by": "owner",
+    "items": [
+      "Daily IRR rate: an administrator sets it every morning; the backend keeps a configured default (CARPAL_DEFAULT_IRR_PER_USD = 1,000,000) so it is never blank -> AC14b.T3 (backend S26a.T4).",
+      "Pilot administrators admin100, admin200, admin300 are seeded with an initial password and must change it at the first sign-in -> AC14b.T2 (backend S26a.T1).",
+      "Maps: Neshan replaces the self-hosted tile host (R-24) -> AC14b.T6 (backend S26b.T3)."
     ]
   }
 }

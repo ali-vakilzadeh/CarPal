@@ -66,6 +66,8 @@ export const BUSINESS_TEMPLATE_KEYS = [
   'staff.recovery_waiting',
   'staff.recovery_done',
   'staff.break_glass_notice',
+  // backend S26a (contract 1.5.0): the morning reminder to set the day's exchange rate.
+  'staff.exchange_rate_reminder',
 ] as const;
 
 /** Sent by email or SMS only (links, codes, invitations, digests): never an in-app notification (BA-18). */

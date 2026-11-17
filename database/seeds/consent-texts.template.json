@@ -1,0 +1,263 @@
+{
+  "meta": {
+    "title": "Consent texts of the 13 consent types: seed template (version 1.1, region ir-pilot)",
+    "status": "draft_for_owner_review",
+    "created": "2026-11-16",
+    "owner_decision": "Owner, 2026-11-16: \"seed other data (build a template and I will review it later) for consent text\" (backend/BR-update-plan.json S26.T4).",
+    "replaces": "The placeholder 1.0 texts that migration 0109 (backend S15b) publishes at install time.",
+    "how_it_is_loaded": "Backend S26.T4 adds `pnpm seed:consent-texts --file database/seeds/consent-texts.json`. It reads the reviewed copy of this file (consent-texts.json, status approved) and creates each text as a DRAFT version 1.1 of the consent type's document. An administrator then publishes the drafts in the admin console (A-POL-01, four eyes, with an effective date). The seed refuses a file whose meta.status is not approved, and it never changes a published version.",
+    "review_checklist": [
+      "Every value in [square brackets] is a placeholder: replace it, or delete the sentence.",
+      "Check that each text says only what the product does (the 'grounded_in' line under each item names the rule it describes).",
+      "The Persian text must say the same as the English text. Have a native speaker and a lawyer read both.",
+      "Keep the texts short: the PWA shows them in a sheet next to the switch, and the Privacy Policy holds the details.",
+      "Markdown only (headings, lists, bold, links); no HTML (S15: the clients render Markdown without HTML).",
+      "requires_reconsent stays false for 1.1: nobody has consented under the placeholder 1.0 texts in the pilot, so no re-consent is needed. Set it to true only if real consents exist under 1.0 when you publish."
+    ],
+    "fields": {
+      "consent_type": "One of the 13 consent types (Docs/52 ConsentRecord).",
+      "policy_version": "The version label of the new text.",
+      "title": "Shown as the heading of the consent sheet and in the consent list (Me > Privacy).",
+      "body": "The consent text (Markdown).",
+      "change_summary": "Shown to people who consented under an earlier version.",
+      "requires_reconsent": "See review_checklist.",
+      "grounded_in": "For the reviewer only; the seed does not load it."
+    }
+  },
+  "items": [
+    {
+      "consent_type": "vehicle_data_sharing",
+      "policy_version": "1.1",
+      "requires_reconsent": false,
+      "grounded_in": "Docs/52: Appointment.vehicle_id and shared_with_provider need an active vehicle_data_sharing consent scoped to that provider.",
+      "title": {
+        "en": "Share my vehicle's details with this business",
+        "fa": "اشتراک مشخصات خودروی من با این کسب‌وکار"
+      },
+      "body": {
+        "en": "**What is shared:** the make, model, year, engine and current mileage of the vehicle you choose, and its VIN [if you add it].\n\n**With whom:** only the business you are booking with or asking. Other businesses do not see it.\n\n**Why:** so the business can prepare for your visit and quote for the right car.\n\n**For how long:** until you withdraw this consent. The business keeps the details it already received with the appointment record, as the Privacy Policy explains.\n\n**If you say no:** you can still book; the business will ask you about the car at the visit.\n\nYou can withdraw this consent at any time in **Me > Privacy > Consents**.",
+        "fa": "**چه چیزی به اشتراک گذاشته می‌شود:** سازنده، مدل، سال ساخت، موتور و کارکرد فعلی خودرویی که انتخاب می‌کنید، و شماره شاسی (VIN) آن [در صورتی که آن را وارد کرده باشید].\n\n**با چه کسی:** فقط کسب‌وکاری که نزد آن نوبت می‌گیرید یا از آن سؤال می‌کنید. کسب‌وکارهای دیگر آن را نمی‌بینند.\n\n**چرا:** تا کسب‌وکار بتواند برای مراجعه شما آماده شود و برای خودروی درست قیمت بدهد.\n\n**تا چه زمانی:** تا زمانی که این رضایت را پس بگیرید. کسب‌وکار اطلاعاتی را که پیش‌تر همراه نوبت دریافت کرده، طبق توضیح سیاست حفظ حریم خصوصی نگه می‌دارد.\n\n**اگر موافقت نکنید:** همچنان می‌توانید نوبت بگیرید؛ کسب‌وکار هنگام مراجعه درباره خودرو از شما می‌پرسد.\n\nهر زمان بخواهید می‌توانید این رضایت را در **من > حریم خصوصی > رضایت‌ها** پس بگیرید."
+      },
+      "change_summary": {
+        "en": "First full version of this consent text.",
+        "fa": "نخستین نسخه کامل متن این رضایت."
+      }
+    },
+    {
+      "consent_type": "service_history_sharing",
+      "policy_version": "1.1",
+      "requires_reconsent": false,
+      "grounded_in": "Docs/52: the pre-visit report's relevant_history_summary (at most 3000 characters) only with service_history_sharing; consent scoped to the provider.",
+      "title": {
+        "en": "Share my service history with this business",
+        "fa": "اشتراک سوابق سرویس خودروی من با این کسب‌وکار"
+      },
+      "body": {
+        "en": "**What is shared:** a short summary of the vehicle's past repairs and services that relate to your request (for example earlier work on the same part), in the pre-visit report. Costs and attached invoices are [not] included.\n\n**With whom:** only the business you are booking with.\n\n**Why:** so the mechanic knows what was already done and can find the cause faster.\n\n**For how long:** until you withdraw this consent. A report the business already received stays with the appointment.\n\n**If you say no:** the business gets your description of the problem only.\n\nYou can withdraw this consent at any time in **Me > Privacy > Consents**.",
+        "fa": "**چه چیزی به اشتراک گذاشته می‌شود:** خلاصه‌ای کوتاه از تعمیرات و سرویس‌های گذشته خودرو که به درخواست شما مربوط است (برای نمونه کار قبلی روی همان قطعه)، در گزارش پیش از مراجعه. هزینه‌ها و فاکتورهای پیوست‌شده [در آن نیست].\n\n**با چه کسی:** فقط کسب‌وکاری که نزد آن نوبت می‌گیرید.\n\n**چرا:** تا مکانیک بداند چه کارهایی پیش‌تر انجام شده و علت را سریع‌تر پیدا کند.\n\n**تا چه زمانی:** تا زمانی که این رضایت را پس بگیرید. گزارشی که کسب‌وکار پیش‌تر دریافت کرده، همراه نوبت باقی می‌ماند.\n\n**اگر موافقت نکنید:** کسب‌وکار فقط شرح مشکل را که خودتان نوشته‌اید دریافت می‌کند.\n\nهر زمان بخواهید می‌توانید این رضایت را در **من > حریم خصوصی > رضایت‌ها** پس بگیرید."
+      },
+      "change_summary": {
+        "en": "First full version of this consent text.",
+        "fa": "نخستین نسخه کامل متن این رضایت."
+      }
+    },
+    {
+      "consent_type": "vendor_fitment_context",
+      "policy_version": "1.1",
+      "requires_reconsent": false,
+      "grounded_in": "Docs/52 StockInquiry: consent_reference_id required when a vehicle is attached to a parts inquiry.",
+      "title": {
+        "en": "Send my vehicle's details with this parts inquiry",
+        "fa": "ارسال مشخصات خودروی من همراه این استعلام قطعه"
+      },
+      "body": {
+        "en": "**What is shared:** the make, model, year, engine [and VIN] of the vehicle you attach to the inquiry.\n\n**With whom:** only the parts seller you send this inquiry to.\n\n**Why:** so the seller can check that the part fits your car before answering.\n\n**For how long:** the seller keeps the details with this inquiry. Withdrawing the consent stops them being sent with new inquiries.\n\n**If you say no:** you can still send the inquiry without a vehicle; the answer may be less certain to fit.\n\nYou can withdraw this consent at any time in **Me > Privacy > Consents**.",
+        "fa": "**چه چیزی به اشتراک گذاشته می‌شود:** سازنده، مدل، سال ساخت، موتور [و شماره شاسی] خودرویی که به استعلام پیوست می‌کنید.\n\n**با چه کسی:** فقط فروشنده قطعه‌ای که این استعلام را برایش می‌فرستید.\n\n**چرا:** تا فروشنده پیش از پاسخ بررسی کند که قطعه با خودروی شما سازگار است.\n\n**تا چه زمانی:** فروشنده این اطلاعات را همراه همین استعلام نگه می‌دارد. با پس گرفتن رضایت، این اطلاعات دیگر همراه استعلام‌های جدید ارسال نمی‌شود.\n\n**اگر موافقت نکنید:** همچنان می‌توانید استعلام را بدون خودرو بفرستید؛ ممکن است پاسخ از نظر سازگاری قطعیت کمتری داشته باشد.\n\nهر زمان بخواهید می‌توانید این رضایت را در **من > حریم خصوصی > رضایت‌ها** پس بگیرید."
+      },
+      "change_summary": {
+        "en": "First full version of this consent text.",
+        "fa": "نخستین نسخه کامل متن این رضایت."
+      }
+    },
+    {
+      "consent_type": "photo_publishing",
+      "policy_version": "1.1",
+      "requires_reconsent": false,
+      "grounded_in": "Docs/52 consent types: publishing photos; Privacy Policy section on consents.",
+      "title": {
+        "en": "Publish my photos",
+        "fa": "انتشار عکس‌های من"
+      },
+      "body": {
+        "en": "**What is published:** the photos you add to a public review, question or post, for everyone who uses CarPal to see.\n\n**Before publishing:** we remove location and camera data from the file. Please do not show licence plates, faces or documents; we may blur or remove photos that do.\n\n**For how long:** until you delete the photo or the post, or withdraw this consent.\n\n**If you say no:** your photos stay private (for example in your garage) and your posts are published without them.\n\nYou can withdraw this consent at any time in **Me > Privacy > Consents**. [Withdrawing removes your photos from public view within 24 hours.]",
+        "fa": "**چه چیزی منتشر می‌شود:** عکس‌هایی که به یک نظر، پرسش یا پست عمومی اضافه می‌کنید، تا همه کاربران کارپال آن‌ها را ببینند.\n\n**پیش از انتشار:** اطلاعات مکان و دوربین را از فایل حذف می‌کنیم. لطفاً پلاک خودرو، چهره افراد یا مدارک را نشان ندهید؛ ممکن است عکس‌هایی را که چنین مواردی دارند تار یا حذف کنیم.\n\n**تا چه زمانی:** تا زمانی که عکس یا پست را حذف کنید، یا این رضایت را پس بگیرید.\n\n**اگر موافقت نکنید:** عکس‌های شما خصوصی می‌ماند (برای نمونه در گاراژ شما) و پست‌هایتان بدون عکس منتشر می‌شود.\n\nهر زمان بخواهید می‌توانید این رضایت را در **من > حریم خصوصی > رضایت‌ها** پس بگیرید. [با پس گرفتن رضایت، عکس‌های شما ظرف ۲۴ ساعت از دید عموم حذف می‌شود.]"
+      },
+      "change_summary": {
+        "en": "First full version of this consent text.",
+        "fa": "نخستین نسخه کامل متن این رضایت."
+      }
+    },
+    {
+      "consent_type": "showcase_publishing",
+      "policy_version": "1.1",
+      "requires_reconsent": false,
+      "grounded_in": "Docs/52 ConsentRequest: a business asks the customer through a single-use link, scoped to one portfolio item; Privacy Policy: showcase media kept until the business deletes it or the customer withdraws.",
+      "title": {
+        "en": "Let this business show the work on my car",
+        "fa": "اجازه نمایش کار انجام‌شده روی خودروی من به این کسب‌وکار"
+      },
+      "body": {
+        "en": "**What is published:** the before and after photos of the work this business did on your car, with a short description, on the business's public profile.\n\n**What is not published:** your name, your contact details and your licence plate. [The business must hide the plate in the photos.]\n\n**For how long:** until the business removes the showcase, or until you withdraw this consent.\n\n**If you say no:** nothing changes for you or your visit. The business cannot publish these photos.\n\nYou can withdraw this consent at any time in **Me > Privacy > Consents**; the showcase is then taken down.",
+        "fa": "**چه چیزی منتشر می‌شود:** عکس‌های قبل و بعد از کاری که این کسب‌وکار روی خودروی شما انجام داده، همراه توضیحی کوتاه، در صفحه عمومی کسب‌وکار.\n\n**چه چیزی منتشر نمی‌شود:** نام شما، اطلاعات تماس شما و پلاک خودرو. [کسب‌وکار باید پلاک را در عکس‌ها بپوشاند.]\n\n**تا چه زمانی:** تا زمانی که کسب‌وکار نمونه‌کار را حذف کند، یا شما این رضایت را پس بگیرید.\n\n**اگر موافقت نکنید:** برای شما و مراجعه‌تان چیزی تغییر نمی‌کند. کسب‌وکار نمی‌تواند این عکس‌ها را منتشر کند.\n\nهر زمان بخواهید می‌توانید این رضایت را در **من > حریم خصوصی > رضایت‌ها** پس بگیرید؛ در این صورت نمونه‌کار برداشته می‌شود."
+      },
+      "change_summary": {
+        "en": "First full version of this consent text.",
+        "fa": "نخستین نسخه کامل متن این رضایت."
+      }
+    },
+    {
+      "consent_type": "ai_personalization",
+      "policy_version": "1.1",
+      "requires_reconsent": false,
+      "grounded_in": "Docs/52 UserPreference: ai_personalization_enabled, ai_help_me_personalised, ai_personalised_matching true only with this consent; off = Help Me uses the session's text only.",
+      "title": {
+        "en": "Personalise AI suggestions with my vehicle history",
+        "fa": "شخصی‌سازی پیشنهادهای هوش مصنوعی با سوابق خودروی من"
+      },
+      "body": {
+        "en": "**What is used:** your vehicles, their mileage and service history, and your earlier requests.\n\n**What it is used for:** Help Me answers, maintenance suggestions and the order of recommended businesses, so they fit your car and what was already done.\n\n**How:** every AI request goes through one controlled layer that checks this consent first. [Your data is not used to train AI models.] [AI processing runs on servers in [country].]\n\n**If you say no:** the AI uses only what you type in the current conversation. All features keep working.\n\nYou can withdraw this consent at any time in **Me > Privacy > Consents**.",
+        "fa": "**از چه چیزی استفاده می‌شود:** خودروهای شما، کارکرد و سوابق سرویس آن‌ها، و درخواست‌های قبلی شما.\n\n**برای چه کاری:** پاسخ‌های «کمکم کن»، پیشنهادهای نگهداری و ترتیب کسب‌وکارهای پیشنهادی، تا با خودروی شما و کارهای انجام‌شده روی آن متناسب باشد.\n\n**چگونه:** هر درخواست هوش مصنوعی از یک لایه کنترل‌شده می‌گذرد که پیش از هر چیز این رضایت را بررسی می‌کند. [از داده‌های شما برای آموزش مدل‌های هوش مصنوعی استفاده نمی‌شود.] [پردازش هوش مصنوعی روی سرورهایی در [کشور] انجام می‌شود.]\n\n**اگر موافقت نکنید:** هوش مصنوعی فقط از متنی که در همین گفت‌وگو می‌نویسید استفاده می‌کند. همه امکانات همچنان کار می‌کنند.\n\nهر زمان بخواهید می‌توانید این رضایت را در **من > حریم خصوصی > رضایت‌ها** پس بگیرید."
+      },
+      "change_summary": {
+        "en": "First full version of this consent text.",
+        "fa": "نخستین نسخه کامل متن این رضایت."
+      }
+    },
+    {
+      "consent_type": "review_invitations",
+      "policy_version": "1.1",
+      "requires_reconsent": false,
+      "grounded_in": "Docs/52: covers the in-app and email channels; an email invitation needs this consent; phone-only accounts get in-app invitations until an email is added.",
+      "title": {
+        "en": "Invite me to review my visits",
+        "fa": "دعوت از من برای ثبت نظر درباره مراجعه‌ها"
+      },
+      "body": {
+        "en": "**What you get:** after a visit to a business, an invitation to rate it, in the app and by email, and up to [two] reminders if you have not answered.\n\n**What we use:** your email address and the visit concerned. The business does not get your email address.\n\n**If you say no:** you get the invitation in the app only, and you can still write a review whenever you like.\n\nYou can withdraw this consent at any time in **Me > Privacy > Consents**, or with the link at the bottom of every invitation email.",
+        "fa": "**چه چیزی دریافت می‌کنید:** پس از مراجعه به یک کسب‌وکار، دعوتی برای امتیاز دادن به آن، در اپلیکیشن و با ایمیل، و در صورت پاسخ ندادن حداکثر [دو] یادآوری.\n\n**از چه چیزی استفاده می‌کنیم:** نشانی ایمیل شما و مراجعه مربوط. کسب‌وکار نشانی ایمیل شما را دریافت نمی‌کند.\n\n**اگر موافقت نکنید:** دعوت را فقط در اپلیکیشن دریافت می‌کنید و همچنان هر وقت بخواهید می‌توانید نظر بنویسید.\n\nهر زمان بخواهید می‌توانید این رضایت را در **من > حریم خصوصی > رضایت‌ها** یا با پیوند پایین هر ایمیل دعوت پس بگیرید."
+      },
+      "change_summary": {
+        "en": "First full version of this consent text.",
+        "fa": "نخستین نسخه کامل متن این رضایت."
+      }
+    },
+    {
+      "consent_type": "fleet_driver_data_visibility",
+      "policy_version": "1.1",
+      "requires_reconsent": false,
+      "grounded_in": "modules/fleet/infrastructure/fleet-services.ts DriverNames: the fleet sees a driver's name only with this consent to that fleet; otherwise the driver is shown as \"Driver\". The records a driver makes on the fleet's own vehicles belong to the fleet either way.",
+      "title": {
+        "en": "Show my name to my fleet",
+        "fa": "نمایش نام من به ناوگانم"
+      },
+      "body": {
+        "en": "**What the fleet sees with this consent:** your name next to what you do for the fleet: the vehicles assigned to you, and the mileage readings, problems, photos and documents you record for them.\n\n**Without this consent:** you appear to the fleet as \"Driver\". What you record on the fleet's vehicles still belongs to the fleet's vehicle history, without your name.\n\n**What the fleet never sees:** your own vehicles, your private garage, your messages with other businesses and your location.\n\n**Why:** so the fleet manager knows who to contact about a vehicle.\n\nYou can withdraw this consent at any time in **Me > Privacy > Consents**. [Your employer may have its own rules about this.]",
+        "fa": "**با این رضایت، ناوگان چه چیزی را می‌بیند:** نام شما در کنار کارهایی که برای ناوگان انجام می‌دهید: خودروهای سپرده‌شده به شما، و کارکرد، مشکلات، عکس‌ها و مدارکی که برای آن‌ها ثبت می‌کنید.\n\n**بدون این رضایت:** ناوگان شما را با عنوان «راننده» می‌بیند. آنچه روی خودروهای ناوگان ثبت می‌کنید، بدون نام شما، همچنان جزو سوابق خودروهای ناوگان است.\n\n**ناوگان هرگز چه چیزی را نمی‌بیند:** خودروهای شخصی شما، گاراژ خصوصی شما، پیام‌های شما با کسب‌وکارهای دیگر و موقعیت مکانی شما.\n\n**چرا:** تا مدیر ناوگان بداند درباره هر خودرو با چه کسی تماس بگیرد.\n\nهر زمان بخواهید می‌توانید این رضایت را در **من > حریم خصوصی > رضایت‌ها** پس بگیرید. [ممکن است کارفرمای شما در این باره قواعد خودش را داشته باشد.]"
+      },
+      "change_summary": {
+        "en": "First full version of this consent text.",
+        "fa": "نخستین نسخه کامل متن این رضایت."
+      }
+    },
+    {
+      "consent_type": "fleet_data_ai_use",
+      "policy_version": "1.1",
+      "requires_reconsent": false,
+      "grounded_in": "Docs/52: organization consent for AI use of fleet data (given by the fleet organization's owner or manager).",
+      "title": {
+        "en": "Use our fleet data for AI insights",
+        "fa": "استفاده از داده‌های ناوگان ما برای تحلیل‌های هوش مصنوعی"
+      },
+      "body": {
+        "en": "**Given by:** an owner or manager of the fleet, for the whole organization.\n\n**What is used:** the fleet's vehicles, their mileage, service records, costs and reported problems.\n\n**What it is used for:** maintenance suggestions, cost and downtime insights, and the order of recommended businesses for the fleet. The results are shown only to your organization.\n\n**How:** every AI request goes through one controlled layer that checks this consent first. [Your data is not used to train AI models.]\n\n**If you say no:** the fleet features keep working without AI insights.\n\nAn owner or manager can withdraw this consent at any time in the organization's settings.",
+        "fa": "**توسط چه کسی داده می‌شود:** یکی از مالکان یا مدیران ناوگان، برای کل سازمان.\n\n**از چه چیزی استفاده می‌شود:** خودروهای ناوگان، کارکرد آن‌ها، سوابق سرویس، هزینه‌ها و مشکلات گزارش‌شده.\n\n**برای چه کاری:** پیشنهادهای نگهداری، تحلیل هزینه و زمان توقف خودروها، و ترتیب کسب‌وکارهای پیشنهادی برای ناوگان. نتایج فقط به سازمان شما نشان داده می‌شود.\n\n**چگونه:** هر درخواست هوش مصنوعی از یک لایه کنترل‌شده می‌گذرد که پیش از هر چیز این رضایت را بررسی می‌کند. [از داده‌های شما برای آموزش مدل‌های هوش مصنوعی استفاده نمی‌شود.]\n\n**اگر موافقت نکنید:** امکانات ناوگان بدون تحلیل‌های هوش مصنوعی همچنان کار می‌کنند.\n\nمالک یا مدیر سازمان هر زمان بخواهد می‌تواند این رضایت را در تنظیمات سازمان پس بگیرد."
+      },
+      "change_summary": {
+        "en": "First full version of this consent text.",
+        "fa": "نخستین نسخه کامل متن این رضایت."
+      }
+    },
+    {
+      "consent_type": "provider_analytics_ai_use",
+      "policy_version": "1.1",
+      "requires_reconsent": false,
+      "grounded_in": "Docs/52: provider analytics are private to the provider and used by AI only with provider_analytics_ai_use.",
+      "title": {
+        "en": "Use our business analytics for AI insights",
+        "fa": "استفاده از تحلیل‌های کسب‌وکار ما برای پیشنهادهای هوش مصنوعی"
+      },
+      "body": {
+        "en": "**Given by:** an owner or manager of the business, for the whole organization.\n\n**What is used:** your business's private analytics: requests, appointments, profile views, reviews and ratings over time.\n\n**What it is used for:** suggestions to improve your profile and service, and explanations of trends. The results are shown only to your organization; other businesses never see your analytics.\n\n**How:** every AI request goes through one controlled layer that checks this consent first. [Your data is not used to train AI models.]\n\n**If you say no:** you still see your analytics, without AI suggestions.\n\nAn owner or manager can withdraw this consent at any time in the organization's settings.",
+        "fa": "**توسط چه کسی داده می‌شود:** یکی از مالکان یا مدیران کسب‌وکار، برای کل سازمان.\n\n**از چه چیزی استفاده می‌شود:** تحلیل‌های خصوصی کسب‌وکار شما: درخواست‌ها، نوبت‌ها، بازدیدهای صفحه، نظرها و امتیازها در طول زمان.\n\n**برای چه کاری:** پیشنهادهایی برای بهتر کردن صفحه و خدمات شما، و توضیح روندها. نتایج فقط به سازمان شما نشان داده می‌شود؛ کسب‌وکارهای دیگر هرگز تحلیل‌های شما را نمی‌بینند.\n\n**چگونه:** هر درخواست هوش مصنوعی از یک لایه کنترل‌شده می‌گذرد که پیش از هر چیز این رضایت را بررسی می‌کند. [از داده‌های شما برای آموزش مدل‌های هوش مصنوعی استفاده نمی‌شود.]\n\n**اگر موافقت نکنید:** تحلیل‌های خود را همچنان می‌بینید، بدون پیشنهادهای هوش مصنوعی.\n\nمالک یا مدیر سازمان هر زمان بخواهد می‌تواند این رضایت را در تنظیمات سازمان پس بگیرد."
+      },
+      "change_summary": {
+        "en": "First full version of this consent text.",
+        "fa": "نخستین نسخه کامل متن این رضایت."
+      }
+    },
+    {
+      "consent_type": "vendor_inventory_ai_use",
+      "policy_version": "1.1",
+      "requires_reconsent": false,
+      "grounded_in": "Docs/52: vendor consent for AI use of private inventory.",
+      "title": {
+        "en": "Use our private inventory for AI matching",
+        "fa": "استفاده از موجودی خصوصی ما برای تطبیق با هوش مصنوعی"
+      },
+      "body": {
+        "en": "**Given by:** an owner or manager of the parts business, for the whole organization.\n\n**What is used:** the inventory you keep private: stock levels, cost prices and items you have not published.\n\n**What it is used for:** matching your parts to customers' inquiries and vehicles, and suggestions about your stock. Buyers see only what you publish; your private data is never shown to them or to other sellers.\n\n**How:** every AI request goes through one controlled layer that checks this consent first. [Your data is not used to train AI models.]\n\n**If you say no:** matching uses your published listings only.\n\nAn owner or manager can withdraw this consent at any time in the organization's settings.",
+        "fa": "**توسط چه کسی داده می‌شود:** یکی از مالکان یا مدیران کسب‌وکار قطعه، برای کل سازمان.\n\n**از چه چیزی استفاده می‌شود:** موجودی‌ای که خصوصی نگه می‌دارید: مقدار موجودی، قیمت خرید و اقلامی که منتشر نکرده‌اید.\n\n**برای چه کاری:** تطبیق قطعات شما با استعلام‌ها و خودروهای مشتریان، و پیشنهادهایی درباره موجودی. خریداران فقط آنچه را منتشر می‌کنید می‌بینند؛ داده‌های خصوصی شما هرگز به آن‌ها یا فروشندگان دیگر نشان داده نمی‌شود.\n\n**چگونه:** هر درخواست هوش مصنوعی از یک لایه کنترل‌شده می‌گذرد که پیش از هر چیز این رضایت را بررسی می‌کند. [از داده‌های شما برای آموزش مدل‌های هوش مصنوعی استفاده نمی‌شود.]\n\n**اگر موافقت نکنید:** تطبیق فقط با آگهی‌های منتشرشده شما انجام می‌شود.\n\nمالک یا مدیر سازمان هر زمان بخواهد می‌تواند این رضایت را در تنظیمات سازمان پس بگیرد."
+      },
+      "change_summary": {
+        "en": "First full version of this consent text.",
+        "fa": "نخستین نسخه کامل متن این رضایت."
+      }
+    },
+    {
+      "consent_type": "location_usage",
+      "policy_version": "1.1",
+      "requires_reconsent": false,
+      "grounded_in": "Docs/52 SearchQuery: latitude/longitude used only with location_usage or a chosen city; Privacy Policy: position private by default, map tiles from our own servers.",
+      "title": {
+        "en": "Use my device's location",
+        "fa": "استفاده از موقعیت مکانی دستگاه من"
+      },
+      "body": {
+        "en": "**What is used:** your device's position, only when you search, browse the map or ask for businesses near you. Your browser or phone asks you as well.\n\n**What it is used for:** showing businesses near you and the distance to them. Businesses never see your position.\n\n**What is kept:** the position is saved with the search, [rounded to about 1 km], for [90 days], to improve search results. We do not track you between searches.\n\n**If you say no:** choose a city or an area instead; search works the same way.\n\nYou can withdraw this consent at any time in **Me > Privacy > Consents**, and in your device settings.",
+        "fa": "**از چه چیزی استفاده می‌شود:** موقعیت دستگاه شما، فقط هنگامی که جست‌وجو می‌کنید، نقشه را مرور می‌کنید یا کسب‌وکارهای نزدیک را می‌خواهید. مرورگر یا گوشی شما هم از شما اجازه می‌گیرد.\n\n**برای چه کاری:** نمایش کسب‌وکارهای نزدیک شما و فاصله تا آن‌ها. کسب‌وکارها هرگز موقعیت شما را نمی‌بینند.\n\n**چه چیزی نگه داشته می‌شود:** موقعیت همراه جست‌وجو، [با دقت حدود ۱ کیلومتر]، به مدت [۹۰ روز] ذخیره می‌شود تا نتایج جست‌وجو بهتر شود. شما را میان جست‌وجوها ردیابی نمی‌کنیم.\n\n**اگر موافقت نکنید:** به جای آن یک شهر یا محدوده انتخاب کنید؛ جست‌وجو به همان شکل کار می‌کند.\n\nهر زمان بخواهید می‌توانید این رضایت را در **من > حریم خصوصی > رضایت‌ها** و در تنظیمات دستگاه خود پس بگیرید."
+      },
+      "change_summary": {
+        "en": "First full version of this consent text.",
+        "fa": "نخستین نسخه کامل متن این رضایت."
+      }
+    },
+    {
+      "consent_type": "marketing",
+      "policy_version": "1.1",
+      "requires_reconsent": false,
+      "grounded_in": "Privacy Policy: marketing and product news by email and push, consent, opt out at any time.",
+      "title": {
+        "en": "Send me news and offers",
+        "fa": "ارسال اخبار و پیشنهادها برای من"
+      },
+      "body": {
+        "en": "**What you get:** news about CarPal features, seasonal car-care tips and offers [from CarPal] [and from partner businesses], by email and push notification, at most [two] messages a month.\n\n**What we use:** your email address, your push token and your notification preferences. We do not give your contact details to businesses for their own marketing.\n\n**If you say no:** you still get the messages you need to use CarPal, such as sign-in codes, appointment updates and security notices.\n\nYou can withdraw this consent at any time in **Me > Privacy > Consents**, or with the unsubscribe link in every message.",
+        "fa": "**چه چیزی دریافت می‌کنید:** اخبار امکانات کارپال، نکته‌های فصلی نگهداری خودرو و پیشنهادهای ویژه [از کارپال] [و از کسب‌وکارهای همکار]، با ایمیل و اعلان، حداکثر [دو] پیام در ماه.\n\n**از چه چیزی استفاده می‌کنیم:** نشانی ایمیل، شناسه اعلان دستگاه و تنظیمات اعلان شما. اطلاعات تماس شما را برای تبلیغات خودِ کسب‌وکارها به آن‌ها نمی‌دهیم.\n\n**اگر موافقت نکنید:** پیام‌هایی را که برای استفاده از کارپال لازم است، مانند کدهای ورود، به‌روزرسانی نوبت‌ها و هشدارهای امنیتی، همچنان دریافت می‌کنید.\n\nهر زمان بخواهید می‌توانید این رضایت را در **من > حریم خصوصی > رضایت‌ها** یا با پیوند لغو اشتراک در هر پیام پس بگیرید."
+      },
+      "change_summary": {
+        "en": "First full version of this consent text.",
+        "fa": "نخستین نسخه کامل متن این رضایت."
+      }
+    }
+  ]
+}

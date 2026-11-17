@@ -676,6 +676,10 @@ CREATE TABLE identity.authentication_methods (
   verified_at          timestamptz,
   last_used_at         timestamptz,
   status               text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','active','disabled')),
+  password_change_required    boolean NOT NULL DEFAULT false,   -- initial or one-time staff password (backend S26a)
+  initial_password_expires_at timestamptz,                      -- the initial password is refused after it (DQ-25: 7 days)
+  CONSTRAINT authentication_methods_pwd_change_type_check CHECK (NOT password_change_required OR method_type = 'email_password'),
+  CONSTRAINT authentication_methods_initial_expiry_check CHECK (initial_password_expires_at IS NULL OR password_change_required),
   CHECK (method_type <> 'oidc_social' OR provider_name IS NOT NULL),
   CHECK (method_type NOT IN ('email_password','phone_otp','totp_mfa','recovery_code') OR credential_reference IS NOT NULL),
   CHECK (method_type <> 'webauthn' OR credential_data IS NOT NULL)
@@ -3983,7 +3987,8 @@ CREATE TABLE notification.notifications (
     'profile_suggestion','inquiry_received','inventory_import_finished','ai_fitment_suggestion','low_data_quality_alert',
     'driver_issue_reported','fleet_approval_needed','repair_completed','vehicle_due_for_service','monthly_report_ready',
     'moderation_update','system_announcement','marketing','review_awaiting_approval','support_update',   -- support: S24
-    'four_eyes_outcome','staff_security_alert','ai_kill_switch_changed')),   -- staff notices (backend S17)
+    'four_eyes_outcome','staff_security_alert','ai_kill_switch_changed',   -- staff notices (backend S17)
+    'exchange_rate_reminder')),                                            -- the morning rate reminder (backend S26a)
   category                core.notification_category NOT NULL,
   priority                text NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal','critical')),
   template_key            text NOT NULL CHECK (template_key ~ '^[a-z0-9_.]{1,120}$'),
@@ -4041,6 +4046,8 @@ CREATE INDEX notification_deliveries_queue_idx ON notification.notification_deli
 CREATE INDEX notification_deliveries_failed_idx ON notification.notification_deliveries (updated_at) WHERE status = 'failed';   -- admin.system_health (S21)
 CREATE INDEX notification_deliveries_attempted_idx ON notification.notification_deliveries (updated_at)
   WHERE status IN ('sent','delivered','failed');   -- admin.notif_delivery_health (S25a)
+CREATE INDEX notification_deliveries_sms_status_idx ON notification.notification_deliveries (sent_at)
+  WHERE channel = 'sms' AND status = 'sent' AND provider_message_id IS NOT NULL;   -- SMS delivery status sweep (S26a)
 COMMENT ON TABLE notification.notification_deliveries IS '52 NotificationDelivery';
 
 CREATE TABLE notification.notification_preferences (

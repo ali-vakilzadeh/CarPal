@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertDev, DEV_STAFF, MINIMUM, parseSpec, parseStaffArgs, shortfall, TEST_STAFF_PREFIXES } from './staff.js';
+import { assertDev, checkInitialPassword, DEV_STAFF, MINIMUM, parseSpec, parseStaffArgs, shortfall, TEST_STAFF_PREFIXES } from './staff.js';
 
 describe('staff tool (backend S12, admin console OQ-10 / BR-05)', () => {
   it('parses the commands', () => {
@@ -74,5 +74,21 @@ describe('staff tool (backend S12, admin console OQ-10 / BR-05)', () => {
     expect(DEV_STAFF.map((s) => s.roles.join(','))).toEqual(['ADM', 'ADM', 'MOD', 'CRV', 'SUP', 'ADM', 'ADM']);
     expect(() => assertDev('dev', 'dev:staff create')).not.toThrow();
     expect(() => assertDev('prod', 'dev:staff create')).toThrow(/only runs with CARPAL_ENV=dev/);
+  });
+});
+
+describe('S26a: initial password and reissue (DQ-25)', () => {
+  it('parses --reissue and refuses it with --file or without an email', () => {
+    expect(parseStaffArgs(['bootstrap', '--reissue', ' Admin100@Carpals.ir '])).toEqual({ kind: 'reissue', email: 'admin100@carpals.ir' });
+    expect(() => parseStaffArgs(['bootstrap', '--reissue', 'x', '--file', 'y'])).toThrow(/do not go together/);
+    expect(() => parseStaffArgs(['bootstrap', '--reissue', 'not-an-email'])).toThrow(/staff email/);
+  });
+
+  it('accepts an initial password of 8-128 characters below SEC-AU-7 and nothing shorter', () => {
+    expect(checkInitialPassword(undefined)).toBeNull();
+    expect(checkInitialPassword('')).toBeNull();
+    expect(checkInitialPassword('Qwe@1234!')).toBe('Qwe@1234!');
+    expect(() => checkInitialPassword('short')).toThrow(/8-128/);
+    expect(() => checkInitialPassword(' padded123 ')).toThrow(/space/);
   });
 });

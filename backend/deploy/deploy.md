@@ -161,6 +161,10 @@ All scripts are in `backend/deploy/`. Run them as root with `bash <script>`. The
 | `3-permissions.sh`              | Every deployment      | Owners and modes from the [layout](#server-layout), then an access check run as the service user.                                                                                                                                                                                                                                 |
 | `4-start.sh`                    | Every deployment      | Restarts the service and waits for `/v1/health`. Then checks that auth, admin-api and storage answer, and that storage sends `Cross-Origin-Resource-Policy: cross-origin` (R-23). On failure it prints the last 80 log lines.                                                                                                     |
 | `update.sh`                     | Every update          | Runs 0 → 1 → 2 → 3 → 4 and stops at the first failure.                                                                                                                                                                                                                                                                            |
+| `staff-bootstrap.sh`            | Once, then as needed  | Creates the staff accounts of `/carpal/config/staff-bootstrap.json` that do not exist (initial password from `CARPAL_STAFF_INITIAL_PASSWORD`); `--reissue <email>` gives an expired initial password 7 more days ([Admin plane](#admin-plane)).                                                                                   |
+| `staff-break-glass.sh`          | Emergencies           | Resets one staff account's security keys and recovery codes, with a reason ([Admin plane](#admin-plane)).                                                                                                                                                                                                                         |
+| `mail-test.sh`                  | After mail changes    | Sends one test message with the `backend.env` mail settings from this server ([Email](#email)).                                                                                                                                                                                                                                   |
+| `seed-consent-texts.sh`         | Once per text version | Loads the reviewed consent texts as drafts ([Consent texts](#consent-texts)).                                                                                                                                                                                                                                                     |
 | `lib.sh`, `deploy.conf.example` | —                     | Shared helpers and default settings.                                                                                                                                                                                                                                                                                              |
 | `templates/`                    | —                     | `backend.env`, `db-admin.env`, the systemd unit and the nginx site, with `@PLACEHOLDERS@`.                                                                                                                                                                                                                                        |
 
@@ -313,7 +317,9 @@ Then restart the backend and run `pwa-update.sh`. Token requests fail between th
 
 ### Exchange rate
 
-Prices are stored in USD. `admin.exchange_rate_update` sets the USD → IRR rate that every client shows (GD-41), and the seed is a **placeholder (1,000,000 IRR per USD)**. Set the real rate in the admin console ([Admin plane](#admin-plane)): a platform admin opens **Settings → Exchange rates**, chooses IRR, enters the amount per US dollar (the page previews sample prices at the current and the new rate) and saves it with a reason. The change is audited. Clients see it within five minutes (config.client). A change of more than 20 % waits until a **second** platform admin approves it on **Pending approvals** (up to 72 hours; the console asks the approver for their security key again when their last key check is older than 5 minutes, SEC-ADM-2). The first real rate is usually far from the placeholder, so two of the pilot's admins must be ready (the staff bootstrap below creates all four).
+Prices are stored in USD. `admin.exchange_rate_update` sets the USD → IRR rate that every client shows (GD-41), and the seed is a **placeholder (1,000,000 IRR per USD)**. If the IRR row is ever missing, the backend creates it at start from `CARPAL_DEFAULT_IRR_PER_USD` (default 1000000; audited as system, never overwriting a rate an administrator set), so `config.client` always serves a rate (backend S26a).
+
+**Every morning (owner decision 2026-11-16).** The rial moves daily, so a platform admin sets the rate each morning. The rates list shows whether each rate was set today (Tehran time) and how old it is. When the rate was not set by `CARPAL_RATE_REMINDER_HOUR` (default 9, Tehran time), every active ADM gets one reminder that day, in the console and by email (staff notice `exchange_rate_reminder`); none once the rate is set. **A daily move of more than 20 % (a sharp devaluation) still waits for a second ADM** (four eyes): on such a day two administrators must be reachable in the morning. Set the real rate in the admin console ([Admin plane](#admin-plane)): a platform admin opens **Settings → Exchange rates**, chooses IRR, enters the amount per US dollar (the page previews sample prices at the current and the new rate) and saves it with a reason. The change is audited. Clients see it within five minutes (config.client). A change of more than 20 % waits until a **second** platform admin approves it on **Pending approvals** (up to 72 hours; the console asks the approver for their security key again when their last key check is older than 5 minutes, SEC-ADM-2). The first real rate is usually far from the placeholder, so two of the pilot's admins must be ready (the staff bootstrap below creates all four).
 
 Fallback, only while the console is not reachable yet (before its deploy kit, stage AC11 of `frontend/admin-console/dev-plan.json`, or if it is down): the server operator sets the rate once in SQL, as root:
 
@@ -324,6 +330,43 @@ PGPASSWORD="$CARPAL_DB_SUPERUSER_PASSWORD" psql -h 127.0.0.1 -U postgres carpal 
 ```
 
 This skips the audit entry and the second approver of the staff operation, so use it for the bootstrap only.
+
+### Email
+
+Since backend S26a the backend sends mail through the **carpals.ir mailbox on the cPanel host** (authenticated SMTP submission to `mail.carpals.ir`), never from the API server itself: the domain's SPF record ends in `-all` and lists only the mail hosts, so mail sent directly from this server would be rejected or marked as spam. Roundcube (webmail) is only the reader of that mailbox; the backend does not use it. Step by step for cPanel: [email_setup_guide.md](email_setup_guide.md).
+
+1. In cPanel → **Email Accounts**, create the sending mailbox (default `no-reply@carpals.ir`) with a long random password. Ask the host for the plan's **hourly sending limit**.
+2. From this server, check that the mail server answers on 465 (or 587):
+
+   ```bash
+   openssl s_client -connect mail.carpals.ir:465 -servername mail.carpals.ir -brief </dev/null
+   ```
+
+   It must print `Verification: OK` and the mail server's banner. If it hangs, the hosting firewall blocks this server: ask the host to allow outgoing SMTP from `185.110.190.201`, or try 587 (`openssl s_client -starttls smtp -connect mail.carpals.ir:587`).
+
+3. In `/carpal/config/backend.env` set `CARPAL_MAIL_TRANSPORT=smtp` and `CARPAL_SMTP_URL='smtps://no-reply%40carpals.ir:<password>@mail.carpals.ir:465'` (percent-encode `@ : / %` in the password: `%40 %3A %2F %25`), keep `CARPAL_MAIL_FROM='CarPal <no-reply@carpals.ir>'`, and set `CARPAL_MAIL_MAX_PER_HOUR` below the host's limit (default 300). Outside dev the backend refuses plain SMTP and a certificate that does not verify.
+4. Send a test message from this server, then restart:
+
+   ```bash
+   sudo bash /carpal/backend/src/backend/deploy/mail-test.sh you@example.com
+   sudo bash /carpal/backend/src/backend/deploy/4-start.sh
+   ```
+
+Above the hourly limit, normal notifications wait for the next hour; sign-in codes and security notices always go first. A failed send is retried (a 4xx answer or a lost connection) or recorded as failed for good (a 5xx answer); the admin console shows it in **Notifications → Delivery health** (provider `smtp`). **DNS:** SPF and DKIM are already published by cPanel (`default._domainkey.carpals.ir`); DMARC is `p=none` (monitoring); move it to `p=quarantine` once the pilot's reports are clean. Transactional mail only: the host's banner forbids bulk mail, so marketing mail needs its own provider later.
+
+### SMS
+
+Until the owner chooses an SMS provider (DQ-28), `CARPAL_SMS_PROVIDER=mock`: the SMS gateway behaves like a provider (message ids, delivery statuses, failures) but **no text message leaves the server**. One-time codes are only in `/carpal/data/outbox-sms.jsonl` (readable by root only), the backend log warns every hour, the admin console's System health shows the provider `mock`, and `config.client` tells the PWA to hide phone sign-up and sign-in (`auth.phone_signin_available = false`; people use email). Adding the chosen provider is one adapter in `libs/sms/providers/` (see `vendor-adapter.example.ts`) and its keys `CARPAL_SMS_API_KEY`, `CARPAL_SMS_SENDER_LINE`, `CARPAL_SMS_OTP_TEMPLATE`.
+
+### Consent texts
+
+The 13 consent texts are seeded from the owner's reviewed file (backend S26a.T5): review `database/seeds/consent-texts.template.json`, save the approved copy as `consent-texts.json` (`meta.status` `approved`, no `[bracketed]` placeholder left), copy it to `/carpal/config/consent-texts.json` and run, as root:
+
+```bash
+sudo bash /carpal/backend/src/backend/deploy/seed-consent-texts.sh
+```
+
+Each text becomes a **draft** version of its consent type's document; published versions are never changed, and a second run creates nothing. Then publish each draft in the admin console (**Policies**, A-POL-01): an effective date and a second administrator's approval (four eyes).
 
 ### Admin plane
 
@@ -339,7 +382,17 @@ With four ADMs an ADM's lost key is recovered in the console by two other ADMs (
 sudo bash /carpal/backend/src/backend/deploy/staff-bootstrap.sh
 ```
 
-It creates the accounts that do not exist and prints a one-time password for each (hand them over on a separate channel); accounts that exist are reported and never changed, so it is safe to run again. The admin console's setup script runs it on its first install. On the first console sign-in a staff member enters the email and that password, then the code sent to the email (until real email exists, NI-07, it is in `/carpal/data/outbox-mail.jsonl`), then registers a **device-bound** passkey: a security key, or a platform passkey that is not synced (Windows Hello; synced iCloud or Google passkeys are refused, SEC-ADM-2). After that every sign-in is password + passkey at `aal3`. Later role changes go through the console (`admin.platform_role_grant`, four eyes).
+It creates the accounts that do not exist; accounts that exist are reported and never changed, so it is safe to run again. The admin console's setup script runs it on its first install.
+
+**Initial password (backend S26a, DQ-25).** The template lists the three main administrators `admin100@carpals.ir`, `admin200@carpals.ir` and `admin300@carpals.ir` (owner decision 2026-11-16; each mailbox must be read by its holder only, because the sign-in codes go there); fill in the backup ADM, the MOD and the CRV when they are named (the command warns while the pilot minimum is not met). Put the owner's initial password in `/carpal/config/backend.env` as `CARPAL_STAFF_INITIAL_PASSWORD='…'` **before** running the script: every account it creates gets that password (it is never printed, logged or written to git). Without it each new account gets a one-time password printed once. Give the password to each holder on a separate channel (not the email that receives the codes). Either way the password must be changed at the first console sign-in, within **7 days**: after the password the console asks for the code sent to the email and then a new password of at least 12 characters (not a known breached password, not the initial one); only then comes the security key. No token is issued before the change. After 7 days the initial password is refused like a wrong password; set a new one with:
+
+```bash
+sudo bash /carpal/backend/src/backend/deploy/staff-bootstrap.sh --reissue admin200@carpals.ir
+```
+
+(audited as `staff.initial_password_reissued`; refused for an account that already chose its own password, which recovers through the console or break glass). The initial password may stay in `backend.env` for the next staff accounts; remove it once every account has signed in.
+
+On the first console sign-in a staff member enters the email and that password, then the code sent to the email (until real email is set up, [Email](#email), it is in `/carpal/data/outbox-mail.jsonl`), then a new password, then registers a **device-bound** passkey: a security key, or a platform passkey that is not synced (Windows Hello; synced iCloud or Google passkeys are refused, SEC-ADM-2). After that every sign-in is password + passkey at `aal3`. Later role changes go through the console (`admin.platform_role_grant`, four eyes).
 
 **Recovery codes and backup keys (S16a).** The first key comes with a sheet of 10 recovery codes (`XXXX-XXXX-XXXX-XXXX-XXXX`), shown once: the staff member writes or prints it and keeps it sealed, apart from the keys. Staff who enrolled before S16a have none; the console asks them to create a set. In the console each staff member can add a backup key (plan two keys per person, OQ-14), remove a key (never the last one) and create a new sheet (the old one stops working). Each of these needs a sign-in within the last 5 minutes.
 
@@ -426,7 +479,7 @@ Expected startup warnings in the log: `GD-06` (strict auth off), `GD-04` (lite i
 
 These come from lite mode and the current state of the code. They are not caused by these scripts. Each one is tracked in `dev_plan.json` (`next_iteration`) or `risk_control_plan.json`.
 
-1. **No outgoing mail, SMS or push.** The lite adapters write every message to `/carpal/data/outbox-*.jsonl`. Sign-up verification, one-time codes, password resets and invitations only reach a user if you forward them by hand. Real providers are NI-07.
+1. **No outgoing SMS or push; mail only once set up.** Mail goes out through the cPanel mailbox once `CARPAL_MAIL_TRANSPORT=smtp` is set ([Email](#email)); until then it is written to `/carpal/data/outbox-mail.jsonl`. SMS runs on the mock provider ([SMS](#sms)) and push on the file sink: those messages are only in `/carpal/data/outbox-*.jsonl`. The SMS provider is DQ-28, push is NI-07.
 2. **Restarts sign everybody out.** Sessions, rate-limit windows, idempotency records and queued jobs are in memory. A restart (every deployment) drops them. Events are safe: the outbox lives in PostgreSQL and is relayed after the restart. Media processing is re-queued by its sweep. Other background jobs that were waiting in the queue may have to be requested again. The search index is rebuilt from the database at startup (`CARPAL_SEARCH_REBUILD_ON_START`). Redis, NATS and OpenSearch adapters (full mode) are NI-06.
 3. **Client IP behind nginx.** The backend reads the client address from the TCP socket only, so behind nginx every client looks like `127.0.0.1`. The per-IP windows of 40 §2.8 would then be shared by all users: 30 sign-ins per 15 minutes and 20 OTPs per hour for the whole platform. As a stopgap, `backend.env` raises only those three IP windows (`CARPAL_RATE_LIMITS`), and nginx enforces per-client limits with the contract's values (`templates/nginx-carpal.conf`). The proper fix is code: trust `X-Forwarded-For` from a configured proxy address in `libs/http-pipeline/pipeline.ts`. Until then, the backend's IP-prefix signals (abuse escalation, audit `ip_prefix`) record `127.0.0.0`.
 4. **`prod` is not reachable yet** ([Environment choice](#environment-choice)). App attestation and the rest of NI-01, and the portal and admin BFFs (NI-08).

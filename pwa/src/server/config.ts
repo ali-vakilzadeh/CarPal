@@ -57,6 +57,8 @@ export function fallbackConfig(locale: Locale, file: RegionFile = region): Clien
     i18n: { version: 'bundled', base_url: '' },
     taxonomy_version: '',
     flags: [],
+    // Contract 1.5.0 (backend S26a, DQ-28): without the backend, phone sign-in is not offered (PB-11).
+    auth: { phone_signin_available: false },
     region: regionConfig,
   };
 }

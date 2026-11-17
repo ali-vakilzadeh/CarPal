@@ -10,7 +10,7 @@ import { loadConfig, type CarpalConfig } from '#libs/config/index.js';
 import type { OperationId } from '#libs/contract/index.js';
 import { Database } from '#libs/db/index.js';
 import { markOverride, Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
-import { createInfra, type EmailMessage, type FileMailer, type FileSmsSender, type Infra, type SmsMessage } from '#libs/infra/index.js';
+import { createInfra, type EmailMessage, type FileMailer, type GatewaySmsSender, type Infra, type SmsMessage } from '#libs/infra/index.js';
 import { createLogger, type Logger } from '#libs/observability/index.js';
 import { createHttpHost, type HttpHost, type HttpHostName } from '#libs/runtime/index.js';
 import { TxRunner } from '#libs/tenancy/index.js';
@@ -117,7 +117,7 @@ export async function createTestApp(o: TestAppOptions): Promise<TestApp> {
     principals: new PrincipalFactory(fixtures),
     request: (r) => send(url, r),
     mail: (to, template) => (infra.mailer as FileMailer).sent.filter((m) => m.to === to && (!template || m.template === template)),
-    sms: (to) => (infra.sms as FileSmsSender).sent.filter((m) => m.to === to),
+    sms: (to) => (infra.sms as GatewaySmsSender).sent.filter((m) => m.to === to),
     async close() {
       await http.close();
       await app.close();

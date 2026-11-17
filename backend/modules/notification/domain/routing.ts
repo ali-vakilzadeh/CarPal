@@ -94,6 +94,8 @@ export const ROUTED_EVENTS = [
   'staff.recovery_requested',
   'staff.recovery_completed',
   'staff.break_glass',
+  // S26a: the display exchange rate was not set by the reminder hour (administrators, console and email)
+  'exchange_rate.reminder_due',
 ] as const;
 
 const PROVIDER_MEMBERS = ['provider_owner', 'provider_manager', 'provider_staff'];
@@ -732,7 +734,7 @@ const KILL_SWITCH_KEY = 'ai.automation.kill_switch';
 
 function staffNotice(
   audience: Audience,
-  eventType: 'four_eyes_outcome' | 'staff_security_alert' | 'ai_kill_switch_changed',
+  eventType: 'four_eyes_outcome' | 'staff_security_alert' | 'ai_kill_switch_changed' | 'exchange_rate_reminder',
   template: string,
   params: Intent['params'],
   reference: Intent['reference'],
@@ -806,12 +808,35 @@ export function routeStaff(e: RoutedEvent): Intent[] {
         ),
       ];
     }
+    case 'exchange_rate.reminder_due': {
+      const currency = str(p.currency);
+      if (!currency) return [];
+      // S26a.T4: the morning reminder goes to the console and by email (normal priority: the person's preferences apply).
+      return [
+        {
+          ...staffNotice(
+            { kind: 'staff', roles: ADMINS, except: null },
+            'exchange_rate_reminder',
+            'staff.exchange_rate_reminder',
+            { currency, per_usd: str(p.per_usd) ?? '' },
+            { type: 'exchange_rate', id: e.aggregateId },
+            'normal',
+          ),
+          channels: ['in_app', 'email'],
+        },
+      ];
+    }
     default:
       return [];
   }
 }
 
 /** Event types of the S17 staff notices: never listed on the api host (40 §20.2 notifications.list). */
-export const STAFF_ONLY_EVENT_TYPES = ['four_eyes_outcome', 'staff_security_alert', 'ai_kill_switch_changed'] as const;
+export const STAFF_ONLY_EVENT_TYPES = [
+  'four_eyes_outcome',
+  'staff_security_alert',
+  'ai_kill_switch_changed',
+  'exchange_rate_reminder',
+] as const;
 /** Event types admin.notifications_list shows (also the DSR deadline and reviewer queue notices). */
 export const STAFF_EVENT_TYPES = [...STAFF_ONLY_EVENT_TYPES, 'moderation_alert', 'review_awaiting_approval'] as const;

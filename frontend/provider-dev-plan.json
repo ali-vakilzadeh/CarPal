@@ -1,441 +1,857 @@
 {
   "meta": {
-    "title": "CarPal provider portal (repair mechanics): full Web UI portal and the compact Workshop PWA — plan and proposals",
+    "title": "CarPal for repair mechanics: provider Web UI and the compact Workshop PWA — development plan",
     "created": "2026-11-15",
-    "last_updated": "2026-11-15",
-    "status": "proposal",
-    "status_note": "Nothing is built yet: frontend/provider-portal/ holds only this plan's mockup. The full portal follows the original plan (Docs/90 §6, Docs/02 WP20). The compact Workshop PWA is new: the owner asked for it on 2026-11-15 for small workshops that have no computer, limited to three jobs (answer appointment requests, reply to customers, post before/after photos).",
+    "last_updated": "2026-11-16",
+    "status": "development_plan",
+    "status_note": "The proposal of 2026-11-15 was reviewed against Docs/11 and converted into this development plan on 2026-11-16 with the owner's decisions (decisions_2026_11_16). Nothing is built yet. frontend/provider-portal/ holds only the mockup, which still shows the old /workshop paths.",
     "owner": "project owner",
-    "mockup": "frontend/provider-portal/mockup.html (open it in a browser: compact PWA screens in phone frames, two full-portal desktop frames for comparison, theme and RTL switches)",
-    "purpose": "Turn the repair-mechanic requirements (Docs/11 Reza's story, Docs/22 where the consumer web touches the shop, Docs/90 §6 P- screens) into a stage plan for two surfaces of one business app: the full provider portal (desktop-first, every P- screen) and the compact Workshop PWA (phone-first, three jobs).",
-    "sources_of_truth": [
-      "Docs/11.User Story - Repair Mechanic.md (chapters 1-8 and its open points 1-10)",
-      "Docs/22.Social_WebUI_user_screens.md (W-PUB-02 shop profile, W-PUB-05 comments with shop replies, W-REV-01/02 review and showcase consent on the customer side, W-APP-01 appointment on the customer side)",
-      "Docs/90.CarPal Screen Map.md §6 (P-ONB, P-DASH, P-REQ, P-CAL, P-PROF, P-PORT, P-REV, P-INS, P-TEAM, P-SET) and line 124 (provider portal installable as a PWA with web push)",
-      "Docs/40.API contract.md §0.3-0.5 (aliases, tags, role groups P*/P+), §2.2 (cp-web-portal client), §2.12 SEC-WEB, provider.*, provider.appointments_*, pre_visit.provider_get, reviews.org_*, review_responses.*, review_approvals.*, provider.portfolio_*, media.*, posts.*, comments.*, ai.review_response_draft, ai.showcase_compose, ai.appointment_suggestions, push_tokens.*, notifications.*",
-      "Docs/02.Detailed project plan.md §1.4 (web.<DOMAIN> is the business web app) and WP20 (portals installable as PWA, web push)",
-      "Docs/carpal-design-system (tokens, Sunlight theme for outdoor use, 48 px touch targets, RTL rules)",
-      "frontend/public-ui-dev-plan.json (PU-P01 onboarding wizard, PU-P02 plan pages, PU-OQ-01 shared package)",
-      "pwa/dev_plan.json (P2 BFF, P7 upload kit, P12 service worker and web push, DI-16 business pushes go to the portal, DI-72 / OQ-26 no web push sender yet)"
+    "deliverables": [
+      {
+        "id": "D1",
+        "name": "Provider Web UI (full portal)",
+        "where": "web.<DOMAIN>/<locale>/provider/... — the business web app in frontend/, OAuth client cp-web-portal",
+        "users": "Workshops with a computer: provider_owner, provider_manager, provider_staff",
+        "stages": "PP1-PP13"
+      },
+      {
+        "id": "D2",
+        "name": "CarPal Workshop / «کارپال تعمیرگاه» (compact PWA)",
+        "where": "pwa.<DOMAIN>/<locale>/provider/... — a route group of the consumer PWA in pwa/, OAuth client cp-web-consumer",
+        "users": "Small workshops without a computer; any member of a provider organization",
+        "stages": "PW1-PW8"
+      }
     ],
-    "how_to_use": "Stages PP1-PP10 build the full portal; stages PW1-PW5 build the compact Workshop PWA. The recommended order (build_order) runs the compact app right after the foundation and the onboarding wizard, so phone-only workshops can join the pilot early. Backend needs are listed in backend_requests with the same entry shape as the other frontend plans and join backend/BR-update-plan.json through its intake rules. When a proposal is accepted, set its status and record the decision in progress_log."
+    "delivery_phases": {
+      "fast_delivery": "Pilot: backend, admin console, consumer PWA, provider Web UI (D1) and Workshop PWA (D2). Stages PW1-PW8, PP1-PP13, FT1a, FT1b of this plan.",
+      "slow_delivery": "Starts right after the pilot launch: public Web UI, vendor UI, the full admin console and other interfaces. From this plan: PX1 and next_phase_plan."
+    },
+    "mockup": "frontend/provider-portal/mockup.html (compact screens in phone frames, two desktop frames, theme and RTL switches). Paths in the mockup say /workshop; the built paths are /provider (PRV-GD-01).",
+    "purpose": "Stage plan for the two provider deliverables, sized so that one stage fits one working session, with one joint test stage at the end.",
+    "sources_of_truth": [
+      "Docs/11.User Story - Repair Mechanic.md (chapters 1-8)",
+      "Docs/40.API contract.md (supersedes Docs/90 where they differ, owner 2026-11-16): §0.3-0.5 role groups, §2.2 clients, §2.12 SEC-WEB, provider.*, provider.appointments_*, pre_visit.provider_get, reviews.org_*, review_responses.*, review_approvals.*, provider.portfolio_*, media.*, posts.*, comments.*, ai.*, push_tokens.*, notifications.*",
+      "Docs/90.CarPal Screen Map.md §6 (P- screens; used for screen content, not for roles)",
+      "Docs/22.Social_WebUI_user_screens.md (W-PUB-02, W-PUB-05, W-REV-01/02, W-APP-01: the customer side)",
+      "Docs/56.UI-UX Social Flow.md §2.10-2.11 (publish conditions; §2.11 is followed)",
+      "Docs/02.Detailed project plan.md §1.4 and WP20",
+      "Docs/carpal-design-system (tokens, Sunlight theme, 48 px targets, RTL)",
+      "pwa/dev_plan.json (P2 BFF, P4 hosted sign-in, P6 map, P7 upload kit, P12 service worker and web push, DI-16, DI-71, DI-72, OQ-26)",
+      "frontend/public-ui-dev-plan.json (PU-P01, PU-P02, PU-BR-03, PU-BR-04, backend_follow_ups_for_business_screens)",
+      "frontend/admin-console/dev-plan.json (AC1 package setup and BFF copy, the pattern for PP1)",
+      "backend/BR-update-plan.json (action_plan.intake_rules; intake_candidates_provider_plan)"
+    ],
+    "how_to_use": "Run one stage per session in build_order. Before a stage, read its context_to_read and nothing else. A stage with needs_backend starts only when those requests are done in the backend plan, or it builds the named fallback. Each stage ends with its stage checks (conventions.stage_checks) and a report in progress_log. End-to-end, accessibility, performance and security tests of both deliverables run together in FT1a and FT1b."
+  },
+
+  "decisions_2026_11_16": {
+    "by": "project owner",
+    "open_questions": [
+      { "id": "PRV-OQ-01", "answer": "The Workshop PWA is deployed at pwa.carpals.ir/<locale>/provider as a route group inside the consumer PWA (pwa/). The rest of the provider portal stays at web.carpals.ir.", "effect": "PRV-GD-01 rewritten; PRV-BR-08, -09, -10 added; PW stages no longer depend on PP1." },
+      { "id": "PRV-OQ-02", "answer": "Yes: a minimal Update job / Close job in the Workshop PWA.", "effect": "Stage PW4." },
+      { "id": "PRV-OQ-03", "answer": "A compact onboarding in the Workshop PWA with only the critical inputs.", "effect": "Stage PW2 (screens PW-ONB-01..04). The full wizard stays in the Web UI (PP3, PP4)." },
+      { "id": "PRV-OQ-04", "answer": "Default: no change to session lifetimes; quick re-sign-in.", "effect": "The Workshop PWA follows its client cp-web-consumer (12 h idle, 7 days absolute); the Web UI follows cp-web-portal (8 h idle, 7 days). No Docs/40 lifetime change." },
+      { "id": "PRV-OQ-05", "answer": "Default: photos upload only while the page is open; no offline queue.", "effect": "Offline queue is next_phase_plan NX-03." },
+      { "id": "PRV-OQ-06", "answer": "No in the MVP.", "effect": "Showcases come only from completed CarPal appointments. PRV-BR-07 moved to next_phase_plan NX-01." },
+      { "id": "PRV-OQ-07", "answer": "Default approved: review replies, review approvals and comments on the shop's content are in Replies; appointment messages stay in the request detail.", "effect": "PW5, PW6, PW3." },
+      { "id": "PRV-OQ-08", "answer": "Default approved: name CarPal Workshop / «کارپال تعمیرگاه», screen ids PW-*.", "effect": "surfaces.workshop_pwa." },
+      { "id": "PRV-OQ-09", "answer": "Default approved: the iOS limit (web push only after Add to Home Screen, iOS 16.4+) is acceptable for the pilot.", "effect": "PW8 walks iPhone users through Add to Home Screen. Native business app is NX-04." }
+    ],
+    "doc_issues": [
+      { "id": "PRV-DI-01", "answer": "The compact app is part of the plan (deliverable D2).", "effect": "Docs/90 §6 and Docs/02 WP20 get the Workshop PWA in FT1b (docs closure)." },
+      { "id": "PRV-DI-02", "answer": "Follow Docs/56 §2.11. Business verification is deferred to the next phase, except a simple licence upload.", "effect": "Both onboardings keep an optional licence upload (org.verification_submit) and publish with 'Verification pending'. Status page, 'more information requested', resubmit, rejection reason and certification review screens are NX-02." },
+      { "id": "PRV-DI-03", "answer": "Docs/40 supersedes; Docs/90 role names are ignored.", "effect": "Roles are provider_owner, provider_manager, provider_staff (PRV-GD-07)." },
+      { "id": "PRV-DI-04", "answer": "Fix Docs/11 where Docs/90 has the solution.", "effect": "Done 2026-11-16: Docs/11 open points 8 and 10 closed (P-REV-04, P-INS-01 'Map & search visibility'); points 4, 5 and 9 marked decided." },
+      { "id": "PRV-DI-05", "answer": "Job log, provider parts search and trade accounts are deferred until the vendor plan is settled.", "effect": "Stage PX1 is blocked. frontend/vendor-dev-plan.json has the blocking requirement VND-BLK-01." }
+    ],
+    "asked_in_session": [
+      { "question": "How is pwa.carpals.ir/provider built?", "answer": "Inside the consumer PWA (route group of pwa/), not a separate app on that path." },
+      { "question": "How far does the verification deferral go?", "answer": "Upload now, the rest later." },
+      { "question": "How does the plan carry backend work?", "answer": "Handed over to the backend plan: this plan lists requests and fallbacks; they are staged in backend/BR-update-plan.json and frontend stages name them as dependencies." }
+    ],
+    "follow_up_2026_11_16": [
+      { "id": "PRV-OQ-10", "answer": "The sign-in page of the Web UI has a large button that opens the Workshop PWA. On iOS it tells the user to open the link in Safari and add it to the home screen.", "effect": "PP1.T6, PW8.T1 and PW8.T3." },
+      { "id": "PRV-OQ-11", "answer": "PX1 does not hold back the final test. The pilot is the first phase, 'fast delivery': backend, admin console, consumer PWA, provider Web UI and Workshop PWA. The next development phase, 'slow delivery', starts right after it with the other interfaces (public Web UI, vendor UI, the full admin console and more); PX1 belongs there.", "effect": "meta.delivery_phases; PX1 status deferred_to_slow_delivery; next_phase_plan NX-08." },
+      { "id": "PRV-GD-11", "answer": "Where the layout follows the mockup, the parts-related areas stay in place but are greyed out and disabled. They are not removed.", "effect": "PRV-GD-11; PP2.T2, PP5.T3, FT1b.T3." }
+    ],
+    "test_rule": "Both deliverables are tested together in the final stage (FT1a, FT1b). Earlier stages run only the stage checks."
+  },
+
+  "review_2026_11_16": {
+    "note": "Result of comparing the proposal with Docs/11. Each finding names where the plan now handles it.",
+    "findings": [
+      { "id": "RF-01", "chapter": "Ch.1", "finding": "Docs/11 says Reza signs up with a mobile number and a password and verifies by SMS code; the proposal said 'number and code'.", "handling": "Both surfaces use the hosted sign-in and sign-up as the backend serves them (password plus code; one-time code sign-in for daily login). No own sign-up form is designed here (PW1, PP1)." },
+      { "id": "RF-02", "chapter": "Ch.1", "finding": "Concierge (assisted) onboarding needs the {adm}/assist routes, which the backend deferred (NP-09). The proposal used it as the alternative for phone-only workshops.", "handling": "The compact onboarding (PW2) replaces it for the pilot. Assisted onboarding is NX-07." },
+      { "id": "RF-03", "chapter": "Ch.1", "finding": "An existing car owner who chooses 'Create a business' was sent to the full portal. In the consumer PWA the business choice of W-ONB-01 still points to a placeholder URL.", "handling": "PW2: 'Service provider' in W-ONB-01 and 'Create a business' in the account menu open the compact onboarding. Vendor and fleet choices keep the portal link." },
+      { "id": "RF-04", "chapter": "Ch.2", "finding": "Step 7 (call-back code, licence upload, review in 2 days, Verified badge) is larger than what the owner now wants in the MVP.", "handling": "Optional licence upload and 'Verification pending' only (PW2, PP4). The rest is NX-02." },
+      { "id": "RF-05", "chapter": "Ch.2", "finding": "The 8-step wizard with AI portfolio grouping is too large for one stage.", "handling": "Split into PP3 (steps 1-4) and PP4 (steps 5-8 and publish)." },
+      { "id": "RF-06", "chapter": "Ch.3", "finding": "The switcher 'Reza (personal) / Reza Auto Suspension' was only a business picker in the Workshop PWA.", "handling": "PW1: the PWA account menu switches between the personal app and each provider business; the Web UI keeps S-SHARED-06 (PP2)." },
+      { "id": "RF-07", "chapter": "Ch.3", "finding": "The first-weeks onboarding checklist on the dashboard was not in any stage.", "handling": "PP5 (dashboard) and a short 'Finish your profile' card on Today (PW1) that lists what the compact onboarding skipped." },
+      { "id": "RF-08", "chapter": "Ch.3-4", "finding": "Docs/11 uses the roles Bookings (Neda) and Technician (Hamid). Docs/40 has no such roles.", "handling": "Both are provider_staff. 'Assigned jobs only' is a 'My jobs' filter from appointment participants, not a role (PRV-GD-07). Docs/11 open point 4 marked decided." },
+      { "id": "RF-09", "chapter": "Ch.5", "finding": "The private customer note ('prefers updates by app message') is not in the compact app.", "handling": "Stays in the Web UI (PP5). Accepted limit of the compact app." },
+      { "id": "RF-10", "chapter": "Ch.5", "finding": "'Decline requires a reason' has no structured field in the contract.", "handling": "PRV-BR-05; fallback: the reason is written into the customer-visible note (PW3)." },
+      { "id": "RF-11", "chapter": "Ch.6", "finding": "Parts search, stock inquiry, trade access and the vendor rating at the end of Ch.8 depend on screens that have no spec.", "handling": "Stage PX1, in the slow delivery phase (owner decisions DI-05 and OQ-11); its places in the layout are greyed out (PRV-GD-11). In this plan Ch.6 is covered only by 'Awaiting parts' with a note, an estimated completion time and a cost range (PW4, PP5)." },
+      { "id": "RF-12", "chapter": "Ch.7", "finding": "The compact Close job left parts used and the cost split to the full portal, which a phone-only workshop does not use. The service record would then lack the part number that Docs/11 expects.", "handling": "PW4: Close job has labour cost, parts cost and optional simple part lines (name, part number, quantity). The invoice photo and internal note are included." },
+      { "id": "RF-13", "chapter": "Ch.7", "finding": "Walk-in job log and the review invitation sent from it are not covered.", "handling": "Job log is in blocked stage PX1. Review invitations to past customers from the shop's own records are in PP10 (P-REV-05) and do not need the job log." },
+      { "id": "RF-14", "chapter": "Ch.8", "finding": "Docs/11 describes Yes and No for the approval; Docs/90 P-REV-04 adds 'Not sure'.", "handling": "Follow the contract's review_approvals.answer values; show 'Not sure' only if the contract has it (PW5)." },
+      { "id": "RF-15", "chapter": "Ch.5, Ch.8", "finding": "'The phone buzzes' needs a web push sender, and the backend sends business pushes to every web token of the user without a target (pwa DI-16, DI-71, DI-72).", "handling": "PRV-BR-06 and PRV-BR-09; until then PW8 falls back to in-app polling while open, email and SMS." },
+      { "id": "RF-16", "chapter": "Ch.4, Ch.8", "finding": "Backend follow-ups recorded for business screens (public UI plan) were not in the proposal: confirm organization consents after a text change, support requests in a business context, the business's own plan requests.", "handling": "PP12 (settings, consents, plan, help). Verification follow-ups are NX-02." },
+      { "id": "RF-17", "chapter": "all", "finding": "The proposal built shared components in the business app; with OQ-01 the two deliverables are two apps.", "handling": "PRV-GD-08: shared package shared/business-ui, created in PW1 and used by both apps." },
+      { "id": "RF-18", "chapter": "Ch.4", "finding": "Badge award and 'Your business is verified' notifications, and the Pro trial banner, were not placed.", "handling": "Notifications list in both shells (PW1, PP2); trial banner in PP2 from subscription.org_get; the verified notice is NX-02." }
+    ]
   },
 
   "requirements_summary": {
-    "note": "What a repair mechanic must be able to do, by chapter of Docs/11, and which surface serves it. 'compact' = in the Workshop PWA; 'link' = the Workshop PWA opens the full portal page; 'proposed' = needs the owner's OK (see open_questions).",
+    "note": "What a repair mechanic must be able to do, by chapter of Docs/11, and the stage that delivers it on each deliverable. 'web' = opens the Web UI in a new tab (separate sign-in, other origin).",
     "items": [
-      { "id": "PRQ-01", "chapter": "Ch.1 Signing up", "need": "Sign up with mobile number and code, choose Service provider, consents incl. provider_analytics_ai_use; an existing car-owner account adds a business (new provider_owner membership).", "screens": ["S-AUTH-03", "S-AUTH-04", "S-AUTH-05"], "full_portal": "yes", "compact": "link (sign-up and business creation open the full portal, which must work at phone width)" },
-      { "id": "PRQ-02", "chapter": "Ch.2 Business profile", "need": "Eight-step onboarding wizard with Save and continue later, map pin check, capabilities as Offered until evidence, AI suggestions the owner approves, portfolio upload with plate blur and per-job consent, hours and capacity, verification upload, AI profile preview, Publish with Verification pending.", "screens": ["P-ONB-01..08", "A-VER-01 (console)"], "full_portal": "yes", "compact": "link (the wizard is responsive; a workshop without a computer completes it on the phone in the full portal, or CarPal staff assist from the console)" },
-      { "id": "PRQ-03", "chapter": "Ch.3 Daily login", "need": "Sign in with a one-time code; switch between personal and business context; dashboard with today's appointments, new requests, reviews, approval requests, AI suggestions, completeness and response time; no-permission screen for limited roles.", "screens": ["S-AUTH-02", "S-SHARED-06", "P-DASH-01", "S-SHARED-07"], "full_portal": "yes", "compact": "compact (code or passkey sign-in, business picker, a Today screen limited to the three jobs)" },
-      { "id": "PRQ-04", "chapter": "Ch.4 Growing the profile", "need": "Team invites with roles, certifications, time off, review invitations to past customers, AI profile suggestions, badges, Pro trial banner, public profile preview.", "screens": ["P-TEAM-01", "P-PROF-01..05", "P-CAL-02", "P-REV-05", "P-INS-04", "P-SET-01"], "full_portal": "yes", "compact": "link" },
-      { "id": "PRQ-05", "chapter": "Ch.5 Sara's request", "need": "Push for a new request; list and detail with customer, vehicle, AI pre-visit summary, video/photos, shared history (or 'Not shared by customer'), preferred times, safety banner, 'Triage: not provided', vehicle-coverage mismatch note; AI slot suggestion; actions accept, propose another time, decline with reason, ask for more information; private customer note.", "screens": ["P-REQ-01", "P-REQ-02", "P-CAL-01"], "full_portal": "yes", "compact": "compact (all actions; the calendar is reduced to a 'conflicts that day' line; private customer notes stay in the full portal)" },
-      { "id": "PRQ-06", "chapter": "Ch.6 The part", "need": "Part search in the appointment's vehicle context with fitment, stock, distance and trade price; stock inquiry without VIN/plate; trade access request; set Awaiting parts with a note and estimate.", "screens": ["C-INV-01/02 in provider context (no P- screen yet, Docs/11 open point 2)"], "full_portal": "yes (PP9)", "compact": "no (deferred)" },
-      { "id": "PRQ-07", "chapter": "Ch.7 The repair", "need": "Status changes in progress → awaiting parts → ready for pickup → completed with an outcome (service system, task, parts used, costs, warranty, invoice photo, internal note); completion creates the service record, evidence and the review invitation; walk-in job log.", "screens": ["P-REQ-02", "P-CAL-01", "job log screen (missing, Docs/11 open point 1)"], "full_portal": "yes", "compact": "proposed (PRV-OQ-02: a minimal 'Update job / Close job' in the Workshop PWA, because without completion there is no verified-visit review and no evidence)" },
-      { "id": "PRQ-08", "chapter": "Ch.8 Reviews", "need": "Review inbox; AI-drafted reply that the owner edits and publishes (recorded as AI-assisted and edited); hard-review handling; 'Do you recognise this customer?' approval with Yes / No / Not sure within 7 days; flag and mediation.", "screens": ["P-REV-01", "P-REV-02", "P-REV-04"], "full_portal": "yes", "compact": "compact (inbox, reply with AI draft, approval answer; flag and mediation open the full portal)" },
-      { "id": "PRQ-09", "chapter": "Ch.8 + Docs/22 W-PUB-05", "need": "Reply to customers' comments on the shop's showcases and posts, shown with the Shop badge.", "screens": ["W-PUB-05 (consumer side)", "no provider screen yet"], "full_portal": "yes (in P-PORT-01 and a comments tab of P-REV-01)", "compact": "compact (needs PRV-BR-01..03)" },
-      { "id": "PRQ-10", "chapter": "Ch.8 The showcase", "need": "Create a before/after showcase from a job: upload photos, AI composer pairs, captions, tags and flags plates; owner edits; customer consent request; goes live after consent and moderation; optional feed post.", "screens": ["P-PORT-01", "P-PORT-02", "P-PORT-03", "W-REV-02 (customer side, built in pwa P11)"], "full_portal": "yes", "compact": "compact (camera capture, AI compose, blur decision, consent request, publish, list with consent status)" },
-      { "id": "PRQ-11", "chapter": "Ch.8 Insights, vendor review", "need": "Skill heatmap, capability detail, improvement plan, map and search visibility; rate the parts vendor after an inquiry.", "screens": ["P-INS-01..04", "C-REV-04 in provider context"], "full_portal": "yes", "compact": "no (link)" }
+      { "id": "PRQ-01", "chapter": "Ch.1 Signing up", "need": "Sign up, choose Service provider, accept terms, grant provider_analytics_ai_use for the organization; an existing car owner adds a business.", "web_ui": "PP1, PP3", "workshop_pwa": "PW1, PW2" },
+      { "id": "PRQ-02", "chapter": "Ch.2 Business profile", "need": "Eight-step wizard with save and continue later, pin check, capabilities as Offered, AI suggestions the owner approves, portfolio upload with plate blur and consent per job, hours and capacity, licence upload, AI preview, publish with Verification pending.", "web_ui": "PP3, PP4", "workshop_pwa": "PW2 (critical inputs only: name, type, phone, location, one service system, one brand, hours, optional licence photo)" },
+      { "id": "PRQ-03", "chapter": "Ch.3 Daily login", "need": "One-time code sign-in, personal/business switch, dashboard, no-permission screen.", "web_ui": "PP1, PP2, PP5", "workshop_pwa": "PW1" },
+      { "id": "PRQ-04", "chapter": "Ch.4 Growing the profile", "need": "Team, certifications, time off, review invitations, AI profile suggestions, badges, trial banner, public preview.", "web_ui": "PP6, PP7, PP10, PP11, PP12", "workshop_pwa": "web" },
+      { "id": "PRQ-05", "chapter": "Ch.5 Sara's request", "need": "Push; list and detail with the pre-visit report; AI slot suggestion; accept, propose, decline with reason, ask for information; private customer note.", "web_ui": "PP5", "workshop_pwa": "PW3 (no customer notes; a 'load that day' line instead of the calendar)" },
+      { "id": "PRQ-06", "chapter": "Ch.6 The part", "need": "Part search in the vehicle context, stock inquiry, trade access; Awaiting parts with note and estimate.", "web_ui": "PX1 (blocked); Awaiting parts in PP5", "workshop_pwa": "Awaiting parts in PW4; the rest NX-05" },
+      { "id": "PRQ-07", "chapter": "Ch.7 The repair", "need": "Status changes to completed with an outcome; completion creates the service record, evidence and review invitation; walk-in job log.", "web_ui": "PP5; job log PX1 (blocked)", "workshop_pwa": "PW4" },
+      { "id": "PRQ-08", "chapter": "Ch.8 Reviews", "need": "Inbox, AI-drafted reply edited and published by a person, approval answer within 7 days, flag and mediation.", "web_ui": "PP9, PP10", "workshop_pwa": "PW5 (flag and mediation: web)" },
+      { "id": "PRQ-09", "chapter": "Ch.8 + Docs/22 W-PUB-05", "need": "Reply to customers' comments as the shop, with the Shop badge.", "web_ui": "PP9", "workshop_pwa": "PW6" },
+      { "id": "PRQ-10", "chapter": "Ch.8 The showcase", "need": "Before/after showcase from a completed job: photos, AI composer, plate blur, customer consent, live after consent and moderation.", "web_ui": "PP8", "workshop_pwa": "PW7" },
+      { "id": "PRQ-11", "chapter": "Ch.8 Insights, vendor review", "need": "Skill heatmap, capability detail, improvement plan, map and search visibility; rate the parts vendor.", "web_ui": "PP11; vendor review PX1 (blocked)", "workshop_pwa": "web" }
     ]
   },
 
   "global_decisions": [
     {
       "id": "PRV-GD-01",
-      "status": "proposed",
-      "decision": "One business app, two surfaces. The full provider portal and the compact Workshop PWA are route groups of the same Next.js business app at web.<DOMAIN> (WP20), with the same BFF and OAuth client cp-web-portal, the same generated contract, the same design system and i18n. The Workshop PWA lives under /<locale>/workshop/ with its own web app manifest (scope /<locale>/workshop/, start_url /<locale>/workshop/today, name 'CarPal Workshop' / «کارپال تعمیرگاه»), so it installs as its own home-screen app on the phone.",
-      "why": "SEC-WEB-5 keeps {org} operations out of the consumer BFF, and Docs/90 line 124 keeps business notifications out of the consumer app. One app means components built once (request card, pre-visit report, reply editor, showcase composer) serve both surfaces.",
-      "alternative": "PRV-OQ-01 (host it inside the consumer PWA like the fleet driver view /<locale>/drive)."
+      "status": "decided 2026-11-16",
+      "decision": "Two deliverables in two apps. D1, the provider Web UI, is the route group /<locale>/provider of the business web app at web.<DOMAIN> (frontend/, client cp-web-portal, portal BFF). D2, the Workshop PWA, is the route group /<locale>/provider of the consumer PWA at pwa.<DOMAIN> (pwa/, client cp-web-consumer, consumer BFF). The Workshop PWA has its own web app manifest (id and scope /<locale>/provider/, start_url /<locale>/provider/today) so it can be added to the home screen as its own app.",
+      "why": "Owner decision PRV-OQ-01. The consumer PWA already has the BFF, hosted sign-in, upload kit, map, service worker and push, and Reza gets one sign-in for his family car and his shop (Docs/11 Ch.3).",
+      "consequences": [
+        "The consumer BFF forwards a fixed list of provider operations (PRV-BR-08). Docs/40 SEC-WEB-5 and the header comment of pwa/src/server/bff/allowlist.ts change.",
+        "Business pushes arrive in the consumer PWA's service worker. Docs/90 line 124 and pwa DI-16 change (PRV-DI-06, PRV-BR-09).",
+        "'Open in Web UI' crosses origins: new tab, separate sign-in.",
+        "The camera is allowed on the consumer origin (SEC-WEB-4), so no workaround is needed."
+      ],
+      "checked": "pwa/src/server/bff/allowlist.ts refuses every /v1/orgs/{org_id} route except fleet driver routes today. backend/libs/auth has no rule that binds organization operations to a client; tokens carry no roles (SEC-AU-3). The backend confirms this in PRV-BR-08."
     },
     {
       "id": "PRV-GD-02",
-      "status": "proposed",
-      "decision": "The Workshop PWA does three jobs only: (1) review and answer appointment requests, (2) reply to customers (review replies, review approval answers, comments on the shop's showcases and posts), (3) post before/after photos. Plus what those need: sign-in, business picker, Today screen, notifications and web push, language, theme. Every other task shows as 'Open in full portal' (same session, same tab) and is never re-implemented in the compact app.",
-      "why": "Owner scope 2026-11-15. A short list keeps the app small enough for low-end phones and quick to learn."
+      "status": "decided 2026-11-16",
+      "decision": "The Workshop PWA does: (1) compact onboarding, (2) answer appointment requests, (3) update and close jobs, (4) reply to customers (review replies, approval answers, comments on the shop's content), (5) post before/after photos. Plus sign-in, business switch, Today, notifications and push, language, theme. Every other task is a link 'Open in Web UI' and is not re-implemented.",
+      "why": "Owner scope of 2026-11-15 plus PRV-OQ-02 and PRV-OQ-03."
     },
     {
       "id": "PRV-GD-03",
-      "status": "proposed",
-      "decision": "The server decides everything. Both surfaces show actions from Appointment.allowed_transitions, the caller's role (P* sees, P+ publishes replies and showcases, per Docs/40 sec lines) and plan entitlements (ENT(ai_tools_enabled) for AI drafts). The client never keeps its own copy of a rule; a 403 becomes 'Ask the owner' for staff roles.",
-      "why": "Same rule as the fleet ?fleet option in frontend/README.md: the compact surface only hides pages."
+      "status": "decided",
+      "decision": "The server decides access. Both deliverables show actions from Appointment.allowed_transitions, the caller's role (P* or P+ as each operation's sec line says) and plan entitlements. No rule is copied to the client. A 403 for a staff member shows 'Ask the owner'.",
+      "why": "Same rule as the fleet option in frontend/README.md."
     },
     {
       "id": "PRV-GD-04",
-      "status": "proposed",
-      "decision": "Phone-first budgets for the Workshop PWA: first-load JS for /workshop routes ≤ 120 KB gzip, LCP ≤ 2.5 s on a mid-range phone over throttled 4G, Sunlight theme offered on first run and followed automatically with prefers-contrast: more, 48 px targets, one primary action per screen, no maps loaded (a static address line instead). Photos are resized in the browser to ≤ 2048 px long side and re-encoded (WebP or JPEG, ≈ ≤ 600 KB) before media.upload_init; uploads resume through the media.upload_* steps while the page is open.",
-      "why": "Docs/carpal-design-system: workshop yards, sun, greasy hands, mobile data."
+      "status": "decided",
+      "decision": "Phone budgets for the Workshop PWA: the /provider routes add at most 120 KB gzip of route JavaScript on top of the PWA's shared chunks, LCP ≤ 2.5 s on a mid-range phone over throttled 4G, 48 px targets, one primary action per screen, Sunlight theme offered on first run. The map loads only on the location step of the compact onboarding. Photos are resized in the browser to ≤ 2048 px on the long side (about ≤ 600 KB) before media.upload_init.",
+      "why": "Docs/carpal-design-system: workshop yards, sun, greasy hands, mobile data. Measured in FT1b."
     },
     {
       "id": "PRV-GD-05",
-      "status": "proposed",
-      "decision": "Camera through <input type=file accept=image/* capture=environment>, not getUserMedia, so SEC-WEB-4 (camera allowed only on the consumer origin) needs no change. The service worker caches the app shell only, never API answers (they carry PII: pre-visit reports, customer contact), and is wiped at sign-out, as in pwa P12.",
-      "why": "Keeps the business origin's security headers as the contract states them."
+      "status": "decided",
+      "decision": "Provider API answers are never cached by the service worker or kept in Web Storage (they carry customer data); the worker's shell cache is wiped at sign-out, as pwa P12 does. Photos are taken through the upload kit's file input with capture.",
+      "why": "pwa P12 rules; PRV-OQ-05."
     },
     {
       "id": "PRV-GD-06",
-      "status": "proposed",
-      "decision": "AI output is always a labelled draft (AI suggestion chip). The owner edits and publishes; nothing AI-written is sent or published by the client without a human tap. When AI is off (flag or plan), the same screens work with empty editors and the category picker.",
-      "why": "Docs/11 Ch.2 and Ch.8 ('AI suggests, provider approves'), Docs/40 ai.* descriptions."
+      "status": "decided",
+      "decision": "AI output is always a labelled draft. A person edits and publishes; the client never sends or publishes AI text without a tap. With AI off (flag, plan or consent) the same screens work with empty editors.",
+      "why": "Docs/11 Ch.2 and Ch.8."
+    },
+    {
+      "id": "PRV-GD-07",
+      "status": "decided 2026-11-16",
+      "decision": "Roles are those of Docs/40 §0.5: provider_owner, provider_manager (P+), provider_staff (P*). The team page offers these three. A technician's 'assigned jobs only' is a 'My jobs' filter built from appointment participants.",
+      "why": "Owner decision PRV-DI-03."
+    },
+    {
+      "id": "PRV-GD-08",
+      "status": "decided",
+      "decision": "Components used by both apps live in a new package shared/business-ui (linked like @carpal/i18n): request card, pre-visit report, answer sheets, job status and close form, review card, reply editor with AI draft, approval card, comment thread, showcase composer steps, status chips. They take data and callbacks as props and import no BFF client, router or app shell. Each app wraps them in its own pages. The package is created in PW1 and grows in PW3-PW7; the Web UI stages reuse it.",
+      "why": "The two deliverables are two apps (PRV-GD-01); this is the default of PU-OQ-01."
+    },
+    {
+      "id": "PRV-GD-09",
+      "status": "decided 2026-11-16",
+      "decision": "Backend work is not done in this plan. Requests are listed in backend_requests with a fallback and handed to backend/BR-update-plan.json (intake_candidates_provider_plan). A frontend stage names the requests it needs and either waits or builds the fallback.",
+      "why": "Owner decision in session."
+    },
+    {
+      "id": "PRV-GD-10",
+      "status": "decided 2026-11-16",
+      "decision": "Stage checks only until the end: typecheck, lint, unit and component tests, and a manual smoke of the stage's path against the dev backend. Playwright journeys, axe, performance and security tests of both deliverables run together in FT1a and FT1b.",
+      "why": "Owner: the plan (PWA and Web UI) is tested together at the final stage."
+    },
+    {
+      "id": "PRV-GD-11",
+      "status": "decided 2026-11-16",
+      "decision": "The layout follows the mockup. Parts-related areas that the pilot does not deliver stay where the mockup has them, greyed out and disabled, with the label 'Coming soon': the Web UI navigation entries Parts and Job log, and any 'Find a part', 'Ask about this part' or 'Request trade access' action on a request or job page. A disabled entry has aria-disabled, is skipped by the keyboard, opens no page and calls no operation. Typing the parts used when closing a job is not part of this: it stays enabled.",
+      "why": "Owner, 2026-11-16: do not remove, only disable. The pilot shows where the parts flow will be without PX1."
     }
   ],
 
+  "conventions": {
+    "stage_size": "One stage = one session. Load is rated small, medium or full. A full stage has a split_point: if the session runs long, stop there, report, and continue as '<id>b' in the next session.",
+    "context_rule": "Read only the stage's context_to_read. Use the generated operation map of shared/api-contracts instead of re-reading Docs/40 blocks. Copy the pattern of the first finished screen of a kind.",
+    "stage_checks": "pnpm typecheck, pnpm lint, pnpm test in every package the stage touched (pwa/, frontend business app, shared/business-ui); manual smoke in FA and EN at 360 px for PW stages and at 1280 px for PP stages. Use Node 24.",
+    "report": "Add to progress_log: date, stage, what was built, deviations, backend requests met or replaced by a fallback, notes for the next stage.",
+    "folders": {
+      "workshop_pwa": "pwa/src/app/[locale]/provider/..., pwa/src/features/provider/",
+      "web_ui": "the business web app package in frontend/ (created in PP1; provider pages under /<locale>/provider)",
+      "shared": "shared/business-ui/"
+    }
+  },
+
   "surfaces": {
-    "full_portal": {
-      "host_and_routes": "web.<DOMAIN>/<locale>/provider/... (role-based routing beside vendor and fleet sections)",
-      "users": "Owner, manager, bookings/service advisor and technician roles of a provider organization (WP0 permission matrix; Docs/11 open point 4)",
-      "layout": "Desktop first (≥ 1200 px: left navigation, master-detail), usable down to phone width for onboarding and occasional tasks",
-      "sections": "Docs/90 §6.1: Auth & Onboarding, Dashboard, Requests, Calendar, Profile, Portfolio, Reviews, Insights, Team, Settings; plus the missing screens this plan adds: Job log (P-JOB-01), Parts search in provider context (P-PART-01), Trade accounts (P-PART-02)",
-      "install": "Installable as a PWA with web push (Docs/02 WP20 acceptance)"
+    "web_ui": {
+      "host_and_routes": "web.<DOMAIN>/<locale>/provider/...",
+      "users": "provider_owner, provider_manager, provider_staff",
+      "layout": "Desktop first (≥ 1200 px: left navigation, master-detail), usable at phone width",
+      "sections": "Docs/90 §6.1: Onboarding, Dashboard, Requests, Calendar, Profile, Portfolio, Reviews, Insights, Team, Settings. Job log, parts search and trade accounts are blocked (PX1).",
+      "install": "Installable as a PWA with web push (Docs/02 WP20), stage PP13"
     },
     "workshop_pwa": {
       "name": "CarPal Workshop / «کارپال تعمیرگاه»",
-      "host_and_routes": "web.<DOMAIN>/<locale>/workshop/... (own manifest scope)",
-      "users": "Any member of a provider organization (P*); publishing replies and showcases needs P+ as the contract says",
-      "navigation": "Bottom tab bar: Today · Requests · Replies · Photos; top bar: business name (picker when the user has more than one business), notifications bell, account menu (language, theme, notifications, Open full portal, Sign out)",
+      "host_and_routes": "pwa.<DOMAIN>/<locale>/provider/... (start, today, requests, requests/<id>, jobs/<id>, replies/reviews/<id>, replies/approvals/<id>, replies/comments/<id>, photos, photos/new, photos/<id>)",
+      "users": "Any member of a provider organization; publishing replies and showcases needs P+",
+      "navigation": "Bottom tab bar: Today · Requests · Replies · Photos. Top bar: business name (switch to another business or to the personal app), notifications bell, menu (language, theme, notifications, Open in Web UI, Sign out).",
       "screens": [
-        { "id": "PW-AUTH-01", "name": "Sign in", "mirrors": "S-AUTH-02", "content": "Mobile number, one-time code (autocomplete one-time-code), passkey when the browser supports it, 'Keep me signed in on this phone'. No sign-up form: 'New business? Set up in the full portal'." },
-        { "id": "PW-SYS-01", "name": "Install and notifications", "mirrors": "Docs/22 §2.5 PWA install", "content": "First run: business picker (provider organizations only), Sunlight theme offer, Add to Home Screen (iOS: Share → Add to Home Screen steps, needed for iOS web push), 'Get new requests on this phone' push permission after the user taps it." },
-        { "id": "PW-HOME-01", "name": "Today", "mirrors": "P-DASH-01 (reduced)", "content": "Counters for new requests (with oldest age and average response time), replies waiting (reviews without reply, approval requests with days left, unanswered comments), photos waiting for customer approval; today's confirmed appointments as a short list; Verification pending banner; safety-critical requests first." },
-        { "id": "PW-REQ-01", "name": "Requests", "mirrors": "P-REQ-01", "content": "Segments New · Proposed · Upcoming; cards with vehicle, problem line, urgency, preferred time, request age, safety mark; pull to refresh." },
-        { "id": "PW-REQ-02", "name": "Request detail", "mirrors": "P-REQ-02", "content": "Customer display name and 'first visit'; vehicle and mileage; AI pre-visit summary (labelled) or 'Triage: not provided'; photos and video; shared history or 'Not shared by customer'; preferred times; AI slot suggestion with the day's load ('2 of 2 lifts busy 09:00-12:00'); coverage mismatch note; sticky action bar Accept · Propose time · More (Decline, Ask for information)." },
-        { "id": "PW-REQ-03", "name": "Answer sheets", "mirrors": "P-REQ-02 response actions", "content": "Accept: pick one of the customer's windows or a time, duration (AI suggestion prefilled). Propose time: date and time chips for the next 14 days, note to the customer. Decline: reason chips (fully booked, don't work on this car, don't offer this service, other + text). Ask for information: message to the customer (customer-visible note), status stays provider_reviewing." },
-        { "id": "PW-RPL-01", "name": "Replies", "mirrors": "P-REV-01 + comments", "content": "Tabs Reviews · Comments · Approvals with counts; review cards with stars, confirmation label (Verified visit / Approved by the business and CarPal), excerpt, 'No reply yet'; comment cards with the showcase thumbnail; approval cards with days left." },
-        { "id": "PW-RPL-02", "name": "Reply to a review", "mirrors": "P-REV-02", "content": "Full review and context; AI draft (labelled, tone chips Friendly · Formal · Brief) in an editable box; risk note from the AI ('No liability or legal sensitivity detected'); Publish reply; Save draft; 'Flag or request mediation' opens the full portal." },
-        { "id": "PW-RPL-03", "name": "Reply to a comment", "mirrors": "W-PUB-05 comments (shop side)", "content": "The showcase or post card, the comment thread, a reply box that posts as the shop (Shop badge), Report comment." },
-        { "id": "PW-RPL-04", "name": "Approval request", "mirrors": "P-REV-04", "content": "'Do you recognise this customer?' with display name, date and kind of work only; Yes, this was our customer · I don't recognise this customer · Not sure (ask CarPal); note visible to CarPal only; days left; rule text 'A low rating is never a reason to say no'." },
-        { "id": "PW-PHO-01", "name": "Photos", "mirrors": "P-PORT-01 (reduced)", "content": "Grid of showcases with status (Draft, Waiting for customer, Being reviewed, Live, Declined), New before/after button, 'Jobs ready for photos' (recently completed appointments)." },
-        { "id": "PW-PHO-02", "name": "New before/after", "mirrors": "P-PORT-02 steps 1-2", "content": "Step 1 pick the job (completed appointment; vehicle and service filled in). Step 2 Before photos and After photos, each from camera or gallery, up to 10, upload progress per photo." },
-        { "id": "PW-PHO-03", "name": "Check and caption", "mirrors": "P-PORT-02 AI Showroom", "content": "AI pairs before/after (swap), flags plates and faces with Blur (default on) and Keep, caption draft and tags (vehicle, system, task) as editable chips, cover photo choice." },
-        { "id": "PW-PHO-04", "name": "Send for customer approval", "mirrors": "P-PORT-02 publish", "content": "Preview as the customer will see it; 'Ask Sara M. to approve' (provider.portfolio_consent_request); optional 'Also share to the feed' when the community flag is on; result screen with the status and what happens next." },
-        { "id": "PW-JOB-01", "name": "Update job / Close job (proposed, PRV-OQ-02)", "mirrors": "P-REQ-02 status actions", "content": "Status buttons from allowed_transitions (In progress, Awaiting parts with note and estimate, Ready for pickup) and Close job: service system and task prefilled, final cost, warranty note, invoice photo. Parts used and cost breakdown stay in the full portal." }
+        { "id": "PW-ONB-01", "stage": "PW2", "name": "Start a business", "content": "Entry from W-ONB-01 'Service provider' and from the account menu. Business name, type, phone, terms, AI analysis consent (provider_analytics_ai_use, optional)." },
+        { "id": "PW-ONB-02", "stage": "PW2", "name": "Where is the workshop", "content": "'Use my location' or a pin on the map, typed address, pin check warning, show exact address or area only." },
+        { "id": "PW-ONB-03", "stage": "PW2", "name": "What you repair", "content": "Service systems as chips (at least one), brands as chips with search (at least one). Models, series and tasks are added later in the Web UI." },
+        { "id": "PW-ONB-04", "stage": "PW2", "name": "Hours and go live", "content": "Working days and hours with one preset, optional licence photo, summary, Publish. Result: live with 'Verification pending' and a list of what to finish later." },
+        { "id": "PW-HOME-01", "stage": "PW1", "name": "Today", "mirrors": "P-DASH-01 (reduced)", "content": "Counters: new requests (oldest age, average response time), replies waiting, photos waiting for the customer. Today's jobs. Safety-critical requests first. 'Finish your profile' card." },
+        { "id": "PW-REQ-01", "stage": "PW3", "name": "Requests", "mirrors": "P-REQ-01", "content": "Segments New · Proposed · Upcoming; cards with vehicle, problem, urgency, preferred time, age, safety mark; 'My jobs' filter." },
+        { "id": "PW-REQ-02", "stage": "PW3", "name": "Request detail", "mirrors": "P-REQ-02", "content": "Customer display name and 'first visit'; vehicle and mileage; AI pre-visit summary or 'Triage: not provided'; photos and video; shared history or 'Not shared by customer'; preferred times; AI slot suggestion with the day's load; coverage mismatch note; customer-visible messages; actions Accept · Propose time · More." },
+        { "id": "PW-REQ-03", "stage": "PW3", "name": "Answer sheets", "content": "Accept (time, duration), Propose time (chips for 14 days, note), Decline (reason chips, note), Ask for information (message to the customer; status stays provider_reviewing)." },
+        { "id": "PW-JOB-01", "stage": "PW4", "name": "Update job / Close job", "mirrors": "P-REQ-02 status actions", "content": "Status buttons from allowed_transitions: In progress, Awaiting parts (note, estimated completion, cost range), Ready for pickup. Close job: service system and task prefilled, labour cost, parts cost, optional part lines (name, part number, quantity), warranty note, invoice photo, internal note." },
+        { "id": "PW-RPL-01", "stage": "PW5", "name": "Replies", "mirrors": "P-REV-01", "content": "Tabs Reviews · Comments · Approvals with counts." },
+        { "id": "PW-RPL-02", "stage": "PW5", "name": "Reply to a review", "mirrors": "P-REV-02", "content": "Review and context; labelled AI draft with tone chips in an editable box; AI risk note; Publish reply; Save draft; 'Flag or request mediation' opens the Web UI." },
+        { "id": "PW-RPL-04", "stage": "PW5", "name": "Approval request", "mirrors": "P-REV-04", "content": "'Do you recognise this customer?' with display name, date and kind of work only; the answers the contract allows; note for CarPal; days left; 'A low rating is never a reason to say no'." },
+        { "id": "PW-RPL-03", "stage": "PW6", "name": "Reply to a comment", "mirrors": "W-PUB-05 (shop side)", "content": "Showcase or post card, the thread, a reply box that posts as the shop, Report comment." },
+        { "id": "PW-PHO-01", "stage": "PW7", "name": "Photos", "mirrors": "P-PORT-01 (reduced)", "content": "Showcases with status (Draft, Waiting for customer, Being reviewed, Live, Declined); 'Jobs ready for photos'." },
+        { "id": "PW-PHO-02", "stage": "PW7", "name": "New before/after", "content": "Pick a completed appointment; Before and After photos from camera or gallery, up to 10, progress per photo." },
+        { "id": "PW-PHO-03", "stage": "PW7", "name": "Check and caption", "content": "AI pairs, plate and face flags with Blur (default) or Keep, caption draft and tags as editable chips, cover photo." },
+        { "id": "PW-PHO-04", "stage": "PW7", "name": "Send for customer approval", "content": "Preview; ask the customer to approve; optional share to the feed; result with the next step." },
+        { "id": "PW-SYS-01", "stage": "PW8", "name": "Install and notifications", "content": "Add to Home Screen (with iOS steps), 'Get new requests on this phone' after a tap, Sunlight theme offer." }
       ],
       "push_and_deep_links": [
-        "New appointment request → /workshop/requests/<id>",
-        "Customer accepted / countered a proposed time → /workshop/requests/<id>",
-        "New review → /workshop/replies/reviews/<id>",
-        "Review approval request (and reminders at day 3 and 6) → /workshop/replies/approvals/<id>",
-        "New comment on a showcase or post → /workshop/replies/comments/<id> (needs PRV-BR-04)",
-        "Customer approved / declined showcase photos → /workshop/photos/<id>"
+        "New appointment request → /provider/requests/<id>",
+        "Customer accepted or countered a proposed time, customer message → /provider/requests/<id>",
+        "New review → /provider/replies/reviews/<id>",
+        "Review approval request and its reminders (day 3, day 6) → /provider/replies/approvals/<id>",
+        "New comment on the shop's content → /provider/replies/comments/<id> (PRV-BR-04)",
+        "Customer approved or declined showcase photos → /provider/photos/<id>"
       ],
       "not_in_scope": [
-        "Sign-up, onboarding wizard, profile editors, locations, capabilities, certifications (full portal)",
-        "Calendar grid, availability rules, time off (full portal)",
-        "Customer notes, participants, parts search, stock inquiries, trade accounts, job logs (full portal)",
-        "Review invitations, review analytics, flag and mediation, insights, AI profile suggestions (full portal)",
-        "Team, plan, settings other than language, theme and notifications (full portal)",
-        "Offline queue of photos (PRV-OQ-05)"
+        "Models, series, tasks, capabilities, certifications, portfolio import, AI profile preview (Web UI)",
+        "Calendar grid, availability rules, time off (Web UI)",
+        "Customer notes, participants, parts search, stock inquiries, trade accounts, job logs",
+        "Review invitations, review analytics, flag and mediation, insights, AI profile suggestions (Web UI)",
+        "Team, plan, consents and settings other than language, theme and notifications (Web UI)"
       ]
     }
   },
 
-  "build_order": {
-    "recommended": ["PP1", "PP2", "PW1", "PW2", "PW3", "PW4", "PW5", "PP3", "PP6", "PP5", "PP4", "PP7", "PP8", "PP9", "PP10"],
-    "why": "PP1 and PP2 are needed by every provider (no shop can exist without onboarding). The Workshop PWA then delivers the daily loop (request → reply → photos) to phone-only workshops early. Its shared components (request card, pre-visit report, reply editor, showcase composer, upload kit) are built in PW stages inside src/features/provider/ and get their desktop layouts in PP3, PP5 and PP6.",
-    "pilot_blockers_outside_this_plan": [
-      "Web push sender in the backend (pwa DI-72 / OQ-26): without it the Workshop PWA falls back to polling while open, email, and SMS where enabled; the 'phone buzzes' promise of Docs/11 Ch.5 is not met.",
-      "PRV-BR-01..03 for comment replies as the shop (PW3 ships reviews and approvals without them, comments when they land)."
+  "backend_requests": {
+    "note": "Handed over to backend/BR-update-plan.json (action_plan.intake_candidates_provider_plan) on 2026-11-16. Status here follows the backend plan. 'needed_by' is the first stage that needs the request; 'fallback' is what that stage builds if the request is not done.",
+    "items": [
+      {
+        "id": "PRV-BR-08", "group": "A — before PW1", "priority": "P0", "status": "handed_over", "needed_by": "PW1",
+        "request": "Docs/40 SEC-WEB-5: the consumer BFF may also forward the provider operations of the Workshop PWA, as a named list of operation ids (not a path prefix): onboarding.list/update/accept_terms; org.location_create/update, org.location_pin_check; org.consents_list/grant; org.verification_submit; subscription.org_get; provider.profile_get/put, provider.publish, provider.service_category_create, provider.coverage_create, availability rule list/create; provider.appointments_list/get/transition, pre_visit.provider_get, provider.notes_list, provider.note_create, provider.calendar, provider.insights_get; reviews.org_list/get, review_responses.*, review_approvals.list/answer; provider.portfolio_list/get/create/update/consent_request/publish, media.redaction_decide; ai.review_response_draft, ai.showcase_compose, ai.appointment_suggestions; notifications with organization_id; the organization comment inbox of PRV-BR-02. The backend confirms with a test that these operations accept a cp-web-consumer token and that every other {org} operation is still refused at the consumer BFF.",
+        "why": "PRV-GD-01. Today the consumer allowlist refuses all /v1/orgs/{org_id} routes except fleet driver routes.",
+        "fallback": "None on the frontend except the allowlist code itself, which PW1 writes in pwa/. If the backend refuses cp-web-consumer for these operations, PW1 stops and the owner is asked."
+      },
+      {
+        "id": "PRV-BR-10", "group": "A — before PP1", "priority": "P0", "status": "handed_over", "needed_by": "PP1",
+        "request": "cp-web-portal as a working BFF client: DPoP binding and private_key_jwt like cp-web-consumer (backend/libs/auth CLIENTS still says binding 'mtls', backend NI-08), a registered key in CARPAL_OAUTH_CLIENT_JWKS, redirect URIs for web.<DOMAIN> and local development, hosted sign-in under /id of the portal origin.",
+        "why": "The portal BFF cannot sign in in strict mode without it.",
+        "fallback": "PP1 builds and tests against lite mode (CARPAL_STRICT_AUTH=0); strict sign-in is checked in FT1a."
+      },
+      {
+        "id": "PRV-BR-06", "group": "B — push", "priority": "P0 for the pilot", "status": "handed_over", "needed_by": "PW8, PP13",
+        "request": "Web push sender (RFC 8030/8291/8292) with a VAPID key pair (pwa DI-72, OQ-26); the public key is set for pwa.<DOMAIN> and for web.<DOMAIN>.",
+        "why": "Docs/11 Ch.5 'the phone buzzes'.",
+        "fallback": "Polling while the app is open, email, and SMS where enabled. Push controls stay hidden while no VAPID key is set, as today."
+      },
+      {
+        "id": "PRV-BR-09", "group": "B — push", "priority": "P0 for the pilot", "status": "handed_over", "needed_by": "PW8, PP13",
+        "request": "Push payload and tokens: (a) the payload carries organization_context_id and a target (type and id) besides notification_id and template_key (pwa DI-71); (b) web tokens of the consumer PWA and of the portal can be told apart (pwa DI-16), so a business push is not sent twice to one phone and a personal push is not sent to a portal-only install; (c) notification preferences can turn business pushes on and off per device.",
+        "why": "With PRV-GD-01 the consumer PWA's worker receives business pushes and must open /provider/... for them.",
+        "fallback": "A business push opens the notifications list of the business, where the row links to the page."
+      },
+      {
+        "id": "PRV-BR-04", "group": "B — push", "priority": "P1", "status": "handed_over", "needed_by": "PW6, PW8",
+        "request": "Notification event comment.created on the organization's content (to P+ members, respecting preferences); confirm that appointment.request_received, appointment.customer_message, review.received, review.approval_needed, review.approval_reminder and the showcase consent answers reach the provider members with the targets of this plan.",
+        "why": "Module L does not list comments on the shop's content.",
+        "fallback": "The Comments tab shows a count on Today; no push."
+      },
+      {
+        "id": "PRV-BR-01", "group": "C — comments", "priority": "P1", "status": "handed_over", "needed_by": "PW6, PP9",
+        "request": "comments.create accepts as_organization_id (the caller is an active P*/V* member; allowed on targets owned by that organization and on questions and answers), and Comment carries author_organization: PublicOrgCard | null.",
+        "why": "Docs/22 W-PUB-05 promises 'provider replies with Shop badge'; comments.create is USR only, so a reply appears under Reza's personal name.",
+        "fallback": "PW6 and the Comments tab of PP9 are not built until this is done."
+      },
+      {
+        "id": "PRV-BR-02", "group": "C — comments", "priority": "P1", "status": "handed_over", "needed_by": "PW6, PP9",
+        "request": "GET {org}/comments (ORG(P*, V*)): comments on the organization's posts and portfolio items, newest first, with a target summary, replied_by_org and filters unreplied and target.",
+        "why": "comments.list needs a target id; the shop cannot see new comments.",
+        "fallback": "As PRV-BR-01."
+      },
+      {
+        "id": "PRV-BR-03", "group": "C — comments", "priority": "P2", "status": "handed_over", "needed_by": "PW6",
+        "request": "One level of threading: parent_comment_id on create and in Comment.",
+        "why": "A shop reply cannot point at the comment it answers.",
+        "fallback": "The reply is posted on the same target and starts with the customer's display name."
+      },
+      {
+        "id": "PRV-BR-05", "group": "D — small", "priority": "P1", "status": "handed_over", "needed_by": "PW3",
+        "request": "Structured decline: the provider-side transition to cancelled takes decline_reason_code ('fully_booked' | 'vehicle_not_covered' | 'service_not_offered' | 'other') and an optional note shown to the customer.",
+        "why": "Docs/11 Ch.5 'Decline requires a reason'; Docs/40 only says reason 'declined'.",
+        "fallback": "The chosen reason is written as text into a customer-visible note before the transition."
+      },
+      {
+        "id": "PU-BR-03", "group": "D — small", "priority": "P2", "status": "accepted_intake (public UI plan)", "needed_by": "PP12",
+        "request": "GET {org}/subscription/change-requests: the organization's own plan requests.",
+        "why": "The owner cannot see what happened to a plan request.",
+        "fallback": "The plan page shows 'Request sent' without a history."
+      },
+      {
+        "id": "PU-BR-04 (rest)", "group": "D — small", "priority": "P2", "status": "accepted_intake (public UI plan)", "needed_by": "PP12",
+        "request": "Decline a plan request with a notice to the requester.",
+        "why": "See frontend/public-ui-dev-plan.json.",
+        "fallback": "None needed in the provider pages."
+      }
+    ],
+    "moved_to_next_phase": [
+      { "id": "PRV-BR-07", "request": "Showcase consent request for a job without a CarPal appointment (email or SMS link).", "see": "next_phase_plan NX-01" }
+    ],
+    "existing_operations_now_used": [
+      "org.consents_confirm for organization consents with reconsent_required (backend S15b) → PP12",
+      "support.ticket_create with organization_id (backend S24) → PP12 Help page",
+      "review.approval_reminder with days_left (backend S25a) → PW5, PP9"
     ]
+  },
+
+  "build_order": {
+    "recommended": ["PW1", "PW2", "PW3", "PW4", "PW5", "PW7", "PW6", "PW8", "PP1", "PP2", "PP3", "PP4", "PP5", "PP6", "PP7", "PP8", "PP9", "PP10", "PP11", "PP12", "PP13", "FT1a", "FT1b"],
+    "why": "The Workshop PWA sits on finished PWA infrastructure and needs only PRV-BR-08, so phone-only workshops can be shown a working app early; its stages also create the shared components. The Web UI then starts with its own foundation and reuses them. PW6 comes after PW7 because it waits for the comment requests. The two tracks are independent, so PP1-PP2 may be run earlier if PRV-BR-08 is late.",
+    "not_in_pilot": ["PX1 (slow delivery, after the vendor plan is settled, VND-BLK-01); its layout places are greyed out in the pilot (PRV-GD-11)"],
+    "backend_order": "Group A before PW1 and PP1; group D before PW3 and PP12 if possible; group B before PW8; group C before PW6."
   },
 
   "stages": [
     {
-      "id": "PP1",
-      "surface": "both",
-      "title": "Business app foundation: package, cp-web-portal BFF, generated {org}/{prv} contract, design system, i18n, shell, org switcher, role gating",
-      "status": "proposed",
-      "depends_on": [],
-      "goal": "An empty but correct business app in frontend/ (provider-portal route group first) that builds, lints, tests, signs in through cp-web-portal and forwards {org}, {prv}, {pub} and {me} operations.",
-      "tasks": [
-        "Package root copied from the admin console's AC1 setup (Node 24, pnpm, strict TS, eslint, vitest, Playwright); design system synced from shared/design-system; EN/FA with RTL; three themes.",
-        "BFF copied from pwa/src/server/bff (session, OAuth code + PKCE, private_key_jwt, DPoP, CSRF, allowlist per SEC-WEB-5 with {org}), as the console did (console GD-03).",
-        "Contract generator: operations with tags ORG(P*/P+/V*/F*) plus the public and {me} reads used by the portal; role table from sec: lines.",
-        "Shell: S-SHARED-06 organization switcher (me.memberships_list), S-SHARED-07 no-permission page, notifications bell (notifications.*).",
-        "Decide PU-OQ-01 (shared package for components used by more than one surface)."
-      ],
-      "acceptance": ["Sign-in with code works end to end against the backend in strict mode", "A provider_staff user cannot reach a P+ page; the server's 403 shows S-SHARED-07"]
-    },
-    {
-      "id": "PP2",
-      "surface": "full_portal",
-      "title": "Provider onboarding wizard P-ONB-01..08 (= public-ui PU-P01), responsive down to phone width",
-      "status": "proposed",
-      "depends_on": ["PP1"],
-      "goal": "A workshop owner completes sign-up, creates the business and publishes the profile, on a desktop or on a phone.",
-      "screens": ["S-AUTH-03/04/05 business path", "P-ONB-01..08"],
-      "operations": ["org.create", "onboarding.list/update/accept_terms", "provider.profile_put", "provider.publish", "org.location_*", "geo.*", "provider.service_category_create", "provider.coverage_create", "provider.capability_create", "provider.gated_decide", "provider.certification_create", "availability.rule_create", "media.upload_*", "media.attach", "org.consents_grant (provider_analytics_ai_use)"],
-      "notes": ["Must pass at 360 px width: this is how a phone-only workshop joins (PRV-OQ-03).", "Publish with 'Verification pending' per Docs/56 §2.11 (Docs/11 open point 5, PRV-DI-02)."],
-      "acceptance": ["Reza's Ch.1-2 path in FA on a phone viewport", "Capabilities publish as Offered; the AI-suggested W205 capability is active only after approval"]
-    },
-    {
       "id": "PW1",
-      "surface": "workshop_pwa",
-      "title": "Workshop PWA shell: manifest and scope, service worker, sign-in, business picker, Today, tab bar, install and web push",
-      "status": "proposed",
-      "depends_on": ["PP1"],
-      "goal": "A mechanic installs CarPal Workshop on the home screen, signs in with a code, picks the business and sees Today.",
-      "screens": ["PW-AUTH-01", "PW-SYS-01", "PW-HOME-01"],
-      "operations": ["me.memberships_list", "provider.appointments_list (group new, today)", "reviews.org_list (has_response=false)", "review_approvals.list", "provider.portfolio_list", "provider.insights_get (response time only)", "notifications.list/unread_count/mark_read", "push_tokens.register/revoke", "notification_prefs.get/put"],
+      "deliverable": "D2",
+      "title": "Workshop shell in the consumer PWA: provider allowlist, business context and switch, tab bar, Today, shared package",
+      "status": "not_started",
+      "load": "full",
+      "depends_on": [],
+      "needs_backend": ["PRV-BR-08"],
+      "goal": "A signed-in member of a provider organization opens pwa.<DOMAIN>/<locale>/provider/today, sees the business name and live counters, and can switch back to the personal app.",
+      "context_to_read": ["pwa/AGENTS.md and the Next.js docs it names", "pwa/src/server/bff/allowlist.ts and its test", "pwa/src/app/[locale]/(shell) layout and the drive/ pages (pattern for an organization-scoped area)", "pwa/src/features/notifications", "Docs/40 §0.3-0.5 and SEC-WEB-5", "this file: PRV-GD-01..08, surfaces.workshop_pwa"],
+      "screens": ["PW-HOME-01"],
+      "operations": ["me.memberships_list", "provider.appointments_list (new, today)", "reviews.org_list (has_response=false)", "review_approvals.list", "provider.portfolio_list", "provider.insights_get (response time)", "provider.profile_get", "notifications.list/unread_count/mark_read with organization_id"],
       "tasks": [
-        "Route group /<locale>/workshop with its own manifest per locale and icons; start_url Today.",
-        "Service worker adapted from pwa/src/sw: app shell only, no API caching, update flow, wiped at sign-out (PRV-GD-05).",
-        "Install prompt incl. iOS Add to Home Screen instructions; push permission only after a user tap; registration through push_tokens.register; notification click opens the deep link.",
-        "Sunlight theme offer on first run; theme and language in the account menu.",
-        "'Open in full portal' helper that keeps the session and returns to the same business."
+        "T1 Allowlist: add the named provider operations of PRV-BR-08 to the consumer allowlist as an explicit operation-id list (WORKSHOP_OPERATIONS), with tests that every other /v1/orgs/{org_id} route still answers 404. Update the file's header comment.",
+        "T2 Route group /<locale>/provider with its own layout: top bar, bottom tab bar, guard (no provider membership → the compact onboarding entry; no access → the PWA's forbidden page).",
+        "T3 Business context: the active organization from me.memberships_list (provider organizations only), kept in the session, shown in the top bar; switch between businesses and 'Personal' (the consumer shell). Add the business entries to the consumer account menu.",
+        "T4 Create shared/business-ui (package, lint, test setup, link from pwa/); first components: status chips, counter tile, empty and error states.",
+        "T5 Today screen with counters, today's jobs, safety-critical first, 'Finish your profile' card, 'Verification pending' line.",
+        "T6 Notifications: the bell lists the business's notifications; the personal list stays personal.",
+        "T7 'Open in Web UI' helper (new tab to CARPAL_PWA_PORTAL_URL with the locale and organization)."
       ],
-      "acceptance": ["Installed app opens at Today with the business name", "Push permission is never asked on load", "Lighthouse PWA install criteria pass; JS budget of PRV-GD-04 met"]
+      "split_point": "After T3. T4-T7 continue as PW1b.",
+      "acceptance": ["A provider_staff member and a provider_owner both reach Today; a user without a provider membership does not see provider data", "An {org} operation outside the list answers 404 at the BFF (unit test)", "Stage checks pass"],
+      "out_of_scope": ["Manifest, install, push (PW8)", "Onboarding (PW2)"]
     },
     {
       "id": "PW2",
-      "surface": "workshop_pwa",
-      "title": "Appointment requests: list, detail with the pre-visit report, accept, propose a time, decline, ask for information",
-      "status": "proposed",
+      "deliverable": "D2",
+      "title": "Compact onboarding: start a business, location, what you repair, hours, optional licence photo, publish",
+      "status": "not_started",
+      "load": "full",
       "depends_on": ["PW1"],
-      "goal": "Neda's Ch.5 work done on a phone: open Sara's request from a push and propose Thursday 14:00 in under a minute.",
-      "screens": ["PW-REQ-01", "PW-REQ-02", "PW-REQ-03"],
-      "operations": ["provider.appointments_list", "provider.appointments_get", "pre_visit.provider_get", "provider.appointments_transition (provider_reviewing, confirmed, alternative_proposed, cancelled)", "provider.note_create (customer_visible for 'Ask for information')", "ai.appointment_suggestions + jobs.get", "provider.calendar (one day, for the conflicts line)", "media.download_url"],
-      "rules": [
-        "Opening a request moves it to provider_reviewing (response time is measured to the first answer).",
-        "Actions come from allowed_transitions; 409 CAPACITY_UNAVAILABLE on Accept shows the day's load and offers Propose time.",
-        "History shows only with the customer's service_history_sharing consent, else 'Not shared by customer'; requests without Help Me show 'Triage: not provided'.",
-        "Safety-critical requests: red banner and first in every list.",
-        "Decline needs a reason (PRV-BR-05 for structured reasons)."
+      "needs_backend": ["PRV-BR-08"],
+      "goal": "A mechanic with only a phone creates the business and publishes a minimal profile in about five minutes.",
+      "context_to_read": ["Docs/11 Ch.1-2", "Docs/56 §2.10-2.11", "Docs/40 blocks: org.create, onboarding.*, org.location_create, org.location_pin_check, provider.profile_put, provider.service_category_create, provider.coverage_create, availability rule create, org.verification_submit, provider.publish, org.consents_grant", "pwa/src/features/onboarding (W-ONB-01), pwa/src/features/map (pin picker), pwa/src/features/media (upload kit)"],
+      "screens": ["PW-ONB-01", "PW-ONB-02", "PW-ONB-03", "PW-ONB-04"],
+      "operations": ["org.create", "onboarding.list/update/accept_terms", "org.consents_grant (provider_analytics_ai_use)", "org.location_create", "org.location_pin_check", "geo.reverse", "provider.profile_put", "provider.service_category_create", "provider.coverage_create", "availability rule create", "media.upload_*", "org.verification_submit", "provider.publish", "taxonomy reads"],
+      "tasks": [
+        "T1 Entries: W-ONB-01 'Service provider' and the account menu 'Create a business' open /provider/start (vendor and fleet keep the portal link).",
+        "T2 Four steps with a progress bar; each step saves (onboarding.update), so the mechanic can leave and continue.",
+        "T3 Location: 'Use my location' or map pin (map loaded only here), typed address, pin check warning that does not block, exact address or area.",
+        "T4 Service systems and brands as chips; server errors of the publish conditions shown as plain words with a link to the step.",
+        "T5 Hours preset and edit; one availability rule set with default capacity 1 and default buffer.",
+        "T6 Optional licence photo (org.verification_submit); skipped or sent, the profile publishes with 'Verification pending'.",
+        "T7 Result screen: live profile link, what to finish later in the Web UI (models and tasks, portfolio, capacity, team)."
       ],
-      "acceptance": ["Accept, propose, decline and ask work against the backend and the customer side (pwa W-APP-01) shows the result", "AI off: the detail works without summary and slot suggestion"]
+      "split_point": "After T4. T5-T7 continue as PW2b.",
+      "acceptance": ["The Docs/56 §2.10 minimum (name, one active location, one service category, one brand) publishes a profile that opens on W-PUB-02", "Leaving after step 2 and returning resumes at step 3", "No AI step is required"],
+      "out_of_scope": ["Models, series, tasks, capabilities with experience level, portfolio import, AI profile preview, call-back phone check (Web UI or NX-02)"]
     },
     {
       "id": "PW3",
-      "surface": "workshop_pwa",
-      "title": "Replies: review inbox, AI-drafted review replies, review approval answers, comment replies as the shop",
-      "status": "proposed",
+      "deliverable": "D2",
+      "title": "Appointment requests: list, detail with the pre-visit report, accept, propose a time, decline, ask for information",
+      "status": "not_started",
+      "load": "full",
       "depends_on": ["PW1"],
-      "goal": "Reza's Ch.8 review work on a phone: publish the edited AI reply to Sara, answer 'Do you recognise this customer?', and reply to a comment on his showcase as the shop.",
-      "screens": ["PW-RPL-01", "PW-RPL-02", "PW-RPL-03", "PW-RPL-04"],
-      "operations": ["reviews.org_list", "reviews.org_get", "ai.review_response_draft + jobs.get", "review_responses.create/update/publish/delete", "review_approvals.list", "review_approvals.answer", "comments.list", "comments.create (as the organization, PRV-BR-01)", "{org}/comments inbox (PRV-BR-02)"],
-      "rules": [
-        "The reply is created from the AI draft insight (ai_draft_insight_id) so the backend records ai_assisted and edited_after_ai; only a human tap publishes.",
-        "Approval answers show display name, date and kind of work only; the review is never shown for editing or replying at that step.",
-        "Staff roles (provider_staff) see the inbox read-only with 'Ask the owner' (review_responses.* and review_approvals.* are P+)."
+      "needs_backend": ["PRV-BR-05 (fallback: reason in a customer-visible note)"],
+      "goal": "Neda's Ch.5 work on a phone: open Sara's request and propose Thursday 14:00 in under a minute.",
+      "context_to_read": ["Docs/11 Ch.5", "Docs/90 P-REQ-01, P-REQ-02", "Docs/40 blocks: provider.appointments_*, AppointmentTransition, pre_visit.provider_get, provider.note_create, provider.calendar, ai.appointment_suggestions", "pwa/src/features/appointments (customer side, W-APP-01)"],
+      "screens": ["PW-REQ-01", "PW-REQ-02", "PW-REQ-03"],
+      "operations": ["provider.appointments_list", "provider.appointments_get", "pre_visit.provider_get", "provider.appointments_transition (provider_reviewing, confirmed, alternative_proposed, cancelled)", "provider.notes_list", "provider.note_create (customer_visible)", "ai.appointment_suggestions + jobs.get", "provider.calendar (one day)", "media.download_url"],
+      "tasks": [
+        "T1 shared/business-ui: request card, pre-visit report, answer sheets.",
+        "T2 List with segments, pull to refresh, 'My jobs' filter from participants.",
+        "T3 Detail: all sections of PW-REQ-02; opening moves the request to provider_reviewing.",
+        "T4 Answer sheets; 409 CAPACITY_UNAVAILABLE shows the day's load and offers Propose time; 409 INVALID_TRANSITION reloads and says what changed.",
+        "T5 AI slot suggestion as a labelled draft; the screen works with AI off."
       ],
-      "acceptance": ["Sara's reply shows on the public profile (pwa W-PUB-02) with the shop's text", "An approval answer cannot be sent twice (409 shown as 'Already answered')", "Comment reply appears on W-PUB-05 with the Shop badge (after PRV-BR-01..03)"]
+      "rules": ["Actions come from allowed_transitions.", "History only with the customer's service_history_sharing consent, else 'Not shared by customer'; no Help Me → 'Triage: not provided'.", "Safety-critical: red banner, first in every list."],
+      "split_point": "After T3 (read-only detail). T4-T5 continue as PW3b.",
+      "acceptance": ["Accept, propose, decline and ask work against the dev backend and W-APP-01 shows the result", "Stage checks pass"],
+      "out_of_scope": ["Customer notes, participants editing, calendar grid"]
     },
     {
       "id": "PW4",
-      "surface": "workshop_pwa",
-      "title": "Before/after photos: pick a job, capture, upload, AI compose, blur, customer consent, publish",
-      "status": "proposed",
-      "depends_on": ["PW1"],
-      "goal": "Reza's Monday showcase (Ch.8) done in the workshop: four photos to a live showcase after Sara approves.",
-      "screens": ["PW-PHO-01", "PW-PHO-02", "PW-PHO-03", "PW-PHO-04"],
-      "operations": ["provider.appointments_list (group closed)", "provider.portfolio_list/create/update", "media.upload_init/put/complete", "media.attach (before/after with pair_group_key)", "media.redaction_decide", "ai.showcase_compose + jobs.get", "provider.portfolio_consent_request", "provider.portfolio_publish", "posts.create/publish (optional, FLAG community.feed.enabled)"],
+      "deliverable": "D2",
+      "title": "Update job and close job",
+      "status": "not_started",
+      "load": "medium",
+      "depends_on": ["PW3"],
+      "needs_backend": [],
+      "goal": "Reza sets Awaiting parts with a note and estimate from the lift; Neda closes the job with the outcome, so Sara gets a verified-visit review invitation and the shop gets evidence.",
+      "context_to_read": ["Docs/11 Ch.6 (last paragraph), Ch.7", "Docs/40 AppointmentTransition (completion outcome fields), Docs/52 Appointment rules"],
+      "screens": ["PW-JOB-01"],
+      "operations": ["provider.appointments_get", "provider.appointments_transition (in_progress, awaiting_parts, ready_for_pickup, completed)", "media.upload_* (invoice photo)", "taxonomy reads"],
       "tasks": [
-        "Upload kit from pwa P7 (HEIC conversion, signed PUT, scan polling) plus in-browser resize per PRV-GD-04.",
-        "Status chips mapped from PortfolioItem.status and the consent state; errors PUBLISH_REQUIREMENTS_UNMET, CONSENT_REQUIRED and MEDIA_NOT_READY explained in plain words."
+        "T1 shared/business-ui: job status bar and close-job form.",
+        "T2 Job page from Today and Upcoming: status buttons from allowed_transitions; Awaiting parts sheet (note, estimated completion, cost range).",
+        "T3 Close job: system and task prefilled from the request, labour cost, parts cost, optional part lines, warranty note, invoice photo, internal note; field errors from the server shown beside the field.",
+        "T4 After closing: 'Add before/after photos' shortcut (PW7) and the review-invitation notice."
       ],
-      "acceptance": ["A showcase with a visible plate cannot be published unblurred without the owner's explicit Keep", "The customer receives the /l/cn consent page (pwa P11) and approval makes the showcase live after moderation", "Upload of 4 photos on throttled 4G finishes and shows per-photo progress"]
+      "acceptance": ["A completed appointment creates the service record on the customer's vehicle and the customer sees the review invitation", "A staff member can update status if the server allows it"],
+      "out_of_scope": ["Walk-in job log (PX1)", "Parts search (PX1, NX-05)"]
     },
     {
       "id": "PW5",
-      "surface": "workshop_pwa",
-      "title": "Hardening for the pilot: low-end phones, poor network, E2E, accessibility, RTL and Sunlight",
-      "status": "proposed",
-      "depends_on": ["PW2", "PW3", "PW4"],
+      "deliverable": "D2",
+      "title": "Replies: review inbox, AI-drafted review replies, review approval answers",
+      "status": "not_started",
+      "load": "medium",
+      "depends_on": ["PW1"],
+      "needs_backend": [],
+      "goal": "Reza publishes the edited AI reply to Sara and answers 'Do you recognise this customer?' on his phone.",
+      "context_to_read": ["Docs/11 Ch.8", "Docs/90 P-REV-01, P-REV-02, P-REV-04", "Docs/40 blocks: reviews.org_*, review_responses.*, review_approvals.*, ai.review_response_draft"],
+      "screens": ["PW-RPL-01", "PW-RPL-02", "PW-RPL-04"],
+      "operations": ["reviews.org_list", "reviews.org_get", "ai.review_response_draft + jobs.get", "review_responses.create/update/publish/delete", "review_approvals.list", "review_approvals.answer"],
       "tasks": [
-        "Playwright on phone viewports (360×740, 390×844) in EN and FA: Reza's Ch.5 and Ch.8 paths from a notification click.",
-        "axe on every /workshop route × EN/FA × three themes; keyboard and screen-reader labels on icon buttons.",
-        "Performance run with CPU 4× slowdown and throttled 4G (PRV-GD-04 budgets).",
-        "States: offline banner, failed upload retry, expired session (re-sign-in returns to the same screen), AI unavailable, no business membership."
+        "T1 shared/business-ui: review card, reply editor with AI draft, approval card.",
+        "T2 Inbox tabs Reviews and Approvals with counts (the Comments tab appears in PW6).",
+        "T3 Reply: created from the AI draft insight so the backend records ai_assisted and edited_after_ai; Save draft; Publish only by a tap.",
+        "T4 Approval answer with the values the contract allows, note for CarPal, days left; a second answer shows 'Already answered'.",
+        "T5 Staff see the inbox read-only with 'Ask the owner'."
       ],
-      "acceptance": ["All budgets met", "Both paths green in FA with AI on and off"]
+      "acceptance": ["The reply shows on W-PUB-02", "The approval page never shows the review text for editing or reply"],
+      "out_of_scope": ["Flag and mediation, invitations, analytics (PP10)"]
+    },
+    {
+      "id": "PW6",
+      "deliverable": "D2",
+      "title": "Replies to comments as the shop",
+      "status": "not_started",
+      "load": "small",
+      "depends_on": ["PW5"],
+      "needs_backend": ["PRV-BR-01", "PRV-BR-02", "PRV-BR-03 (fallback: reply names the customer)", "PRV-BR-04 (fallback: no push)"],
+      "goal": "Reza answers a customer's comment on his showcase and it appears with the Shop badge.",
+      "context_to_read": ["Docs/22 W-PUB-05", "Docs/40 comments.* after the backend change", "pwa/src/features/community (comment components)"],
+      "screens": ["PW-RPL-03", "PW-RPL-01 Comments tab"],
+      "operations": ["organization comment inbox (PRV-BR-02)", "comments.list", "comments.create with as_organization_id", "reports.create"],
+      "tasks": ["T1 shared/business-ui: comment thread with shop reply.", "T2 Comments tab with the unreplied filter and count on Today.", "T3 Reply page; show author_organization as the Shop badge on the PWA's public comment lists too."],
+      "acceptance": ["The reply shows on W-PUB-05 with the Shop badge"],
+      "out_of_scope": []
+    },
+    {
+      "id": "PW7",
+      "deliverable": "D2",
+      "title": "Before/after photos: pick a job, capture, upload, AI compose, blur, customer consent, publish",
+      "status": "not_started",
+      "load": "full",
+      "depends_on": ["PW1"],
+      "needs_backend": [],
+      "goal": "Reza's Monday showcase done in the workshop: four photos to a live showcase after Sara approves.",
+      "context_to_read": ["Docs/11 Ch.8 'The showcase'", "Docs/90 P-PORT-01, P-PORT-02", "Docs/40 blocks: provider.portfolio_*, media.attach, media.redaction_decide, ai.showcase_compose", "pwa/src/features/media (upload kit), pwa/src/features/reviews (W-REV-02 consent page)"],
+      "screens": ["PW-PHO-01", "PW-PHO-02", "PW-PHO-03", "PW-PHO-04"],
+      "operations": ["provider.appointments_list (closed)", "provider.portfolio_list/get/create/update", "media.upload_init/put/complete", "media.attach (before/after, pair_group_key)", "media.redaction_decide", "ai.showcase_compose + jobs.get", "provider.portfolio_consent_request", "provider.portfolio_publish", "posts.create/publish (optional, community flag)"],
+      "tasks": [
+        "T1 In-browser resize (PRV-GD-04) added to the upload kit; progress and retry per photo.",
+        "T2 shared/business-ui: showcase composer steps and status chips.",
+        "T3 List and 'Jobs ready for photos'; only completed CarPal appointments are offered (PRV-OQ-06).",
+        "T4 Capture and upload step.",
+        "T5 Check and caption: pairs, blur decisions, caption and tags; works with AI off.",
+        "T6 Consent request and publish; errors PUBLISH_REQUIREMENTS_UNMET, CONSENT_REQUIRED and MEDIA_NOT_READY in plain words; staff can prepare, P+ publishes."
+      ],
+      "split_point": "After T4. T5-T6 continue as PW7b.",
+      "acceptance": ["A photo with a flagged plate cannot be published unblurred without an explicit Keep", "The customer gets the consent page (pwa P11) and approval makes the showcase live after moderation"],
+      "out_of_scope": ["Showcase from a walk-in job (NX-01)", "Offline photo queue (NX-03)", "Media library (PP8)"]
+    },
+    {
+      "id": "PW8",
+      "deliverable": "D2",
+      "title": "Workshop install, web push and deep links, states and budgets",
+      "status": "not_started",
+      "load": "medium",
+      "depends_on": ["PW3", "PW4", "PW5", "PW7"],
+      "needs_backend": ["PRV-BR-06 (fallback: polling, email, SMS)", "PRV-BR-09 (fallback: push opens the business notifications list)", "PRV-BR-04"],
+      "goal": "CarPal Workshop is on the home screen and a new request buzzes the phone and opens the request.",
+      "context_to_read": ["pwa/src/features/pwa (manifest, install, update flow), pwa/src/sw (push.ts, routes.ts)", "pwa/dev_plan.json DI-16, DI-71, DI-72", "this file: surfaces.workshop_pwa.push_and_deep_links"],
+      "screens": ["PW-SYS-01"],
+      "operations": ["push_tokens.register/revoke", "notification_prefs.get/put", "notifications.*"],
+      "tasks": [
+        "T1 Workshop manifest per locale (own id, scope /<locale>/provider/, start_url Today, name, icons) linked only from /provider pages. Check on Android Chrome and iOS Safari that it installs beside the consumer app; if nested scopes do not allow that, add a 'Workshop' shortcut to the consumer manifest instead and record the deviation. The entry address is the one the Web UI sign-in button opens (PP1.T6): signed out it shows what the app does and Sign in; signed in without a business it opens the compact onboarding.",
+        "T2 Service worker: business pushes open the deep links of this plan in the Workshop routes instead of the portal URL; update pwa DI-16 handling.",
+        "T3 Install prompt with iOS steps (in an iOS browser other than Safari: 'Open this page in Safari', then Share → Add to Home Screen); push permission only after a tap; business push switch in the Workshop menu.",
+        "T4 States on every /provider screen: offline banner, failed upload retry, expired session (sign-in returns to the same screen), AI unavailable, membership removed.",
+        "T5 Measure the PRV-GD-04 budgets and fix the largest items; Sunlight theme offer on first run."
+      ],
+      "acceptance": ["Push permission is never asked on load", "A business notification row opens the right /provider page", "Route JavaScript within the budget, or the gap is recorded for FT1b"],
+      "out_of_scope": ["Playwright, axe and performance runs (FT1a, FT1b)"]
+    },
+    {
+      "id": "PP1",
+      "deliverable": "D1",
+      "title": "Business web app foundation: package, cp-web-portal BFF, contract generator, security headers, sign-in",
+      "status": "not_started",
+      "load": "full",
+      "depends_on": [],
+      "needs_backend": ["PRV-BR-10 (fallback: lite mode until FT1a)"],
+      "goal": "An empty but correct business web app that builds, signs in through cp-web-portal and forwards {org}, {pub} and {me} operations.",
+      "context_to_read": ["frontend/admin-console/dev-plan.json stages AC1-AC2 and global decision GD-03 (BFF copy)", "pwa/src/server/bff", "Docs/40 §2.2, §2.12 SEC-WEB", "frontend/README.md"],
+      "tasks": [
+        "T1 Package in frontend/ set up like the admin console (Node 24, pnpm, strict TypeScript, eslint, vitest, Playwright config for later).",
+        "T2 BFF copied from pwa/src/server/bff with provenance headers: session, OAuth code + PKCE, private_key_jwt, DPoP, CSRF; portal allowlist ({me}, {pub}, {org}) per SEC-WEB-5.",
+        "T3 Contract generator output for ORG operations and a role table from the sec lines.",
+        "T4 Security headers of SEC-WEB-4 for the business origin; hosted sign-in under /id.",
+        "T5 Sign-in and sign-out end to end against the dev backend.",
+        "T6 Sign-in page: a large button 'Small workshop without a computer? Use CarPal Workshop on your phone' that opens pwa.<DOMAIN>/<locale>/provider. On iOS the text under it says to open the link in Safari and choose Share → Add to Home Screen; on other phones it says to install the app from the browser menu; on a desktop it also shows the address as a QR code (PRV-OQ-10)."
+      ],
+      "split_point": "After T3. T4-T6 continue as PP1b.",
+      "acceptance": ["Sign-in with a code works against the dev backend", "An admin-plane path answers 404 at the BFF"],
+      "out_of_scope": ["Vendor and fleet pages (their plans)", "Shell and design system (PP2)"]
+    },
+    {
+      "id": "PP2",
+      "deliverable": "D1",
+      "title": "Design system, i18n, shell, organization switcher, role gating, notifications",
+      "status": "not_started",
+      "load": "medium",
+      "depends_on": ["PP1"],
+      "needs_backend": [],
+      "goal": "A provider member lands on an empty /provider area with the navigation their role allows.",
+      "context_to_read": ["Docs/90 §3.2 provider navigation, S-SHARED-06, S-SHARED-07", "Docs/carpal-design-system", "shared/business-ui as built in the PW stages"],
+      "screens": ["S-SHARED-06", "S-SHARED-07"],
+      "operations": ["me.memberships_list", "subscription.org_get", "notifications.list/unread_count/mark_read"],
+      "tasks": [
+        "T1 Design system synced from shared/design-system; EN and FA with RTL; three themes; link shared/business-ui.",
+        "T2 Shell: left navigation (Docs/90 §6.1 sections), top bar with the organization switcher and notifications bell, banners (Verification pending, trial days left). The navigation matches the mockup, including Parts and Job log as greyed-out, disabled entries (PRV-GD-11).",
+        "T3 Role gating from the role table; the server's 403 shows S-SHARED-07.",
+        "T4 Routing for a user with no business ('Create a business' → PP3) and for a user with several."
+      ],
+      "acceptance": ["provider_staff cannot open a P+ page", "The shell passes in FA (RTL) and EN in the three themes by eye"],
+      "out_of_scope": []
     },
     {
       "id": "PP3",
-      "surface": "full_portal",
-      "title": "Dashboard, requests, calendar, availability and the appointment lifecycle to completion",
-      "status": "proposed",
-      "depends_on": ["PP1", "PW2"],
-      "screens": ["P-DASH-01", "P-REQ-01", "P-REQ-02", "P-CAL-01", "P-CAL-02"],
-      "operations": ["provider.appointments_*", "provider.participants_*", "provider.notes_*", "provider.customer_notes_*", "provider.calendar", "availability.*", "provider.insights_get"],
-      "notes": ["Reuses the PW2 request components in master-detail.", "Completion with the full outcome (parts used, cost breakdown, warranty, invoice) creates the service record and the review invitation (Docs/11 Ch.7)."]
+      "deliverable": "D1",
+      "title": "Onboarding wizard part 1: P-ONB-01..04 (basics, location, services and capabilities, brands/models/series)",
+      "status": "not_started",
+      "load": "full",
+      "depends_on": ["PP2"],
+      "needs_backend": [],
+      "goal": "Reza's Ch.1 and Ch.2 steps 1-4 on a desktop, with save and continue later.",
+      "context_to_read": ["Docs/11 Ch.1-2", "Docs/90 P-ONB-01..04", "Docs/56 §2", "frontend/public-ui-dev-plan.json PU-P01", "the PW2 pages (same operations)"],
+      "screens": ["S-AUTH-04/05 business path", "P-ONB-01", "P-ONB-02", "P-ONB-03", "P-ONB-04"],
+      "operations": ["org.create", "onboarding.list/update/accept_terms", "org.consents_grant", "provider.profile_put", "org.location_*", "org.location_pin_check", "geo.*", "provider.service_category_create", "provider.coverage_create", "provider.capability_create", "provider.gated_decide", "AI description helper if the contract has one", "taxonomy reads"],
+      "tasks": [
+        "T1 Wizard frame: progress bar, Save and continue later, resume from onboarding.list. A business started in the Workshop PWA continues here at the first unfinished step.",
+        "T2 Step 1 basics with 'Help me write this' as a labelled draft.",
+        "T3 Step 2 map pin with the pin check and address visibility; mobile mechanic service radius.",
+        "T4 Step 3 service systems, tasks, experience level; step 4 brand → model → series with AI suggestions that are active only after approval."
+      ],
+      "split_point": "After T3. T4 continues as PP3b.",
+      "acceptance": ["Capabilities are created as self-declared ('Offered')", "An AI-suggested capability stays pending until the owner approves"],
+      "out_of_scope": ["Assisted onboarding (NX-07)"]
     },
     {
       "id": "PP4",
-      "surface": "full_portal",
-      "title": "Profile editors, locations with map pin, certifications, public preview",
-      "status": "proposed",
-      "depends_on": ["PP2"],
-      "screens": ["P-PROF-01..05"],
-      "operations": ["provider.profile_*", "provider.service_categories_*", "provider.coverage_*", "provider.capabilities_*", "provider.capability_evidence_list", "provider.certifications_*", "org.location_*", "geo.*"]
+      "deliverable": "D1",
+      "title": "Onboarding wizard part 2: P-ONB-05..08 (portfolio upload, hours and capacity, licence upload, AI preview) and publish",
+      "status": "not_started",
+      "load": "full",
+      "depends_on": ["PP3", "PW7"],
+      "needs_backend": [],
+      "goal": "Reza publishes with 'Verification pending' and every capability shown as Offered.",
+      "context_to_read": ["Docs/11 Ch.2", "Docs/90 P-ONB-05..08", "Docs/40 blocks: provider.portfolio_*, media.*, availability.*, org.verification_submit, provider.publish"],
+      "screens": ["P-ONB-05", "P-ONB-06", "P-ONB-07 (upload only)", "P-ONB-08"],
+      "operations": ["media.upload_*", "media.attach", "media.redaction_decide", "provider.portfolio_create/update", "ai.showcase_compose", "availability rule operations", "org.verification_submit", "AI profile preview and suggestions (ai.suggestions_list, ai.suggestion_decide)", "provider.publish"],
+      "tasks": [
+        "T1 Step 5: multi-photo upload, AI grouping into jobs, plate blur, consent answer per job (public only with consent).",
+        "T2 Step 6: hours, appointment types, buffer, parallel capacity.",
+        "T3 Step 7: licence upload only, 'You can publish while we check' (PRV-DI-02).",
+        "T4 Step 8: public preview, completeness, AI suggestions accept or reject; Publish with plain-word errors."
+      ],
+      "split_point": "After T2. T3-T4 continue as PP4b.",
+      "acceptance": ["Only consented jobs become public portfolio items", "Publish works without a licence upload"],
+      "out_of_scope": ["Call-back phone check, verification status, resubmit (NX-02)"]
     },
     {
       "id": "PP5",
-      "surface": "full_portal",
-      "title": "Portfolio list, showcase editor, media library, posts",
-      "status": "proposed",
-      "depends_on": ["PW4"],
-      "screens": ["P-PORT-01", "P-PORT-02", "P-PORT-03"],
-      "operations": ["provider.portfolio_*", "media.*", "ai.showcase_compose", "posts.*"],
-      "notes": ["Desktop layout of the PW4 composer; drag and drop; engagement stats; archive."]
+      "deliverable": "D1",
+      "title": "Dashboard, requests and the appointment lifecycle to completion",
+      "status": "not_started",
+      "load": "full",
+      "depends_on": ["PP2", "PW3", "PW4"],
+      "needs_backend": ["PRV-BR-05 (same fallback as PW3)"],
+      "goal": "Ch.3 dashboard and Ch.5-7 on the office desktop, including the full completion outcome and customer notes.",
+      "context_to_read": ["Docs/11 Ch.3, Ch.5, Ch.7", "Docs/90 P-DASH-01, P-REQ-01, P-REQ-02", "Docs/40 blocks: provider.participants_*, provider.customer_notes_*"],
+      "screens": ["P-DASH-01", "P-REQ-01", "P-REQ-02"],
+      "operations": ["provider.appointments_*", "pre_visit.provider_get", "provider.participants_*", "provider.notes_*", "provider.customer_notes_*", "ai.appointment_suggestions", "provider.insights_get", "reviews.org_list", "review_approvals.list", "ai.suggestions_list (count)"],
+      "tasks": [
+        "T1 Dashboard: today's appointments, new requests, reviews, approval requests, AI suggestions, completeness, response time, first-weeks checklist.",
+        "T2 Requests master-detail from the shared components.",
+        "T3 Status actions and the full completion form (system, task, parts used with part numbers, cost breakdown, warranty, invoice, internal note). Parts actions of the mockup on the request and job pages are shown disabled (PRV-GD-11).",
+        "T4 Participants (assign staff) and private customer notes."
+      ],
+      "split_point": "After T2. T3-T4 continue as PP5b.",
+      "acceptance": ["Neda's Ch.5 and Ch.7 paths work on desktop against the dev backend"],
+      "out_of_scope": ["Calendar (PP6)", "Job log and parts search (PX1)"]
     },
     {
       "id": "PP6",
-      "surface": "full_portal",
-      "title": "Reviews: inbox with comments tab, response, approvals, invitations, analytics, flag and mediation",
-      "status": "proposed",
-      "depends_on": ["PW3"],
-      "screens": ["P-REV-01", "P-REV-02", "P-REV-03", "P-REV-04", "P-REV-05"],
-      "operations": ["reviews.org_*", "review_responses.*", "review_approvals.*", "review_invitations.send/org_list/cancel", "ai.review_response_draft", "ai.review_insights", "reports and disputes operations for flag and mediation"]
+      "deliverable": "D1",
+      "title": "Calendar, availability settings and time off",
+      "status": "not_started",
+      "load": "medium",
+      "depends_on": ["PP5"],
+      "needs_backend": [],
+      "goal": "Neda sees the week on two lifts; Reza blocks the new-year week and changes the buffer from 30 to 45 minutes.",
+      "context_to_read": ["Docs/11 Ch.4 (time off), Ch.8 (improvement plan)", "Docs/90 P-CAL-01, P-CAL-02", "Docs/40 blocks: provider.calendar, availability.*"],
+      "screens": ["P-CAL-01", "P-CAL-02"],
+      "operations": ["provider.calendar", "availability.*", "provider.appointments_transition (reschedule where allowed)"],
+      "tasks": ["T1 Day and week calendar with capacity lanes and appointment cards.", "T2 Availability rules: hours, appointment types, buffer, capacity.", "T3 Time off."],
+      "acceptance": ["A blocked day offers no slots on the customer side"],
+      "out_of_scope": []
     },
     {
       "id": "PP7",
-      "surface": "full_portal",
-      "title": "Insights: skill heatmap, capability detail, improvement plan, AI profile suggestions, map and search visibility",
-      "status": "proposed",
+      "deliverable": "D1",
+      "title": "Profile editors, locations, certifications upload, public preview",
+      "status": "not_started",
+      "load": "medium",
       "depends_on": ["PP4"],
-      "screens": ["P-INS-01", "P-INS-02", "P-INS-03", "P-INS-04"],
-      "operations": ["provider.insights_get", "provider.capabilities_list", "provider.capability_evidence_list", "provider.gated_decide", "ai.review_insights"],
-      "notes": ["Needs the provider_analytics_ai_use consent and the Pro entitlement; read-only after the trial ends."]
+      "needs_backend": [],
+      "goal": "Reza edits the description, adds a certification and checks the public preview before publishing.",
+      "context_to_read": ["Docs/11 Ch.4", "Docs/90 P-PROF-01..05"],
+      "screens": ["P-PROF-01", "P-PROF-02", "P-PROF-03", "P-PROF-04", "P-PROF-05"],
+      "operations": ["provider.profile_*", "provider.service_categories_*", "provider.coverage_*", "provider.capabilities_*", "provider.capability_evidence_list", "provider.certifications_*", "org.location_*", "geo.*", "provider.publish"],
+      "tasks": ["T1 Editors reuse the wizard step forms of PP3.", "T2 Certifications: upload and list with the status the server returns.", "T3 Public profile preview and publish of changes."],
+      "acceptance": ["A published change appears on W-PUB-02"],
+      "out_of_scope": ["Verification status and resubmit screens (NX-02)"]
     },
     {
       "id": "PP8",
-      "surface": "full_portal",
-      "title": "Team, settings and plan pages",
-      "status": "proposed",
-      "depends_on": ["PP1"],
-      "screens": ["P-TEAM-01", "P-SET-01", "PU-P02 plan pages"],
-      "operations": ["org.members_*", "org.member_invite", "notification_prefs.*", "org.consents_*", "plans.list", "subscription.org_get", "subscription.change_request"],
-      "notes": ["Provider staff roles from the WP0 matrix (Docs/11 open point 4): owner, manager, bookings, technician; the Workshop PWA follows the same matrix."]
+      "deliverable": "D1",
+      "title": "Portfolio list, showcase editor, media library, posts",
+      "status": "not_started",
+      "load": "medium",
+      "depends_on": ["PP2", "PW7"],
+      "needs_backend": [],
+      "goal": "The desktop version of the showcase flow, plus the media library and posts.",
+      "context_to_read": ["Docs/90 P-PORT-01, P-PORT-02, P-PORT-03"],
+      "screens": ["P-PORT-01", "P-PORT-02", "P-PORT-03"],
+      "operations": ["provider.portfolio_*", "media.*", "ai.showcase_compose", "posts.*"],
+      "tasks": ["T1 Portfolio list with status, archive and engagement counts.", "T2 Showcase editor from the shared composer, with drag and drop.", "T3 Media library.", "T4 Posts (first post of the onboarding checklist), behind the community flag."],
+      "acceptance": ["Reza's Ch.8 showcase path on desktop"],
+      "out_of_scope": []
     },
     {
       "id": "PP9",
-      "surface": "full_portal",
-      "title": "Missing screens from Docs/11: job log, parts search in provider context, trade accounts, vendor review",
-      "status": "proposed",
-      "depends_on": ["PP3"],
-      "screens": ["P-JOB-01 Job log (new, Docs/11 open point 1)", "P-PART-01 Parts search from an appointment (new, open point 2)", "P-PART-02 Trade accounts (new, open point 3)", "vendor review in provider context"],
-      "operations": ["provider.job_logs_*", "provider.service_record_create", "search for parts with as_organization_id", "inventory reads", "stock inquiries under {RQ}={org}", "trade_accounts.request", "review_invitations.send (from a job log)", "reviews.create (subject vendor)"]
+      "deliverable": "D1",
+      "title": "Reviews part 1: inbox, response with AI draft, approval requests, comments tab",
+      "status": "not_started",
+      "load": "medium",
+      "depends_on": ["PP2", "PW5"],
+      "needs_backend": ["PRV-BR-01, PRV-BR-02 (fallback: no comments tab)"],
+      "goal": "Reza's Ch.8 review work on desktop.",
+      "context_to_read": ["Docs/90 P-REV-01, P-REV-02, P-REV-04"],
+      "screens": ["P-REV-01", "P-REV-02", "P-REV-04"],
+      "operations": ["reviews.org_*", "review_responses.*", "review_approvals.*", "ai.review_response_draft", "comment operations of PW6"],
+      "tasks": ["T1 Inbox master-detail from the shared components.", "T2 Response editor and approval card.", "T3 Comments tab when PW6 is done."],
+      "acceptance": ["Same results as PW5 on desktop"],
+      "out_of_scope": []
     },
     {
       "id": "PP10",
-      "surface": "full_portal",
-      "title": "Full portal install and push, E2E of Reza's Ch.1-8, accessibility, RTL",
-      "status": "proposed",
-      "depends_on": ["PP3", "PP4", "PP5", "PP6", "PP7", "PP8", "PP9"],
-      "acceptance": ["Reza's story Ch.1-8 green in FA and EN on desktop", "The full portal and the Workshop PWA install side by side on one phone without capturing each other's links (PRV-OQ-01 scope test)"]
+      "deliverable": "D1",
+      "title": "Reviews part 2: invitations to past customers, analytics, flag and mediation",
+      "status": "not_started",
+      "load": "medium",
+      "depends_on": ["PP9"],
+      "needs_backend": [],
+      "goal": "Reza invites 12 past customers, flags a fake review and follows the dispute.",
+      "context_to_read": ["Docs/11 Ch.4 (past customers), Ch.8 other paths", "Docs/90 P-REV-03, P-REV-05", "Docs/40 blocks: review_invitations.*, reports.create, disputes.*, ai.review_insights"],
+      "screens": ["P-REV-03", "P-REV-05"],
+      "operations": ["review_invitations.send/org_list/cancel", "ai.review_insights", "reports.create", "disputes.*"],
+      "tasks": ["T1 Invitations: send by email, list with status, cancel, rate-limit message.", "T2 Review analytics.", "T3 Flag a review, request mediation, dispute thread after a rejected approval."],
+      "acceptance": ["An invited customer's review follows the approval path without a second approval request to the shop"],
+      "out_of_scope": ["Invitation from a job log (PX1)"]
+    },
+    {
+      "id": "PP11",
+      "deliverable": "D1",
+      "title": "Insights: skill heatmap, capability detail, improvement plan, AI profile suggestions, map and search visibility",
+      "status": "not_started",
+      "load": "medium",
+      "depends_on": ["PP7"],
+      "needs_backend": [],
+      "goal": "Reza reads his heatmap and accepts or rejects AI profile suggestions.",
+      "context_to_read": ["Docs/11 Ch.4 (AI suggestions, badge), Ch.8 'What the platform tells him'", "Docs/90 P-INS-01..04", "Docs/54 §2.3"],
+      "screens": ["P-INS-01", "P-INS-02", "P-INS-03", "P-INS-04"],
+      "operations": ["provider.insights_get", "provider.capabilities_list", "provider.capability_evidence_list", "provider.gated_decide", "ai.suggestions_list", "ai.suggestion_decide", "ai.review_insights"],
+      "tasks": ["T1 Heatmap and map and search visibility.", "T2 Capability detail with evidence and badge rule.", "T3 Improvement plan with links to the setting it names.", "T4 AI profile suggestions with accept, reject and edit."],
+      "rules": ["Needs the provider_analytics_ai_use consent and the plan entitlement; read-only after the trial ends."],
+      "acceptance": ["Numbers come from the server; only explanation text is AI-written and labelled"],
+      "out_of_scope": []
+    },
+    {
+      "id": "PP12",
+      "deliverable": "D1",
+      "title": "Team, settings, consents, plan pages, help",
+      "status": "not_started",
+      "load": "medium",
+      "depends_on": ["PP2"],
+      "needs_backend": ["PU-BR-03 (fallback: no request history)"],
+      "goal": "Reza invites Neda and Hamid, manages consents and notifications, sees the plan and trial, and can ask CarPal for help.",
+      "context_to_read": ["Docs/11 Ch.4 (team, trial)", "Docs/90 P-TEAM-01 (content only), P-SET-01", "frontend/public-ui-dev-plan.json PU-P02 and backend_follow_ups_for_business_screens", "Docs/40 blocks: org.members_*, org.consents_*, subscription.*, support.ticket_create"],
+      "screens": ["P-TEAM-01", "P-SET-01", "PU-P02 plan pages", "Help page"],
+      "operations": ["org.members_*", "org.member_invite", "notification_prefs.*", "org.consents_list/grant/withdraw/confirm", "plans.list", "subscription.org_get", "subscription.change_request", "support.ticket_create (organization_id)"],
+      "tasks": ["T1 Team with the three Docs/40 roles and what each can do in plain words.", "T2 Settings: notifications, consents incl. the confirm action when reconsent_required.", "T3 Plan pages and trial state.", "T4 Help page that files a support request for the business."],
+      "acceptance": ["An invited staff member signs in and sees only what the server allows"],
+      "out_of_scope": ["Self-service trial start (PU-OQ-02: an administrator assigns)"]
+    },
+    {
+      "id": "PP13",
+      "deliverable": "D1",
+      "title": "Web UI install and web push, states, phone-width pass",
+      "status": "not_started",
+      "load": "small",
+      "depends_on": ["PP5", "PP9"],
+      "needs_backend": ["PRV-BR-06, PRV-BR-09 (same fallbacks as PW8)"],
+      "goal": "The portal installs as a PWA on the office computer and notifies of new requests and approval requests.",
+      "context_to_read": ["Docs/90 line 124", "the PW8 result"],
+      "tasks": ["T1 Manifest and service worker (app shell only) for the business origin.", "T2 Push registration after a tap; notification click opens the portal page.", "T3 States: offline banner, expired session, AI unavailable.", "T4 Onboarding and request pages checked at 360 px."],
+      "acceptance": ["Push permission is never asked on load"],
+      "out_of_scope": []
+    },
+    {
+      "id": "PX1",
+      "deliverable": "D1",
+      "title": "Job log, parts search in provider context, trade accounts, vendor review",
+      "status": "deferred_to_slow_delivery",
+      "blocked_by": "frontend/vendor-dev-plan.json VND-BLK-01: the specs of P-JOB-01, P-PART-01 and P-PART-02 are written only after the vendor plan is settled (owner decision PRV-DI-05).",
+      "depends_on": ["PP5", "vendor plan settled"],
+      "goal": "Docs/11 Ch.6 and the walk-in path of Ch.7.",
+      "screens": ["P-JOB-01 (new)", "P-PART-01 (new)", "P-PART-02 (new)", "vendor review in provider context"],
+      "operations": ["provider.job_log_*", "provider.service_record_create", "parts search with as_organization_id", "inventory reads", "stock inquiries for an organization", "trade_accounts.request", "review_invitations.send (from a job log)", "reviews.create (subject vendor)"],
+      "note": "Not sized and not part of the pilot (owner 2026-11-16, PRV-OQ-11). It does not hold back FT1a or FT1b. In the pilot its places in the layout are greyed out (PRV-GD-11); this stage enables them."
+    },
+    {
+      "id": "FT1a",
+      "deliverable": "D1 + D2",
+      "title": "Final test, part 1: Reza's story end to end on both deliverables",
+      "status": "not_started",
+      "load": "full",
+      "depends_on": ["PW1-PW8", "PP1-PP13"],
+      "needs_backend": ["All group A-D requests done or their fallback recorded"],
+      "goal": "Docs/11 runs green across the Workshop PWA, the Web UI and the customer side of the consumer PWA.",
+      "context_to_read": ["Docs/11", "progress_log of this file", "pwa/tests and the admin console's Playwright setup"],
+      "tasks": [
+        "T1 Seed and fixtures: Reza's organization, Neda and Hamid as provider_staff, Sara with her E90.",
+        "T2 Playwright, Workshop PWA (360×740 and 390×844, FA and EN): compact onboarding; request from a notification click → propose → customer accepts; update and close job; review reply; approval answer; showcase to live.",
+        "T3 Playwright, Web UI (desktop, FA and EN): Ch.1-2 wizard, Ch.3 dashboard and roles, Ch.4 team, time off, invitations, Ch.5 and Ch.7, Ch.8 reviews, showcase, insights.",
+        "T4 Cross-surface: the Web UI sign-in button opens the Workshop PWA; a business created in the Workshop PWA continues in the Web UI wizard; a job closed on the phone shows on the desktop; AI on and off.",
+        "T5 Strict auth sign-in for cp-web-portal; fix what the journeys find."
+      ],
+      "split_point": "After T2 (Workshop PWA journeys green).",
+      "acceptance": ["All journeys green in FA and EN with AI on and off", "Chapters not covered are listed with the reason (Ch.6 parts: PX1)"]
+    },
+    {
+      "id": "FT1b",
+      "deliverable": "D1 + D2",
+      "title": "Final test, part 2: accessibility, RTL and themes, performance, security, documents",
+      "status": "not_started",
+      "load": "full",
+      "depends_on": ["FT1a"],
+      "goal": "Both deliverables are ready for the pilot and the documents match what was built.",
+      "tasks": [
+        "T1 axe on every /provider route of both apps × EN/FA × three themes; keyboard paths; labels on icon buttons.",
+        "T2 Performance: PRV-GD-04 budgets with CPU 4× slowdown and throttled 4G for the Workshop PWA; first view of the desktop requests list and dashboard.",
+        "T3 Security: the consumer BFF forwards only the listed provider operations; tenant isolation (another organization's ids answer 404); no provider API answer in any cache or Web Storage; role tests for provider_staff; the Workshop and consumer installs do not capture each other's links; every greyed-out parts entry is unreachable by click, keyboard and direct address.",
+        "T4 Documents: Docs/90 §6 (Workshop PWA screens PW-*, line 124), Docs/02 §1.4 and WP20, Docs/40 SEC-WEB-5 wording as the backend published it, Docs/11 notes, frontend/README.md, pwa/dev_plan.json DI-16; update the mockup paths.",
+        "T5 Final report: what is ready, open backend requests, next_phase_plan review."
+      ],
+      "acceptance": ["All budgets met or the gap accepted by the owner", "No security test fails", "doc_issues closed or moved"]
     }
   ],
 
-  "backend_requests": [
-    {
-      "id": "PRV-BR-01",
-      "for": "PW3, PP6 (reply to comments as the shop)",
-      "request": "comments.create accepts as_organization_id (caller must be an active P*/V* member of that organization; allowed on targets owned by that organization, and on questions and answers like AnswerWrite), and Comment carries author_organization: PublicOrgCard | null so pages can show the Shop badge.",
-      "why": "Docs/22 W-PUB-05 promises 'provider replies with Shop badge', but comments.create is USR only and Comment has no organization author: a reply today would appear under Reza's personal display name."
-    },
-    {
-      "id": "PRV-BR-02",
-      "for": "PW3 Comments tab, PP6",
-      "request": "GET {org}/comments (ORG(P*, V*)): comments on the organization's posts and portfolio items, newest first, with target summary (type, id, title, cover thumbnail), replied_by_org: boolean, and filters unreplied and target.",
-      "why": "The shop cannot see new comments without opening every showcase; comments.list needs a target id."
-    },
-    {
-      "id": "PRV-BR-03",
-      "for": "PW3",
-      "request": "Comment threading one level deep: parent_comment_id on create and in Comment, so a shop reply attaches to the customer's comment.",
-      "why": "CommentTarget only allows post, portfolio_item, question and answer; a reply cannot point at the comment it answers."
-    },
-    {
-      "id": "PRV-BR-04",
-      "for": "PW1 push, PW3",
-      "request": "Notification events for the organization: comment.created on the organization's content (to P+ members, respecting preferences), and confirm that appointment.requested, review.published, review.approval.requested (+ day 3 and day 6 reminders) and portfolio consent answers notify the provider members with the deep-link targets of this plan.",
-      "why": "The Workshop PWA lives on pushes; Module L lists 'new inquiry' and requests but not comments on the shop's content."
-    },
-    {
-      "id": "PRV-BR-05",
-      "for": "PW2",
-      "request": "Structured decline reasons: AppointmentTransition to cancelled from the provider side takes decline_reason_code ('fully_booked'|'vehicle_not_covered'|'service_not_offered'|'other') and an optional note shown to the customer.",
-      "why": "Docs/40 says 'provider decline = cancelled with reason \"declined\"', which leaves no room for the reason the customer and the matching need (Docs/11 Ch.5 'Decline requires a reason')."
-    },
-    {
-      "id": "PRV-BR-06",
-      "for": "PW1 (dependency, not new)",
-      "request": "Web push sender with a VAPID key pair (pwa DI-72, OQ-26) and the portal's own VAPID public key for web.<DOMAIN>.",
-      "why": "Without a sender the Workshop PWA cannot buzz the phone for a new request."
-    },
-    {
-      "id": "PRV-BR-07",
-      "for": "PW4 (only if PRV-OQ-06 is answered 'yes')",
-      "request": "provider.portfolio_consent_request for a job without a CarPal appointment: by email or SMS to a contact the shop enters, with a cn link and the same consent page, rate-limited like review invitations.",
-      "why": "Today the consent request needs appointment_id or service_record_id, so a walk-in job can never become a public showcase (Docs/11 open point 6)."
-    }
-  ],
+  "next_phase_plan": {
+    "note": "Decided out of the MVP. An item leaves this list only when a later plan picks it up.",
+    "items": [
+      { "id": "NX-01", "item": "Showcase from a walk-in job without a CarPal appointment", "source": "PRV-OQ-06 (owner 2026-11-16: no in the MVP)", "what": "The customer approves by an emailed or SMS link. Needs PRV-BR-07: provider.portfolio_consent_request for a job without an appointment, to a contact the shop enters, rate-limited like review invitations." },
+      { "id": "NX-02", "item": "Business verification screens", "source": "PRV-DI-02 (owner 2026-11-16)", "what": "Verification status page, call-back phone check, 'more information requested' with resubmit (org.verification_resubmit), rejection reason, certification review status, the 'Your business is verified' notice and the Verified Business badge moment. The MVP has only the optional licence upload and 'Verification pending'." },
+      { "id": "NX-03", "item": "Offline queue for photos taken without signal", "source": "PRV-OQ-05", "what": "Revisit after the pilot." },
+      { "id": "NX-04", "item": "Native business app", "source": "PRV-OQ-09", "what": "Only if the pilot shows the iOS PWA push limit is a problem." },
+      { "id": "NX-05", "item": "Parts search and stock inquiries in the Workshop PWA", "source": "proposal 'deferred'", "what": "After PX1 exists in the Web UI." },
+      { "id": "NX-06", "item": "Calendar grid and time off in the Workshop PWA", "source": "proposal 'deferred'", "what": "The Workshop PWA shows only the day's load line." },
+      { "id": "NX-08", "item": "Stage PX1: job log, parts search in provider context, trade accounts, vendor review", "source": "PRV-DI-05, PRV-OQ-11 (owner 2026-11-16)", "what": "Slow delivery, after the vendor plan is settled (VND-BLK-01). Enables the greyed-out parts areas of the pilot layout." },
+      { "id": "NX-07", "item": "Assisted (concierge) onboarding", "source": "Docs/11 Ch.1 other paths; backend NP-09, PU-BR-01, PU-BR-02", "what": "Staff fill the wizard for the owner from the console." }
+    ]
+  },
 
   "doc_issues": [
-    { "id": "PRV-DI-01", "issue": "Docs/90 and Docs/02 WP20 have no compact provider app. Add the Workshop PWA (screens PW-*, scope PRV-GD-02) to Docs/90 §6 and to WP20 once accepted.", "status": "open" },
-    { "id": "PRV-DI-02", "issue": "Publish vs verification (Docs/11 open point 5): Docs/56 §2.10 requires an active business to publish, §2.11 allows 'Verification pending'. This plan follows §2.11.", "status": "open" },
-    { "id": "PRV-DI-03", "issue": "Docs/90 P-TEAM-01 lists roles Owner, Manager, Service advisor, Mechanic limited view, Marketing/review responder; Docs/40 has provider_owner, provider_manager, provider_staff; Docs/11 uses owner, bookings, technician. The WP0 matrix must settle one list (Docs/11 open point 4).", "status": "open" },
-    { "id": "PRV-DI-04", "issue": "Docs/11 open points 8 (review approval screen) and 10 (map statistics in Insights) are now covered by Docs/90 P-REV-04 and P-INS-01 'Map & search visibility'. Close them in Docs/11.", "status": "open" },
-    { "id": "PRV-DI-05", "issue": "Docs/11 open points 1-3 (job log, provider parts search, trade accounts) get the new screen ids P-JOB-01, P-PART-01, P-PART-02 in PP9; Docs/90 needs their specs.", "status": "open" }
+    { "id": "PRV-DI-01", "issue": "Docs/90 and Docs/02 WP20 have no compact provider app.", "status": "decided", "action": "Add the Workshop PWA in FT1b.T4." },
+    { "id": "PRV-DI-02", "issue": "Publish vs verification: Docs/56 §2.10 requires an active business, §2.11 allows 'Verification pending'.", "status": "decided", "action": "§2.11 is followed; verification screens are NX-02. Docs/11 open point 5 marked decided." },
+    { "id": "PRV-DI-03", "issue": "Three different role lists (Docs/90, Docs/40, Docs/11).", "status": "decided", "action": "Docs/40 wins (PRV-GD-07). Docs/90 P-TEAM-01 is corrected in FT1b.T4." },
+    { "id": "PRV-DI-04", "issue": "Docs/11 open points 8 and 10 are covered by Docs/90 P-REV-04 and P-INS-01.", "status": "done 2026-11-16", "action": "Closed in Docs/11." },
+    { "id": "PRV-DI-05", "issue": "Job log, provider parts search and trade accounts have no Docs/90 spec.", "status": "deferred", "action": "After the vendor plan is settled (VND-BLK-01, stage PX1)." },
+    { "id": "PRV-DI-06", "issue": "The OQ-01 decision changes written rules: Docs/40 SEC-WEB-5 (consumer BFF audience), Docs/90 line 124 ('The consumer app does not receive business notifications'), Docs/02 §1.4 (web.<DOMAIN> is the business web app), pwa/dev_plan.json DI-16 and the allowlist comment.", "status": "open", "action": "Docs/40 through PRV-BR-08; the others in PW1.T1, PW8.T2 and FT1b.T4." },
+    { "id": "PRV-DI-07", "issue": "Docs/11 Ch.6-8 parts flow and vendor rating cannot be shown in the MVP provider apps while PX1 is blocked.", "status": "decided", "action": "Not in the pilot (PRV-OQ-11). FT1a lists it as not covered; the areas are greyed out (PRV-GD-11)." }
   ],
 
   "open_questions": [
-    {
-      "id": "PRV-OQ-01",
-      "question": "Where does the Workshop PWA live: a route group of the business app at web.<DOMAIN>/<locale>/workshop (cp-web-portal), or a 'shop mode' inside the existing consumer PWA at pwa.<DOMAIN>, like the fleet driver view /<locale>/drive?",
-      "default": "The business app (PRV-GD-01). It keeps business operations and pushes out of the consumer BFF (SEC-WEB-5, Docs/90 line 124) and shares components with the full portal.",
-      "trade_off": "The consumer PWA option could ship sooner, because its BFF, upload kit, service worker and push are already built, and Reza would have one app for his family car and his shop. But it widens the consumer BFF to {prv} writes and puts business pushes in the consumer app, against both rules above."
-    },
-    {
-      "id": "PRV-OQ-02",
-      "question": "Add a minimal 'Update job / Close job' (PW-JOB-01) to the Workshop PWA?",
-      "default": "Yes, as part of PW2. Without completion there is no service record, no Verified visit review, no review invitation and no evidence (Docs/11 Ch.7-8), so a phone-only workshop would never earn badges. Parts used and the cost breakdown stay in the full portal.",
-      "trade_off": "It goes past the three jobs the owner named."
-    },
-    {
-      "id": "PRV-OQ-03",
-      "question": "How does a workshop without a computer onboard: the full portal's wizard on the phone (responsive), a compact wizard inside the Workshop PWA, or staff-assisted onboarding only?",
-      "default": "The full portal's wizard, tested at 360 px (PP2), with staff-assisted onboarding from the console as the alternative (PU-P01). A separate compact wizard would be a second copy of eight steps."
-    },
-    {
-      "id": "PRV-OQ-04",
-      "question": "cp-web-portal sessions end after 8 h idle (Docs/40 §2.2). On a phone app used every morning this means signing in daily. Keep it, or give the installed Workshop PWA a longer idle time?",
-      "default": "Keep 8 h idle / 7 days absolute and make re-sign-in one tap with a passkey (offered after the second code sign-in). A longer lifetime is a security-model change in Docs/40."
-    },
-    {
-      "id": "PRV-OQ-05",
-      "question": "Offline queue for photos taken without signal (IndexedDB), or uploads only while the page is open?",
-      "default": "Only while open in the MVP (the admin console's no-Web-Storage rule also avoids photos with plates lingering on a shared phone); resumable upload steps cover short drops. Revisit after the pilot."
-    },
-    {
-      "id": "PRV-OQ-06",
-      "question": "Can a showcase be made from a walk-in job that had no CarPal appointment (customer approves by an emailed or SMS link)?",
-      "default": "No in the MVP: PW4 offers only completed CarPal appointments, which also pushes shops to use Request. PRV-BR-07 is the path if the answer is yes."
-    },
-    {
-      "id": "PRV-OQ-07",
-      "question": "Does 'replying to consumer comments' cover comments on the shop's showcases and posts (as this plan assumes), besides review replies? And appointment messages ('Ask for information' and the customer's answer)?",
-      "default": "Review replies, review approvals and comments on the shop's content are in PW3. Appointment messages stay inside the request detail (PW2), not in Replies."
-    },
-    {
-      "id": "PRV-OQ-08",
-      "question": "Name and screen-id prefix: 'CarPal Workshop' / «کارپال تعمیرگاه» with ids PW-*?",
-      "default": "Yes; WP0 approves the prefix as it did W- for the consumer web."
-    },
-    {
-      "id": "PRV-OQ-09",
-      "question": "Is the iOS limit acceptable for the pilot: web push on iPhone works only after Add to Home Screen (iOS 16.4+)? Or plan a native business app (Docs/11 open point 9)?",
-      "default": "Acceptable for the pilot (Android dominates the target market); PW-SYS-01 walks iPhone users through Add to Home Screen. Re-check after the pilot."
-    }
-  ],
-
-  "deferred": [
-    { "item": "Parts search and stock inquiries in the Workshop PWA", "note": "High value for Ch.6 on the lift; candidate for the first extension after the pilot." },
-    { "item": "Calendar grid and time off in the Workshop PWA", "note": "Full portal only; the Workshop PWA shows the day's load line." },
-    { "item": "Native business app", "note": "Only if PRV-OQ-09 says the PWA is not enough." }
+    { "id": "PRV-OQ-10", "question": "If Android or iOS do not install a second app whose scope lies inside the consumer PWA's scope, is a 'Workshop' shortcut in the consumer app enough?", "default": "Yes: one installed app with a Workshop shortcut and the business switch (PW8.T1).", "answer": "Owner 2026-11-16: users reach the Workshop PWA from a large button on the Web UI sign-in page, with the Safari and Add to Home Screen advice on iOS. The shortcut stays the technical fallback if a second install is not possible.", "status": "answered" },
+    { "id": "PRV-OQ-11", "question": "Should PX1 hold back the final test, or run as a follow-up after FT1b?", "default": "Follow-up: the final test does not wait for the vendor plan.", "answer": "Owner 2026-11-16: PX1 does not hold back the final test; it belongs to the slow delivery phase after the pilot.", "status": "answered" }
   ],
 
   "progress_log": [
     {
       "date": "2026-11-15",
-      "summary": "Plan created from Docs/11, Docs/22, Docs/90 §6 and Docs/40: requirements PRQ-01..11, decisions PRV-GD-01..06, full portal stages PP1-PP10, Workshop PWA stages PW1-PW5 with screens PW-*, backend requests PRV-BR-01..07, doc issues PRV-DI-01..05, open questions PRV-OQ-01..09. Mockup at frontend/provider-portal/mockup.html."
+      "summary": "Proposal created from Docs/11, Docs/22, Docs/90 §6 and Docs/40: requirements, decisions PRV-GD-01..06, stages PP1-PP10 and PW1-PW5, backend requests PRV-BR-01..07, doc issues PRV-DI-01..05, open questions PRV-OQ-01..09. Mockup at frontend/provider-portal/mockup.html."
+    },
+    {
+      "date": "2026-11-16",
+      "summary": "Reviewed against Docs/11 (review_2026_11_16, RF-01..18) and converted into a development plan with the owner's answers to PRV-OQ-01..09 and PRV-DI-01..05. The Workshop PWA moved into the consumer PWA at /<locale>/provider; compact onboarding (PW2) and job update and close (PW4) added; verification reduced to an optional upload; roles follow Docs/40; job log, parts search and trade accounts blocked on the vendor plan (PX1, VND-BLK-01); backend requests PRV-BR-08..10 added and all requests handed to backend/BR-update-plan.json; stages resized to one session each (PW1-PW8, PP1-PP13) with a joint final test (FT1a, FT1b); next_phase_plan NX-01..07 added. Docs/11 open points 4, 5, 8, 9 and 10 updated."
+    },
+    {
+      "date": "2026-11-16",
+      "summary": "Owner answered PRV-OQ-10 (Workshop button on the Web UI sign-in page with the Safari and Add to Home Screen advice, PP1.T6) and PRV-OQ-11 (PX1 is not in the pilot; fast delivery and slow delivery phases recorded in meta.delivery_phases, NX-08). New decision PRV-GD-11: parts-related areas of the mockup layout stay, greyed out and disabled."
     }
   ]
 }

@@ -2,6 +2,9 @@
 // A-DASH-01 System and Queues, My work). Both are aggregates only: the owning modules count their own records through
 // the SystemHealthSignals and WorkQueues registries, in the caller's read-only staff transaction.
 import { Injectable } from '@nestjs/common';
+import type { CarpalConfig } from '#libs/config/index.js';
+import type { Infra } from '#libs/infra/index.js';
+import { InjectConfig, InjectInfra } from '#libs/runtime/index.js';
 import { Operation, type OperationContext, type OperationHandler, type OperationResult } from '#libs/http-pipeline/index.js';
 import { staffOf, SystemHealthSignals, WORK_QUEUE_KEYS, WorkQueues, type FailureCounts, type SystemHealthKey } from '../interface/admin.js';
 import { DEFAULT_WORK_TIME_ZONE, summarize } from './work-sla.js';
@@ -14,7 +17,11 @@ export const WORK_ITEMS_LIMIT = 5000;
 @Injectable()
 @Operation('admin.system_health')
 export class SystemHealthHandler implements OperationHandler {
-  constructor(private readonly signals: SystemHealthSignals) {}
+  constructor(
+    private readonly signals: SystemHealthSignals,
+    @InjectInfra() private readonly infra: Infra,
+    @InjectConfig() private readonly config: CarpalConfig,
+  ) {}
 
   async handle(ctx: OperationContext): Promise<OperationResult> {
     staffOf(ctx);
@@ -43,7 +50,16 @@ export class SystemHealthHandler implements OperationHandler {
       },
       { readOnly: true },
     );
-    return { body: { generated_at: now.toISOString(), signals } };
+    return {
+      body: {
+        generated_at: now.toISOString(),
+        signals,
+        // 1.5.0 (S26a, DQ-28): which providers carry messages, and whether SMS really leaves the server.
+        sms_provider: this.infra.smsGateway.provider,
+        sms_simulated: this.infra.smsGateway.simulated,
+        mail_transport: this.config.mail.transport,
+      },
+    };
   }
 }
 

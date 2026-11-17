@@ -1,18 +1,8 @@
 // Full-mode adapters (GD-04): Redis, NATS JetStream, BullMQ, OpenSearch,
-// S3/MinIO and SMTP from infrastructure/docker/docker-compose.yml. They are
+// and S3/MinIO from infrastructure/docker/docker-compose.yml. They are
 // typed skeletons until Docker is available to verify them (OQ-01); every
 // call fails loudly instead of silently doing nothing.
-import type {
-  DeadLetterStore,
-  EventBus,
-  JobQueue,
-  KeyValueStore,
-  Mailer,
-  ObjectStorage,
-  PushSender,
-  SearchIndex,
-  SmsSender,
-} from '../ports.js';
+import type { DeadLetterStore, EventBus, JobQueue, KeyValueStore, ObjectStorage, PushSender, SearchIndex } from '../ports.js';
 import { OpenSearchIndex } from './opensearch.js';
 
 export class NotConfiguredError extends Error {
@@ -59,8 +49,7 @@ export const s3ObjectStorage = (url: string): ObjectStorage =>
   skeleton<ObjectStorage>('S3', url, ['put', 'get', 'head', 'delete', 'presignPut', 'presignGet']);
 /** Written to the port in S6 but unverified (OQ-01). */
 export const openSearchIndex = (url: string): SearchIndex => new OpenSearchIndex(url);
-export const smtpMailer = (url: string): Mailer => ({ ...skeleton<Mailer>('SMTP', url, ['send']), provider: 'smtp' });
-export const smsGateway = (url: string): SmsSender => ({ ...skeleton<SmsSender>('SMS gateway', url, ['send']), provider: 'sms_gateway' });
+// SMTP and SMS moved out of the skeletons in S26a: libs/infra/smtp-mailer.ts and libs/sms (both modes).
 export const pushGateway = (url: string): PushSender => ({
   ...skeleton<PushSender>('push gateway', url, ['send']),
   provider: 'push_gateway',

@@ -1,9 +1,9 @@
 {
   "source": "Docs/40.API contract.md",
-  "sourceSha256": "96d971e4920e67a07844bf0c6175076f8442db2e406908306df932b3d8842e8d",
-  "contractVersion": "1.4.0",
-  "operationCount": 490,
-  "routeCount": 542,
+  "sourceSha256": "b94153360d875b2077e542b606e4d6c89a8bcf79ab1e9ae77a07fcbe9ad3005a",
+  "contractVersion": "1.5.0",
+  "operationCount": 491,
+  "routeCount": 543,
   "assistAllowlist": [
     "org.update",
     "org.location_create",
@@ -864,6 +864,70 @@
       "line": 961
     },
     {
+      "opId": "auth.password_set_initial",
+      "section": "6.2",
+      "sectionTitle": "Authorization server (`id.carpals.ir`)",
+      "module": "identity",
+      "summary": "Only after a staff password sign-in on `cp-web-admin` answered `next: 'change_password'` (the account's password is an initial or one-time password set by `pnpm staff:bootstrap`; contract 1.5.0): checks the code that step sent to the account's verified email and replaces the password with `new_password` (SEC-AU-7: 12-128 characters, not a breached password, `pattern`; not the initial password, `not_unique`). Nothing else of the sign-in is open before it, and no token is issued for the account while its password waits to be changed. Five wrong codes end the interaction. The account is told by email and its other sessions end. The answer is `next: 'enrol_passkey'` for an account without a device-bound key (the same code then opens `auth.passkey_enrol_options` until it expires) or `next: 'mfa'` with `mfa_methods: ['webauthn']`.",
+      "method": "POST",
+      "pathTemplate": "/v1/auth/password/initial",
+      "routes": [
+        {
+          "scope": "single",
+          "host": "auth",
+          "method": "POST",
+          "path": "/v1/auth/password/initial",
+          "pathParams": [],
+          "security": {
+            "principals": [
+              [
+                {
+                  "tag": "PUB",
+                  "args": [],
+                  "qualifier": "no token"
+                }
+              ]
+            ],
+            "tags": [
+              {
+                "tag": "RL",
+                "args": [
+                  "auth.signin"
+                ]
+              },
+              {
+                "tag": "AUD",
+                "args": []
+              }
+            ]
+          }
+        }
+      ],
+      "successStatus": 200,
+      "responseType": "AuthNext",
+      "inputType": "{ interaction_id: Id; code: Code6; new_password: Str<12,128> }",
+      "inputEncoding": "json",
+      "query": [],
+      "sec": "PUB(no token) RL(auth.signin) AUD",
+      "errors": [
+        {
+          "status": 401,
+          "code": "INVALID_CREDENTIALS"
+        },
+        {
+          "status": 422,
+          "code": "CODE_INVALID"
+        },
+        {
+          "status": 422,
+          "code": "VALIDATION_FAILED",
+          "detail": "breached_password"
+        }
+      ],
+      "emits": [],
+      "line": 970
+    },
+    {
       "opId": "auth.staff_recovery_start",
       "section": "6.2",
       "sectionTitle": "Authorization server (`id.carpals.ir`)",
@@ -913,7 +977,7 @@
         }
       ],
       "emits": [],
-      "line": 970
+      "line": 979
     },
     {
       "opId": "auth.staff_recovery_verify",
@@ -968,7 +1032,7 @@
         }
       ],
       "emits": [],
-      "line": 980
+      "line": 989
     },
     {
       "opId": "auth.staff_recovery_status",
@@ -1019,7 +1083,7 @@
         }
       ],
       "emits": [],
-      "line": 989
+      "line": 998
     },
     {
       "opId": "auth.staff_recovery_complete_options",
@@ -1081,7 +1145,7 @@
         }
       ],
       "emits": [],
-      "line": 998
+      "line": 1007
     },
     {
       "opId": "auth.staff_recovery_complete",
@@ -1149,7 +1213,7 @@
         }
       ],
       "emits": [],
-      "line": 1008
+      "line": 1017
     },
     {
       "opId": "auth.social_start",
@@ -1195,7 +1259,7 @@
       "sec": "PUB(no token) RL(auth.signin)",
       "errors": [],
       "emits": [],
-      "line": 1017
+      "line": 1026
     },
     {
       "opId": "auth.email_verify",
@@ -1261,7 +1325,7 @@
           "note": "first verification"
         }
       ],
-      "line": 1025
+      "line": 1034
     },
     {
       "opId": "auth.password_reset_start",
@@ -1311,7 +1375,7 @@
       "sec": "PUB(no token) ATT RL(auth.otp)",
       "errors": [],
       "emits": [],
-      "line": 1035
+      "line": 1044
     },
     {
       "opId": "auth.password_reset_complete",
@@ -1381,7 +1445,7 @@
         }
       ],
       "emits": [],
-      "line": 1043
+      "line": 1052
     },
     {
       "opId": "me.get",
@@ -1424,7 +1488,7 @@
       "sec": "USR PII",
       "errors": [],
       "emits": [],
-      "line": 1054
+      "line": 1063
     },
     {
       "opId": "me.update",
@@ -1477,7 +1541,7 @@
         }
       ],
       "emits": [],
-      "line": 1062
+      "line": 1071
     },
     {
       "opId": "me.email_change",
@@ -1534,7 +1598,7 @@
       "sec": "USR AAL2 IDEM RL(auth.otp) AUD",
       "errors": [],
       "emits": [],
-      "line": 1071
+      "line": 1080
     },
     {
       "opId": "me.phone_change_start",
@@ -1583,7 +1647,7 @@
       "sec": "USR AAL2 RL(auth.otp)",
       "errors": [],
       "emits": [],
-      "line": 1079
+      "line": 1088
     },
     {
       "opId": "me.phone_change_verify",
@@ -1637,7 +1701,7 @@
         }
       ],
       "emits": [],
-      "line": 1087
+      "line": 1096
     },
     {
       "opId": "me.password_change",
@@ -1695,7 +1759,7 @@
         }
       ],
       "emits": [],
-      "line": 1096
+      "line": 1105
     },
     {
       "opId": "me.deactivate",
@@ -1750,7 +1814,7 @@
           "event": "user.deactivated"
         }
       ],
-      "line": 1105
+      "line": 1114
     },
     {
       "opId": "me.preferences_get",
@@ -1788,7 +1852,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 1114
+      "line": 1123
     },
     {
       "opId": "me.preferences_update",
@@ -1841,7 +1905,7 @@
         }
       ],
       "emits": [],
-      "line": 1122
+      "line": 1131
     },
     {
       "opId": "me.memberships_list",
@@ -1895,7 +1959,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 1131
+      "line": 1140
     },
     {
       "opId": "me.membership_leave",
@@ -1950,7 +2014,7 @@
         }
       ],
       "emits": [],
-      "line": 1139
+      "line": 1148
     },
     {
       "opId": "me.sessions_list",
@@ -1999,7 +2063,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 1148
+      "line": 1157
     },
     {
       "opId": "me.session_revoke",
@@ -2039,7 +2103,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 1156
+      "line": 1165
     },
     {
       "opId": "me.sessions_revoke_all",
@@ -2086,7 +2150,7 @@
       "sec": "USR AAL2 AUD",
       "errors": [],
       "emits": [],
-      "line": 1164
+      "line": 1173
     },
     {
       "opId": "me.mfa_list",
@@ -2124,7 +2188,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 1172
+      "line": 1181
     },
     {
       "opId": "me.mfa_totp_enroll",
@@ -2171,7 +2235,7 @@
       "sec": "USR AAL2 IDEM",
       "errors": [],
       "emits": [],
-      "line": 1179
+      "line": 1188
     },
     {
       "opId": "me.webauthn_register_options",
@@ -2214,7 +2278,7 @@
       "sec": "USR AAL2",
       "errors": [],
       "emits": [],
-      "line": 1187
+      "line": 1196
     },
     {
       "opId": "me.mfa_confirm",
@@ -2269,7 +2333,7 @@
         }
       ],
       "emits": [],
-      "line": 1195
+      "line": 1204
     },
     {
       "opId": "me.mfa_remove",
@@ -2318,7 +2382,7 @@
       "sec": "USR AAL2 AUD",
       "errors": [],
       "emits": [],
-      "line": 1204
+      "line": 1213
     },
     {
       "opId": "me.recovery_codes_regenerate",
@@ -2369,7 +2433,7 @@
       "sec": "USR AAL2 IDEM AUD",
       "errors": [],
       "emits": [],
-      "line": 1211
+      "line": 1220
     },
     {
       "opId": "consents.list",
@@ -2428,7 +2492,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 1221
+      "line": 1230
     },
     {
       "opId": "consents.grant",
@@ -2480,7 +2544,7 @@
         }
       ],
       "emits": [],
-      "line": 1229
+      "line": 1238
     },
     {
       "opId": "consents.withdraw",
@@ -2533,7 +2597,7 @@
           "event": "consent.withdrawn"
         }
       ],
-      "line": 1239
+      "line": 1248
     },
     {
       "opId": "consents.request_view",
@@ -2586,7 +2650,7 @@
         }
       ],
       "emits": [],
-      "line": 1248
+      "line": 1257
     },
     {
       "opId": "consents.request_respond",
@@ -2657,7 +2721,7 @@
         }
       ],
       "emits": [],
-      "line": 1257
+      "line": 1266
     },
     {
       "opId": "org.consents_list",
@@ -2715,7 +2779,7 @@
       "sec": "ORG(ANY)",
       "errors": [],
       "emits": [],
-      "line": 1266
+      "line": 1275
     },
     {
       "opId": "org.consents_grant",
@@ -2776,7 +2840,7 @@
         }
       ],
       "emits": [],
-      "line": 1274
+      "line": 1283
     },
     {
       "opId": "org.consents_confirm",
@@ -2843,7 +2907,7 @@
         }
       ],
       "emits": [],
-      "line": 1283
+      "line": 1292
     },
     {
       "opId": "org.consents_withdraw",
@@ -2899,7 +2963,7 @@
           "event": "consent.withdrawn"
         }
       ],
-      "line": 1292
+      "line": 1301
     },
     {
       "opId": "dsr.create",
@@ -2962,7 +3026,7 @@
         }
       ],
       "emits": [],
-      "line": 1302
+      "line": 1311
     },
     {
       "opId": "dsr.list",
@@ -3000,7 +3064,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 1311
+      "line": 1320
     },
     {
       "opId": "dsr.get",
@@ -3040,7 +3104,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 1318
+      "line": 1327
     },
     {
       "opId": "dsr.export_download",
@@ -3106,7 +3170,7 @@
         }
       ],
       "emits": [],
-      "line": 1325
+      "line": 1334
     },
     {
       "opId": "onboarding.list",
@@ -3144,7 +3208,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 1339
+      "line": 1348
     },
     {
       "opId": "onboarding.update",
@@ -3189,7 +3253,7 @@
       "sec": "USR ETAG",
       "errors": [],
       "emits": [],
-      "line": 1346
+      "line": 1355
     },
     {
       "opId": "onboarding.accept_terms",
@@ -3242,7 +3306,7 @@
       "sec": "USR AAL2 IDEM AUD",
       "errors": [],
       "emits": [],
-      "line": 1354
+      "line": 1363
     },
     {
       "opId": "policy.current",
@@ -3289,7 +3353,7 @@
       "sec": "PUB RL(public.read)",
       "errors": [],
       "emits": [],
-      "line": 1368
+      "line": 1377
     },
     {
       "opId": "policy.accept",
@@ -3341,7 +3405,7 @@
         }
       ],
       "emits": [],
-      "line": 1375
+      "line": 1384
     },
     {
       "opId": "org.create",
@@ -3399,7 +3463,7 @@
         }
       ],
       "emits": [],
-      "line": 1448
+      "line": 1457
     },
     {
       "opId": "org.get",
@@ -3441,7 +3505,7 @@
       "sec": "ORG(ANY)",
       "errors": [],
       "emits": [],
-      "line": 1457
+      "line": 1466
     },
     {
       "opId": "org.update",
@@ -3498,7 +3562,7 @@
         }
       ],
       "emits": [],
-      "line": 1464
+      "line": 1473
     },
     {
       "opId": "org.members_list",
@@ -3567,7 +3631,7 @@
       "sec": "ORG(M+, FC) PII",
       "errors": [],
       "emits": [],
-      "line": 1473
+      "line": 1482
     },
     {
       "opId": "org.member_invite",
@@ -3636,7 +3700,7 @@
         }
       ],
       "emits": [],
-      "line": 1481
+      "line": 1490
     },
     {
       "opId": "org.invitation_accept",
@@ -3702,7 +3766,7 @@
         }
       ],
       "emits": [],
-      "line": 1490
+      "line": 1499
     },
     {
       "opId": "org.member_update",
@@ -3764,7 +3828,7 @@
         }
       ],
       "emits": [],
-      "line": 1499
+      "line": 1508
     },
     {
       "opId": "org.member_remove",
@@ -3820,7 +3884,7 @@
         }
       ],
       "emits": [],
-      "line": 1508
+      "line": 1517
     },
     {
       "opId": "org.locations_list",
@@ -3862,7 +3926,7 @@
       "sec": "ORG(ANY)",
       "errors": [],
       "emits": [],
-      "line": 1516
+      "line": 1525
     },
     {
       "opId": "org.location_create",
@@ -3915,7 +3979,7 @@
         }
       ],
       "emits": [],
-      "line": 1523
+      "line": 1532
     },
     {
       "opId": "org.location_update",
@@ -3967,7 +4031,7 @@
       "sec": "ORG(M+) ETAG AUD",
       "errors": [],
       "emits": [],
-      "line": 1532
+      "line": 1541
     },
     {
       "opId": "org.location_delete",
@@ -4021,7 +4085,7 @@
         }
       ],
       "emits": [],
-      "line": 1540
+      "line": 1549
     },
     {
       "opId": "org.location_pin_check",
@@ -4070,7 +4134,7 @@
       "sec": "ORG(M+) RL(geo.business)",
       "errors": [],
       "emits": [],
-      "line": 1548
+      "line": 1557
     },
     {
       "opId": "geo.geocode",
@@ -4119,7 +4183,7 @@
       "sec": "ORG(M+) RL(geo.business)",
       "errors": [],
       "emits": [],
-      "line": 1556
+      "line": 1565
     },
     {
       "opId": "geo.reverse",
@@ -4168,7 +4232,7 @@
       "sec": "ORG(M+) RL(geo.business)",
       "errors": [],
       "emits": [],
-      "line": 1564
+      "line": 1573
     },
     {
       "opId": "geo.resolve_map_link",
@@ -4227,7 +4291,7 @@
         }
       ],
       "emits": [],
-      "line": 1572
+      "line": 1581
     },
     {
       "opId": "org.verifications_list",
@@ -4269,7 +4333,7 @@
       "sec": "ORG(M+)",
       "errors": [],
       "emits": [],
-      "line": 1581
+      "line": 1590
     },
     {
       "opId": "org.verification_submit",
@@ -4330,7 +4394,7 @@
         }
       ],
       "emits": [],
-      "line": 1588
+      "line": 1597
     },
     {
       "opId": "org.verification_resubmit",
@@ -4392,7 +4456,7 @@
         }
       ],
       "emits": [],
-      "line": 1597
+      "line": 1606
     },
     {
       "opId": "provider.profile_get",
@@ -4434,7 +4498,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 1675
+      "line": 1684
     },
     {
       "opId": "provider.profile_put",
@@ -4487,7 +4551,7 @@
       "sec": "ORG(P+) ETAG(if exists) IDEM(if new)",
       "errors": [],
       "emits": [],
-      "line": 1682
+      "line": 1691
     },
     {
       "opId": "provider.publish",
@@ -4547,7 +4611,7 @@
           "event": "provider.profile.published"
         }
       ],
-      "line": 1690
+      "line": 1699
     },
     {
       "opId": "provider.unpublish",
@@ -4598,7 +4662,7 @@
       "sec": "ORG(O+) IDEM AUD",
       "errors": [],
       "emits": [],
-      "line": 1700
+      "line": 1709
     },
     {
       "opId": "provider.certifications_list",
@@ -4640,7 +4704,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 1708
+      "line": 1717
     },
     {
       "opId": "provider.certification_create",
@@ -4692,7 +4756,7 @@
         }
       ],
       "emits": [],
-      "line": 1715
+      "line": 1724
     },
     {
       "opId": "provider.certification_update",
@@ -4740,7 +4804,7 @@
       "sec": "ORG(P+) ETAG",
       "errors": [],
       "emits": [],
-      "line": 1724
+      "line": 1733
     },
     {
       "opId": "provider.certification_delete",
@@ -4788,7 +4852,7 @@
       "sec": "ORG(P+) AUD",
       "errors": [],
       "emits": [],
-      "line": 1732
+      "line": 1741
     },
     {
       "opId": "provider.service_categories_list",
@@ -4846,7 +4910,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 1739
+      "line": 1748
     },
     {
       "opId": "provider.service_category_create",
@@ -4902,7 +4966,7 @@
         }
       ],
       "emits": [],
-      "line": 1747
+      "line": 1756
     },
     {
       "opId": "provider.service_category_update",
@@ -4950,7 +5014,7 @@
       "sec": "ORG(P+) ETAG",
       "errors": [],
       "emits": [],
-      "line": 1756
+      "line": 1765
     },
     {
       "opId": "provider.service_category_delete",
@@ -4993,7 +5057,7 @@
       "sec": "ORG(P+)",
       "errors": [],
       "emits": [],
-      "line": 1764
+      "line": 1773
     },
     {
       "opId": "provider.coverage_list",
@@ -5056,7 +5120,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 1771
+      "line": 1780
     },
     {
       "opId": "provider.coverage_create",
@@ -5103,7 +5167,7 @@
       "sec": "ORG(P+) IDEM",
       "errors": [],
       "emits": [],
-      "line": 1779
+      "line": 1788
     },
     {
       "opId": "provider.coverage_delete",
@@ -5146,7 +5210,7 @@
       "sec": "ORG(P+)",
       "errors": [],
       "emits": [],
-      "line": 1787
+      "line": 1796
     },
     {
       "opId": "provider.capabilities_list",
@@ -5214,7 +5278,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 1794
+      "line": 1803
     },
     {
       "opId": "provider.capability_create",
@@ -5270,7 +5334,7 @@
         }
       ],
       "emits": [],
-      "line": 1802
+      "line": 1811
     },
     {
       "opId": "provider.capability_update",
@@ -5318,7 +5382,7 @@
       "sec": "ORG(P+) ETAG",
       "errors": [],
       "emits": [],
-      "line": 1811
+      "line": 1820
     },
     {
       "opId": "provider.capability_delete",
@@ -5361,7 +5425,7 @@
       "sec": "ORG(P+)",
       "errors": [],
       "emits": [],
-      "line": 1819
+      "line": 1828
     },
     {
       "opId": "provider.capability_evidence_list",
@@ -5420,7 +5484,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 1826
+      "line": 1835
     },
     {
       "opId": "provider.gated_decide",
@@ -5482,7 +5546,7 @@
         }
       ],
       "emits": [],
-      "line": 1834
+      "line": 1843
     },
     {
       "opId": "provider.job_logs_list",
@@ -5550,7 +5614,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 1844
+      "line": 1853
     },
     {
       "opId": "provider.job_log_create",
@@ -5608,7 +5672,7 @@
         }
       ],
       "emits": [],
-      "line": 1852
+      "line": 1861
     },
     {
       "opId": "provider.job_log_update",
@@ -5656,7 +5720,7 @@
       "sec": "ORG(P+) ETAG",
       "errors": [],
       "emits": [],
-      "line": 1861
+      "line": 1870
     },
     {
       "opId": "provider.job_log_delete",
@@ -5704,7 +5768,7 @@
       "sec": "ORG(P+) AUD",
       "errors": [],
       "emits": [],
-      "line": 1869
+      "line": 1878
     },
     {
       "opId": "provider.customer_notes_list",
@@ -5767,7 +5831,7 @@
       "sec": "ORG(P*) PII",
       "errors": [],
       "emits": [],
-      "line": 1876
+      "line": 1885
     },
     {
       "opId": "provider.customer_note_create",
@@ -5820,7 +5884,7 @@
         }
       ],
       "emits": [],
-      "line": 1884
+      "line": 1893
     },
     {
       "opId": "provider.customer_note_update",
@@ -5868,7 +5932,7 @@
       "sec": "ORG(P*) ETAG",
       "errors": [],
       "emits": [],
-      "line": 1893
+      "line": 1902
     },
     {
       "opId": "provider.customer_note_delete",
@@ -5911,7 +5975,7 @@
       "sec": "ORG(P+)",
       "errors": [],
       "emits": [],
-      "line": 1901
+      "line": 1910
     },
     {
       "opId": "provider.portfolio_list",
@@ -5969,7 +6033,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 1908
+      "line": 1917
     },
     {
       "opId": "provider.portfolio_create",
@@ -6016,7 +6080,7 @@
       "sec": "ORG(P*) IDEM",
       "errors": [],
       "emits": [],
-      "line": 1916
+      "line": 1925
     },
     {
       "opId": "provider.portfolio_update",
@@ -6064,7 +6128,7 @@
       "sec": "ORG(P*) ETAG",
       "errors": [],
       "emits": [],
-      "line": 1924
+      "line": 1933
     },
     {
       "opId": "provider.portfolio_consent_request",
@@ -6125,7 +6189,7 @@
         }
       ],
       "emits": [],
-      "line": 1932
+      "line": 1941
     },
     {
       "opId": "provider.portfolio_publish",
@@ -6191,7 +6255,7 @@
           "note": "when moderation approves"
         }
       ],
-      "line": 1941
+      "line": 1950
     },
     {
       "opId": "provider.portfolio_archive",
@@ -6239,7 +6303,7 @@
       "sec": "ORG(P+) IDEM",
       "errors": [],
       "emits": [],
-      "line": 1951
+      "line": 1960
     },
     {
       "opId": "provider.insights_get",
@@ -6293,7 +6357,7 @@
       "sec": "ORG(P+)",
       "errors": [],
       "emits": [],
-      "line": 1959
+      "line": 1968
     },
     {
       "opId": "vendor.profile_get",
@@ -6335,7 +6399,7 @@
       "sec": "ORG(V*)",
       "errors": [],
       "emits": [],
-      "line": 1994
+      "line": 2003
     },
     {
       "opId": "vendor.profile_put",
@@ -6388,7 +6452,7 @@
       "sec": "ORG(V+) ETAG(if exists) IDEM(if new)",
       "errors": [],
       "emits": [],
-      "line": 2001
+      "line": 2010
     },
     {
       "opId": "vendor.publish",
@@ -6444,7 +6508,7 @@
         }
       ],
       "emits": [],
-      "line": 2009
+      "line": 2018
     },
     {
       "opId": "vendor.unpublish",
@@ -6495,7 +6559,7 @@
       "sec": "ORG(V+) IDEM AUD",
       "errors": [],
       "emits": [],
-      "line": 2018
+      "line": 2027
     },
     {
       "opId": "vendor.coverage_list",
@@ -6537,7 +6601,7 @@
       "sec": "ORG(V*)",
       "errors": [],
       "emits": [],
-      "line": 2026
+      "line": 2035
     },
     {
       "opId": "vendor.coverage_create",
@@ -6584,7 +6648,7 @@
       "sec": "ORG(V+) IDEM",
       "errors": [],
       "emits": [],
-      "line": 2033
+      "line": 2042
     },
     {
       "opId": "vendor.coverage_delete",
@@ -6627,7 +6691,7 @@
       "sec": "ORG(V+)",
       "errors": [],
       "emits": [],
-      "line": 2041
+      "line": 2050
     },
     {
       "opId": "vendor.insights_get",
@@ -6681,7 +6745,7 @@
       "sec": "ORG(V*)",
       "errors": [],
       "emits": [],
-      "line": 2048
+      "line": 2057
     },
     {
       "opId": "plans.list",
@@ -6725,7 +6789,7 @@
       "sec": "PUB",
       "errors": [],
       "emits": [],
-      "line": 2083
+      "line": 2092
     },
     {
       "opId": "subscription.me_get",
@@ -6763,7 +6827,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 2091
+      "line": 2100
     },
     {
       "opId": "subscription.org_get",
@@ -6805,7 +6869,7 @@
       "sec": "ORG(ANY)",
       "errors": [],
       "emits": [],
-      "line": 2098
+      "line": 2107
     },
     {
       "opId": "subscription.change_request",
@@ -6858,7 +6922,7 @@
       "sec": "ORG(O+) IDEM RL(default.write)",
       "errors": [],
       "emits": [],
-      "line": 2105
+      "line": 2114
     },
     {
       "opId": "taxonomy.version",
@@ -6896,7 +6960,7 @@
       "sec": "PUB",
       "errors": [],
       "emits": [],
-      "line": 2134
+      "line": 2143
     },
     {
       "opId": "taxonomy.snapshot",
@@ -6961,7 +7025,7 @@
       "sec": "PUB",
       "errors": [],
       "emits": [],
-      "line": 2141
+      "line": 2150
     },
     {
       "opId": "taxonomy.node_get",
@@ -7001,7 +7065,7 @@
       "sec": "PUB",
       "errors": [],
       "emits": [],
-      "line": 2149
+      "line": 2158
     },
     {
       "opId": "taxonomy.suggest",
@@ -7046,7 +7110,7 @@
       "sec": "PUB RL(search)",
       "errors": [],
       "emits": [],
-      "line": 2156
+      "line": 2165
     },
     {
       "opId": "vehicles.list",
@@ -7141,7 +7205,7 @@
       "sec": "USR | ORG(F*) DRV",
       "errors": [],
       "emits": [],
-      "line": 2241
+      "line": 2250
     },
     {
       "opId": "vehicles.create",
@@ -7252,7 +7316,7 @@
           "event": "vehicle.created"
         }
       ],
-      "line": 2249
+      "line": 2258
     },
     {
       "opId": "vehicles.get",
@@ -7319,7 +7383,7 @@
       "sec": "USR | ORG(F*) DRV",
       "errors": [],
       "emits": [],
-      "line": 2259
+      "line": 2268
     },
     {
       "opId": "vehicles.update",
@@ -7405,7 +7469,7 @@
           "event": "vehicle.updated"
         }
       ],
-      "line": 2266
+      "line": 2275
     },
     {
       "opId": "vehicles.status_change",
@@ -7499,7 +7563,7 @@
           "event": "vehicle.updated"
         }
       ],
-      "line": 2276
+      "line": 2285
     },
     {
       "opId": "vehicles.vin_reveal",
@@ -7600,7 +7664,7 @@
       "sec": "USR | ORG(F+) AAL2 AUD PII RL(default.write)",
       "errors": [],
       "emits": [],
-      "line": 2286
+      "line": 2295
     },
     {
       "opId": "vehicles.transfer_request",
@@ -7709,7 +7773,7 @@
           "event": "vehicle.transfer.requested"
         }
       ],
-      "line": 2294
+      "line": 2303
     },
     {
       "opId": "vehicles.transfers_list",
@@ -7790,7 +7854,7 @@
       "sec": "USR | ORG(FC)",
       "errors": [],
       "emits": [],
-      "line": 2304
+      "line": 2313
     },
     {
       "opId": "vehicles.transfer_decide",
@@ -7884,7 +7948,7 @@
           "note": "accept"
         }
       ],
-      "line": 2312
+      "line": 2321
     },
     {
       "opId": "vehicles.transfer_cancel",
@@ -7962,7 +8026,7 @@
         }
       ],
       "emits": [],
-      "line": 2322
+      "line": 2331
     },
     {
       "opId": "vehicles.vin_decode",
@@ -8050,7 +8114,7 @@
         }
       ],
       "emits": [],
-      "line": 2330
+      "line": 2339
     },
     {
       "opId": "vehicles.status_history",
@@ -8117,7 +8181,7 @@
       "sec": "USR | ORG(F*) DRV",
       "errors": [],
       "emits": [],
-      "line": 2339
+      "line": 2348
     },
     {
       "opId": "vehicles.mileage_list",
@@ -8184,7 +8248,7 @@
       "sec": "USR | ORG(F*) DRV",
       "errors": [],
       "emits": [],
-      "line": 2346
+      "line": 2355
     },
     {
       "opId": "vehicles.mileage_add",
@@ -8261,7 +8325,7 @@
       "sec": "USR | ORG(FC) DRV IDEM",
       "errors": [],
       "emits": [],
-      "line": 2353
+      "line": 2362
     },
     {
       "opId": "vehicles.documents_list",
@@ -8325,7 +8389,7 @@
       "sec": "USR | ORG(F+, FC)",
       "errors": [],
       "emits": [],
-      "line": 2361
+      "line": 2370
     },
     {
       "opId": "vehicles.document_create",
@@ -8421,7 +8485,7 @@
         }
       ],
       "emits": [],
-      "line": 2368
+      "line": 2377
     },
     {
       "opId": "vehicles.document_update",
@@ -8510,7 +8574,7 @@
       "sec": "USR | ORG(FC) ETAG CNS(vehicle_data_sharing: if shared_with_provider)",
       "errors": [],
       "emits": [],
-      "line": 2377
+      "line": 2386
     },
     {
       "opId": "vehicles.document_delete",
@@ -8585,7 +8649,7 @@
       "sec": "USR | ORG(FC) AUD",
       "errors": [],
       "emits": [],
-      "line": 2385
+      "line": 2394
     },
     {
       "opId": "service_records.list",
@@ -8683,7 +8747,7 @@
       "sec": "USR | ORG(F*) DRV",
       "errors": [],
       "emits": [],
-      "line": 2392
+      "line": 2401
     },
     {
       "opId": "service_records.create",
@@ -8760,7 +8824,7 @@
           "event": "service_record.created"
         }
       ],
-      "line": 2400
+      "line": 2409
     },
     {
       "opId": "service_records.get",
@@ -8829,7 +8893,7 @@
       "sec": "USR | ORG(F*) DRV",
       "errors": [],
       "emits": [],
-      "line": 2409
+      "line": 2418
     },
     {
       "opId": "service_records.update",
@@ -8910,7 +8974,7 @@
         }
       ],
       "emits": [],
-      "line": 2416
+      "line": 2425
     },
     {
       "opId": "service_records.delete",
@@ -8985,7 +9049,7 @@
       "sec": "USR | ORG(F+) AUD",
       "errors": [],
       "emits": [],
-      "line": 2425
+      "line": 2434
     },
     {
       "opId": "service_records.evidence_add",
@@ -9065,7 +9129,7 @@
         }
       ],
       "emits": [],
-      "line": 2432
+      "line": 2441
     },
     {
       "opId": "service_records.evidence_remove",
@@ -9132,7 +9196,7 @@
       "sec": "USR | ORG(FC)",
       "errors": [],
       "emits": [],
-      "line": 2441
+      "line": 2450
     },
     {
       "opId": "provider.service_record_create",
@@ -9195,7 +9259,7 @@
           "event": "service_record.created"
         }
       ],
-      "line": 2448
+      "line": 2457
     },
     {
       "opId": "issues.list",
@@ -9278,7 +9342,7 @@
       "sec": "USR | ORG(F*) DRV",
       "errors": [],
       "emits": [],
-      "line": 2458
+      "line": 2467
     },
     {
       "opId": "issues.create",
@@ -9368,7 +9432,7 @@
           "note": "fleet driver"
         }
       ],
-      "line": 2466
+      "line": 2475
     },
     {
       "opId": "issues.get",
@@ -9437,7 +9501,7 @@
       "sec": "USR | ORG(F*) DRV",
       "errors": [],
       "emits": [],
-      "line": 2476
+      "line": 2485
     },
     {
       "opId": "issues.update",
@@ -9517,7 +9581,7 @@
       "sec": "USR | ORG(FC) DRV(own reports) ETAG",
       "errors": [],
       "emits": [],
-      "line": 2483
+      "line": 2492
     },
     {
       "opId": "issues.status_change",
@@ -9597,7 +9661,7 @@
         }
       ],
       "emits": [],
-      "line": 2491
+      "line": 2500
     },
     {
       "opId": "reminders.list",
@@ -9680,7 +9744,7 @@
       "sec": "USR | ORG(F*) DRV",
       "errors": [],
       "emits": [],
-      "line": 2500
+      "line": 2509
     },
     {
       "opId": "reminders.create",
@@ -9753,7 +9817,7 @@
       "sec": "USR | ORG(FC) IDEM",
       "errors": [],
       "emits": [],
-      "line": 2508
+      "line": 2517
     },
     {
       "opId": "reminders.update",
@@ -9828,7 +9892,7 @@
       "sec": "USR | ORG(FC) ETAG",
       "errors": [],
       "emits": [],
-      "line": 2516
+      "line": 2525
     },
     {
       "opId": "reminders.delete",
@@ -9893,7 +9957,7 @@
       "sec": "USR | ORG(FC)",
       "errors": [],
       "emits": [],
-      "line": 2524
+      "line": 2533
     },
     {
       "opId": "inventory.list",
@@ -9982,7 +10046,7 @@
       "sec": "ORG(V*)",
       "errors": [],
       "emits": [],
-      "line": 2597
+      "line": 2606
     },
     {
       "opId": "inventory.search",
@@ -10031,7 +10095,7 @@
       "sec": "ORG(V*) RL(search)",
       "errors": [],
       "emits": [],
-      "line": 2607
+      "line": 2616
     },
     {
       "opId": "inventory.create",
@@ -10098,7 +10162,7 @@
           "event": "inventory.updated"
         }
       ],
-      "line": 2615
+      "line": 2624
     },
     {
       "opId": "inventory.get",
@@ -10141,7 +10205,7 @@
       "sec": "ORG(V*)",
       "errors": [],
       "emits": [],
-      "line": 2625
+      "line": 2634
     },
     {
       "opId": "inventory.update",
@@ -10200,7 +10264,7 @@
           "event": "inventory.updated"
         }
       ],
-      "line": 2632
+      "line": 2641
     },
     {
       "opId": "inventory.delete",
@@ -10252,7 +10316,7 @@
           "event": "inventory.updated"
         }
       ],
-      "line": 2641
+      "line": 2650
     },
     {
       "opId": "inventory.bulk_update",
@@ -10307,7 +10371,7 @@
           "event": "inventory.updated"
         }
       ],
-      "line": 2649
+      "line": 2658
     },
     {
       "opId": "inventory.duplicate_mark",
@@ -10355,7 +10419,7 @@
       "sec": "ORG(V*) IDEM",
       "errors": [],
       "emits": [],
-      "line": 2658
+      "line": 2667
     },
     {
       "opId": "fitment.list",
@@ -10414,7 +10478,7 @@
       "sec": "ORG(V*)",
       "errors": [],
       "emits": [],
-      "line": 2666
+      "line": 2675
     },
     {
       "opId": "fitment.create",
@@ -10466,7 +10530,7 @@
           "event": "inventory.updated"
         }
       ],
-      "line": 2674
+      "line": 2683
     },
     {
       "opId": "fitment.update",
@@ -10519,7 +10583,7 @@
           "event": "inventory.updated"
         }
       ],
-      "line": 2683
+      "line": 2692
     },
     {
       "opId": "fitment.delete",
@@ -10567,7 +10631,7 @@
           "event": "inventory.updated"
         }
       ],
-      "line": 2692
+      "line": 2701
     },
     {
       "opId": "fitment.decide",
@@ -10630,7 +10694,7 @@
           "event": "inventory.updated"
         }
       ],
-      "line": 2700
+      "line": 2709
     },
     {
       "opId": "inventory.import_create",
@@ -10703,7 +10767,7 @@
           "note": "on completion"
         }
       ],
-      "line": 2710
+      "line": 2719
     },
     {
       "opId": "inventory.imports_list",
@@ -10745,7 +10809,7 @@
       "sec": "ORG(V*)",
       "errors": [],
       "emits": [],
-      "line": 2720
+      "line": 2729
     },
     {
       "opId": "inventory.import_get",
@@ -10788,7 +10852,7 @@
       "sec": "ORG(V*)",
       "errors": [],
       "emits": [],
-      "line": 2727
+      "line": 2736
     },
     {
       "opId": "inventory.import_error_report",
@@ -10837,7 +10901,7 @@
         }
       ],
       "emits": [],
-      "line": 2734
+      "line": 2743
     },
     {
       "opId": "trade_accounts.vendor_list",
@@ -10895,7 +10959,7 @@
       "sec": "ORG(V*)",
       "errors": [],
       "emits": [],
-      "line": 2743
+      "line": 2752
     },
     {
       "opId": "trade_accounts.vendor_decide",
@@ -10952,7 +11016,7 @@
         }
       ],
       "emits": [],
-      "line": 2751
+      "line": 2760
     },
     {
       "opId": "inquiries.vendor_list",
@@ -11010,7 +11074,7 @@
       "sec": "ORG(V*)",
       "errors": [],
       "emits": [],
-      "line": 2760
+      "line": 2769
     },
     {
       "opId": "inquiries.vendor_get",
@@ -11061,7 +11125,7 @@
       "sec": "ORG(V*) CNS(vendor_fitment_context: for vehicle snapshot)",
       "errors": [],
       "emits": [],
-      "line": 2768
+      "line": 2777
     },
     {
       "opId": "inquiries.vendor_message",
@@ -11115,7 +11179,7 @@
         }
       ],
       "emits": [],
-      "line": 2775
+      "line": 2784
     },
     {
       "opId": "inquiries.vendor_transition",
@@ -11168,7 +11232,7 @@
         }
       ],
       "emits": [],
-      "line": 2784
+      "line": 2793
     },
     {
       "opId": "inquiries.create",
@@ -11269,7 +11333,7 @@
           "event": "inquiry.sent"
         }
       ],
-      "line": 2797
+      "line": 2806
     },
     {
       "opId": "inquiries.list",
@@ -11346,7 +11410,7 @@
       "sec": "USR | ORG(P*, FC)",
       "errors": [],
       "emits": [],
-      "line": 2807
+      "line": 2816
     },
     {
       "opId": "inquiries.get",
@@ -11410,7 +11474,7 @@
       "sec": "USR | ORG(P*, FC)",
       "errors": [],
       "emits": [],
-      "line": 2815
+      "line": 2824
     },
     {
       "opId": "inquiries.message",
@@ -11490,7 +11554,7 @@
         }
       ],
       "emits": [],
-      "line": 2822
+      "line": 2831
     },
     {
       "opId": "inquiries.transition",
@@ -11569,7 +11633,7 @@
         }
       ],
       "emits": [],
-      "line": 2831
+      "line": 2840
     },
     {
       "opId": "trade_accounts.request",
@@ -11633,7 +11697,7 @@
         }
       ],
       "emits": [],
-      "line": 2840
+      "line": 2849
     },
     {
       "opId": "trade_accounts.customer_list",
@@ -11676,7 +11740,7 @@
       "sec": "ORG(P*, F*)",
       "errors": [],
       "emits": [],
-      "line": 2849
+      "line": 2858
     },
     {
       "opId": "search.run",
@@ -11739,7 +11803,7 @@
           "note": "analytics"
         }
       ],
-      "line": 3005
+      "line": 3014
     },
     {
       "opId": "search.page",
@@ -11798,7 +11862,7 @@
       "sec": "PUB RL(search)",
       "errors": [],
       "emits": [],
-      "line": 3015
+      "line": 3024
     },
     {
       "opId": "search.session_get",
@@ -11858,7 +11922,7 @@
         }
       ],
       "emits": [],
-      "line": 3023
+      "line": 3032
     },
     {
       "opId": "search.refine",
@@ -11910,7 +11974,7 @@
           "note": "analytics, when chips changed"
         }
       ],
-      "line": 3032
+      "line": 3041
     },
     {
       "opId": "search.result_event",
@@ -11958,7 +12022,7 @@
       "sec": "PUB RL(default.write)",
       "errors": [],
       "emits": [],
-      "line": 3042
+      "line": 3051
     },
     {
       "opId": "map.pins",
@@ -12020,7 +12084,7 @@
           "note": "analytics, first call of a map session"
         }
       ],
-      "line": 3050
+      "line": 3059
     },
     {
       "opId": "safety.check",
@@ -12065,7 +12129,7 @@
       "sec": "PUB RL(search)",
       "errors": [],
       "emits": [],
-      "line": 3060
+      "line": 3069
     },
     {
       "opId": "public.org_get",
@@ -12112,7 +12176,7 @@
       "sec": "PUB RL(public.read)",
       "errors": [],
       "emits": [],
-      "line": 3072
+      "line": 3081
     },
     {
       "opId": "public.org_reviews",
@@ -12191,7 +12255,7 @@
       "sec": "PUB RL(public.read)",
       "errors": [],
       "emits": [],
-      "line": 3079
+      "line": 3088
     },
     {
       "opId": "public.org_portfolio",
@@ -12259,7 +12323,7 @@
       "sec": "PUB RL(public.read)",
       "errors": [],
       "emits": [],
-      "line": 3087
+      "line": 3096
     },
     {
       "opId": "public.org_inventory_search",
@@ -12312,7 +12376,7 @@
         }
       ],
       "emits": [],
-      "line": 3095
+      "line": 3104
     },
     {
       "opId": "public.inventory_get",
@@ -12365,7 +12429,7 @@
       "sec": "PUB RL(public.read)",
       "errors": [],
       "emits": [],
-      "line": 3106
+      "line": 3115
     },
     {
       "opId": "public.availability",
@@ -12434,7 +12498,7 @@
       "sec": "PUB RL(public.read)",
       "errors": [],
       "emits": [],
-      "line": 3114
+      "line": 3123
     },
     {
       "opId": "reviews.eligibility",
@@ -12479,7 +12543,7 @@
       "sec": "USR RL(default.read)",
       "errors": [],
       "emits": [],
-      "line": 3217
+      "line": 3226
     },
     {
       "opId": "reviews.create",
@@ -12563,7 +12627,7 @@
           "note": "Path 2"
         }
       ],
-      "line": 3225
+      "line": 3234
     },
     {
       "opId": "reviews.mine_list",
@@ -12617,7 +12681,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 3235
+      "line": 3244
     },
     {
       "opId": "reviews.mine_get",
@@ -12657,7 +12721,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 3243
+      "line": 3252
     },
     {
       "opId": "reviews.mine_update",
@@ -12708,7 +12772,7 @@
         }
       ],
       "emits": [],
-      "line": 3250
+      "line": 3259
     },
     {
       "opId": "reviews.mine_withdraw",
@@ -12753,7 +12817,7 @@
       "sec": "USR AUD",
       "errors": [],
       "emits": [],
-      "line": 3259
+      "line": 3268
     },
     {
       "opId": "reviews.evidence_add",
@@ -12808,7 +12872,7 @@
         }
       ],
       "emits": [],
-      "line": 3266
+      "line": 3275
     },
     {
       "opId": "review_invitations.mine_list",
@@ -12846,7 +12910,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 3275
+      "line": 3284
     },
     {
       "opId": "review_invitations.open",
@@ -12914,7 +12978,7 @@
           "event": "review.invitation.opened"
         }
       ],
-      "line": 3282
+      "line": 3291
     },
     {
       "opId": "review_invitations.verify",
@@ -12982,7 +13046,7 @@
         }
       ],
       "emits": [],
-      "line": 3292
+      "line": 3301
     },
     {
       "opId": "review_invitations.send",
@@ -13069,7 +13133,7 @@
           "event": "review.invitation.sent"
         }
       ],
-      "line": 3303
+      "line": 3312
     },
     {
       "opId": "review_invitations.org_list",
@@ -13128,7 +13192,7 @@
       "sec": "ORG(P*, V*)",
       "errors": [],
       "emits": [],
-      "line": 3313
+      "line": 3322
     },
     {
       "opId": "review_invitations.cancel",
@@ -13177,7 +13241,7 @@
       "sec": "ORG(P+, V+) IDEM",
       "errors": [],
       "emits": [],
-      "line": 3321
+      "line": 3330
     },
     {
       "opId": "reviews.org_list",
@@ -13246,7 +13310,7 @@
       "sec": "ORG(P*, V*)",
       "errors": [],
       "emits": [],
-      "line": 3329
+      "line": 3338
     },
     {
       "opId": "reviews.org_get",
@@ -13290,7 +13354,7 @@
       "sec": "ORG(P*, V*)",
       "errors": [],
       "emits": [],
-      "line": 3337
+      "line": 3346
     },
     {
       "opId": "review_responses.create",
@@ -13345,7 +13409,7 @@
         }
       ],
       "emits": [],
-      "line": 3344
+      "line": 3353
     },
     {
       "opId": "review_responses.update",
@@ -13395,7 +13459,7 @@
       "sec": "ORG(P+, V+) ETAG",
       "errors": [],
       "emits": [],
-      "line": 3353
+      "line": 3362
     },
     {
       "opId": "review_responses.publish",
@@ -13454,7 +13518,7 @@
         }
       ],
       "emits": [],
-      "line": 3361
+      "line": 3370
     },
     {
       "opId": "review_responses.delete",
@@ -13504,7 +13568,7 @@
       "sec": "ORG(P+, V+) AUD",
       "errors": [],
       "emits": [],
-      "line": 3370
+      "line": 3379
     },
     {
       "opId": "review_approvals.list",
@@ -13547,7 +13611,7 @@
       "sec": "ORG(P+, V+)",
       "errors": [],
       "emits": [],
-      "line": 3377
+      "line": 3386
     },
     {
       "opId": "review_approvals.answer",
@@ -13615,7 +13679,7 @@
           "note": "rejected"
         }
       ],
-      "line": 3384
+      "line": 3393
     },
     {
       "opId": "disputes.create",
@@ -13670,7 +13734,7 @@
         }
       ],
       "emits": [],
-      "line": 3394
+      "line": 3403
     },
     {
       "opId": "disputes.mine_list",
@@ -13729,7 +13793,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 3403
+      "line": 3412
     },
     {
       "opId": "disputes.get",
@@ -13769,7 +13833,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 3411
+      "line": 3420
     },
     {
       "opId": "disputes.withdraw",
@@ -13819,7 +13883,7 @@
         }
       ],
       "emits": [],
-      "line": 3418
+      "line": 3427
     },
     {
       "opId": "disputes.messages_list",
@@ -13866,7 +13930,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 3427
+      "line": 3436
     },
     {
       "opId": "disputes.message_post",
@@ -13935,7 +13999,7 @@
           "event": "dispute.message.posted"
         }
       ],
-      "line": 3435
+      "line": 3444
     },
     {
       "opId": "badges.list",
@@ -13993,7 +14057,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 3445
+      "line": 3454
     },
     {
       "opId": "trust_signals.list",
@@ -14052,7 +14116,7 @@
       "sec": "ORG(P+, V+)",
       "errors": [],
       "emits": [],
-      "line": 3453
+      "line": 3462
     },
     {
       "opId": "appointments.create",
@@ -14157,7 +14221,7 @@
           "note": "submit = true"
         }
       ],
-      "line": 3573
+      "line": 3582
     },
     {
       "opId": "appointments.list",
@@ -14242,7 +14306,7 @@
       "sec": "USR | ORG(F*) DRV",
       "errors": [],
       "emits": [],
-      "line": 3583
+      "line": 3592
     },
     {
       "opId": "appointments.get",
@@ -14309,7 +14373,7 @@
       "sec": "USR | ORG(F*) DRV",
       "errors": [],
       "emits": [],
-      "line": 3591
+      "line": 3600
     },
     {
       "opId": "appointments.update",
@@ -14388,7 +14452,7 @@
         }
       ],
       "emits": [],
-      "line": 3598
+      "line": 3607
     },
     {
       "opId": "appointments.transition",
@@ -14482,7 +14546,7 @@
           "note": "accept"
         }
       ],
-      "line": 3607
+      "line": 3616
     },
     {
       "opId": "appointments.delay",
@@ -14565,7 +14629,7 @@
         }
       ],
       "emits": [],
-      "line": 3617
+      "line": 3626
     },
     {
       "opId": "appointments.check_in",
@@ -14652,7 +14716,7 @@
           "event": "appointment.status_changed"
         }
       ],
-      "line": 3626
+      "line": 3635
     },
     {
       "opId": "appointments.check_in_link",
@@ -14717,7 +14781,7 @@
           "event": "appointment.status_changed"
         }
       ],
-      "line": 3636
+      "line": 3645
     },
     {
       "opId": "appointments.history",
@@ -14784,7 +14848,7 @@
       "sec": "USR | ORG(F*) DRV",
       "errors": [],
       "emits": [],
-      "line": 3646
+      "line": 3655
     },
     {
       "opId": "appointments.notes_list",
@@ -14851,7 +14915,7 @@
       "sec": "USR | ORG(F*) DRV",
       "errors": [],
       "emits": [],
-      "line": 3653
+      "line": 3662
     },
     {
       "opId": "appointments.note_create",
@@ -14924,7 +14988,7 @@
       "sec": "USR | ORG(FC) IDEM",
       "errors": [],
       "emits": [],
-      "line": 3660
+      "line": 3669
     },
     {
       "opId": "pre_visit.requester_get",
@@ -14987,7 +15051,7 @@
       "sec": "USR | ORG(FC)",
       "errors": [],
       "emits": [],
-      "line": 3668
+      "line": 3677
     },
     {
       "opId": "provider.appointments_list",
@@ -15065,7 +15129,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 3677
+      "line": 3686
     },
     {
       "opId": "provider.appointments_get",
@@ -15113,7 +15177,7 @@
       "sec": "ORG(P*) PII",
       "errors": [],
       "emits": [],
-      "line": 3686
+      "line": 3695
     },
     {
       "opId": "provider.appointments_update",
@@ -15166,7 +15230,7 @@
           "note": "cost estimate above threshold"
         }
       ],
-      "line": 3693
+      "line": 3702
     },
     {
       "opId": "provider.appointments_transition",
@@ -15233,7 +15297,7 @@
           "event": "appointment.completed"
         }
       ],
-      "line": 3702
+      "line": 3711
     },
     {
       "opId": "provider.participants_list",
@@ -15276,7 +15340,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 3712
+      "line": 3721
     },
     {
       "opId": "provider.participant_add",
@@ -15330,7 +15394,7 @@
         }
       ],
       "emits": [],
-      "line": 3719
+      "line": 3728
     },
     {
       "opId": "provider.participant_remove",
@@ -15374,7 +15438,7 @@
       "sec": "ORG(P+)",
       "errors": [],
       "emits": [],
-      "line": 3728
+      "line": 3737
     },
     {
       "opId": "provider.notes_list",
@@ -15417,7 +15481,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 3735
+      "line": 3744
     },
     {
       "opId": "provider.note_create",
@@ -15465,7 +15529,7 @@
       "sec": "ORG(P*) IDEM",
       "errors": [],
       "emits": [],
-      "line": 3742
+      "line": 3751
     },
     {
       "opId": "pre_visit.provider_get",
@@ -15519,7 +15583,7 @@
       "sec": "ORG(P*) CNS(service_history_sharing) PII",
       "errors": [],
       "emits": [],
-      "line": 3750
+      "line": 3759
     },
     {
       "opId": "provider.calendar",
@@ -15578,7 +15642,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 3757
+      "line": 3766
     },
     {
       "opId": "availability.rules_list",
@@ -15636,7 +15700,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 3765
+      "line": 3774
     },
     {
       "opId": "availability.rule_create",
@@ -15690,7 +15754,7 @@
       "sec": "ORG(P+) IDEM ENT(appointment_capacity_tools_enabled: concurrency > 1 or buffers)",
       "errors": [],
       "emits": [],
-      "line": 3773
+      "line": 3782
     },
     {
       "opId": "availability.rule_update",
@@ -15738,7 +15802,7 @@
       "sec": "ORG(P+) ETAG",
       "errors": [],
       "emits": [],
-      "line": 3781
+      "line": 3790
     },
     {
       "opId": "availability.rule_delete",
@@ -15781,7 +15845,7 @@
       "sec": "ORG(P+)",
       "errors": [],
       "emits": [],
-      "line": 3789
+      "line": 3798
     },
     {
       "opId": "availability.time_off_list",
@@ -15844,7 +15908,7 @@
       "sec": "ORG(P*)",
       "errors": [],
       "emits": [],
-      "line": 3796
+      "line": 3805
     },
     {
       "opId": "availability.time_off_create",
@@ -15891,7 +15955,7 @@
       "sec": "ORG(P+) IDEM",
       "errors": [],
       "emits": [],
-      "line": 3804
+      "line": 3813
     },
     {
       "opId": "availability.time_off_cancel",
@@ -15934,7 +15998,7 @@
       "sec": "ORG(P+)",
       "errors": [],
       "emits": [],
-      "line": 3812
+      "line": 3821
     },
     {
       "opId": "media.upload_init",
@@ -15997,7 +16061,7 @@
         }
       ],
       "emits": [],
-      "line": 3855
+      "line": 3864
     },
     {
       "opId": "media.upload_put",
@@ -16029,7 +16093,7 @@
       "sec": "signed URL only (no Authorization header)",
       "errors": [],
       "emits": [],
-      "line": 3864
+      "line": 3873
     },
     {
       "opId": "media.upload_complete",
@@ -16097,7 +16161,7 @@
           "note": "later"
         }
       ],
-      "line": 3872
+      "line": 3881
     },
     {
       "opId": "media.get",
@@ -16145,7 +16209,7 @@
       "sec": "USR | ORG(ANY)",
       "errors": [],
       "emits": [],
-      "line": 3882
+      "line": 3891
     },
     {
       "opId": "media.download_url",
@@ -16206,7 +16270,7 @@
         }
       ],
       "emits": [],
-      "line": 3889
+      "line": 3898
     },
     {
       "opId": "media.attach",
@@ -16267,7 +16331,7 @@
         }
       ],
       "emits": [],
-      "line": 3898
+      "line": 3907
     },
     {
       "opId": "media.attachment_update",
@@ -16315,7 +16379,7 @@
       "sec": "USR | ORG(ANY)",
       "errors": [],
       "emits": [],
-      "line": 3907
+      "line": 3916
     },
     {
       "opId": "media.detach",
@@ -16363,7 +16427,7 @@
       "sec": "USR | ORG(ANY)",
       "errors": [],
       "emits": [],
-      "line": 3915
+      "line": 3924
     },
     {
       "opId": "media.delete",
@@ -16416,7 +16480,7 @@
       "sec": "USR | ORG(ANY) AUD",
       "errors": [],
       "emits": [],
-      "line": 3922
+      "line": 3931
     },
     {
       "opId": "media.redaction_decide",
@@ -16473,7 +16537,7 @@
       "sec": "USR | ORG(ANY) IDEM ASYNC",
       "errors": [],
       "emits": [],
-      "line": 3929
+      "line": 3938
     },
     {
       "opId": "fleet.profile_get",
@@ -16515,7 +16579,7 @@
       "sec": "ORG(F*)",
       "errors": [],
       "emits": [],
-      "line": 3985
+      "line": 3994
     },
     {
       "opId": "fleet.profile_put",
@@ -16579,7 +16643,7 @@
       "sec": "ORG(F+) ETAG(if exists) IDEM(if new) ENT(fleet_approval_workflow_enabled: if enabling) AUD",
       "errors": [],
       "emits": [],
-      "line": 3992
+      "line": 4001
     },
     {
       "opId": "fleet.dashboard",
@@ -16623,7 +16687,7 @@
       "sec": "ORG(F+, FC, FR)",
       "errors": [],
       "emits": [],
-      "line": 4000
+      "line": 4009
     },
     {
       "opId": "fleet.assignments_list",
@@ -16699,7 +16763,7 @@
       "sec": "ORG(FC) CNS(fleet_driver_data_visibility: driver details)",
       "errors": [],
       "emits": [],
-      "line": 4007
+      "line": 4016
     },
     {
       "opId": "fleet.assignment_set",
@@ -16758,7 +16822,7 @@
         }
       ],
       "emits": [],
-      "line": 4015
+      "line": 4024
     },
     {
       "opId": "fleet.assignment_end",
@@ -16806,7 +16870,7 @@
       "sec": "ORG(FC) AUD",
       "errors": [],
       "emits": [],
-      "line": 4024
+      "line": 4033
     },
     {
       "opId": "fleet.partners_list",
@@ -16864,7 +16928,7 @@
       "sec": "ORG(F*)",
       "errors": [],
       "emits": [],
-      "line": 4031
+      "line": 4040
     },
     {
       "opId": "fleet.partner_create",
@@ -16920,7 +16984,7 @@
         }
       ],
       "emits": [],
-      "line": 4039
+      "line": 4048
     },
     {
       "opId": "fleet.partner_update",
@@ -16972,7 +17036,7 @@
       "sec": "ORG(F+) ETAG AUD",
       "errors": [],
       "emits": [],
-      "line": 4048
+      "line": 4057
     },
     {
       "opId": "fleet.approvals_list",
@@ -17041,7 +17105,7 @@
       "sec": "ORG(F+, FC)",
       "errors": [],
       "emits": [],
-      "line": 4056
+      "line": 4065
     },
     {
       "opId": "fleet.approval_create",
@@ -17092,7 +17156,7 @@
           "event": "fleet.approval.requested"
         }
       ],
-      "line": 4064
+      "line": 4073
     },
     {
       "opId": "fleet.approval_get",
@@ -17136,7 +17200,7 @@
       "sec": "ORG(F+, FC)",
       "errors": [],
       "emits": [],
-      "line": 4073
+      "line": 4082
     },
     {
       "opId": "fleet.approval_decide",
@@ -17201,7 +17265,7 @@
           "event": "fleet.approval.decided"
         }
       ],
-      "line": 4080
+      "line": 4089
     },
     {
       "opId": "fleet.report",
@@ -17269,7 +17333,7 @@
       "sec": "ORG(F+, FR) ENT(fleet_reports_enabled)",
       "errors": [],
       "emits": [],
-      "line": 4090
+      "line": 4099
     },
     {
       "opId": "fleet.export_create",
@@ -17337,7 +17401,7 @@
       "sec": "ORG(F+, FR) IDEM ENT(export_enabled) ASYNC RL(export) AUD",
       "errors": [],
       "emits": [],
-      "line": 4098
+      "line": 4107
     },
     {
       "opId": "fleet.exports_list",
@@ -17380,7 +17444,7 @@
       "sec": "ORG(F+, FR)",
       "errors": [],
       "emits": [],
-      "line": 4106
+      "line": 4115
     },
     {
       "opId": "fleet.export_download",
@@ -17441,7 +17505,7 @@
         }
       ],
       "emits": [],
-      "line": 4113
+      "line": 4122
     },
     {
       "opId": "fleet.import_create",
@@ -17514,7 +17578,7 @@
           "note": "per created vehicle"
         }
       ],
-      "line": 4122
+      "line": 4131
     },
     {
       "opId": "fleet.imports_list",
@@ -17556,7 +17620,7 @@
       "sec": "ORG(F+)",
       "errors": [],
       "emits": [],
-      "line": 4132
+      "line": 4141
     },
     {
       "opId": "fleet.import_error_report",
@@ -17599,7 +17663,7 @@
       "sec": "ORG(F+)",
       "errors": [],
       "emits": [],
-      "line": 4139
+      "line": 4148
     },
     {
       "opId": "follows.list",
@@ -17637,7 +17701,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4195
+      "line": 4204
     },
     {
       "opId": "follows.put",
@@ -17684,7 +17748,7 @@
       "sec": "USR RL(default.write)",
       "errors": [],
       "emits": [],
-      "line": 4202
+      "line": 4211
     },
     {
       "opId": "follows.delete",
@@ -17724,7 +17788,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4210
+      "line": 4219
     },
     {
       "opId": "favorites.list",
@@ -17762,7 +17826,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4217
+      "line": 4226
     },
     {
       "opId": "favorites.put",
@@ -17809,7 +17873,7 @@
       "sec": "USR RL(default.write)",
       "errors": [],
       "emits": [],
-      "line": 4224
+      "line": 4233
     },
     {
       "opId": "favorites.delete",
@@ -17849,7 +17913,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4232
+      "line": 4241
     },
     {
       "opId": "feed.discover",
@@ -17894,7 +17958,7 @@
       "sec": "PUB RL(search)",
       "errors": [],
       "emits": [],
-      "line": 4239
+      "line": 4248
     },
     {
       "opId": "showcases.get",
@@ -17941,7 +18005,7 @@
       "sec": "PUB RL(public.read)",
       "errors": [],
       "emits": [],
-      "line": 4247
+      "line": 4256
     },
     {
       "opId": "posts.org_list",
@@ -18007,7 +18071,7 @@
       "sec": "ORG(P*, V*) FLAG(community.feed.enabled)",
       "errors": [],
       "emits": [],
-      "line": 4254
+      "line": 4263
     },
     {
       "opId": "posts.create",
@@ -18061,7 +18125,7 @@
       "sec": "ORG(P*, V*) IDEM FLAG(community.feed.enabled)",
       "errors": [],
       "emits": [],
-      "line": 4262
+      "line": 4271
     },
     {
       "opId": "posts.update",
@@ -18110,7 +18174,7 @@
       "sec": "ORG(P*, V*) ETAG",
       "errors": [],
       "emits": [],
-      "line": 4270
+      "line": 4279
     },
     {
       "opId": "posts.publish",
@@ -18168,7 +18232,7 @@
         }
       ],
       "emits": [],
-      "line": 4278
+      "line": 4287
     },
     {
       "opId": "posts.delete",
@@ -18212,7 +18276,7 @@
       "sec": "ORG(P+, V+)",
       "errors": [],
       "emits": [],
-      "line": 4287
+      "line": 4296
     },
     {
       "opId": "posts.public_list",
@@ -18281,7 +18345,7 @@
       "sec": "PUB RL(public.read) FLAG(community.feed.enabled)",
       "errors": [],
       "emits": [],
-      "line": 4294
+      "line": 4303
     },
     {
       "opId": "comments.list",
@@ -18353,7 +18417,7 @@
       "sec": "PUB RL(public.read) FLAG(community.comments.enabled)",
       "errors": [],
       "emits": [],
-      "line": 4302
+      "line": 4311
     },
     {
       "opId": "comments.create",
@@ -18418,7 +18482,7 @@
         }
       ],
       "emits": [],
-      "line": 4310
+      "line": 4319
     },
     {
       "opId": "comments.delete",
@@ -18458,7 +18522,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4319
+      "line": 4328
     },
     {
       "opId": "reactions.put",
@@ -18504,7 +18568,7 @@
       "sec": "USR RL(default.write)",
       "errors": [],
       "emits": [],
-      "line": 4326
+      "line": 4335
     },
     {
       "opId": "reactions.delete",
@@ -18542,7 +18606,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4334
+      "line": 4343
     },
     {
       "opId": "questions.create",
@@ -18601,7 +18665,7 @@
           "event": "qna.question.created"
         }
       ],
-      "line": 4342
+      "line": 4351
     },
     {
       "opId": "questions.search",
@@ -18652,7 +18716,7 @@
       "sec": "PUB RL(search) FLAG(qna.enabled)",
       "errors": [],
       "emits": [],
-      "line": 4351
+      "line": 4360
     },
     {
       "opId": "questions.get",
@@ -18705,7 +18769,7 @@
       "sec": "PUB RL(public.read) FLAG(qna.enabled)",
       "errors": [],
       "emits": [],
-      "line": 4360
+      "line": 4369
     },
     {
       "opId": "questions.update",
@@ -18750,7 +18814,7 @@
       "sec": "USR ETAG",
       "errors": [],
       "emits": [],
-      "line": 4367
+      "line": 4376
     },
     {
       "opId": "answers.create",
@@ -18807,7 +18871,7 @@
       "sec": "USR IDEM RL(default.write) FLAG(qna.enabled)",
       "errors": [],
       "emits": [],
-      "line": 4375
+      "line": 4384
     },
     {
       "opId": "answers.accept",
@@ -18852,7 +18916,7 @@
       "sec": "USR IDEM",
       "errors": [],
       "emits": [],
-      "line": 4383
+      "line": 4392
     },
     {
       "opId": "answers.delete",
@@ -18892,7 +18956,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4391
+      "line": 4400
     },
     {
       "opId": "notifications.list",
@@ -18956,7 +19020,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4426
+      "line": 4436
     },
     {
       "opId": "notifications.unread_count",
@@ -19000,7 +19064,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4434
+      "line": 4444
     },
     {
       "opId": "notifications.mark_read",
@@ -19039,7 +19103,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4442
+      "line": 4452
     },
     {
       "opId": "notification_prefs.get",
@@ -19077,7 +19141,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4450
+      "line": 4460
     },
     {
       "opId": "notification_prefs.put",
@@ -19121,7 +19185,7 @@
         }
       ],
       "emits": [],
-      "line": 4457
+      "line": 4467
     },
     {
       "opId": "push_tokens.register",
@@ -19170,7 +19234,7 @@
       "sec": "USR IDEM RL(default.write)",
       "errors": [],
       "emits": [],
-      "line": 4466
+      "line": 4476
     },
     {
       "opId": "push_tokens.revoke",
@@ -19210,7 +19274,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4474
+      "line": 4484
     },
     {
       "opId": "triage.start",
@@ -19283,7 +19347,7 @@
         }
       ],
       "emits": [],
-      "line": 4520
+      "line": 4530
     },
     {
       "opId": "triage.reply",
@@ -19346,7 +19410,7 @@
         }
       ],
       "emits": [],
-      "line": 4529
+      "line": 4539
     },
     {
       "opId": "triage.get",
@@ -19386,7 +19450,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4538
+      "line": 4548
     },
     {
       "opId": "triage.complete",
@@ -19442,7 +19506,7 @@
           "note": "create_issue"
         }
       ],
-      "line": 4545
+      "line": 4555
     },
     {
       "opId": "ai.vehicle_suggestions",
@@ -19559,7 +19623,7 @@
       "sec": "USR | ORG(FC) IDEM ASYNC RL(ai.user) FLAG(ai.vehicle_helper.enabled) ENT(ai_tools_enabled)",
       "errors": [],
       "emits": [],
-      "line": 4558
+      "line": 4568
     },
     {
       "opId": "ai.service_history_insights",
@@ -19676,7 +19740,7 @@
       "sec": "USR | ORG(FC) IDEM ASYNC RL(ai.user) FLAG(ai.service_history.enabled) ENT(ai_tools_enabled)",
       "errors": [],
       "emits": [],
-      "line": 4566
+      "line": 4576
     },
     {
       "opId": "ai.profile_helper",
@@ -19751,7 +19815,7 @@
       "sec": "ORG(P+) IDEM ASYNC RL(ai.org) CNS(provider_analytics_ai_use) FLAG(ai.profile_helper.enabled) ENT(ai_tools_enabled)",
       "errors": [],
       "emits": [],
-      "line": 4574
+      "line": 4584
     },
     {
       "opId": "ai.skill_heatmap",
@@ -19812,7 +19876,7 @@
       "sec": "ORG(P+) CNS(provider_analytics_ai_use) FLAG(skill_heatmap.visible)",
       "errors": [],
       "emits": [],
-      "line": 4582
+      "line": 4592
     },
     {
       "opId": "ai.review_response_draft",
@@ -19883,7 +19947,7 @@
       "sec": "ORG(P+, V+) IDEM ASYNC RL(ai.org) FLAG(ai.review_response.enabled) ENT(ai_tools_enabled)",
       "errors": [],
       "emits": [],
-      "line": 4590
+      "line": 4600
     },
     {
       "opId": "ai.review_insights",
@@ -19959,7 +20023,7 @@
       "sec": "ORG(P+, V+) IDEM ASYNC RL(ai.org) CNS(provider_analytics_ai_use) FLAG(ai.review_insights.enabled) ENT(advanced_analytics_enabled)",
       "errors": [],
       "emits": [],
-      "line": 4598
+      "line": 4608
     },
     {
       "opId": "ai.showcase_compose",
@@ -20029,7 +20093,7 @@
       "sec": "ORG(P*) IDEM ASYNC RL(ai.org) FLAG(ai.showroom.enabled) ENT(ai_tools_enabled)",
       "errors": [],
       "emits": [],
-      "line": 4606
+      "line": 4616
     },
     {
       "opId": "ai.appointment_suggestions",
@@ -20099,7 +20163,7 @@
       "sec": "ORG(P*) IDEM ASYNC RL(ai.org) FLAG(ai.appointment.enabled) ENT(ai_tools_enabled)",
       "errors": [],
       "emits": [],
-      "line": 4614
+      "line": 4624
     },
     {
       "opId": "ai.inventory_normalize",
@@ -20175,7 +20239,7 @@
       "sec": "ORG(V*) IDEM ASYNC RL(ai.org) CNS(vendor_inventory_ai_use) FLAG(vendor.ai_import.enabled) ENT(ai_tools_enabled)",
       "errors": [],
       "emits": [],
-      "line": 4622
+      "line": 4632
     },
     {
       "opId": "ai.fitment_suggest",
@@ -20251,7 +20315,7 @@
       "sec": "ORG(V*) IDEM ASYNC RL(ai.org) CNS(vendor_inventory_ai_use) FLAG(vendor.ai_import.enabled) ENT(ai_tools_enabled)",
       "errors": [],
       "emits": [],
-      "line": 4630
+      "line": 4640
     },
     {
       "opId": "ai.inventory_gaps",
@@ -20320,7 +20384,7 @@
       "sec": "ORG(V+) IDEM ASYNC RL(ai.org) FLAG(ai.inventory_gaps.enabled) ENT(advanced_analytics_enabled)",
       "errors": [],
       "emits": [],
-      "line": 4638
+      "line": 4648
     },
     {
       "opId": "ai.fleet_suggestions",
@@ -20395,7 +20459,7 @@
       "sec": "ORG(F+) IDEM ASYNC RL(ai.org) CNS(fleet_data_ai_use) FLAG(ai.fleet.enabled) ENT(ai_fleet_suggestions_enabled)",
       "errors": [],
       "emits": [],
-      "line": 4646
+      "line": 4656
     },
     {
       "opId": "ai.insight_get",
@@ -20443,7 +20507,7 @@
       "sec": "USR | ORG(ANY)",
       "errors": [],
       "emits": [],
-      "line": 4656
+      "line": 4666
     },
     {
       "opId": "ai.insight_feedback",
@@ -20502,7 +20566,7 @@
       "sec": "USR | ORG(ANY) IDEM RL(default.write)",
       "errors": [],
       "emits": [],
-      "line": 4663
+      "line": 4673
     },
     {
       "opId": "ai.suggestions_list",
@@ -20565,7 +20629,7 @@
       "sec": "ORG(ANY)",
       "errors": [],
       "emits": [],
-      "line": 4671
+      "line": 4681
     },
     {
       "opId": "ai.suggestions_mine",
@@ -20619,7 +20683,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4679
+      "line": 4689
     },
     {
       "opId": "ai.suggestion_decide",
@@ -20685,7 +20749,7 @@
         }
       ],
       "emits": [],
-      "line": 4687
+      "line": 4697
     },
     {
       "opId": "ai.approvals_list",
@@ -20743,7 +20807,7 @@
       "sec": "ORG(M+)",
       "errors": [],
       "emits": [],
-      "line": 4696
+      "line": 4706
     },
     {
       "opId": "ai.approval_decide",
@@ -20808,7 +20872,7 @@
         }
       ],
       "emits": [],
-      "line": 4704
+      "line": 4714
     },
     {
       "opId": "config.client",
@@ -20853,7 +20917,7 @@
       "sec": "PUB RL(public.read)",
       "errors": [],
       "emits": [],
-      "line": 4762
+      "line": 4773
     },
     {
       "opId": "jobs.get",
@@ -20901,7 +20965,7 @@
       "sec": "USR | ORG(ANY)",
       "errors": [],
       "emits": [],
-      "line": 4769
+      "line": 4780
     },
     {
       "opId": "jobs.cancel",
@@ -20959,7 +21023,7 @@
         }
       ],
       "emits": [],
-      "line": 4776
+      "line": 4787
     },
     {
       "opId": "events.ingest",
@@ -21004,7 +21068,7 @@
       "sec": "PUB RL(events)",
       "errors": [],
       "emits": [],
-      "line": 4785
+      "line": 4796
     },
     {
       "opId": "reports.create",
@@ -21064,7 +21128,7 @@
           "note": "target review"
         }
       ],
-      "line": 4793
+      "line": 4804
     },
     {
       "opId": "support.ticket_create",
@@ -21123,7 +21187,7 @@
           "event": "support.ticket.created"
         }
       ],
-      "line": 4803
+      "line": 4814
     },
     {
       "opId": "support.tickets_list",
@@ -21177,7 +21241,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4813
+      "line": 4824
     },
     {
       "opId": "support.ticket_get",
@@ -21217,7 +21281,7 @@
       "sec": "USR",
       "errors": [],
       "emits": [],
-      "line": 4821
+      "line": 4832
     },
     {
       "opId": "support.ticket_reply",
@@ -21278,7 +21342,7 @@
           "event": "support.message.posted"
         }
       ],
-      "line": 4828
+      "line": 4839
     },
     {
       "opId": "health.get",
@@ -21317,7 +21381,7 @@
       "sec": "PUB(no token)",
       "errors": [],
       "emits": [],
-      "line": 4838
+      "line": 4849
     },
     {
       "opId": "admin.staff_me",
@@ -21360,7 +21424,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 5297
+      "line": 5313
     },
     {
       "opId": "admin.staff_list",
@@ -21424,7 +21488,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 5304
+      "line": 5320
     },
     {
       "opId": "admin.staff_disable",
@@ -21486,7 +21550,7 @@
         }
       ],
       "emits": [],
-      "line": 5312
+      "line": 5328
     },
     {
       "opId": "admin.staff_enable",
@@ -21551,7 +21615,7 @@
         }
       ],
       "emits": [],
-      "line": 5321
+      "line": 5337
     },
     {
       "opId": "admin.staff_recoveries_list",
@@ -21607,7 +21671,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5330
+      "line": 5346
     },
     {
       "opId": "admin.staff_recovery_get",
@@ -21649,7 +21713,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5338
+      "line": 5354
     },
     {
       "opId": "admin.staff_recovery_approve",
@@ -21720,7 +21784,7 @@
         }
       ],
       "emits": [],
-      "line": 5345
+      "line": 5361
     },
     {
       "opId": "admin.staff_recovery_reject",
@@ -21777,7 +21841,7 @@
         }
       ],
       "emits": [],
-      "line": 5356
+      "line": 5372
     },
     {
       "opId": "admin.staff_passkeys_list",
@@ -21820,7 +21884,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 5365
+      "line": 5381
     },
     {
       "opId": "admin.staff_passkey_register_options",
@@ -21874,7 +21938,7 @@
         }
       ],
       "emits": [],
-      "line": 5372
+      "line": 5388
     },
     {
       "opId": "admin.staff_passkey_register",
@@ -21940,7 +22004,7 @@
         }
       ],
       "emits": [],
-      "line": 5381
+      "line": 5397
     },
     {
       "opId": "admin.staff_passkey_remove",
@@ -21999,7 +22063,7 @@
         }
       ],
       "emits": [],
-      "line": 5390
+      "line": 5406
     },
     {
       "opId": "admin.staff_recovery_codes_regenerate",
@@ -22051,7 +22115,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV) AAL3 AUD",
       "errors": [],
       "emits": [],
-      "line": 5398
+      "line": 5414
     },
     {
       "opId": "admin.users_search",
@@ -22108,7 +22172,7 @@
       "sec": "STF(ADM, MOD, SUP) PURP PII RL(admin.bulk_read)",
       "errors": [],
       "emits": [],
-      "line": 5406
+      "line": 5422
     },
     {
       "opId": "admin.user_get",
@@ -22166,7 +22230,7 @@
         }
       ],
       "emits": [],
-      "line": 5414
+      "line": 5430
     },
     {
       "opId": "admin.user_vehicles",
@@ -22240,7 +22304,7 @@
         }
       ],
       "emits": [],
-      "line": 5422
+      "line": 5438
     },
     {
       "opId": "admin.user_appointments",
@@ -22314,7 +22378,7 @@
         }
       ],
       "emits": [],
-      "line": 5431
+      "line": 5447
     },
     {
       "opId": "admin.user_consents",
@@ -22393,7 +22457,7 @@
         }
       ],
       "emits": [],
-      "line": 5440
+      "line": 5456
     },
     {
       "opId": "admin.user_sessions",
@@ -22451,7 +22515,7 @@
         }
       ],
       "emits": [],
-      "line": 5449
+      "line": 5465
     },
     {
       "opId": "admin.user_status",
@@ -22507,7 +22571,7 @@
           "event": "moderation.action.taken"
         }
       ],
-      "line": 5457
+      "line": 5473
     },
     {
       "opId": "admin.user_sessions_revoke",
@@ -22559,7 +22623,7 @@
       "sec": "STF(ADM, SUP) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5466
+      "line": 5482
     },
     {
       "opId": "admin.platform_role_grant",
@@ -22619,7 +22683,7 @@
         }
       ],
       "emits": [],
-      "line": 5474
+      "line": 5490
     },
     {
       "opId": "admin.platform_role_revoke",
@@ -22676,7 +22740,7 @@
         }
       ],
       "emits": [],
-      "line": 5483
+      "line": 5499
     },
     {
       "opId": "admin.onboarding_reset",
@@ -22729,7 +22793,7 @@
       "sec": "STF(ADM, SUP) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5491
+      "line": 5507
     },
     {
       "opId": "admin.orgs_search",
@@ -22778,7 +22842,7 @@
       "sec": "STF(ADM, MOD, SUP) RL(admin.bulk_read)",
       "errors": [],
       "emits": [],
-      "line": 5499
+      "line": 5515
     },
     {
       "opId": "admin.org_get",
@@ -22836,7 +22900,7 @@
         }
       ],
       "emits": [],
-      "line": 5507
+      "line": 5523
     },
     {
       "opId": "admin.org_status",
@@ -22892,7 +22956,7 @@
           "event": "moderation.action.taken"
         }
       ],
-      "line": 5515
+      "line": 5531
     },
     {
       "opId": "admin.org_merge",
@@ -22970,7 +23034,7 @@
           "note": "by the job"
         }
       ],
-      "line": 5524
+      "line": 5540
     },
     {
       "opId": "admin.org_merge_preview",
@@ -23029,7 +23093,7 @@
         }
       ],
       "emits": [],
-      "line": 5534
+      "line": 5550
     },
     {
       "opId": "admin.verifications_queue",
@@ -23101,7 +23165,7 @@
       "sec": "STF(ADM, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5543
+      "line": 5559
     },
     {
       "opId": "admin.verification_assign",
@@ -23164,7 +23228,7 @@
         }
       ],
       "emits": [],
-      "line": 5552
+      "line": 5568
     },
     {
       "opId": "admin.verification_decide",
@@ -23242,7 +23306,7 @@
           "note": "rejected; the owners and managers are told what to fix, backend S25a"
         }
       ],
-      "line": 5561
+      "line": 5577
     },
     {
       "opId": "admin.location_correct",
@@ -23299,7 +23363,7 @@
           "event": "organization.location.corrected"
         }
       ],
-      "line": 5572
+      "line": 5588
     },
     {
       "opId": "admin.org_correct",
@@ -23361,7 +23425,7 @@
           "event": "organization.profile.corrected"
         }
       ],
-      "line": 5582
+      "line": 5598
     },
     {
       "opId": "admin.org_history",
@@ -23419,7 +23483,7 @@
         }
       ],
       "emits": [],
-      "line": 5592
+      "line": 5608
     },
     {
       "opId": "admin.org_capabilities",
@@ -23473,7 +23537,7 @@
         }
       ],
       "emits": [],
-      "line": 5600
+      "line": 5616
     },
     {
       "opId": "admin.org_portfolio",
@@ -23547,7 +23611,7 @@
         }
       ],
       "emits": [],
-      "line": 5608
+      "line": 5624
     },
     {
       "opId": "admin.org_inventory_quality",
@@ -23601,7 +23665,7 @@
         }
       ],
       "emits": [],
-      "line": 5617
+      "line": 5633
     },
     {
       "opId": "admin.org_members",
@@ -23680,7 +23744,7 @@
         }
       ],
       "emits": [],
-      "line": 5625
+      "line": 5641
     },
     {
       "opId": "admin.org_plan_history",
@@ -23745,7 +23809,7 @@
         }
       ],
       "emits": [],
-      "line": 5634
+      "line": 5650
     },
     {
       "opId": "admin.assist_session_start",
@@ -23798,7 +23862,7 @@
       "sec": "STF(ADM, SUP) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5643
+      "line": 5659
     },
     {
       "opId": "admin.assist_session_end",
@@ -23850,7 +23914,7 @@
       "sec": "STF(ADM, SUP) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5652
+      "line": 5668
     },
     {
       "opId": "admin.assist_sessions_list",
@@ -23917,7 +23981,7 @@
       "sec": "STF(ADM, SUP)",
       "errors": [],
       "emits": [],
-      "line": 5660
+      "line": 5676
     },
     {
       "opId": "admin.subscription_assign",
@@ -23966,7 +24030,7 @@
       "sec": "STF(ADM) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5668
+      "line": 5684
     },
     {
       "opId": "admin.subscriptions_list",
@@ -24042,7 +24106,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5676
+      "line": 5692
     },
     {
       "opId": "admin.subscription_change_requests_list",
@@ -24104,7 +24168,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5685
+      "line": 5701
     },
     {
       "opId": "admin.plans_list",
@@ -24144,7 +24208,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5693
+      "line": 5709
     },
     {
       "opId": "admin.plan_update",
@@ -24199,7 +24263,7 @@
       "sec": "STF(ADM) 4EYES RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5700
+      "line": 5716
     },
     {
       "opId": "admin.taxonomy_snapshot",
@@ -24267,7 +24331,7 @@
       "sec": "STF(ADM, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5710
+      "line": 5726
     },
     {
       "opId": "admin.taxonomy_node_create",
@@ -24330,7 +24394,7 @@
         }
       ],
       "emits": [],
-      "line": 5718
+      "line": 5734
     },
     {
       "opId": "admin.taxonomy_node_update",
@@ -24385,7 +24449,7 @@
       "sec": "STF(ADM) ETAG RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5727
+      "line": 5743
     },
     {
       "opId": "admin.taxonomy_merge",
@@ -24448,7 +24512,7 @@
           "event": "taxonomy.node.merged"
         }
       ],
-      "line": 5735
+      "line": 5751
     },
     {
       "opId": "admin.synonyms_list",
@@ -24512,7 +24576,7 @@
       "sec": "STF(ADM, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5744
+      "line": 5760
     },
     {
       "opId": "admin.synonym_create",
@@ -24572,7 +24636,7 @@
         }
       ],
       "emits": [],
-      "line": 5752
+      "line": 5768
     },
     {
       "opId": "admin.synonym_decide",
@@ -24624,7 +24688,7 @@
       "sec": "STF(ADM, MOD) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5761
+      "line": 5777
     },
     {
       "opId": "admin.synonym_delete",
@@ -24675,7 +24739,7 @@
       "sec": "STF(ADM) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5769
+      "line": 5785
     },
     {
       "opId": "admin.mappings_list",
@@ -24747,7 +24811,7 @@
       "sec": "STF(ADM, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5776
+      "line": 5792
     },
     {
       "opId": "admin.mapping_upsert",
@@ -24805,7 +24869,7 @@
         }
       ],
       "emits": [],
-      "line": 5784
+      "line": 5800
     },
     {
       "opId": "admin.review_approvals_queue",
@@ -24862,7 +24926,7 @@
       "sec": "STF(CRV, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5795
+      "line": 5811
     },
     {
       "opId": "admin.review_approval_get",
@@ -24915,7 +24979,7 @@
         }
       ],
       "emits": [],
-      "line": 5803
+      "line": 5819
     },
     {
       "opId": "admin.my_decisions_list",
@@ -24963,7 +25027,7 @@
       "sec": "STF(CRV, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5811
+      "line": 5827
     },
     {
       "opId": "admin.review_approval_decide",
@@ -25043,7 +25107,7 @@
           "event": "moderation.action.taken"
         }
       ],
-      "line": 5819
+      "line": 5835
     },
     {
       "opId": "admin.review_move_to_approval_path",
@@ -25098,7 +25162,7 @@
       "sec": "STF(MOD) 4EYES RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5829
+      "line": 5845
     },
     {
       "opId": "admin.reports_list",
@@ -25165,7 +25229,7 @@
       "sec": "STF(MOD, SUP)",
       "errors": [],
       "emits": [],
-      "line": 5837
+      "line": 5853
     },
     {
       "opId": "admin.report_triage",
@@ -25218,7 +25282,7 @@
       "sec": "STF(MOD, SUP) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5845
+      "line": 5861
     },
     {
       "opId": "admin.cases_list",
@@ -25300,7 +25364,7 @@
       "sec": "STF(MOD, ADM)",
       "errors": [],
       "emits": [],
-      "line": 5853
+      "line": 5869
     },
     {
       "opId": "admin.case_get",
@@ -25353,7 +25417,7 @@
         }
       ],
       "emits": [],
-      "line": 5862
+      "line": 5878
     },
     {
       "opId": "admin.case_context",
@@ -25406,7 +25470,7 @@
         }
       ],
       "emits": [],
-      "line": 5870
+      "line": 5886
     },
     {
       "opId": "admin.case_assign",
@@ -25459,7 +25523,7 @@
       "sec": "STF(MOD, ADM) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5878
+      "line": 5894
     },
     {
       "opId": "admin.case_action",
@@ -25550,7 +25614,7 @@
           "note": "penalty"
         }
       ],
-      "line": 5886
+      "line": 5902
     },
     {
       "opId": "admin.case_close",
@@ -25602,7 +25666,7 @@
       "sec": "STF(MOD, ADM) RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 5896
+      "line": 5912
     },
     {
       "opId": "admin.disputes_queue",
@@ -25669,7 +25733,7 @@
       "sec": "STF(MOD, CRV)",
       "errors": [],
       "emits": [],
-      "line": 5904
+      "line": 5920
     },
     {
       "opId": "admin.dispute_get",
@@ -25722,7 +25786,7 @@
         }
       ],
       "emits": [],
-      "line": 5912
+      "line": 5928
     },
     {
       "opId": "admin.dispute_resolve",
@@ -25810,7 +25874,7 @@
           "note": "upheld objection"
         }
       ],
-      "line": 5920
+      "line": 5936
     },
     {
       "opId": "admin.dispute_messages_list",
@@ -25870,7 +25934,7 @@
         }
       ],
       "emits": [],
-      "line": 5931
+      "line": 5947
     },
     {
       "opId": "admin.dispute_message_post",
@@ -25940,7 +26004,7 @@
           "event": "dispute.message.posted"
         }
       ],
-      "line": 5940
+      "line": 5956
     },
     {
       "opId": "admin.badges_list",
@@ -26007,7 +26071,7 @@
       "sec": "STF(ADM, MOD)",
       "errors": [],
       "emits": [],
-      "line": 5950
+      "line": 5966
     },
     {
       "opId": "admin.badge_approve",
@@ -26063,7 +26127,7 @@
           "event": "badge.awarded"
         }
       ],
-      "line": 5958
+      "line": 5974
     },
     {
       "opId": "admin.flags_list",
@@ -26124,7 +26188,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5969
+      "line": 5985
     },
     {
       "opId": "admin.flag_update",
@@ -26192,14 +26256,14 @@
       "sec": "STF(ADM) ETAG RSN AUD 4EYES(kill switch off, featured.enabled on)",
       "errors": [],
       "emits": [],
-      "line": 5977
+      "line": 5993
     },
     {
       "opId": "admin.exchange_rates_list",
       "section": "23.5",
       "sectionTitle": "Flags, retention, audit, AI oversight and analytics",
       "module": "admin",
-      "summary": "Lists the USD exchange rates that clients use to show prices in a display currency.",
+      "summary": "Lists the USD exchange rates that clients use to show prices in a display currency, with whether each was set today (the region's time zone) and its age, for the daily rate workflow. When the rate was not set by the reminder hour (09:00 region time by default), the active administrators get one `exchange_rate_reminder` staff notice that day (in the console and by email). A missing display-currency rate is created at start from the deployment's default (`CARPAL_DEFAULT_IRR_PER_USD`), so `config.client` always serves a rate.",
       "method": "GET",
       "pathTemplate": "{adm}/exchange-rates",
       "routes": [
@@ -26232,7 +26296,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 5985
+      "line": 6001
     },
     {
       "opId": "admin.exchange_rate_update",
@@ -26304,7 +26368,7 @@
           "event": "exchange_rate.changed"
         }
       ],
-      "line": 5992
+      "line": 6008
     },
     {
       "opId": "admin.region_settings",
@@ -26347,7 +26411,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 6001
+      "line": 6017
     },
     {
       "opId": "admin.notif_templates_list",
@@ -26409,7 +26473,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 6008
+      "line": 6024
     },
     {
       "opId": "admin.notif_template_update",
@@ -26471,7 +26535,7 @@
         }
       ],
       "emits": [],
-      "line": 6016
+      "line": 6032
     },
     {
       "opId": "admin.notif_template_reset",
@@ -26526,7 +26590,7 @@
       "sec": "STF(ADM) ETAG RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 6025
+      "line": 6041
     },
     {
       "opId": "admin.notif_template_preview",
@@ -26569,7 +26633,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 6033
+      "line": 6049
     },
     {
       "opId": "admin.notif_rules_get",
@@ -26609,7 +26673,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 6042
+      "line": 6058
     },
     {
       "opId": "admin.notif_rules_update",
@@ -26663,7 +26727,7 @@
       "sec": "STF(ADM) ETAG RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 6049
+      "line": 6065
     },
     {
       "opId": "admin.notif_delivery_health",
@@ -26703,7 +26767,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 6057
+      "line": 6073
     },
     {
       "opId": "admin.notifications_list",
@@ -26762,7 +26826,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 6064
+      "line": 6080
     },
     {
       "opId": "admin.notifications_unread_count",
@@ -26805,7 +26869,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 6072
+      "line": 6088
     },
     {
       "opId": "admin.notifications_mark_read",
@@ -26849,7 +26913,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 6079
+      "line": 6095
     },
     {
       "opId": "admin.retention_list",
@@ -26889,7 +26953,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 6087
+      "line": 6103
     },
     {
       "opId": "admin.retention_update",
@@ -26944,7 +27008,7 @@
       "sec": "STF(ADM) 4EYES RSN AUD",
       "errors": [],
       "emits": [],
-      "line": 6094
+      "line": 6110
     },
     {
       "opId": "admin.retention_create",
@@ -27003,7 +27067,7 @@
         }
       ],
       "emits": [],
-      "line": 6102
+      "line": 6118
     },
     {
       "opId": "admin.retention_dry_run",
@@ -27045,7 +27109,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 6111
+      "line": 6127
     },
     {
       "opId": "admin.policies_list",
@@ -27085,7 +27149,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 6119
+      "line": 6135
     },
     {
       "opId": "admin.policy_version_get",
@@ -27127,7 +27191,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 6126
+      "line": 6142
     },
     {
       "opId": "admin.policy_version_create",
@@ -27184,7 +27248,7 @@
         }
       ],
       "emits": [],
-      "line": 6133
+      "line": 6149
     },
     {
       "opId": "admin.policy_version_update",
@@ -27250,7 +27314,7 @@
         }
       ],
       "emits": [],
-      "line": 6142
+      "line": 6158
     },
     {
       "opId": "admin.policy_version_publish",
@@ -27311,7 +27375,7 @@
         }
       ],
       "emits": [],
-      "line": 6152
+      "line": 6168
     },
     {
       "opId": "admin.audit_search",
@@ -27363,7 +27427,7 @@
       "sec": "STF(ADM) RL(admin.bulk_read) AUD",
       "errors": [],
       "emits": [],
-      "line": 6161
+      "line": 6177
     },
     {
       "opId": "admin.dsr_queue",
@@ -27430,7 +27494,7 @@
       "sec": "STF(ADM, SUP)",
       "errors": [],
       "emits": [],
-      "line": 6170
+      "line": 6186
     },
     {
       "opId": "admin.dsr_update",
@@ -27491,7 +27555,7 @@
         }
       ],
       "emits": [],
-      "line": 6178
+      "line": 6194
     },
     {
       "opId": "admin.dsr_export",
@@ -27556,7 +27620,7 @@
         }
       ],
       "emits": [],
-      "line": 6187
+      "line": 6203
     },
     {
       "opId": "admin.job_get",
@@ -27599,7 +27663,7 @@
       "sec": "STF(ADM, SUP)",
       "errors": [],
       "emits": [],
-      "line": 6196
+      "line": 6212
     },
     {
       "opId": "admin.dsr_execute_deletion",
@@ -27671,7 +27735,7 @@
           "event": "user.deletion.completed"
         }
       ],
-      "line": 6203
+      "line": 6219
     },
     {
       "opId": "admin.media_download_url",
@@ -27730,7 +27794,7 @@
         }
       ],
       "emits": [],
-      "line": 6213
+      "line": 6229
     },
     {
       "opId": "admin.ai_insights_search",
@@ -27778,7 +27842,7 @@
       "sec": "STF(ADM, MOD) RL(admin.bulk_read)",
       "errors": [],
       "emits": [],
-      "line": 6222
+      "line": 6238
     },
     {
       "opId": "admin.mcp_clients_list",
@@ -27818,7 +27882,7 @@
       "sec": "STF(ADM)",
       "errors": [],
       "emits": [],
-      "line": 6231
+      "line": 6247
     },
     {
       "opId": "admin.mcp_client_update",
@@ -27886,7 +27950,7 @@
       "sec": "STF(ADM) ETAG RSN AUD 4EYES(scope, resource or tool changes)",
       "errors": [],
       "emits": [],
-      "line": 6238
+      "line": 6254
     },
     {
       "opId": "admin.mcp_access_log_search",
@@ -27937,7 +28001,7 @@
       "sec": "STF(ADM) RL(admin.bulk_read) AUD",
       "errors": [],
       "emits": [],
-      "line": 6247
+      "line": 6263
     },
     {
       "opId": "admin.analytics_dashboard",
@@ -28002,14 +28066,14 @@
       "sec": "STF(ADM, MOD, SUP)",
       "errors": [],
       "emits": [],
-      "line": 6256
+      "line": 6272
     },
     {
       "opId": "admin.system_health",
       "section": "23.5",
       "sectionTitle": "Flags, retention, audit, AI oversight and analytics",
       "module": "admin",
-      "summary": "Returns the A-DASH-01 System widget: failed inventory and fleet imports, failed notification deliveries and files the virus scan could not check, in the last 24 hours, 7 days and 30 days, with the last failure. Aggregates only.",
+      "summary": "Returns the A-DASH-01 System widget: failed inventory and fleet imports, failed notification deliveries and files the virus scan could not check, in the last 24 hours, 7 days and 30 days, with the last failure; and (1.5.0) the SMS provider, whether SMS is simulated, and the mail transport. Aggregates only.",
       "method": "GET",
       "pathTemplate": "{adm}/system-health",
       "routes": [
@@ -28044,7 +28108,7 @@
       "sec": "STF(ADM, MOD, SUP)",
       "errors": [],
       "emits": [],
-      "line": 6264
+      "line": 6280
     },
     {
       "opId": "admin.work_summary",
@@ -28087,7 +28151,7 @@
       "sec": "STF(ADM, MOD, SUP, CRV)",
       "errors": [],
       "emits": [],
-      "line": 6271
+      "line": 6287
     },
     {
       "opId": "admin.four_eyes_list",
@@ -28150,7 +28214,7 @@
       "sec": "STF(ADM, MOD)",
       "errors": [],
       "emits": [],
-      "line": 6278
+      "line": 6294
     },
     {
       "opId": "admin.four_eyes_decide",
@@ -28226,7 +28290,7 @@
           "event": "four_eyes.decided"
         }
       ],
-      "line": 6286
+      "line": 6302
     },
     {
       "opId": "admin.support_tickets_list",
@@ -28298,7 +28362,7 @@
       "sec": "STF(SUP, ADM)",
       "errors": [],
       "emits": [],
-      "line": 6300
+      "line": 6316
     },
     {
       "opId": "admin.support_ticket_get",
@@ -28355,7 +28419,7 @@
         }
       ],
       "emits": [],
-      "line": 6308
+      "line": 6324
     },
     {
       "opId": "admin.support_ticket_assign",
@@ -28414,7 +28478,7 @@
         }
       ],
       "emits": [],
-      "line": 6316
+      "line": 6332
     },
     {
       "opId": "admin.support_ticket_reply",
@@ -28484,7 +28548,7 @@
           "event": "support.message.posted"
         }
       ],
-      "line": 6325
+      "line": 6341
     },
     {
       "opId": "admin.support_ticket_convert",
@@ -28568,7 +28632,7 @@
           "note": "moderation_case about a review"
         }
       ],
-      "line": 6335
+      "line": 6351
     },
     {
       "opId": "admin.support_ticket_close",
@@ -28638,7 +28702,7 @@
           "event": "support.ticket.solved"
         }
       ],
-      "line": 6345
+      "line": 6361
     }
   ]
 }

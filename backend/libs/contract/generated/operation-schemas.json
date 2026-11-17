@@ -533,6 +533,42 @@
         "$ref": "https://schemas.carpal.app/contract/v1#/$defs/AuthNext"
       }
     },
+    "auth.password_set_initial": {
+      "query": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "pathParams": {},
+      "input": {
+        "type": "object",
+        "properties": {
+          "interaction_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$"
+          },
+          "new_password": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 128,
+            "pattern": "^[^\\r\\n]*$"
+          }
+        },
+        "required": [
+          "interaction_id",
+          "code",
+          "new_password"
+        ],
+        "additionalProperties": false
+      },
+      "response": {
+        "$ref": "https://schemas.carpal.app/contract/v1#/$defs/AuthNext"
+      }
+    },
     "auth.staff_recovery_start": {
       "query": {
         "type": "object",

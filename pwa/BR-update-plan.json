@@ -3,7 +3,7 @@
     "title": "PWA update plan - refinement proposals collected from other components",
     "created": "2026-11-12",
     "status": "partial_collecting",
-    "status_note": "Proposal only. Collected from the Admin Console plan (on hold after AC9); to be converted into a comprehensive PWA plan later. Nothing here is scheduled or built. 2026-11-16: the owner scheduled a PWA refinement round for these items and the backend follow-ups (meta.pending_intake_from_backend). 2026-11-16 (backend S25b): the backend follow-ups are items PB-01..PB-08; nothing is scheduled or built yet.",
+    "status_note": "Proposal only. Collected from the Admin Console plan (on hold after AC9); to be converted into a comprehensive PWA plan later. Nothing here is scheduled or built. 2026-11-16: the owner scheduled a PWA refinement round for these items and the backend follow-ups (meta.pending_intake_from_backend). 2026-11-16 (backend S25b): the backend follow-ups are items PB-01..PB-08; nothing is scheduled or built yet. 2026-11-16 (after the backend closure): PB-09 added for the monthly odometer prompt (owner answer to DQ-24; backend S26b.T1). Later on 2026-11-16: PB-10 (Neshan basemap, supersedes R-24) and PB-11 (phone sign-in while SMS is a mock, DQ-28) added; backend task ids follow the S26a/S26b/S26c split.",
     "format": "Machine-readable. raw_text is the source recommendation verbatim; proposal is a first, unreviewed suggestion.",
     "decisions_from_owner_2026_11_12": [
       "No part of backend, admin console or PWA goes to a test run until the whole plan is complete (PD-03). Test-related items below therefore wait for the full test run.",
@@ -11,7 +11,7 @@
     ],
     "sibling_file": "backend/BR-update-plan.json",
     "counts": {
-      "items": 14
+      "items": 17
     },
     "decisions_from_owner_2026_11_16": [
       "The PWA goes through another round of refinement that implements the recommendations from the admin console development and the backend development (owner, 2026-11-16, Notice 2).",
@@ -199,7 +199,7 @@
       "related": [
         "backend NI-22 (region-config CDN host)"
       ],
-      "note_2026_11_16": "Still infra and owner preparation (backend pilot_prep_checklist_non_code); not part of the backend refinement."
+      "note_2026_11_16": "Still infra and owner preparation (backend pilot_prep_checklist_non_code); not part of the backend refinement. Later on 2026-11-16: superseded by PB-10 (owner decision: Neshan instead of a self-hosted tile host)."
     },
     {
       "id": "PB-01",
@@ -379,6 +379,75 @@
       "proposal": "Read CARPAL_STRICT_AUTH and CARPAL_PWA_CLIENT_PRIVATE_JWKS in the two suites as the console's bff.int.test.ts does: strict BFF config with privateKeyJwt for cp-web-consumer and cp-ssr; sign the direct /oauth/token calls (refresh reuse, revoked token) with the client assertion and a DPoP proof, and call the search with a DPoP-bound token. Then `pnpm int:env clients pwa` (in backend/) runs them against the one strict backend; until then `pnpm int:env backend --lite` and `clients --lite`.",
       "depends_on": [
         "PWA-R-11 (backend part done in S25b)"
+      ]
+    },
+    {
+      "id": "PB-09",
+      "action_id": "PWA-PB-09",
+      "origin": {
+        "component": "backend",
+        "file": "backend/BR-update-plan.json",
+        "raised_in": "S26 (planned 2026-11-16)",
+        "source": "decisions_needed DQ-24 (answered 2026-11-16); S26b.T1"
+      },
+      "status": "proposed",
+      "raw_text": "Owner, 2026-11-16: \"DQ-24: monthly ODOmeter prompt: please add it, but data entry should be voluntry (user can skip) - add the prompt to PWA (if not there), and add the routing in the backend to receive and record data (in historical sequence)\".",
+      "type": "feature",
+      "components": [
+        "pwa"
+      ],
+      "trigger": "after backend S26b (contract 1.5.0)",
+      "test_run_required": false,
+      "found_in_pwa": "Not there yet. The vehicle header (src/features/garage/vehicle-header.tsx, W-GAR-01) has the inline mileage edit with the \"Mileage went down\" check and writes vehicles.mileage_add; there is no monthly prompt, no notification route to it and no skip.",
+      "proposal": "C-GARAGE-08 as a sheet that opens from (a) the push or in-app notice vehicle.odometer_prompt (deep link to the vehicle, sheet open) and (b) a garage card shown while Vehicle.odometer_prompt.due is true. The sheet reuses the header's mileage logic (last value and date, numeric field, lower-value check with Fix last entry / Save anyway) and has two actions: Save (vehicles.mileage_add with recorded_at now, or a date the person picks for a reading taken earlier) and \"Skip this month\" (vehicles.odometer_prompt_skip; no reading written, the card disappears). Answering is voluntary: closing the sheet does nothing, and nothing nags. Add the template text vehicle.odometer_prompt (EN/FA) to the catalog as a consumer template, the notification preference under Reminders, and refresh vehicles.get, vehicles.list and vehicles.mileage_list after Save or Skip. Tests: deep link opens the sheet, Skip calls the operation and hides the card, Save writes a reading, back-dated date accepted, RTL.",
+      "depends_on": [
+        "backend S26b.T1 (vehicles.odometer_prompt_skip, Vehicle.odometer_prompt, template vehicle.odometer_prompt)"
+      ]
+    },
+    {
+      "id": "PB-10",
+      "action_id": "PWA-PB-10",
+      "origin": {
+        "component": "backend",
+        "file": "backend/BR-update-plan.json",
+        "raised_in": "S26b (planned 2026-11-16)",
+        "source": "meta.decisions_from_owner_2026_11_16_s26_scope (Neshan); S26b.T3; supersedes PWA-R-24"
+      },
+      "status": "proposed",
+      "raw_text": "Owner, 2026-11-16: \"for maps, I am planning to use a local map provider from www.neshan.org (api documentation is available here: https://platform.neshan.org/docs/)\".",
+      "type": "feature",
+      "components": [
+        "pwa"
+      ],
+      "trigger": "after backend S26b.T3 and the owner's Neshan web map key",
+      "test_run_required": false,
+      "proposal": "Neshan basemap in the map pages (search map pane, location pickers): keep MapLibre and load a Neshan style built from the region config (vector basemap day/night by theme, no traffic, no Neshan POI layer), with the web map key from CARPAL_PWA_NESHAN_MAP_KEY attached as the Neshan docs require (transformRequest), never stored in Web Storage. Add the Neshan origins to the page CSP (map-config.ts mapTileOrigins: vts.neshan.org, static.neshan.org; and the RTL text plugin from static.neshan.org or a self-hosted copy), the \"© Neshan\" attribution and logo as the terms require, the built-in fallback style kept for outages. If the docs allow only Neshan's SDK (mapbox-gl 1.13 fork, stores the key in localStorage), stop and ask: it conflicts with the PWA's CSP and Web Storage rules. Tests: CSP origins, fallback on style failure, RTL labels, attribution visible.",
+      "depends_on": [
+        "backend S26b.T3 (region config map block)",
+        "Neshan web map key restricted to pwa.carpals.ir"
+      ],
+      "supersedes": "PWA-R-24 (region tile host)"
+    },
+    {
+      "id": "PB-11",
+      "action_id": "PWA-PB-11",
+      "origin": {
+        "component": "backend",
+        "file": "backend/BR-update-plan.json",
+        "raised_in": "S26a (planned 2026-11-16)",
+        "source": "decisions_needed DQ-28 (default)"
+      },
+      "status": "proposed",
+      "raw_text": "Owner, 2026-11-16: \"For sms providers: add a mock module (with real functions to be called from backend) until I can finalize some external SMS API provider.\" DQ-28 default: hide phone sign-in while SMS is a mock.",
+      "type": "feature",
+      "components": [
+        "pwa"
+      ],
+      "trigger": "after backend S26a, if DQ-28 keeps its default",
+      "test_run_required": false,
+      "proposal": "Read config.client auth.phone_signin_available: when false, the sign-up and sign-in screens offer email only (no phone tab, no \"send code by SMS\"), the phone field in Me > Account stays but says that SMS codes are not available yet, and no screen promises an SMS. Tests for both values.",
+      "depends_on": [
+        "backend S26a.T3 (config.client auth.phone_signin_available)"
       ]
     }
   ]
