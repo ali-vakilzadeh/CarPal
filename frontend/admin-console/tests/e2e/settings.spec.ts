@@ -187,7 +187,7 @@ test('kill switch on at once, off only with a second admin; plan, retention and 
     await gotoReady(pageA, `/plans?subscriber=user:${me.staff.id}`);
     const form = pageA.getByTestId('assign-form');
     await expect(form.getByLabel('User ID')).toHaveValue(me.staff.id);
-    await form.getByLabel('Plan').selectOption('individual_free');
+    await form.getByLabel('Plan', { exact: true }).selectOption('individual_free');
     await form.getByRole('button', { name: 'Assign plan' }).click();
     await reason(pageA, 'Assign this plan', 'Assign plan', 'pilot_operation');
     await expect(form.getByText("Assigned. The subscriber's limits change at once.")).toBeVisible();
@@ -227,7 +227,10 @@ test('a flag changed meanwhile: the save is refused and explained; Reload, then 
     await reason(page, 'Change the targeting', 'Save');
     await expect(page.getByText('Someone changed this record meanwhile. Reload it and try again.')).toBeVisible();
     await expectNoAxeViolations(page);
+    // Reload re-reads the list in the background: save only after the new version is in.
+    const reread = page.waitForResponse((r) => r.request().method() === 'GET' && /\/api\/v1\/admin\/flags\?/.test(r.url()) && r.ok());
     await page.getByRole('button', { name: 'Reload' }).click();
+    await reread;
     await expect(detail.getByLabel('Share of users (%)')).toHaveValue('100');
     await detail.getByRole('button', { name: 'Save targeting' }).click();
     await reason(page, 'Change the targeting', 'Save');

@@ -398,3 +398,6 @@ export const isId = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 
 /** The reason of the self-assignment (admin.case_assign RSN): the button is the reason (D-50). */
 export const SELF_ASSIGN_REASON = 'taking_case';
+
+/** The reason of an assignment to a colleague: the code and the colleague's name (AC10.T0, D-50). */
+export const COLLEAGUE_ASSIGN_REASON = 'assigned_to_colleague';

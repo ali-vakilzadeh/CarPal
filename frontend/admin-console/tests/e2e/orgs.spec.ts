@@ -26,6 +26,8 @@ const say = (l: 'en' | 'fa', key: string, vars: Record<string, string> = {}) =>
 const purpose = (id: string) => encodeURIComponent(`verification:${id}`);
 
 test.beforeAll(requireBackend);
+// The FA test reads the organization the EN test verified: same worker, in order (the config is fully parallel).
+test.describe.configure({ mode: 'serial' });
 
 async function chooseReason(page: Page, l: 'en' | 'fa', code: string, note?: string) {
   const dialog = page.getByRole('dialog');
@@ -51,7 +53,9 @@ test('a provider is verified after its pin is corrected (AC9, EN)', async ({ con
 
   await signInAs(context, page, ['MOD'], { path: `/verification?verification=${identityId}&purpose=${purpose(identityId)}` });
   const item = page.getByTestId('verification-item');
-  await expect(item).toHaveAttribute('data-verification', identityId);
+  // The queue answers slowly on a local DB full of earlier test checks (backend N+1, reported), and the linked check
+  // may be on a later page.
+  await expect(item).toHaveAttribute('data-verification', identityId, { timeout: 90_000 });
   await expect(item.getByText(shop.name).first()).toBeVisible();
   await expectNoAxeViolations(page);
 
@@ -81,7 +85,7 @@ test('a provider is verified after its pin is corrected (AC9, EN)', async ({ con
 
   // Approve the location check: the organization is verified now.
   await page.goto(`/verification?verification=${locationId}&purpose=${purpose(locationId)}`);
-  await expect(page.getByTestId('verification-item')).toHaveAttribute('data-verification', locationId);
+  await expect(page.getByTestId('verification-item')).toHaveAttribute('data-verification', locationId, { timeout: 90_000 });
   await tickChecklist(page);
   await page.getByRole('button', { name: 'Approve' }).click();
   dialog = await chooseReason(page, 'en', 'location_confirmed');
@@ -90,9 +94,12 @@ test('a provider is verified after its pin is corrected (AC9, EN)', async ({ con
   await expect(page.getByText(/Verified Business badge/)).toBeVisible();
 });
 
-test('an admin finds the organization, sees the audited correction and suspends it (AC9, FA)', async ({ context, page }) => {
+test('an admin finds the organization, sees the audited correction and suspends it (AC9, FA)', async ({ browser }) => {
   test.setTimeout(300_000);
   test.skip(!shop, 'needs the organization of the EN test');
+  // The sign-in page follows the browser's language (the staff member is not known yet).
+  const context = await browser.newContext({ locale: 'fa-IR' });
+  const page = await context.newPage();
   // A fresh pending check gives the admin a purpose to read the organization for.
   const phoneId = await submitVerification(shop, 'phone');
   await signInAs(context, page, ['ADM'], { path: '/orgs', locale: 'fa' });
@@ -127,4 +134,5 @@ test('an admin finds the organization, sees the audited correction and suspends 
   await dialog.getByRole('button', { name: say('fa', 'orgs.status.do.reactivate') }).click();
   await expect(page.getByText(say('fa', 'orgs.status.done.reactivate'))).toBeVisible();
   await expectNoAxeViolations(page);
+  await context.close();
 });

@@ -248,7 +248,8 @@
         "network": "No connection to the console. Check your network and try again.",
         "other": "Something went wrong. Try again; if it keeps failing, report the request ID.",
         "requestId": "Request ID:",
-        "reload": "Reload"
+        "reload": "Reload",
+        "recoveryRestricted": "Your account was recovered recently: approvals, role changes and staff re-enabling are blocked until the restriction ends."
       },
       "outcome": {
         "applied": "Done.",
@@ -430,7 +431,26 @@
         "pilot_onboarding": "Pilot onboarding",
         "onboarding_done": "Onboarding done",
         "owner_takes_over": "The owner takes over",
-        "session_not_needed": "Session not needed"
+        "session_not_needed": "Session not needed",
+        "identity_checked": "Identity check started",
+        "identity_verified": "Identity verified",
+        "processing_started": "Processing started",
+        "export_delivered": "Export ready for the user",
+        "data_corrected": "Data corrected",
+        "consent_withdrawn": "Consent withdrawn",
+        "identity_not_verified": "Identity could not be verified",
+        "request_unfounded": "Request unfounded",
+        "legal_obligation": "Legal obligation to keep the data",
+        "user_request": "The user asked",
+        "regenerate_failed": "The last export failed",
+        "deletion_bundle": "Export before deletion",
+        "account_compromise": "Account compromise",
+        "suspicious_activity": "Suspicious activity",
+        "stuck_flow": "Onboarding stuck",
+        "new_staff": "New staff member",
+        "role_change": "Change of duties",
+        "staff_left": "Left the team",
+        "security_concern": "Security concern"
       }
     },
     "ops": {
@@ -443,7 +463,11 @@
       "exchange_rate_update": "Exchange rate change",
       "retention_update": "Data retention change",
       "dsr_execute_deletion": "Account data deletion",
-      "mcp_client_update": "MCP client change"
+      "mcp_client_update": "MCP client change",
+      "staff_enable": "Staff account re-enabled",
+      "retention_create": "New data retention policy",
+      "policy_version_publish": "Policy version published",
+      "dispute_resolve": "Dispute decision (fairness approval)"
     },
     "approvals": {
       "title": "Pending approvals",
@@ -488,8 +512,11 @@
       "decisionDone": "Your decision is recorded.",
       "stepUpHint": "Deciding needs a recent security-key sign-in; you may be asked to confirm with your key.",
       "mine": {
-        "title": "Your requests (this tab)",
-        "none": "You have not requested a change in this tab."
+        "title": "Your requests",
+        "none": "You have not requested a change that needs a second staff member.",
+        "error": "Your requests could not be read. They are still listed for the approvers.",
+        "decided": "Decided by {{who}} on {{when}}.",
+        "expired": "Nobody decided it before {{when}}, so it did not take effect."
       }
     },
     "work": {
@@ -1470,7 +1497,10 @@
       "assign": {
         "take": "Take this case",
         "hint": "Others then see that you handle it.",
-        "yours": "You are handling this case."
+        "yours": "You are handling this case.",
+        "to": "Or assign to",
+        "choose": "Choose a colleague",
+        "assign": "Assign"
       },
       "account": {
         "titleUser": "Account",
@@ -1489,10 +1519,7 @@
       "locationHint": "To fix a wrong location, correct it on the organization's page (Organizations); this case records the report.",
       "badge": {
         "title": "Badges",
-        "text": "The Verified Business badge waits for staff approval; any badge can be revoked here. The console cannot list an organization's badges yet: enter the badge id from the badge challenge (Disputes), the verification or the audit log.",
-        "id": "Badge id",
-        "idHint": "For example 0193a3c4-5d6e-7f80-9a1b-…",
-        "idInvalid": "Enter a badge id (a UUID).",
+        "text": "The Verified Business badge waits for staff approval; an active badge can be revoked from a case about the organization.",
         "approve": "Approve the badge",
         "revoke": "Revoke the badge",
         "approveTitle": "Approve this badge",
@@ -1513,6 +1540,24 @@
           "excellent_communication": "Excellent communication",
           "fleet_friendly": "Fleet friendly",
           "ev_ready": "EV ready"
+        },
+        "titlePending": "Badges waiting for approval",
+        "listError": "The badges could not be read.",
+        "none": "This organization has no badges.",
+        "nonePending": "No badge is waiting for approval.",
+        "more": "Only the newest {{n}} badges are shown.",
+        "col": {
+          "badge": "Badge",
+          "organization": "Organization",
+          "status": "Status",
+          "awarded": "Awarded",
+          "actions": "Actions"
+        },
+        "status": {
+          "pending_approval": "Waiting for approval",
+          "active": "Active",
+          "revoked": "Revoked",
+          "expired": "Expired"
         }
       },
       "reportStatus": {
@@ -1937,6 +1982,302 @@
       "badgeNext": "The Verified Business badge is awarded by the trust check and waits for staff approval (organization page, Verification tab).",
       "alreadyDecided": "This request is decided: {{status}}.",
       "cannotDecide": "Only moderators and platform admins decide verification requests."
+    },
+    "suspension": {
+      "label": "Suspend for",
+      "duration": {
+        "until_reactivated": "Until reactivated",
+        "1d": "1 day",
+        "3d": "3 days",
+        "7d": "7 days",
+        "30d": "30 days"
+      },
+      "summaryOpen": "The account stays suspended until someone reactivates it.",
+      "summaryUntil": "The account is reactivated automatically on {{when}}."
+    },
+    "privacy": {
+      "title": "Privacy requests",
+      "intro": "Requests from users about their data: export, deletion, correction and consent withdrawal. Each one has a legal due date; most urgent first.",
+      "listLabel": "Privacy requests",
+      "itemLabel": "Request",
+      "decisionLabel": "Steps",
+      "empty": "No request in this view.",
+      "pick": "Pick a request from the queue.",
+      "pickFirst": "Pick a request first.",
+      "notListed": "This request is not on the current page of the queue. Change the filters or page through the queue to find it.",
+      "cannotAct": "Your role can read this queue but not work on requests.",
+      "closed": "This request is closed: {{status}}.",
+      "overdue": "This request is past its due date.",
+      "itemTitle": "{{type}} request",
+      "completedAt": "Completed",
+      "exportFile": "Export file",
+      "exportReady": "Ready for the user to download",
+      "exportNotReady": "Not ready",
+      "rejectionShown": "Reason shown to the user",
+      "details": "What the user wrote",
+      "noDetails": "The user added no details.",
+      "openUser": "Open the user's account for this request",
+      "dueIn": "Due {{when}}",
+      "rejectionRequired": "Write the reason the user will read.",
+      "rejectionTooLong": "At most {{n}} characters.",
+      "completeNeedsFile": "Mark the request completed only after the export file is built; the user then downloads it from the app.",
+      "filter": {
+        "view": "View",
+        "type": "Type",
+        "status": "Status"
+      },
+      "view": {
+        "overdue": "Overdue",
+        "week": "Due this week"
+      },
+      "type": {
+        "export": "Data export",
+        "deletion": "Account deletion",
+        "rectification": "Correction",
+        "consent_withdrawal": "Consent withdrawal"
+      },
+      "status": {
+        "received": "Received",
+        "verifying_identity": "Checking identity",
+        "in_progress": "In progress",
+        "completed": "Completed",
+        "rejected": "Rejected"
+      },
+      "col": {
+        "type": "Type",
+        "request": "Request",
+        "user": "User",
+        "status": "Status",
+        "requested": "Requested",
+        "due": "Due"
+      },
+      "typeNote": {
+        "export": "The export covers every module, including notes businesses keep about the user. Staff never download it: the user does, from the app.",
+        "deletion": "The console cannot show yet which data will be deleted and which anonymized, or what must be kept and why. Check open disputes and legal holds before you run the deletion.",
+        "rectification": "The console cannot list the records the request concerns yet. Correct the data where it lives (or ask the owning business), then complete the request with what you did in the reason.",
+        "consent_withdrawal": "Staff cannot withdraw a consent for a user. Ask the user to withdraw it in the app's privacy settings, or record what was done, then complete the request."
+      },
+      "move": {
+        "verifying_identity": "Start the identity check",
+        "in_progress": "Identity verified: start processing",
+        "completed": "Mark completed",
+        "rejected": "Reject the request"
+      },
+      "moved": {
+        "verifying_identity": "The identity check has started.",
+        "in_progress": "The request is in progress.",
+        "completed": "The request is completed. The user is told.",
+        "rejected": "The request is rejected. The user is told why."
+      },
+      "stepHint": {
+        "received": "First check that the request comes from the account holder.",
+        "verifying_identity": "Continue once you are sure who made the request.",
+        "in_progress": "Do the work, then complete the request."
+      },
+      "dialog": {
+        "verifying_identity": "Start the identity check",
+        "in_progress": "Start processing",
+        "completed": "Complete the request",
+        "rejected": "Reject the request"
+      },
+      "effect": {
+        "verifying_identity": "The request moves to the identity check.",
+        "in_progress": "You confirm the identity; the request moves to processing.",
+        "completed": "The request is closed as done and the user is told.",
+        "rejected": "The request is closed and the user reads the reason below."
+      },
+      "export": {
+        "title": "Export file",
+        "text": "The export is built in the background. When it is ready, the user downloads it from the app (the link expires after 7 days).",
+        "build": "Build the export file",
+        "again": "Build it again",
+        "effect": "A new export file is built from the user's current data."
+      },
+      "deletion": {
+        "title": "Run the deletion",
+        "text": "Deletes the account's private data and anonymizes the content it published, following the retention rules. It runs only after a second administrator approves it.",
+        "noPreview": "The console cannot show a preview of what is deleted yet.",
+        "run": "Run the deletion",
+        "adminOnly": "Only a platform admin can run a deletion.",
+        "dialog": "Run the deletion",
+        "effect": "After a second administrator approves, the account's private data is deleted. This cannot be undone."
+      },
+      "reject": {
+        "title": "Reject",
+        "message": "Reason the user will read",
+        "hint": "Plain words, at most {{n}} characters."
+      },
+      "job": {
+        "unreadable": "The progress of the export cannot be read. Reload the page later.",
+        "started": "The export has started.",
+        "queued": "The export is waiting to start.",
+        "running": "The export is being built ({{progress}} %).",
+        "succeeded": "The export file is ready. You can now mark the request completed.",
+        "failed": "The export failed. Build it again; if it fails again, tell the engineering team.",
+        "cancelled": "The export was cancelled."
+      }
+    },
+    "users": {
+      "title": "Users",
+      "detailTitle": "User",
+      "intro": "Find a user for the work item you are on: a case, dispute, privacy request or verification. You only find the people that item is about.",
+      "readFor": "Read for this work item: {{kind}}. Each read and search is logged.",
+      "back": "Back to the user lookup",
+      "id": "User id",
+      "suspendedUntil": "Suspended until {{when}}",
+      "suspendedOpen": "Suspended until reactivated",
+      "deleted": "This account is deleted. Nothing can be changed.",
+      "overview": "Overview",
+      "fullName": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "emailMark": "Email verified",
+      "phoneMark": "Phone verified",
+      "verifiedOn": "Yes, on {{when}}",
+      "notVerified": "No",
+      "mfa": "Second sign-in step",
+      "trusted": "Trusted user",
+      "yes": "Yes",
+      "no": "No",
+      "created": "Joined",
+      "lastActive": "Last active",
+      "count": {
+        "reviews": "Reviews",
+        "reportsAgainst": "Reports against",
+        "openDisputes": "Open disputes"
+      },
+      "plan": "Plan",
+      "trialEnds": "trial ends {{when}}",
+      "memberships": "Roles in organizations",
+      "noMemberships": "No organization memberships.",
+      "col": {
+        "organization": "Organization",
+        "role": "Role",
+        "status": "Status",
+        "joined": "Joined"
+      },
+      "results": "Users found",
+      "none": "Nobody found. Only the people this work item is about can be found.",
+      "search": {
+        "label": "Find a user",
+        "by": "Find by",
+        "kind": {
+          "email": "Email",
+          "phone": "Phone",
+          "name": "Name",
+          "user_id": "User id"
+        },
+        "text": "Search for",
+        "hint": {
+          "email": "The full email address.",
+          "phone": "The full number, e.g. +98 912 345 6789 or 0912 345 6789.",
+          "name": "The full or display name.",
+          "user_id": "The user id (a UUID)."
+        },
+        "problem": {
+          "required": "Enter what to search for.",
+          "invalid": "This does not look right for the chosen kind."
+        },
+        "go": "Find",
+        "logged": "Every search is logged with the work item.",
+        "error": "The search did not work. Check that the work item is still open, then try again."
+      },
+      "unavailable": {
+        "title": "This user cannot be shown",
+        "mismatch": "This user is not part of the work item you opened the page from.",
+        "notFound": "No such user.",
+        "other": "The user cannot be read for this work item now (it may be closed). Open the user again from an open work item."
+      },
+      "missing": {
+        "title": "More about this user",
+        "text": "Vehicles, appointments, consents, sessions and devices, privacy requests, content and cases come in a later stage (AC14)."
+      },
+      "status": {
+        "pending_verification": "Not verified yet",
+        "active": "Active",
+        "suspended": "Suspended",
+        "deactivated": "Deactivated",
+        "deleted": "Deleted",
+        "do": {
+          "suspend": "Suspend the account",
+          "reactivate": "Reactivate the account"
+        },
+        "done": {
+          "suspend": "The account is suspended and signed out everywhere.",
+          "reactivate": "The account is active again."
+        },
+        "dialog": {
+          "suspend": "Suspend this account",
+          "reactivate": "Reactivate this account"
+        },
+        "effect": {
+          "suspend": "The user is signed out everywhere and cannot use the account until it is reactivated.",
+          "reactivate": "The user can sign in and use the account again."
+        }
+      },
+      "role": {
+        "platform_admin": "Platform admin",
+        "platform_moderator": "Moderator",
+        "platform_support": "Support",
+        "platform_community_reviewer": "Community reviewer"
+      },
+      "flow": {
+        "individual": "Personal account",
+        "fleet": "Fleet",
+        "provider": "Workshop",
+        "vendor": "Parts seller"
+      },
+      "memberRole": {
+        "individual": "Individual",
+        "fleet_owner": "Fleet owner",
+        "fleet_manager": "Fleet manager",
+        "fleet_maintenance_coordinator": "Maintenance coordinator",
+        "fleet_driver": "Driver",
+        "fleet_viewer": "Viewer",
+        "provider_owner": "Workshop owner",
+        "provider_manager": "Workshop manager",
+        "provider_staff": "Workshop staff",
+        "vendor_owner": "Seller owner",
+        "vendor_staff": "Seller staff"
+      },
+      "memberStatus": {
+        "invited": "Invited",
+        "active": "Active",
+        "suspended": "Suspended",
+        "removed": "Removed"
+      },
+      "signOut": {
+        "do": "Sign out everywhere",
+        "done": "The user is signed out on every device.",
+        "dialog": "Sign this user out everywhere",
+        "effect": "Every session of the account ends. Use it when the account may be in the wrong hands."
+      },
+      "onboarding": {
+        "do": "Reset onboarding",
+        "done": "Onboarding reset: {{flow}}.",
+        "dialog": "Reset onboarding",
+        "flow": "Which onboarding",
+        "only": "Onboarding: {{flow}}.",
+        "effect": "The user starts this onboarding again from the first step. Saved data stays."
+      },
+      "staff": {
+        "title": "Staff roles",
+        "text": "Platform roles give access to this console. A new role takes effect only after a second platform admin approves it; removing a role works at once.",
+        "none": "This user has no staff role.",
+        "role": "Role to give",
+        "choose": "Choose a role",
+        "grant": "Request the role",
+        "revoke": "Remove the role",
+        "revoked": "{{role}} removed.",
+        "dialog": {
+          "grant": "Give the role {{role}}",
+          "revoke": "Remove the role {{role}}"
+        },
+        "effect": {
+          "grant": "A second platform admin must approve this in Pending approvals within 72 hours.",
+          "revoke": "The role ends at once and the user loses its access."
+        }
+      }
     }
   }
 }

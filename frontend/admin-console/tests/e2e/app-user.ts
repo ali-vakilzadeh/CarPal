@@ -354,3 +354,13 @@ export async function submitVerification(
   const v = await ok(shop.owner.call('POST', `/v1/orgs/${shop.id}/verifications`, { verification_type: type }), `verification ${type}`);
   return v.id as string;
 }
+
+/** AC10: the user files a privacy request (dsr.create), as the app's privacy settings do. */
+export async function requestData(
+  user: AppUser,
+  type: 'export' | 'deletion' | 'rectification' | 'consent_withdrawal',
+  details?: string,
+): Promise<{ id: string; status: string }> {
+  const r = await ok(user.call('POST', '/v1/me/data-requests', { request_type: type, ...(details ? { details } : {}) }), `dsr ${type}`);
+  return { id: r.id as string, status: r.status as string };
+}

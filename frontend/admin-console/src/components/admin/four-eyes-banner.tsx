@@ -44,6 +44,7 @@ export function problemText(p: ApiProblem, t: Translate): string {
   if (p.code === 'DUPLICATE') return t('admin.kit.problem.duplicate');
   if (p.purposeMismatch) return t('admin.kit.problem.purposeMismatch');
   if (p.purposeRequired) return t('admin.kit.problem.purpose');
+  if (p.code === 'STAFF_RECOVERY_RESTRICTED') return t('admin.kit.problem.recoveryRestricted');
   if (p.status === 403) return t('admin.kit.problem.forbidden');
   if (p.status === 404) return t('admin.kit.problem.notFound');
   if (p.status === 422) return t('admin.kit.problem.invalid');

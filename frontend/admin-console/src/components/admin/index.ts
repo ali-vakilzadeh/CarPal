@@ -1,15 +1,7 @@
 // The admin interaction kit (AC5): every console screen is built from these, so the admin rules hold everywhere —
 // a reason for every write (GD-11), purpose-bound reads (GD-10), four-eyes outcomes (SEC-ADM-6), masked personal data,
 // paged tables (SEC-ADM-7), the three-panel case layout and the audit trail.
-export {
-  useAdminAction,
-  rememberMyChange,
-  actionIntentType,
-  ReasonMissingError,
-  MY_CHANGES_KEY,
-  type ActionArgs,
-  type ActionState,
-} from './admin-action';
+export { useAdminAction, rememberMyChange, actionIntentType, ReasonMissingError, type ActionArgs, type ActionState } from './admin-action';
 export {
   ReasonPanel,
   ReasonDialog,

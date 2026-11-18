@@ -32,7 +32,16 @@ export type ReasonKind =
   | 'verification_reject'
   | 'location_correction'
   | 'assist_start'
-  | 'assist_end';
+  | 'assist_end'
+  | 'dsr_step'
+  | 'dsr_complete'
+  | 'dsr_reject'
+  | 'dsr_export'
+  | 'dsr_deletion'
+  | 'force_signout'
+  | 'onboarding_reset'
+  | 'role_grant'
+  | 'role_revoke';
 
 export interface ReasonSet {
   codes: readonly string[];
@@ -85,6 +94,18 @@ export const REASON_SETS: Record<ReasonKind, ReasonSet> = {
   },
   assist_start: { codes: ['owner_requested', 'onboarding_help', 'pilot_onboarding', 'other'], noteRequired: false },
   assist_end: { codes: ['onboarding_done', 'owner_takes_over', 'session_not_needed', 'other'], noteRequired: false },
+  // Privacy requests (AC10). A rejection tells the user why in its own text (rejection_reason); the note here is the
+  // staff record. A deletion cannot be undone, so its note is required.
+  dsr_step: { codes: ['identity_checked', 'identity_verified', 'processing_started', 'other'], noteRequired: false },
+  dsr_complete: { codes: ['export_delivered', 'data_corrected', 'consent_withdrawn', 'other'], noteRequired: false },
+  dsr_reject: { codes: ['identity_not_verified', 'request_unfounded', 'legal_obligation', 'duplicate', 'other'], noteRequired: true },
+  dsr_export: { codes: ['user_request', 'regenerate_failed', 'deletion_bundle', 'other'], noteRequired: false },
+  dsr_deletion: { codes: ['identity_verified', 'user_request', 'other'], noteRequired: true },
+  // Users and staff roles (AC10). Role changes give or take platform power, so they carry a note.
+  force_signout: { codes: ['account_compromise', 'suspicious_activity', 'user_request', 'other'], noteRequired: false },
+  onboarding_reset: { codes: ['user_request', 'stuck_flow', 'other'], noteRequired: false },
+  role_grant: { codes: ['new_staff', 'role_change', 'other'], noteRequired: true },
+  role_revoke: { codes: ['staff_left', 'role_change', 'security_concern', 'other'], noteRequired: true },
 };
 
 /** Every code of every set (for the translation check and the parser). */

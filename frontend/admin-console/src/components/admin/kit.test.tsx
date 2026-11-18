@@ -4,13 +4,13 @@
 // paging, states), the case layout, entity chips, timeline, AI evidence, the audit drawer (ADM only, Shift+H) — and
 // axe in English and Persian.
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PendingChange } from '@carpal/api-contracts';
 import { axeViolations, page, problem, renderConsole, scriptedTransport } from '../../../tests/support/console-harness';
 import { nav, resetNav } from '../../../tests/support/navigation-mock';
 import { ApiProblem } from '@/lib/api/problem';
+import { useApiQuery } from '@/lib/api/query';
 import type { Locale } from '@/lib/i18n/locales';
 import {
   ActionNotice,
@@ -21,7 +21,6 @@ import {
   DataTable,
   EntityChip,
   MaskedField,
-  MY_CHANGES_KEY,
   PurposeGate,
   ReasonDialog,
   ReasonMissingError,
@@ -128,10 +127,10 @@ describe('ReasonDialog and ConfirmDialog (AC5.T2)', () => {
 });
 
 describe('useAdminAction (AC5.T2/T4)', () => {
-  function Action({ reason, onError }: { reason: string; onError?: (e: unknown) => void }) {
+  function Action({ reason, onError, mine = false }: { reason: string; onError?: (e: unknown) => void; mine?: boolean }) {
     const action = useAdminAction('admin.four_eyes_decide');
-    const queryClient = useQueryClient();
-    const mine = queryClient.getQueryData<PendingChange[]>(MY_CHANGES_KEY) ?? [];
+    // The server list of the caller's own requests, read again after a 202 (rememberMyChange).
+    useApiQuery('admin.four_eyes_list', { query: { mine: true } }, { enabled: mine });
     return (
       <>
         <button
@@ -143,7 +142,6 @@ describe('useAdminAction (AC5.T2/T4)', () => {
           Go
         </button>
         <ActionNotice state={action.state} />
-        <p data-testid="mine">{mine.length}</p>
       </>
     );
   }
@@ -166,14 +164,20 @@ describe('useAdminAction (AC5.T2/T4)', () => {
     expect(calls[0]!.body).toEqual({ decision: 'approve', reason: 'checked_and_correct' });
   });
 
-  it('a 202 PendingChange shows the four-eyes banner and joins "my requests"', async () => {
-    const { transport } = scriptedTransport({ 'admin.four_eyes_decide': () => Response.json(CHANGE, { status: 202 }) });
-    renderConsole(<Action reason="planned_change" />, { transport });
+  it('a 202 PendingChange shows the four-eyes banner and makes "my requests" read again', async () => {
+    const { transport, calls } = scriptedTransport({
+      'admin.four_eyes_decide': () => Response.json(CHANGE, { status: 202 }),
+      'admin.four_eyes_list': () => page([]),
+    });
+    const listCalls = () => calls.filter((c) => c.opId === 'admin.four_eyes_list');
+    renderConsole(<Action reason="planned_change" mine />, { transport });
+    await waitFor(() => expect(listCalls()).toHaveLength(1));
+    expect(listCalls()[0]!.search).toBe('?mine=true');
     fireEvent.click(screen.getByRole('button', { name: 'Go' }));
     expect(await screen.findByText('Waiting for a second staff member')).toBeInTheDocument();
     expect(screen.getByText(/Data retention change was filed/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open Pending approvals' })).toHaveAttribute('href', '/approvals');
-    await waitFor(() => expect(screen.getByTestId('mine')).toHaveTextContent('1'));
+    await waitFor(() => expect(listCalls()).toHaveLength(2));
   });
 
   it('explains SELF_APPROVAL_FORBIDDEN as a rule, not a failure', async () => {

@@ -1,13 +1,12 @@
 // AC5.T4/T8 DOM tests of Pending approvals: the list (status filter in the URL), the change and the decision; approve
 // and reject need a reason (A/R open them); the decision is sent with the reason; SELF_APPROVAL_FORBIDDEN and an
 // expired change are explained; a step-up saves the decision and the replay sends it once; staff who cannot decide
-// see no buttons; "your requests" lists changes filed in this tab; axe in EN and FA.
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+// see no buttons; "your requests" lists your own changes with their outcome (BR-21); axe in EN and FA.
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PendingChange } from '@carpal/api-contracts';
 import { axeViolations, page, problem, renderConsole, scriptedTransport, staffView } from '../../../tests/support/console-harness';
 import { nav, resetNav } from '../../../tests/support/navigation-mock';
-import { MY_CHANGES_KEY } from '@/components/admin';
 import type { Locale } from '@/lib/i18n/locales';
 import { ApprovalsPage } from './approvals-page';
 
@@ -42,7 +41,8 @@ afterEach(() => vi.unstubAllGlobals());
 describe('Pending approvals (AC5.T4)', () => {
   it('lists pending changes and shows the selected one with the requester’s reason', async () => {
     const { transport, calls } = scriptedTransport({
-      'admin.four_eyes_list': () => page([change(A), change(B, { op_id: 'admin.some_future_op' })]),
+      'admin.four_eyes_list': (req) =>
+        req.search.includes('mine=true') ? page([]) : page([change(A), change(B, { op_id: 'admin.some_future_op' })]),
     });
     renderConsole(<ApprovalsPage />, { transport, roles: ['ADM'] });
     const table = await screen.findByRole('table', { name: 'Changes' });
@@ -61,7 +61,7 @@ describe('Pending approvals (AC5.T4)', () => {
     resetNav(`/approvals?change=${A}`);
     let decided = false;
     const { transport, calls } = scriptedTransport({
-      'admin.four_eyes_list': () => page(decided ? [] : [change(A)]),
+      'admin.four_eyes_list': (req) => (req.search.includes('mine=true') ? page([]) : page(decided ? [] : [change(A)])),
       'admin.four_eyes_decide': () => {
         decided = true;
         return Response.json(change(A, { status: 'approved' }));
@@ -87,7 +87,7 @@ describe('Pending approvals (AC5.T4)', () => {
   it('reject needs a note (R opens it)', async () => {
     resetNav(`/approvals?change=${A}`);
     const { transport, calls } = scriptedTransport({
-      'admin.four_eyes_list': () => page([change(A)]),
+      'admin.four_eyes_list': (req) => (req.search.includes('mine=true') ? page([]) : page([change(A)])),
       'admin.four_eyes_decide': () => Response.json(change(A, { status: 'rejected' })),
     });
     renderConsole(<ApprovalsPage />, { transport, roles: ['ADM'] });
@@ -110,7 +110,7 @@ describe('Pending approvals (AC5.T4)', () => {
     resetNav(`/approvals?change=${A}`);
     let answer = problem(403, 'SELF_APPROVAL_FORBIDDEN');
     const { transport } = scriptedTransport({
-      'admin.four_eyes_list': () => page([change(A)]),
+      'admin.four_eyes_list': (req) => (req.search.includes('mine=true') ? page([]) : page([change(A)])),
       'admin.four_eyes_decide': () => answer.clone(),
     });
     renderConsole(<ApprovalsPage />, { transport, roles: ['ADM'] });
@@ -133,7 +133,7 @@ describe('Pending approvals (AC5.T4)', () => {
     resetNav(`/approvals?change=${A}`);
     const sends: unknown[] = [];
     const { transport } = scriptedTransport({
-      'admin.four_eyes_list': () => page([change(A)]),
+      'admin.four_eyes_list': (req) => (req.search.includes('mine=true') ? page([]) : page([change(A)])),
       'admin.four_eyes_decide': (_req, body) => {
         sends.push(body);
         return Response.json(change(A, { status: 'approved' }));
@@ -165,7 +165,9 @@ describe('Pending approvals (AC5.T4)', () => {
 
   it('a moderator without the change in the list, and staff who cannot decide, see no buttons', async () => {
     resetNav(`/approvals?change=${B}`);
-    const { transport } = scriptedTransport({ 'admin.four_eyes_list': () => page([change(A)]) });
+    const { transport } = scriptedTransport({
+      'admin.four_eyes_list': (req) => (req.search.includes('mine=true') ? page([]) : page([change(A)])),
+    });
     renderConsole(<ApprovalsPage />, { transport, roles: ['MOD'] });
     expect(await screen.findByTestId('approval-not-listed')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
@@ -173,27 +175,54 @@ describe('Pending approvals (AC5.T4)', () => {
 
   it('decided changes show their status and no buttons; the status filter is in the URL', async () => {
     resetNav(`/approvals?status=approved&change=${A}`);
-    const { transport, calls } = scriptedTransport({ 'admin.four_eyes_list': () => page([change(A, { status: 'approved' })]) });
+    const { transport, calls } = scriptedTransport({
+      'admin.four_eyes_list': (req) => (req.search.includes('mine=true') ? page([]) : page([change(A, { status: 'approved' })])),
+    });
     renderConsole(<ApprovalsPage />, { transport, roles: ['ADM'] });
     expect(await screen.findByText('Already decided: Approved.')).toBeInTheDocument();
     expect(calls[0]!.search).toBe('?status=approved&limit=50');
     expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
   });
 
-  it('lists the changes this staff member requested in this tab as waiting for someone else', async () => {
-    const { transport } = scriptedTransport({ 'admin.four_eyes_list': () => page([]) });
-    const { queryClient } = renderConsole(<ApprovalsPage />, { transport, roles: ['ADM'] });
+  it('lists your own requests from the server, waiting or decided with who, when and why (BR-21)', async () => {
+    const { transport, calls } = scriptedTransport({
+      'admin.four_eyes_list': (req) =>
+        req.search.includes('mine=true')
+          ? page([
+              change(B),
+              change(A, {
+                status: 'rejected',
+                decided_by_display: 'Sara Staff',
+                decided_at: ago(1),
+                decision_reason: 'values_incorrect: 60 days is too long',
+              }),
+            ])
+          : page([]),
+    });
+    renderConsole(<ApprovalsPage />, { transport, roles: ['ADM'] });
     expect(await screen.findByText('Nothing waits for your approval.')).toBeInTheDocument();
-    expect(screen.getByTestId('my-requests')).toHaveTextContent('You have not requested a change in this tab.');
-    act(() => queryClient.setQueryData(MY_CHANGES_KEY, [change(B, { requested_by_display: 'Sara Staff' })]));
     const mine = screen.getByTestId('my-requests');
     expect(await within(mine).findByText('Waiting for a second staff member')).toBeInTheDocument();
+    const decided = within(mine).getByTestId('my-decided');
+    expect(decided).toHaveAttribute('data-status', 'rejected');
+    expect(decided).toHaveTextContent('Data retention change: Rejected');
+    expect(decided).toHaveTextContent(/Decided by Sara Staff on/);
+    expect(decided).toHaveTextContent('60 days is too long');
+    expect(calls.map((c) => c.search)).toContain('?mine=true&limit=20');
+  });
+
+  it('says so when you have no requests', async () => {
+    const { transport } = scriptedTransport({ 'admin.four_eyes_list': () => page([]) });
+    renderConsole(<ApprovalsPage />, { transport, roles: ['ADM'] });
+    expect(await within(screen.getByTestId('my-requests')).findByText(/You have not requested a change/)).toBeInTheDocument();
   });
 
   for (const locale of ['en', 'fa'] as Locale[]) {
     it(`axe: no violations (${locale})`, async () => {
       resetNav(`/approvals?change=${A}`);
-      const { transport } = scriptedTransport({ 'admin.four_eyes_list': () => page([change(A), change(B)]) });
+      const { transport } = scriptedTransport({
+        'admin.four_eyes_list': (req) => (req.search.includes('mine=true') ? page([]) : page([change(A), change(B)])),
+      });
       renderConsole(<ApprovalsPage />, { transport, roles: ['ADM'], locale });
       await screen.findByTestId('approval-detail');
       expect(await axeViolations()).toEqual([]);

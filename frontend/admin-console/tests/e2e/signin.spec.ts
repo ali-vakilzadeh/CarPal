@@ -56,7 +56,7 @@ test('a moderator sees no ADM-only section, and an ADM URL answers the no-permis
 
   const allowed = await page.goto('/reviews');
   expect(allowed?.status()).toBe(200);
-  await expect(page.getByTestId('section-placeholder')).toContainText('It arrives in stage AC7');
+  await expect(page.getByRole('heading', { level: 1, name: 'Reviews' })).toBeVisible();
   await page.goto('/no-such-section');
   await expect(page.getByRole('heading', { level: 1, name: "This page doesn't exist" })).toBeVisible();
 });

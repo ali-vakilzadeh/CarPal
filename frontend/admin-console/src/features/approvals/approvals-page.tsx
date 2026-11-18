@@ -3,10 +3,10 @@
 // staff member (admin.four_eyes_list: never the caller's own; moderators see moderation changes only, the server
 // filters), in the three-panel layout: the list, the change, and the decision. Approve (A) or Reject (R) opens the
 // reason; admin.four_eyes_decide is AAL3, so a sign-in older than the step-up window asks for the security key and
-// repeats the decision once. SELF_APPROVAL_FORBIDDEN and an expired or already decided change are explained. Changes
-// this staff member requested in this tab are listed apart as "Waiting for someone else" (memory only; the contract
-// has no list of one's own requests, BR-21).
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+// repeats the decision once. SELF_APPROVAL_FORBIDDEN and an expired or already decided change are explained. The
+// changes this staff member requested are listed apart with their outcome (admin.four_eyes_list mine=true, backend
+// S13, BR-21; AC10.T0 replaced the per-tab memory list of D-31): waiting, or approved / rejected by whom, when and why.
+import { useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import type { PendingChange } from '@carpal/api-contracts';
@@ -15,7 +15,6 @@ import {
   CaseLayout,
   DataTable,
   FourEyesBanner,
-  MY_CHANGES_KEY,
   opLabel,
   ReasonDialog,
   SlaBadge,
@@ -25,6 +24,7 @@ import {
   type Column,
   type FilterDef,
 } from '@/components/admin';
+import { Banner } from '@/components/ds/banner';
 import { Button } from '@/components/ds/button';
 import { useShortcut } from '@/features/shell';
 import { useApiQuery, useSession } from '@/lib/api/query';
@@ -38,6 +38,8 @@ import { canCall } from '@/lib/roles';
 
 const STATUSES = ['pending', 'approved', 'rejected', 'expired'] as const;
 const PAGE_SIZE = 50;
+/** How many of one's own requests are shown (newest first). */
+const MINE_SIZE = 20;
 
 export function statusLabel(status: string, t: Translate): string {
   return (STATUSES as readonly string[]).includes(status)
@@ -59,6 +61,32 @@ function ReasonText({ reason }: { reason: string }) {
         </>
       ) : null}
     </>
+  );
+}
+
+/** One of the caller's own requests once decided or expired: the outcome, by whom, when and why. */
+function MyDecided({ change }: { change: PendingChange }) {
+  const t = useT();
+  const f = useFormat();
+  const tone = change.status === 'approved' ? 'success' : change.status === 'rejected' ? 'danger' : 'info';
+  return (
+    <div data-testid="my-decided" data-change={change.change_id} data-status={change.status}>
+      <Banner tone={tone} title={`${opLabel(change.op_id, t)}: ${statusLabel(change.status, t)}`}>
+        <p className="pwa-banner-text">
+          <Bidi>{change.summary}</Bidi>
+        </p>
+        <p className="pwa-banner-text adm-muted">
+          {change.decided_by_display && change.decided_at
+            ? t('admin.approvals.mine.decided', { who: change.decided_by_display, when: f.date(change.decided_at, 'dateTime') })
+            : t('admin.approvals.mine.expired', { when: f.date(change.expires_at, 'dateTime') })}
+        </p>
+        {change.decision_reason ? (
+          <p className="pwa-banner-text">
+            <ReasonText reason={change.decision_reason} />
+          </p>
+        ) : null}
+      </Banner>
+    </div>
   );
 }
 
@@ -97,7 +125,8 @@ export function ApprovalsPage() {
     },
     { refetchInterval: 60_000 },
   );
-  const mine = useQuery<PendingChange[]>({ queryKey: MY_CHANGES_KEY, queryFn: () => [], enabled: false, staleTime: Infinity });
+  // The caller's own requests, newest first, with the decision once made (read after the list: calls stay in order).
+  const mine = useApiQuery('admin.four_eyes_list', { query: { mine: true, limit: MINE_SIZE } }, { refetchInterval: 60_000 });
 
   const selectedId = params.get('change');
   const items = list.data?.items;
@@ -286,17 +315,19 @@ export function ApprovalsPage() {
         <h2 id="mine-title" className="adm-section-title">
           {t('admin.approvals.mine.title')}
         </h2>
-        {mine.data?.length ? (
+        {mine.isError ? (
+          <p className="adm-muted">{t('admin.approvals.mine.error')}</p>
+        ) : mine.data?.items.length ? (
           <ul className="adm-mine">
-            {mine.data.map((c) => (
+            {mine.data.items.map((c) => (
               <li key={c.change_id}>
-                <FourEyesBanner change={c} showLink={false} />
+                {c.status === 'pending' ? <FourEyesBanner change={c} showLink={false} /> : <MyDecided change={c} />}
               </li>
             ))}
           </ul>
-        ) : (
+        ) : mine.data ? (
           <p className="adm-muted">{t('admin.approvals.mine.none')}</p>
-        )}
+        ) : null}
       </section>
       <ReasonDialog
         open={dialog !== null}

@@ -2,9 +2,9 @@
 // defaults (centre, zoom, attribution) come from the pilot region file the backend loads (shared/region-config), so
 // the console and the apps start their maps at the same place. The pin-versus-address threshold is the backend's
 // CARPAL_LOCATION_CHECK_THRESHOLD_M (default 300 m): admin.verifications_queue returns it with each location check
-// (PinCheck.threshold_m); StaffOrgView does not, so the organization page shows this default until the admin plane
-// serves the region settings (BR-18, D-58). The far/near verdict itself is always the server's
-// (Location.location_check_status), never recomputed here.
+// (PinCheck.threshold_m) and admin.region_settings with the region (backend S13, BR-18; the organization page reads it
+// since AC10.T0). This default is shown only until that read answers. The far/near verdict itself is always the
+// server's (Location.location_check_status), never recomputed here.
 import region from '@carpal/region-config/ir-pilot.json';
 
 export type GeoPoint = { lat: number; lng: number };

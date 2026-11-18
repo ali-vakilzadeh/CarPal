@@ -85,7 +85,8 @@ export const SECTIONS: readonly Section[] = [
     group: 'settings',
     icon: 'user',
     ops: ['admin.platform_role_grant', 'admin.platform_role_revoke'],
-    stage: 'AC10',
+    // A-STAFF-01 (directory, disable, four-eyes enable) is AC14.T2; AC10 grants and revokes roles on the user page.
+    stage: 'AC14',
   },
 ];
 

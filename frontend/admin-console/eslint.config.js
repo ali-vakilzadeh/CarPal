@@ -7,6 +7,13 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import carpal from './tools/eslint/carpal-plugin.js';
 
+/** R-17: writes go through useAdminAction (src/components/admin), never useApiMutation directly. */
+const USE_API_MUTATION = {
+  name: '@/lib/api/query',
+  importNames: ['useApiMutation'],
+  message: 'Use useAdminAction from @/components/admin (reason, step-up, four-eyes outcome; R-17).',
+};
+
 export default tseslint.config(
   {
     ignores: [
@@ -55,11 +62,16 @@ export default tseslint.config(
     },
   },
   {
-    // Server-only code is imported only by server code: app routes, the proxy and src/server itself.
+    // Server-only code is imported only by server code: app routes, the proxy and src/server itself. Screens write only
+    // through the admin kit (R-17, AC10.T0): useAdminAction asks for the reason, runs the step-up and reports four-eyes
+    // outcomes, which useApiMutation does not.
     files: ['src/**/*.{ts,tsx}'],
-    ignores: ['src/app/**', 'src/server/**', 'src/proxy.ts', 'src/**/*.test.{ts,tsx}'],
+    ignores: ['src/app/**', 'src/server/**', 'src/proxy.ts', 'src/**/*.test.{ts,tsx}', 'src/components/admin/**', 'src/lib/api/**'],
     rules: {
-      'no-restricted-imports': ['error', { patterns: [{ group: ['@/server', '@/server/*'], message: 'src/server is server-only.' }] }],
+      'no-restricted-imports': [
+        'error',
+        { paths: [USE_API_MUTATION], patterns: [{ group: ['@/server', '@/server/*'], message: 'src/server is server-only.' }] },
+      ],
     },
   },
   {
@@ -73,13 +85,17 @@ export default tseslint.config(
     },
   },
   {
-    // Features never reach into each other's internals: import another feature through its index only.
+    // Features never reach into each other's internals: import another feature through its index only. (This entry
+    // replaces the one above for features, so it repeats the server-only and useApiMutation rules.)
     files: ['src/features/**/*.{ts,tsx}'],
+    ignores: ['src/**/*.test.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
+          paths: [USE_API_MUTATION],
           patterns: [
+            { group: ['@/server', '@/server/*'], message: 'src/server is server-only.' },
             {
               group: ['@/features/*/*'],
               message: "Import another feature through its index ('@/features/<area>'); use relative paths inside a feature.",

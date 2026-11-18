@@ -257,6 +257,34 @@ describe('Content cases (AC8.T2-T4)', () => {
     expect(call.body).toEqual({ action_type: 'hide', reason: 'policy_violation: spam link' });
   });
 
+  it('assigns an open case to a colleague from the staff list (AC10.T0, BR-10, D-50)', async () => {
+    resetNav(`/content?tab=content&case=${C1}`);
+    const { transport, calls } = scriptedTransport({
+      'admin.cases_list': (req) => page(caseType(req) === 'post' ? [kase()] : []),
+      'admin.case_get': () => Response.json({ case: kase(), actions: [], target_snapshot: postSnapshot() }),
+      'admin.staff_list': () =>
+        page([
+          { user_id: P1, display_name: 'Nima Moderator', platform_roles: ['platform_moderator'], status: 'active' },
+          { user_id: C1, display_name: 'Rana Support', platform_roles: ['platform_support'], status: 'active' },
+        ]),
+      'admin.case_assign': () => Response.json(kase({ assigned_to_display: 'Nima Moderator', status: 'investigating' })),
+    });
+    renderConsole(<ContentPage />, { transport, roles: ['MOD'] });
+    const box = await screen.findByTestId('assign-colleague');
+    expect(calls.find((c) => c.opId === 'admin.staff_list')!.search).toBe('?status=active&limit=100');
+    const select = within(box).getByLabelText('Or assign to');
+    // Support staff cannot work cases: only moderators and admins are offered.
+    expect(within(select).queryByRole('option', { name: 'Rana Support' })).toBeNull();
+    expect(within(box).getByRole('button', { name: 'Assign' })).toBeDisabled();
+    fireEvent.change(select, { target: { value: P1 } });
+    fireEvent.click(within(box).getByRole('button', { name: 'Assign' }));
+    await waitFor(() => expect(screen.getByTestId('case-assignee')).toHaveTextContent('Nima Moderator'));
+    expect(calls.find((c) => c.opId === 'admin.case_assign')!.body).toEqual({
+      assignee_user_id: P1,
+      reason: 'assigned_to_colleague: Nima Moderator',
+    });
+  });
+
   it('a showcase item without a valid consent cannot be approved', async () => {
     resetNav(`/content?tab=content&case=${C1}`);
     const c = kase({
@@ -321,24 +349,53 @@ describe('Accounts, penalties and badges (AC8.T4/T5)', () => {
     const { bff } = renderConsole(<ContentPage />, { transport, roles: ['MOD'] });
     const account = await screen.findByTestId('account-actions');
     expect(within(account).queryByRole('button', { name: 'Reactivate the account' })).toBeNull();
+    // AC10.T0 (BR-07, D-52 lifted): a suspension can end by itself.
+    expect(within(account).getByLabelText('Suspend for')).toHaveValue('until_reactivated');
+    fireEvent.change(within(account).getByLabelText('Suspend for'), { target: { value: '7d' } });
     fireEvent.click(within(account).getByRole('button', { name: 'Suspend the account' }));
     const dialog = await screen.findByRole('dialog', { name: 'Suspend the account' });
     expect(within(dialog).getByText('You will be asked for your security key before this is sent.')).toBeInTheDocument();
+    expect(within(dialog).getByTestId('suspend-summary')).toHaveTextContent('The account is reactivated automatically on');
     await reason(dialog, 'repeated_violations', 'third harassment report');
+    const sentAt = Date.now();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Suspend the account' }));
     const key = await screen.findByRole('dialog', { name: "Confirm it's you" });
-    expect(calls.find((x) => x.opId === 'admin.case_action')!.body).toEqual({
+    const body = calls.find((x) => x.opId === 'admin.case_action')!.body as { params: { suspend_until: string } };
+    expect(body).toEqual({
       action_type: 'suspend_account',
       reason: 'repeated_violations: third harassment report',
+      params: { suspend_until: expect.any(String) },
     });
+    const days = (Date.parse(body.params.suspend_until) - sentAt) / 86_400_000;
+    expect(days).toBeGreaterThan(6.99);
+    expect(days).toBeLessThanOrEqual(7);
     fireEvent.click(within(key).getByRole('button', { name: 'Confirm with security key' }));
     await waitFor(() => expect(bff.posted.find((p) => p.url === '/bff/intents')).toBeTruthy());
     expect((bff.posted.find((p) => p.url === '/bff/intents')!.body as { type: string }).type).toBe('act.admin.case_action');
   });
 
-  it('a trust penalty needs 1-100 points and a second confirmation; badges are approved and revoked by id', async () => {
+  it('a trust penalty needs 1-100 points and a second confirmation; badges are listed, approved and revoked (BR-31)', async () => {
     resetNav(`/content?tab=accounts&case=${C1}`);
     const c = kase({ case_type: 'organization', target: { type: 'organization', id: ORG }, reason: 'fake', severity: 'high' });
+    let badgeStatus: 'pending_approval' | 'active' = 'pending_approval';
+    const badge = (status: 'pending_approval' | 'active') => ({
+      id: BADGE,
+      created_at: ago(5),
+      updated_at: ago(0),
+      version: status === 'active' ? 2 : 1,
+      badge_type: 'verified_business',
+      scope_taxonomy_node_ids: [],
+      rule_key: 'verified_business.v1',
+      rule_version: '1',
+      evaluation_snapshot: {},
+      requires_admin_approval: true,
+      awarded_at: ago(0),
+      last_evaluated_at: ago(5),
+      expires_at: null,
+      visibility: 'public',
+      status,
+      revoked_reason: null,
+    });
     const { transport, calls } = scriptedTransport({
       'admin.cases_list': (req) => page(caseType(req) === 'organization' ? [c] : []),
       'admin.case_get': () =>
@@ -357,25 +414,12 @@ describe('Accounts, penalties and badges (AC8.T4/T5)', () => {
           },
         }),
       'admin.case_action': (_req, body) => action(String(body?.action_type)),
-      'admin.badge_approve': () =>
-        Response.json({
-          id: BADGE,
-          created_at: ago(5),
-          updated_at: ago(0),
-          version: 2,
-          badge_type: 'verified_business',
-          scope_taxonomy_node_ids: [],
-          rule_key: 'verified_business.v1',
-          rule_version: '1',
-          evaluation_snapshot: {},
-          requires_admin_approval: true,
-          awarded_at: ago(0),
-          last_evaluated_at: ago(5),
-          expires_at: null,
-          visibility: 'public',
-          status: 'active',
-          revoked_reason: null,
-        }),
+      // AC10.T0 (BR-31, D-53 lifted): the organization's badges are listed; approval turns the badge active.
+      'admin.badges_list': () => page([{ ...badge(badgeStatus), organization: { id: ORG, name: 'Pars Suspension' } }]),
+      'admin.badge_approve': () => {
+        badgeStatus = 'active';
+        return Response.json(badge('active'));
+      },
     });
     renderConsole(<ContentPage publicWeb="https://pwa.carpals.ir" />, { transport, roles: ['MOD'] });
     expect(await screen.findByRole('link', { name: 'Open the public page (new tab)' })).toHaveAttribute(
@@ -406,10 +450,12 @@ describe('Accounts, penalties and badges (AC8.T4/T5)', () => {
     });
 
     const badges = screen.getByTestId('badge-panel');
-    fireEvent.click(within(badges).getByRole('button', { name: 'Approve the badge' }));
-    expect(within(badges).getByText('Enter a badge id (a UUID).')).toBeInTheDocument();
-    fireEvent.change(within(badges).getByLabelText('Badge id'), { target: { value: BADGE } });
-    fireEvent.click(within(badges).getByRole('button', { name: 'Approve the badge' }));
+    const row = await within(badges).findByTestId('badge-row');
+    expect(row).toHaveTextContent('Verified Business');
+    expect(row).toHaveTextContent('Waiting for approval');
+    expect(calls.find((x) => x.opId === 'admin.badges_list')!.search).toBe(`?organization_id=${ORG}&limit=50`);
+    expect(within(row).queryByRole('button', { name: 'Revoke the badge' })).toBeInTheDocument();
+    fireEvent.click(within(row).getByRole('button', { name: 'Approve the badge' }));
     dialog = await screen.findByRole('dialog', { name: 'Approve this badge' });
     await reason(dialog, 'meets_policy');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Approve the badge' }));
@@ -417,6 +463,8 @@ describe('Accounts, penalties and badges (AC8.T4/T5)', () => {
     const approve = calls.find((x) => x.opId === 'admin.badge_approve')!;
     expect(approve.path).toBe(`/v1/admin/badges/${BADGE}/approve`);
     expect(approve.body).toEqual({ reason: 'meets_policy' });
+    await waitFor(() => expect(within(badges).getByTestId('badge-row')).toHaveTextContent('Active'));
+    expect(within(badges).queryByRole('button', { name: 'Approve the badge' })).toBeNull();
 
     fireEvent.click(within(badges).getByRole('button', { name: 'Revoke the badge' }));
     dialog = await screen.findByRole('dialog', { name: 'Revoke this badge' });

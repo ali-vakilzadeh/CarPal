@@ -303,11 +303,13 @@ describe('Locations tab (AC9.T3)', () => {
           location({ latitude: 35.701, longitude: 51.402, geo_source: 'admin_corrected', location_check_status: 'consistent' }),
         );
       },
+      // AC10.T0 (BR-18, D-58 lifted): the region's threshold comes from the admin plane.
+      'admin.region_settings': () => Response.json({ region: {}, location_check_threshold_m: 250 }),
     });
     renderConsole(<OrgPage orgId={ORG} mapStyleUrl={null} />, { transport, roles: ['MOD'] });
     const tab = await screen.findByTestId('locations-tab');
     expect(within(tab).getByTestId('pin-verdict')).toHaveTextContent('Pin far from address');
-    expect(within(tab).getByTestId('pin-distance')).toHaveTextContent('about 1.2 km (threshold 300 m)');
+    await waitFor(() => expect(within(tab).getByTestId('pin-distance')).toHaveTextContent('about 1.2 km (threshold 250 m)'));
     expect(within(tab).getByTestId('pin-coords')).toHaveTextContent('35.7, 51.4');
     // jsdom has no WebGL: the map says so and the form still works (keyboard alternative).
     expect(await within(tab).findByTestId('map-failed')).toBeInTheDocument();

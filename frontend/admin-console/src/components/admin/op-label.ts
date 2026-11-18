@@ -4,8 +4,12 @@
 import { ADMIN_OPERATIONS } from '@/lib/api/generated';
 import type { MessageKey, Translate } from '@/lib/i18n/keys';
 
-/** The four-eyes operations of contract 1.3.0 (4EYES in their sec: line), which pending changes name. */
+/**
+ * The operations a pending change can name: 4EYES in their sec: line (contract 1.5.0), and admin.dispute_resolve,
+ * whose removal outcomes wait for an administrator's fairness approval (backend S25a, 202 PendingChange).
+ */
 export const FOUR_EYES_OPS = [
+  'admin.staff_enable',
   'admin.platform_role_grant',
   'admin.org_merge',
   'admin.plan_update',
@@ -14,8 +18,11 @@ export const FOUR_EYES_OPS = [
   'admin.flag_update',
   'admin.exchange_rate_update',
   'admin.retention_update',
+  'admin.retention_create',
+  'admin.policy_version_publish',
   'admin.dsr_execute_deletion',
   'admin.mcp_client_update',
+  'admin.dispute_resolve',
 ] as const;
 
 const NAMED: ReadonlySet<string> = new Set(FOUR_EYES_OPS);

@@ -136,6 +136,19 @@ describe('Verification queue and review (AC9.T4)', () => {
     expect(within(panel).getByText('Document 1 of 1')).toBeInTheDocument();
   });
 
+  it('opens a linked check that is on a later page of a long queue', async () => {
+    resetNav(`/verification?verification=${V2}&purpose=verification:${V2}`);
+    const { transport, calls } = scriptedTransport({
+      'admin.verifications_queue': (req) =>
+        req.search.includes('cursor=c2') ? page([item({ id: V2, organization: { ...item().organization, name: 'Later Shop' } })]) : page([item()], 'c2'),
+      'admin.org_get': () => Response.json(org({ name: 'Later Shop' })),
+    });
+    renderConsole(<VerificationPage />, { transport, roles: ['MOD'] });
+    const panel = await screen.findByTestId('verification-item');
+    expect(panel).toHaveAttribute('data-verification', V2);
+    expect(calls.some((c) => c.opId === 'admin.verifications_queue' && c.search.includes('cursor=c2'))).toBe(true);
+  });
+
   it('approves only after the checklist and shows the organization status afterwards', async () => {
     resetNav(`/verification?verification=${V1}&purpose=verification:${V1}`);
     let decided = false;

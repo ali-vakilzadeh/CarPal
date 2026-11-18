@@ -93,8 +93,11 @@ test('a reported post is triaged, hidden, restored and closed (AC8, EN)', async 
   await expect(page.getByTestId('case-status')).toHaveText('Action taken');
 });
 
-test('suspending the author asks for the security key and runs once after it (AC8, FA)', async ({ context, page }) => {
+test('suspending the author asks for the security key and runs once after it (AC8, FA)', async ({ browser }) => {
   test.setTimeout(300_000);
+  // The sign-in page follows the browser's language (the staff member is not known yet).
+  const context = await browser.newContext({ locale: 'fa-IR' });
+  const page = await context.newPage();
   const shop = await publishedShop('m2');
   const post = await shopPost(shop, 'm2');
   const reporter = await appUser('m2-reporter', 'Sara Reporter');
@@ -143,4 +146,5 @@ test('suspending the author asks for the security key and runs once after it (AC
 
   // The author's account is suspended: its next API call is refused.
   await expect.poll(async () => (await shop.owner.call('GET', '/v1/me')).status).toBeGreaterThanOrEqual(401);
+  await context.close();
 });

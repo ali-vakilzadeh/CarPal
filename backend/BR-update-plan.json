@@ -16,7 +16,7 @@
         "file": "frontend/admin-console/dev-plan.json",
         "as_of": "2026-11-18",
         "progress_at_collection": "AC1-AC9 done (AC6-AC9 strict signed-in E2E 35/35 on 2026-11-18); AC10, AC10b, AC11-AC15 and AC14b not started; hold lifted by the owner on 2026-11-18.",
-        "collected": "New: BR-36 (slow verification queue) and BR-37 (verification read by id or organization, from D-66). status_in_source of BR-07..BR-35 synced to the console's 'done' (BR-14 deferred). Nothing else in the console plan asks the backend for new work: open console R-items are owner or console tasks, and D-60 (checklist in the reason) and DI-16 (staff reason_code) were explicitly not requested."
+        "collected": "New: BR-36 (slow verification queue) and BR-37 (verification read by id or organization, from D-66). status_in_source of BR-07..BR-35 synced to the console's 'done' (BR-14 deferred). Nothing else in the console plan asks the backend for new work: open console R-items are owner or console tasks, and D-60 (checklist in the reason) and DI-16 (staff reason_code) were explicitly not requested. Later (AC10): BR-38 (privacy request read by id, handled_by, deletion preview)."
       }
     ],
     "pending_sources": [
@@ -40,15 +40,15 @@
       "deferred_to_next_phase": "Register of the work deferred out of this refinement (NP-xx) with source, decision, date and where to resume; plus items moved to other plans and items the owner closed without change."
     },
     "counts": {
-      "recommendations": 37,
-      "todo": 2,
+      "recommendations": 38,
+      "todo": 3,
       "r_item_actions_for_backend": 12,
       "unlinked_open_doc_issues": 4,
       "stages": 19,
       "by_priority": {
         "P0": 4,
         "P1": 8,
-        "P2": 17,
+        "P2": 18,
         "P3": 1,
         "mixed": 1,
         "closed": 6
@@ -56,7 +56,7 @@
       "by_priority_note": "Recommendations only. mixed = BR-35 (part 1 row P0, part 2 P1, parts 1-filters and 3 P2). R-items are planned in r_item_actions_for_backend and are not counted here.",
       "done_in_refinement": 33,
       "partly_done": 0,
-      "counts_note": "todo, done_in_refinement, partly_done and deferred follow the recommendation status (deferred: BR-14, owner 2026-11-15); by_priority keeps the planning view of 2026-11-12. 2026-11-18: BR-36 (P1) and BR-37 (P2) added from the console as todo, not staged. Later the same day both were staged in S26c.T0 (owner).",
+      "counts_note": "todo, done_in_refinement, partly_done and deferred follow the recommendation status (deferred: BR-14, owner 2026-11-15); by_priority keeps the planning view of 2026-11-12. 2026-11-18: BR-36 (P1) and BR-37 (P2) added from the console as todo, not staged. Later the same day both were staged in S26c.T0 (owner). 2026-11-18 (AC10): BR-38 (P2) added from the console, not staged.",
       "deferred": 1
     },
     "status": "reopened_for_s26",
@@ -1876,6 +1876,50 @@
         "why": "admin.verifications_queue takes status, verification_type, assignee and info_requested only (Docs/40). A link to one check (notices, cases, the organization page) makes the console walk up to 20 pages, and under BR-36 each page takes 8-10 s. A q organization_id / verification_id filter (or admin.verification_get) is one read. Same purpose rules as the queue (the verification purpose opens the record).",
         "task": "S26c.T0",
         "placed": "Owner, 2026-11-18: first priority in S26c."
+      }
+    },
+    {
+      "id": "BR-38",
+      "action_id": "BRU-38",
+      "kind": "backend_request",
+      "origin": {
+        "component": "admin-console",
+        "file": "frontend/admin-console/dev-plan.json",
+        "source": "AC10 (D-67, D-68, DI-33)",
+        "stage_needed": "backend (AC14 or later)"
+      },
+      "priority": "low",
+      "status_in_source": "open",
+      "status": "todo",
+      "in_scope_of_backend_refinement": true,
+      "raw_text": "Privacy requests on the admin plane: (1) a read of one request (admin.dsr_get, or q request_id / user_id on admin.dsr_queue) so a link from a notice or the user page opens it without paging (D-67); (2) handled_by (display name) on the queue item for the A-DSR-01 assignee column; (3) a deletion preview for A-DSR-02: per module what is deleted, anonymized or kept and why (legal hold, open dispute), read under the dsr purpose.",
+      "source_notes": {
+        "collected": "2026-11-18"
+      },
+      "related": {
+        "r_items": [],
+        "open_questions": [],
+        "doc_issues": [
+          {
+            "id": "DI-33"
+          }
+        ],
+        "deviations": [
+          {
+            "id": "D-67"
+          },
+          {
+            "id": "D-68"
+          }
+        ],
+        "requests": []
+      },
+      "plan": {
+        "priority": "P2",
+        "complexity": "M",
+        "stage": [],
+        "proposed_stage": "Not staged: owner to place it (after S26c, with the AC14 console work).",
+        "why": "The console opens a privacy request only from the queue page it is on, shows no assignee and cannot preview a deletion; the pilot works without them (staff read the queue and check holds by hand)."
       }
     }
   ],

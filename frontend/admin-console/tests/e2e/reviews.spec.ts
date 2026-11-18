@@ -92,7 +92,8 @@ test('a business objection is decided by a different staff member; the first dec
   const review = await path2Review(shop, 't2', { rating: 1 });
 
   const aCtx = await browser.newContext();
-  const bCtx = await browser.newContext();
+  // The sign-in page follows the browser's language (the staff member is not known yet).
+  const bCtx = await browser.newContext({ locale: 'fa-IR' });
   const a = await aCtx.newPage();
   const b = await bCtx.newPage();
   await Promise.all([

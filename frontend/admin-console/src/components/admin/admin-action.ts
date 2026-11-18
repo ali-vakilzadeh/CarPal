@@ -2,9 +2,9 @@
 // useAdminAction (AC5.T2/T4, GD-11, SEC-ADM-3): the one way kit screens send a mutating admin operation. It refuses
 // to send an RSN operation without a valid reason (3–500 characters; the ReasonDialog builds it), runs the call
 // through the step-up (an AAL3 / STEP_UP_REQUIRED answer saves the action in the BFF and repeats it once after the
-// security key), and reports the outcome: applied, waiting for a second staff member (202 PendingChange; kept in the
-// in-memory "my requests" list), accepted as a background job, or a problem the screen explains
-// (SELF_APPROVAL_FORBIDDEN, expired/decided, someone changed it meanwhile).
+// security key), and reports the outcome: applied, waiting for a second staff member (202 PendingChange; the
+// server's list of the caller's own requests, admin.four_eyes_list mine=true, is read again), accepted as a
+// background job, or a problem the screen explains (SELF_APPROVAL_FORBIDDEN, expired/decided, changed meanwhile).
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PendingChange } from '@carpal/api-contracts';
@@ -32,12 +32,13 @@ export class ReasonMissingError extends Error {
   }
 }
 
-/** Four-eyes changes this staff member requested in this tab (memory only, cleared with the cache, GD-12). */
-export const MY_CHANGES_KEY = ['kit', 'my-four-eyes-changes'] as const;
-
-export function rememberMyChange(queryClient: QueryClient, change: PendingChange): void {
-  const list = queryClient.getQueryData<PendingChange[]>(MY_CHANGES_KEY) ?? [];
-  queryClient.setQueryData<PendingChange[]>(MY_CHANGES_KEY, [change, ...list.filter((c) => c.change_id !== change.change_id)].slice(0, 50));
+/**
+ * A four-eyes change was filed: the caller's own requests (admin.four_eyes_list mine=true, backend S13, BR-21) and
+ * the pending list are read again, so Pending approvals shows it with its outcome once decided (replaces the
+ * per-tab memory list of AC5, D-31).
+ */
+export function rememberMyChange(queryClient: QueryClient, _change: PendingChange): void {
+  void queryClient.invalidateQueries({ queryKey: ['admin.four_eyes_list'] });
 }
 
 /** Intent type of a replayed action (a-z, digits, '_' and '.'). */
@@ -55,6 +56,8 @@ export function useAdminAction<Id extends AdminOperationId>(
   const queryClient = useQueryClient();
   const stepUp = useStepUp();
   const [state, setState] = useState<ActionState<AdminResponse<Id>>>({ status: 'idle' });
+  // The arguments of the last send, also after a replay on a reloaded page (the screen's own state is gone then).
+  const [lastArgs, setLastArgs] = useState<ActionArgs<Id> | null>(null);
   const op = ADMIN_OPERATIONS[opId];
   const options = useRef(o);
   useEffect(() => {
@@ -65,6 +68,7 @@ export function useAdminAction<Id extends AdminOperationId>(
     async (args: ActionArgs<Id>, replay: boolean): Promise<ActionState<AdminResponse<Id>>> => {
       if (op.reason && !isValidReason(args.reason)) throw new ReasonMissingError(opId);
       setState({ status: 'busy' });
+      setLastArgs(args);
       // The signal cannot be saved for a replay; everything else is plain data (ids, body, purpose, reason).
       const { signal: _signal, ...plain } = args as ActionArgs<Id> & { signal?: AbortSignal };
       const run = () => api.act(opId, ...([plain] as unknown as CallRest<Id>));
@@ -101,5 +105,5 @@ export function useAdminAction<Id extends AdminOperationId>(
 
   const run = useCallback((args: ActionArgs<Id>) => send(args, false), [send]);
   const reset = useCallback(() => setState({ status: 'idle' }), []);
-  return { run, reset, state };
+  return { run, reset, state, lastArgs };
 }

@@ -5,9 +5,10 @@
 // per call, D-49) unless a type is chosen. Safety cases sort first, then severity, then age (Docs/23 principle 10).
 // The item is admin.case_get for purpose case:<id> (open cases, unassigned or the caller's; otherwise "being handled
 // by …"): the target as the public sees it, the case facts, the AI risk as labelled evidence and the action history.
-// "Take this case" assigns it to the caller (admin.case_assign; the button is the reason, D-50). Actions apply to the
-// target in its state (targetActions): content actions, the account (warn, suspend, reactivate; suspension and trust
-// penalties ask for the security key again, AAL3), a trust penalty for the organization, badges on organization
+// "Take this case" assigns it to the caller, or to an active moderator or admin from admin.staff_list (admin.case_assign;
+// the button is the reason, D-50; AC10.T0). Actions apply to the target in its state (targetActions): content actions,
+// the account (warn, suspend for a chosen duration or until reactivated, reactivate; suspension and trust penalties ask
+// for the security key again, AAL3), a trust penalty for the organization, badges on organization
 // cases; every one with a reason through the ReasonDialog. The case is closed with an outcome and a resolution.
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -36,6 +37,7 @@ import { purposeOf, type AccessPurpose } from '@/lib/api/client';
 import type { ApiProblem } from '@/lib/api/problem';
 import { useApiClient, useApiQuery, useSession } from '@/lib/api/query';
 import { slaState } from '@/lib/config/sla';
+import { isSuspendDuration, SUSPEND_DURATIONS, suspendUntil, type SuspendDuration } from '@/lib/config/suspension';
 import { Bidi } from '@/lib/format/bidi';
 import { useFormat } from '@/lib/format/client';
 import { useT } from '@/lib/i18n/client';
@@ -66,6 +68,7 @@ import {
   PENALTY_MAX,
   PENALTY_MIN,
   SELF_ASSIGN_REASON,
+  COLLEAGUE_ASSIGN_REASON,
   STEP_UP_ACTIONS,
   targetActions,
   targetOrganization,
@@ -286,6 +289,14 @@ export function CaseWorkspace({
   const [closeTried, setCloseTried] = useState(false);
   const [points, setPoints] = useState('');
   const [pointsTried, setPointsTried] = useState(false);
+  const [suspendFor, setSuspendFor] = useState<SuspendDuration>('until_reactivated');
+  // Colleagues a case can be assigned to (admin.staff_list, backend S13, BR-10; D-50): active moderators and admins.
+  const [assignee, setAssignee] = useState('');
+  const staff = useApiQuery('admin.staff_list', { query: { status: 'active', limit: 100 } }, { enabled: canAssign, staleTime: 5 * 60_000 });
+  const myId = session.data?.staff?.id;
+  const colleagues = (staff.data?.items ?? []).filter(
+    (s) => s.user_id !== myId && s.platform_roles.some((r) => r === 'platform_moderator' || r === 'platform_admin'),
+  );
   const resolutionError =
     closeTried && !resolution.trim()
       ? t('admin.cases.resolutionRequired')
@@ -321,6 +332,10 @@ export function CaseWorkspace({
     setLastAction(d.action);
     const body: ModerationActionInput = { action_type: d.action, reason };
     if (d.action === 'apply_trust_penalty') body.params = { trust_penalty_points: penaltyPoints(points)! };
+    if (d.action === 'suspend_account') {
+      const until = suspendUntil(suspendFor);
+      if (until) body.params = { suspend_until: until };
+    }
     void caseAction.run({ path: { case_id: theCase.id }, purpose, body, reason });
   };
 
@@ -328,6 +343,13 @@ export function CaseWorkspace({
     if (!theCase || busy) return;
     assign.reset();
     void assign.run({ path: { case_id: theCase.id }, body: { reason: SELF_ASSIGN_REASON }, reason: SELF_ASSIGN_REASON });
+  };
+  const assignColleague = () => {
+    const to = colleagues.find((s) => s.user_id === assignee);
+    if (!theCase || busy || !to) return;
+    assign.reset();
+    const reason = `${COLLEAGUE_ASSIGN_REASON}: ${to.display_name}`;
+    void assign.run({ path: { case_id: theCase.id }, body: { assignee_user_id: to.user_id, reason }, reason });
   };
 
   const now = list.updatedAt;
@@ -491,7 +513,10 @@ export function CaseWorkspace({
       return <p className="adm-muted">{detail.isError ? t('admin.cases.cannotActNow') : t('admin.kit.table.loading')}</p>;
     const acts = targetActions(target);
     const org = targetOrganization(target);
-    const done = lastAction && target ? t(actionTexts(target.type, lastAction).done, { thing }) : undefined;
+    // After a step-up the page was reloaded: the replayed action's own body says which action it was.
+    const shown =
+      lastAction ?? ((caseAction.lastArgs?.body as ModerationActionInput | undefined)?.action_type as CaseAction | undefined) ?? null;
+    const done = shown && target ? t(actionTexts(target.type, shown).done, { thing }) : undefined;
     const pointsValue = penaltyPoints(points);
     return (
       <div className="adm-stack">
@@ -501,12 +526,48 @@ export function CaseWorkspace({
               {t('admin.moderation.assign.yours')}
             </p>
           ) : (
-            <div className="adm-actions">
-              <Button size="sm" variant="secondary" icon="user" disabled={busy} loading={assign.state.status === 'busy'} onClick={takeCase}>
-                {t('admin.moderation.assign.take')}
-              </Button>
-              <span className="adm-muted">{t('admin.moderation.assign.hint')}</span>
-            </div>
+            <>
+              <div className="adm-actions">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon="user"
+                  disabled={busy}
+                  loading={assign.state.status === 'busy'}
+                  onClick={takeCase}
+                >
+                  {t('admin.moderation.assign.take')}
+                </Button>
+                <span className="adm-muted">{t('admin.moderation.assign.hint')}</span>
+              </div>
+              {colleagues.length ? (
+                <div className="adm-actions" data-testid="assign-colleague">
+                  <div className="cp-field">
+                    <label className="cp-field-label" htmlFor={`${uid}-assignee`}>
+                      {t('admin.moderation.assign.to')}
+                    </label>
+                    <div className="cp-field-box">
+                      <select
+                        id={`${uid}-assignee`}
+                        className="cp-field-input adm-select"
+                        value={assignee}
+                        onChange={(e) => setAssignee(e.target.value)}
+                      >
+                        <option value="">{t('admin.moderation.assign.choose')}</option>
+                        {colleagues.map((s) => (
+                          <option key={s.user_id} value={s.user_id}>
+                            {s.display_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="secondary" disabled={busy || !assignee} onClick={assignColleague}>
+                    {t('admin.moderation.assign.assign')}
+                  </Button>
+                </div>
+              ) : null}
+            </>
           )
         ) : null}
         {assign.state.status === 'failed' ? <ActionNotice state={assign.state} /> : null}
@@ -537,6 +598,27 @@ export function CaseWorkspace({
               {t(target?.type === 'user' ? 'admin.moderation.account.titleUser' : 'admin.moderation.account.titleAuthor')}
             </h3>
             <p className="adm-muted">{t('admin.moderation.account.text')}</p>
+            {acts.suspend ? (
+              <div className="cp-field">
+                <label className="cp-field-label" htmlFor={`${uid}-suspend-for`}>
+                  {t('admin.suspension.label')}
+                </label>
+                <div className="cp-field-box">
+                  <select
+                    id={`${uid}-suspend-for`}
+                    className="cp-field-input adm-select"
+                    value={suspendFor}
+                    onChange={(e) => isSuspendDuration(e.target.value) && setSuspendFor(e.target.value)}
+                  >
+                    {SUSPEND_DURATIONS.map((d) => (
+                      <option key={d} value={d}>
+                        {t(`admin.suspension.duration.${d}`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            ) : null}
             <div className="adm-actions">
               {acts.suspend ? actionButton('suspend_account', 'danger') : null}
               {acts.reactivate ? actionButton('reactivate_account', 'primary') : null}
@@ -570,7 +652,7 @@ export function CaseWorkspace({
           <ActionNotice state={caseAction.state} applied={done} />
         ) : null}
         {canAct && target?.type === 'organization_location' ? <p className="adm-muted">{t('admin.moderation.locationHint')}</p> : null}
-        {acts.badges && purpose ? <BadgePanel caseId={theCase.id} purpose={purpose} onDone={refresh} /> : null}
+        {acts.badges && purpose ? <BadgePanel orgId={org} caseId={theCase.id} purpose={purpose} onDone={refresh} /> : null}
         {purpose ? extra?.({ theCase, target, purpose, busy, refresh }) : null}
         {canClose ? (
           <section className="adm-panel" aria-labelledby={`${uid}-close`}>
@@ -682,6 +764,13 @@ export function CaseWorkspace({
               )}
               {action === 'apply_trust_penalty' ? (
                 <p>{t('admin.moderation.penalty.summary', { n: f.number(penaltyPoints(points) ?? 0) })}</p>
+              ) : null}
+              {action === 'suspend_account' ? (
+                <p data-testid="suspend-summary">
+                  {suspendFor === 'until_reactivated'
+                    ? t('admin.suspension.summaryOpen')
+                    : t('admin.suspension.summaryUntil', { when: f.date(suspendUntil(suspendFor)!, 'dateTime') })}
+                </p>
               ) : null}
               {action && STEP_UP_ACTIONS.has(action) ? <p className="adm-muted">{t('admin.moderation.stepUp')}</p> : null}
             </>
