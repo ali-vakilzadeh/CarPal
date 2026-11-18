@@ -2,8 +2,8 @@
   "meta": {
     "title": "CarPal admin console (WP15 UI, WP20 admin part; frontend/admin-console/) — build plan and stage log",
     "created": "2026-11-08",
-    "last_updated": "2026-11-16",
-    "status": "partial_on_hold",
+    "last_updated": "2026-11-18",
+    "status": "in_progress",
     "owner": "ali-vakilzadeh",
     "purpose": "Build the internal staff console that operates the platform: Path 2 review approvals, moderation, disputes, verification, privacy requests, plans, flags and the AI kill switch, the USD exchange rate, taxonomy, audit, AI/MCP oversight and analytics. Without it the pilot cannot run without direct API or database work (backend S11 open_after_stage, NI-08).",
     "sources_of_truth": [
@@ -19,27 +19,25 @@
       "Backend work that a stage needs (backend_requests with stage 'AC2' or other) is done in backend/ and also logged as a backend stage (S12, S13) in backend/dev_plan.json."
     ],
     "progress": {
-      "as_of": "2026-11-10",
-      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) with pnpm check, build and a Playwright smoke. AC2 done 2026-11-09 (backend S12): contract 1.3.0 gives cp-web-admin DPoP + private_key_jwt, the staff passkey enrolment inside the sign-in (auth.passkey_enrol_options, auth.passkey_enrol), admin.staff_me, and a first-run staff bootstrap (backend pnpm staff:bootstrap, backend/deploy/staff-bootstrap.sh); the console is regenerated (63 admin-api operations, no api reads, because the api host refuses admin tokens), shows a Latin environment badge (OQ-12) and sends HSTS outside dev (OQ-11). OQ-01, OQ-10, OQ-11 and OQ-12 are answered. AC3 done 2026-11-09: the admin BFF (src/server/bff, copied from the PWA with provenance headers) signs staff in at aal3 with code + PKCE, DPoP-bound tokens and private_key_jwt, keeps tokens, the DPoP key and the admin.staff_me profile server-side (browser: one __Host-cpa_sid cookie), ends sessions after 30 min idle / 8 h, forwards exactly the 63 admin-api operations (purpose and reason headers, CSRF), and offers /bff/reauth for step-up; the typed client (src/lib/api) and the TanStack provider (memory-only cache, cleared on sign-out, session end and staff switch) are in. Tests: pnpm check (196), pnpm test:int against the strict backend (7), pnpm e2e (10). AC4 done 2026-11-09: staff sign in on the console's own /id/signin (work email + password with proof of work in strict mode, then the security key; a first-time account enrols a device-bound key with the emailed code in the same sign-in; the key alone for a step-up) and land in the shell: top bar with the environment badge, lookup and My queue placeholders, shortcut list and avatar menu (roles, My actions for ADM, language, theme, sign-out), left navigation filtered by the role table (20 sections, placeholders until their stages), no-permission and not-found states inside the shell, idle warning at 25 min and sign-out at 30 (measured against the server clock), step-up with one-time replay of the saved action, and keyboard shortcuts. Tests: pnpm check (243), pnpm test:int (7), pnpm e2e (22, strict backend). AC5 done 2026-11-10: the admin interaction kit (src/components/admin) carries the admin rules into every later screen: useAdminAction refuses an RSN write without a 3-500 character reason, runs it through the step-up with a one-time replay and reports applied / waiting for a second staff member (FourEyesBanner) / accepted job / an explained problem (SELF_APPROVAL_FORBIDDEN, expired, changed meanwhile); ReasonDialog (console reason codes per kind of action + note, sent as '<code>: <note>', D-29) and ConfirmDialog (second confirmation for irreversible actions); PurposeGate and MaskedField (GD-10); DataTable with URL-bound filters, cursor paging, column choice, saved views without data, keyboard rows and Latin digits; CaseLayout, EntityChip, Timeline, AiEvidenceBlock, SlaBadge and the ADM-only AuditDrawer (Shift+H). Pending approvals (/approvals) lists and decides four-eyes changes; My work (/) shows the approvals waiting and one tile per queue the roles may see with count, oldest age and SLA state (OQ-05 targets, D-32); the top bar's My queue links there with the approvals count. Tests: pnpm check (301), pnpm test:int (7), pnpm e2e (25, strict backend; the four-eyes round trip with two ADM accounts). AC6 built 2026-11-10 (partial: the signed-in E2E is not run yet): Exchange rates (/rates: preview, 20 % four-eyes warning, If-Match; replaces the deploy SQL), Feature flags (/flags: the AI kill switch on top, on at once and off by four-eyes; switch and targeting with If-Match and a Reload on 412), Plans & entitlements (/plans: the ranking rule, plan edits by four-eyes, the audit history, assign plan / trial / overrides) and Data retention (/retention: edits by four-eyes). Tests: pnpm check (330), smoke + bff E2E (13); tests/e2e/settings.spec.ts written, waiting for a strict run with the client key. AC7 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6): Reviews (/reviews: the Path 2 approval queue by stage for community reviewers — the review read for its approval purpose with the business answer, the author history without contact data and evidence links, Confirm once the business step is done, Reject with a note, Ask for evidence, a reason code that is never a rating, A/R keys; moderators read the queue and work review cases: remove, restore, approve a held-back review, warn, move to Path 2 by four-eyes, close) and Disputes & appeals (/disputes: the disputed review with both sides' evidence and the first decider, mediation / uphold / reject with what each does, the different-staff rule explained). Tests: pnpm check (363), smoke + bff E2E (13); tests/e2e/reviews.spec.ts written, its API seeding run against the strict backend. AC8 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6 and AC7): the moderation case workspace for every target type (also under the AC7 review cases): Reports (/content: triage into a case — safety reasons at least high — into the open case about the same item, or dismiss), Content / Accounts & organizations / AI output (/content tabs) and Inventory (/inventory) queues with safety cases first; a case read for its purpose shows the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), \"Take this case\", the actions the backend applies to that item in its state (showcase approval needs the customer's consent), warn / suspend (security key) / reactivate, trust penalties (security key, second confirmation) and badges by id, and closing with a resolution. Tests: pnpm check (397), smoke + bff E2E (13); tests/e2e/moderation.spec.ts written, its API seeding run. AC4-AC8 are committed (the user, 2026-11-10). AC9 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6-AC8): Organizations (/orgs: search by name, slug or id without contact data, two saved views) and the organization page read for an open work item (a pending verification or an open case; otherwise the header from the search and the checks to open it for): Profile with masked contact data, Locations with a MapLibre map (owner's pin, service radius, the server's pin-to-address verdict) and pin or address correction by click, drag or typed coordinates, Verification with the badge approval, Plan; suspend and reactivate; assist sessions with a banner on every page. Verification (/verification: queue with the 2-working-day SLA; submitted data, a watermarked document viewer with zoom, rotate and paging, the checklist; approve blocked by a far pin; reject with the message for the business; the organization's new status after the decision). Tests: pnpm check (429), smoke + bff E2E (13); tests/e2e/orgs.spec.ts written, its API seeding run.",
+      "as_of": "2026-11-18",
+      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) with pnpm check, build and a Playwright smoke. AC2 done 2026-11-09 (backend S12): contract 1.3.0 gives cp-web-admin DPoP + private_key_jwt, the staff passkey enrolment inside the sign-in (auth.passkey_enrol_options, auth.passkey_enrol), admin.staff_me, and a first-run staff bootstrap (backend pnpm staff:bootstrap, backend/deploy/staff-bootstrap.sh); the console is regenerated (63 admin-api operations, no api reads, because the api host refuses admin tokens), shows a Latin environment badge (OQ-12) and sends HSTS outside dev (OQ-11). OQ-01, OQ-10, OQ-11 and OQ-12 are answered. AC3 done 2026-11-09: the admin BFF (src/server/bff, copied from the PWA with provenance headers) signs staff in at aal3 with code + PKCE, DPoP-bound tokens and private_key_jwt, keeps tokens, the DPoP key and the admin.staff_me profile server-side (browser: one __Host-cpa_sid cookie), ends sessions after 30 min idle / 8 h, forwards exactly the 63 admin-api operations (purpose and reason headers, CSRF), and offers /bff/reauth for step-up; the typed client (src/lib/api) and the TanStack provider (memory-only cache, cleared on sign-out, session end and staff switch) are in. Tests: pnpm check (196), pnpm test:int against the strict backend (7), pnpm e2e (10). AC4 done 2026-11-09: staff sign in on the console's own /id/signin (work email + password with proof of work in strict mode, then the security key; a first-time account enrols a device-bound key with the emailed code in the same sign-in; the key alone for a step-up) and land in the shell: top bar with the environment badge, lookup and My queue placeholders, shortcut list and avatar menu (roles, My actions for ADM, language, theme, sign-out), left navigation filtered by the role table (20 sections, placeholders until their stages), no-permission and not-found states inside the shell, idle warning at 25 min and sign-out at 30 (measured against the server clock), step-up with one-time replay of the saved action, and keyboard shortcuts. Tests: pnpm check (243), pnpm test:int (7), pnpm e2e (22, strict backend). AC5 done 2026-11-10: the admin interaction kit (src/components/admin) carries the admin rules into every later screen: useAdminAction refuses an RSN write without a 3-500 character reason, runs it through the step-up with a one-time replay and reports applied / waiting for a second staff member (FourEyesBanner) / accepted job / an explained problem (SELF_APPROVAL_FORBIDDEN, expired, changed meanwhile); ReasonDialog (console reason codes per kind of action + note, sent as '<code>: <note>', D-29) and ConfirmDialog (second confirmation for irreversible actions); PurposeGate and MaskedField (GD-10); DataTable with URL-bound filters, cursor paging, column choice, saved views without data, keyboard rows and Latin digits; CaseLayout, EntityChip, Timeline, AiEvidenceBlock, SlaBadge and the ADM-only AuditDrawer (Shift+H). Pending approvals (/approvals) lists and decides four-eyes changes; My work (/) shows the approvals waiting and one tile per queue the roles may see with count, oldest age and SLA state (OQ-05 targets, D-32); the top bar's My queue links there with the approvals count. Tests: pnpm check (301), pnpm test:int (7), pnpm e2e (25, strict backend; the four-eyes round trip with two ADM accounts). AC6 built 2026-11-10 (partial: the signed-in E2E is not run yet): Exchange rates (/rates: preview, 20 % four-eyes warning, If-Match; replaces the deploy SQL), Feature flags (/flags: the AI kill switch on top, on at once and off by four-eyes; switch and targeting with If-Match and a Reload on 412), Plans & entitlements (/plans: the ranking rule, plan edits by four-eyes, the audit history, assign plan / trial / overrides) and Data retention (/retention: edits by four-eyes). Tests: pnpm check (330), smoke + bff E2E (13); tests/e2e/settings.spec.ts written, waiting for a strict run with the client key. AC7 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6): Reviews (/reviews: the Path 2 approval queue by stage for community reviewers — the review read for its approval purpose with the business answer, the author history without contact data and evidence links, Confirm once the business step is done, Reject with a note, Ask for evidence, a reason code that is never a rating, A/R keys; moderators read the queue and work review cases: remove, restore, approve a held-back review, warn, move to Path 2 by four-eyes, close) and Disputes & appeals (/disputes: the disputed review with both sides' evidence and the first decider, mediation / uphold / reject with what each does, the different-staff rule explained). Tests: pnpm check (363), smoke + bff E2E (13); tests/e2e/reviews.spec.ts written, its API seeding run against the strict backend. AC8 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6 and AC7): the moderation case workspace for every target type (also under the AC7 review cases): Reports (/content: triage into a case — safety reasons at least high — into the open case about the same item, or dismiss), Content / Accounts & organizations / AI output (/content tabs) and Inventory (/inventory) queues with safety cases first; a case read for its purpose shows the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), \"Take this case\", the actions the backend applies to that item in its state (showcase approval needs the customer's consent), warn / suspend (security key) / reactivate, trust penalties (security key, second confirmation) and badges by id, and closing with a resolution. Tests: pnpm check (397), smoke + bff E2E (13); tests/e2e/moderation.spec.ts written, its API seeding run. AC4-AC8 are committed (the user, 2026-11-10). AC9 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6-AC8): Organizations (/orgs: search by name, slug or id without contact data, two saved views) and the organization page read for an open work item (a pending verification or an open case; otherwise the header from the search and the checks to open it for): Profile with masked contact data, Locations with a MapLibre map (owner's pin, service radius, the server's pin-to-address verdict) and pin or address correction by click, drag or typed coordinates, Verification with the badge approval, Plan; suspend and reactivate; assist sessions with a banner on every page. Verification (/verification: queue with the 2-working-day SLA; submitted data, a watermarked document viewer with zoom, rotate and paging, the checklist; approve blocked by a far pin; reject with the message for the business; the organization's new status after the decision). Tests: pnpm check (429), smoke + bff E2E (13); tests/e2e/orgs.spec.ts written, its API seeding run. AC6-AC9 closed 2026-11-18: the strict signed-in E2E ran with the int:env test keys (no staff key needed), 35/35 passed after two console fixes (D-65 step-up replay notice, D-66 verification deep link) and test fixes; backend_requests BR-02..BR-35 marked done from backend S13-S24 (BR-14 stays deferred); new BR-36 (slow verification queue). 2026-11-18 (after the AC6-AC9 closure): backend/BR-update-plan.json reviewed. Backend S13-S25b and S26a-S26b are done (S26c not started), so the hold is lifted (meta.hold.lifted). The readiness map is backend_status_2026_11_18. The catch-up patch is AC10.T0. The S16a/S16b staff key and recovery work is the new stage AC10b, before AC11. AC14.T1 (the backend half) was done by backend S13-S24. Doc issues and R-items closed by the backend are marked. New BR-37 (verification read by id or organization, from D-66). BR-36 and BR-37 are handed to the backend plan and staged first in S26c (S26c.T0, owner); the console follow-up is AC14b.T8.",
       "stages_done": [
         "AC1",
         "AC2",
         "AC3",
         "AC4",
-        "AC5"
-      ],
-      "next": "ON HOLD (2026-11-12): wait for the finalized backend plan (backend/BR-update-plan.json). Then AC10-AC12, the backend refinement, AC13-AC15 as decided. Full test run only when the whole plan is complete (PD-03).",
-      "decisions_needed_now": [
-        "BR-19: lost-key reset design waits for the user's research (now part of the backend refinement).",
-        "BR-30 / DI-24: meaning of \"upheld\" for a business objection (docs decision, part of the backend refinement).",
-        "R-07, R-05, R-19, R-21, R-24: non-code pilot preparations (security keys, staff names, real IRR rate, region tile host); no deadline before AC11."
-      ],
-      "stages_partial": [
+        "AC5",
         "AC6",
         "AC7",
         "AC8",
         "AC9"
-      ]
+      ],
+      "next": "AC10 (T0 is the catch-up patch), AC10b (staff keys and recovery), AC12, AC11 (milestone M1), AC13, AC14, AC14b (T7 after backend S26c), AC15. Every backend stage these need is done except S26c (AC14b.T7). Full test run when the whole plan is complete (PD-03).",
+      "decisions_needed_now": [
+        "Backend DQ-25 (initial password length for admin100/200/300), DQ-26 (their email addresses) and DQ-29 (Neshan as a third party) were built on their defaults and wait for the owner's confirmation (backend/BR-update-plan.json decisions_needed). DQ-25 and DQ-26 shape AC14b.T2 and the AC11 runbook, and DQ-29 shapes AC14b.T6.",
+        "R-05, R-07, R-19, R-21: non-code pilot preparations (staff names, security keys, who checks Pending approvals, the real IRR rate). They are not needed before AC11. R-24 is closed: Neshan replaces the tile host (AC14b.T6)."
+      ],
+      "stages_partial": []
     },
     "milestones": [
       {
@@ -64,7 +62,13 @@
         "Whether the backend refinement (at least BR-20, BR-10, BR-18) runs before AC10, instead of building AC10 and AC12 with workarounds.",
         "Milestone M1 wording under PD-03 (deploy kit built vs real deployment).",
         "GD-15 and AC11: ADMIN_GATE default none, because OQ-02 is passkey only."
-      ]
+      ],
+      "lifted": {
+        "on": "2026-11-18",
+        "by": "owner",
+        "request": "\"review file backend/BR-update-plan.json and mark its progress in the frontend/admin-console/dev-plan.json so that the admin console can proceed with complete jobs\"",
+        "note": "The resume condition is met: the backend refinement closed with S25b (contract 1.4.0 frozen, 2026-11-16), and S26a and S26b (contract 1.5.0, open) are built. backend_status_2026_11_18 says which console work each finished backend stage unblocks. Only AC14b.T7 still waits (backend S26c)."
+      }
     }
   },
   "environment": {
@@ -277,52 +281,60 @@
       "id": "DI-05",
       "issue": "Docs/23 actions with no ModerationActionType in Docs/40: 'Reduce weight', 'Edit request' with highlighted text (A-REV-02), 'Apply redaction' with boxes (A-CON-02).",
       "action": "Not shown until BR-15 (AC14). request_changes and apply_trust_penalty cover part of it.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S20 and S22 (BR-15); console AC14.T5."
     },
     {
       "id": "DI-06",
       "issue": "Docs/23 A-ORG-02 tabs Capabilities & badges, Reviews, Portfolio, Inventory, Members, Plan history, Cases need reads that StaffOrgView does not carry.",
       "action": "AC9 shows what StaffOrgView has (profile, locations, verifications, subscription, counts) and links to the public profile; the rest is BR-16.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S23 (BR-16); console AC14.T5."
     },
     {
       "id": "DI-07",
       "issue": "Docs/23 A-USR-02 tabs Vehicles, Appointments, Consents, Privacy requests, Sessions & devices need reads that StaffUserView does not carry.",
       "action": "AC10 shows StaffUserView (memberships, subscription, counts, verification marks); Force sign-out uses admin.user_sessions_revoke; the rest is BR-16.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S23 (BR-16); console AC14.T5 (AC10 shows StaffUserView)."
     },
     {
       "id": "DI-08",
       "issue": "Docs/23 'Assist onboarding' opens the business wizard on behalf of an owner; backend DI-05 leaves the {adm}/assist/{id}/… routes undefined and the wizard lives in the business web app, which does not exist yet.",
       "action": "AC9 builds start/end of an assist session only; the assisted wizard waits for backend DI-05 and the business web app.",
-      "status": "open",
-      "dq03": "Under DQ-03 assisted onboarding is business work and moves to the public Web UI (Docs/23 §0 row 1); the AC9 start/end/banner stays until the move is planned."
+      "status": "deferred",
+      "dq03": "Under DQ-03 assisted onboarding is business work and moves to the public Web UI (Docs/23 §0 row 1); the AC9 start/end/banner stays until the move is planned.",
+      "resolution": "2026-11-18: deferred to the next phase as backend NP-09 (assisted routes, backend DI-05). AC9's start, end and banner stay."
     },
     {
       "id": "DI-09",
       "issue": "Docs/23 A-DASH-01 System widget (import, notification delivery, media scan failures) and parts of A-NOTIF-01 delivery health have no DashboardKey.",
       "action": "Dashboard uses the 11 contract keys and queue counts; system metrics are BR-17.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S21 (BR-17); console AC13.T6."
     },
     {
       "id": "DI-10",
       "issue": "Docs/23 lists A-NOTIF-01, A-POL-01, A-STAFF-01 (list), A-SUP-01, the A-AI-02 decisions and A-AI-03 as Must or Should, but Docs/40 §23 has no operations for them.",
       "action": "Recorded as BR-10..BR-14; built in AC14 after OQ-07.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S13 (BR-10), S17 (BR-11), S15/S15b (BR-12), S24 (BR-13); console AC14.T2-T5. BR-14 (A-AI-02 decisions, A-AI-03) deferred to the next phase (NP-01)."
     },
     {
       "id": "DI-11",
       "raised_in": "AC1",
       "issue": "shared/i18n/package.json and the PWA's i18n:check describe the shared dictionary as the PWA's. The console now reads two of its namespaces (common, format) but keeps its own text in an 'admin' namespace inside the console (deviation D-01). A key renamed or removed in shared/i18n fails only the console's own check, not the PWA's.",
       "action": "Recommendation R-04: run the console's `pnpm i18n:check` (or its whole `pnpm check`) whenever shared/ changes, and mention the console in shared/i18n/package.json 'description' at the next PWA stage that touches shared/i18n.",
-      "status": "open"
+      "status": "moved",
+      "resolution": "2026-11-18: moved to pwa/BR-update-plan.json PB-07. Since backend S25b, pnpm check:clients in backend/ regenerates and checks both clients (R-04)."
     },
     {
       "id": "DI-12",
       "raised_in": "AC2",
       "issue": "Docs/40 §6.2 says the /v1/auth/* endpoints 'are used only by the hosted sign-in UI on id.carpals.ir'. In practice each BFF serves the hosted sign-in on its own origin through an /id proxy (the PWA since P2, the console from AC3), which is also why no per-client sign-in URL is needed (BR-02).",
       "action": "Reword the §6.2 sentence at the next contract change (no field changes, so no version of its own): 'used only by a hosted sign-in UI, served by the client's BFF under /id on its own origin or on the auth host'.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S15: Docs/40 §6.2 reworded (hosted sign-in UI served by each client's BFF under /id)."
     },
     {
       "id": "DI-13",
@@ -336,14 +348,16 @@
       "raised_in": "AC3",
       "issue": "admin.dsr_export (ASYNC) answers 202 with a Job, but contract 1.3.0 has no job read on the admin plane: jobs.get is on the api host (USR/ORG principals), which refuses cp-web-admin tokens. A-DSR-02 cannot show the export's progress or its download unless the DSR record itself carries them.",
       "action": "BR-20. Check in AC10 whether admin.dsr_queue / the DSR view already carries the export state and download; if not, the backend adds an admin job read.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S13 (BR-20, admin.job_get); console AC10.T5."
     },
     {
       "id": "DI-15",
       "raised_in": "AC4",
       "issue": "Docs/23 A-AUTH-01 asks for 'MFA required (authenticator app or security key)', a company SSO button and separate states for 'account disabled'. The contract allows staff WebAuthn only (SEC-AU-9, SEC-ADM-2: device-bound), has no SSO (OQ-08) and answers disabled staff accounts with the same INVALID_CREDENTIALS as a wrong password (SEC-AU-11).",
       "action": "Reword Docs/23 A-AUTH-01 at the next docs pass: email + password, then a device-bound security key (first-time enrolment with an emailed code); no authenticator app, no SSO; 'account disabled' is covered by the generic sign-in error that names it (D-24).",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S15/S16a: Docs/23 A-AUTH-01 reworded (password + device-bound key, no authenticator app, no SSO, generic disabled-account error)."
     },
     {
       "id": "DI-16",
@@ -357,112 +371,128 @@
       "raised_in": "AC5",
       "issue": "Docs/23 §3.3 'Four-eyes request: the first staff member submits; a second … approves or rejects from Pending approvals' and the plan's AC5.T4 'own requests shown as Waiting for someone else': admin.four_eyes_list returns only changes the caller may decide, never their own, and no operation lists one's own requests or tells the requester the outcome. Docs/23 A-DASH-01 asks for queue counts; no operation returns counts.",
       "action": "AC5 shows own requests made in the current tab (memory only, D-31) and computes counts by paging the lists (D-32). BR-21 (own requests with outcome) and BR-22 (queue summary) ask the backend for the missing reads.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S13 (BR-21 four_eyes_list mine), S17 (outcome notice), S21 (BR-22 work_summary); console AC10.T0 and AC13.T6."
     },
     {
       "id": "DI-18",
       "raised_in": "AC6",
       "issue": "Docs/40 §10.1 Plan has no status, yet admin.plans_list lists inactive plans too and admin.plan_update can set status active|inactive. A-PLAN-01 cannot show which plans are offered.",
       "action": "AC6 offers \"Plan status: No change / Active / Inactive\" with a hint that the list does not show it (D-42). BR-23 adds status to the admin read.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S21 (BR-23); console AC14.T5."
     },
     {
       "id": "DI-19",
       "raised_in": "AC6",
       "issue": "FeatureFlag and ExchangeRate (Docs/40 §23.1) carry no id, but the audit log records them by id (entity feature_flag / exchange_rate). The console cannot open a flag's or a rate's history (AuditDrawer needs entity_id). Docs/23 A-FLAG-01 also says turning the kill switch on is \"broadcast to the dashboard and AI governance staff\": no operation or notification does that (the event feature_flag.changed has no staff consumer).",
       "action": "AC6 shows \"last changed by / when\" from the record only. BR-26 asks for the ids (or an audit search by key) and a staff notice for the kill switch.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S21 (BR-26 ids) and S17 (kill-switch staff notice); console AC13.T1, AC14.T5."
     },
     {
       "id": "DI-20",
       "raised_in": "AC6",
       "issue": "Docs/23 A-PLAN-01 \"Assignments\" lists organizations and individuals with their plan, trial end and overrides, and A-RET-01 asks for add and a dry run. Contract 1.3.0 has no list of subscriptions (only one per organization in StaffOrgView and per user in StaffUserView), no retention create and no dry run.",
       "action": "AC6 builds the assignment form (no list) and says on the retention screen that add and dry run are not available. BR-24 and BR-25.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S21 (BR-24, BR-25); console AC14.T5."
     },
     {
       "id": "DI-21",
       "raised_in": "AC7",
       "issue": "Docs/23 A-REV-01 has tabs Reported / AI flagged / Suspicious pattern and columns review excerpt, rating and author for review cases. Contract 1.3.0 admin.cases_list filters by status, severity, case_type and assignee only (no source), and ModerationCase carries no excerpt; admin.case_get returns the target as Json<TargetSnapshot> whose only typed fields are type, id and available (the review fields are the backend's choice).",
       "action": "AC7 shows one list of review cases with a Source column (D-47) and reads the review from the snapshot defensively (reviewSnapshot; unknown shapes show the target chip). BR-27.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S18 (BR-27, BR-33); console AC14.T5."
     },
     {
       "id": "DI-22",
       "raised_in": "AC7",
       "issue": "Docs/23 A-REV-02 lists Hide (kept for review) and Remove as separate actions and an Edit request. The backend's review target applies hide and remove the same way (status removed; there is no hidden review status) and refuses request_changes for reviews.",
       "action": "AC7 offers Remove (and Restore) only, with the effect said in the dialog; Edit request and Reduce weight stay with BR-15.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S20 (BR-15 reduce_weight, edit_request); console AC14.T5."
     },
     {
       "id": "DI-23",
       "raised_in": "AC7",
       "issue": "Docs/23 A-DSP-01 asks for a message thread with each party, the original decision of an appeal (with its decision-maker), evidence from both sides for every target and \"Withdraw on request\". Contract 1.3.0 has no dispute messages, no admin read of a moderation action, a service record or a badge, and dispute_resolve cannot set withdrawn.",
       "action": "AC7 shows the statement, the target chip, and for Path 2 reviews the review with the business answer and the author's evidence (admin.review_approval_get under the dispute purpose); the screen says what is not available. BR-28.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S20 (BR-28) and S25a (removal outcomes wait for an ADM fairness approval); console AC14.T5."
     },
     {
       "id": "DI-24",
       "raised_in": "AC7",
       "issue": "For review_approval_objection the backend's resolved_upheld publishes the review (\"Disputed by the business\", Docs/02 WP9 \"if upheld it shows Disputed by the business\") and resolved_rejected rejects it, so \"upheld\" upholds the review, not the objection the business raised; for every other dispute type upheld means the raiser's claim is accepted. A staff member reading \"Uphold\" on a business objection would expect the opposite effect.",
       "action": "AC7 names the two outcomes of an objection by their effect (D-44) and shows the effect of every outcome before the decision. BR-30 asks to settle the wording in Docs/40 / Docs/52.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S20 (BR-30, DQ-06: outcomes defined by their effect in the docs); console AC14.T5 checks the D-44 labels."
     },
     {
       "id": "DI-25",
       "raised_in": "AC7",
       "issue": "StaffReviewApprovalView has no stage and no time of the business answer (the 2-working-day timer starts then, Docs/23 §6); fraud_signals is always empty (backend S7 deviation); and the approval and dispute purposes end with the decision, so a reviewer cannot re-open what they just decided.",
       "action": "The console derives the stage like the backend filter, starts the timer at the deadline or the review's last change (as My work, AC5), shows \"No fraud signals reported\", and keeps the decision's answer on screen (D-48). BR-29.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S18 (BR-29); console AC14.T5."
     },
     {
       "id": "DI-26",
       "raised_in": "AC8",
       "issue": "Docs/23 A-ORG-02 \"Capabilities & badges\" and the Verified Business approval (54 §4: the trust worker awards it pending_approval) need the badges of an organization and the badges waiting for approval. Contract 1.3.0 has admin.badge_approve and revoke_badge by badge id, but no read that lists badges (StaffOrgView carries none; ProviderBadge has no organization).",
       "action": "AC8 approves and revokes by a badge id the staff member enters (D-53); BR-31 asks for the list.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S13 (BR-31 admin.badges_list); console AC10.T0."
     },
     {
       "id": "DI-27",
       "raised_in": "AC8",
       "issue": "Docs/23 A-INV-01 actions \"Downgrade fitment (confirmed → likely/uncertain)\" and \"Suspend vendor (T&S lead, four-eyes)\", and A-CON-01 tabs Counterfeit / Wrong fitment / Prohibited / Duplicate / Vendor data: the backend's fitment target only rejects and restores a row (no confidence change), vendor suspension is admin.org_status (not four-eyes in contract 1.3.0, OQ-04), and the case list cannot filter by reason.",
       "action": "AC8 offers reject / restore for fitment rows and shows the reason column; vendor status is changed on the organization page (AC9). Fitment downgrade joins BR-15; the reason filter is BR-32.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S20 (downgrade_fitment) and S18 (reason filter, BR-32); console AC14.T5. Vendor suspension stays admin.org_status (OQ-04)."
     },
     {
       "id": "DI-28",
       "raised_in": "AC8",
       "issue": "Docs/23 A-CON-01 \"author (role badge)\" and A-CON-02 \"consent record for showcases (customer, scope, date)\", \"author history\", \"the whole post with its comments\": the target snapshots of admin.case_get carry the record's own fields only (a post has no author or organization, a showcase item only its consent status, no media ids), and the admin plane has no read of a post's comments.",
       "action": "AC8 shows what the snapshot has (text, state, owner organization where present, consent status) and a public link for published posts and open questions. BR-33.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S18 (BR-33); console AC14.T5."
     },
     {
       "id": "DI-29",
       "raised_in": "AC8",
       "issue": "Docs/23 A-CON-01 \"unsafe_advice, non_consensual_media and privacy cases are at least high\": the backend opens cases with the severity it is given (admin.report_triage open_case) or its own (AI flags, rules) and does not enforce the floor.",
       "action": "The console proposes high and offers nothing lower in triage (D-57) and sorts these reasons first whatever their severity; BR-32 asks the backend to enforce it.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S18 (BR-32 severity floor enforced); console AC14.T5."
     },
     {
       "id": "DI-30",
       "raised_in": "AC9",
       "issue": "Docs/23 A-VER-02 \"Request more info (choose missing items; message template; status stays pending, SLA pauses)\" and the A-VER-01 columns AI pre-check, assignee and request types certification / location change / wrong-location report: admin.verification_decide knows verified and rejected only, OrganizationVerification has no assignee or pre-check, and certifications are not a verification type in contract 1.3.0. The submitted data lacks registration number, owner and call-back result.",
       "action": "The console offers Approve and Reject only and says so (no dead buttons, GD-08); BR-35 asks for the rest.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S19 (BR-35 part 2; more request types and the AI pre-check deferred, NP-04); console AC14.T5."
     },
     {
       "id": "DI-31",
       "raised_in": "AC9",
       "issue": "admin.orgs_search is not PURP but returns full StaffOrgView rows (contact email and phone, exact location points), while admin.org_get with the same view is PURP PII. Docs/23 A-ORG-01 also asks for city, plan, rating, possible duplicate and location issue filters and the saved views \"Possible duplicates\" and \"Location issues\", which OrgSearch lacks.",
       "action": "The list and the header show no contact data or points from the search (GD-10); BR-35 asks for a narrower search row and the filters.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S14 (narrow search row, already used) and S19 (filters, BR-35 part 1); console AC14.T5."
     },
     {
       "id": "DI-32",
       "raised_in": "AC9",
       "issue": "Docs/23 A-ORG-02 Profile \"Staff can correct obvious data errors (e.g. wrong city) with a reason; changes are audited and the organization is notified\" and \"with edit history\": the admin plane has no organization profile correction or history read (only locations, admin.location_correct).",
       "action": "The Profile tab is read-only and says so; part of BR-35.",
-      "status": "open"
+      "status": "resolved",
+      "resolution": "2026-11-18 (from backend/BR-update-plan.json): the gap is closed by backend S19 (BR-35 part 3, admin.org_correct and history); console AC14.T5."
     }
   ],
   "backend_requests": [
@@ -527,9 +557,10 @@
       "priority": "high",
       "request": "Lift timed suspensions automatically (backend DI-66: suspended_until column and a job).",
       "source": "backend NI-04",
-      "status": "open",
+      "status": "done",
       "note_ac8": "AC8 suspends without an end date (D-52): suspend_until is accepted by the backend but never lifted.",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S14 (done) (backend/BR-update-plan.json action_plan). Console use: AC10.T2 offers suspension durations (D-52 goes); AC10.T0 lets the AC8 case suspension take an end date."
     },
     {
       "id": "BR-08",
@@ -537,9 +568,10 @@
       "priority": "medium",
       "request": "Organization merge re-pointing registry (backend DI-67). Until done, AC9 hides Merge.",
       "source": "backend NI-04",
-      "status": "open",
+      "status": "done",
       "note_ac8": "AC8 does not offer merge_duplicate on organization cases either (D-51).",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S22 (done) (backend/BR-update-plan.json action_plan). Console use: AC14.T5 (Merge with admin.org_merge_preview and the job; merge_duplicate on organization cases; lifts D-51)."
     },
     {
       "id": "BR-09",
@@ -547,8 +579,9 @@
       "priority": "high",
       "request": "Bind staff access purposes to the record being read (backend NI-02, SEC-ADM-5). The console already sends the purpose of the work item it came from (GD-10).",
       "source": "backend NI-02, RCP-01",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S13 (done), S14 (done) (backend/BR-update-plan.json action_plan). Console use: none left. The console has sent the work item's purpose since AC3, and the kit explains PURPOSE_RECORD_MISMATCH (S14). AC11.T5 re-checks it."
     },
     {
       "id": "BR-10",
@@ -556,8 +589,9 @@
       "priority": "must",
       "request": "Staff directory: admin.staff_list (staff, roles, MFA status, last sign-in, status) and admin.staff_disable for A-STAFF-01.",
       "source": "DI-10",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S13 (done) (backend/BR-update-plan.json action_plan). Console use: AC10.T0 (assign a case to a colleague from admin.staff_list, D-50; the admin.staff_enable label) and AC14.T2 (A-STAFF-01 with disable and four-eyes enable)."
     },
     {
       "id": "BR-11",
@@ -565,8 +599,9 @@
       "priority": "must",
       "request": "Notification templates and rules (A-NOTIF-01): list templates per event, channel and locale with missing-translation flags; edit rules (invitation delay, reminders 0-3, quiet hours, digest).",
       "source": "DI-10",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S17 (done) (backend/BR-update-plan.json action_plan). Console use: AC14.T3 (templates, rules including the S25a fields, Delivery health); AC14b.T4 adds odometer_prompt_days."
     },
     {
       "id": "BR-12",
@@ -574,8 +609,9 @@
       "priority": "must",
       "request": "Policies and consent texts with versions (A-POL-01): list, draft, publish with effective date and re-consent flag (4EYES).",
       "source": "DI-10; needed for the legal texts go-live item (PWA NI-P13-12)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S15 (done), S15b (done) (backend/BR-update-plan.json action_plan). Console use: AC14.T4 (16 documents including consent texts, reconsent_action keep or pause)."
     },
     {
       "id": "BR-13",
@@ -583,8 +619,9 @@
       "priority": "should",
       "request": "Support tickets for A-SUP-01 (today 'Contact support' is an email address).",
       "source": "DI-10",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S24 (done) (backend/BR-update-plan.json action_plan), except ticket attachments (NP-08) and escalating a bug to engineering (NP-12). Console use: AC14.T5 (A-SUP-01 support inbox) and AC13.T6 (support_tickets widget)."
     },
     {
       "id": "BR-14",
@@ -602,9 +639,10 @@
       "priority": "should",
       "request": "Moderation actions reduce_weight, edit_request (with highlighted spans) and apply_redaction (boxes → redacted copy).",
       "source": "DI-05",
-      "status": "open",
+      "status": "done",
       "note_ac8": "Add \"downgrade fitment\" (confirmed → likely/uncertain) for A-INV-01 (DI-27).",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S20 (done), S22 (done) (backend/BR-update-plan.json action_plan), except the CDN purge of redacted images in full mode (NP-06). Console use: AC14.T5 (A-REV-02 Reduce weight and Edit request, A-INV-01 Downgrade fitment, A-CON-02 Apply redaction)."
     },
     {
       "id": "BR-16",
@@ -612,8 +650,9 @@
       "priority": "should",
       "request": "Extended staff reads for user and organization tabs (vehicles summary, appointments, consents history, sessions, capabilities/badges with rule evaluation, portfolio with consent, inventory quality, members, plan history), each PURP.",
       "source": "DI-06, DI-07",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S23 (done) (backend/BR-update-plan.json action_plan), except the A-USR-02 / A-ORG-02 tabs that still have no operation (NP-07). Console use: AC14.T5 (A-USR-02 and A-ORG-02 tabs)."
     },
     {
       "id": "BR-17",
@@ -621,8 +660,9 @@
       "priority": "should",
       "request": "System health metrics for the dashboard (import failures, notification delivery failures, media scan failures).",
       "source": "DI-09",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S21 (done) (backend/BR-update-plan.json action_plan). Console use: AC13.T6 (A-DASH-01 System widget)."
     },
     {
       "id": "BR-18",
@@ -630,8 +670,9 @@
       "priority": "high",
       "request": "The console cannot call the api host (it refuses cp-web-admin tokens). Serve on admin-api what the console still needs from it: the taxonomy tree (taxonomy.snapshot / node reads, for A-TAX-01) and the region settings the map needs (map style, location threshold; part of config.client). Option decided by OQ-13 (answered 2026-11-09: admin-api reads, contract 1.4.0).",
       "source": "AC2 finding, GD-07, DI-13",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S13 (done) (backend/BR-update-plan.json action_plan). Console use: AC10.T0 (admin.region_settings for the pin threshold and map style, D-58, D-59) and AC12.T1 (admin.taxonomy_snapshot)."
     },
     {
       "id": "BR-19",
@@ -639,9 +680,10 @@
       "priority": "high",
       "request": "Staff passkey management on admin-api: list own passkeys, add a second (backup) device-bound key with a fresh aal3 re-authentication, remove one (never the last); and an ADM reset of another staff member's passkeys with a reason and four-eyes (the next sign-in then enrols again with password + emailed code). Today me.webauthn_register_options and me.mfa_remove are on the api host, which refuses admin tokens.",
       "source": "AC2 (SEC-ADM-2, lost-key recovery)",
-      "status": "open",
+      "status": "done",
       "interim": "Operator runbook in AC11.T3: disable the staff member's webauthn methods in SQL; the next sign-in enrols again.",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S16a (done), S16b (done) (backend/BR-update-plan.json action_plan). Console use: AC10b (security keys and recovery codes page, recovery codes after enrolment, Lost my security key, Recovery requests queue)."
     },
     {
       "id": "BR-20",
@@ -649,8 +691,9 @@
       "priority": "high",
       "request": "A staff read of the background job a staff operation started: GET /v1/admin/jobs/{job_id} (admin.job_get, STF of the starting operation, only jobs started from the admin plane), or the export job's state and download carried by the DSR view. Needed for admin.dsr_export (A-DSR-02) and later ASYNC admin operations.",
       "source": "AC3 (DI-14)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S13 (done) (backend/BR-update-plan.json action_plan). Console use: AC10.T5 (DSR export progress with admin.job_get) and AC12.T3 (merge job)."
     },
     {
       "id": "BR-21",
@@ -658,8 +701,9 @@
       "priority": "medium",
       "request": "Let the requester see their own four-eyes changes and the outcome: admin.four_eyes_list q: mine=true (requested_by = caller, all statuses, with decided_by_display, decided_at and the decision reason in PendingChange), or a separate admin.four_eyes_mine. Optionally a notification to the requester when the change is approved, rejected or expires (today the requester learns it only from the audit log, which only ADM can read).",
       "source": "AC5 (DI-17)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S13 (done), S17 (done) (backend/BR-update-plan.json action_plan). Console use: AC10.T0 (own four-eyes requests with their outcome from admin.four_eyes_list mine; D-31 goes)."
     },
     {
       "id": "BR-22",
@@ -667,8 +711,9 @@
       "priority": "low",
       "request": "A queue summary read for My work and the navigation counts: GET /v1/admin/work-summary (admin.work_summary, STF(any staff), aggregates only) returning per queue the caller may see: open count, oldest created_at and the SLA-relevant timestamps (or counts per SLA state). Today the console pages each list (up to 2 pages of 100 per status, 13 calls for a MOD) every minute and shows '200+' beyond.",
       "source": "AC5 (DI-17, D-32)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S18 (done), S21 (done) (backend/BR-update-plan.json action_plan). Console use: AC13.T6 (My work and navigation counts from admin.work_summary; D-32 paging and the 200+ cap go)."
     },
     {
       "id": "BR-23",
@@ -676,8 +721,9 @@
       "priority": "low",
       "request": "Plan in admin.plans_list carries status: 'active'|'inactive' (and is_default_for_audience), so A-PLAN-01 shows which plans are offered and which plan a trial falls back to.",
       "source": "AC6 (DI-18)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S21 (done) (backend/BR-update-plan.json action_plan). Console use: AC14.T5 (A-PLAN-01 status and default; D-42 goes)."
     },
     {
       "id": "BR-24",
@@ -685,8 +731,9 @@
       "priority": "medium",
       "request": "admin.subscriptions_list (GET {adm}/subscriptions, STF(ADM)): q plan_key, status (trial|active|expired|cancelled), subscriber_type, trial_ends_before, cursor, limit ≤ 100; items: subscriber (type, id, display name), plan_key, status, trial_ends_at, expires_at, overrides, assigned_by_display, started_at. Also the open subscription change requests (subscription.change_request) with the organization, for a \"requests to handle\" queue.",
       "source": "AC6 (DI-20; Docs/23 A-PLAN-01 Assignments)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S21 (done) (backend/BR-update-plan.json action_plan). Console use: AC14.T5 (A-PLAN-01 Assignments, the plan requests queue)."
     },
     {
       "id": "BR-25",
@@ -694,8 +741,9 @@
       "priority": "low",
       "request": "admin.retention_create (POST {adm}/retention-policies, STF(ADM) 4EYES RSN AUD) and admin.retention_dry_run (POST {adm}/retention-policies/{policy_id}/dry-run → { affected: Int, by_status?: … }, STF(ADM)) for Docs/23 A-RET-01.",
       "source": "AC6 (DI-20)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S21 (done) (backend/BR-update-plan.json action_plan), except the retention handlers for UserAccount, McpAccessLog, AnalyticsEvent and InventoryImportBatch (NP-05: the daily run skips them, dry run no_handler). Console use: AC14.T5 (A-RET-01 Add by four-eyes and Dry run)."
     },
     {
       "id": "BR-26",
@@ -703,8 +751,9 @@
       "priority": "low",
       "request": "id in FeatureFlag and ExchangeRate (the audit entity ids), or admin.audit_search by entity key, for the per-record history; and a staff notification (in-app, ADM) when ai.automation.kill_switch is turned on or off (Docs/23 A-FLAG-01 \"broadcast to the dashboard and AI governance staff\").",
       "source": "AC6 (DI-19)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S17 (done), S21 (done) (backend/BR-update-plan.json action_plan). Console use: AC13.T1 and AC14.T5 (flag and rate history by id in the AuditDrawer); the kill-switch staff notice in the notice map (AC13)."
     },
     {
       "id": "BR-27",
@@ -712,9 +761,10 @@
       "priority": "medium",
       "request": "admin.cases_list q: source (user_report | ai_flag | system_rule | admin), and in ModerationCase a short target summary (excerpt ≤ 120, rating for reviews); a typed target snapshot per target type in admin.case_get (ReviewSnapshot: subject_organization_id, overall_rating, title, body, status, confirmation_path, verified_status, created_at, …); later the suspicious-pattern and automatic-check-failed tabs of A-REV-01 when their signals exist.",
       "source": "AC7 (DI-21)",
-      "status": "open",
+      "status": "done",
       "note_ac8": "AC8: the Content views (reported, AI flagged, held by a rule, unsafe advice, consent) narrow the loaded cases on the client (D-49); BR-32 adds the reason filter, BR-33 the content snapshots.",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S18 (done) (backend/BR-update-plan.json action_plan), except the suspicious-pattern and automatic-check-failed tabs (deferred, backend NP-02: no signal source). Console use: AC14.T5 (source tabs on A-REV-01 and A-CON-01; D-47 goes)."
     },
     {
       "id": "BR-28",
@@ -722,8 +772,9 @@
       "priority": "medium",
       "request": "Disputes: a message thread per party (staff templated messages, the party's replies and added evidence), admin reads of the dispute targets the console cannot show (moderation action with its decider, service record, badge), and a staff \"withdraw on request\" (status withdrawn with the raiser's request as the reason).",
       "source": "AC7 (DI-23)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S20 (done) (backend/BR-update-plan.json action_plan). Console use: AC14.T5 (A-DSP-01 message threads, target snapshot, Withdraw on request, 202 PendingChange from S25a)."
     },
     {
       "id": "BR-29",
@@ -731,8 +782,9 @@
       "priority": "low",
       "request": "StaffReviewApprovalView: stage and business_answered_at (the reviewer timer's start), and fraud signals when SEC-BF-1 has a source; a read of one's own decided approvals and disputes (history) without a live purpose.",
       "source": "AC7 (DI-25)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S18 (done) (backend/BR-update-plan.json action_plan), except fraud_signals (deferred, backend NP-02). Console use: AC14.T5 (stage and business_answered_at for the reviewer timer; D-48 goes)."
     },
     {
       "id": "BR-30",
@@ -740,8 +792,9 @@
       "priority": "medium",
       "request": "Settle the meaning of resolved_upheld / resolved_rejected for review_approval_objection in Docs/40 §23.4 and Docs/52 Dispute (today upheld = the review is published as disputed, the opposite of upholding the objection), or give objections their own outcomes (publish_disputed / reject_review).",
       "source": "AC7 (DI-24)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S20 (done) (backend/BR-update-plan.json action_plan). Console use: AC14.T5 (check the D-44 outcome labels against the settled Docs/40 wording)."
     },
     {
       "id": "BR-31",
@@ -749,8 +802,9 @@
       "priority": "high",
       "request": "Badges on the admin plane: admin.badges_list (GET {adm}/badges, STF(ADM, MOD); q status pending_approval|active|revoked|expired, organization_id, badge_type, cursor, limit ≤ 100; items ProviderBadge & { organization: OrgSummary }), or the badges in StaffOrgView (part of BR-16) plus a \"badges waiting for approval\" queue for My work. Without it a Verified Business badge awarded pending_approval cannot be found in the console.",
       "source": "AC8 (DI-26)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S13 (done) (backend/BR-update-plan.json action_plan). Console use: AC10.T0 (badge list instead of typed ids; D-53 goes)."
     },
     {
       "id": "BR-32",
@@ -758,8 +812,9 @@
       "priority": "medium",
       "request": "Enforce the Docs/23 A-CON-01 severity floor (unsafe_advice, non_consensual_media, privacy at least high) wherever a case is opened (report_triage open_case, AI flags, rules), and add q reason (ModerationReason, several allowed) to admin.cases_list next to BR-27's source, for the Unsafe advice / Consent tabs of A-CON-01 and the tabs of A-INV-01.",
       "source": "AC8 (DI-27, DI-29)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S18 (done) (backend/BR-update-plan.json action_plan). Console use: AC14.T5 (reason filter on A-CON-01; the backend enforces the severity floor that D-57 proposes)."
     },
     {
       "id": "BR-33",
@@ -767,8 +822,9 @@
       "priority": "medium",
       "request": "Typed target snapshots for content (with BR-27): the author (display name, role member/provider/vendor, the organization card when posted for an organization) and a short author history (published, removed, warnings) for posts, comments, questions, answers and files; for a showcase item its consent record (customer display, scope, granted_at) and media ids; for a fitment row the listing name; and an admin read of the comments or answers around a reported comment or answer (PURP case).",
       "source": "AC8 (DI-28)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S18 (done) (backend/BR-update-plan.json action_plan). Console use: AC14.T5 (author and consent snapshots on A-CON-01/02)."
     },
     {
       "id": "BR-34",
@@ -776,8 +832,9 @@
       "priority": "low",
       "request": "A read of open assist sessions: GET {adm}/assist-sessions?mine=true&status=active (admin.assist_sessions_list, STF(ADM, SUP)) → { items: { assist_session_id, organization: OrgSummary, flow_type, expires_at }[] }, so the console can show the banner after a reload and on another device.",
       "source": "AC9 (D-62, DI-08)",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S19 (done) (backend/BR-update-plan.json action_plan), the assisted onboarding routes themselves are deferred (NP-09, DI-08). Console use: AC14.T5 (assist banner after a reload; D-62 goes)."
     },
     {
       "id": "BR-35",
@@ -785,8 +842,27 @@
       "priority": "medium",
       "request": "Organizations and verification on the admin plane: (1) admin.orgs_search returns a list row without contact data or exact points (name, type, city, plan, statuses, members, open cases, trust, created) and filters city, plan_key, has_open_cases, location_issue (far_apart or open wrong-location report) and possible_duplicate; (2) admin.verification_decide decision \"info_requested\" with missing items and a message (status stays pending, the SLA pauses), and assignee / AI pre-check / registration number, owner and call-back result in the queue item; (3) an organization profile correction (admin.org_correct, RSN AUD, the organization notified) and its history.",
       "source": "AC9 (DI-30, DI-31, DI-32)",
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-12)",
+      "note_2026_11_18": "Built by backend S14 (done), S19 (done) (backend/BR-update-plan.json action_plan), except more verification request types and the AI pre-check (NP-04; ai_precheck stays null). Console use: the narrow search row is in (S14 regenerated it). AC14.T5 adds the A-ORG-01 filters and saved views, A-VER-01/02 Request more info, Assign, the paused clock and new columns, and the A-ORG-02 profile correction with history."
+    },
+    {
+      "id": "BR-36",
+      "stage": "backend S26c.T0 (first priority, owner 2026-11-18)",
+      "priority": "medium",
+      "request": "admin.verifications_queue answers in 8-10 s for one page of 50 on the local DB after many E2E runs: StaffVerificationItems.items (backend/modules/organization/application/admin-ops.ts) runs per row, in series, the primary-location read, the location id list and one reportsAgainst count per location, plus the owner read per organization and StaffOrgSearchRows.duplicates. Batch them (one query per kind for the page) and check duplicates for cost; target well under 1 s.",
+      "source": "AC9.T6 strict E2E 2026-11-18 (backend log latency_ms 8495-10415)",
       "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-12)"
+      "collected_in": "backend/BR-update-plan.json (2026-11-18, recommendations BR-36; staged first in S26c as S26c.T0)"
+    },
+    {
+      "id": "BR-37",
+      "stage": "backend S26c.T0 (first priority, owner 2026-11-18)",
+      "priority": "low",
+      "request": "A direct read of one verification check for a link from a notice, a case or the organization page: admin.verifications_queue q organization_id and verification_id (or admin.verification_get by id, STF(ADM, MOD)), so the console no longer walks the queue pages to find it.",
+      "source": "AC9 D-66 (strict E2E 2026-11-18): a ?verification=<id> link to a check that is not on the first queue page walks up to 20 pages of 50. Under BR-36 each page takes 8-10 s.",
+      "status": "open",
+      "collected_in": "backend/BR-update-plan.json (2026-11-18, recommendations BR-37; staged first in S26c as S26c.T0)"
     }
   ],
   "open_questions": [
@@ -2083,7 +2159,7 @@
     {
       "id": "AC6",
       "title": "Platform settings: exchange rate, feature flags and AI kill switch, plans and subscriptions, retention",
-      "status": "partial",
+      "status": "done",
       "depends_on": [
         "AC5"
       ],
@@ -2151,8 +2227,8 @@
         {
           "id": "AC6.T6",
           "task": "Update backend/deploy/deploy.md 'Exchange rate' to point at the console (keep the SQL as a fallback); E2E: rate change reflected in config.client; kill switch on → an AI operation answers the kill-switch problem; flag change with a stale ETag shows the conflict.",
-          "status": "partial",
-          "result": "backend/deploy/deploy.md \"Exchange rate\" now points at the console (Settings → Exchange rates; over 20 % needs a second admin) and keeps the SQL as the fallback while the console is not reachable. tests/e2e/settings.spec.ts (4 tests: rate → config.client and the 20 % warning; kill switch on → AI flags off in config.client, off as a four-eyes change approved by a second ADM → on again, plus a plan and a retention change (rejected by the second ADM to keep the data) and an assignment; a flag saved with a stale version → conflict, Reload, save; Persian on the four screens with axe) and tests/e2e/public-api.ts (config.client as an anonymous cp-mobile app: PoW + DPoP, D-36). NOT RUN in this session: the signed-in suites need the cp-web-admin private key of the strict backend (CARPAL_ADMIN_CLIENT_PRIVATE_JWKS), which this session could not read. public-api.ts itself was run against the strict backend (config.client read: IRR 1,000,000, 22 flags)."
+          "status": "done",
+          "result": "backend/deploy/deploy.md \"Exchange rate\" now points at the console (Settings → Exchange rates; over 20 % needs a second admin) and keeps the SQL as the fallback while the console is not reachable. tests/e2e/settings.spec.ts (4 tests: rate → config.client and the 20 % warning; kill switch on → AI flags off in config.client, off as a four-eyes change approved by a second ADM → on again, plus a plan and a retention change (rejected by the second ADM to keep the data) and an assignment; a flag saved with a stale version → conflict, Reload, save; Persian on the four screens with axe) and tests/e2e/public-api.ts (config.client as an anonymous cp-mobile app: PoW + DPoP, D-36). NOT RUN in this session: the signed-in suites need the cp-web-admin private key of the strict backend (CARPAL_ADMIN_CLIENT_PRIVATE_JWKS), which this session could not read. public-api.ts itself was run against the strict backend (config.client read: IRR 1,000,000, 22 flags). DONE 2026-11-18: settings.spec.ts 4/4 passed. Fixed in the test: the assignment form has three labels containing \"Plan\" (getByLabel exact), and Save after Reload now waits for the re-read flag list (the click raced the background refetch and got the same 412). Strict signed-in E2E on 2026-11-18: pnpm e2e against `pnpm int:env backend` (strict auth, the throwaway client keys of backend/.env.test, backend S25b R-11), 35 passed, 0 skipped (5.8 min, 4 workers); pnpm check 431 tests green. The run was `pnpm build` then `pnpm exec playwright test`: `pnpm e2e` stopped twice at `next build` with a Next.js security-advisory error (SecurityFatalError for 16.4.3) after a clean compile; a plain rebuild passed both times. The Next.js upgrade is left to the owner."
         }
       ],
       "deliverables": [
@@ -2169,12 +2245,12 @@
       ],
       "report": {
         "started_at": "2026-11-10",
-        "completed_at": null,
-        "summary": "The platform settings the pilot needs are in the console, for platform admins: Exchange rates (replaces the one-time SQL), Feature flags with the AI kill switch on top, Plans & entitlements with the assignment form, and Data retention. Every write goes through the AC5 kit (reason dialog, step-up replay, outcome notice); writes on versioned records send the record's version as If-Match and explain a 412 with a Reload that keeps the input; four-eyes cases (kill switch off, featured.enabled on, a rate change over 20 %, every plan and retention edit) end in the FourEyesBanner and are decided on Pending approvals. Contract gaps found: plans carry no status, no list of assignments, no retention add or dry run, flags and rates carry no id for their history, and no staff notice when the kill switch goes on (DI-18..DI-20, BR-23..BR-26). The E2E for all of it is written but not run: the strict backend needs the console's client key, which this session could not read.",
+        "completed_at": "2026-11-18",
+        "summary": "The platform settings the pilot needs are in the console, for platform admins: Exchange rates (replaces the one-time SQL), Feature flags with the AI kill switch on top, Plans & entitlements with the assignment form, and Data retention. Every write goes through the AC5 kit (reason dialog, step-up replay, outcome notice); writes on versioned records send the record's version as If-Match and explain a 412 with a Reload that keeps the input; four-eyes cases (kill switch off, featured.enabled on, a rate change over 20 %, every plan and retention edit) end in the FourEyesBanner and are decided on Pending approvals. Contract gaps found: plans carry no status, no list of assignments, no retention add or dry run, flags and rates carry no id for their history, and no staff notice when the kill switch goes on (DI-18..DI-20, BR-23..BR-26). The E2E for all of it is written but not run: the strict backend needs the console's client key, which this session could not read. Update 2026-11-18: the signed-in E2E has run and passed (e2e_2026_11_18).",
         "acceptance": {
-          "The USD/IRR rate set in the console is what the PWA displays (via config.client) after the cache refresh.": "not yet verified end to end: settings.spec.ts test 1 sets the rate in the console and polls config.client on the api host (as an anonymous app, the PWA's path) until it serves the new rate, then restores it. The config.client reader (public-api.ts) was run against the strict backend; the console side is DOM-tested (PUT body, If-Match \"v3\", applied notice, list re-read). The backend's own s11.int.test proves an admin rate change reaches config.client at once.",
-          "Kill switch on and off works with the four-eyes rule for off.": "not yet verified end to end: settings.spec.ts test 2 (A on → ai.triage.enabled off in config.client; A off → 202, still off; B approves → on). DOM tests pass: on is sent at once with If-Match and the reason; off says the second-admin rule first and shows the FourEyesBanner. Backend admin.int.test proves the server rule.",
-          "E2E and axe pass in EN and FA.": "axe in jsdom passes for the four screens in EN and FA (8 tests); the Chromium runs (EN in tests 1-3, FA in test 4) are written but not run (see partial_reason). The no-sign-in E2E (smoke, bff: 13) pass against the AC6 build."
+          "The USD/IRR rate set in the console is what the PWA displays (via config.client) after the cache refresh.": "Verified 2026-11-18 in the strict signed-in E2E (Chromium, EN and FA with axe). Before: not yet verified end to end: settings.spec.ts test 1 sets the rate in the console and polls config.client on the api host (as an anonymous app, the PWA's path) until it serves the new rate, then restores it. The config.client reader (public-api.ts) was run against the strict backend; the console side is DOM-tested (PUT body, If-Match \"v3\", applied notice, list re-read). The backend's own s11.int.test proves an admin rate change reaches config.client at once.",
+          "Kill switch on and off works with the four-eyes rule for off.": "Verified 2026-11-18 in the strict signed-in E2E (Chromium, EN and FA with axe). Before: not yet verified end to end: settings.spec.ts test 2 (A on → ai.triage.enabled off in config.client; A off → 202, still off; B approves → on). DOM tests pass: on is sent at once with If-Match and the reason; off says the second-admin rule first and shows the FourEyesBanner. Backend admin.int.test proves the server rule.",
+          "E2E and axe pass in EN and FA.": "Verified 2026-11-18 in the strict signed-in E2E (Chromium, EN and FA with axe). Before: axe in jsdom passes for the four screens in EN and FA (8 tests); the Chromium runs (EN in tests 1-3, FA in test 4) are written but not run (see partial_reason). The no-sign-in E2E (smoke, bff: 13) pass against the AC6 build."
         },
         "screens_built": [
           "Exchange rates (/rates; new, not in Docs/23)",
@@ -2212,7 +2288,7 @@
         "tests": {
           "unit": "console 330 passed in 35 files (301 before AC6): rates 8, flags 10, plans 7, retention 4 (rules as unit tests; screens as DOM tests with the scripted transport)",
           "int": "not run (no BFF change; src/server/bff unchanged)",
-          "e2e": "written: tests/e2e/settings.spec.ts (4 tests) - NOT RUN (strict backend; no client key in this session). Run: smoke + bff 13 passed against the AC6 production build. tests/e2e/public-api.ts run by hand against the strict backend: config.client read (PoW + DPoP).",
+          "e2e": "written: tests/e2e/settings.spec.ts (4 tests) - NOT RUN (strict backend; no client key in this session). Run: smoke + bff 13 passed against the AC6 production build. tests/e2e/public-api.ts run by hand against the strict backend: config.client read (PoW + DPoP). — RUN 2026-11-18: passed in the strict E2E (35/35, e2e_2026_11_18).",
           "a11y": "axe-core in jsdom: 0 violations on the four screens in EN and FA. Chromium axe written in settings.spec.ts (not run).",
           "static": "pnpm check (lint + logical CSS, typecheck, unit + DOM 330, contract:check, i18n:check 666 keys, ds:check), pnpm format:check, pnpm build (routes /rates, /flags, /plans, /retention)",
           "not_run": "All signed-in E2E (signin, approvals, settings) after the AC6 changes; pnpm test:int; a real step-up on an AC6 write (none is AAL3); Firefox/Safari."
@@ -2257,14 +2333,14 @@
           "DI-18..DI-20 (new); DI-01, DI-05..DI-17 as before.",
           "OQ-15, OQ-02 (AC11), OQ-03, OQ-06..OQ-09 with their defaults.",
           "Nothing committed (commit only when the user asks)."
-        ]
-      },
-      "partial_reason": "All code, docs and DOM tests are done and green; the signed-in E2E (tests/e2e/settings.spec.ts, and the AC4/AC5 suites after the AC6 changes) has not been run, because it needs CARPAL_ADMIN_CLIENT_PRIVATE_JWKS for the strict backend and this session had no access to the key. Run: export CARPAL_STRICT_AUTH=1 and CARPAL_ADMIN_CLIENT_PRIVATE_JWKS, then `pnpm e2e` in frontend/admin-console (backend `pnpm dev` running). When it passes, set AC6 and AC6.T6 to done."
+        ],
+        "e2e_2026_11_18": "Strict signed-in E2E on 2026-11-18: pnpm e2e against `pnpm int:env backend` (strict auth, the throwaway client keys of backend/.env.test, backend S25b R-11), 35 passed, 0 skipped (5.8 min, 4 workers); pnpm check 431 tests green. settings.spec.ts 4/4 passed. Fixed in the test: the assignment form has three labels containing \"Plan\" (getByLabel exact), and Save after Reload now waits for the re-read flag list (the click raced the background refetch and got the same 412). The run was `pnpm build` then `pnpm exec playwright test`: `pnpm e2e` stopped twice at `next build` with a Next.js security-advisory error (SecurityFatalError for 16.4.3) after a clean compile; a plain rebuild passed both times. The Next.js upgrade is left to the owner."
+      }
     },
     {
       "id": "AC7",
       "title": "Reviews: Path 2 approval queue, review cases, disputes and appeals",
-      "status": "partial",
+      "status": "done",
       "depends_on": [
         "AC5"
       ],
@@ -2333,8 +2409,8 @@
         {
           "id": "AC7.T6",
           "task": "E2E: a Path 2 review created through the API (the PWA E2E helpers show how) is confirmed by a CRV and becomes 'approved_without_visit'; a business rejection opens a dispute that a different staff member resolves; EN and FA; axe.",
-          "status": "partial",
-          "result": "tests/e2e/reviews.spec.ts (2 tests: a CRV confirms a Path 2 review the business confirmed → the author sees approved_without_visit; a MOD reads the queue without decision buttons and opens Review cases; a CRV who asked for evidence is refused on the business objection and the screen explains it; a MOD in Persian publishes the review as disputed → the author sees it published with disputed_by_business; axe in EN and FA) and tests/e2e/app-user.ts (shop, customers, Path 2 reviews and the business answer through the API as cp-mobile users: sign-up, mailed link, code flow with PKCE and DPoP, proof of work when the server asks; D-46). The seeding was run against the strict backend (shop published, Path 2 review, objection, author view: passed). NOT RUN signed in: the staff sign-in of the strict backend needs CARPAL_ADMIN_CLIENT_PRIVATE_JWKS (the run stopped at /id/signed-out?reason=failed, as AC6)."
+          "status": "done",
+          "result": "tests/e2e/reviews.spec.ts (2 tests: a CRV confirms a Path 2 review the business confirmed → the author sees approved_without_visit; a MOD reads the queue without decision buttons and opens Review cases; a CRV who asked for evidence is refused on the business objection and the screen explains it; a MOD in Persian publishes the review as disputed → the author sees it published with disputed_by_business; axe in EN and FA) and tests/e2e/app-user.ts (shop, customers, Path 2 reviews and the business answer through the API as cp-mobile users: sign-up, mailed link, code flow with PKCE and DPoP, proof of work when the server asks; D-46). The seeding was run against the strict backend (shop published, Path 2 review, objection, author view: passed). NOT RUN signed in: the staff sign-in of the strict backend needs CARPAL_ADMIN_CLIENT_PRIVATE_JWKS (the run stopped at /id/signed-out?reason=failed, as AC6). DONE 2026-11-18: reviews.spec.ts passed. Fixed in the test: the FA staff member signs in from a fa-IR browser (the sign-in page follows the browser language; the staff member is not known yet). Strict signed-in E2E on 2026-11-18: pnpm e2e against `pnpm int:env backend` (strict auth, the throwaway client keys of backend/.env.test, backend S25b R-11), 35 passed, 0 skipped (5.8 min, 4 workers); pnpm check 431 tests green. The run was `pnpm build` then `pnpm exec playwright test`: `pnpm e2e` stopped twice at `next build` with a Next.js security-advisory error (SecurityFatalError for 16.4.3) after a clean compile; a plain rebuild passed both times. The Next.js upgrade is left to the owner."
         }
       ],
       "deliverables": [
@@ -2350,12 +2426,12 @@
       ],
       "report": {
         "started_at": "2026-11-10",
-        "completed_at": null,
-        "summary": "The trust flow the pilot depends on is in the console. Community reviewers clear the Path 2 approval queue (/reviews): each review opens for its approval purpose with the business answer, the author history without contact data and the evidence files, and is confirmed, rejected or sent back for evidence with a reason code (never a rating); Confirm waits for the business step and A/R open the reason. Moderators work review cases (remove, restore, approve a held-back review, warn, close) and move a review whose visit evidence proved invalid to Path 2 by four-eyes. Disputes & appeals (/disputes) shows the statement, the disputed review with both sides' evidence and the first decider, says what each outcome does, and explains the different-staff rule when the server refuses. Contract gaps: no source filter or typed snapshot for cases, no hidden state for reviews, no thread, target reads or staff withdraw for disputes, no stage or answer time in the approval view, and the inverted meaning of \"upheld\" for business objections (DI-21..DI-25, BR-27..BR-30). The E2E is written and its API seeding ran against the strict backend; the signed-in part waits for the client key, like AC6.",
+        "completed_at": "2026-11-18",
+        "summary": "The trust flow the pilot depends on is in the console. Community reviewers clear the Path 2 approval queue (/reviews): each review opens for its approval purpose with the business answer, the author history without contact data and the evidence files, and is confirmed, rejected or sent back for evidence with a reason code (never a rating); Confirm waits for the business step and A/R open the reason. Moderators work review cases (remove, restore, approve a held-back review, warn, close) and move a review whose visit evidence proved invalid to Path 2 by four-eyes. Disputes & appeals (/disputes) shows the statement, the disputed review with both sides' evidence and the first decider, says what each outcome does, and explains the different-staff rule when the server refuses. Contract gaps: no source filter or typed snapshot for cases, no hidden state for reviews, no thread, target reads or staff withdraw for disputes, no stage or answer time in the approval view, and the inverted meaning of \"upheld\" for business objections (DI-21..DI-25, BR-27..BR-30). The E2E is written and its API seeding ran against the strict backend; the signed-in part waits for the client key, like AC6. Update 2026-11-18: the signed-in E2E has run and passed (e2e_2026_11_18).",
         "acceptance": {
           "A CRV can clear the approval queue end to end; a MOD without CRV cannot decide approvals.": "DOM-tested (queue by stage, the purpose-bound read, Confirm / Reject / Ask for evidence bodies with reason_code, Confirm blocked until the business step, A/R, MOD sees \"Only community reviewers decide\" and no buttons). E2E written (reviews.spec.ts test 1: confirm → the author sees approved_without_visit; MOD without buttons); its seeding ran against the strict backend, the signed-in part did not (partial_reason). The server rule is the backend's (STF(CRV) on admin.review_approval_decide, S9b sweep).",
-          "Dispute decisions by the original decider are refused and explained.": "DOM-tested (SELF_APPROVAL_FORBIDDEN → \"A colleague must decide this\"; the rule stated before deciding; the first decider shown). E2E written (test 2: the CRV who asked for evidence is refused on the objection; a MOD decides in Persian; the author sees the review published as disputed); not run signed in.",
-          "E2E and axe pass in EN and FA.": "axe in jsdom: 0 violations on the approval item, the review case and the dispute, in EN and FA (6 tests). Chromium axe is in reviews.spec.ts (EN approval and cases, EN refused dispute, FA dispute), not run. smoke + bff E2E: 13 passed against the AC7 build."
+          "Dispute decisions by the original decider are refused and explained.": "Verified 2026-11-18 in the strict signed-in E2E (Chromium, EN and FA with axe). Before: DOM-tested (SELF_APPROVAL_FORBIDDEN → \"A colleague must decide this\"; the rule stated before deciding; the first decider shown). E2E written (test 2: the CRV who asked for evidence is refused on the objection; a MOD decides in Persian; the author sees the review published as disputed); not run signed in.",
+          "E2E and axe pass in EN and FA.": "Verified 2026-11-18 in the strict signed-in E2E (Chromium, EN and FA with axe). Before: axe in jsdom: 0 violations on the approval item, the review case and the dispute, in EN and FA (6 tests). Chromium axe is in reviews.spec.ts (EN approval and cases, EN refused dispute, FA dispute), not run. smoke + bff E2E: 13 passed against the AC7 build."
         },
         "screens_built": [
           "A-REV-01 Review queues (/reviews): Awaiting approval by stage; Review cases",
@@ -2389,7 +2465,7 @@
         "tests": {
           "unit": "console 363 passed in 38 files (331 before AC7): review rules 8, reviews DOM 17 (incl. axe EN/FA ×2), disputes DOM 7 (incl. axe EN/FA), reasons +1",
           "int": "not run (no BFF change)",
-          "e2e": "written: tests/e2e/reviews.spec.ts (2 tests) - signed-in part NOT RUN (strict backend; no client key in this session). The API seeding (app-user.ts) ran against the strict backend in a temporary check (passed; removed). smoke + bff: 13 passed against the AC7 production build.",
+          "e2e": "written: tests/e2e/reviews.spec.ts (2 tests) - signed-in part NOT RUN (strict backend; no client key in this session). The API seeding (app-user.ts) ran against the strict backend in a temporary check (passed; removed). smoke + bff: 13 passed against the AC7 production build. — RUN 2026-11-18: passed in the strict E2E (35/35, e2e_2026_11_18).",
           "a11y": "axe-core in jsdom: 0 violations on the approval item, the review case and the dispute in EN and FA. Chromium axe written in reviews.spec.ts (not run).",
           "static": "pnpm check (lint + logical CSS, typecheck, unit + DOM 363, contract:check, i18n:check 983 keys, ds:check), pnpm format:check, pnpm build (routes /reviews, /disputes)",
           "not_run": "All signed-in E2E (signin, approvals, settings, reviews); pnpm test:int; Firefox/Safari."
@@ -2434,14 +2510,14 @@
           "DI-21..DI-25 (new); DI-01, DI-05..DI-20 as before.",
           "OQ-15 (SLA working days; disputes and review approvals use it), OQ-02 (AC11), OQ-03, OQ-06..OQ-09 with their defaults.",
           "Nothing committed (commit only when the user asks)."
-        ]
-      },
-      "partial_reason": "All code, docs, unit and DOM tests are done and green, and the E2E seeding through the API ran against the strict backend; the signed-in part of tests/e2e/reviews.spec.ts (and the AC4-AC6 suites) has not run, because the strict backend needs the cp-web-admin private key (CARPAL_ADMIN_CLIENT_PRIVATE_JWKS) and this session had none. Run: export CARPAL_STRICT_AUTH=1 and CARPAL_ADMIN_CLIENT_PRIVATE_JWKS, then `pnpm e2e` in frontend/admin-console (backend `pnpm dev` running). When it passes, set AC7 and AC7.T6 (and AC6, AC6.T6) to done."
+        ],
+        "e2e_2026_11_18": "Strict signed-in E2E on 2026-11-18: pnpm e2e against `pnpm int:env backend` (strict auth, the throwaway client keys of backend/.env.test, backend S25b R-11), 35 passed, 0 skipped (5.8 min, 4 workers); pnpm check 431 tests green. reviews.spec.ts passed. Fixed in the test: the FA staff member signs in from a fa-IR browser (the sign-in page follows the browser language; the staff member is not known yet). The run was `pnpm build` then `pnpm exec playwright test`: `pnpm e2e` stopped twice at `next build` with a Next.js security-advisory error (SecurityFatalError for 16.4.3) after a clean compile; a plain rebuild passed both times. The Next.js upgrade is left to the owner."
+      }
     },
     {
       "id": "AC8",
       "title": "Moderation: reports, cases for content, inventory, users, organizations and AI output; badges",
-      "status": "partial",
+      "status": "done",
       "depends_on": [
         "AC5"
       ],
@@ -2508,8 +2584,8 @@
         {
           "id": "AC8.T6",
           "task": "E2E: a community post reported in the PWA flow (API helper) is triaged, hidden, restored and closed; a suspend action triggers step-up; EN and FA; axe.",
-          "status": "partial",
-          "result": "tests/e2e/moderation.spec.ts (2 tests: EN — a post published by a shop and reported by a customer is triaged into a case, taken, hidden [the public list no longer shows it], restored [shown again] and closed with a resolution, axe on the report and the case; FA — suspending the post's author asks for the security key, the virtual key confirms on the sign-in page and the saved action runs once against the backend, the author's next API call is refused, axe in FA) and app-user.ts helpers communityOn (backend dev:flags set community on), shopPost, reportAs, publicPostStatus. The step-up is triggered by answering the first suspend call with the backend's STEP_UP_REQUIRED (page.route): the backend's 10-minute window never expires in a fresh E2E session (D-55). The API seeding ran against the running backend (shop, post published, report: passed). NOT RUN signed in: the sign-in stopped at /id/signed-out?reason=failed, as AC6 and AC7 (no CARPAL_ADMIN_CLIENT_PRIVATE_JWKS in this session)."
+          "status": "done",
+          "result": "tests/e2e/moderation.spec.ts (2 tests: EN — a post published by a shop and reported by a customer is triaged into a case, taken, hidden [the public list no longer shows it], restored [shown again] and closed with a resolution, axe on the report and the case; FA — suspending the post's author asks for the security key, the virtual key confirms on the sign-in page and the saved action runs once against the backend, the author's next API call is refused, axe in FA) and app-user.ts helpers communityOn (backend dev:flags set community on), shopPost, reportAs, publicPostStatus. The step-up is triggered by answering the first suspend call with the backend's STEP_UP_REQUIRED (page.route): the backend's 10-minute window never expires in a fresh E2E session (D-55). The API seeding ran against the running backend (shop, post published, report: passed). NOT RUN signed in: the sign-in stopped at /id/signed-out?reason=failed, as AC6 and AC7 (no CARPAL_ADMIN_CLIENT_PRIVATE_JWKS in this session). DONE 2026-11-18: moderation.spec.ts passed. Fixed in the console (D-65): after the security-key step-up the replayed suspend_account succeeded but the page had reloaded and lost which action ran, so the specific \"account suspended\" notice was missing; useAdminAction now keeps lastArgs (also for a replay) and the case workspace reads the action from it. Test: fa-IR browser for the FA sign-in. Strict signed-in E2E on 2026-11-18: pnpm e2e against `pnpm int:env backend` (strict auth, the throwaway client keys of backend/.env.test, backend S25b R-11), 35 passed, 0 skipped (5.8 min, 4 workers); pnpm check 431 tests green. The run was `pnpm build` then `pnpm exec playwright test`: `pnpm e2e` stopped twice at `next build` with a Next.js security-advisory error (SecurityFatalError for 16.4.3) after a clean compile; a plain rebuild passed both times. The Next.js upgrade is left to the owner."
         }
       ],
       "deliverables": [
@@ -2527,12 +2603,12 @@
       ],
       "report": {
         "started_at": "2026-11-10",
-        "completed_at": null,
-        "summary": "Moderators work every kind of case in the console. Reports (/content) are triaged into a case (safety reasons at least high), into the open case about the same item, or dismissed, safety reports first. Content, account, AI output (/content tabs) and inventory (/inventory) cases are queues of admin.cases_list with safety cases first; a case opens for its purpose with the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), the AI risk and the history; \"Take this case\" assigns it; the actions are the ones the backend applies to that item in its state (approve held content, hide, remove, restore, request changes, reject a fitment row; a showcase cannot be approved without the customer's consent), accounts are warned, suspended (security key) and reactivated, organizations get trust penalties (security key, second confirmation) and badge decisions; every action takes a reason, and the case closes with an outcome and a resolution. The AC7 review case now runs on the same workspace. Contract gaps: no badge list (Verified Business approval needs the badge id), no reason or source filter, no severity floor on the server, snapshots without author or consent record, no fitment downgrade (DI-26..DI-29, BR-31..BR-33). The E2E is written and its seeding ran; the signed-in part waits for the client key, like AC6 and AC7.",
+        "completed_at": "2026-11-18",
+        "summary": "Moderators work every kind of case in the console. Reports (/content) are triaged into a case (safety reasons at least high), into the open case about the same item, or dismissed, safety reports first. Content, account, AI output (/content tabs) and inventory (/inventory) cases are queues of admin.cases_list with safety cases first; a case opens for its purpose with the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), the AI risk and the history; \"Take this case\" assigns it; the actions are the ones the backend applies to that item in its state (approve held content, hide, remove, restore, request changes, reject a fitment row; a showcase cannot be approved without the customer's consent), accounts are warned, suspended (security key) and reactivated, organizations get trust penalties (security key, second confirmation) and badge decisions; every action takes a reason, and the case closes with an outcome and a resolution. The AC7 review case now runs on the same workspace. Contract gaps: no badge list (Verified Business approval needs the badge id), no reason or source filter, no severity floor on the server, snapshots without author or consent record, no fitment downgrade (DI-26..DI-29, BR-31..BR-33). The E2E is written and its seeding ran; the signed-in part waits for the client key, like AC6 and AC7. Update 2026-11-18: the signed-in E2E has run and passed (e2e_2026_11_18).",
         "acceptance": {
           "Every case type can be opened, actioned with a reason and closed.": "DOM-tested on post (read for the purpose, take, hide with reason, done), showcase item (approve blocked without consent), user (suspend), organization (penalty, badge approve and revoke), file (media viewer), listing (request changes needs a note), and closing (AC7 test on the shared workspace); unit-tested action sets for all 14 target types (case-logic.test.ts). E2E written (moderation.spec.ts test 1: triage, take, hide, restore, close on a real post); seeding ran, the signed-in part did not (partial_reason).",
-          "Suspend, trust penalty and merge require a fresh passkey step-up.": "Suspend and trust penalty: the server enforces AAL3 (admin.case_action AAL3(suspend_account, apply_trust_penalty, merge_duplicate), 10-minute window); the console says so in the dialog and the kit replays the action once after the key (DOM test: STEP_UP_REQUIRED → \"Confirm it's you\" → the action saved as act.admin.case_action; E2E test 2 written, not run). Merge is not offered (BR-08 open, D-51).",
-          "E2E and axe pass in EN and FA.": "axe-core in jsdom: 0 violations on a report, a content case and an organization case in EN and FA (6 tests). Chromium axe is in moderation.spec.ts (EN report and case, FA account panel), not run. smoke + bff E2E: 13 passed against the AC8 production build."
+          "Suspend, trust penalty and merge require a fresh passkey step-up.": "Verified 2026-11-18 in the strict signed-in E2E (Chromium, EN and FA with axe). Before: Suspend and trust penalty: the server enforces AAL3 (admin.case_action AAL3(suspend_account, apply_trust_penalty, merge_duplicate), 10-minute window); the console says so in the dialog and the kit replays the action once after the key (DOM test: STEP_UP_REQUIRED → \"Confirm it's you\" → the action saved as act.admin.case_action; E2E test 2 written, not run). Merge is not offered (BR-08 open, D-51).",
+          "E2E and axe pass in EN and FA.": "Verified 2026-11-18 in the strict signed-in E2E (Chromium, EN and FA with axe). Before: axe-core in jsdom: 0 violations on a report, a content case and an organization case in EN and FA (6 tests). Chromium axe is in moderation.spec.ts (EN report and case, FA account panel), not run. smoke + bff E2E: 13 passed against the AC8 production build."
         },
         "screens_built": [
           "Reports inbox (/content?tab=reports): list, report, triage",
@@ -2566,7 +2642,7 @@
         "tests": {
           "unit": "console 397 passed in 40 files (363 before AC8): case rules 15, moderation DOM 18 (incl. axe EN/FA ×3), CSP media origin 1; env assertions added; the AC7 review-case tests pass unchanged on the shared workspace",
           "int": "not run (no BFF change)",
-          "e2e": "written: tests/e2e/moderation.spec.ts (2 tests) - signed-in part NOT RUN (no client key in this session; the sign-in stops at /id/signed-out?reason=failed). Its API seeding ran against the running backend (community flags on, shop, post published, report: passed). smoke + bff: 13 passed against the AC8 production build.",
+          "e2e": "written: tests/e2e/moderation.spec.ts (2 tests) - signed-in part NOT RUN (no client key in this session; the sign-in stops at /id/signed-out?reason=failed). Its API seeding ran against the running backend (community flags on, shop, post published, report: passed). smoke + bff: 13 passed against the AC8 production build. — RUN 2026-11-18: passed in the strict E2E (35/35, e2e_2026_11_18).",
           "a11y": "axe-core in jsdom: 0 violations on a report, a content case and an organization case in EN and FA. Chromium axe written in moderation.spec.ts (not run).",
           "static": "pnpm check (lint + logical CSS, typecheck, unit + DOM 397, contract:check, i18n:check 1249 keys, ds:check), pnpm format:check, pnpm build (routes /content, /inventory)",
           "not_run": "All signed-in E2E (signin, approvals, settings, reviews, moderation); pnpm test:int; Firefox/Safari."
@@ -2613,14 +2689,14 @@
           "OQ-15 (SLA working days), OQ-02 (AC11), OQ-03, OQ-06..OQ-09 with their defaults.",
           "The E2E seeding left test data in the dev database (shops, posts, reports, staff accounts) and turned the community flags on in dev.",
           "Nothing committed (commit only when the user asks)."
-        ]
-      },
-      "partial_reason": "All code, docs, unit and DOM tests are done and green, and the E2E seeding through the API ran against the running backend; the signed-in part of tests/e2e/moderation.spec.ts (and the AC4-AC7 suites) has not run, because the strict backend needs the cp-web-admin private key (CARPAL_ADMIN_CLIENT_PRIVATE_JWKS) and this session had none. Run: export CARPAL_STRICT_AUTH=1 and CARPAL_ADMIN_CLIENT_PRIVATE_JWKS, then `pnpm e2e` in frontend/admin-console (backend `pnpm dev` running). When it passes, set AC8 and AC8.T6 (and AC6, AC7 with their T6) to done."
+        ],
+        "e2e_2026_11_18": "Strict signed-in E2E on 2026-11-18: pnpm e2e against `pnpm int:env backend` (strict auth, the throwaway client keys of backend/.env.test, backend S25b R-11), 35 passed, 0 skipped (5.8 min, 4 workers); pnpm check 431 tests green. moderation.spec.ts passed. Fixed in the console (D-65): after the security-key step-up the replayed suspend_account succeeded but the page had reloaded and lost which action ran, so the specific \"account suspended\" notice was missing; useAdminAction now keeps lastArgs (also for a replay) and the case workspace reads the action from it. Test: fa-IR browser for the FA sign-in. The run was `pnpm build` then `pnpm exec playwright test`: `pnpm e2e` stopped twice at `next build` with a Next.js security-advisory error (SecurityFatalError for 16.4.3) after a clean compile; a plain rebuild passed both times. The Next.js upgrade is left to the owner."
+      }
     },
     {
       "id": "AC9",
       "title": "Organizations, verification and locations (map), assist sessions",
-      "status": "partial",
+      "status": "done",
       "depends_on": [
         "AC5"
       ],
@@ -2691,8 +2767,8 @@
         {
           "id": "AC9.T6",
           "task": "E2E: a provider organization created through the API is verified; a location pin is corrected; EN and FA; axe (map has a keyboard alternative).",
-          "status": "partial",
-          "result": "tests/e2e/orgs.spec.ts (2 tests: EN — a published provider submits business identity and location checks through the API; a moderator approves the identity check after the checklist, corrects the pin on the Locations tab by typed coordinates, approves the location check and sees the organization verified, axe on the review and the Locations tab; FA — an admin finds the organization by id, opens it for a pending phone check, reads the correction in the location's audit drawer, suspends and reactivates it, axe in FA) and app-user.ts submitVerification. axe-core in jsdom: 0 violations on the organization page with its Locations tab (EN, FA), the list (FA) and a check under review (EN, FA). The API seeding ran against the running backend (shop published, two checks submitted: passed). NOT RUN signed in: the sign-in stopped at /id/signed-out?reason=failed, as AC6-AC8 (no CARPAL_ADMIN_CLIENT_PRIVATE_JWKS in this session)."
+          "status": "done",
+          "result": "tests/e2e/orgs.spec.ts (2 tests: EN — a published provider submits business identity and location checks through the API; a moderator approves the identity check after the checklist, corrects the pin on the Locations tab by typed coordinates, approves the location check and sees the organization verified, axe on the review and the Locations tab; FA — an admin finds the organization by id, opens it for a pending phone check, reads the correction in the location's audit drawer, suspends and reactivates it, axe in FA) and app-user.ts submitVerification. axe-core in jsdom: 0 violations on the organization page with its Locations tab (EN, FA), the list (FA) and a check under review (EN, FA). The API seeding ran against the running backend (shop published, two checks submitted: passed). NOT RUN signed in: the sign-in stopped at /id/signed-out?reason=failed, as AC6-AC8 (no CARPAL_ADMIN_CLIENT_PRIVATE_JWKS in this session). DONE 2026-11-18: orgs.spec.ts 2/2 passed. Fixed in the console (D-66): a /verification link to a check that is not on the first queue page (50 rows, oldest first) showed nothing; the page now walks the next pages (up to 20) to find it, with a DOM test. Tests: the file runs serial (the FA test needs the EN test's organization and was always skipped under fullyParallel), the FA test signs in from a fa-IR browser, and the two queue waits allow 90 s because admin.verifications_queue takes 8-10 s on the local DB (BR-36). Strict signed-in E2E on 2026-11-18: pnpm e2e against `pnpm int:env backend` (strict auth, the throwaway client keys of backend/.env.test, backend S25b R-11), 35 passed, 0 skipped (5.8 min, 4 workers); pnpm check 431 tests green. The run was `pnpm build` then `pnpm exec playwright test`: `pnpm e2e` stopped twice at `next build` with a Next.js security-advisory error (SecurityFatalError for 16.4.3) after a clean compile; a plain rebuild passed both times. The Next.js upgrade is left to the owner."
         }
       ],
       "deliverables": [
@@ -2709,12 +2785,12 @@
       ],
       "report": {
         "started_at": "2026-11-10",
-        "completed_at": null,
-        "summary": "Staff find organizations (/orgs) by name, slug or id without seeing contact data, and open one for a work item: the backend accepts a purpose only while its item is open, so the page is read for a pending verification or an open case and otherwise shows the header from the search with the checks to open it for. The organization page has Profile (masked contact data), Locations (a MapLibre map with the owner's pin, the service radius and the server's pin-to-address verdict; pin or address corrected with a reason by click, drag or typed coordinates), Verification (the checks, the Verified Business badge approval) and Plan; suspend and reactivate with a reason; assist sessions start and end with a banner on every page. Verification (/verification) is a queue with the 2-working-day SLA and a three-panel review: the submitted data, the documents (watermarked display copies with zoom, rotate and paging) and the checklist; Approve needs the checklist and no far pin, Reject needs the message for the business, and the organization's new verification status is shown after the decision. Contract gaps: no request-more-info, no org search filters for duplicates or location issues and full StaffOrgView rows without a purpose, no profile correction, no read of open assist sessions, no region settings on the admin plane (DI-30..DI-32, BR-34, BR-35, BR-18). The E2E is written and its seeding ran; the signed-in part waits for the client key, like AC6-AC8.",
+        "completed_at": "2026-11-18",
+        "summary": "Staff find organizations (/orgs) by name, slug or id without seeing contact data, and open one for a work item: the backend accepts a purpose only while its item is open, so the page is read for a pending verification or an open case and otherwise shows the header from the search with the checks to open it for. The organization page has Profile (masked contact data), Locations (a MapLibre map with the owner's pin, the service radius and the server's pin-to-address verdict; pin or address corrected with a reason by click, drag or typed coordinates), Verification (the checks, the Verified Business badge approval) and Plan; suspend and reactivate with a reason; assist sessions start and end with a banner on every page. Verification (/verification) is a queue with the 2-working-day SLA and a three-panel review: the submitted data, the documents (watermarked display copies with zoom, rotate and paging) and the checklist; Approve needs the checklist and no far pin, Reject needs the message for the business, and the organization's new verification status is shown after the decision. Contract gaps: no request-more-info, no org search filters for duplicates or location issues and full StaffOrgView rows without a purpose, no profile correction, no read of open assist sessions, no region settings on the admin plane (DI-30..DI-32, BR-34, BR-35, BR-18). The E2E is written and its seeding ran; the signed-in part waits for the client key, like AC6-AC8. Update 2026-11-18: the signed-in E2E has run and passed (e2e_2026_11_18).",
         "acceptance": {
-          "Verification decisions update the organization's verification status and badge eligibility.": "The backend recomputes the organization's status on every decision (verified when business identity and a location are verified; then the trust worker awards Verified Business pending_approval). The console shows the new status from admin.orgs_search after the decision and the badge hint (DOM test: approve → \"The organization's verification status is now: Verified.\"); a location check cannot be approved while a pin is far (DOM test). E2E written (orgs.spec.ts test 1 ends on the verified status), not run signed in (partial_reason).",
-          "Location corrections are audited and visible in the audit drawer.": "admin.location_correct writes organization.location_corrected (entity organization_location) with the reason; each location has its own Audit trail button (AuditDrawer, ADM). DOM test: the correction sends only the pin with the reason and the page shows the new verdict and source; E2E test 2 reads the correction (reason code and note) in the drawer in FA — written, not run.",
-          "E2E and axe pass in EN and FA.": "axe-core in jsdom: 0 violations on the organization page with Locations (EN, FA), the list (FA) and a check under review (EN, FA). Chromium axe is in orgs.spec.ts (EN review and Locations tab, FA organization page), not run. smoke + bff E2E: 13 passed against the AC9 production build."
+          "Verification decisions update the organization's verification status and badge eligibility.": "Verified 2026-11-18 in the strict signed-in E2E (Chromium, EN and FA with axe). Before: The backend recomputes the organization's status on every decision (verified when business identity and a location are verified; then the trust worker awards Verified Business pending_approval). The console shows the new status from admin.orgs_search after the decision and the badge hint (DOM test: approve → \"The organization's verification status is now: Verified.\"); a location check cannot be approved while a pin is far (DOM test). E2E written (orgs.spec.ts test 1 ends on the verified status), not run signed in (partial_reason).",
+          "Location corrections are audited and visible in the audit drawer.": "Verified 2026-11-18 in the strict signed-in E2E (Chromium, EN and FA with axe). Before: admin.location_correct writes organization.location_corrected (entity organization_location) with the reason; each location has its own Audit trail button (AuditDrawer, ADM). DOM test: the correction sends only the pin with the reason and the page shows the new verdict and source; E2E test 2 reads the correction (reason code and note) in the drawer in FA — written, not run.",
+          "E2E and axe pass in EN and FA.": "Verified 2026-11-18 in the strict signed-in E2E (Chromium, EN and FA with axe). Before: axe-core in jsdom: 0 violations on the organization page with Locations (EN, FA), the list (FA) and a check under review (EN, FA). Chromium axe is in orgs.spec.ts (EN review and Locations tab, FA organization page), not run. smoke + bff E2E: 13 passed against the AC9 production build."
         },
         "screens_built": [
           "A-ORG-01 Organization list (/orgs)",
@@ -2757,7 +2833,7 @@
         "tests": {
           "unit": "console 429 passed in 44 files (397 before AC9): organization rules 7, verification rules 5, organization DOM 12 (incl. axe EN/FA ×3), verification DOM 7 (incl. axe EN/FA ×2), CSP map origin 1, env map URL assertions; the moderation case test checks the organization link",
           "int": "not run (no BFF change)",
-          "e2e": "written: tests/e2e/orgs.spec.ts (2 tests) - signed-in part NOT RUN (no client key in this session; the sign-in stops at /id/signed-out?reason=failed). Its API seeding ran against the running backend (shop published, business identity and location checks submitted: passed). smoke + bff: 13 passed against the AC9 production build.",
+          "e2e": "written: tests/e2e/orgs.spec.ts (2 tests) - signed-in part NOT RUN (no client key in this session; the sign-in stops at /id/signed-out?reason=failed). Its API seeding ran against the running backend (shop published, business identity and location checks submitted: passed). smoke + bff: 13 passed against the AC9 production build. — RUN 2026-11-18: passed in the strict E2E (35/35, e2e_2026_11_18).",
           "a11y": "axe-core in jsdom: 0 violations on the organization page with Locations (EN, FA), the list (FA) and a check under review (EN, FA). Chromium axe written in orgs.spec.ts (not run).",
           "static": "pnpm check (lint + logical CSS, typecheck, unit + DOM 429, contract:check, i18n:check 1553 keys, ds:check), pnpm format:check, pnpm build (routes /orgs, /orgs/[orgId], /verification; maplibre worker emitted under /_next/static/media)",
           "not_run": "All signed-in E2E (signin, approvals, settings, reviews, moderation, orgs); pnpm test:int; the map with WebGL in a real browser (jsdom has none: the DOM tests cover the no-map path); Firefox/Safari."
@@ -2800,9 +2876,9 @@
           "OQ-15 (SLA working days), OQ-02 (AC11), OQ-03, OQ-06..OQ-09 with their defaults.",
           "The E2E seeding left test data in the dev database (a published shop with two verification checks) besides the earlier suites' data.",
           "Commit when the user asks (the user committed AC6-AC8 before this stage)."
-        ]
-      },
-      "partial_reason": "All code, docs, unit and DOM tests are done and green, and the E2E seeding through the API ran against the running backend; the signed-in part of tests/e2e/orgs.spec.ts (and the AC4-AC8 suites) has not run, because the strict backend needs the cp-web-admin private key (CARPAL_ADMIN_CLIENT_PRIVATE_JWKS) and this session had none. Run: export CARPAL_STRICT_AUTH=1 and CARPAL_ADMIN_CLIENT_PRIVATE_JWKS, then `pnpm e2e` in frontend/admin-console (backend `pnpm dev` running). When it passes, set AC9 and AC9.T6 (and AC6-AC8 with their T6) to done."
+        ],
+        "e2e_2026_11_18": "Strict signed-in E2E on 2026-11-18: pnpm e2e against `pnpm int:env backend` (strict auth, the throwaway client keys of backend/.env.test, backend S25b R-11), 35 passed, 0 skipped (5.8 min, 4 workers); pnpm check 431 tests green. orgs.spec.ts 2/2 passed. Fixed in the console (D-66): a /verification link to a check that is not on the first queue page (50 rows, oldest first) showed nothing; the page now walks the next pages (up to 20) to find it, with a DOM test. Tests: the file runs serial (the FA test needs the EN test's organization and was always skipped under fullyParallel), the FA test signs in from a fa-IR browser, and the two queue waits allow 90 s because admin.verifications_queue takes 8-10 s on the local DB (BR-36). The run was `pnpm build` then `pnpm exec playwright test`: `pnpm e2e` stopped twice at `next build` with a Next.js security-advisory error (SecurityFatalError for 16.4.3) after a clean compile; a plain rebuild passed both times. The Next.js upgrade is left to the owner."
+      }
     },
     {
       "id": "AC10",
@@ -2810,7 +2886,8 @@
       "status": "not_started",
       "depends_on": [
         "AC5",
-        "BR-07 recommended"
+        "BR-07 (backend S14, done)",
+        "BR-10, BR-18, BR-20, BR-21, BR-31 (backend S13, done)"
       ],
       "goal": "Support and moderators look up a user by one identifier for a work item, suspend or reactivate, force sign-out and reset onboarding; ADM grants and revokes staff roles (four-eyes); privacy requests are processed on time, including the four-eyes deletion run.",
       "scope": {
@@ -2846,6 +2923,11 @@
       ],
       "tasks": [
         {
+          "id": "AC10.T0",
+          "task": "Catch-up patch (backend/BR-update-plan.json admin_console_resume; S13 and S14 notes_for_next). First check that pnpm contract:check passes at the current backend contract (pnpm check:clients in backend/). Then: (a) badge list from admin.badges_list instead of typed ids (D-53); (b) own four-eyes requests with their outcome from admin.four_eyes_list mine (D-31); (c) admin.region_settings for the pin threshold and map style, keeping CARPAL_ADMIN_MAP_STYLE_URL as a fallback (D-58, D-59); (d) assign a case to a colleague from admin.staff_list (D-50); (e) the AC8 case suspension takes an end date (suspended_until, D-52); (f) admin.staff_enable in FOUR_EYES_OPS and its i18n name; (g) the R-17 lint rule (useApiMutation only inside src/components/admin).",
+          "status": "not_started"
+        },
+        {
           "id": "AC10.T1",
           "task": "User lookup: one identifier (email, phone, name or id) inside a work item context (GD-10); results masked; opening a result carries the purpose.",
           "status": "not_started"
@@ -2853,7 +2935,8 @@
         {
           "id": "AC10.T2",
           "task": "User detail from StaffUserView: header with masked contacts and Reveal, status, verification marks, counts, memberships, subscription; actions Suspend (duration, permanent → 4EYES if the contract tags it), Reactivate, Force sign-out, Reset onboarding (flow type), all with reasons; deleted and under-deletion states.",
-          "status": "not_started"
+          "status": "not_started",
+          "note_2026_11_18": "Suspension durations work since backend S14: the end is StaffUserView.suspended_until and the scheduler lifts it. admin.users_search returns only the work item's users (S14)."
         },
         {
           "id": "AC10.T3",
@@ -2868,7 +2951,8 @@
         {
           "id": "AC10.T5",
           "task": "A-DSR-02 by type: export (regenerate via admin.dsr_export ASYNC with progress, mark completed), deletion (identity check step → run deletion 4EYES + AAL3 → completion), rectification and consent withdrawal (status updates with summaries).",
-          "status": "not_started"
+          "status": "not_started",
+          "note_2026_11_18": "The export's progress uses admin.job_get (backend S13; follow the Location header of the 202). Staff do not download the export (DQ-12)."
         },
         {
           "id": "AC10.T6",
@@ -2885,8 +2969,100 @@
         "E2E and axe pass in EN and FA."
       ],
       "out_of_scope": [
-        "extended user tabs (BR-16)",
-        "staff directory list (BR-10)"
+        "extended user tabs (BR-16): built by backend S23, console in AC14.T5",
+        "staff directory list (BR-10): built by backend S13, console in AC14.T2",
+        "staff security keys, recovery codes and account recovery (BR-19): AC10b"
+      ],
+      "report": null
+    },
+    {
+      "id": "AC10b",
+      "title": "Staff security keys, recovery codes and account recovery (backend S16a, S16b)",
+      "status": "not_started",
+      "depends_on": [
+        "AC4 (/id/signin)",
+        "AC5 (admin kit, Pending approvals)",
+        "Backend S16a, S16b, S17, S21, S25a (done)"
+      ],
+      "goal": "A staff member can keep a backup key and recovery codes, and get back in after losing a key without SQL on the server (R-08). Two administrators approve a recovery, as backend DQ-04 decided. The AC11 runbook's lost-key section relies on this.",
+      "added": "2026-11-18 from backend/BR-update-plan.json (admin_console_resume console_work_from_dq04, status_2026_11_13_s16a; S16a and S16b console_impact and notes_for_next). Not in any console stage before.",
+      "scope": {
+        "docs": [
+          "Docs/23 A-AUTH-01 'Security keys and recovery codes' and the lost-key text",
+          "Docs/40 SEC-ADM-2, §6.2 staff recovery operations, §23 staff operations",
+          "backend/deploy/deploy.md 'Lost security key'"
+        ],
+        "screens": [
+          "recovery codes shown once after enrolment",
+          "Security keys and recovery codes page",
+          "/id Lost my security key",
+          "Recovery requests queue (ADM)",
+          "restriction banner after a recovery"
+        ],
+        "operations": [
+          "auth.passkey_enrol (AuthNext.recovery_codes)",
+          "admin.staff_passkeys_list",
+          "admin.staff_passkey_register_options",
+          "admin.staff_passkey_register",
+          "admin.staff_passkey_remove",
+          "admin.staff_recovery_codes_regenerate",
+          "auth.staff_recovery_start",
+          "auth.staff_recovery_verify",
+          "auth.staff_recovery_status",
+          "auth.staff_recovery_complete_options",
+          "auth.staff_recovery_complete",
+          "admin.staff_recoveries_list",
+          "admin.staff_recovery_get",
+          "admin.staff_recovery_approve",
+          "admin.staff_recovery_reject",
+          "admin.staff_me (recovery_codes_remaining, restricted_until)"
+        ]
+      },
+      "context_to_read": [
+        "backend/BR-update-plan.json action_plan.stages S16a and S16b (console_impact, report.notes_for_next)",
+        "Docs/23.Admin_WebUI_screens.md A-AUTH-01",
+        "Docs/40 the staff recovery and staff passkey operation blocks"
+      ],
+      "tasks": [
+        {
+          "id": "AC10b.T1",
+          "task": "After the first enrolment (auth.passkey_enrol), show AuthNext.recovery_codes once, with Print and an 'I have stored them' confirmation. Never put them in browser storage (GD-12), and the BFF must not log the body. Show a prompt when StaffMe.recovery_codes_remaining is 0.",
+          "status": "not_started"
+        },
+        {
+          "id": "AC10b.T2",
+          "task": "'Security keys and recovery codes' page for every staff member: own keys (name, added, last used), Add a backup key (device-bound only), Remove (never the last key: LAST_PASSKEY), New recovery codes (the old set stops working). Each action asks for the key again when the sign-in is older than 5 minutes (STEP_UP_REQUIRED max_age=300 -> /bff/reauth). Show the passkey_limit message.",
+          "status": "not_started"
+        },
+        {
+          "id": "AC10b.T3",
+          "task": "/id 'Lost my security key': start -> emailed code -> waiting page polling auth.staff_recovery_status -> new password if forgotten -> new key -> the usual MFA step -> the new recovery codes once. The BFF keeps the request handle server-side.",
+          "status": "not_started"
+        },
+        {
+          "id": "AC10b.T4",
+          "task": "ADM 'Recovery requests' queue next to Pending approvals (admin.staff_recoveries_list / staff_recovery_get): Approve with reason, verification method and a note when the method is 'other' (fresh AAL3, 5 minutes), or Reject. Show a banner while StaffMe.restricted_until is in the future and explain STAFF_RECOVERY_RESTRICTED. Add the recovery and break-glass staff notices (backend S17) to the notice map, and the open recovery count from admin.work_summary (S21) to My work.",
+          "status": "not_started"
+        },
+        {
+          "id": "AC10b.T5",
+          "task": "Unit and DOM tests; strict E2E with pnpm int:env and the virtual authenticator (add a backup key, regenerate codes, a recovery approved by two ADMs, a rejected one); EN and FA; axe.",
+          "status": "not_started"
+        }
+      ],
+      "deliverables": [
+        "src/features/staff-security",
+        "/id recovery pages",
+        "Recovery requests queue"
+      ],
+      "acceptance_criteria": [
+        "Recovery codes appear once and are never stored in the browser or the BFF logs.",
+        "A lost-key recovery completes in the console with two other ADMs' approval and no server SQL.",
+        "E2E and axe pass in EN and FA."
+      ],
+      "out_of_scope": [
+        "break glass (a server script, deploy/staff-break-glass.sh; AC11 runbook)",
+        "geo-IP country of a recovery request (NP-03)"
       ],
       "report": null
     },
@@ -2900,8 +3076,9 @@
         "AC8",
         "AC9",
         "AC10",
+        "AC10b",
         "OQ-02 answered or default",
-        "BR-09 recommended"
+        "BR-09 (backend S14, done)"
       ],
       "goal": "The console runs on admin.<DOMAIN> behind the chosen gate with strict auth, deployed by setup/update scripts in the WinSCP workflow, and the pilot flows are covered by E2E and a security review.",
       "scope": {
@@ -2922,7 +3099,8 @@
         {
           "id": "AC11.T1",
           "task": "deploy/: deploy.md, admin-setup.sh (service user, systemd unit on 127.0.0.1:3200, nginx server block for ADMIN_HOST with TLS, gate per ADMIN_GATE, client key placement), admin-update.sh (stop, copy from staging, pnpm install --frozen-lockfile, build, restart), lib.sh; LF only; reads /carpal/config/deploy.conf.",
-          "status": "not_started"
+          "status": "not_started",
+          "note_2026_11_18": "R-23 backend half done (S25b: the storage host sends CORP cross-origin; never add same-origin in nginx). The map style comes from the region settings (admin.region_settings, AC10.T0), with CARPAL_ADMIN_MAP_STYLE_URL only as a fallback. The deploy kit places the Neshan web map key (CARPAL_ADMIN_NESHAN_MAP_KEY, AC14b.T6). After backend S26c, trusted proxy addresses (CARPAL_TRUSTED_PROXIES) are a backend setting; the console BFF change is AC14b.T7."
         },
         {
           "id": "AC11.T2",
@@ -2933,7 +3111,8 @@
           "id": "AC11.T3",
           "task": "First-staff runbook: create the first ADM on the server (dev tool is refused in prod → document a one-time server command or backend bootstrap flag), enrol passkeys, grant roles by four-eyes from then on.",
           "status": "not_started",
-          "note_ac2": "OQ-10 answer: admin-setup.sh runs backend/deploy/staff-bootstrap.sh on its first install when /carpal/config/staff-bootstrap.json exists (it prints one-time passwords; existing accounts are left alone). The runbook covers handing over the passwords, the first sign-in (password, emailed code from the outbox until NI-07, device-bound passkey), and until BR-19 a lost key (SQL to disable the staff member's webauthn methods)."
+          "note_ac2": "OQ-10 answer: admin-setup.sh runs backend/deploy/staff-bootstrap.sh on its first install when /carpal/config/staff-bootstrap.json exists (it prints one-time passwords; existing accounts are left alone). The runbook covers handing over the passwords, the first sign-in (password, emailed code from the outbox until NI-07, device-bound passkey), and until BR-19 a lost key (SQL to disable the staff member's webauthn methods).",
+          "note_2026_11_18": "Since backend S26a the pilot administrators admin100, admin200 and admin300 are seeded with the owner's initial password (CARPAL_STAFF_INITIAL_PASSWORD; it expires after 7 days, staff:bootstrap --reissue) and must choose a new password at the first sign-in (AC14b.T2). Real email goes through the carpals.ir SMTP mailbox (backend deploy/email_setup_guide.md). A lost key uses the console recovery (AC10b). Break glass (deploy/staff-break-glass.sh) is only for when fewer than two other ADMs are active. The lost-key SQL is gone."
         },
         {
           "id": "AC11.T4",
@@ -2972,7 +3151,8 @@
       "title": "Taxonomy management: tree, node editor, merge, synonyms and mappings",
       "status": "not_started",
       "depends_on": [
-        "AC5"
+        "AC5",
+        "BR-18 and BR-20 (backend S13, done)"
       ],
       "goal": "ADM and the taxonomy specialist maintain brands, models, systems, tasks, part categories, symptoms and review tags in EN and FA, approve AI-suggested and local synonyms (incl. Latin-letter Persian), edit mappings and merge duplicates.",
       "scope": {
@@ -2987,7 +3167,7 @@
           "A-TAX-02"
         ],
         "operations": [
-          "taxonomy reads (GD-07)",
+          "admin.taxonomy_snapshot (BR-18, backend S13; If-Match from its version)",
           "admin.taxonomy_node_create",
           "admin.taxonomy_node_update",
           "admin.taxonomy_merge",
@@ -2997,7 +3177,8 @@
           "admin.synonym_delete",
           "admin.mappings_list",
           "admin.mapping_upsert",
-          "admin.analytics_dashboard (search_and_map for zero-result terms)"
+          "admin.analytics_dashboard (search_and_map for zero-result terms)",
+          "admin.job_get (an approved merge answers PendingChange.job_id)"
         ]
       },
       "context_to_read": [
@@ -3054,7 +3235,8 @@
       "title": "Oversight: audit log, AI oversight, MCP clients and access log, analytics, full dashboard",
       "status": "not_started",
       "depends_on": [
-        "AC5"
+        "AC5",
+        "BR-17, BR-22, BR-26 (backend S21, done)"
       ],
       "goal": "Staff answer 'who changed what, when and why', AI governance watches AI quality and MCP access and edits MCP client scopes with four-eyes, and everyone sees the MVP metric dashboards and a complete home dashboard.",
       "scope": {
@@ -3080,7 +3262,9 @@
           "admin.mcp_client_update",
           "admin.mcp_access_log_search",
           "admin.analytics_dashboard",
-          "admin.flags_list"
+          "admin.flags_list",
+          "admin.system_health",
+          "admin.work_summary"
         ]
       },
       "context_to_read": [
@@ -3092,7 +3276,8 @@
         {
           "id": "AC13.T1",
           "task": "A-AUD-01: filters (actor type, entity, action, time range), append-only notice, entity chips; searches are themselves audited (show a note).",
-          "status": "not_started"
+          "status": "not_started",
+          "note_2026_11_18": "FeatureFlag and ExchangeRate carry ids since backend S21 (BR-26), so their history opens by entity id."
         },
         {
           "id": "AC13.T2",
@@ -3117,7 +3302,8 @@
         {
           "id": "AC13.T6",
           "task": "A-DASH-01 full: My work, Queues, Safety, Growth today, Trust, AI widgets from existing data, each failing independently with Retry; refresh every 60 s while visible.",
-          "status": "not_started"
+          "status": "not_started",
+          "note_2026_11_18": "Backend S21: the System widget from admin.system_health (S26a adds sms_provider, sms_simulated and mail_transport; S26b adds geocoder counters) and the queue counts from admin.work_summary. Remove the D-32 paging and the 200+ cap. Add the support_tickets widget (S24). The kill-switch staff notice is from S17."
         },
         {
           "id": "AC13.T7",
@@ -3135,7 +3321,6 @@
       ],
       "out_of_scope": [
         "AI decisions (BR-14)",
-        "system health widget (BR-17)",
         "MCP token rotation"
       ],
       "report": null
@@ -3145,7 +3330,8 @@
       "title": "Contract gaps: backend contract 1.4.0 for the missing admin screens, and those screens",
       "status": "not_started",
       "depends_on": [
-        "AC11",
+        "AC5",
+        "Backend S13-S24 and S25a (done; contract 1.4.0 frozen in S25b)",
         "OQ-07 answered"
       ],
       "goal": "The Docs/23 screens the contract cannot serve today are added in the backend (contract 1.4.0, logged as backend S13) and built in the console, limited to what the user approves in OQ-07.",
@@ -3164,7 +3350,7 @@
           "extended user/org tabs (Should)"
         ],
         "operations": [
-          "new operations from BR-10..BR-17 as approved"
+          "contract 1.4.0 admin operations from backend S13-S25a (124 admin-api operations in the console after S25b)"
         ]
       },
       "context_to_read": [
@@ -3172,32 +3358,47 @@
         "backend/dev_plan.json conventions (how to add an operation: registry, OpenAPI, sweep resolver, tests)",
         "Docs/23.Admin_WebUI_screens.md lines 445-462, 505-518"
       ],
-      "split_note": "If OQ-07 approves more than BR-10..BR-12, split into AC14-a (backend contract 1.4.0) and AC14-b (console screens).",
+      "split_note": "If it runs long, split by screen group into AC14-1 (A-STAFF-01, A-NOTIF-01, A-POL-01) and AC14-2 (T5). Do not name a part 'AC14b': that id is the backend S26 follow-up stage. The backend half (T1) is already done.",
       "tasks": [
         {
           "id": "AC14.T1",
           "task": "Backend: contract 1.4.0 for the approved BRs (Docs/40 text, registry, OpenAPI, module code, sweep resolvers, integration tests); log as backend S13.",
-          "status": "not_started"
+          "status": "done",
+          "done_by": "backend S13-S24 and S25a (backend/BR-update-plan.json action_plan; contract 1.4.0 frozen 2026-11-16), not by the console"
         },
         {
           "id": "AC14.T2",
           "task": "Console: regenerate the contract; A-STAFF-01 list with invite/disable/role changes and the access-request flow.",
-          "status": "not_started"
+          "status": "not_started",
+          "backend_delivered": "S13: admin.staff_list, staff_disable, staff_enable (four-eyes; DQ-09, DQ-10, DQ-11)."
         },
         {
           "id": "AC14.T3",
           "task": "Console: A-NOTIF-01 templates per event/channel/locale with preview and missing-translation flags; rules editor (invitation delay, reminders 0-3, quiet hours, digest), critical alerts marked 'Always delivered'.",
-          "status": "not_started"
+          "status": "not_started",
+          "backend_delivered": "S17: templates and rules (DQ-05). S25a: rules review_approval_reminder_days, maintenance_due_window_days, mileage_due_window_km (required on update), and the Delivery health tab. S26a: provider smtp in Delivery health. odometer_prompt_days is AC14b.T4."
         },
         {
           "id": "AC14.T4",
           "task": "Console: A-POL-01 policy versions (draft → publish with effective date, re-consent flag, 4EYES); published versions read-only. Feeds the legal-texts go-live item.",
-          "status": "not_started"
+          "status": "not_started",
+          "backend_delivered": "S15 and S15b: five admin.policy* operations, 16 documents including consent texts with reconsent_mode, and the publish dialog's reconsent_action (keep, preselected, or pause). The BFF must allow 256 KiB for the two text writes (S15-D2). S26a: pnpm seed:consent-texts loads 13 reviewed texts as drafts."
         },
         {
           "id": "AC14.T5",
           "task": "Console: other approved gaps (support inbox, AI decisions, moderation actions, extended tabs, system health).",
-          "status": "not_started"
+          "status": "not_started",
+          "backend_delivered": [
+            "S18: source filter and tabs, typed target snapshots (author, consent), severity floor, reason filter, review approval stage and timer (BR-27, BR-29, BR-32, BR-33).",
+            "S19: A-ORG-01 filters and saved views; A-VER-01/02 Request more info, Assign, paused clock, owner and call-back columns; A-ORG-02 profile correction and history; assist sessions list for the banner (BR-34, BR-35).",
+            "S20: A-DSP-01 message threads, target snapshot, respondent, Withdraw; A-REV-02 Reduce weight and Edit request; A-INV-01 Downgrade fitment (BR-15, BR-28, BR-30).",
+            "S21: A-PLAN-01 status and default, Assignments, History, plan requests queue; A-RET-01 Add (four-eyes) and Dry run; flag and rate ids (BR-23..BR-26).",
+            "S22: Merge with preview and the job; merge_duplicate on organization cases; A-CON-02 Apply redaction (BR-08, BR-15).",
+            "S23: A-USR-02 tabs Vehicles, Appointments, Consents, Sessions & devices; A-ORG-02 tabs Capabilities & badges, Portfolio, Inventory, Members, Plan history (work item purpose; hidden for CRV) (BR-16).",
+            "S24: A-SUP-01 support inbox (list with the clock, ticket:<id> purpose, assign, templated replies, Turn into, Close with outcome) (BR-13).",
+            "S25a: re-authentication on max_age=300 for every AAL3 action; A-DSP-01 handles 202 PendingChange; a ticket solved with no solved_by was closed by the system.",
+            "Not for now: A-AI-02 decisions and A-AI-03 (BR-14, NP-01); NP-07 tabs; geo-IP columns (NP-03)."
+          ]
         },
         {
           "id": "AC14.T6",
@@ -3217,14 +3418,15 @@
         "A-FEAT-01 featured placements",
         "A-TRU-01 trusted users"
       ],
-      "report": null
+      "report": null,
+      "order_note": "Built after AC11 in the plan order (meta.progress.next). A part can start earlier once its backend stage is done (admin_console_resume)."
     },
     {
       "id": "AC14b",
       "title": "Backend S26 follow-ups (contract 1.5.0): first sign-in password change, daily exchange rate, Neshan basemap, edge changes",
       "status": "not_started",
       "depends_on": [
-        "Backend S26a (contract 1.5.0) for T1-T3; S26b for T4 and T6; S26c for T7",
+        "Backend S26a (done 2026-11-17) for T1-T3; S26b (done 2026-11-17) for T4 and T6; S26c (not started) for T7 (S26c.T2) and T8 (S26c.T0)",
         "AC6 (Exchange rates page)",
         "AC4 (/id/signin)",
         "AC9 (Locations tab)"
@@ -3253,39 +3455,56 @@
         {
           "id": "AC14b.T1",
           "task": "Regenerate the contract at 1.5.0 (pnpm check:clients in backend/); handle the new sign-in step change_password and the staff notice exchange_rate.reminder in the op-label and notice maps.",
-          "status": "not_started"
+          "status": "not_started",
+          "backend_ready_2026_11_18": true,
+          "progress_2026_11_18": "Partly done: the console is already regenerated at contract 1.5.0 (src/lib/api/generated, 124 admin-api operations; backend S26a/S26b changed the generated files). Still to do: handle the sign-in step change_password and the staff notice exchange_rate.reminder in the op-label and notice maps (not in src yet)."
         },
         {
           "id": "AC14b.T2",
           "task": "/id/signin: after the emailed code, a seeded account gets \"Choose your own password\" (new password twice, the SEC-AU-7 rules shown before typing, strength hint, show/hide, the server's field errors such as too short, breached or same as the initial one), then the security-key registration as today. No way to skip; an expired initial password shows the generic sign-in error and the line \"ask the server operator for a new initial password\". EN/FA, keyboard, axe.",
-          "status": "not_started"
+          "status": "not_started",
+          "backend_ready_2026_11_18": true,
+          "owner_open": "DQ-25 (initial password length) and DQ-26 (admin email addresses) were built on their defaults and wait for the owner. The step does not depend on the answers."
         },
         {
           "id": "AC14b.T3",
           "task": "Exchange rates daily workflow: the /rates page shows when the rate was set and by whom, a \"Not set today\" badge from set_today, and \"Set today's rate\" as the main action (prefilled reason \"Daily rate DD/MM\", editable; preview of sample prices at the current and the new rate; the 20 % four-eyes warning as in AC6). A rate card on the dashboard and in My work for ADMs (today's rate, age, the action) while it is not set today; the morning notice (backend S26a.T4) opens /rates. The per-rate history stays in the AuditDrawer (flag and rate ids, backend S21).",
-          "status": "not_started"
+          "status": "not_started",
+          "backend_ready_2026_11_18": true
         },
         {
           "id": "AC14b.T4",
           "task": "A-NOTIF-01 Rules: odometer_prompt_days (0 = off, 14-90; required on update since 1.5.0), built with the Rules form of AC14.T3.",
           "backend_delivered_2026_11_17": "S26b.T1 built NotificationRules.odometer_prompt_days (admin.notif_rules_get / update; the handler answers 422 out_of_range for 1-13); the contract allows 0-90.",
-          "status": "not_started"
+          "status": "not_started",
+          "backend_ready_2026_11_18": true
         },
         {
           "id": "AC14b.T6",
           "backend_delivered_2026_11_17": "S26b.T3 built: RegionConfig.map.provider and origins (CSP), tiles_url (Neshan vector tiles), style_url (to be published at cdn.carpals.ir), attribution; SystemHealth.geocoder { provider, requests_today, requests_30d } for the System health widget. The web map key stays unconfirmed until the Neshan docs are readable (down on 2026-11-16 and 2026-11-17).",
           "task": "Neshan basemap in the Locations tab (backend S26b.T3; replaces R-24): MapLibre with the Neshan style from the region config, the web map key from CARPAL_ADMIN_NESHAN_MAP_KEY attached as the Neshan docs require and never put in Web Storage (GD-12), the Neshan origins added to the console CSP (security-headers.ts), attribution, the blank fallback kept. If only Neshan's SDK works, stop and ask (it stores the key in localStorage).",
-          "status": "not_started"
+          "status": "not_started",
+          "backend_ready_2026_11_18": "yes, with a caveat: the Neshan endpoints, answer shapes and web map key were not checked against the live Neshan docs (down on 2026-11-16 and 2026-11-17). Check them first. DQ-29 (Neshan as a third party) waits for the owner."
         },
         {
           "id": "AC14b.T7",
           "task": "Console BFF edge changes of backend S26c.T2: send the forwarded client IP with the client assertion, and the CSRF token on the auth routes through the /id proxy.",
-          "status": "not_started"
+          "status": "not_started",
+          "backend_ready_2026_11_18": false,
+          "blocked_by": "backend S26c.T2 (not started)"
+        },
+        {
+          "id": "AC14b.T8",
+          "task": "After backend S26c.T0 (BR-37): open a ?verification=<id> link with the admin.verifications_queue verification_id filter instead of walking up to 20 pages (remove the D-66 workaround); keep the not-found state when the check is no longer pending. Unit test and the existing orgs.spec deep-link E2E.",
+          "status": "not_started",
+          "backend_ready_2026_11_18": false,
+          "blocked_by": "backend S26c.T0 (not started)"
         },
         {
           "id": "AC14b.T5",
           "task": "Unit and DOM tests for the new step and the rate workflow; E2E with the other screens in the whole-plan test run (PD-03).",
-          "status": "not_started"
+          "status": "not_started",
+          "backend_ready_2026_11_18": true
         }
       ],
       "deliverables": [
@@ -3308,7 +3527,8 @@
       "depends_on": [
         "AC12",
         "AC13",
-        "AC14"
+        "AC14",
+        "AC14b"
       ],
       "goal": "The console is complete for the MVP, passes the same quality bar as the PWA, and hands over a plan for sharing the BFF and admin kit with the business web app.",
       "scope": {
@@ -3922,6 +4142,24 @@
       "affects": [
         "AC9.T5"
       ]
+    },
+    {
+      "stage": "AC8",
+      "id": "D-65",
+      "summary": "useAdminAction returns lastArgs (the arguments of the last send, also of a replay after the step-up), so a screen whose own state was lost in the reload can still name the replayed action; the case workspace uses it for the done notice.",
+      "affects": [
+        "AC5.T2",
+        "AC8.T6"
+      ]
+    },
+    {
+      "stage": "AC9",
+      "id": "D-66",
+      "summary": "A verification link (?verification=<id>) to a check not on the first queue page walks the next pages (up to 20 of 50) to open it: the queue has no read by id or organization filter. BR-37 asks for the read.",
+      "affects": [
+        "AC9.T3",
+        "AC9.T6"
+      ]
     }
   ],
   "handoff_notes": [
@@ -4111,20 +4349,22 @@
       "component": [
         "backend"
       ],
-      "status": "todo",
+      "status": "done",
       "action": "Bind staff access purposes to the record being read (BR-09 / backend NI-02) before real staff use the console with real data.",
       "br": [
         "BR-09"
-      ]
+      ],
+      "done": "2026-11-18 (marked from backend/BR-update-plan.json): backend S14 (BR-09), 2026-11-13."
     },
     {
       "r_item": "R-04",
       "component": [
         "repo-tooling"
       ],
-      "status": "todo",
+      "status": "done",
       "action": "Add a small root script (or CI job) that runs pwa and admin-console checks in order: pwa contract:generate, admin-console contract:generate, pnpm check in both.",
-      "when": "any time; before the full test run"
+      "when": "any time; before the full test run",
+      "done": "2026-11-18 (marked from backend/BR-update-plan.json): backend S25b: pnpm check:clients in backend/ runs the PWA and console contract:generate and checks."
     },
     {
       "r_item": "R-05",
@@ -4134,7 +4374,8 @@
       ],
       "status": "todo",
       "action": "Plan pilot staff accounts: four ADM (DQ-16: three main and one undisclosed backup administrator), one MOD, one CRV (backend staff:bootstrap covers creation). Decide who they are.",
-      "when": "before pilot"
+      "when": "before pilot",
+      "note_2026_11_18": "Backend S26a seeds admin100, admin200 and admin300 (ADM) with a forced password change. The owner still names the MOD and CRV staff and the undisclosed backup ADM (DQ-16), and confirms DQ-26 (their email addresses)."
     },
     {
       "r_item": "R-06",
@@ -4158,22 +4399,24 @@
       "component": [
         "backend"
       ],
-      "status": "todo",
+      "status": "done",
       "action": "Build BR-19 (staff passkey management, ADM reset with four-eyes) so a spare key can be registered and a lost key needs no server SQL.",
       "br": [
         "BR-19"
-      ]
+      ],
+      "done": "2026-11-18 (marked from backend/BR-update-plan.json): backend S16a and S16b (BR-19); the console screens are AC10b."
     },
     {
       "r_item": "R-09",
       "component": [
         "backend"
       ],
-      "status": "todo",
+      "status": "done",
       "action": "Build BR-18 as admin-api reads (taxonomy tree, region map settings) in contract 1.4.0.",
       "br": [
         "BR-18"
-      ]
+      ],
+      "done": "2026-11-18 (marked from backend/BR-update-plan.json): backend S13 (BR-18: admin.taxonomy_snapshot, admin.region_settings)."
     },
     {
       "r_item": "R-10",
@@ -4190,9 +4433,10 @@
         "pwa",
         "admin-console"
       ],
-      "status": "todo",
+      "status": "done",
       "action": "Put the integration-test settings (strict auth, client keys, env) into backend/.env or a small script so pnpm test:int of the console and of the PWA run against one strict backend without hand-set variables.",
-      "when": "before the full test run"
+      "when": "before the full test run",
+      "done": "2026-11-18 (marked from backend/BR-update-plan.json): backend S25b: pnpm int:env (the console's test:int and E2E run strict without hand-set variables)."
     },
     {
       "r_item": "R-12",
@@ -4227,20 +4471,22 @@
       "component": [
         "backend"
       ],
-      "status": "todo",
-      "action": "Add dev-only `pnpm dev:staff prune --domain staff.carpals.test --prefix e2e-` to keep the dev staff list readable after E2E runs."
+      "status": "done",
+      "action": "Add dev-only `pnpm dev:staff prune --domain staff.carpals.test --prefix e2e-` to keep the dev staff list readable after E2E runs.",
+      "done": "2026-11-18 (marked from backend/BR-update-plan.json): backend S25b: pnpm dev:staff prune --domain staff.carpals.test --prefix e2e-,bff-int-."
     },
     {
       "r_item": "R-16",
       "component": [
         "backend"
       ],
-      "status": "todo",
+      "status": "done",
       "action": "Bundle BR-21 (own four-eyes requests with outcome) and BR-22 (queue summary) into the contract 1.4.0 backend stage. BR-21 matters most for the pilot.",
       "br": [
         "BR-21",
         "BR-22"
-      ]
+      ],
+      "done": "2026-11-18 (marked from backend/BR-update-plan.json): backend S13 (BR-21) and S21 (BR-22)."
     },
     {
       "r_item": "R-17",
@@ -4249,7 +4495,8 @@
       ],
       "status": "todo",
       "action": "Add a lint rule that forbids useApiMutation outside src/components/admin so later screens always use useAdminAction.",
-      "when": "before AC10"
+      "when": "before AC10",
+      "note_2026_11_18": "Planned as part of AC10.T0 (g)."
     },
     {
       "r_item": "R-18",
@@ -4274,8 +4521,9 @@
       "component": [
         "admin-console"
       ],
-      "status": "deferred_to_full_test_run",
-      "action": "Run pnpm e2e in strict mode with the client key (closes AC6-AC9). Per decision 2026-11-12 nothing is run until the whole plan is complete; optionally keep the key in a git-ignored local file the E2E command sources."
+      "status": "done",
+      "action": "Run pnpm e2e in strict mode with the client key (closes AC6-AC9). Per decision 2026-11-12 nothing is run until the whole plan is complete; optionally keep the key in a git-ignored local file the E2E command sources.",
+      "done": "2026-11-18 (marked from backend/BR-update-plan.json): console 2026-11-18: strict E2E with the int:env test keys, 35/35 (AC6-AC9 closed)."
     },
     {
       "r_item": "R-21",
@@ -4286,18 +4534,20 @@
       ],
       "status": "todo",
       "action": "Before the pilot set the real IRR rate in the console with two ADM accounts ready (the placeholder 1,000,000 makes the first change over 20 % and four-eyes). Put it in the AC11 runbook and backend deploy.md Exchange rate section.",
-      "when": "AC11 / pilot"
+      "when": "AC11 / pilot",
+      "note_2026_11_18": "Backend half done: deploy.md 'Exchange rate' updated in S25b. Since S26a the rate is never blank (CARPAL_DEFAULT_IRR_PER_USD) and ADMs get a morning reminder; the daily workflow is AC14b.T3. Setting the real rate is still an owner action at the pilot."
     },
     {
       "r_item": "R-22",
       "component": [
         "backend"
       ],
-      "status": "todo",
+      "status": "done",
       "action": "Build BR-31 (badge list on admin-api) in the contract 1.4.0 stage.",
       "br": [
         "BR-31"
-      ]
+      ],
+      "done": "2026-11-18 (marked from backend/BR-update-plan.json): backend S13 (BR-31)."
     },
     {
       "r_item": "R-23",
@@ -4307,7 +4557,8 @@
       ],
       "status": "todo",
       "action": "AC11 deploy kit: set CARPAL_STORAGE_URL and CARPAL_ADMIN_PUBLIC_WEB_URL in the console env file (admin-console). Check that the storage host serves display copies without Cross-Origin-Resource-Policy: same-origin (backend/storage deploy).",
-      "when": "AC11"
+      "when": "AC11",
+      "note_2026_11_18": "Backend half done (S25b: CORP cross-origin on the storage host). Console env remains AC11.T1."
     },
     {
       "r_item": "R-24",
@@ -4316,20 +4567,22 @@
         "pwa",
         "admin-console"
       ],
-      "status": "todo",
+      "status": "closed_by_decision",
       "action": "Publish the region tile host (WP1/WP8, backend/infra), then set CARPAL_ADMIN_MAP_STYLE_URL in the console env and the style URL in the PWA.",
-      "when": "before pilot"
+      "when": "before pilot",
+      "decision": "Owner 2026-11-16: Neshan replaces the self-hosted tile host (backend S26b.T3, done 2026-11-17); the console side is AC14b.T6."
     },
     {
       "r_item": "R-25",
       "component": [
         "backend"
       ],
-      "status": "todo",
+      "status": "done",
       "action": "\"Request more info\" for verification (BR-35 part 2) is included, because all BRs go into the backend refinement.",
       "br": [
         "BR-35"
-      ]
+      ],
+      "done": "2026-11-18 (marked from backend/BR-update-plan.json): backend S19 (BR-35 part 2: Request more info, paused clock)."
     }
   ],
   "decisions_2026_11_13": {
@@ -4421,6 +4674,84 @@
       "Daily IRR rate: an administrator sets it every morning; the backend keeps a configured default (CARPAL_DEFAULT_IRR_PER_USD = 1,000,000) so it is never blank -> AC14b.T3 (backend S26a.T4).",
       "Pilot administrators admin100, admin200, admin300 are seeded with an initial password and must change it at the first sign-in -> AC14b.T2 (backend S26a.T1).",
       "Maps: Neshan replaces the self-hosted tile host (R-24) -> AC14b.T6 (backend S26b.T3)."
+    ]
+  },
+  "backend_status_2026_11_18": {
+    "source": "backend/BR-update-plan.json (meta.progress as_of 2026-11-16; stage statuses read 2026-11-18)",
+    "backend_stages_done": [
+      "S13",
+      "S14",
+      "S15",
+      "S15b",
+      "S16a",
+      "S16b",
+      "S17",
+      "S18",
+      "S19",
+      "S20",
+      "S21",
+      "S22",
+      "S23",
+      "S24",
+      "S25a",
+      "S25b",
+      "S26a",
+      "S26b"
+    ],
+    "backend_stages_open": [
+      "S26c (not started): T0 BR-36 and BR-37 first (owner, 2026-11-18), then NI-18 production hardening, NI-19 web edge, contract 1.5.0 freeze"
+    ],
+    "contract": "1.4.0 frozen 2026-11-16 (124 admin-api operations in the console after S25b). 1.5.0 has been open since S26a (2026-11-17) and freezes at S26c. Regenerate with pnpm check:clients in backend/.",
+    "backend_requests": "BR-01..BR-13 and BR-15..BR-35 done (BR-02 closed_not_needed). BR-14 deferred (NP-01, with the AI build). BR-36 and BR-37 open, handed to backend/BR-update-plan.json on 2026-11-18 and staged first in S26c (S26c.T0, owner).",
+    "by_console_stage": [
+      {
+        "stage": "AC10",
+        "ready": true,
+        "backend": "S13 (staff_list, staff_enable, badges_list, four_eyes_list mine, region_settings, job_get), S14 (purpose binding, suspended_until)",
+        "note": "T0 is the catch-up patch for AC5, AC8 and AC9."
+      },
+      {
+        "stage": "AC10b",
+        "ready": true,
+        "backend": "S16a (own keys, recovery codes, break glass), S16b (recovery with two ADM approvals), S17 (staff notices), S21 (recovery count in work_summary), S25a (AAL3 5 minutes)"
+      },
+      {
+        "stage": "AC11",
+        "ready": true,
+        "backend": "Nothing new is required to build it. The runbook uses S16a/S16b (lost key), S26a (seeded admins with a forced password change, SMTP mail) and R-23 (backend half, S25b).",
+        "note": "The pilot E2E green criterion still waits for the whole-plan test run (PD-03)."
+      },
+      {
+        "stage": "AC12",
+        "ready": true,
+        "backend": "S13 (admin.taxonomy_snapshot, admin.job_get for the merge job)"
+      },
+      {
+        "stage": "AC13",
+        "ready": true,
+        "backend": "S17 (kill-switch staff notice), S21 (system_health, work_summary, flag and rate ids), S24 (support_tickets widget), S26a (SMS and mail in System health), S26b (geocoder counters)",
+        "note": "A-AI-02 decisions and A-AI-03 stay out: BR-14 deferred (NP-01)."
+      },
+      {
+        "stage": "AC14",
+        "ready": true,
+        "backend": "S13-S24 and S25a (T1 done by the backend)"
+      },
+      {
+        "stage": "AC14b",
+        "ready": "partly",
+        "backend": "S26a (T1-T3), S26b (T4, T6) done; S26c (T7) not started",
+        "note": "T6 caveat: backend S26b built the Neshan geocoder and map block without the live Neshan docs (down on 2026-11-16 and 2026-11-17); the web map key and endpoints are unverified."
+      },
+      {
+        "stage": "AC15",
+        "ready": "after AC12, AC13, AC14 and AC14b",
+        "backend": "S26c closure for the final contract:check at 1.5.0"
+      }
+    ],
+    "caveats": [
+      "Backend S26b report: one integration test (s25a 'an upheld badge challenge waits too') fails in full backend runs, cause not found. It does not block console work.",
+      "Backend meta.progress in BR-update-plan.json still lists S26b as next. The S26b stage itself is done and committed (6204ea4)."
     ]
   }
 }
