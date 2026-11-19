@@ -14,6 +14,10 @@ const TITLES: Record<ErrorCode, [en: string, fa: string]> = {
   CLIENT_UPGRADE_REQUIRED: ['Please update the app to continue.', 'لطفاً برای ادامه برنامه را به‌روزرسانی کنید.'],
   CODE_INVALID: ['The code is wrong or has expired.', 'کد نادرست است یا منقضی شده است.'],
   CONSENT_REQUIRED: ['Your permission is needed for this.', 'برای این کار اجازه شما لازم است.'],
+  CSRF_FAILED: [
+    'This request was blocked. Please reload the page and try again.',
+    'این درخواست مسدود شد. لطفاً صفحه را دوباره بارگذاری و دوباره تلاش کنید.',
+  ],
   CURSOR_MISMATCH: ['The list changed. Please reload it.', 'فهرست تغییر کرده است. لطفاً دوباره بارگذاری کنید.'],
   DUPLICATE: ['This already exists.', 'این مورد از قبل وجود دارد.'],
   ENTITLEMENT_REQUIRED: ['Your plan does not include this.', 'طرح شما این امکان را ندارد.'],

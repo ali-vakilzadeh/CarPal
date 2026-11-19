@@ -3,7 +3,7 @@
     "title": "PWA update plan - refinement proposals collected from other components",
     "created": "2026-11-12",
     "status": "partial_collecting",
-    "status_note": "Proposal only. Collected from the Admin Console plan (on hold after AC9); to be converted into a comprehensive PWA plan later. Nothing here is scheduled or built. 2026-11-16: the owner scheduled a PWA refinement round for these items and the backend follow-ups (meta.pending_intake_from_backend). 2026-11-16 (backend S25b): the backend follow-ups are items PB-01..PB-08; nothing is scheduled or built yet. 2026-11-16 (after the backend closure): PB-09 added for the monthly odometer prompt (owner answer to DQ-24; backend S26b.T1). Later on 2026-11-16: PB-10 (Neshan basemap, supersedes R-24) and PB-11 (phone sign-in while SMS is a mock, DQ-28) added; backend task ids follow the S26a/S26b/S26c split.",
+    "status_note": "Proposal only. Collected from the Admin Console plan (on hold after AC9); to be converted into a comprehensive PWA plan later. Nothing here is scheduled or built. 2026-11-16: the owner scheduled a PWA refinement round for these items and the backend follow-ups (meta.pending_intake_from_backend). 2026-11-16 (backend S25b): the backend follow-ups are items PB-01..PB-08; nothing is scheduled or built yet. 2026-11-16 (after the backend closure): PB-09 added for the monthly odometer prompt (owner answer to DQ-24; backend S26b.T1). Later on 2026-11-16: PB-10 (Neshan basemap, supersedes R-24) and PB-11 (phone sign-in while SMS is a mock, DQ-28) added; backend task ids follow the S26a/S26b/S26c split. 2026-11-19 (backend S26c): PB-12 added (web edge: the signed visitor address CarPal-Forwarded-Client from the BFF and SSR, typeahead bucket, PoW up front).",
     "format": "Machine-readable. raw_text is the source recommendation verbatim; proposal is a first, unreviewed suggestion.",
     "decisions_from_owner_2026_11_12": [
       "No part of backend, admin console or PWA goes to a test run until the whole plan is complete (PD-03). Test-related items below therefore wait for the full test run.",
@@ -450,6 +450,29 @@
       "proposal": "Read config.client auth.phone_signin_available: when false, the sign-up and sign-in screens offer email only (no phone tab, no \"send code by SMS\"), the phone field in Me > Account stays but says that SMS codes are not available yet, and no screen promises an SMS. Tests for both values.",
       "depends_on": [
         "backend S26a.T3 (config.client auth.phone_signin_available)"
+      ]
+    },
+    {
+      "id": "PB-12",
+      "action_id": "PWA-PB-12",
+      "origin": {
+        "component": "backend",
+        "file": "backend/BR-update-plan.json",
+        "raised_in": "S26c (2026-11-19)",
+        "source": "action_plan.stages[S26c].tasks S26c.T2 (NI-19); pwa_impact; PWA DI-09, DI-25, DI-26, DI-28, NI-P13-02, NI-P13-06, NI-P13-13"
+      },
+      "status": "proposed",
+      "raw_text": "Backend S26c.T2 (NI-19): the auth host checks Origin and Sec-Fetch-Site on POST /v1/auth/* (403 CSRF_FAILED), trusts X-Forwarded-For only from CARPAL_TRUSTED_PROXIES, and accepts a BFF visitor address in the optional signed header CarPal-Forwarded-Client (Docs/40 1.5.0 §1.3). taxonomy.suggest moved to its own bucket RL(typeahead); cp-ssr without the header uses ssr.read and ssr.search; per-client PoW difficulty CARPAL_POW_CLIENT_DIFFICULTY_BITS (not set by default).",
+      "type": "security",
+      "components": [
+        "pwa"
+      ],
+      "trigger": "after backend S26c (contract 1.5.0 frozen 2026-11-19); before the pilot web users rely on per-IP limits",
+      "test_run_required": false,
+      "proposal": "(1) BFF forwarder (/api), the /id auth proxy and server rendering (cp-ssr): send CarPal-Forwarded-Client on every backend call made for a browser: a compact JWS signed with the client key of CARPAL_PWA_CLIENT_PRIVATE_JWKS (cp-web-consumer for /api and /id, cp-ssr for server rendering), header typ carpal-fwd+jwt, kid of the key; claims iss = sub = client_id, aud = the backend host URL (the issuer for /id, the API audience for /api), htm and htu of the upstream request (htu = aud + path, no query), cip = the visitor IP (from the X-Forwarded-For that nginx sets for the PWA, rightmost address, only when the PWA itself runs behind that nginx), iat, exp at most 60 s later. A key may sign one statement per visitor and URL per minute (cache), never a statement for another visitor. Keep stripping X-Forwarded-For. (2) No CSRF token is added on the auth routes: the backend binds them to the __Host-cp_ia interaction cookie (S26c-D3); keep forwarding Origin and Sec-Fetch-Site from the /id proxy. CSRF_FAILED from the backend is already handled as the BFF code. (3) Typeahead: the separate bucket exists, so the 350 ms debounce can stay but the stop-after-429 rule no longer competes with search (PWA DI-28 can be closed after a check). (4) PoW (NI-P13-13): solve the challenge up front when the PWA runs in strict mode (it knows CARPAL_STRICT_AUTH); if the owner wants a lower web difficulty, the backend operator sets CARPAL_POW_CLIENT_DIFFICULTY_BITS {\"cp-web-consumer\":16} (CarPal-Client is self-declared, so the lower value is open to anyone naming that client). Tests: the signed header on /api, /id and SSR calls (backend apps/testing/s26c-edge.int.test.ts shows the accepted form); after deployment, backend.env CARPAL_RATE_LIMITS can drop the raised IP windows once the console does the same (backend deploy.md Known limitations 3).",
+      "depends_on": [
+        "backend S26c.T2 (done 2026-11-19)",
+        "console AC14b.T7 (the same header for cp-web-admin) before the raised IP windows are lowered"
       ]
     }
   ]

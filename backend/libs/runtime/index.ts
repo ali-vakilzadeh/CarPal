@@ -10,3 +10,18 @@ export {
 } from './platform.module.js';
 export { createHttpHost, discoverHandlers, type HttpHost, type HttpHostName } from './http-host.js';
 export { CARPAL_CONFIG, HOST, INFRA, LOGGER, type RuntimeHost } from './tokens.js';
+export {
+  acquireProcessLock,
+  checkDatabaseDurability,
+  DURABILITY_SETTINGS,
+  encryptRawUploads,
+  LOCK_FILE,
+  ownerRuns,
+  RAW_UPLOAD_PREFIX,
+  runStartupChecks,
+  StartupCheckError,
+  systemProbe,
+  type ProcessProbe,
+  type SettingReader,
+  type StartupCheckOptions,
+} from './startup-checks.js';

@@ -14,6 +14,7 @@ export const ERROR_CODES = {
   CLIENT_UPGRADE_REQUIRED: { status: 400, meaning: "", common: true },
   CODE_INVALID: { status: 422, meaning: "Wrong or expired one-time code (no remaining-attempts count is disclosed)", common: false },
   CONSENT_REQUIRED: { status: 403, meaning: "A needed consent is missing or withdrawn; body names the `consent_type`", common: false },
+  CSRF_FAILED: { status: 403, meaning: "A browser request to a state-changing `/v1/auth/*` route came from another site: `Sec-Fetch-Site` other than `same-origin`, or an `Origin` that is not an allowed web origin (SEC-WEB-3, 1.5.0). BFFs answer the same code for their own checks", common: false },
   CURSOR_MISMATCH: { status: 400, meaning: "", common: true },
   DUPLICATE: { status: 409, meaning: "Uniqueness rule (e.g. one active follow, one review per visit)", common: false },
   ENTITLEMENT_REQUIRED: { status: 403, meaning: "Plan does not include the entitlement; body names the key", common: false },

@@ -49,6 +49,22 @@ export const DEFAULT_BUCKETS: Record<string, Window[]> = {
     { limit: 10, windowMs: MIN, scope: 'anon' },
     { limit: 500, windowMs: DAY, scope: 'anon' },
   ],
+  // taxonomy.suggest (contract 1.5.0, PWA DI-28): typing has its own bucket, so it never uses up search.
+  typeahead: [
+    { limit: 60, windowMs: MIN, scope: 'user' },
+    { limit: 30, windowMs: MIN, scope: 'anon' },
+    { limit: 2_000, windowMs: DAY, scope: 'anon' },
+  ],
+  // cp-ssr without a forwarded visitor (contract 1.5.0, PWA DI-26): all server rendering shares one anonymous token,
+  // so it gets server-sized windows in place of public.read and search.
+  'ssr.read': [
+    { limit: 1_200, windowMs: MIN, scope: 'anon' },
+    { limit: 200_000, windowMs: DAY, scope: 'anon' },
+  ],
+  'ssr.search': [
+    { limit: 120, windowMs: MIN, scope: 'anon' },
+    { limit: 20_000, windowMs: DAY, scope: 'anon' },
+  ],
   map: [{ limit: 60, windowMs: MIN, scope: 'principal' }],
   'geo.business': [{ limit: 30, windowMs: HOUR, scope: 'org' }],
   upload: [

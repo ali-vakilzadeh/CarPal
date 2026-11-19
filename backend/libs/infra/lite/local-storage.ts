@@ -4,14 +4,18 @@
 // Signed PUT URLs fix Content-Type, Content-Length and SHA-256; signed GET
 // URLs expire and carry the Content-Disposition. Objects put with
 // { encrypt: true } are stored AES-256-GCM encrypted (iv | tag | ciphertext)
-// and decrypted when read or served, like SSE-KMS in full mode.
+// and decrypted when read or served, like SSE-KMS in full mode. Raw uploads
+// that arrive through a signed PUT are always encrypted (S26c.T1, NI-18: no
+// plaintext raw file on disk before W6 re-stores it); encryptPlaintext() is
+// the one-time migration of files stored before that. Files are written to a
+// temporary name and renamed into place.
 // Browsers upload with a cross-origin signed PUT (SEC-UP-1) and the PWA reads
 // private PDFs into a blob for its in-place preview, so configured web origins
 // get CORS for PUT and GET (no credentials, nothing exposed; PWA DI-08).
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { mkdirSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
-import { dirname, join, resolve, sep } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import type { ObjectStorage, PresignedPut, PutOptions, StoredObjectInfo } from '../ports.js';
 
 const KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9/_.-]{0,511}$/;
@@ -43,31 +47,87 @@ export class LocalObjectStorage implements ObjectStorage {
     const info: StoredObjectInfo = {
       size: body.length,
       contentType,
-      sha256: createHash('sha256').update(body).digest('base64'),
+      sha256: sha256(body),
       ...(options.encrypt ? { encrypted: true } : {}),
     };
-    let stored = body;
-    if (options.encrypt) {
-      const iv = randomBytes(12);
-      const cipher = createCipheriv('aes-256-gcm', this.encryptionKey, iv);
-      cipher.setAAD(Buffer.from(key));
-      const ct = Buffer.concat([cipher.update(body), cipher.final()]);
-      stored = Buffer.concat([iv, cipher.getAuthTag(), ct]);
-    }
-    writeFileSync(p, stored);
-    writeFileSync(`${p}.meta.json`, JSON.stringify(info));
+    writeAtomic(p, options.encrypt ? this.#encrypt(key, body) : body);
+    writeAtomic(`${p}.meta.json`, Buffer.from(JSON.stringify(info)));
     return info;
+  }
+
+  #encrypt(key: string, body: Buffer): Buffer {
+    const iv = randomBytes(12);
+    const cipher = createCipheriv('aes-256-gcm', this.encryptionKey, iv);
+    cipher.setAAD(Buffer.from(key));
+    const ct = Buffer.concat([cipher.update(body), cipher.final()]);
+    return Buffer.concat([iv, cipher.getAuthTag(), ct]);
+  }
+
+  #decrypt(key: string, raw: Buffer): Buffer {
+    const decipher = createDecipheriv('aes-256-gcm', this.encryptionKey, raw.subarray(0, 12));
+    decipher.setAAD(Buffer.from(key));
+    decipher.setAuthTag(raw.subarray(12, 28));
+    return Buffer.concat([decipher.update(raw.subarray(28)), decipher.final()]);
   }
 
   async get(key: string): Promise<{ body: Buffer; info: StoredObjectInfo } | null> {
     const info = await this.head(key);
     if (!info) return null;
     const raw = readFileSync(this.#path(key));
-    if (!info.encrypted) return { body: raw, info };
-    const decipher = createDecipheriv('aes-256-gcm', this.encryptionKey, raw.subarray(0, 12));
-    decipher.setAAD(Buffer.from(key));
-    decipher.setAuthTag(raw.subarray(12, 28));
-    return { body: Buffer.concat([decipher.update(raw.subarray(28)), decipher.final()]), info };
+    return { body: info.encrypted ? this.#decrypt(key, raw) : raw, info };
+  }
+
+  /** Object keys under a prefix (files that have a sidecar). */
+  #keysUnder(prefix: string): string[] {
+    const dir = join(this.root, ...prefix.split('/'));
+    if (!existsSync(dir)) return [];
+    const out: string[] = [];
+    for (const entry of readdirSync(dir, { recursive: true, withFileTypes: true })) {
+      if (!entry.isFile() || !entry.name.endsWith('.meta.json')) continue;
+      const file = join(entry.parentPath, entry.name.slice(0, -'.meta.json'.length));
+      if (existsSync(file)) out.push(relative(this.root, file).split(sep).join('/'));
+    }
+    return out.sort();
+  }
+
+  #info(key: string): StoredObjectInfo {
+    return JSON.parse(readFileSync(`${this.#path(key)}.meta.json`, 'utf8')) as StoredObjectInfo;
+  }
+
+  /** Keys under the prefix whose bytes on disk are the plaintext (they match the sidecar's SHA-256). */
+  plaintextKeys(prefix: string): string[] {
+    return this.#keysUnder(prefix).filter((key) => sha256(readFileSync(this.#path(key))) === this.#info(key).sha256);
+  }
+
+  /**
+   * One-time migration (S26c.T1): encrypts the plaintext objects under a prefix in place. A file's state is decided
+   * by its bytes, not by the sidecar's flag, so a run cut short is finished by the next one: plaintext bytes are
+   * encrypted; encrypted bytes under a sidecar that does not say so get the sidecar repaired; bytes that are neither
+   * are counted as unreadable and left alone.
+   */
+  async encryptPlaintext(prefix: string): Promise<{ encrypted: number; repaired: number; unreadable: number }> {
+    const r = { encrypted: 0, repaired: 0, unreadable: 0 };
+    for (const key of this.#keysUnder(prefix)) {
+      const p = this.#path(key);
+      const info = this.#info(key);
+      const raw = readFileSync(p);
+      const flagged = Buffer.from(JSON.stringify({ ...info, encrypted: true }));
+      if (sha256(raw) === info.sha256) {
+        writeAtomic(p, this.#encrypt(key, raw));
+        writeAtomic(`${p}.meta.json`, flagged);
+        r.encrypted++;
+        continue;
+      }
+      if (info.encrypted) continue;
+      try {
+        if (sha256(this.#decrypt(key, raw)) !== info.sha256) throw new Error('digest');
+        writeAtomic(`${p}.meta.json`, flagged);
+        r.repaired++;
+      } catch {
+        r.unreadable++;
+      }
+    }
+    return r;
   }
 
   async head(key: string): Promise<StoredObjectInfo | null> {
@@ -165,7 +225,8 @@ export class LocalObjectStorage implements ObjectStorage {
       }
       const body = Buffer.concat(chunks);
       if (body.length !== Number(len) || createHash('sha256').update(body).digest('base64') !== sha) return fail(400);
-      await this.put(key, body, type);
+      // A raw upload stays encrypted at rest until W6 re-stores it (NI-18); get() decrypts it for W6.
+      await this.put(key, body, type, { encrypt: true });
       res.writeHead(200, headers).end();
       return;
     }
@@ -197,3 +258,12 @@ export class LocalObjectStorage implements ObjectStorage {
 }
 
 export const objectsDir = (dataDir: string): string => join(dataDir, 'objects');
+
+const sha256 = (b: Buffer): string => createHash('sha256').update(b).digest('base64');
+
+/** Writes a file under a temporary name and renames it into place (a crash leaves the old or the new file). */
+function writeAtomic(path: string, data: Buffer): void {
+  const tmp = `${path}.${process.pid}.tmp`;
+  writeFileSync(tmp, data);
+  renameSync(tmp, path);
+}

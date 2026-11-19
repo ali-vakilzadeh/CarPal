@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -145,6 +145,10 @@ describe('LocalObjectStorage', () => {
       expect(bad.status).toBe(403);
       const ok = await fetch(url, { method: 'PUT', headers: put.headers, body });
       expect(ok.status).toBe(200);
+      // S26c.T1 (NI-18): the raw upload is encrypted at rest; reads decrypt it.
+      expect(readFileSync(join(dir, 'u', '1', 'a.txt')).includes(body)).toBe(false);
+      expect((await storage.head('u/1/a.txt'))?.encrypted).toBe(true);
+      expect(storage.plaintextKeys('u')).toEqual([]);
       const get = (await storage.presignGet('u/1/a.txt', { expiresInMs: 60_000, disposition: 'attachment' })).replace(
         'http://127.0.0.1:0',
         base,
@@ -215,6 +219,32 @@ describe('LocalObjectStorage', () => {
       expect((await fetch(get, { headers: { origin: 'https://evil.example' } })).headers.get('access-control-allow-origin')).toBeNull();
     } finally {
       server.close();
+    }
+  });
+
+  it('encrypts plaintext raw uploads once, and finishes a migration cut short (S26c.T1, NI-18)', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'carpal-migrate-'));
+    try {
+      const storage = new LocalObjectStorage(root, 'http://127.0.0.1:0', Buffer.alloc(32, 9));
+      await storage.put('uploads/a', Buffer.from('raw a'), 'image/jpeg');
+      await storage.put('uploads/b', Buffer.from('raw b'), 'image/jpeg');
+      await storage.put('media/x/display', Buffer.from('public copy'), 'image/webp');
+      expect(storage.plaintextKeys('uploads')).toEqual(['uploads/a', 'uploads/b']);
+      // A run cut short between the data and the sidecar: encrypted bytes under a sidecar without the flag.
+      await storage.put('uploads/c', Buffer.from('raw c'), 'image/jpeg', { encrypt: true });
+      const metaC = join(root, 'uploads', 'c.meta.json');
+      const info = JSON.parse(readFileSync(metaC, 'utf8')) as Record<string, unknown>;
+      delete info.encrypted;
+      writeFileSync(metaC, JSON.stringify(info));
+      expect(await storage.encryptPlaintext('uploads')).toEqual({ encrypted: 2, repaired: 1, unreadable: 0 });
+      expect(storage.plaintextKeys('uploads')).toEqual([]);
+      expect(readFileSync(join(root, 'uploads', 'a')).toString()).not.toContain('raw a');
+      for (const k of ['a', 'b', 'c']) expect((await storage.get(`uploads/${k}`))?.body.toString()).toBe(`raw ${k}`);
+      // Idempotent, and other prefixes are left alone.
+      expect(await storage.encryptPlaintext('uploads')).toEqual({ encrypted: 0, repaired: 0, unreadable: 0 });
+      expect(storage.plaintextKeys('media')).toEqual(['media/x/display']);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 

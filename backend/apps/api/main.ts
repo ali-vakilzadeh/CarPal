@@ -1,12 +1,13 @@
 // D2 api deployable (41 §1). In lite mode run all deployables in one
 // process with `pnpm dev` instead: the lite KV store and event bus are per process.
-import { loadConfig } from '#libs/config/index.js';
+import { dataDir, loadConfig } from '#libs/config/index.js';
 import { createLogger } from '#libs/observability/index.js';
 import { apiAppModule } from '../shared/app-modules.js';
-import { logDeviations, onShutdown, startHttpApp } from '../shared/bootstrap.js';
+import { logDeviations, onShutdown, startHttpApp, startupChecks } from '../shared/bootstrap.js';
 
 const config = loadConfig();
 const logger = createLogger({ level: config.logLevel, base: { service: 'carpal-backend', env: config.env } });
 logDeviations(config, logger);
+await startupChecks(config, logger, { dataDir: config.infra === 'lite' ? dataDir : null });
 const running = await startHttpApp('api', apiAppModule({ config, logger }), config.http.ports.api, config, logger);
 onShutdown(() => running.close(), logger);

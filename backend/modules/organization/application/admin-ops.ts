@@ -475,7 +475,11 @@ export class StaffVerificationItems {
         : Promise.resolve([]),
       // Every location id of each organization (wrong-location reports count against all of them).
       orgIds.length
-        ? scope.db.selectFrom('organization.organization_locations').select(['id', 'organization_id']).where('organization_id', 'in', orgIds).execute()
+        ? scope.db
+            .selectFrom('organization.organization_locations')
+            .select(['id', 'organization_id'])
+            .where('organization_id', 'in', orgIds)
+            .execute()
         : Promise.resolve([]),
     ]);
     const callback = new Map(phones.map((p) => [p.organization_id, p.status]));

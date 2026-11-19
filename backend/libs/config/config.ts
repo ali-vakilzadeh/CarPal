@@ -30,6 +30,17 @@ const STRICT_CLIENTS = ['cp-web-consumer', 'cp-ssr'] as const;
 
 const loginRolePassword = (role: string) => z.string().min(1).default(`${role}_dev`);
 
+/** Login-role password keys and their roles; the development default of each is `<role>_dev`. */
+const DB_PASSWORD_KEYS = [
+  ['CARPAL_DB_PASSWORD_API', 'carpal_api'],
+  ['CARPAL_DB_PASSWORD_ADMIN_API', 'carpal_admin_api'],
+  ['CARPAL_DB_PASSWORD_AUTH', 'carpal_auth'],
+  ['CARPAL_DB_PASSWORD_WORKER', 'carpal_worker'],
+  ['CARPAL_DB_PASSWORD_ANALYTICS_WRITER', 'carpal_analytics_writer'],
+  ['CARPAL_DB_PASSWORD_ANALYTICS_READER', 'carpal_analytics_reader'],
+  ['CARPAL_DB_PASSWORD_AI', 'carpal_ai'],
+] as const;
+
 const EnvSchema = z
   .object({
     CARPAL_ENV: z.enum(['dev', 'staging', 'prod']).default('dev'),
@@ -163,6 +174,46 @@ const EnvSchema = z
     CARPAL_AUTH_MIN_LATENCY_MS: z.coerce.number().int().min(0).max(5_000).default(400),
     /** Leading zero bits of auth.pow_challenge (SEC-BF-7); raised per risk later. */
     CARPAL_POW_DIFFICULTY_BITS: z.coerce.number().int().min(8).max(32).default(18),
+    /**
+     * Per-client difficulty (S26c.T2, PWA NI-P13-13): JSON {"cp-web-consumer":16}; clients not named use
+     * CARPAL_POW_DIFFICULTY_BITS. Nothing is lowered unless configured.
+     */
+    CARPAL_POW_CLIENT_DIFFICULTY_BITS: jsonRecord(z.number().int().min(8).max(32)).default({}),
+
+    // --- Web edge (S26c.T2, NI-19)
+    /**
+     * Addresses whose X-Forwarded-For is trusted (nginx, a local BFF), JSON ["127.0.0.1","::1"]. Empty: the socket
+     * address is the client (every caller behind nginx then looks like 127.0.0.1).
+     */
+    CARPAL_TRUSTED_PROXIES: z
+      .string()
+      .transform((s, ctx) => {
+        try {
+          return JSON.parse(s) as unknown;
+        } catch {
+          ctx.addIssue({ code: 'custom', message: 'must be a JSON array of IP addresses' });
+          return z.NEVER;
+        }
+      })
+      .pipe(z.array(z.union([z.ipv4(), z.ipv6()])).max(20))
+      .optional(),
+    /**
+     * Web origins allowed as Origin on the auth host's /v1/auth/* (SEC-WEB-3): the BFF origins whose /id proxy
+     * forwards the browser's Origin. The issuer's origin is always allowed. Default: the https origins of
+     * CARPAL_WEBAUTHN_ORIGINS (plus the local PWA and console origins in dev).
+     */
+    CARPAL_AUTH_WEB_ORIGINS: z
+      .string()
+      .transform((s, ctx) => {
+        try {
+          return JSON.parse(s) as unknown;
+        } catch {
+          ctx.addIssue({ code: 'custom', message: 'must be a JSON array' });
+          return z.NEVER;
+        }
+      })
+      .pipe(z.array(z.url().regex(/^https?:\/\/[^/]+$/, 'must be an origin (scheme://host[:port])')).max(20))
+      .optional(),
     /** Taxonomy cache: how often the catalog fingerprint is re-checked (0 = every read). */
     CARPAL_TAXONOMY_REFRESH_MS: z.coerce.number().int().min(0).max(3_600_000).default(30_000),
 
@@ -218,6 +269,18 @@ const EnvSchema = z
   .superRefine((env, ctx) => {
     if (env.CARPAL_ENV !== 'dev' && env.CARPAL_MASTER_SECRET === DEV_MASTER_SECRET) {
       ctx.addIssue({ code: 'custom', path: ['CARPAL_MASTER_SECRET'], message: `must be set outside dev (CARPAL_ENV=${env.CARPAL_ENV})` });
+    }
+    if (env.CARPAL_ENV !== 'dev') {
+      // S26c.T1 (NI-18 e): the development login-role passwords (<role>_dev, the defaults) are public; refused outside dev.
+      for (const [key, role] of DB_PASSWORD_KEYS)
+        if (env[key] === `${role}_dev`)
+          ctx.addIssue({ code: 'custom', path: [key], message: `is the development password of ${role}; set a random one outside dev` });
+      // S26c.T1 (NI-18 b): signed media URLs name the configured https media origin; the lite listener's http address
+      // (and the response check's https rewrite of it, DI-26) is for dev only.
+      if (!env.CARPAL_MEDIA_BASE_URL)
+        ctx.addIssue({ code: 'custom', path: ['CARPAL_MEDIA_BASE_URL'], message: 'must be set outside dev (https://media.<domain>)' });
+      else if (!env.CARPAL_MEDIA_BASE_URL.startsWith('https://'))
+        ctx.addIssue({ code: 'custom', path: ['CARPAL_MEDIA_BASE_URL'], message: 'must be an https:// origin outside dev' });
     }
     if (env.CARPAL_ENV !== 'dev' && env.CARPAL_SMTP_TLS_INSECURE)
       ctx.addIssue({ code: 'custom', path: ['CARPAL_SMTP_TLS_INSECURE'], message: 'is dev only: the certificate must verify' });
@@ -320,7 +383,13 @@ export interface CarpalConfig {
     clientJwks: Record<string, { keys: Record<string, unknown>[] }>;
     minLatencyMs: number;
     powDifficultyBits: number;
+    /** Per-client PoW difficulty (S26c.T2); clients not named use powDifficultyBits. */
+    powClientDifficultyBits: Record<string, number>;
+    /** Origins allowed as Origin on the auth host's state-changing /v1/auth/* routes (SEC-WEB-3), issuer included. */
+    webOrigins: string[];
   };
+  /** S26c.T2 (NI-19): proxies whose X-Forwarded-For is trusted (normalized IP literals). */
+  edge: { trustedProxies: string[] };
   taxonomyRefreshMs: number;
   geo: { locationCheckThresholdM: number };
   media: { rescanAfterMs: number; corsOrigins: string[] };
@@ -362,6 +431,20 @@ export const DEV_REDIRECT_URIS: Record<string, string[]> = {
   'cp-web-portal': ['https://web.carpals.ir/bff/oauth/callback'],
   'cp-web-admin': ['https://admin.carpals.ir/bff/oauth/callback'],
 };
+
+/** Local web apps in dev: the PWA (pnpm dev :3000, pnpm e2e :3100) and the admin console (pnpm dev :3200, e2e :3300). */
+export const DEV_WEB_ORIGINS = [...DEV_MEDIA_CORS_ORIGINS, 'http://localhost:3200', 'https://localhost:3200', 'http://localhost:3300'];
+
+/** SEC-WEB-3 on the auth host: the issuer's origin, then the configured BFF origins (or the WebAuthn web origins). */
+function authWebOrigins(e: RawEnv): string[] {
+  const configured =
+    e.CARPAL_AUTH_WEB_ORIGINS ??
+    [
+      ...(e.CARPAL_WEBAUTHN_ORIGINS ?? ['https://pwa.carpals.ir', 'https://web.carpals.ir', 'https://admin.carpals.ir']),
+      ...(e.CARPAL_ENV === 'dev' ? DEV_WEB_ORIGINS : []),
+    ].filter((o) => /^https?:\/\/[^/]+$/.test(o));
+  return [...new Set([new URL(e.CARPAL_ISSUER).origin, ...configured])];
+}
 
 let envFileLoaded = false;
 function loadEnvFile(): void {
@@ -447,7 +530,10 @@ export function loadConfig(overrides: Record<string, string | undefined> = {}): 
       clientJwks: e.CARPAL_OAUTH_CLIENT_JWKS ?? {},
       minLatencyMs: e.CARPAL_AUTH_MIN_LATENCY_MS,
       powDifficultyBits: e.CARPAL_POW_DIFFICULTY_BITS,
+      powClientDifficultyBits: e.CARPAL_POW_CLIENT_DIFFICULTY_BITS,
+      webOrigins: authWebOrigins(e),
     },
+    edge: { trustedProxies: (e.CARPAL_TRUSTED_PROXIES ?? []).map((a) => a.toLowerCase()) },
     taxonomyRefreshMs: e.CARPAL_TAXONOMY_REFRESH_MS,
     geo: { locationCheckThresholdM: e.CARPAL_LOCATION_CHECK_THRESHOLD_M },
     media: {

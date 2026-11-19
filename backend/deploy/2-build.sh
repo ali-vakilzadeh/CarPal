@@ -72,7 +72,7 @@ fi
 
 # --------------------------------------------------------------------- database
 if [[ "$SKIP_DB" == "1" || "$RUN_DB_SETUP" != "1" ]]; then
-  warn "database step skipped"
+  warn "database step skipped (and the preflight with it: the backend runs its startup checks when it starts)"
   finish
   exit 0
 fi
@@ -110,4 +110,21 @@ if ! grep -q '^Baseline: up to date' <<<"$after"; then
   [[ "${ALLOW_BASELINE_DRIFT:-0}" == "1" ]] || die "Docs/43.db_setup.sql still differs from the installed and migrated schema after db:setup"
 fi
 ok "databases installed / migrated ($(ls "$SRC_DIR/database/migrations" | grep -cE '^[0-9]{4}_[a-z0-9_]+\.sql$') migrations in database/migrations)"
+
+# The backend refuses to start on a lite-only shortcut (S26c.T1, NI-18): development secrets, an http media origin,
+# PostgreSQL without fsync, synchronous_commit or full_page_writes. Checked here, so a refused update stops before 4-start.
+step "Preflight (the backend's startup checks)"
+# Keys that the template sets and this server's backend.env lacks (new settings of S26a-S26c and later): a warning
+# only, because each has a default; deploy.md says what each one does.
+missing="$(comm -23 \
+  <(sed -n 's/^\(CARPAL_[A-Z0-9_]*\)=.*/\1/p' "$BACKEND_DIR/deploy/templates/backend.env.template" | sort -u) \
+  <(sed -n 's/^\(CARPAL_[A-Z0-9_]*\)=.*/\1/p' "$CONFIG_DIR/backend.env" | sort -u))"
+if [[ -n "$missing" ]]; then
+  warn "backend.env lacks keys the template sets (defaults apply; see templates/backend.env.template and deploy.md):"
+  printf '%s\n' "$missing" | sed 's/^/    /'
+fi
+pre="$(run_db pnpm -s preflight 2>&1)" || die "the backend would refuse to start:
+$pre"
+printf '%s\n' "$pre" | sed 's/^/    /'
+ok "preflight"
 finish

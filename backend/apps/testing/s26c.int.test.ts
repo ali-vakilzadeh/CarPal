@@ -106,7 +106,8 @@ describe('verification queue page (BR-36)', () => {
       ids.push(c.id);
     }
     await h.settle(); // the consumers of the new organizations' events read the same tables: let them finish first
-    const mine = async (limit: number) => ok(await reviewer.c.get(`/v1/admin/verifications?status=pending&assignee=me&limit=${limit}`), 'queue');
+    const mine = async (limit: number) =>
+      ok(await reviewer.c.get(`/v1/admin/verifications?status=pending&assignee=me&limit=${limit}`), 'queue');
     await mine(1); // warm up the plans and the staff context
 
     let small: Json = {};

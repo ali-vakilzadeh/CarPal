@@ -7,13 +7,16 @@ import { dataDir, loadConfig } from '#libs/config/index.js';
 import { createInfra, LocalObjectStorage } from '#libs/infra/index.js';
 import { createLogger } from '#libs/observability/index.js';
 import { adminApiAppModule, apiAppModule, authAppModule, workerAppModule } from '../shared/app-modules.js';
-import { logDeviations, onShutdown, startHttpApp, startWorkerApp } from '../shared/bootstrap.js';
+import { logDeviations, onShutdown, startHttpApp, startupChecks, startWorkerApp } from '../shared/bootstrap.js';
 
 const config = loadConfig();
 const logger = createLogger({ level: config.logLevel, base: { service: 'carpal-backend', env: config.env } });
 logDeviations(config, logger);
 
-const infra = createInfra(config, { dataDir: config.infra === 'lite' ? dataDir : null, logger });
+const ownData = config.infra === 'lite' ? dataDir : null;
+const infra = createInfra(config, { dataDir: ownData, logger });
+// S26c.T1 (NI-18): the process lock, durable PostgreSQL and encrypted raw uploads, before anything listens.
+const releaseLock = await startupChecks(config, logger, { dataDir: ownData, storage: infra.storage });
 const shared = { config, infra, logger };
 
 const storageServer =
@@ -41,4 +44,5 @@ onShutdown(async () => {
   await worker.close();
   storageServer?.close();
   await infra.close();
+  releaseLock();
 }, logger);

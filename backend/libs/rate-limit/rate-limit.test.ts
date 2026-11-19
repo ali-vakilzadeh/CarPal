@@ -14,6 +14,32 @@ describe('buckets (40 §2.8)', () => {
     expect(routeBuckets(route('reports.create'), user)).toEqual(['default.write', 'report.create']);
     expect(defaultBucket(route('admin.users_search'), { kind: 'staff', id: 's', ipPrefix: 'x' })).toBe('admin.default');
   });
+
+  it('gives typeahead its own bucket and the shared server renderer the ssr.* buckets (S26c.T2, PWA DI-26, DI-28)', () => {
+    expect(routeBuckets(route('taxonomy.suggest'), anon)).toEqual(['public.read', 'typeahead']);
+    expect(routeBuckets(route('search.run'), anon)).toContain('search');
+    const renderer: RateSubject = { ...anon, sharedRenderer: true };
+    expect(routeBuckets(route('config.client'), renderer)).toEqual(['ssr.read']);
+    expect(routeBuckets(route('search.run'), renderer)).toEqual(['ssr.read', 'ssr.search']);
+    expect(routeBuckets(route('taxonomy.suggest'), renderer)).toEqual(['ssr.read', 'typeahead']);
+  });
+
+  it('keeps typing out of the search windows', async () => {
+    const limiter = new RateLimiter({ kv: new MemoryKeyValueStore() });
+    let allowed = 0;
+    for (;;) {
+      try {
+        await limiter.check(['typeahead'], anon);
+        allowed++;
+      } catch (err) {
+        expect(err).toMatchObject({ code: 'RATE_LIMITED' });
+        break;
+      }
+      if (allowed > 100) throw new Error('typeahead never limited');
+    }
+    expect(allowed).toBeGreaterThan(10);
+    await expect(limiter.check(['search'], anon)).resolves.toBeDefined();
+  });
 });
 
 describe('RateLimiter', () => {

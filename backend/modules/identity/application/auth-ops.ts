@@ -392,8 +392,11 @@ export class PowChallengeHandler implements OperationHandler {
   async handle(ctx: OperationContext<{ purpose: string }>): Promise<OperationResult> {
     const id = uuidv7();
     const prefix = randomBytes(18).toString('base64url');
-    // Difficulty: configured base; risk-adapted difficulty per IP prefix and device is a later refinement.
-    const bits = this.auth.config.auth.powDifficultyBits;
+    // Difficulty: the configured base, or the calling client's own value (S26c.T2, PWA NI-P13-13: CarPal-Client is
+    // declared by the caller, so a lower web value is open to anyone who names that client; none is set by default).
+    // Risk-adapted difficulty per IP prefix and device is a later refinement.
+    const { powDifficultyBits, powClientDifficultyBits } = this.auth.config.auth;
+    const bits = (ctx.client && powClientDifficultyBits[ctx.client.clientId]) || powDifficultyBits;
     await this.auth.state.putPow(id, { prefix, bits, purpose: ctx.body.purpose });
     return { body: { challenge_id: id, prefix, difficulty_bits: bits, expires_at: iso(new Date(Date.now() + 5 * 60_000)) } };
   }

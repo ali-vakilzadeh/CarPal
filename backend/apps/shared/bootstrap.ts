@@ -6,7 +6,26 @@ import type { DynamicModule, INestApplicationContext, LoggerService } from '@nes
 import { NestFactory } from '@nestjs/core';
 import type { CarpalConfig } from '#libs/config/index.js';
 import type { Logger } from '#libs/observability/index.js';
-import { createHttpHost, type HttpHost, type HttpHostName } from '#libs/runtime/index.js';
+import { createHttpHost, runStartupChecks, StartupCheckError, type HttpHost, type HttpHostName } from '#libs/runtime/index.js';
+import type { ObjectStorage } from '#libs/infra/index.js';
+
+/**
+ * The startup checks of a deployable (S26c.T1, NI-18: durable PostgreSQL, one lite process per data folder, raw
+ * uploads encrypted at rest). A failed check is logged with the setting's name and the process exits with 1.
+ */
+export async function startupChecks(
+  config: CarpalConfig,
+  logger: Logger,
+  o: { dataDir: string | null; storage?: ObjectStorage },
+): Promise<() => void> {
+  try {
+    return await runStartupChecks(config, { ...o, logger });
+  } catch (err) {
+    if (!(err instanceof StartupCheckError)) throw err;
+    logger.fatal({ setting: err.setting }, `startup check failed: ${err.message}`);
+    process.exit(1);
+  }
+}
 
 /** Routes Nest's own messages (module init, DI errors) into the structured log. */
 export function nestLogger(logger: Logger): LoggerService {

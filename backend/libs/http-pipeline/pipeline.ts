@@ -41,6 +41,7 @@ import {
   SECURITY_HEADERS,
   type ClientInfo,
 } from './headers.js';
+import { FORWARDED_CLIENT_HEADER, ForwardedClientVerifier, forwardedFor, normalizeIp } from './client-address.js';
 import { normalizeInput, normalizeString } from './normalize.js';
 import { checksOwnFlags, type OperationContext, type OperationHandler, type OperationResult } from './operation.js';
 import { toProblem } from './problem.js';
@@ -87,8 +88,17 @@ interface Exchange {
   principal: Principal;
   client?: ClientInfo;
   ipPrefix: string;
+  /** The BFF client whose signed CarPal-Forwarded-Client gave the address (S26c.T2). */
+  forwardedBy?: string;
   extraHeaders: Record<string, string>;
 }
+
+/** SEC-WEB-3 on the auth host (S26c.T2): the browser-facing state changes. */
+const browserAuthRoute = (host: string, method: string, path: string): boolean =>
+  host === 'auth' && method === 'POST' && path.startsWith('/v1/auth/');
+
+/** cp-ssr without a forwarded visitor shares these buckets instead of the per-visitor ones (40 §2.8, PWA DI-26). */
+const SHARED_RENDERER = 'cp-ssr';
 
 const header = (req: IncomingMessage, name: string): string | undefined => {
   const v = req.headers[name];
@@ -126,7 +136,49 @@ function mediaType(req: IncomingMessage): { type: string; charset?: string } | u
 }
 
 export class HttpPipeline {
-  constructor(private readonly d: PipelineDeps) {}
+  readonly #forwarded: ForwardedClientVerifier;
+  readonly #trustedProxies: ReadonlySet<string>;
+
+  constructor(private readonly d: PipelineDeps) {
+    this.#forwarded = new ForwardedClientVerifier(d.config.auth.clientJwks);
+    this.#trustedProxies = new Set(d.config.edge.trustedProxies.map((a) => normalizeIp(a) ?? a));
+  }
+
+  /**
+   * The caller's address (S26c.T2, NI-19; 40 §1.3): a BFF's verified CarPal-Forwarded-Client, else X-Forwarded-For
+   * from a trusted proxy, else the socket. A statement that does not verify is logged and ignored.
+   */
+  async #resolveAddress(req: IncomingMessage, x: Exchange, method: string, rawPath: string): Promise<void> {
+    let ip = forwardedFor(req.socket.remoteAddress, header(req, 'x-forwarded-for'), this.#trustedProxies);
+    const statement = header(req, FORWARDED_CLIENT_HEADER);
+    if (statement) {
+      const base = this.d.host === 'auth' ? this.d.config.http.issuer : this.d.config.http.audiences[this.d.host];
+      const r = await this.#forwarded.verify(statement, { audience: base, method, htu: `${base}${rawPath}` });
+      if ('refused' in r)
+        this.d.logger.warn(
+          { security_event: 'forwarded_client_refused', reason: r.refused, request_id: x.requestId },
+          'CarPal-Forwarded-Client ignored',
+        );
+      else {
+        ip = r.ip;
+        x.forwardedBy = r.clientId;
+      }
+    }
+    x.ipPrefix = toIpPrefix(ip);
+  }
+
+  /**
+   * SEC-WEB-3 on the auth host (S26c.T2, PWA DI-09): a browser POST to /v1/auth/* must be same-origin and come from
+   * the issuer's origin or a configured BFF origin (whose /id proxy forwards Origin and Sec-Fetch-Site). A request
+   * with neither header is not from a browser (a native app, a server) and passes.
+   */
+  #checkBrowserOrigin(req: IncomingMessage): void {
+    const site = header(req, 'sec-fetch-site');
+    const origin = header(req, 'origin');
+    if (site !== undefined && site !== 'same-origin') throw new ApiError('CSRF_FAILED', { detail: `Sec-Fetch-Site ${site.slice(0, 20)}` });
+    if (origin !== undefined && !this.d.config.auth.webOrigins.includes(origin))
+      throw new ApiError('CSRF_FAILED', { detail: `Origin ${origin.slice(0, 100)} is not an allowed web origin` });
+  }
 
   /** node:http request listener. Never throws. */
   readonly listener = (req: IncomingMessage, res: ServerResponse): void => {
@@ -238,8 +290,10 @@ export class HttpPipeline {
     onAdmit(d.shedder.enter(shedPriority(op.opId, method)));
 
     // 3. Transport
+    if (browserAuthRoute(d.host, method, route.path)) this.#checkBrowserOrigin(req);
     for (const h of METHOD_OVERRIDE_HEADERS)
       if (req.headers[h] !== undefined) throw new ApiError('MALFORMED_REQUEST', { detail: `${h} is not accepted` });
+    await this.#resolveAddress(req, x, method, rawPath);
     x.client = parseClientHeader(header(req, 'carpal-client'), d.config.http.clientMinVersions);
     const tokenless = noTokenRoute(entry);
     // CarPal-Client is required everywhere except token-less GETs (discovery documents, the hosted sign-in redirect, health).
@@ -261,15 +315,18 @@ export class HttpPipeline {
       });
     }
 
-    // 5. Rate limit (caller scopes)
+    // 5. Rate limit (caller scopes). cp-ssr renders for many visitors with one anonymous token: with a forwarded
+    // visitor it is counted per visitor, without one it shares the ssr.* buckets (S26c.T2, PWA DI-26).
+    const renderer = x.principal.kind === 'anonymous' && x.client?.clientId === SHARED_RENDERER;
     const subject: RateSubject = {
       kind: x.principal.kind,
       ...(x.principal.kind === 'user' || x.principal.kind === 'staff'
         ? { id: x.principal.userId }
         : x.principal.kind === 'anonymous'
-          ? { id: x.principal.anonKey }
+          ? { id: renderer && x.forwardedBy ? `${x.principal.anonKey}@${x.ipPrefix}` : x.principal.anonKey }
           : {}),
       ipPrefix: x.ipPrefix,
+      ...(renderer && !x.forwardedBy ? { sharedRenderer: true } : {}),
     };
     const buckets = routeBuckets(route, subject);
     Object.assign(x.extraHeaders, (await d.rateLimiter.check(buckets, subject, 'caller')).headers);
@@ -521,11 +578,12 @@ export class HttpPipeline {
    * Lite mode signs media URLs for the local storage listener, which speaks
    * plain http, while the contract `Url` is https-only. For the response check
    * only, those URLs are rewritten to an https placeholder (S4 deviation); the
-   * client receives them unchanged. Full mode is not affected.
+   * client receives them unchanged. Full mode is not affected. Dev only (S26c.T1, NI-18): staging and prod must
+   * configure the https media origin (CARPAL_MEDIA_BASE_URL, checked by loadConfig), so nothing is rewritten there.
    */
   #liteMediaUrls(body: unknown): unknown {
     const base = this.d.config.http.mediaBaseUrl;
-    if (this.d.config.infra !== 'lite' || !base.startsWith('http://') || body === undefined) return body;
+    if (this.d.config.env !== 'dev' || this.d.config.infra !== 'lite' || !base.startsWith('http://') || body === undefined) return body;
     const json = JSON.stringify(body);
     return json.includes(`"${base}/`) ? JSON.parse(json.replaceAll(`"${base}/`, '"https://media.lite.invalid/')) : body;
   }

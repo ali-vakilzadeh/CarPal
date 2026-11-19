@@ -16,7 +16,12 @@ export interface RateSubject {
   id?: string;
   ipPrefix: string;
   orgId?: string;
+  /** cp-ssr's anonymous token without a forwarded visitor (S26c.T2): the ssr.* buckets replace public.read and search. */
+  sharedRenderer?: boolean;
 }
+
+/** Buckets of the shared server renderer (40 §2.8, contract 1.5.0). */
+const SHARED_RENDERER_BUCKETS: Readonly<Record<string, string>> = { 'public.read': 'ssr.read', search: 'ssr.search' };
 
 export interface Decision {
   /** Headers for every response (IETF RateLimit fields of the tightest window). */
@@ -44,7 +49,8 @@ export function defaultBucket(route: Route, subject: RateSubject): string {
 
 export function routeBuckets(route: Route, subject: RateSubject): string[] {
   const explicit = route.security.tags.filter((t) => t.tag === 'RL').flatMap((t) => t.args);
-  return [...new Set([defaultBucket(route, subject), ...explicit])];
+  const names = [defaultBucket(route, subject), ...explicit];
+  return [...new Set(subject.sharedRenderer ? names.map((n) => SHARED_RENDERER_BUCKETS[n] ?? n) : names)];
 }
 
 function scopeKey(scope: Scope, s: RateSubject): string | null {

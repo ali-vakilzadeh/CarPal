@@ -3551,7 +3551,7 @@
       "title": "Backend S26 follow-ups (contract 1.5.0): first sign-in password change, daily exchange rate, Neshan basemap, edge changes",
       "status": "not_started",
       "depends_on": [
-        "Backend S26a (done 2026-11-17) for T1-T3; S26b (done 2026-11-17) for T4 and T6; S26c (not started) for T7 (S26c.T2) and T8 (S26c.T0)",
+        "Backend S26a (done 2026-11-17) for T1-T3; S26b (done 2026-11-17) for T4 and T6; S26c (done 2026-11-19) for T7 (S26c.T2) and T8 (S26c.T0)",
         "AC6 (Exchange rates page)",
         "AC4 (/id/signin)",
         "AC9 (Locations tab)"
@@ -3613,17 +3613,19 @@
         },
         {
           "id": "AC14b.T7",
-          "task": "Console BFF edge changes of backend S26c.T2: send the forwarded client IP with the client assertion, and the CSRF token on the auth routes through the /id proxy.",
+          "task": "Console BFF edge changes of backend S26c.T2: send CarPal-Forwarded-Client (the visitor IP, signed with the cp-web-admin private_key_jwt key) on every admin-api call and every /id proxy call; keep forwarding Origin and Sec-Fetch-Site from the /id proxy. No CSRF token on the auth routes (the backend binds them to the __Host-cp_ia interaction cookie, S26c-D3).",
           "status": "not_started",
           "backend_ready_2026_11_18": false,
-          "blocked_by": "backend S26c.T2 (not started)"
+          "backend_ready_2026_11_19": true,
+          "backend_delivered_2026_11_19": "S26c.T2 built: Docs/40 1.5.0 §1.3 CarPal-Forwarded-Client (compact JWS, typ carpal-fwd+jwt; iss = sub = cp-web-admin, aud = the admin API URL or the issuer for /id, htm, htu = aud + path, cip = the visitor IP, iat, exp at most 60 s later; EdDSA or ES256 with a key of CARPAL_OAUTH_CLIENT_JWKS). A statement that does not verify is ignored and logged, never refused. Auth host: POST /v1/auth/* with Sec-Fetch-Site other than same-origin, or an Origin other than the issuer or CARPAL_AUTH_WEB_ORIGINS (default: the issuer and CARPAL_WEBAUTHN_ORIGINS, plus localhost:3200 and :3300 in dev), answers 403 CSRF_FAILED. Example of the accepted form: backend/apps/testing/s26c-edge.int.test.ts. Same item for the PWA: pwa/BR-update-plan.json PB-12."
         },
         {
           "id": "AC14b.T8",
           "task": "After backend S26c.T0 (BR-37): open a ?verification=<id> link with the admin.verifications_queue verification_id filter instead of walking up to 20 pages (remove the D-66 workaround); keep the not-found state when the check is no longer pending. Unit test and the existing orgs.spec deep-link E2E.",
           "status": "not_started",
           "backend_ready_2026_11_18": false,
-          "blocked_by": "backend S26c.T0 (not started)"
+          "backend_ready_2026_11_19": true,
+          "backend_delivered_2026_11_19": "S26c.T0 built (backend commit b93f5c1): admin.verifications_queue q verification_id and organization_id; with verification_id and no status the check is found in any status (S26c-D1). The console is regenerated at 1.5.0 by pnpm check:clients."
         },
         {
           "id": "AC14b.T5",
