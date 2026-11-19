@@ -3,11 +3,11 @@
 // (admin.moderation_actions) and the purpose verifier of the authorizer
 // (libs/authz PurposeVerifier, SEC-ADM-5).
 import { Injectable } from '@nestjs/common';
-import { sql } from 'kysely';
+import { sql, type ExpressionBuilder } from 'kysely';
 import { writeAudit } from '#libs/audit/index.js';
 import type { AccessPurpose, PurposeVerdict, PurposeVerifier } from '#libs/authz/index.js';
 import { ApiError } from '#libs/contract/index.js';
-import { registerConstraintErrors } from '#libs/db/index.js';
+import { registerConstraintErrors, type DB } from '#libs/db/index.js';
 import { TxRunner, type TxScope } from '#libs/tenancy/index.js';
 import { toPendingChange, type PendingChangeRow } from '../api/projections.js';
 import {
@@ -256,8 +256,6 @@ export class DbModerationLog extends ModerationLog {
 
   async withOpenReports(scope: TxScope, targets: readonly SubjectRef[], reason: string): Promise<Set<string>> {
     if (targets.length === 0) return new Set();
-    const byType = new Map<string, string[]>();
-    for (const t of targets) byType.set(t.type, [...(byType.get(t.type) ?? []), t.id]);
     // Triaged reports stay open while their case is: closing the case resolves or dismisses them (admin.case_close).
     const rows = await scope.db
       .selectFrom('admin.content_reports')
@@ -266,10 +264,31 @@ export class DbModerationLog extends ModerationLog {
       .where('reason', '=', reason as never)
       .where('status', 'in', ['open', 'triaged'])
       .where('deleted_at', 'is', null)
-      .where((eb) => eb.or([...byType].map(([type, ids]) => eb.and([eb('target_type', '=', type as never), eb('target_id', 'in', ids)]))))
+      .where(reportTargets(targets))
       .execute();
     return new Set(rows.map((r) => `${r.target_type}:${r.target_id}`));
   }
+
+  async reportCounts(scope: TxScope, targets: readonly SubjectRef[], reason: string): Promise<Map<string, number>> {
+    if (targets.length === 0) return new Map();
+    const rows = await scope.db
+      .selectFrom('admin.content_reports')
+      .select(['target_type', 'target_id', (eb) => eb.fn.countAll<string>().as('n')])
+      .where('reason', '=', reason as never)
+      .where('deleted_at', 'is', null)
+      .where(reportTargets(targets))
+      .groupBy(['target_type', 'target_id'])
+      .execute();
+    return new Map(rows.map((r) => [`${r.target_type}:${r.target_id}`, Number(r.n)]));
+  }
+}
+
+/** content_reports rows about any of `targets`: ids grouped by type, one `target_id IN (…)` per type. */
+function reportTargets(targets: readonly SubjectRef[]) {
+  const byType = new Map<string, string[]>();
+  for (const t of targets) byType.set(t.type, [...(byType.get(t.type) ?? []), t.id]);
+  return (eb: ExpressionBuilder<DB, 'admin.content_reports'>) =>
+    eb.or([...byType].map(([type, ids]) => eb.and([eb('target_type', '=', type as never), eb('target_id', 'in', ids)])));
 }
 
 /** Counts for staff views. */

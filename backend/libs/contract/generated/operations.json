@@ -1,6 +1,6 @@
 {
   "source": "Docs/40.API contract.md",
-  "sourceSha256": "13427e8649309b6446c4187eb1b4f4e3a5687398b07356e14426907fb5f28bc4",
+  "sourceSha256": "dde0d31281ebbf7cce6d6a4a3694a984a07079d1d2d030eeed4d083e3f7ef1c7",
   "contractVersion": "1.5.0",
   "operationCount": 492,
   "routeCount": 545,
@@ -23177,7 +23177,7 @@
       "section": "23.2",
       "sectionTitle": "Users, organizations and plans",
       "module": "organization",
-      "summary": "Lists organization verification checks waiting for review, with pin-versus-address results and wrong-location reports, the reviewer each check is assigned to, its review clock (paused while CarPal waits for the business), the owner, the latest phone call-back result and the possible-duplicate flag.",
+      "summary": "Lists organization verification checks waiting for review, with pin-versus-address results and wrong-location reports, the reviewer each check is assigned to, its review clock (paused while CarPal waits for the business), the owner, the latest phone call-back result and the possible-duplicate flag. `organization_id` lists the checks of one organization and `verification_id` reads one check, so a link from a notice, a case or the organization page opens it without walking the queue (backend S26c, BR-37); without `status` the queue lists `pending` checks, except when `verification_id` is given: then the check is found in any status.",
       "method": "GET",
       "pathTemplate": "{adm}/verifications",
       "routes": [
@@ -23227,6 +23227,16 @@
           "name": "info_requested",
           "optional": true,
           "type": "boolean"
+        },
+        {
+          "name": "organization_id",
+          "optional": true,
+          "type": "Id"
+        },
+        {
+          "name": "verification_id",
+          "optional": true,
+          "type": "Id"
         },
         {
           "name": "cursor",

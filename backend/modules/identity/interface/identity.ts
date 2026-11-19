@@ -151,6 +151,11 @@ export abstract class OrgMemberships {
     i: { email: string; role: string; invitedBy: string; tokenHash: Buffer; expiresAt: Date },
   ): Promise<string>;
   abstract update(scope: TxScope, membershipId: string, patch: { role?: string; status?: string }): Promise<OrgMemberRecord>;
+  /**
+   * The first active member (lowest membership id) holding the wanted role in each organization, as organization id to
+   * user id; organizations without one are absent. One query for a whole page (backend S26c, BR-36).
+   */
+  abstract firstActiveByRole(scope: TxScope, wanted: readonly { orgId: string; role: string }[]): Promise<Map<string, string | null>>;
   /** Active memberships with one of `roles`, optionally without one membership. */
   abstract countActive(scope: TxScope, orgId: string, roles: readonly string[], excludingId?: string): Promise<number>;
   /**

@@ -1807,7 +1807,7 @@
       },
       "priority": "medium",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "admin.verifications_queue answers in 8-10 s for one page of 50 on the local DB after many E2E runs: StaffVerificationItems.items (backend/modules/organization/application/admin-ops.ts) runs per row, in series, the primary-location read, the location id list and one reportsAgainst count per location, plus the owner read per organization and StaffOrgSearchRows.duplicates. Batch them (one query per kind for the page) and check duplicates for cost; target well under 1 s.",
       "source_notes": {
@@ -1831,7 +1831,14 @@
         "why": "Verification is a pilot flow (A-VER-01, 2-working-day SLA). A queue page of 50 takes 8-10 s on the local DB (backend log latency_ms 8495-10415). StaffVerificationItems.items reads, per row and in series, the primary location, the location ids, one reportsAgainst count per location, the owner, and StaffOrgSearchRows.duplicates. Batch them into one query per kind for the page and check the duplicates cost; target well under 1 s. Measure on a database with pilot-like volume, not only the E2E-bloated local one.",
         "task": "S26c.T0",
         "placed": "Owner, 2026-11-18: first priority in S26c."
-      }
+      },
+      "done_in": [
+        {
+          "stage": "S26c",
+          "date": "2026-11-18",
+          "note": "StaffVerificationItems.items reads the primary location, the location ids, the wrong-location report counts (ModerationLog.reportCounts) and the owners (OrgMemberships.firstActiveByRole) once per page; a page makes the same 7 reads for 2 or 12 items (was 19 and 93). The larger cost was possibleDuplicate(): one EXISTS with an OR between the phone and name tests used neither index (840 ms for 12 rows on 2,700 organizations); split into two EXISTS (S26c-D2). Local DB, page of 50: about 3.5 s before, about 60 ms warm after (731 ms first call). Not measured on pilot-like volume; the local database is larger than the pilot will be and the plan is now index lookups. Test: apps/testing/s26c.int.test.ts."
+        }
+      ]
     },
     {
       "id": "BR-37",
@@ -1845,7 +1852,7 @@
       },
       "priority": "low",
       "status_in_source": "open",
-      "status": "todo",
+      "status": "done",
       "in_scope_of_backend_refinement": true,
       "raw_text": "A direct read of one verification check for a link from a notice, a case or the organization page: admin.verifications_queue q organization_id and verification_id (or admin.verification_get by id, STF(ADM, MOD)), so the console no longer walks the queue pages to find it.",
       "source_notes": {
@@ -1876,7 +1883,14 @@
         "why": "admin.verifications_queue takes status, verification_type, assignee and info_requested only (Docs/40). A link to one check (notices, cases, the organization page) makes the console walk up to 20 pages, and under BR-36 each page takes 8-10 s. A q organization_id / verification_id filter (or admin.verification_get) is one read. Same purpose rules as the queue (the verification purpose opens the record).",
         "task": "S26c.T0",
         "placed": "Owner, 2026-11-18: first priority in S26c."
-      }
+      },
+      "done_in": [
+        {
+          "stage": "S26c",
+          "date": "2026-11-18",
+          "note": "admin.verifications_queue takes q organization_id and verification_id (Docs/40 section 23.1, Appendix D row, generated contract and clients). With verification_id and no status the check is found in any status (S26c-D1); otherwise the default stays pending. Console follow-up: AC14b.T8 (removes D-66)."
+        }
+      ]
     },
     {
       "id": "BR-38",
@@ -6474,7 +6488,7 @@
       {
         "id": "S26c",
         "title": "S26c - Production hardening (NI-18 lite shortcuts, NI-19 web edge), contract 1.5.0 freeze and closure",
-        "status": "not_started",
+        "status": "in_progress",
         "items": [
           "BR-36 (verification queue latency) and BR-37 (verification read by id or organization), first priority (owner, 2026-11-18)",
           "NI-18 (remove lite-only shortcuts before production)",
@@ -6507,7 +6521,8 @@
             ],
             "priority": "first (owner, 2026-11-18)",
             "task": "Verification queue (organization module), done before T1. (a) BR-36: StaffVerificationItems.items (modules/organization/application/admin-ops.ts) reads per row, in series, the primary location, the location ids, one reportsAgainst count per location, the owner, and StaffOrgSearchRows.duplicates. Batch each kind into one query for the page and check the duplicates cost. Target: a page of 50 well under 1 s; measure on the E2E-heavy local DB and on pilot-like volume, and record latency_ms before and after. (b) BR-37: admin.verifications_queue q organization_id and verification_id (Docs/40 §23.1 text, registry, OpenAPI, codegen; same STF(ADM, MOD) and purpose rules as the queue), so a link opens one check without walking pages (console D-66). Tests: an integration test for both filters, a query-count or latency guard for the page, and the contract sweep.",
-            "status": "not_started"
+            "status": "done",
+            "result": "2026-11-18, built, not committed. BR-36: batched reads and the possibleDuplicate index fix; a page of 50 about 3.5 s before, about 60 ms warm after on the local database (2,744 organizations); not measured on pilot-like volume. BR-37: q organization_id and verification_id. Deviations: S26c-D1 (verification_id without status finds the check in any status, because the console links to decided checks too), S26c-D2 (possibleDuplicate split into two EXISTS: beyond batching, it also speeds up admin.orgs_search possible_duplicate). Tests: apps/testing/s26c.int.test.ts (5 tests, a read-count guard on the admin host pool). Checks: typecheck, lint, contract:check, openapi:check, check:clients green; unit 357 passed. Integration: s19 flaked once (notification lookup) and passed on rerun; moderation (verified_business badge) and s25a (T2 reminder, T5 badge) fail on HEAD with the current local database too, not caused by this task; to be re-checked on a fresh database."
           },
           {
             "id": "S26c.T1",

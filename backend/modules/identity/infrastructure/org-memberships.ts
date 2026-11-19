@@ -101,6 +101,21 @@ export class DbOrgMemberships extends OrgMemberships {
     return rows.map((r) => toRecord(r as MemberRow));
   }
 
+  async firstActiveByRole(scope: TxScope, wanted: readonly { orgId: string; role: string }[]): Promise<Map<string, string | null>> {
+    if (wanted.length === 0) return new Map();
+    const rows = await scope.db
+      .selectFrom('identity.role_memberships as m')
+      .select(['m.organization_id', 'm.user_id'])
+      .distinctOn('m.organization_id')
+      .where('m.status', '=', 'active')
+      .where('m.deleted_at', 'is', null)
+      .where((eb) => eb.or(wanted.map((w) => eb.and([eb('m.organization_id', '=', w.orgId), eb('m.role', '=', w.role)]))))
+      .orderBy('m.organization_id')
+      .orderBy('m.id')
+      .execute();
+    return new Map(rows.map((r) => [r.organization_id as string, r.user_id]));
+  }
+
   async get(scope: TxScope, orgId: string, membershipId: string, lock = false): Promise<OrgMemberRecord | null> {
     if (lock)
       await scope.db

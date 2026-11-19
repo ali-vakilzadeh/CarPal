@@ -217,16 +217,23 @@ export class StaffOrgSearchRows {
  * locations), or the same contact phone. Merged and archived organizations are never flagged and never match.
  */
 function possibleDuplicate(): Expression<SqlBool> {
-  return sql<SqlBool>`(o.status NOT IN ('merged','archived') AND EXISTS (
-    SELECT 1 FROM organization.organizations d
-     WHERE d.id <> o.id AND d.deleted_at IS NULL AND d.status NOT IN ('merged','archived')
-       AND ((o.contact_phone IS NOT NULL AND d.contact_phone = o.contact_phone)
-         OR (organization.normalized_name(d.name) = organization.normalized_name(o.name)
-             AND EXISTS (SELECT 1 FROM organization.organization_locations l1
-                           JOIN organization.organization_locations l2 ON lower(btrim(l2.city)) = lower(btrim(l1.city))
-                          WHERE l1.organization_id = o.id AND l2.organization_id = d.id
-                            AND l1.status = 'active' AND l2.status = 'active'
-                            AND l1.deleted_at IS NULL AND l2.deleted_at IS NULL)))))`;
+  // Two EXISTS rather than one with an OR between the phone and the name tests: with the OR in the join filter neither
+  // organizations_contact_phone_idx nor organizations_normalized_name_idx can be used and every organization is
+  // compared with every other one (backend S26c, BR-36: 840 ms for a page of 12 on 2,700 organizations).
+  return sql<SqlBool>`(o.status NOT IN ('merged','archived') AND (
+    (o.contact_phone IS NOT NULL AND EXISTS (
+      SELECT 1 FROM organization.organizations d
+       WHERE d.contact_phone = o.contact_phone AND d.id <> o.id
+         AND d.deleted_at IS NULL AND d.status NOT IN ('merged','archived')))
+    OR EXISTS (
+      SELECT 1 FROM organization.organizations d
+       WHERE organization.normalized_name(d.name) = organization.normalized_name(o.name) AND d.id <> o.id
+         AND d.deleted_at IS NULL AND d.status NOT IN ('merged','archived')
+         AND EXISTS (SELECT 1 FROM organization.organization_locations l1
+                       JOIN organization.organization_locations l2 ON lower(btrim(l2.city)) = lower(btrim(l1.city))
+                      WHERE l1.organization_id = o.id AND l2.organization_id = d.id
+                        AND l1.status = 'active' AND l2.status = 'active'
+                        AND l1.deleted_at IS NULL AND l2.deleted_at IS NULL))))`;
 }
 
 type OrgSearch = {
@@ -425,15 +432,14 @@ export class StaffVerificationItems {
     private readonly search: StaffOrgSearchRows,
   ) {}
 
-  /** The organization's active owner (the first by membership), or null. */
-  private async owner(scope: TxScope, orgId: string, orgType: Parameters<typeof ownerRoleFor>[0]): Promise<string | null> {
-    const [m] = await this.members.list(scope, orgId, { role: ownerRoleFor(orgType), status: 'active', limit: 1 });
-    return m?.userId ?? null;
-  }
-
+  /**
+   * One page of items. Everything that belongs to the organization rather than to the check is read once per kind for
+   * the whole page, never per row (backend S26c, BR-36: a page of 50 took 8-10 s on the E2E-heavy database, from the
+   * per-row reads and from the possible-duplicate test, see possibleDuplicate).
+   */
   async items(scope: TxScope, page: readonly VerificationRow[], locale: string) {
     const orgIds = [...new Set(page.map((r) => r.organization_id))];
-    const [cards, requests, duplicates, phones] = await Promise.all([
+    const [cards, requests, duplicates, phones, primaries, locations] = await Promise.all([
       this.orgs.cards(scope, orgIds),
       latestInfoRequests(
         scope,
@@ -453,47 +459,64 @@ export class StaffVerificationItems {
             .orderBy('id', 'desc')
             .execute()
         : Promise.resolve([]),
+      // The active primary location of each organization (a primary pin first, then the lowest id).
+      orgIds.length
+        ? scope.db
+            .selectFrom('organization.organization_locations')
+            .select(['organization_id', 'geo_address_distance_m', 'location_check_status'])
+            .distinctOn('organization_id')
+            .where('organization_id', 'in', orgIds)
+            .where('status', '=', 'active')
+            .where('deleted_at', 'is', null)
+            .orderBy('organization_id')
+            .orderBy('is_primary', 'desc')
+            .orderBy('id')
+            .execute()
+        : Promise.resolve([]),
+      // Every location id of each organization (wrong-location reports count against all of them).
+      orgIds.length
+        ? scope.db.selectFrom('organization.organization_locations').select(['id', 'organization_id']).where('organization_id', 'in', orgIds).execute()
+        : Promise.resolve([]),
     ]);
     const callback = new Map(phones.map((p) => [p.organization_id, p.status]));
-    const owners = new Map<string, string | null>();
-    for (const id of orgIds) {
-      const card = cards.get(id);
-      owners.set(id, card ? await this.owner(scope, id, card.organizationType) : null);
-    }
+    const primary = new Map(primaries.map((p) => [p.organization_id, p]));
+    const known = orgIds.filter((id) => cards.has(id));
+    const [owners, reports] = await Promise.all([
+      this.members.firstActiveByRole(
+        scope,
+        known.map((orgId) => ({ orgId, role: ownerRoleFor(cards.get(orgId)!.organizationType) })),
+      ),
+      this.moderation.reportCounts(
+        scope,
+        [
+          ...known.map((id) => ({ type: 'organization', id })),
+          ...locations.filter((l) => cards.has(l.organization_id)).map((l) => ({ type: 'organization_location', id: l.id })),
+        ],
+        'wrong_location_or_closed',
+      ),
+    ]);
+    const wrongByOrg = new Map<string, number>();
+    for (const id of known) wrongByOrg.set(id, reports.get(`organization:${id}`) ?? 0);
+    for (const l of locations)
+      if (wrongByOrg.has(l.organization_id))
+        wrongByOrg.set(l.organization_id, wrongByOrg.get(l.organization_id)! + (reports.get(`organization_location:${l.id}`) ?? 0));
     const names = await this.names.names(scope, [...page.map((r) => r.assigned_to), ...owners.values()], locale);
     const items = [];
     for (const r of page) {
       const card = cards.get(r.organization_id);
       if (!card) continue;
-      const primary = await scope.db
-        .selectFrom('organization.organization_locations')
-        .select(['geo_address_distance_m', 'location_check_status'])
-        .where('organization_id', '=', r.organization_id)
-        .where('status', '=', 'active')
-        .where('deleted_at', 'is', null)
-        .orderBy('is_primary', 'desc')
-        .orderBy('id')
-        .executeTakeFirst();
-      const locationIds = (
-        await scope.db
-          .selectFrom('organization.organization_locations')
-          .select('id')
-          .where('organization_id', '=', r.organization_id)
-          .execute()
-      ).map((l) => l.id);
-      let wrong = await this.moderation.reportsAgainst(scope, 'organization', r.organization_id, 'wrong_location_or_closed');
-      for (const id of locationIds)
-        wrong += await this.moderation.reportsAgainst(scope, 'organization_location', id, 'wrong_location_or_closed');
+      const loc = primary.get(r.organization_id);
+      const wrong = wrongByOrg.get(r.organization_id) ?? 0;
       const owner = owners.get(r.organization_id) ?? null;
       items.push({
         ...toVerification(r, requests.get(r.id) ?? null),
         organization: toOrgSummary(card),
         location_check:
-          (r.verification_type === 'location' || r.verification_type === 'address') && primary
+          (r.verification_type === 'location' || r.verification_type === 'address') && loc
             ? {
                 geocoded_point: null,
-                distance_m: primary.geo_address_distance_m,
-                location_check_status: primary.location_check_status,
+                distance_m: loc.geo_address_distance_m,
+                location_check_status: loc.location_check_status,
                 threshold_m: this.checker.thresholdM,
               }
             : null,
@@ -523,7 +546,15 @@ function precheck(v: unknown) {
   return { documents_readable: bool(p.documents_readable), name_match: bool(p.name_match), duplicate_risk: risk, checked_at: iso(at) };
 }
 
-type QueueQuery = { status?: string; verification_type?: string; assignee?: 'me' | 'unassigned'; info_requested?: boolean; limit: number };
+type QueueQuery = {
+  status?: string;
+  verification_type?: string;
+  assignee?: 'me' | 'unassigned';
+  info_requested?: boolean;
+  organization_id?: string;
+  verification_id?: string;
+  limit: number;
+};
 
 @Injectable()
 @Operation('admin.verifications_queue')
@@ -537,7 +568,11 @@ export class AdminVerificationsQueueHandler implements OperationHandler {
     const body = await ctx.tx(
       async (scope) => {
         let v = scope.db.selectFrom('organization.organization_verifications').selectAll().where('deleted_at', 'is', null);
-        v = v.where('status', '=', q.status ?? 'pending');
+        // A link to one check (verification_id) finds it in any state; without one the queue lists pending checks.
+        const status = q.status ?? (q.verification_id ? undefined : 'pending');
+        if (status) v = v.where('status', '=', status);
+        if (q.verification_id) v = v.where('id', '=', q.verification_id);
+        if (q.organization_id) v = v.where('organization_id', '=', q.organization_id);
         if (q.verification_type) v = v.where('verification_type', '=', q.verification_type);
         if (q.assignee === 'me') v = v.where('assigned_to', '=', s.userId);
         if (q.assignee === 'unassigned') v = v.where('assigned_to', 'is', null);

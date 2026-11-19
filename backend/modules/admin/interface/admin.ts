@@ -448,6 +448,11 @@ export abstract class ModerationLog {
   abstract affects(scope: TxScope, actionId: string): Promise<{ userId: string | null; organizationId: string | null } | null>;
   /** Reports filed against a record (staff views: StaffUserView.counts.reports_against). */
   abstract reportsAgainst(scope: TxScope, targetType: string, targetId: string, reason?: string): Promise<number>;
+  /**
+   * Reports of `reason` filed against each of `targets` (any status, like reportsAgainst), as "type:id" keys; targets
+   * without a report are absent. One query for a whole page (backend S26c, BR-36).
+   */
+  abstract reportCounts(scope: TxScope, targets: readonly SubjectRef[], reason: string): Promise<Map<string, number>>;
   /** Open moderation cases about a record (StaffOrgView.open_cases). */
   abstract openCases(scope: TxScope, targetType: string, targetId: string): Promise<number>;
   /** The records among `ids` with an open moderation case about them (admin.orgs_search has_open_cases, backend S19). */
