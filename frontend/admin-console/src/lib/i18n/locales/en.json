@@ -101,7 +101,9 @@
       "expired": {
         "title": "This sign-in page has expired",
         "text": "Sign-in pages are valid for 30 minutes. Start again; you will come back to the page you wanted.",
-        "restart": "Start again"
+        "restart": "Start again",
+        "keySaved": "Your new security key was saved. Start again and sign in with it.",
+        "recovery": "Your recovery request is kept. Start again from this browser to continue it."
       },
       "gate": {
         "title": "Use the company network",
@@ -117,6 +119,52 @@
         "step_up": "The sign-in did not use a security key bound to one device. Use your security key.",
         "account": "Confirm with the same staff account you are signed in with.",
         "not_staff": "This account has no staff role. Sign in with your staff account."
+      },
+      "codes": {
+        "title": "Store your recovery codes"
+      },
+      "recover": {
+        "link": "Lost your security key?",
+        "title": "Recover your staff account",
+        "intro": "Lost your security key? Enter your work email, your password and one of your recovery codes. Two other administrators then check with you and approve the recovery, and you add a new key.",
+        "forgotten": "I have forgotten my password too",
+        "code": "Recovery code",
+        "codeHint": "One of the codes you stored when you added your key, e.g. ABCD-EFGH-JKMN-PQRS-TVWX.",
+        "start": "Ask for a recovery",
+        "codeTitle": "Check your email",
+        "sent": "If the details were right, we sent a 6-digit code to your work email. Enter it to send the request to the administrators.",
+        "verify": "Send the request",
+        "again": "No email? Check the details and try again",
+        "waitTitle": "Waiting for two administrators",
+        "waitText": "Two other administrators must approve your recovery. They will check with you outside CarPal first: a call to your known number, in person or a video call.",
+        "approvals": "{{n}} of 2 approved.",
+        "expires": "The request expires on {{when}}.",
+        "checking": "Checking your request…",
+        "comeBack": "You can close this page. When you get the approval email, open the admin console in this browser and sign in again to continue.",
+        "refresh": "Check again",
+        "approvedTitle": "Recovery approved",
+        "approved": "Two administrators approved your recovery. Set up your new security key now.",
+        "continue": "Continue",
+        "keyTitle": "Set up your new security key",
+        "keyText": "Your old keys and recovery codes stop working. Use a key that stays on one device: a USB or NFC security key, or this computer’s built-in key.",
+        "newPassword": "New password",
+        "newPasswordHint": "At least {{n}} characters. Not a password you used before.",
+        "repeatPassword": "Repeat the new password",
+        "ended": {
+          "gone": "There is no open recovery request in this browser. Sign in, or ask for a recovery again.",
+          "rejected": "Your recovery request was rejected. Ask an administrator what to do next.",
+          "expired": "Your recovery request expired before it was finished. Ask for a recovery again.",
+          "completed": "Your account was already recovered. Sign in with your new security key."
+        },
+        "errors": {
+          "notApproved": "The request is not approved, or it has expired. Check its state and try again.",
+          "notFound": "There is no open recovery request in this browser.",
+          "codeFormat": "Enter one of your recovery codes, e.g. ABCD-EFGH-JKMN-PQRS-TVWX.",
+          "details": "The request could not be sent. Check the details and try again.",
+          "passwordLength": "The new password must have 12 to 128 characters.",
+          "passwordRepeat": "The two passwords are not the same.",
+          "password": "This password cannot be used. Choose a longer one that you have not used before."
+        }
       }
     },
     "signedOut": {
@@ -160,7 +208,8 @@
         "flags": "Feature flags",
         "rates": "Exchange rates",
         "retention": "Data retention",
-        "staff": "Staff"
+        "staff": "Staff",
+        "recoveries": "Recovery requests"
       },
       "lookup": {
         "label": "Look up",
@@ -172,7 +221,8 @@
         "menu": "Account menu",
         "roles": "Roles: {{roles}}",
         "myActions": "My actions in the audit log",
-        "signOut": "Sign out"
+        "signOut": "Sign out",
+        "security": "Security keys and recovery codes"
       },
       "section": {
         "text": "This section is not built yet. It arrives in stage {{stage}} of the console plan.",
@@ -354,6 +404,14 @@
           "system": "system",
           "mcp_client": "AI client"
         }
+      },
+      "job": {
+        "unreadable": "The progress of the background job cannot be read. Reload the page later.",
+        "queued": "The background job is waiting to start.",
+        "running": "The background job is running ({{progress}} %).",
+        "succeeded": "The background job finished.",
+        "failed": "The background job failed. Tell the engineering team.",
+        "cancelled": "The background job was cancelled."
       }
     },
     "reasons": {
@@ -450,7 +508,17 @@
         "new_staff": "New staff member",
         "role_change": "Change of duties",
         "staff_left": "Left the team",
-        "security_concern": "Security concern"
+        "security_concern": "Security concern",
+        "known_requester": "Requester checked and known",
+        "not_requested_by_owner": "Not asked for by the account owner",
+        "suspicious_request": "Suspicious request",
+        "new_item": "New item",
+        "translation": "Translation",
+        "catalog_cleanup": "Catalog clean-up",
+        "search_gap": "Search found nothing for it",
+        "least_privilege": "Least privilege",
+        "new_capability": "New capability",
+        "incident_resolved": "Incident resolved"
       }
     },
     "ops": {
@@ -539,7 +607,11 @@
         "reports": "Open reports",
         "cases": "Moderation cases",
         "disputes": "Disputes and appeals",
-        "privacy": "Privacy requests"
+        "privacy": "Privacy requests",
+        "recoveries": "Staff account recoveries",
+        "badges": "Badges awaiting approval",
+        "planRequests": "Plan change requests",
+        "support": "Support tickets"
       },
       "atLeast": "{{n}}+",
       "countLabel": "{{n}} open",
@@ -2277,6 +2349,874 @@
           "grant": "A second platform admin must approve this in Pending approvals within 72 hours.",
           "revoke": "The role ends at once and the user loses its access."
         }
+      }
+    },
+    "codes": {
+      "title": "Your recovery codes",
+      "text": "Each code works once, if you lose your security key. Print them or write them down and keep them somewhere safe, away from the key.",
+      "once": "They are shown only now. CarPal cannot show them again; you can make a new set on the Security keys page.",
+      "print": "Print",
+      "stored": "I have stored them",
+      "tickFirst": "Tick \"I have stored them\" first."
+    },
+    "security": {
+      "title": "Security keys and recovery codes",
+      "intro": "You sign in to the admin console with a security key that stays on one device. Keep a backup key and your recovery codes, so you can get back in if you lose a key.",
+      "stepUpHint": "Each change asks for your security key again when you signed in more than 5 minutes ago.",
+      "otherSessions": "Your other sessions end and you get an email.",
+      "armed": {
+        "add": "Confirmed with your security key. Press \"Add backup key\" again within 5 minutes.",
+        "codes": "Confirmed with your security key. Press \"New recovery codes\" again within 5 minutes.",
+        "remove": "Confirmed with your security key. Confirm the removal again within 5 minutes."
+      },
+      "errors": {
+        "generic": "Something went wrong. Try again.",
+        "lastKey": "This is your only security key that can sign in. Add a backup key before you remove it.",
+        "limit": "You have {{n}} keys, the most an account can have. Remove one first.",
+        "keyRejected": "The key could not be checked. Try again.",
+        "alreadyRegistered": "This security key is already registered for your account. Use another key.",
+        "load": "Your keys could not be loaded."
+      },
+      "keys": {
+        "title": "Security keys",
+        "added": "Backup key \"{{name}}\" added. Your other sessions ended.",
+        "removed": "Key \"{{name}}\" removed. Your other sessions ended.",
+        "added_at": "Added {{when}}",
+        "lastUsed": "last used {{when}}",
+        "neverUsed": "never used",
+        "notBound": "This key syncs across devices and cannot sign in to the admin console.",
+        "remove": "Remove",
+        "removeNamed": "Remove {{name}}",
+        "onlyOne": "You have one key that can sign in. Add a backup key, so a lost key does not lock you out.",
+        "addTitle": "Add a backup key",
+        "addText": "A USB or NFC security key, or this computer’s built-in key. Passkeys that sync to a phone or a cloud account are not accepted.",
+        "label": "Name of the key",
+        "labelHint": "For example \"Blue USB key\" (up to {{n}} characters).",
+        "labelMissing": "Give the key a name.",
+        "labelLong": "The name can have at most {{n}} characters.",
+        "add": "Add backup key",
+        "removeTitle": "Remove this security key?",
+        "removeText": "The key \"{{name}}\" will no longer sign in."
+      },
+      "codes": {
+        "title": "Recovery codes",
+        "remaining": "Unused recovery codes: {{n}} of 10.",
+        "text": "Use a recovery code if you lose your security key. A new set replaces the old one: the old codes stop working.",
+        "new": "New recovery codes",
+        "newTitle": "Make new recovery codes?",
+        "newText": "Your current recovery codes stop working at once. The new codes are shown only once.",
+        "made": "New recovery codes were made. The old ones no longer work.",
+        "done": "Done"
+      },
+      "restricted": {
+        "title": "Your account was recovered recently",
+        "text": "Until {{when}} you cannot approve changes, grant roles or re-enable staff members."
+      },
+      "noCodes": {
+        "title": "You have no recovery codes left",
+        "text": "Without them you cannot recover your account if you lose your security key.",
+        "link": "Make new recovery codes"
+      }
+    },
+    "recoveries": {
+      "title": "Recovery requests",
+      "intro": "Staff members who lost their security key ask to recover their account. Two different administrators must approve; one rejection ends the request. Check with the person outside CarPal before you approve.",
+      "listLabel": "Recovery requests",
+      "itemLabel": "Request",
+      "decisionLabel": "Decision",
+      "empty": "No recovery requests in this view.",
+      "email": "Work email",
+      "country": "Country of the request",
+      "countryUnknown": "Not known",
+      "password": "Password",
+      "passwordForgotten": "Forgotten (a new one is set at the end)",
+      "passwordKnown": "Known",
+      "completed": "Completed",
+      "restrictedUntil": "Restricted until",
+      "decisions": "Decisions",
+      "noDecisions": "No decision yet.",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "notFound": "This request could not be found.",
+      "pick": "Pick a request from the list.",
+      "pickFirst": "Pick a request first.",
+      "closed": "This request is {{status}}; nothing more to decide.",
+      "approvedByMe": "You approved this request. A second administrator must approve too.",
+      "checkFirst": "Before you approve: call the person on a number you already know, meet them, or see them on a video call. Never approve from an email or a chat message alone.",
+      "approvalsOf": "{{n}} of {{of}}",
+      "filter": {
+        "status": "Status"
+      },
+      "status": {
+        "awaiting_approvals": "Waiting for approvals",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "expired": "Expired",
+        "completed": "Completed"
+      },
+      "method": {
+        "phone_known_number": "Call to a known phone number",
+        "in_person": "In person",
+        "video_call": "Video call",
+        "other": "Other (describe it)"
+      },
+      "col": {
+        "who": "Staff member",
+        "roles": "Roles",
+        "requested": "Asked",
+        "approvals": "Approvals",
+        "expires": "Expires",
+        "status": "Status"
+      },
+      "approve": {
+        "title": "Approve the recovery",
+        "action": "Approve",
+        "effect": "With the second approval the staff member can set a new key; their old keys and codes stop working.",
+        "method": "How did you check the person?",
+        "methodRequired": "Choose how you checked the person.",
+        "note": "Note on the check (optional)",
+        "noteRequiredLabel": "Note on the check (required)",
+        "noteHint": "For example the number you called. Do not write codes or passwords.",
+        "noteRequired": "Describe how you checked the person.",
+        "done": "Approval recorded."
+      },
+      "reject": {
+        "title": "Reject the recovery",
+        "action": "Reject",
+        "effect": "The request ends and the staff member is told by email.",
+        "done": "The request was rejected."
+      },
+      "own": "This is your own recovery request: other administrators decide it."
+    },
+    "notices": {
+      "recoveryWaiting": "{{staff_name}} asked to recover their staff account. Check with the person outside CarPal before you approve it.",
+      "recoveryDone": "The staff account of {{staff_name}} was recovered with a new security key. For 72 hours it cannot approve changes or grant roles.",
+      "breakGlass": "The security keys and recovery codes of {{staff_name}} were reset from the server. If nobody expected this, disable the account and investigate.",
+      "killSwitch": "The AI automation kill switch is now {{enabled}}. While it is on, every AI feature and AI write tool is stopped.",
+      "killOn": "on",
+      "killOff": "off"
+    },
+    "taxonomy": {
+      "title": "Taxonomy",
+      "sections": {
+        "catalog": "Catalog",
+        "terms": "Zero-result searches"
+      },
+      "type": "Type",
+      "search": "Search",
+      "searchHint": "Any label (English or Persian) or slug",
+      "allStatuses": "All statuses",
+      "view": "View",
+      "views": {
+        "tree": "Tree",
+        "list": "List",
+        "missing": "Missing translations"
+      },
+      "addTop": "Add to {{type}}",
+      "addChild": "Add to {{type}} here",
+      "addChildTitle": "Add to {{type}} under {{parent}}",
+      "capped": "This type has more nodes than the console reads at once; some are not shown.",
+      "listLabel": "{{type}}",
+      "loadFailed": "This could not be loaded. Try again.",
+      "empty": "No nodes of this type yet.",
+      "noMissing": "Every node of this type has all its labels.",
+      "noMatch": "No node matches.",
+      "nodeLabel": "Node",
+      "notInType": "This node is not of the chosen type, or it is not there any more.",
+      "pick": "Pick a node, or add one.",
+      "actions": "Actions",
+      "tabs": {
+        "details": "Details",
+        "synonyms": "Synonyms",
+        "mappings": "Mappings",
+        "merge": "Merge"
+      },
+      "list": {
+        "otherType": "Of another type",
+        "missing": "Missing labels",
+        "allRegions": "All regions"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "deprecated": "Deprecated",
+        "merged": "Merged"
+      },
+      "types": {
+        "vehicle_brand": "Vehicle brands",
+        "vehicle_model": "Vehicle models",
+        "vehicle_series": "Vehicle series",
+        "engine_type": "Engines",
+        "fuel_type": "Fuel types",
+        "service_system": "Service systems",
+        "service_task": "Service tasks",
+        "part_category": "Part categories",
+        "symptom": "Symptoms",
+        "review_tag": "Review tags",
+        "amenity": "Amenities"
+      },
+      "locale": {
+        "en": "English",
+        "fa": "Persian"
+      },
+      "source": {
+        "manual": "Staff",
+        "ai_suggested": "AI suggestion",
+        "import": "Import"
+      },
+      "attributes": {
+        "production_start_year": "Production start year",
+        "production_end_year": "Production end year",
+        "engine_code": "Engine code",
+        "displacement_cc": "Displacement (cc)",
+        "performance_variant": "Performance variant",
+        "powertrain": "Powertrain",
+        "safety_critical": "Safety critical",
+        "sentiment": "Sentiment",
+        "applies_to": "Applies to",
+        "position_applicable": "Position applies (front, rear, left, right)"
+      },
+      "editor": {
+        "nameMissing": "Enter the {{language}} label.",
+        "tooLong": "At most {{n}} characters.",
+        "slugPattern": "Use lower-case Latin letters, digits and hyphens (e.g. pars-tondar).",
+        "parentRequired": "Choose a parent: this type cannot stand alone.",
+        "regionsPattern": "Use two-letter country codes separated by commas (e.g. IR, AE).",
+        "sortRange": "Use a whole number from 0 to 100000.",
+        "attributeInvalid": "This value is not allowed.",
+        "mergedReadOnly": "This node was merged into another one and can no longer be edited.",
+        "readOnly": "You can read this node; platform admins edit it.",
+        "fix": "Fix these first",
+        "labels": "Labels",
+        "name": "Label ({{language}})",
+        "description": "Description ({{language}}, optional)",
+        "placement": "Place in the catalog",
+        "typeIs": "Type: {{type}}",
+        "slug": "Slug",
+        "slugHint": "Part of links and imports; Latin letters, digits and hyphens.",
+        "suggestSlug": "Suggest from the English label",
+        "parentType": "Parent type",
+        "parent": "Parent",
+        "choose": "Choose…",
+        "noParent": "No parent (top level)",
+        "currentParent": "Current parent",
+        "noParents": "This type has no parent.",
+        "regions": "Regions",
+        "regionsHint": "Leave empty for every region; else country codes, e.g. IR.",
+        "sortOrder": "Order",
+        "status": "Status",
+        "statusHint": "Deprecated: hidden from new choices; existing references are kept.",
+        "attributes": "Attributes",
+        "notSet": "Not set",
+        "yes": "Yes",
+        "no": "No",
+        "save": "Save changes",
+        "create": "Create node",
+        "saveTitle": "Save the node",
+        "createTitle": "Create the node",
+        "saved": "Saved.",
+        "created": "Created.",
+        "mismatch": "The catalog rules refuse this: the parent is of a type this node cannot have, or it would make a circle.",
+        "duplicate": "Another node of this type already has this slug."
+      },
+      "synonyms": {
+        "title": "Synonyms and spellings",
+        "filter": "Show",
+        "all": "All",
+        "none": "No synonyms in this view.",
+        "term": "Term",
+        "kind": "Kind",
+        "language": "Language",
+        "source": "From",
+        "state": "State",
+        "approve": "Approve",
+        "reject": "Reject",
+        "deactivate": "Deactivate",
+        "duplicate": "This node already has this term in this language and script.",
+        "add": "Add a synonym or spelling",
+        "addAction": "Add",
+        "termMissing": "Enter the term.",
+        "kindMissing": "Choose the kind.",
+        "scriptLabel": "Script",
+        "scriptMissing": "Choose the script of the transliteration.",
+        "hint": "Latin-letter Persian (e.g. \"pishkhan\") is a transliteration in Persian with the Latin script.",
+        "status": {
+          "pending_review": "Waiting for review",
+          "active": "Active",
+          "inactive": "Inactive"
+        },
+        "types": {
+          "synonym": "Synonym",
+          "alias": "Alias",
+          "misspelling": "Misspelling",
+          "local_term": "Local term",
+          "abbreviation": "Abbreviation",
+          "transliteration": "Transliteration"
+        },
+        "script": {
+          "latin": "Latin letters",
+          "native": "Native letters"
+        },
+        "done": {
+          "add": "Added.",
+          "approve": "Approved: search uses it now.",
+          "reject": "Rejected.",
+          "delete": "Deactivated."
+        },
+        "dialog": {
+          "add": "Add this term",
+          "approve": "Approve this suggestion",
+          "reject": "Reject this suggestion",
+          "delete": "Deactivate this term"
+        },
+        "confirm": {
+          "add": "Add",
+          "approve": "Approve",
+          "reject": "Reject",
+          "delete": "Deactivate"
+        }
+      },
+      "mappings": {
+        "title": "Mappings",
+        "notForType": "{{type}} take part in no mapping.",
+        "none": "No mappings yet.",
+        "kind": "Mapping",
+        "other": "Other node",
+        "otherOf": "Node ({{type}})",
+        "otherMissing": "Choose the other node.",
+        "weight": "Weight",
+        "weightHint": "0 to 100: how strongly the two belong together.",
+        "weightRange": "Use a whole number from 0 to 100.",
+        "edit": "Edit",
+        "add": "Add or change a mapping",
+        "save": "Save mapping",
+        "saveTitle": "Save the mapping",
+        "saved": "Mapping saved.",
+        "mismatch": "The node types do not fit this mapping.",
+        "types": {
+          "symptom_to_system": "Symptom → system",
+          "symptom_to_task": "Symptom → task",
+          "part_category_to_system": "Part category → system",
+          "task_to_part_category": "Task → part category"
+        }
+      },
+      "merge": {
+        "title": "Merge into another node",
+        "text": "Use this for a duplicate. The node is merged into the one you choose:",
+        "effectReferences": "Every reference (vehicles, capabilities, inventory, reviews, appointments) moves to the chosen node in a background job.",
+        "effectStatus": "This node becomes \"merged\" and leads to the chosen one; it cannot be undone.",
+        "effectFourEyes": "A second platform admin must approve the merge on Pending approvals first.",
+        "noPreview": "The console cannot list the references that will move before the merge (not in the contract).",
+        "adminOnly": "Only platform admins merge nodes.",
+        "into": "Merge into ({{type}})",
+        "cycleGuard": "Only live nodes of the same type that are not below this one (no circular parents).",
+        "action": "Merge",
+        "dialog": "Merge this node",
+        "summary": "\"{{from}}\" is merged into \"{{into}}\".",
+        "mismatch": "The catalog refuses this merge: the nodes are of different types, or the target is below this node.",
+        "mine": "Merges you asked for",
+        "already": "This node was merged into \"{{into}}\"."
+      },
+      "terms": {
+        "title": "Zero-result searches",
+        "intro": "How often a search found nothing, as a share of all searches. A rising share points at missing synonyms or nodes.",
+        "period": "Period",
+        "lastDays": "Last {{n}} days",
+        "searches": "Searches",
+        "zero": "Without a result",
+        "rate": "Share without a result",
+        "noSearches": "No searches",
+        "byDay": "Day by day",
+        "day": "Day",
+        "noTerms": "The analytics give counts only, not the words people typed, so the terms cannot be listed here. Add synonyms on a node from what support tickets and reports show."
+      }
+    },
+    "dash": {
+      "metrics": "Platform today",
+      "myWork": "My work",
+      "waitingForYou": "Waiting for your approval",
+      "assignedToYou": "Assigned to you",
+      "atRisk": "At risk or overdue",
+      "mine": "{{n}} assigned to you",
+      "paused": "{{n}} paused (waiting for someone else)",
+      "safety": "Safety",
+      "unsafeCases": "Open cases about unsafe advice",
+      "criticalCases": "Open critical cases",
+      "unsafeReports": "Open reports of unsafe advice",
+      "triageLater": "Safety-critical triage sessions are counted once the triage review arrives (next phase).",
+      "growth": "Growth",
+      "toAnalytics": "Open analytics",
+      "orgsNote": "New organizations: published provider profiles (the analytics store counts no other organization events yet).",
+      "trust": "Trust",
+      "fraudLater": "Fraud flags and review velocity alerts have no data source yet.",
+      "ai": "AI",
+      "system": "System",
+      "failures": "Failures by signal",
+      "signal": "Signal",
+      "h24": "24 hours",
+      "d7": "7 days",
+      "d30": "30 days",
+      "lastFailure": "Last failure",
+      "signals": {
+        "import_failures": "Inventory and fleet import failures",
+        "notification_delivery_failures": "Notification delivery failures",
+        "media_scan_failures": "Files the virus scan could not check"
+      },
+      "sms": "SMS provider",
+      "smsSimulated": "Simulated: no text message leaves the server",
+      "mail": "Mail",
+      "mailSmtp": "Sent by SMTP",
+      "mailFile": "Written to the server's outbox file only",
+      "geocoder": "Geocoder",
+      "geoRequests": "{{today}} requests today, {{month}} in 30 days",
+      "generated": "Numbers from {{when}}.",
+      "open": "Open",
+      "failed": "Could not load this widget."
+    },
+    "analytics": {
+      "title": "Analytics",
+      "intro": "The MVP success metrics, counted per day for the whole platform. Aggregates only: no person can be picked out. Counts add up over the period; states (marked \"as of\") are the latest day's.",
+      "navLabel": "Dashboards",
+      "noMetrics": "This dashboard has no metrics.",
+      "allEmpty": "No data in this period yet. Numbers appear once the hourly aggregation has counted events.",
+      "toAi": "Open AI oversight",
+      "toTerms": "Zero-result searches on Taxonomy",
+      "period": {
+        "label": "Period",
+        "today": "Today",
+        "last7": "Last 7 days",
+        "last30": "Last 30 days",
+        "last90": "Last 90 days",
+        "custom": "Choose days…",
+        "from": "From",
+        "to": "To",
+        "apply": "Apply",
+        "between": "{{from}} – {{to}}",
+        "problem": {
+          "format": "Enter both days.",
+          "order": "The first day must not be after the last.",
+          "tooLong": "Choose at most 366 days."
+        }
+      },
+      "stat": {
+        "inPeriod": "In the period",
+        "asOf": "As of {{day}}"
+      },
+      "chart": {
+        "total": "Total {{value}}",
+        "asOf": "{{value}} as of {{day}}",
+        "noReading": "No reading in this period",
+        "noReadingDay": "No reading",
+        "empty": "Nothing counted in this period.",
+        "table": "Show the numbers",
+        "day": "Day",
+        "count": "Count",
+        "reading": "Reading",
+        "summary": "{{name}}, daily from {{from}} to {{to}}, highest {{max}}. Use the arrow keys to read each day; the numbers are also in the table below."
+      },
+      "dash": {
+        "activation": {
+          "name": "Activation",
+          "about": "Sign-ups, vehicles added, onboarding steps and app opens: are new people getting started?"
+        },
+        "matching": {
+          "name": "Matching",
+          "about": "Searches, searches without a result, results opened and appointment requests."
+        },
+        "search_and_map": {
+          "name": "Search and map",
+          "about": "Searches, zero results, edited interpretation chips, safety banners and how the map is used (opens, pins, vehicle filter, directions)."
+        },
+        "trust": {
+          "name": "Trust",
+          "about": "Reviews published, disputes opened, badges awarded and moderation actions."
+        },
+        "reviews": {
+          "name": "Reviews",
+          "about": "Reviews written and published, approval requests and approvals, invitations sent and opened."
+        },
+        "provider_value": {
+          "name": "Provider value",
+          "about": "Appointment requests, confirmations and completions, and profile views for repair businesses."
+        },
+        "vendor_value": {
+          "name": "Vendor value",
+          "about": "Inquiries, profile views and published vendors."
+        },
+        "fleet_value": {
+          "name": "Fleet value",
+          "about": "Fleet approval requests and decisions, and active fleets."
+        },
+        "growth": {
+          "name": "Growth",
+          "about": "New users and provider profiles, and how many users, providers, vendors and fleets are active."
+        },
+        "moderation_load": {
+          "name": "Moderation load",
+          "about": "Reported reviews, moderation actions and what is open: cases, reports, review approvals and privacy requests."
+        },
+        "ai_quality": {
+          "name": "AI quality",
+          "about": "AI outputs, pending suggestions, accepted and rejected feedback and hallucination reports."
+        }
+      },
+      "metric": {
+        "userRegistered": "New users",
+        "vehicleCreated": "Vehicles added",
+        "onboardingStep": "Onboarding steps completed",
+        "appOpened": "App opens",
+        "reviewPublished": "Reviews published",
+        "reviewCreated": "Reviews written",
+        "reviewApprovalRequested": "Review approvals requested",
+        "reviewApproved": "Reviews approved",
+        "invitationSent": "Review invitations sent",
+        "invitationOpened": "Review invitations opened",
+        "reviewReported": "Reviews reported",
+        "disputeOpened": "Disputes opened",
+        "badgeAwarded": "Badges awarded",
+        "moderationAction": "Moderation actions",
+        "searchStarted": "Searches",
+        "searchZero": "Searches without a result",
+        "searchResultOpened": "Search results opened",
+        "searchChipEdited": "Interpretation chips edited",
+        "searchSafetyBanner": "Safety banners shown in search",
+        "mapOpened": "Map opens",
+        "mapPinSelected": "Map pins selected",
+        "mapVehicleFilter": "Vehicle filter toggles on the map",
+        "mapDirections": "Directions taps",
+        "appointmentRequested": "Appointment requests",
+        "appointmentConfirmed": "Appointments confirmed",
+        "appointmentCompleted": "Appointments completed",
+        "profileViewed": "Profile views",
+        "inquirySent": "Inquiries sent",
+        "fleetApprovalRequested": "Fleet approvals requested",
+        "fleetApprovalDecided": "Fleet approvals decided",
+        "aiInsightGenerated": "AI outputs",
+        "providerPublished": "Provider profiles published",
+        "vendorsPublished": "Published vendors",
+        "fleetsActive": "Active fleets",
+        "providersPublished": "Published providers",
+        "usersActive": "Active users",
+        "aiSuggestionsPending": "AI suggestions pending",
+        "aiFeedbackAccepted": "AI feedback: accepted",
+        "aiFeedbackRejected": "AI feedback: rejected",
+        "aiHallucinationReports": "Hallucination reports",
+        "openCases": "Open moderation cases",
+        "openReports": "Open reports",
+        "reviewApprovalsPending": "Review approvals pending",
+        "dsrOpen": "Open privacy requests"
+      }
+    },
+    "audit": {
+      "title": "Audit log",
+      "intro": "Who changed what, when and why, for any record: staff, users, the system and AI clients.",
+      "appendOnly": "The audit log is append-only: nobody can edit or delete an entry.",
+      "search": {
+        "title": "Search",
+        "entityType": "Entity type",
+        "entityId": "Entity ID",
+        "action": "Action",
+        "actorId": "Actor ID",
+        "badId": "Enter a full ID (36 characters) or leave it empty.",
+        "submit": "Search",
+        "recorded": "Each search is recorded in the audit log with your name."
+      },
+      "window": {
+        "label": "Time",
+        "last1": "Last 24 hours",
+        "last7": "Last 7 days",
+        "last30": "Last 30 days",
+        "last90": "Last 90 days",
+        "days": "Choose days…",
+        "problem": {
+          "format": "Enter both days.",
+          "order": "The first day must not be after the last.",
+          "tooLong": "Choose at most 93 days."
+        }
+      },
+      "idle": "Choose filters and press Search. Nothing is read before that.",
+      "results": "Results",
+      "between": "From {{from}} to {{to}}.",
+      "empty": "No entries match.",
+      "becomes": "becomes",
+      "col": {
+        "time": "Time",
+        "actor": "Actor",
+        "action": "Action",
+        "entity": "Entity",
+        "change": "Before → after",
+        "reason": "Reason",
+        "request": "Request ID"
+      }
+    },
+    "mcp": {
+      "title": "MCP clients and access log",
+      "tabsLabel": "MCP views",
+      "tab": {
+        "clients": "Clients",
+        "log": "Access log"
+      },
+      "listLabel": "MCP clients",
+      "itemLabel": "Client",
+      "decisionLabel": "Status",
+      "empty": "No MCP clients are registered.",
+      "pick": "Choose a client to see its access.",
+      "pickFirst": "Choose a client first.",
+      "applied": "The client was updated.",
+      "col": {
+        "name": "Client",
+        "type": "Type",
+        "environment": "Environment",
+        "status": "Status",
+        "scopes": "Scopes",
+        "resources": "Resources",
+        "tools": "Tools",
+        "rate": "Rate limit policy"
+      },
+      "geo": "Countries",
+      "geoNone": "All countries",
+      "version": "Version",
+      "clientType": {
+        "internal_assistant": "Internal AI assistant",
+        "matching_engine": "Matching engine",
+        "moderation_assistant": "Moderation assistant",
+        "analytics_engine": "Analytics pipelines",
+        "partner_agent_future": "Partner (future)"
+      },
+      "status": {
+        "active": "Active",
+        "suspended": "Suspended",
+        "revoked": "Revoked"
+      },
+      "environment": {
+        "dev": "Development",
+        "staging": "Staging",
+        "prod": "Production"
+      },
+      "field": {
+        "allowed_scopes": "Scopes",
+        "allowed_resources": "Resources",
+        "allowed_tools": "Tools"
+      },
+      "access": {
+        "title": "Access",
+        "intro": "Tick what this client may use. Groups follow the MCP catalog (Docs/53). Only the lists you change are sent.",
+        "count": "{{n}} allowed",
+        "groupCount": "{{n}} of {{total}}",
+        "other": "Other (not in the catalog)",
+        "otherNote": "Values this console does not know. They stay unless you untick them.",
+        "save": "Ask to save",
+        "undo": "Undo changes",
+        "unchanged": "No changes yet."
+      },
+      "fourEyes": "A second platform admin must approve this before it takes effect.",
+      "now": "Now:",
+      "suspend": "Suspend",
+      "reactivate": "Ask to reactivate",
+      "suspendNote": "Suspending stops the client at once: every AI feature that uses it stops until it is reactivated.",
+      "reactivateNote": "Reactivating waits for a second platform admin.",
+      "revokedNote": "A revoked client cannot be used again.",
+      "recentDenials": "Recent denials (last 7 days)",
+      "notInContract": "Creating clients, token rotation, rate limits and a usage graph are not available yet.",
+      "dialog": {
+        "accessTitle": "Change the client's access",
+        "suspendTitle": "Suspend the client",
+        "reactivateTitle": "Reactivate the client",
+        "request": "Ask for approval",
+        "added": "Added:",
+        "removed": "Removed:",
+        "suspendEffect": "The client stops at once. AI features that use it stop working."
+      },
+      "decision": {
+        "allowed": "Allowed",
+        "denied": "Denied",
+        "consent_required": "Consent needed",
+        "approval_required": "Approval needed",
+        "rate_limited": "Rate limited",
+        "error": "Error"
+      },
+      "risk": {
+        "read_only": "Read only",
+        "personalized_read": "Personal read",
+        "draft_creation": "Draft",
+        "external_action": "External action",
+        "admin_action": "Admin action"
+      },
+      "result": {
+        "success": "Success",
+        "failure": "Failure",
+        "partial": "Partial"
+      },
+      "opType": {
+        "resource_read": "read",
+        "tool_invoke": "tool call"
+      },
+      "principal": {
+        "user": "User",
+        "organization": "Organization",
+        "system": "System"
+      },
+      "log": {
+        "title": "MCP access log",
+        "intro": "Every AI read of data and every AI tool call, with the policy decision and the consent behind it. The log cannot be changed.",
+        "searchLabel": "Search the access log",
+        "client": "Client",
+        "key": "Resource or tool",
+        "decision": "Decision",
+        "principal": "User or organization ID",
+        "principalHint": "Exact match; the search is recorded.",
+        "idle": "Choose filters and press Search. Nothing is read before that.",
+        "entry": "Looking for entry {{id}}: search the day and client it belongs to; it is marked when it is in the results.",
+        "empty": "No access matches.",
+        "ms": "{{n}} ms",
+        "consentChecked": "Checked",
+        "consentNone": "—",
+        "approvalAsked": "Requested",
+        "openInsight": "Open the output",
+        "col": {
+          "time": "Time",
+          "client": "Client",
+          "principal": "For",
+          "key": "Resource or tool",
+          "risk": "Risk",
+          "decision": "Decision",
+          "consent": "Consent",
+          "approval": "Approval",
+          "redactions": "Redactions",
+          "result": "Result",
+          "model": "Model",
+          "latency": "Latency",
+          "insight": "AI output"
+        }
+      }
+    },
+    "ai": {
+      "title": "AI oversight",
+      "tabsLabel": "AI oversight views",
+      "tab": {
+        "overview": "Overview",
+        "insights": "AI outputs"
+      },
+      "overview": {
+        "title": "AI quality and safety",
+        "notInContract": "Volume and cost per feature, edit-before-accept and override rates, latency, errors, model and prompt versions and a language split are not in the analytics data yet."
+      },
+      "kill": {
+        "title": "AI automation",
+        "on": "AI automation OFF (kill switch on)",
+        "off": "AI automation on",
+        "unknown": "Kill switch state unknown",
+        "manage": "Feature flags",
+        "adminsOnly": "The kill switch state is visible to platform admins."
+      },
+      "alert": {
+        "hallucinations": "{{n}} hallucination reports",
+        "acceptance": "Acceptance rate {{rate}} is below the target",
+        "examples": "See examples",
+        "none": "No alerts in this period."
+      },
+      "stat": {
+        "generated": "AI outputs",
+        "acceptance": "Acceptance rate",
+        "pending": "Suggestions pending",
+        "hallucinations": "Hallucination reports"
+      },
+      "insights": {
+        "title": "AI outputs",
+        "intro": "Outputs the AI features produced, with their confidence, approval state and safety flags.",
+        "readOnly": "Read only: marking outputs right or wrong and the evaluation set arrive with the AI build (next phase).",
+        "searchLabel": "Search AI outputs",
+        "type": "Output type",
+        "feedback": "User feedback",
+        "org": "Organization ID",
+        "listLabel": "List of AI outputs",
+        "itemLabel": "Output",
+        "decisionLabel": "Review",
+        "empty": "No AI outputs match.",
+        "pick": "Choose an output to see it.",
+        "notInPage": "The output is not on this page of results. Narrow the search (type, organization, day).",
+        "decisionsLater": "Review decisions (Mark OK, Mark wrong, prompt ticket, evaluation set) arrive with the AI build."
+      },
+      "col": {
+        "type": "Type",
+        "created": "Created",
+        "model": "Model",
+        "approval": "Approval",
+        "confidence": "Confidence",
+        "safety": "Safety flags",
+        "locale": "Language"
+      },
+      "detail": {
+        "subject": "About",
+        "organization": "Organization",
+        "visibility": "Visibility",
+        "expires": "Expires",
+        "evidence": "Evidence",
+        "payload": "Structured output",
+        "log": "MCP access log of that day"
+      },
+      "feedback": {
+        "hallucination_report": "Hallucination reported",
+        "rejected": "Rejected",
+        "corrected": "Corrected"
+      },
+      "approval": {
+        "not_required": "Not needed",
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "visibility": {
+        "internal": "Internal",
+        "owner_only": "Owner only",
+        "public_after_approval": "Public after approval"
+      },
+      "safety": {
+        "safety_critical": "Safety critical",
+        "legal_sensitive": "Legal",
+        "privacy_sensitive": "Privacy"
+      },
+      "type": {
+        "triage_summary": "Triage summary",
+        "urgency_assessment": "Urgency assessment",
+        "maintenance_suggestion": "Maintenance suggestion",
+        "provider_match": "Provider match",
+        "match_explanation": "Match explanation",
+        "vehicle_field_suggestion": "Vehicle field suggestion",
+        "vehicle_summary": "Vehicle summary",
+        "service_history_summary": "Service history summary",
+        "recurring_issue": "Recurring issue",
+        "category_extraction": "Category extraction",
+        "resolution_status_suggestion": "Resolution status suggestion",
+        "duplicate_record": "Duplicate record",
+        "skill_heatmap": "Skill heatmap",
+        "capability_suggestion": "Capability suggestion",
+        "profile_suggestion": "Profile suggestion",
+        "badge_eligibility": "Badge eligibility",
+        "review_sentiment": "Review sentiment",
+        "review_theme": "Review theme",
+        "review_response_draft": "Review response draft",
+        "review_quality_score": "Review quality score",
+        "improvement_suggestion": "Improvement suggestion",
+        "showcase_caption": "Showcase caption",
+        "showcase_draft": "Showcase draft",
+        "redaction_suggestion": "Redaction suggestion",
+        "appointment_slot_suggestion": "Appointment slot suggestion",
+        "customer_need_summary": "Customer need summary",
+        "pre_visit_summary": "Pre-visit summary",
+        "inventory_normalization": "Inventory normalization",
+        "fitment_suggestion": "Fitment suggestion",
+        "duplicate_inventory": "Duplicate inventory",
+        "inventory_gap": "Inventory gap",
+        "catalog_quality": "Catalog quality",
+        "fleet_suggestion": "Fleet suggestion",
+        "fraud_flag": "Fraud flag",
+        "duplicate_entity": "Duplicate entity",
+        "search_synonym_suggestion": "Search synonym suggestion",
+        "query_interpretation": "Query interpretation",
+        "moderation_recommendation": "Moderation recommendation",
+        "profile_confidence_score": "Profile confidence score",
+        "likely_specialization": "Likely specialization"
       }
     }
   }

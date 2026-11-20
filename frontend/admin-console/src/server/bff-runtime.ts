@@ -7,8 +7,10 @@ import { LOCALES, LOCALE_COOKIE } from '@/lib/i18n/locales';
 import {
   createBff,
   DEFAULT_LIFETIMES,
+  LiteRecoveryStore,
   LiteSessionStore,
   privateKeyJwt,
+  RedisRecoveryStore,
   RedisSessionStore,
   RespClient,
   type Bff,
@@ -44,12 +46,12 @@ const holder = globalThis as typeof globalThis & { __carpalAdminBff?: Bff };
 export function bff(): Bff {
   if (!holder.__carpalAdminBff) {
     const env = serverEnv();
-    const store =
-      env.CARPAL_ADMIN_SESSION_STORE === 'redis'
-        ? new RedisSessionStore(new RespClient(env.CARPAL_ADMIN_REDIS_URL!))
-        : new LiteSessionStore();
+    const redis = env.CARPAL_ADMIN_SESSION_STORE === 'redis' ? new RespClient(env.CARPAL_ADMIN_REDIS_URL!) : null;
+    const store = redis ? new RedisSessionStore(redis) : new LiteSessionStore();
+    // The staff recovery handles (AC10b) live where the sessions do, under their own key prefix.
+    const recoveryStore = redis ? new RedisRecoveryStore(redis) : new LiteRecoveryStore();
     const clientAuth = clientAuthentication(env);
-    holder.__carpalAdminBff = createBff({ config: bffConfig(env), store, ...(clientAuth ? { clientAuth } : {}) });
+    holder.__carpalAdminBff = createBff({ config: bffConfig(env), store, recoveryStore, ...(clientAuth ? { clientAuth } : {}) });
   }
   return holder.__carpalAdminBff;
 }

@@ -1,23 +1,14 @@
-// Work queues of "My work" (AC5.T7, Docs/23 §1 principle 5, §6, A-DASH-01 queue counts). Contract 1.3.0 has no count
-// or summary operation, so a queue's numbers come from its list operation: up to MAX_PAGES pages of 100 per status
-// (SEC-ADM-7), counted in the browser; a longer queue shows "200+" and its oldest item among those read (BR-21 asks
-// for a summary read). Each item gets an SLA timer from the console config (OQ-05 default, src/lib/config/sla).
-import type {
-  DataSubjectRequest,
-  ModerationCase,
-  OrganizationVerification,
-  PendingChange,
-  StaffDispute,
-  StaffReport,
-  StaffReviewApprovalView,
-} from '@carpal/api-contracts';
+// Work queues read from their lists (AC5.T7; since AC13 the numbers of every other queue come from the server,
+// admin.work_summary, src/lib/work/summary.ts). Two remain list reads: the changes waiting for the caller's approval,
+// whose items My work lists (one page, soonest expiry first), and staff account recoveries, which admin.work_summary does
+// not count (D-75, BR-39). The SLA timers of review approvals and disputes are shared with their queue pages.
+import type { PendingChange, StaffDispute, StaffRecoveryRequest, StaffReviewApprovalView } from '@carpal/api-contracts';
 import type { ApiClient, CallRest } from '@/lib/api/client';
 import type { AdminOperationId, StaffRole } from '@/lib/api/generated';
 import { dueAt, SLA_TARGETS, slaState, worse, type SlaState } from '@/lib/config/sla';
-import { caseDue, reportDue } from '@/features/moderation/case-logic';
 import { canCall } from '@/lib/roles';
 
-export type QueueId = 'approvals' | 'verification' | 'reviewApproval' | 'reports' | 'cases' | 'disputes' | 'privacy';
+export type ListQueueId = 'approvals' | 'recoveries';
 
 export interface Timer {
   start: number;
@@ -25,7 +16,7 @@ export interface Timer {
 }
 
 export interface QueueDef {
-  id: QueueId;
+  id: ListQueueId;
   opId: AdminOperationId;
   /** One list call per entry (e.g. one per open status); each is paged on its own. */
   queries: readonly Record<string, string>[];
@@ -60,7 +51,7 @@ function def<T>(d: Omit<QueueDef, 'timer'> & { timer: (item: T, timeZone: string
   return d as unknown as QueueDef;
 }
 
-/** The queues in the order My work shows them (most personal first). */
+/** The queues read from their lists. */
 export const QUEUES: readonly QueueDef[] = [
   def<PendingChange>({
     id: 'approvals',
@@ -69,48 +60,14 @@ export const QUEUES: readonly QueueDef[] = [
     href: '/approvals',
     timer: (c) => ({ start: at(c.requested_at), due: at(c.expires_at) }),
   }),
-  def<OrganizationVerification>({
-    id: 'verification',
-    opId: 'admin.verifications_queue',
-    queries: [{ status: 'pending' }],
-    href: '/verification',
-    timer: (v, tz) => ({ start: at(v.created_at), due: dueAt(at(v.created_at), SLA_TARGETS.verification, tz) }),
-  }),
-  def<StaffReviewApprovalView>({
-    id: 'reviewApproval',
-    opId: 'admin.review_approvals_queue',
-    queries: [{ stage: 'awaiting_reviewer' }],
-    href: '/reviews',
-    timer: (r, tz) => reviewApprovalTimer(r, tz),
-  }),
-  def<StaffReport>({
-    id: 'reports',
-    opId: 'admin.reports_list',
-    queries: [{ status: 'open' }],
-    href: '/content',
-    // Docs/23 §6 by reason and target (the moderation rules, AC8: reviews 24 h, safety 4 h, the rest 48 h).
-    timer: (r, tz) => ({ start: at(r.created_at), due: reportDue(r, tz) }),
-  }),
-  def<ModerationCase>({
-    id: 'cases',
-    opId: 'admin.cases_list',
-    queries: [{ status: 'open' }, { status: 'investigating' }, { status: 'escalated' }],
-    href: '/content',
-    timer: (c, tz) => ({ start: at(c.created_at), due: caseDue(c, tz) }),
-  }),
-  def<StaffDispute>({
-    id: 'disputes',
-    opId: 'admin.disputes_queue',
-    queries: [{ status: 'open' }, { status: 'in_mediation' }],
-    href: '/disputes',
-    timer: (d, tz) => disputeTimer(d, tz),
-  }),
-  def<DataSubjectRequest>({
-    id: 'privacy',
-    opId: 'admin.dsr_queue',
-    queries: [{ status: 'received' }, { status: 'verifying_identity' }, { status: 'in_progress' }],
-    href: '/privacy',
-    timer: (d) => ({ start: at(d.requested_at), due: at(d.due_at) }),
+  // Staff account recoveries waiting for administrators (AC10b): admin.work_summary has no recovery queue (D-75,
+  // BR-39). The timer runs from the request to its 24-hour expiry.
+  def<StaffRecoveryRequest>({
+    id: 'recoveries',
+    opId: 'admin.staff_recoveries_list',
+    queries: [{ status: 'awaiting_approvals' }],
+    href: '/recoveries',
+    timer: (r) => ({ start: at(r.requested_at), due: at(r.expires_at) }),
   }),
 ];
 
@@ -178,5 +135,5 @@ export async function summarizeQueue(
   return { count: items.length, capped, oldestStart, state, overdue, urgent: timed.slice(0, URGENT_KEEP) };
 }
 
-/** Query key of a queue summary (shared by My work and the top bar's My queue). */
-export const queueKey = (id: QueueId) => ['work', id] as const;
+/** Query key of a list-read queue summary. */
+export const queueKey = (id: ListQueueId) => ['work', id] as const;

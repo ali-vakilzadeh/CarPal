@@ -1,2 +1,3 @@
-// Console home "My work" (AC5.T7); the full dashboard joins in AC13.
-export { MyWork, WORK_REFRESH_MS } from './my-work';
+// The console home (A-DASH-01): My work since AC5, the full dashboard since AC13.
+export { Dashboard } from './dashboard';
+export { WORK_REFRESH_MS } from '@/lib/work/summary';

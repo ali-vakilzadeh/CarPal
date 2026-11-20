@@ -7,6 +7,7 @@
 // imports, so it can move to backend/api-gateway or a shared package with the PWA's and the portal's copies.
 import { AdminAllowlist } from './allowlist';
 import { proxyAuth } from './auth-proxy';
+import { LiteRecoveryStore, type RecoveryStore } from './recovery';
 import { clientHeader, type BffConfig } from './config';
 import { checkCsrf } from './csrf';
 import { consumeIntent, csrfToken, saveIntent, sessionView } from './endpoints';
@@ -23,12 +24,15 @@ export { DEFAULT_LIFETIMES, SESSION_COOKIE, INTERACTION_COOKIE, RESUME_COOKIE, c
 export { readResumeCookie, resumeUrl, restartUrl, type ResumeInfo } from './auth-proxy';
 export { LiteSessionStore, type SessionStore } from './session/store';
 export { RedisSessionStore, RespClient } from './session/redis';
+export { LiteRecoveryStore, RedisRecoveryStore, RECOVERY_COOKIE, type RecoveryStore } from './recovery';
 export { privateKeyJwt, noClientAuthentication, TokenEndpointError, type ClientAuthentication } from './oauth/token-client';
 export { sessionView, type SessionView } from './endpoints';
 
 export interface BffOptions {
   config: BffConfig;
   store: SessionStore;
+  /** Staff recovery request handles (AC10b); in memory when not given. */
+  recoveryStore?: RecoveryStore;
   fetch?: typeof fetch;
   now?: () => number;
   /** Client authentication at /oauth/token and /oauth/revoke: private_key_jwt with the cp-web-admin key; none in lite dev. */
@@ -48,6 +52,7 @@ export function createBff(o: BffOptions): Bff {
   const doFetch = o.fetch ?? ((input, init) => fetch(input, init));
   const now = o.now ?? Date.now;
   const sessions = new SessionManager(o.store, config, now);
+  const recovery: RecoveryStore = o.recoveryStore ?? new LiteRecoveryStore({ now });
   const tokenClient = new TokenClient({
     authUrl: config.authUrl,
     clientHeader: (id) => clientHeader(id, config.clientVersion),
@@ -65,7 +70,7 @@ export function createBff(o: BffOptions): Bff {
     if (pathname === '/api' || pathname.startsWith('/api/'))
       return forward(request, { config, sessions, tokens, allowlist, fetch: doFetch });
     if (pathname.startsWith('/id/'))
-      return proxyAuth(request, { config, fetch: doFetch, issuer: async () => (await tokenClient.discovery()).issuer });
+      return proxyAuth(request, { config, fetch: doFetch, recovery, issuer: async () => (await tokenClient.discovery()).issuer });
 
     switch (pathname) {
       case '/bff/login':
@@ -116,6 +121,7 @@ export function createBff(o: BffOptions): Bff {
     tokenClient,
     async close() {
       await o.store.close?.();
+      await recovery.close?.();
     },
   };
 }

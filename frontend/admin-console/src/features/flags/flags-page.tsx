@@ -6,13 +6,15 @@
 // the URL; the selected flag can be switched and its targeting edited, always with a reason and the flag's version
 // as If-Match, so a change made meanwhile is refused (412) and explained with a Reload that keeps the edit.
 // featured.enabled carries the MVP note (no paid placements yet) and needs a second admin to turn on.
-// Not in the contract: scheduled changes (Docs/23 "Should"), a per-flag history (no flag id; the audit log in AC13).
+// The selected flag opens its audit trail by its id (backend S21, BR-26; AC13.T1). Not in the contract: scheduled
+// changes (Docs/23 "Should").
 import { useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { FeatureFlag, Role } from '@carpal/api-contracts';
 import {
   ActionNotice,
+  AuditDrawer,
   CaseLayout,
   DataTable,
   ReasonDialog,
@@ -389,6 +391,7 @@ function FlagDetail({ flag, busy, onSave }: { flag: FeatureFlag; busy: boolean; 
           </dd>
         </div>
       </dl>
+      <AuditDrawer entityType="feature_flag" entityId={flag.id} label={flag.key} />
       <form
         className="adm-form"
         noValidate

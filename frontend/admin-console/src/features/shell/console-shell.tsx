@@ -7,15 +7,14 @@
 // changes waiting for the caller's approval.
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
 import { Suspense, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Banner } from '@/components/ds/banner';
 import { Icon } from '@/components/ds/icon';
 import { IconButton } from '@/components/ds/icon-button';
 import type { StaffRole } from '@/lib/api/generated';
-import { useApiClient, useSession } from '@/lib/api/query';
+import { useSession } from '@/lib/api/query';
 import { useFormat } from '@/lib/format/client';
-import { queueKey, queuesFor, summarizeQueue } from '@/lib/work/queues';
+import { useWorkSummary } from '@/lib/work/summary';
 import { useT } from '@/lib/i18n/client';
 import { isSigninOutcome, outcomeMessage } from '@/features/auth';
 import { AccountMenu } from './account-menu';
@@ -149,26 +148,21 @@ function ShellFrame({ envBadge, themeChoice, children }: ConsoleShellProps) {
   );
 }
 
-/** My queue (AC5): a link to My work; for staff who decide four-eyes changes, the number waiting (refreshed each minute). */
+/**
+ * My queue (AC5): a link to My work; for staff who decide four-eyes changes, the number waiting (admin.work_summary,
+ * the dashboard's query, read again every minute; AC13).
+ */
 function MyQueue() {
   const t = useT();
   const f = useFormat();
-  const api = useApiClient();
-  const session = useSession();
-  const queue = queuesFor(session.data?.staff?.roles ?? []).find((q) => q.id === 'approvals');
-  const summary = useQuery({
-    queryKey: queueKey('approvals'),
-    queryFn: ({ signal }) => summarizeQueue(api, queue!, { timeZone: f.timeZone, signal }),
-    enabled: !!queue,
-    refetchInterval: 60_000,
-    staleTime: 30_000,
-  });
-  const n = summary.data ? (summary.data.capped ? `${f.number(summary.data.count)}+` : f.number(summary.data.count)) : null;
+  const summary = useWorkSummary();
+  const fourEyes = summary.data?.items?.find((q) => q.queue === 'four_eyes');
+  const n = fourEyes ? f.number(fourEyes.open) : null;
   return (
-    <Link href="/" className="adm-queue" data-testid="my-queue" data-count={summary.data?.count ?? ''}>
+    <Link href="/" className="adm-queue" data-testid="my-queue" data-count={fourEyes?.open ?? ''}>
       <Icon name="list" size={20} />
       <span>{t('admin.shell.myQueue')}</span>
-      {queue && n !== null ? (
+      {n !== null ? (
         <>
           <span className="adm-queue-count" aria-hidden="true">
             {n}

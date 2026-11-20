@@ -31,6 +31,9 @@ export function authOutcome(err: unknown, credentials: MessageKey = 'admin.signi
   if (err.code === 'PASSKEY_NOT_DEVICE_BOUND') return { kind: 'message', message: 'admin.signin.errors.notDeviceBound' };
   if (err.code === 'INVALID_CREDENTIALS' || err.code === 'CODE_INVALID') return { kind: 'message', message: credentials };
   if (err.code === 'VALIDATION_FAILED') return { kind: 'message', message: credentials };
+  // Staff recovery (AC10b): the request is not approved (yet) or ran out; no request on file in this browser.
+  if (err.code === 'INVALID_TRANSITION') return { kind: 'message', message: 'admin.signin.recover.errors.notApproved' };
+  if (err.code === 'NOT_FOUND') return { kind: 'message', message: 'admin.signin.recover.errors.notFound' };
   return { kind: 'message', message: 'admin.signin.errors.generic' };
 }
 

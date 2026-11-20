@@ -2,3 +2,5 @@
 export { StaffSignIn, type StaffSignInProps } from './staff-sign-in';
 export { authOutcome, isSigninOutcome, outcomeMessage, SIGNIN_OUTCOMES, type AuthOutcome, type SigninOutcome } from './problems';
 export { createAuthClient, browserPow, authPath, type AuthClient, type AuthOperationId } from './auth-client';
+export { passkeysSupported, passkeyCancelled, passkeyAlreadyRegistered } from './passkey';
+export { RecoveryCodes, type RecoveryCodesProps } from './recovery-codes';

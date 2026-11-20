@@ -3,13 +3,27 @@
 // /id/v1/auth/* (incl. the staff passkey enrolment of contract 1.3.0) and /id/.well-known/* go to the auth host;
 // /oauth/token and /oauth/revoke stay server-to-server (the BFF's only). Only the interaction cookie travels; the BFF
 // session cookie never reaches the auth host. Copied from pwa/src/server/bff/auth-proxy.ts (GD-03); changes: the
-// console's resume cookie name and comments.
+// console's resume cookie name and comments; the staff recovery routes keep their request handle server-side (AC10b,
+// recovery.ts).
 import { OPERATIONS } from '@carpal/api-contracts';
 import { clientHeader, INTERACTION_COOKIE, MAX_BODY_BYTES, RESUME_COOKIE, type BffConfig } from './config';
 import { checkSameOrigin } from './csrf';
 import { isCanonicalPath } from './allowlist';
 import { base64url } from './crypto';
 import { hostCookie, parseCookies, problem, readBody } from './http';
+import {
+  ENDED_STATES,
+  handleFrom,
+  NEEDS_HANDLE,
+  RECOVERY_COOKIE,
+  RECOVERY_ID,
+  RECOVERY_TTL_MS,
+  recoveryRoute,
+  withHandle,
+  type RecoveryRoute,
+  type RecoveryStore,
+} from './recovery';
+import { randomToken } from './crypto';
 
 const BROWSER_OPS = new Set(
   Object.entries(OPERATIONS)
@@ -48,6 +62,8 @@ export interface AuthProxyDeps {
   fetch: typeof fetch;
   /** The issuer (from discovery): auth-host redirects to it are rewritten to <origin>/id. */
   issuer: () => Promise<string>;
+  /** Where the staff recovery request handle is kept (AC10b): never sent to the browser. */
+  recovery: RecoveryStore;
 }
 
 export async function proxyAuth(request: Request, d: AuthProxyDeps): Promise<Response> {
@@ -73,6 +89,17 @@ export async function proxyAuth(request: Request, d: AuthProxyDeps): Promise<Res
     if (!read) return problem(413, 'PAYLOAD_TOO_LARGE');
     body = read;
   }
+  const recovery = method === 'POST' ? recoveryRoute(path) : null;
+  const recoveryId = parseCookies(request.headers.get('cookie')).get(RECOVERY_COOKIE);
+  const storedId = recoveryId && RECOVERY_ID.test(recoveryId) ? recoveryId : null;
+  if (recovery && NEEDS_HANDLE.has(recovery)) {
+    // No request on file (never started here, expired or ended): the auth host's answer for an unknown handle.
+    const handle = storedId ? await d.recovery.get(storedId) : null;
+    if (!handle) return problem(404, 'NOT_FOUND', { headers: { 'set-cookie': clearRecoveryCookie() } });
+    const filled = withHandle(body ?? new Uint8Array(0), handle);
+    if (!filled) return problem(400, 'MALFORMED_REQUEST');
+    body = filled;
+  }
   let upstream: Response;
   try {
     upstream = await d.fetch(`${d.config.authUrl}${path}${url.search}`, {
@@ -92,12 +119,62 @@ export async function proxyAuth(request: Request, d: AuthProxyDeps): Promise<Res
   }
   if (!out.has('cache-control')) out.set('cache-control', 'no-store');
   for (const cookie of upstream.headers.getSetCookie()) if (cookie.startsWith(`${INTERACTION_COOKIE}=`)) out.append('set-cookie', cookie);
+  if (recovery) return recoveryAnswer(recovery, upstream, out, storedId, d.recovery);
   const location = upstream.headers.get('location');
   if (location) {
     const target = await rewriteLocation(location, d);
     out.set('location', target);
     if (path === '/oauth/authorize') out.append('set-cookie', resumeCookie(target, url.search));
   }
+  return new Response(upstream.body, { status: upstream.status, headers: out });
+}
+
+function clearRecoveryCookie(): string {
+  return hostCookie(RECOVERY_COOKIE, '', { sameSite: 'Lax', maxAgeS: 0 });
+}
+
+/**
+ * The auth host's answer to a recovery call, with the handle taken care of: a started request is stored (the browser
+ * gets an empty body and the cookie; the start answers the same whatever the details were, SEC-AU-11, so a handle is
+ * stored every time), an ended one is dropped. Only the start and the status answers are read; the completion's
+ * answer (the new recovery codes) is passed on as it came.
+ */
+async function recoveryAnswer(
+  route: RecoveryRoute,
+  upstream: Response,
+  out: Headers,
+  storedId: string | null,
+  store: RecoveryStore,
+): Promise<Response> {
+  const drop = async () => {
+    if (storedId) await store.delete(storedId);
+    out.append('set-cookie', clearRecoveryCookie());
+  };
+  if (route === 'start' && upstream.ok) {
+    const handle = handleFrom(await upstream.json().catch(() => null));
+    if (storedId) await store.delete(storedId);
+    if (!handle) return new Response(null, { status: 502, headers: out });
+    const id = randomToken(32);
+    await store.set(id, handle, RECOVERY_TTL_MS);
+    out.append('set-cookie', hostCookie(RECOVERY_COOKIE, id, { sameSite: 'Lax', maxAgeS: RECOVERY_TTL_MS / 1000 }));
+    out.set('content-type', 'application/json');
+    return new Response('{}', { status: upstream.status, headers: out });
+  }
+  if (route === 'status') {
+    if (upstream.status === 404) await drop();
+    else if (upstream.ok) {
+      const text = await upstream.text();
+      let state: unknown;
+      try {
+        state = (JSON.parse(text) as { status?: unknown }).status;
+      } catch {
+        state = undefined;
+      }
+      if (typeof state === 'string' && ENDED_STATES.has(state)) await drop();
+      return new Response(text, { status: upstream.status, headers: out });
+    }
+  }
+  if (route === 'complete' && upstream.ok) await drop();
   return new Response(upstream.body, { status: upstream.status, headers: out });
 }
 

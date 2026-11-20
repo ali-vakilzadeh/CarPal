@@ -26,6 +26,7 @@ export interface Section {
 export type SectionId =
   | 'dashboard'
   | 'approvals'
+  | 'recoveries'
   | 'verification'
   | 'reviews'
   | 'content'
@@ -48,6 +49,8 @@ export type SectionId =
 export const SECTIONS: readonly Section[] = [
   { id: 'dashboard', path: '/', group: 'work', icon: 'home', ops: [], stage: 'AC5' },
   { id: 'approvals', path: '/approvals', group: 'work', icon: 'check', ops: ['admin.four_eyes_list'], stage: 'AC5' },
+  // Staff account recoveries (AC10b): administrators approve them, next to Pending approvals.
+  { id: 'recoveries', path: '/recoveries', group: 'work', icon: 'lock', ops: ['admin.staff_recoveries_list'], stage: 'AC10b' },
   { id: 'verification', path: '/verification', group: 'work', icon: 'shield', ops: ['admin.verifications_queue'], stage: 'AC9' },
   { id: 'reviews', path: '/reviews', group: 'work', icon: 'star', ops: ['admin.review_approvals_queue', 'admin.cases_list'], stage: 'AC7' },
   { id: 'content', path: '/content', group: 'work', icon: 'flag', ops: ['admin.reports_list', 'admin.cases_list'], stage: 'AC8' },

@@ -41,7 +41,14 @@ export type ReasonKind =
   | 'force_signout'
   | 'onboarding_reset'
   | 'role_grant'
-  | 'role_revoke';
+  | 'role_revoke'
+  | 'recovery_approve'
+  | 'recovery_reject'
+  | 'taxonomy_edit'
+  | 'taxonomy_merge'
+  | 'mcp_access'
+  | 'mcp_suspend'
+  | 'mcp_reactivate';
 
 export interface ReasonSet {
   codes: readonly string[];
@@ -106,6 +113,18 @@ export const REASON_SETS: Record<ReasonKind, ReasonSet> = {
   onboarding_reset: { codes: ['user_request', 'stuck_flow', 'other'], noteRequired: false },
   role_grant: { codes: ['new_staff', 'role_change', 'other'], noteRequired: true },
   role_revoke: { codes: ['staff_left', 'role_change', 'security_concern', 'other'], noteRequired: true },
+  // Staff account recovery (AC10b). The verification method and its note are asked apart (the operation's own fields);
+  // a rejection ends the request, so it carries a note.
+  recovery_approve: { codes: ['identity_verified', 'known_requester', 'other'], noteRequired: false },
+  recovery_reject: { codes: ['identity_not_verified', 'not_requested_by_owner', 'suspicious_request', 'other'], noteRequired: true },
+  // Taxonomy (AC12). A merge moves every reference and cannot be undone, so it carries a note.
+  taxonomy_edit: { codes: ['new_item', 'correction', 'translation', 'catalog_cleanup', 'search_gap', 'other'], noteRequired: false },
+  taxonomy_merge: { codes: ['duplicate', 'catalog_cleanup', 'other'], noteRequired: true },
+  // MCP clients (AC13). An access change waits for a second administrator, who reads the note; a suspension stops a
+  // client at once, so it carries one too (Docs/23 §1).
+  mcp_access: { codes: ['least_privilege', 'new_capability', 'incident_response', 'correction', 'other'], noteRequired: true },
+  mcp_suspend: { codes: ['incident_response', 'suspicious_activity', 'policy_violation', 'planned_change', 'other'], noteRequired: true },
+  mcp_reactivate: { codes: ['incident_resolved', 'planned_change', 'other'], noteRequired: false },
 };
 
 /** Every code of every set (for the translation check and the parser). */

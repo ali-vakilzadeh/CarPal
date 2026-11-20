@@ -48,8 +48,11 @@ export function createStaff(roles: string[], o: { locale?: 'en' | 'fa'; name?: s
   return email;
 }
 
-/** The latest sign-in code mailed to `to` (backend lite writes mail to .data/outbox-mail.jsonl). */
-export async function lastCode(to: string): Promise<string> {
+/**
+ * The latest code mailed to `to` (backend lite writes mail to .data/outbox-mail.jsonl): the sign-in code, or another
+ * template's code (identity.staff_recovery_code for an account recovery, AC10b).
+ */
+export async function lastCode(to: string, template = 'identity.otp_code'): Promise<string> {
   let code: string | undefined;
   await expect
     .poll(
@@ -57,7 +60,7 @@ export async function lastCode(to: string): Promise<string> {
         if (!existsSync(OUTBOX)) return undefined;
         for (const line of readFileSync(OUTBOX, 'utf8').trim().split('\n').reverse()) {
           const m = JSON.parse(line) as { to: string; template: string; variables: { code?: string } };
-          if (m.to === to && m.template === 'identity.otp_code' && m.variables.code) return (code = m.variables.code);
+          if (m.to === to && m.template === template && m.variables.code) return (code = m.variables.code);
         }
         return undefined;
       },
@@ -67,11 +70,14 @@ export async function lastCode(to: string): Promise<string> {
   return code!;
 }
 
-/** A device-bound security key in this page's browser (Chrome's virtual authenticator). */
-export async function addSecurityKey(context: BrowserContext, page: Page): Promise<void> {
+/**
+ * A device-bound security key in this page's browser (Chrome's virtual authenticator). remove() takes it away, e.g. to
+ * stand for a lost key or to make a second key with another authenticator (AC10b).
+ */
+export async function addSecurityKey(context: BrowserContext, page: Page): Promise<{ remove: () => Promise<void> }> {
   const cdp = await context.newCDPSession(page);
   await cdp.send('WebAuthn.enable');
-  await cdp.send('WebAuthn.addVirtualAuthenticator', {
+  const { authenticatorId } = await cdp.send('WebAuthn.addVirtualAuthenticator', {
     options: {
       protocol: 'ctap2',
       transport: 'usb',
@@ -81,6 +87,11 @@ export async function addSecurityKey(context: BrowserContext, page: Page): Promi
       automaticPresenceSimulation: true,
     },
   });
+  return {
+    remove: async () => {
+      await cdp.send('WebAuthn.removeVirtualAuthenticator', { authenticatorId });
+    },
+  };
 }
 
 export interface SignInLabels {
@@ -90,6 +101,7 @@ export interface SignInLabels {
   code: string;
   create: string;
   useKey: string;
+  stored: string;
 }
 
 export const EN: SignInLabels = {
@@ -99,6 +111,7 @@ export const EN: SignInLabels = {
   code: 'Code from the email',
   create: 'Create security key',
   useKey: 'Use security key',
+  stored: 'I have stored them',
 };
 
 export const FA: SignInLabels = {
@@ -108,13 +121,25 @@ export const FA: SignInLabels = {
   code: 'کد ایمیل',
   create: 'ساخت کلید امنیتی',
   useKey: 'استفاده از کلید امنیتی',
+  stored: 'آن‌ها را نگه داشتم',
 };
+
+/** The recovery codes shown once (AC10b.T1): read them, tick "I have stored them" and go on. */
+export async function storeRecoveryCodes(page: Page, l: SignInLabels = EN): Promise<string[]> {
+  const shown = page.getByTestId('recovery-codes');
+  await shown.waitFor({ timeout: 60_000 });
+  const codes = await shown.getByTestId('recovery-code').allTextContents();
+  await shown.getByLabel(l.stored).check();
+  await shown.getByRole('button', { name: l.continue, exact: true }).click();
+  return codes;
+}
 
 /**
  * On the sign-in page: password, the first security key when the account has none (emailed code + the browser's key
- * prompt), then the key; waits until the browser is back in the console.
+ * prompt, then the recovery codes shown once), then the key; waits until the browser is back in the console. Returns
+ * the recovery codes of a new key (empty when no key was made).
  */
-export async function signInOnPage(page: Page, email: string, o: { enrol: boolean; labels?: SignInLabels }): Promise<void> {
+export async function signInOnPage(page: Page, email: string, o: { enrol: boolean; labels?: SignInLabels }): Promise<string[]> {
   const l = o.labels ?? EN;
   await page.waitForURL(/\/id\/signin\?/);
   await page.locator('html[data-hydrated="true"]').waitFor({ state: 'attached' });
@@ -128,18 +153,30 @@ export async function signInOnPage(page: Page, email: string, o: { enrol: boolea
     await code.fill(await lastCode(email));
     await page.getByRole('button', { name: l.create }).click();
   }
+  const codes = o.enrol ? await storeRecoveryCodes(page, l) : [];
   await page.getByRole('button', { name: l.useKey }).click({ timeout: 60_000 });
   await page.waitForURL((u) => !u.pathname.startsWith('/id/') && !u.pathname.startsWith('/bff/'), { timeout: 60_000 });
   await page.locator('html[data-hydrated="true"]').waitFor({ state: 'attached' });
+  return codes;
 }
 
 /** A new account with these roles, signed in from `path` (enrols its key on the way). */
 export async function signInAs(context: BrowserContext, page: Page, roles: string[], o: { path?: string; locale?: 'en' | 'fa' } = {}) {
-  const email = createStaff(roles, o.locale ? { locale: o.locale } : {});
-  await addSecurityKey(context, page);
+  return (await signInWithCodes(context, page, roles, o)).email;
+}
+
+/** signInAs, also giving the recovery codes shown after the key and the virtual key itself (AC10b). */
+export async function signInWithCodes(
+  context: BrowserContext,
+  page: Page,
+  roles: string[],
+  o: { path?: string; locale?: 'en' | 'fa'; name?: string } = {},
+) {
+  const email = createStaff(roles, { ...(o.locale ? { locale: o.locale } : {}), ...(o.name ? { name: o.name } : {}) });
+  const key = await addSecurityKey(context, page);
   await page.goto(o.path ?? '/');
-  await signInOnPage(page, email, { enrol: true, ...(o.locale === 'fa' ? { labels: FA } : {}) });
-  return email;
+  const codes = await signInOnPage(page, email, { enrol: true, ...(o.locale === 'fa' ? { labels: FA } : {}) });
+  return { email, codes, key };
 }
 
 /** The section names in the left navigation. */

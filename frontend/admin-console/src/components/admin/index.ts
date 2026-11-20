@@ -38,3 +38,4 @@ export {
   type AiEvidenceProps,
 } from './case-layout';
 export { AuditDrawer, type AuditDrawerProps } from './audit-drawer';
+export { JobProgress, JOB_DONE } from './job-progress';

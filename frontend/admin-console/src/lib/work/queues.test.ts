@@ -1,8 +1,10 @@
-// AC5.T7 unit tests: which queues a role sees, and how a queue summary is counted from its list operation (pages of
-// 100, a cap of two pages per status, SLA state of the most urgent item, the soonest-due items first).
+// Unit tests of the work queues: the two queues still read from their lists (AC5.T7, AC10b; the others come from
+// admin.work_summary since AC13) and the server summary helpers (SLA state from the server's buckets, breakdowns,
+// unknown queue keys).
 import { describe, expect, it } from 'vitest';
 import type { AdminOperationId } from '@/lib/api/generated';
 import { QUEUES, queuesFor, summarizeQueue, MAX_PAGES } from './queues';
+import { breakdownCount, slaOf, workQueue } from './summary';
 
 const H = 3_600_000;
 const NOW = Date.parse('2026-11-10T12:00:00Z');
@@ -24,69 +26,20 @@ function fakeApi(pages: Record<string, { items: unknown[]; next_cursor: string |
   };
 }
 
-describe('queues per role (GD-09)', () => {
-  it('shows each role the queues its list operations allow', () => {
-    expect(queuesFor(['ADM']).map((q) => q.id)).toEqual(['approvals', 'verification', 'cases', 'privacy']);
-    expect(queuesFor(['MOD']).map((q) => q.id)).toEqual(['approvals', 'verification', 'reviewApproval', 'reports', 'cases', 'disputes']);
-    expect(queuesFor(['SUP']).map((q) => q.id)).toEqual(['reports', 'privacy']);
-    expect(queuesFor(['CRV']).map((q) => q.id)).toEqual(['reviewApproval', 'disputes']);
+describe('list-read queues per role (GD-09)', () => {
+  it('approvals for staff who decide four-eyes changes, recoveries for administrators', () => {
+    expect(queuesFor(['ADM']).map((q) => q.id)).toEqual(['approvals', 'recoveries']);
+    expect(queuesFor(['MOD']).map((q) => q.id)).toEqual(['approvals']);
+    expect(queuesFor(['SUP']).map((q) => q.id)).toEqual([]);
+    expect(queuesFor(['CRV']).map((q) => q.id)).toEqual([]);
   });
 });
 
 describe('summarizeQueue', () => {
-  const reports = QUEUES.find((q) => q.id === 'reports')!;
+  const approvals = QUEUES.find((q) => q.id === 'approvals')!;
+  const recoveries = QUEUES.find((q) => q.id === 'recoveries')!;
 
-  it('counts open reports, finds the oldest and the worst SLA state (4 h for unsafe advice)', async () => {
-    const { api, calls } = fakeApi({
-      open: [
-        {
-          items: [
-            { id: 'r1', reason: 'spam', target: { type: 'review', id: 'x' }, created_at: iso(NOW - 2 * H) },
-            { id: 'r2', reason: 'unsafe_advice', target: { type: 'post', id: 'y' }, created_at: iso(NOW - 5 * H) },
-            { id: 'r3', reason: 'spam', target: { type: 'inventory_item', id: 'z' }, created_at: iso(NOW - 40 * H) },
-          ],
-          next_cursor: null,
-        },
-      ],
-    });
-    const s = await summarizeQueue(api, reports, { now: NOW, timeZone: 'Asia/Tehran' });
-    expect(calls).toEqual([{ opId: 'admin.reports_list', query: { status: 'open', limit: 100 } }]);
-    expect(s.count).toBe(3);
-    expect(s.capped).toBe(false);
-    expect(s.oldestStart).toBe(NOW - 40 * H);
-    expect(s.state).toBe('breach');
-    expect(s.overdue).toBe(1);
-    expect((s.urgent[0]!.item as { id: string }).id).toBe('r2');
-  });
-
-  it('reads at most two pages per status and marks the count as a lower bound', async () => {
-    const item = (n: number) => ({ id: `c${n}`, reason: 'spam', severity: 'low', case_type: 'review', created_at: iso(NOW - n * H) });
-    const full = (from: number) => Array.from({ length: 100 }, (_, i) => item(from + i));
-    const { api, calls } = fakeApi({
-      open: [
-        { items: full(0), next_cursor: 'p1' },
-        { items: full(100), next_cursor: 'p2' },
-      ],
-      investigating: [{ items: [item(1)], next_cursor: null }],
-    });
-    const cases = QUEUES.find((q) => q.id === 'cases')!;
-    const s = await summarizeQueue(api, cases, { now: NOW, timeZone: 'Asia/Tehran' });
-    expect(calls.filter((c) => c.query.status === 'open')).toHaveLength(MAX_PAGES);
-    expect(calls.map((c) => c.query.status)).toEqual(['open', 'open', 'investigating', 'escalated']);
-    expect(s.count).toBe(201);
-    expect(s.capped).toBe(true);
-  });
-
-  it('times privacy requests by their own due date and approvals by their expiry', async () => {
-    const privacy = QUEUES.find((q) => q.id === 'privacy')!;
-    const { api } = fakeApi({
-      received: [{ items: [{ id: 'd1', requested_at: iso(NOW - 20 * 24 * H), due_at: iso(NOW + 2 * 24 * H) }], next_cursor: null }],
-    });
-    const s = await summarizeQueue(api, privacy, { now: NOW, timeZone: 'Asia/Tehran' });
-    expect(s.count).toBe(1);
-    expect(s.state).toBe('warn');
-
-    const approvals = QUEUES.find((q) => q.id === 'approvals')!;
+  it('times approvals by their expiry, soonest first', async () => {
     const a = fakeApi({
       pending: [
         {
@@ -98,14 +51,54 @@ describe('summarizeQueue', () => {
         },
       ],
     });
-    const sa = await summarizeQueue(a.api, approvals, { now: NOW, timeZone: 'Asia/Tehran' });
+    const sa = await summarizeQueue(a.api, approvals, { now: NOW, timeZone: 'Asia/Tehran', maxPages: 1 });
+    expect(a.calls).toEqual([{ opId: 'admin.four_eyes_list', query: { status: 'pending', limit: 100 } }]);
     expect(sa.state).toBe('warn');
     expect(sa.urgent.map((u) => (u.item as { change_id: string }).change_id)).toEqual(['c2', 'c1']);
   });
 
+  it('reads at most two pages and marks the count as a lower bound', async () => {
+    const item = (n: number) => ({ id: `r${n}`, requested_at: iso(NOW - n * 60_000), expires_at: iso(NOW + H) });
+    const full = (from: number) => Array.from({ length: 100 }, (_, i) => item(from + i));
+    const { api, calls } = fakeApi({
+      awaiting_approvals: [
+        { items: full(0), next_cursor: 'p1' },
+        { items: full(100), next_cursor: 'p2' },
+      ],
+    });
+    const s = await summarizeQueue(api, recoveries, { now: NOW, timeZone: 'Asia/Tehran' });
+    expect(calls).toHaveLength(MAX_PAGES);
+    expect(s.count).toBe(200);
+    expect(s.capped).toBe(true);
+  });
+
   it('an empty queue has no state', async () => {
     const { api } = fakeApi({});
-    const s = await summarizeQueue(api, reports, { now: NOW, timeZone: 'Asia/Tehran' });
+    const s = await summarizeQueue(api, recoveries, { now: NOW, timeZone: 'Asia/Tehran' });
     expect(s).toMatchObject({ count: 0, capped: false, oldestStart: null, state: null, overdue: 0, urgent: [] });
+  });
+});
+
+describe('work summary helpers (admin.work_summary)', () => {
+  it('the worst SLA bucket decides; paused items alone and queues without targets have no state', () => {
+    expect(slaOf({ ok: 3, warn: 1, breach: 1, paused: 0 })).toBe('breach');
+    expect(slaOf({ ok: 3, warn: 1, breach: 0, paused: 0 })).toBe('warn');
+    expect(slaOf({ ok: 3, warn: 0, breach: 0, paused: 2 })).toBe('ok');
+    expect(slaOf({ ok: 0, warn: 0, breach: 0, paused: 2 })).toBeNull();
+    expect(slaOf(null)).toBeNull();
+  });
+
+  it('maps server queues to tiles and pages; unknown keys are null', () => {
+    expect(workQueue('four_eyes')).toEqual({ id: 'approvals', href: '/approvals' });
+    expect(workQueue('support_tickets')).toEqual({ id: 'support', href: null });
+    expect(workQueue('toString')).toBeNull();
+    expect(workQueue('new_queue')).toBeNull();
+  });
+
+  it('reads a breakdown count', () => {
+    const q = { breakdown: [{ key: 'reason:unsafe_advice', open: 2 }] } as never;
+    expect(breakdownCount(q, 'reason:unsafe_advice')).toBe(2);
+    expect(breakdownCount(q, 'severity:critical')).toBe(0);
+    expect(breakdownCount(undefined, 'x')).toBe(0);
   });
 });

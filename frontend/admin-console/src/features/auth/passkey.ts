@@ -53,6 +53,35 @@ export async function enrolmentOptions(
   return options as unknown as PublicKeyCredentialCreationOptionsJSON;
 }
 
+/**
+ * Lost key (AC10b): an approved recovery gets creation options for the new key (with the new password when the old
+ * one was forgotten); the browser creates it and auth.staff_recovery_complete stores it, answering next 'mfa' with the
+ * new recovery codes once.
+ */
+export async function recoveryKeyOptions(
+  auth: AuthClient,
+  interactionId: string,
+  newPassword: string | null,
+): Promise<PublicKeyCredentialCreationOptionsJSON> {
+  const options = await auth.call('auth.staff_recovery_complete_options', {
+    interaction_id: interactionId,
+    ...(newPassword !== null ? { new_password: newPassword } : {}),
+  });
+  return options as unknown as PublicKeyCredentialCreationOptionsJSON;
+}
+
+export async function completeRecovery(
+  auth: AuthClient,
+  interactionId: string,
+  options: PublicKeyCredentialCreationOptionsJSON,
+): Promise<AuthNext> {
+  const attestation = await startRegistration({ optionsJSON: options });
+  return auth.call('auth.staff_recovery_complete', {
+    interaction_id: interactionId,
+    attestation: attestation as unknown as WebAuthnAttestation,
+  });
+}
+
 /** Creates the credential with the browser and stores it (answers next 'mfa' with the new key). */
 export async function enrolPasskey(
   auth: AuthClient,

@@ -4,6 +4,8 @@
 // which the proxy checks. An ATT operation (auth.signin_password, auth.password_reset_start) that the auth host
 // refuses with 403 ATTESTATION_REQUIRED (strict mode) is sent once more with a solved proof of work (SEC-BF-7), as
 // the PWA's client does. Failures become ApiProblem (src/lib/api/problem.ts). Never logs a body (GD-12).
+// Staff account recovery (AC10b): the proxy keeps the request handle server-side, so these calls are made without it
+// (AuthBody leaves it out) and auth.staff_recovery_start answers an empty body here.
 import { OPERATIONS, type OperationInput, type OperationResponse } from '@carpal/api-contracts';
 import { ApiProblem, problemFrom } from '@/lib/api/problem';
 import { uuidv7 } from '@/lib/api/uuid';
@@ -15,7 +17,15 @@ export type AuthOperationId =
   | 'auth.passkey_enrol'
   | 'auth.webauthn_options'
   | 'auth.mfa_verify'
-  | 'auth.password_reset_start';
+  | 'auth.password_reset_start'
+  | 'auth.staff_recovery_start'
+  | 'auth.staff_recovery_verify'
+  | 'auth.staff_recovery_status'
+  | 'auth.staff_recovery_complete_options'
+  | 'auth.staff_recovery_complete';
+
+/** The request body as the browser sends it: the recovery request handle is added by the /id proxy (AC10b). */
+export type AuthBody<Id extends AuthOperationId> = Omit<OperationInput<Id>, 'request_handle'>;
 
 export type PowPurpose = 'signin';
 
@@ -28,7 +38,7 @@ export interface AuthClientOptions {
 }
 
 export interface AuthClient {
-  call<Id extends AuthOperationId>(opId: Id, body: OperationInput<Id>): Promise<OperationResponse<Id>>;
+  call<Id extends AuthOperationId>(opId: Id, body: AuthBody<Id>): Promise<OperationResponse<Id>>;
 }
 
 /** The /id path of an auth operation (the proxy maps /id/v1/auth/* to the auth host's /v1/auth/*). */

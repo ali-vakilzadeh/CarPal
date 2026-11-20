@@ -1,7 +1,7 @@
-// Console home "My work" (AC5.T7, A-DASH-01 queue part): changes waiting for the caller's approval and the work queues
-// their roles may see, with counts, oldest age and SLA state. The full dashboard (widgets, analytics) is AC13.
+// Console home (A-DASH-01): My work and the queues (AC5.T7), and since AC13 the full dashboard (safety, growth, trust,
+// AI and system widgets, each failing on its own).
 import type { Metadata } from 'next';
-import { MyWork } from '@/features/dashboard';
+import { Dashboard } from '@/features/dashboard';
 import { ADMIN_CONTRACT } from '@/lib/api/generated';
 import { formatNumber } from '@/lib/format';
 import { getTranslator } from '@/lib/i18n/dictionary';
@@ -20,7 +20,7 @@ export default async function ConsoleHome() {
   const operations = ADMIN_CONTRACT.adminOperationCount + ADMIN_CONTRACT.apiReadCount;
   return (
     <>
-      <MyWork />
+      <Dashboard />
       <p className="adm-muted" data-testid="contract-line">
         {t('admin.console.contractLine', { version: ADMIN_CONTRACT.version, n: formatNumber(operations, locale) })}
       </p>

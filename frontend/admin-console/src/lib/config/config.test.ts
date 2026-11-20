@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { REASON_SETS, checkReason, composeReason, isValidReason, noteLimit, parseReason, reasonReady, REASON_CODES } from './reasons';
 import { addWorkingDays, dueAt, slaState, weekdayIn, worse, SLA_TARGETS } from './sla';
 import en from '@/lib/i18n/locales/en.json';
+import { staffNotice } from './staff-notices';
 
 describe('reasons (AC5.T2)', () => {
   it('needs a code from the list of the action kind', () => {
@@ -91,5 +92,17 @@ describe('SLA timers (AC5.T7, OQ-05)', () => {
     expect(slaState(start, start, 0)).toBe('breach');
     expect(worse('ok', 'warn')).toBe('warn');
     expect(worse('breach', 'warn')).toBe('breach');
+  });
+});
+
+describe('staff notices (AC10b, AC13)', () => {
+  it('the kill-switch notice links to Feature flags and says on/off in the UI language', () => {
+    const def = staffNotice('staff.kill_switch_changed')!;
+    expect(def.href(null)).toBe('/flags');
+    const t = ((k: string, o?: Record<string, unknown>) => (o ? `${k}(${String(o.value)})` : k)) as never;
+    expect(def.params!({ enabled: 'on' }, t)).toEqual({ enabled: 'admin.notices.killOn' });
+    expect(def.params!({ enabled: 'off' }, t)).toEqual({ enabled: 'admin.notices.killOff' });
+    expect(def.params!({ enabled: 'maybe' }, t)).toEqual({ enabled: 'admin.kit.unknown(maybe)' });
+    expect(staffNotice('toString')).toBeNull();
   });
 });

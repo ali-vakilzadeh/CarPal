@@ -4,12 +4,13 @@
 // display currency with its amount per US dollar and who changed it last; the editor previews sample prices at the
 // current and the new rate, warns when the change is over 20 % (a second platform admin must approve it, SEC-ADM-6),
 // asks for a reason and sends the record's version as If-Match. Someone else's change meanwhile (412) is explained
-// with a Reload that keeps the typed rate. This replaces the one-time SQL of backend/deploy/deploy.md.
+// with a Reload that keeps the typed rate. This replaces the one-time SQL of backend/deploy/deploy.md. The editor
+// opens the rate's audit trail (AC13: rates carry their audit id since backend S21).
 import { useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import type { ExchangeRate } from '@carpal/api-contracts';
-import { ActionNotice, DataTable, ReasonDialog, useAdminAction, type Column } from '@/components/admin';
+import { ActionNotice, AuditDrawer, DataTable, ReasonDialog, useAdminAction, type Column } from '@/components/admin';
 import { Banner } from '@/components/ds/banner';
 import { Button } from '@/components/ds/button';
 import { TextField } from '@/components/ds/text-field';
@@ -143,6 +144,8 @@ function RateEditor({ rate, onReload, onChanged }: { rate: ExchangeRate; onReloa
           </dd>
         </div>
       </dl>
+      {/* The rate's history by its audit id (backend S21, BR-26; AC13.T1). */}
+      <AuditDrawer entityType="exchange_rate" entityId={rate.id} label={rate.currency} />
       <form
         className="adm-form"
         noValidate

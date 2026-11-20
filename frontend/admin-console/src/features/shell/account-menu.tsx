@@ -69,6 +69,9 @@ export function AccountMenu({ name, roles, themeChoice }: { name: string; roles:
           <span className="adm-muted">{t('admin.shell.account.roles', { roles: roleNames(roles, t) })}</span>
         </p>
         <ul className="adm-account-list">
+          <li>
+            <Link href="/security">{t('admin.shell.account.security')}</Link>
+          </li>
           {canCall('admin.audit_search', roles) ? (
             <li>
               <Link href="/audit?actor=me">{t('admin.shell.account.myActions')}</Link>

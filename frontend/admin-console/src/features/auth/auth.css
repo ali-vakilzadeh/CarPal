@@ -69,3 +69,53 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Staff recovery codes, shown once (AC10b.T1): a numbered list in two columns; printing puts only the codes on the sheet. */
+.adm-codes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.adm-codes-title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.adm-codes-text {
+  margin: 0;
+}
+.adm-codes-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding-inline-start: 2.25rem;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 1rem;
+}
+.adm-codes-list code {
+  letter-spacing: 0.04em;
+  user-select: all;
+}
+.adm-codes-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .adm-codes,
+  .adm-codes * {
+    visibility: visible;
+  }
+  .adm-codes {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+  }
+  .adm-codes-noprint,
+  .adm-codes-noprint * {
+    display: none;
+  }
+}

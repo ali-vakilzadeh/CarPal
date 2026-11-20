@@ -15,6 +15,7 @@ import {
   CaseLayout,
   DataTable,
   FourEyesBanner,
+  JobProgress,
   opLabel,
   ReasonDialog,
   SlaBadge,
@@ -86,6 +87,7 @@ function MyDecided({ change }: { change: PendingChange }) {
           </p>
         ) : null}
       </Banner>
+      {change.status === 'approved' && change.job_id ? <JobProgress jobId={change.job_id} /> : null}
     </div>
   );
 }
@@ -306,6 +308,10 @@ export function ApprovalsPage() {
                       : 'admin.approvals.decisionDone',
                 )}
               />
+            ) : null}
+            {/* An approved change that runs as a background job (a merge, AC12.T3): its progress until it ends. */}
+            {action.state.status === 'done' && action.state.outcome.kind === 'applied' && action.state.outcome.data.job_id ? (
+              <JobProgress jobId={action.state.outcome.data.job_id} />
             ) : null}
             <p className="adm-muted">{t('admin.approvals.stepUpHint')}</p>
           </>

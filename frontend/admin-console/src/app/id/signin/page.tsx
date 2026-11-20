@@ -24,7 +24,13 @@ export default async function SigninPage({ searchParams }: Props) {
   const languages = LOCALES.map((l) => ({ locale: l, href: prefHref(path, 'lang', l), current: l === locale }));
   return (
     <PlainFrame languages={languages} narrow>
-      <StaffSignIn interactionId={ctx.interactionId} resumeUrl={ctx.resumeUrl} restartUrl={ctx.restartUrl} stepUp={ctx.stepUp} />
+      <StaffSignIn
+        interactionId={ctx.interactionId}
+        resumeUrl={ctx.resumeUrl}
+        restartUrl={ctx.restartUrl}
+        stepUp={ctx.stepUp}
+        recoveryPending={ctx.recoveryPending}
+      />
     </PlainFrame>
   );
 }

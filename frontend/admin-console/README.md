@@ -275,6 +275,91 @@ waiting for the caller's approval.
   console keeps them in memory: after a reload the banner is gone (the session still ends by itself, BR-34). The
   assisted wizard waits for the business web app (DI-08).
 
+## Security keys and account recovery (AC10b)
+
+Backend S16a and S16b; contract 1.5.0.
+
+- **Recovery codes** (10, `XXXX-XXXX-XXXX-XXXX-XXXX`) appear once: after the first security key, after an account
+  recovery, and after "New recovery codes". They live only in the page's memory (never in browser storage, the query
+  cache or a URL, GD-12). Print puts only the codes on the sheet. "I have stored them" must be ticked to go on. A
+  banner above every page asks for a new set when none is left.
+- **Security keys and recovery codes** (`/security`, from the avatar menu, every staff member): the staff member's own
+  keys (device-bound first), "Add backup key" (a name, then the browser's key prompt), Remove (never the only key
+  that can sign in), and "New recovery codes" (the old set stops working). Each action needs a security-key sign-in
+  within 5 minutes. After the step-up the page says "Confirmed" and the staff member presses the button again: a new key
+  needs a click for the browser prompt, and new codes must be seen when they are made (D-76).
+- **Lost your security key?** (on `/id/signin`, not on a step-up): work email, the password (or "I have forgotten my
+  password too") and one recovery code, then the emailed code. The request then waits for two other administrators,
+  and the page asks for its state every 30 seconds. Once it is approved: a new password if it was forgotten, the new
+  key, and the new codes once. The account is restricted for 72 hours (no approvals, role changes or staff
+  re-enabling), and a banner says so. The `/id` proxy keeps the request handle server-side (`src/server/bff/recovery.ts`:
+  in memory, or Redis with `CARPAL_ADMIN_SESSION_STORE=redis`). The browser holds only a random id in the HttpOnly
+  `__Host-cpa_rcv` cookie (24 hours). So when the approval email arrives hours later, opening the console in the same
+  browser continues the recovery in a new sign-in.
+- **Recovery requests** (`/recoveries`, platform admins): the requests waiting for approvals, the requester (masked
+  email, roles, country, whether the password was forgotten) and the decisions so far. Approve asks how the person
+  was checked outside CarPal (a call to a known number, in person, a video call, or "other" with a note) and a
+  reason, with a fresh security key. Reject ends the request. The server refuses the requester, a second approval by
+  the same administrator, and administrators under the restriction; the page explains each case. Break glass
+  (backend `deploy/staff-break-glass.sh`) is only for when fewer than two other administrators are active.
+
+## Taxonomy (AC12)
+
+`/taxonomy`: platform admins edit; moderators read and decide AI-suggested synonyms. Contract 1.5.0 §23.3.
+
+- **Catalog**: one type at a time (brands, models, series, engines, fuels, systems, tasks, part categories,
+  symptoms, review tags, amenities), read whole with every status (`admin.taxonomy_snapshot`, 500 per page). Three
+  views: a tree, a list (label EN/FA, slug, parent, status, missing labels, regions) and "Missing translations". The
+  search covers any label or the slug, and folds Arabic letter forms, Persian digits and marks. There is also a status
+  filter. The URL keeps the view (`?type=…&node=…&tab=…`).
+- **Node editor**: labels in every enabled locale (English and Persian are required; the form will not send
+  without them), descriptions, slug (suggested from the English label), parent, regions, order, status (Deprecate
+  hides the node from new choices) and the attributes the type allows. The parent and attribute rules mirror the
+  database trigger `taxonomy.tg_node_rules` (Docs/43) in `src/features/taxonomy/taxonomy-logic.ts`; keep the two in
+  step. "Add … here" creates a child, for example a model or an engine under a brand. Edits send If-Match from the
+  node's version, and a 412 offers a Reload that keeps what was typed. Every save asks for a reason.
+- **Synonyms** per node: the kind (synonym, alias, misspelling, local term, abbreviation, transliteration with its
+  script; Latin-letter Persian is a Persian transliteration in the Latin script), the language, and where it came
+  from. Admins add and deactivate; admins and moderators approve or reject AI suggestions.
+- **Mappings** per node (symptom → system or task, part category → system, task → part category) with a weight from
+  0 to 100 and a status.
+- **Merge** into a live node of the same type, never the node itself or one below it. The merge always waits for a
+  second admin. Once approved, the background job's progress shows on Pending approvals and under "Merges you asked
+  for" (kit `JobProgress`, `admin.job_get`). Afterwards the node is "merged".
+- **Zero-result searches**: the `search_and_map` dashboard's searches, searches without a result, their share and the
+  day-by-day numbers for 7, 30 or 90 days.
+- Not in the contract (DI-35, BR-40): the terms people typed, synonym search across nodes, a queue of pending
+  synonyms across nodes, usage counts, and a preview of the references a merge moves.
+
+## Oversight and the dashboard (AC13)
+
+Contract 1.5.0 §23.5. Every screen reads its numbers from the server; nothing personal is shown except masked ids.
+
+- **Home** (`/`, A-DASH-01): My work (changes waiting for you, items assigned to you, items at risk), Safety (cases
+  about unsafe advice, critical cases, reports of unsafe advice), Queues (one tile per queue of `admin.work_summary`
+  with the server's SLA buckets; staff account recoveries still from their list, D-75/BR-39), then for ADM, MOD and
+  SUP the Growth, Trust and AI widgets for today / 7 / 30 days (`?range=`) and System (`admin.system_health`: import,
+  delivery and scan failures, the SMS provider with a warning while simulated, the mail transport, the geocoder).
+  Each widget loads and fails on its own (Retry). Everything refreshes every 60 s while the tab is visible. My queue
+  in the top bar reads the same work summary.
+- **Analytics** (`/analytics`, A-ANL-01): one view per DashboardKey (`?dashboard=`), a period (presets or typed days,
+  at most 366, on the viewer's clock). `events.*` metrics are counts that add up; `gauge.*` metrics are the latest
+  day's state ("as of"). Charts (`src/features/analytics/charts.tsx`) follow the dataviz rules: one metric per chart,
+  thin marks, colours from the design-system tokens, a crosshair readable with the arrow keys, a table behind each
+  chart, the time axis mirrored in Persian.
+- **AI oversight** (`/ai`, A-AI-01, A-AI-02 read-only): the kill switch state (ADM; changed on Feature flags), alert
+  cards (any hallucination report; acceptance below 50 % once 10 answers exist), the `ai_quality` numbers and charts;
+  AI outputs searched by type, feedback, organization and window, with their detail. Review decisions wait for BR-14.
+- **MCP** (`/mcp`, ADM): clients with an access editor (scopes, resources and tools as a checkbox tree from
+  `src/lib/config/mcp-catalog.ts`; values the catalog lacks stay under "Other"). A save sends only the changed lists
+  with If-Match and waits for a second admin; Suspend applies at once, Reactivate waits. The access log
+  (`?tab=log`) is a search: client, resource or tool, decision, principal id (exact), window; principals masked.
+- **Audit log** (`/audit`, ADM): entity type and id, action, actor id (exact matches; suggestions from
+  `src/lib/config/audit-catalog.ts`) and a window of at most 93 days. Flags and exchange rates open their own audit
+  trail by id.
+- The audit log and the MCP access log are searched only when staff press Search (each search is audited and
+  rate-limited); the submitted search lives in the URL (`window=`, or `from`/`to`, and `at=`).
+
 ## Integration tests
 
 `pnpm test:int` signs a fresh ADM account in through the BFF (password, emailed code, a software security key, then
@@ -311,7 +396,14 @@ retention and an assignment, Persian), `reviews.spec.ts` (AC7: a reviewer confir
 moderator cannot decide, a business objection decided by a different staff member, Persian) and `moderation.spec.ts`
 (AC8: a reported post triaged, hidden, restored and closed; a suspension that asks for the security key, Persian) and
 `orgs.spec.ts` (AC9: a provider's identity and location checks approved after a pin correction by typed coordinates;
-an admin finds it by id, reads the audited correction, suspends and reactivates it, Persian) sign real staff in. `moderation.spec.ts` turns the community flags on in dev (backend `pnpm dev:flags set community on`)
+an admin finds it by id, reads the audited correction, suspends and reactivates it, Persian), `privacy.spec.ts` (AC10) and
+`recovery.spec.ts` (AC10b: a backup key, new codes, a lost-key recovery approved by two new administrators, a rejected
+one in Persian; every account is new, because a recovery restricts its account for 72 hours) and `taxonomy.spec.ts`
+(AC12: two `e2e-` brands, a transliteration, an edit, a merge approved by a second admin with its job, the survivor
+set inactive; a moderator in Persian) and `oversight.spec.ts` (AC13: the home dashboard and every analytics dashboard
+key with axe in EN and FA, an MCP tool removal that a second admin rejects, so nothing changes, found again in the
+audit log, the access log, AI oversight as a moderator) sign real staff in. A
+sign-in that enrols a key stores the recovery codes shown once (`tests/e2e/staff.ts` `storeRecoveryCodes`). `moderation.spec.ts` turns the community flags on in dev (backend `pnpm dev:flags set community on`)
 and has a shop publish a post and a customer report it; the backend asks for the key only when the sign-in is older
 than 10 minutes, so the spec answers the first suspend call with the backend's `STEP_UP_REQUIRED` and the replay
 after the key goes to the real backend.

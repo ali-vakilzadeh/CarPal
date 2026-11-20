@@ -1056,3 +1056,546 @@ button.adm-tab {
   inset-inline-start: 0;
   will-change: transform;
 }
+
+/* Security keys and recovery codes (AC10b.T2): the staff member's own keys as a list with a Remove button each. */
+.adm-keys {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+.adm-key {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+}
+.adm-key p {
+  margin: 0;
+}
+.adm-key-name {
+  font-weight: 700;
+}
+.adm-key-add {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-block-start: var(--space-4);
+}
+.adm-key-add .cp-field {
+  align-self: stretch;
+}
+
+/* Taxonomy (AC12): toolbar, tree or list beside the node panel, compact tables inside the node tabs. */
+.adm-tax-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin-block: var(--space-3);
+}
+.adm-tax-toolbar .cp-field {
+  min-inline-size: 12rem;
+}
+.adm-tax-views {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.adm-tax-layout {
+  display: grid;
+  grid-template-columns: minmax(18rem, 2fr) minmax(22rem, 3fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+@media (max-width: 1000px) {
+  .adm-tax-layout {
+    grid-template-columns: 1fr;
+  }
+}
+.adm-tax-list,
+.adm-tax-node-panel {
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  min-inline-size: 0;
+}
+.adm-tax-list {
+  max-block-size: 75vh;
+  overflow: auto;
+}
+.adm-tax-tree {
+  margin: 0;
+  padding-inline-start: var(--space-3);
+  list-style: none;
+}
+.adm-tax-tree[data-depth='0'] {
+  padding-inline-start: 0;
+}
+.adm-tax-node {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  padding: var(--space-1) var(--space-2);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.adm-tax-node:hover {
+  background: var(--surface-sunken);
+}
+.adm-tax-node[aria-current='true'] {
+  background: var(--surface-sunken);
+  font-weight: 700;
+}
+.adm-tax-chip {
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-1);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+.adm-tax-chip[data-status='missing'],
+.adm-tax-chip[data-status='deprecated'] {
+  border-color: var(--warn, var(--divider));
+}
+.adm-tax-editor,
+.adm-tax-panel,
+.adm-tax-add,
+.adm-tax-terms {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
+}
+.adm-tax-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+.adm-tax-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+.adm-tax-row > .cp-field {
+  flex: 1 1 12rem;
+}
+.adm-tax-filter {
+  max-inline-size: 18rem;
+}
+.adm-tax-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+.adm-tax-table th,
+.adm-tax-table td {
+  border-block-end: 1px solid var(--divider);
+  padding: var(--space-1) var(--space-2);
+  text-align: start;
+  vertical-align: top;
+}
+.adm-tax-effects {
+  margin: 0;
+  padding-inline-start: var(--space-4);
+}
+.adm-tax-stats {
+  max-inline-size: 30rem;
+}
+
+/* Oversight (AC13): periods, stat tiles, charts (dataviz rules: thin marks, hairline grid, tokens only), analytics */
+.adm-period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin-block: var(--space-3);
+}
+.adm-period-custom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+.adm-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--space-3);
+  margin-block: var(--space-3);
+}
+.adm-stat {
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+.adm-stat-label {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.adm-stat-value {
+  margin: var(--space-1) 0 0;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.adm-stat-note {
+  margin: var(--space-1) 0 0;
+  font-size: 12px;
+}
+.adm-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  gap: var(--space-4);
+}
+.adm-chart {
+  min-inline-size: 0;
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.adm-chart[data-refreshing] .adm-chart-plot {
+  opacity: 0.55;
+}
+.adm-chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-block-end: var(--space-2);
+}
+.adm-chart-title {
+  font-weight: 600;
+  color: var(--ink);
+}
+.adm-chart-value {
+  color: var(--ink-muted);
+}
+.adm-chart-empty {
+  margin: 0;
+  padding-block: var(--space-4);
+  color: var(--ink-muted);
+}
+.adm-chart-plot {
+  position: relative;
+  inline-size: 100%;
+  border-radius: var(--radius-sm);
+}
+.adm-chart-plot:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+.adm-chart-plot svg {
+  display: block;
+  overflow: visible;
+}
+.adm-chart-grid {
+  stroke: var(--divider);
+  stroke-width: 1;
+}
+.adm-chart-base {
+  stroke: var(--ink-muted);
+  stroke-width: 1;
+}
+.adm-chart-tick {
+  fill: var(--ink-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.adm-chart-bar {
+  fill: var(--accent);
+}
+.adm-chart-bar[data-active] {
+  fill: var(--ink);
+}
+.adm-chart-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.adm-chart-dot {
+  fill: var(--accent);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+.adm-chart-cross {
+  stroke: var(--ink-muted);
+  stroke-width: 1;
+}
+.adm-chart-tip {
+  position: absolute;
+  inset-block-start: 0;
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 7.5rem;
+  max-inline-size: 7.5rem;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-1);
+  font-size: 12px;
+  color: var(--ink-muted);
+  pointer-events: none;
+}
+.adm-chart-tip strong {
+  font-size: 15px;
+  color: var(--ink);
+}
+.adm-chart-table {
+  margin-block-start: var(--space-2);
+  font-size: 13px;
+}
+.adm-chart-table summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+.adm-chart-table table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  margin-block-start: var(--space-2);
+  font-variant-numeric: tabular-nums;
+}
+.adm-chart-table th,
+.adm-chart-table td {
+  border-block-end: 1px solid var(--divider);
+  padding: var(--space-1) var(--space-2);
+  text-align: start;
+}
+.adm-anl {
+  display: grid;
+  grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .adm-anl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.adm-anl-nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-anl-nav a {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  text-decoration: none;
+}
+.adm-anl-nav a:hover {
+  background: var(--accent-soft);
+}
+.adm-anl-nav a[aria-current='page'] {
+  border-inline-start: 3px solid var(--accent);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+.adm-anl-view {
+  min-inline-size: 0;
+}
+.adm-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+.adm-search-row .adm-input {
+  min-inline-size: 14rem;
+}
+.adm-search-problem {
+  flex-basis: 100%;
+}
+form.adm-search {
+  flex-direction: column;
+  align-items: stretch;
+}
+.adm-audit-entity {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+.adm-audit-change {
+  display: inline;
+}
+
+/* Dashboard widgets (AC13.T6) */
+.adm-dash {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-4);
+  margin-block: var(--space-4);
+}
+.adm-widget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.adm-widget[data-wide] {
+  grid-column: 1 / -1;
+}
+.adm-widget-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 17px;
+}
+.adm-widget-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--danger);
+}
+.adm-widget-link {
+  margin: auto 0 0;
+}
+.adm-figures {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+.adm-figures > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-1);
+  border-block-end: 1px solid var(--divider);
+}
+.adm-figures dt {
+  color: var(--ink-muted);
+}
+.adm-figures dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: end;
+}
+.adm-dash-table {
+  overflow-x: auto;
+}
+.adm-dash-table table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.adm-dash-table th,
+.adm-dash-table td {
+  padding: var(--space-1) var(--space-2);
+  border-block-end: 1px solid var(--divider);
+  text-align: start;
+}
+
+/* AI oversight and MCP (AC13.T2-T4) */
+.adm-ai-killrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.adm-ai-kill {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.adm-ai-alerts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-ai-alert {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 2px solid var(--danger);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+}
+.adm-ai-alert > svg {
+  flex: none;
+  color: var(--danger);
+}
+.adm-ai-alert-title {
+  margin: 0 0 var(--space-1);
+  font-weight: 600;
+}
+.adm-ai-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-ai-payload pre {
+  max-block-size: 20rem;
+  overflow: auto;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-size: 12px;
+  text-align: start;
+}
+.adm-mcp-field {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+}
+.adm-mcp-field legend {
+  padding-inline: var(--space-1);
+  font-weight: 600;
+}
+.adm-mcp-group summary {
+  padding-block: var(--space-1);
+  cursor: pointer;
+}
+.adm-mcp-values {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-inline-start: var(--space-4);
+}
+.adm-mcp-diff {
+  margin: 0;
+  padding-inline-start: var(--space-4);
+}
+.adm-mcp-diff p {
+  margin: var(--space-1) 0;
+  overflow-wrap: anywhere;
+}

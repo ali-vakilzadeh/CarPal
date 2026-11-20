@@ -84,6 +84,39 @@ describe('Pending approvals (AC5.T4)', () => {
     await waitFor(() => expect(nav.search).not.toContain('change='));
   });
 
+  it('an approved merge shows its background job until it ends (AC12.T3)', async () => {
+    resetNav(`/approvals?change=${A}`);
+    const JOB = '0193a3c4-5d6e-7f80-9a1b-000000000099';
+    let reads = 0;
+    const { transport } = scriptedTransport({
+      'admin.four_eyes_list': (req) => (req.search.includes('mine=true') ? page([]) : page([change(A, { op_id: 'admin.taxonomy_merge' })])),
+      'admin.four_eyes_decide': () => Response.json(change(A, { op_id: 'admin.taxonomy_merge', status: 'approved', job_id: JOB })),
+      'admin.job_get': () => {
+        reads += 1;
+        const done = reads > 1;
+        const now = new Date().toISOString();
+        return Response.json({
+          id: JOB,
+          kind: 'taxonomy_merge',
+          status: done ? 'succeeded' : 'running',
+          progress: done ? 100 : 30,
+          expires_at: now,
+          created_at: now,
+          updated_at: now,
+        });
+      },
+    });
+    renderConsole(<ApprovalsPage />, { transport, roles: ['ADM'] });
+    await screen.findByTestId('approval-detail');
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Approve this change' });
+    fireEvent.change(within(dialog).getByLabelText('Reason'), { target: { value: 'checked_and_correct' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Approve' }));
+    const job = await screen.findByText('The background job is running (30 %).');
+    expect(job).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('The background job finished.')).toBeInTheDocument(), { timeout: 8000 });
+  }, 15000);
+
   it('reject needs a note (R opens it)', async () => {
     resetNav(`/approvals?change=${A}`);
     const { transport, calls } = scriptedTransport({

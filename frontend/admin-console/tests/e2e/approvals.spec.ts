@@ -102,10 +102,11 @@ test('four-eyes round trip: A requests, A cannot approve, B approves with a reas
   // A second decision is refused as expired/decided.
   expect((await decideDirectly(pageB, change.change_id)).code).toBe('INVALID_TRANSITION');
 
-  // My work for B: the approvals section and the ADM queues.
+  // My work for B: the approvals section and the ADM queues of admin.work_summary (AC13: four-eyes, verification, cases,
+  // privacy, badges, plan requests, support tickets) plus staff recoveries from their list (AC10b, D-75).
   await gotoReady(pageB, '/');
   await expect(pageB.getByRole('heading', { level: 1, name: 'My work' })).toBeVisible();
-  await expect(pageB.locator('[data-queue]')).toHaveCount(4);
+  await expect(pageB.locator('[data-queue]')).toHaveCount(8);
   await expect(pageB.locator('[data-queue="approvals"]')).not.toHaveAttribute('data-count', '');
   await expect(pageB.getByTestId('my-queue')).toHaveAttribute('href', '/');
   await expectNoAxeViolations(pageB);
@@ -120,7 +121,8 @@ test('Persian: My work and Pending approvals right to left (axe)', async ({ brow
   await signInAs(context, page, ['MOD'], { locale: 'fa' });
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await expect(page.getByRole('heading', { level: 1, name: 'کارهای من' })).toBeVisible();
-  await expect(page.locator('[data-queue]')).toHaveCount(6);
+  // MOD: four-eyes, verification, review approvals, reports, cases, disputes, badges (admin.work_summary, AC13).
+  await expect(page.locator('[data-queue]')).toHaveCount(7);
   await expect(page.locator('[data-queue="reports"]')).not.toHaveAttribute('data-count', '');
   await expectNoAxeViolations(page);
   await gotoReady(page, '/approvals');
@@ -133,7 +135,8 @@ test('Persian: My work and Pending approvals right to left (axe)', async ({ brow
 test('support staff cannot open Pending approvals and see their own queues', async ({ context, page }) => {
   test.setTimeout(180_000);
   await signInAs(context, page, ['SUP']);
-  await expect(page.locator('[data-queue]')).toHaveCount(2);
+  // SUP: reports, privacy requests, support tickets (admin.work_summary, AC13).
+  await expect(page.locator('[data-queue]')).toHaveCount(3);
   await expect(page.getByTestId('work-approvals')).toHaveCount(0);
   await gotoReady(page, '/approvals');
   await expect(page.getByTestId('no-permission')).toBeVisible();
