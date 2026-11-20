@@ -122,15 +122,30 @@ export function useLogout() {
   }, [queryClient, api]);
 }
 
+/**
+ * Whether a query run reads again what is already on screen (an interval, focus or invalidation refetch). Such a read is
+ * sent as background (CarPal-Background, D-102) so that a screen left open does not keep the session alive; a first
+ * read, a new page or a new filter is staff activity.
+ */
+export function isRefetch(queryClient: QueryClient, queryKey: readonly unknown[]): boolean {
+  return (queryClient.getQueryState(queryKey)?.dataUpdatedAt ?? 0) > 0;
+}
+
 export function useApiQuery<Id extends AdminOperationId>(
   opId: Id,
   args: CallArgs<Id> | undefined,
   options: Omit<UseQueryOptions<AdminResponse<Id>, ApiProblem>, 'queryKey' | 'queryFn'> = {},
 ) {
   const api = useApiClient();
+  const queryClient = useQueryClient();
+  const queryKey = apiQueryKey(opId, args);
   return useQuery<AdminResponse<Id>, ApiProblem>({
-    queryKey: apiQueryKey(opId, args),
-    queryFn: ({ signal }) => api.api(opId, ...([{ ...args, signal }] as unknown as CallRest<Id>)),
+    queryKey,
+    queryFn: ({ signal }) =>
+      api.api(
+        opId,
+        ...([{ ...args, signal, background: args?.background ?? isRefetch(queryClient, queryKey) }] as unknown as CallRest<Id>),
+      ),
     ...options,
   });
 }

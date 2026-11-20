@@ -9,8 +9,9 @@
 //   - no-store and the BFF security headers on every response; Set-Cookie and DPoP-Nonce never reach the browser.
 // On a 401 the token is renewed once and the request repeated (the API refused it before running the operation);
 // STEP_UP_REQUIRED passes through with its WWW-Authenticate challenge, which the browser client turns into /bff/reauth.
+import { BACKGROUND_HEADER } from '@/lib/api/client';
 import { ADMIN_OPERATIONS } from '@/lib/api/generated';
-import { clientHeader, MAX_BODY_BYTES, type BffConfig } from './config';
+import { BODY_LIMITS, clientHeader, MAX_BODY_BYTES, type BffConfig } from './config';
 import { checkCsrf } from './csrf';
 import { isCanonicalPath, type AdminAllowlist } from './allowlist';
 import { problem, readBody, withSecurityHeaders } from './http';
@@ -44,7 +45,7 @@ export const FORWARD_RESPONSE = [
 
 const TIMEZONE = /^[A-Za-z][A-Za-z0-9_+\-/]{0,63}$/;
 /** SEC-ADM-5 purpose header, exactly as the backend parses it (libs/authz/authorizer.ts PURPOSE). */
-export const PURPOSE = /^(case|dispute|dsr|verification|approval):[0-9a-f-]{36}$/;
+export const PURPOSE = /^(case|dispute|dsr|verification|approval|ticket):[0-9a-f-]{36}$/;
 /** CarPal-Reason as sent: one line of printable ASCII (non-ASCII text is percent-encoded by the client, DI-09). */
 export const REASON_HEADER = /^[\x20-\x7e]{1,2000}$/;
 const STAFF_ME_PATH = ADMIN_OPERATIONS['admin.staff_me'].path;
@@ -103,7 +104,7 @@ export async function forward(request: Request, d: ForwarderDeps): Promise<Respo
 
   let body: Uint8Array | undefined;
   if (method !== 'GET' && method !== 'DELETE') {
-    const read = await readBody(request, MAX_BODY_BYTES);
+    const read = await readBody(request, BODY_LIMITS[match.route.opId] ?? MAX_BODY_BYTES);
     if (!read) return problem(413, 'PAYLOAD_TOO_LARGE');
     body = read;
   }
@@ -135,7 +136,9 @@ export async function forward(request: Request, d: ForwarderDeps): Promise<Respo
     return failure(err);
   }
 
-  await d.sessions.touch(session);
+  // A console-initiated refresh (CarPal-Background on a GET, D-102) is not staff activity: the idle end still comes.
+  const background = method === 'GET' && request.headers.get(BACKGROUND_HEADER) === '1';
+  if (!background) await d.sessions.touch(session);
   const out = withSecurityHeaders(new Headers());
   for (const name of FORWARD_RESPONSE) {
     const v = upstream.headers.get(name);

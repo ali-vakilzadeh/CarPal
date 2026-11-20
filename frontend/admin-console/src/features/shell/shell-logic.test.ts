@@ -12,7 +12,7 @@ const ids = (roles: Parameters<typeof visibleSections>[0]) => visibleSections(ro
 describe('navigation sections (GD-09)', () => {
   it('shows each role only the sections its operations allow', () => {
     expect(ids(['CRV'])).toEqual(['dashboard', 'reviews', 'disputes']);
-    expect(ids(['SUP'])).toEqual(['dashboard', 'content', 'privacy', 'users', 'orgs', 'analytics']);
+    expect(ids(['SUP'])).toEqual(['dashboard', 'content', 'privacy', 'support', 'users', 'orgs', 'analytics']);
     expect(ids(['MOD'])).toEqual([
       'dashboard',
       'approvals',
@@ -34,7 +34,17 @@ describe('navigation sections (GD-09)', () => {
 
   it('adds up the sections of several roles, and shows nothing without a staff role', () => {
     expect(ids(['MOD', 'CRV'])).toEqual(ids(['MOD']));
-    expect(ids(['SUP', 'CRV'])).toEqual(['dashboard', 'reviews', 'content', 'disputes', 'privacy', 'users', 'orgs', 'analytics']);
+    expect(ids(['SUP', 'CRV'])).toEqual([
+      'dashboard',
+      'reviews',
+      'content',
+      'disputes',
+      'privacy',
+      'support',
+      'users',
+      'orgs',
+      'analytics',
+    ]);
     expect(ids([])).toEqual([]);
   });
 

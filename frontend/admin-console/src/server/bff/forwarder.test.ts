@@ -39,6 +39,25 @@ describe('forwarder: allowlist and session', () => {
     expect(t.backend.calls.length).toBe(before);
   });
 
+  it('lets the policy text writes carry up to 256 KiB, as the backend does (S15-D2, AC14.T4)', async () => {
+    const t = await signedIn();
+    t.backend.api.handler = (r) => (r.url.includes('/v1/admin/policies/') ? Response.json({ id: UUID }, { status: 201 }) : undefined);
+    const post = { method: 'POST', headers: { 'x-csrf-token': t.csrf, 'content-type': 'application/json' } };
+    const text = JSON.stringify({ body: 'x'.repeat(200_000) });
+    expect((await t.browser.fetch('/api/v1/admin/policies/terms/versions', { ...post, body: text })).status).toBe(201);
+    const tooBig = JSON.stringify({ body: 'x'.repeat(270_000) });
+    expect((await t.browser.fetch('/api/v1/admin/policies/terms/versions', { ...post, body: tooBig })).status).toBe(413);
+    expect((await t.browser.fetch(`/api/v1/admin/flags/${UUID}`, { ...post, method: 'PATCH', body: text })).status).toBe(413);
+  });
+
+  it('passes a support ticket purpose on (AC14.T5)', async () => {
+    const t = await signedIn();
+    t.backend.api.handler = (r) => (r.url.includes('/v1/admin/support/tickets/') ? Response.json({ id: UUID }) : undefined);
+    const res = await t.browser.fetch(`/api/v1/admin/support/tickets/${UUID}`, { headers: { 'carpal-access-purpose': `ticket:${UUID}` } });
+    expect(res.status).toBe(200);
+    expect(adminCalls(t).at(-1)!.headers.get('carpal-access-purpose')).toBe(`ticket:${UUID}`);
+  });
+
   it('answers 401 UNAUTHENTICATED without a staff session, before any backend call', async () => {
     const t = await testBff();
     const res = await t.browser.fetch('/api/v1/admin/flags');
@@ -133,7 +152,7 @@ describe('forwarder: what reaches admin-api and what comes back', () => {
     await t.browser.fetch('/api/v1/admin/flags', { headers: { 'carpal-access-purpose': purpose } });
     expect(adminCalls(t).at(-1)!.headers.get('carpal-access-purpose')).toBeNull();
     const before = adminCalls(t).length;
-    for (const bad of ['case:1', 'ticket:' + UUID, `case:${UUID}0`, `case:${UUID.toUpperCase()}`]) {
+    for (const bad of ['case:1', 'order:' + UUID, `case:${UUID}0`, `case:${UUID.toUpperCase()}`]) {
       const res = await t.browser.fetch(`/api/v1/admin/users/${UUID}`, { headers: { 'carpal-access-purpose': bad } });
       expect(res.status, bad).toBe(400);
       expect(((await res.json()) as { reason: string }).reason).toBe('purpose');
@@ -276,6 +295,20 @@ describe('forwarder: tokens and the session lifetime', () => {
       await t.browser.fetch('/bff/session');
     }
     const res = await t.browser.fetch('/api/v1/admin/flags');
+    expect(res.status).toBe(401);
+    expect(((await res.json()) as { code: string }).code).toBe('UNAUTHENTICATED');
+  });
+
+  it('a background refresh (CarPal-Background on a GET) is not activity and is not sent on (D-102)', async () => {
+    const t = await signedIn();
+    t.backend.tokenLifetimeS = 3600 * 24;
+    const bg = { headers: { 'carpal-background': '1' } };
+    t.clock.now += 20 * MIN;
+    expect((await t.browser.fetch('/api/v1/admin/flags', bg)).status).toBe(200);
+    expect(adminCalls(t).at(-1)!.headers.get('carpal-background')).toBeNull();
+    // 35 minutes after the last real activity: a refresh in between did not slide the idle end.
+    t.clock.now += 15 * MIN;
+    const res = await t.browser.fetch('/api/v1/admin/flags', bg);
     expect(res.status).toBe(401);
     expect(((await res.json()) as { code: string }).code).toBe('UNAUTHENTICATED');
   });

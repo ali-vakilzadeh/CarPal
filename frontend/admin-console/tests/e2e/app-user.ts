@@ -364,3 +364,24 @@ export async function requestData(
   const r = await ok(user.call('POST', '/v1/me/data-requests', { request_type: type, ...(details ? { details } : {}) }), `dsr ${type}`);
   return { id: r.id as string, status: r.status as string };
 }
+
+/** AC14: a support ticket filed from the app (support.ticket_create, backend S24), as the app's Help screen does. */
+export async function fileTicket(
+  user: AppUser,
+  o: { topic: 'account_access' | 'appointment_problem' | 'data' | 'bug' | 'plan_billing' | 'other'; subject: string; body: string },
+): Promise<string> {
+  const r = await ok(
+    user.call('POST', '/v1/support/tickets', {
+      ...o,
+      app_area: 'help',
+      diagnostics: { platform: 'web_pwa', app_version: '1.0.0', screen: 'help' },
+    }),
+    'support ticket',
+  );
+  return r.id as string;
+}
+
+/** The ticket as its requester sees it (staff messages come from "CarPal"). */
+export async function ticketThread(user: AppUser, id: string): Promise<Json> {
+  return ok(user.call('GET', `/v1/support/tickets/${id}`), 'support ticket read');
+}

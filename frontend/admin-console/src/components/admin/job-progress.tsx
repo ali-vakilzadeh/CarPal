@@ -22,7 +22,7 @@ export function JobProgress({ jobId, onDone }: { jobId: string; onDone?: (status
   const allowed = canCall('admin.job_get', session.data?.staff?.roles ?? []);
   const job = useApiQuery(
     'admin.job_get',
-    { path: { job_id: jobId } },
+    { path: { job_id: jobId }, background: false },
     {
       enabled: allowed,
       refetchInterval: (q) => (q.state.data && JOB_DONE.includes(q.state.data.status) ? false : JOB_POLL_MS),

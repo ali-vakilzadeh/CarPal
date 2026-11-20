@@ -14,7 +14,7 @@
 // The period of the metric widgets is today, 7 or 30 days (URL ?range=). Numbers are read again every 60 s while the
 // page is visible (TanStack pauses intervals in a hidden tab). The region filter of Docs/23 waits for dimensions in
 // the analytics store (DI-36).
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { DashboardKey, PendingChange, WorkQueueSummary } from '@carpal/api-contracts';
@@ -23,7 +23,7 @@ import { Badge } from '@/components/ds/badge';
 import { Button } from '@/components/ds/button';
 import { Icon, type IconName } from '@/components/ds/icon';
 import type { ApiProblem } from '@/lib/api/problem';
-import { apiQueryKey, useApiClient, useApiQuery, useSession } from '@/lib/api/query';
+import { apiQueryKey, isRefetch, useApiClient, useApiQuery, useSession } from '@/lib/api/query';
 import { Bidi } from '@/lib/format/bidi';
 import { useFormat } from '@/lib/format/client';
 import { useT } from '@/lib/i18n/client';
@@ -168,6 +168,7 @@ function Figures({ rows }: { rows: { label: string; value: ReactNode; testId?: s
 
 function useApprovalsList() {
   const api = useApiClient();
+  const queryClient = useQueryClient();
   const f = useFormat();
   const session = useSession();
   const def = QUEUES.find((q) => q.id === 'approvals')!;
@@ -175,7 +176,12 @@ function useApprovalsList() {
   return useQuery<QueueSummary<PendingChange>, ApiProblem>({
     queryKey: queueKey('approvals'),
     queryFn: ({ signal }) =>
-      summarizeQueue(api, def, { timeZone: f.timeZone, signal, maxPages: 1 }) as Promise<QueueSummary<PendingChange>>,
+      summarizeQueue(api, def, {
+        timeZone: f.timeZone,
+        signal,
+        maxPages: 1,
+        background: isRefetch(queryClient, queueKey('approvals')),
+      }) as Promise<QueueSummary<PendingChange>>,
     enabled: allowed,
     refetchInterval: WORK_REFRESH_MS,
     staleTime: 30_000,
@@ -247,6 +253,7 @@ function QueuesWidget() {
   const t = useT();
   const work = useWorkSummary();
   const api = useApiClient();
+  const queryClient = useQueryClient();
   const f = useFormat();
   const session = useSession();
   const roles = session.data?.staff?.roles ?? [];
@@ -255,7 +262,8 @@ function QueuesWidget() {
     queries: [
       {
         queryKey: queueKey('recoveries'),
-        queryFn: ({ signal }: { signal: AbortSignal }) => summarizeQueue(api, recoveryDef, { timeZone: f.timeZone, signal }),
+        queryFn: ({ signal }: { signal: AbortSignal }) =>
+          summarizeQueue(api, recoveryDef, { timeZone: f.timeZone, signal, background: isRefetch(queryClient, queueKey('recoveries')) }),
         enabled: canCall(recoveryDef.opId, roles),
         refetchInterval: WORK_REFRESH_MS,
         staleTime: 30_000,
@@ -465,11 +473,17 @@ function SafetyWidget() {
 /** Several dashboards for one widget; the widget fails when one of them does (Retry reads the failed ones again). */
 function useDashboards(keys: readonly DashboardKey[], range: DayRange) {
   const api = useApiClient();
+  const queryClient = useQueryClient();
   const results = useQueries({
     queries: keys.map((key) => ({
       queryKey: apiQueryKey('admin.analytics_dashboard', { path: { dashboard_key: key }, query: { from: range.from, to: range.to } }),
-      queryFn: ({ signal }: { signal: AbortSignal }) =>
-        api.api('admin.analytics_dashboard', { path: { dashboard_key: key }, query: { from: range.from, to: range.to }, signal }),
+      queryFn: ({ signal, queryKey }: { signal: AbortSignal; queryKey: readonly unknown[] }) =>
+        api.api('admin.analytics_dashboard', {
+          path: { dashboard_key: key },
+          query: { from: range.from, to: range.to },
+          signal,
+          background: isRefetch(queryClient, queryKey),
+        }),
       refetchInterval: WORK_REFRESH_MS,
       staleTime: 30_000,
     })),

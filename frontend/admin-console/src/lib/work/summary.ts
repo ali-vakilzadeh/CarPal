@@ -35,7 +35,7 @@ export const WORK_QUEUES: Record<WorkQueueKey, { id: QueueId; href: string | nul
   privacy_requests: { id: 'privacy', href: '/privacy' },
   badge_approvals: { id: 'badges', href: null },
   subscription_change_requests: { id: 'planRequests', href: null },
-  support_tickets: { id: 'support', href: null },
+  support_tickets: { id: 'support', href: '/support' },
 };
 
 /** The tile of a queue key, or null for a key this console does not know (shown as unknown). */
@@ -60,5 +60,5 @@ export function breakdownCount(q: WorkQueueSummary | undefined, key: string): nu
 export function useWorkSummary() {
   const session = useSession();
   const allowed = canCall('admin.work_summary', session.data?.staff?.roles ?? []);
-  return useApiQuery('admin.work_summary', undefined, { enabled: allowed, refetchInterval: WORK_REFRESH_MS, staleTime: 30_000 });
+  return useApiQuery('admin.work_summary', { background: true }, { enabled: allowed, refetchInterval: WORK_REFRESH_MS, staleTime: 30_000 });
 }

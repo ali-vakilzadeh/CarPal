@@ -90,7 +90,7 @@ describe('work summary helpers (admin.work_summary)', () => {
 
   it('maps server queues to tiles and pages; unknown keys are null', () => {
     expect(workQueue('four_eyes')).toEqual({ id: 'approvals', href: '/approvals' });
-    expect(workQueue('support_tickets')).toEqual({ id: 'support', href: null });
+    expect(workQueue('support_tickets')).toEqual({ id: 'support', href: '/support' });
     expect(workQueue('toString')).toBeNull();
     expect(workQueue('new_queue')).toBeNull();
   });

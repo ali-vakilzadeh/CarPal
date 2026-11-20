@@ -98,7 +98,7 @@ export interface QueueSummary<T = unknown> {
 export async function summarizeQueue(
   api: Pick<ApiClient, 'api'>,
   queue: QueueDef,
-  o: { now?: number; timeZone: string; signal?: AbortSignal; maxPages?: number },
+  o: { now?: number; timeZone: string; signal?: AbortSignal; maxPages?: number; background?: boolean },
 ): Promise<QueueSummary> {
   const now = o.now ?? Date.now();
   const maxPages = o.maxPages ?? MAX_PAGES;
@@ -107,7 +107,11 @@ export async function summarizeQueue(
   for (const query of queue.queries) {
     let cursor: string | undefined;
     for (let page = 0; page < maxPages; page++) {
-      const args = { query: { ...query, limit: PAGE_LIMIT, ...(cursor ? { cursor } : {}) }, ...(o.signal ? { signal: o.signal } : {}) };
+      const args = {
+        query: { ...query, limit: PAGE_LIMIT, ...(cursor ? { cursor } : {}) },
+        ...(o.signal ? { signal: o.signal } : {}),
+        ...(o.background ? { background: true } : {}),
+      };
       const res = (await api.api(queue.opId, ...([args] as unknown as CallRest<AdminOperationId>))) as {
         items: unknown[];
         next_cursor: string | null;

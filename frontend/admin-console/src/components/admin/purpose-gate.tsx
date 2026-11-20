@@ -15,7 +15,7 @@ import { useSession } from '@/lib/api/query';
 import { useT } from '@/lib/i18n/client';
 import type { MessageKey } from '@/lib/i18n/keys';
 
-const PURPOSE = /^(case|dispute|dsr|verification|approval):([0-9a-f-]{36})$/;
+const PURPOSE = /^(case|dispute|dsr|verification|approval|ticket):([0-9a-f-]{36})$/;
 
 /** A valid purpose value, or null (URL values are untrusted). */
 export function parsePurpose(value: string | null | undefined): AccessPurpose | null {

@@ -204,8 +204,9 @@ describe('idle handling (AC4.T4)', () => {
     sessionAnswer = () => view(['MOD'], { leftMs: 30 * MIN });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Stay signed in' }));
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
-    // The shell's My queue reads the work summary (AC13; the approvals count); "Stay signed in" adds exactly one staff_me.
-    expect(apiCalls.filter((op) => op !== 'admin.work_summary')).toEqual(['admin.staff_me']);
+    // The shell's My queue reads the work summary (AC13) and the bell its unread count (AC14); "Stay signed in" adds
+    // exactly one staff_me.
+    expect(apiCalls.filter((op) => op !== 'admin.work_summary' && op !== 'admin.notifications_unread_count')).toEqual(['admin.staff_me']);
   });
 
   it('signs out at the end, clears the session and goes to the signed-out page with the return path', async () => {

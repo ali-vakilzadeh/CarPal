@@ -208,8 +208,11 @@
         "flags": "Feature flags",
         "rates": "Exchange rates",
         "retention": "Data retention",
-        "staff": "Staff",
-        "recoveries": "Recovery requests"
+        "staff": "Staff & permissions",
+        "recoveries": "Recovery requests",
+        "policies": "Policies & consent texts",
+        "notifications": "Notifications & templates",
+        "support": "Support inbox"
       },
       "lookup": {
         "label": "Look up",
@@ -518,7 +521,13 @@
         "search_gap": "Search found nothing for it",
         "least_privilege": "Least privilege",
         "new_capability": "New capability",
-        "incident_resolved": "Incident resolved"
+        "incident_resolved": "Incident resolved",
+        "staff_returned": "Returned to the team",
+        "legal_update": "Legal or policy update",
+        "taking_over": "Taking it over",
+        "workload": "Sharing the workload",
+        "needs_information": "More information needed",
+        "status_update": "Status update"
       }
     },
     "ops": {
@@ -1795,7 +1804,8 @@
           "dispute": "a dispute",
           "dsr": "a privacy request",
           "verification": "a verification",
-          "approval": "a review approval"
+          "approval": "a review approval",
+          "ticket": "a support ticket"
         }
       },
       "tabsLabel": "Organization details",
@@ -2494,7 +2504,23 @@
       "breakGlass": "The security keys and recovery codes of {{staff_name}} were reset from the server. If nobody expected this, disable the account and investigate.",
       "killSwitch": "The AI automation kill switch is now {{enabled}}. While it is on, every AI feature and AI write tool is stopped.",
       "killOn": "on",
-      "killOff": "off"
+      "killOff": "off",
+      "bell": "Notices",
+      "bellUnread": "Notices, {{n}} unread",
+      "title": "Notices",
+      "empty": "No notices.",
+      "failed": "The notices could not be loaded.",
+      "markAll": "Mark all as read",
+      "unreadMark": "Unread:",
+      "unknown": "A notice this console does not know yet ({{key}}).",
+      "fourEyesOutcome": "Your change \"{{change}}\" was {{status}}.",
+      "fourEyesStatus": {
+        "approved": "approved",
+        "rejected": "rejected",
+        "expired": "not decided in time and expired"
+      },
+      "dsrDeadline": "{{request_count}} privacy requests are close to their legal deadline.",
+      "rateReminder": "Enter today's exchange rate for {{currency}} (in force: {{per_usd}} per US dollar)."
     },
     "taxonomy": {
       "title": "Taxonomy",
@@ -3218,6 +3244,511 @@
         "profile_confidence_score": "Profile confidence score",
         "likely_specialization": "Likely specialization"
       }
+    },
+    "staffDir": {
+      "title": "Staff & permissions",
+      "intro": "Everyone with a platform role: their roles, security keys, last sign-in and whether the account may use the console.",
+      "gaps": "Invitations and staff access requests are not available yet. A new staff account is created on the server (staff bootstrap) and gets its roles here.",
+      "listLabel": "Staff members",
+      "itemLabel": "Staff member",
+      "historyLabel": "Audit trail",
+      "empty": "No staff member matches these filters.",
+      "pick": "Choose a staff member to see their roles and access.",
+      "approvalsLink": "Role grants and enables waiting for a second admin are in Pending approvals",
+      "you": "(you)",
+      "never": "Never",
+      "noKey": "No key",
+      "suspendedRole": "suspended",
+      "filter": {
+        "role": "Role",
+        "status": "Status"
+      },
+      "status": {
+        "active": "Active",
+        "disabled": "Disabled"
+      },
+      "col": {
+        "name": "Staff member",
+        "email": "Email",
+        "roles": "Roles",
+        "keys": "Security keys",
+        "lastSignIn": "Last sign-in",
+        "status": "Status"
+      },
+      "access": {
+        "title": "Console access",
+        "self": "You cannot disable your own account. Ask another platform admin.",
+        "disableText": "Disabling works at once: every role is suspended, every session ends and the member's requests waiting in Pending approvals are rejected.",
+        "disable": "Disable",
+        "disabled": "{{name}} is disabled.",
+        "enableText": "Enabling gives the suspended roles back after a second platform admin approves it.",
+        "enable": "Request enable"
+      },
+      "dialog": {
+        "disable": "Disable {{name}}",
+        "enable": "Enable {{name}} again"
+      },
+      "effect": {
+        "disable": "All of this member's roles are suspended and their sessions end now. Their own four-eyes requests still waiting are rejected (\"requester disabled\"). The last active platform admin cannot be disabled.",
+        "enable": "A second platform admin must approve this in Pending approvals within 72 hours."
+      },
+      "notFound": "No staff member has this link. They may have been removed from the staff."
+    },
+    "policies": {
+      "title": "Policies & consent texts",
+      "intro": "The texts people agree to, with their versions. A published version cannot be changed: write a new version and publish it with a date. Publishing waits for a second platform admin.",
+      "listLabel": "Documents",
+      "itemLabel": "Document",
+      "historyLabel": "Audit trail",
+      "empty": "No policy documents for this region.",
+      "pick": "Choose a document to see its versions.",
+      "pickVersion": "Open a version to see its audit trail.",
+      "none": "None in force",
+      "scheduledN": "{{label}} scheduled",
+      "draftsN_one": "{{count, number}} draft",
+      "draftsN_other": "{{count, number}} drafts",
+      "versions": "Versions",
+      "noVersions": "This document has no version yet.",
+      "newVersion": "New version",
+      "newTitle": "New version",
+      "newFrom": "Starts from the texts of version {{label}}. Give it a new label.",
+      "loading": "Loading…",
+      "loadFailed": "The version could not be loaded.",
+      "versionTitle": "Version {{label}}",
+      "createdBy": "Written by",
+      "publishedBy": "Published by",
+      "approvedBy": "approved by {{name}}",
+      "seeded": "Loaded with the system",
+      "readOnly": "This version is read-only. To change the text, write a new version.",
+      "textOf": "Text in {{locale}}",
+      "yes": "Yes",
+      "no": "No",
+      "reconsentWith": "Re-consent; older consents: {{action}}",
+      "saveDraft": "Save the draft",
+      "createDraft": "Create the draft",
+      "undo": "Undo changes",
+      "saved": "Draft saved.",
+      "created": "Draft created.",
+      "draftNote": "A draft is not shown to anyone until it is published.",
+      "dialog": {
+        "save": "Save draft {{label}}",
+        "create": "New draft of {{doc}}"
+      },
+      "locale": {
+        "en": "English",
+        "fa": "Persian"
+      },
+      "field": {
+        "label": "Version label",
+        "labelHint": "What people accept, for example 1.1. Unique within the document.",
+        "title": "Title ({{locale}})",
+        "body": "Text ({{locale}})",
+        "bodyHint": "Markdown without HTML, up to 60,000 characters.",
+        "summary": "What changed ({{locale}})",
+        "summaryHint": "Optional. If you write it, write it in both languages."
+      },
+      "problem": {
+        "label": "Enter a label of up to 20 characters.",
+        "title": "Enter a title of up to 200 characters.",
+        "body": "Enter the text (up to 60,000 characters).",
+        "summary": "Write the summary in both languages (up to 1,000 characters each), or leave both empty."
+      },
+      "col": {
+        "document": "Document",
+        "mode": "When it changes",
+        "inForce": "In force",
+        "next": "Coming",
+        "version": "Version",
+        "status": "Status",
+        "effective": "In force from",
+        "reconsent": "Re-consent"
+      },
+      "key": {
+        "terms": "User Agreement",
+        "privacy": "Privacy policy",
+        "community_guidelines": "Community guidelines",
+        "vehicle_data_sharing": "Vehicle details shared",
+        "service_history_sharing": "Service history shared with a shop",
+        "vendor_fitment_context": "Vehicle details shared with a parts seller",
+        "photo_publishing": "Photos shown publicly",
+        "showcase_publishing": "Showcase on a shop's profile",
+        "ai_personalization": "AI personalization",
+        "review_invitations": "Review invitations",
+        "fleet_driver_data_visibility": "Driver data visible to a fleet",
+        "fleet_data_ai_use": "AI use of fleet data",
+        "provider_analytics_ai_use": "AI analytics for service providers",
+        "vendor_inventory_ai_use": "AI use of vendor inventory",
+        "location_usage": "Location use",
+        "marketing": "Marketing messages"
+      },
+      "mode": {
+        "blocking": "Must accept again",
+        "notice": "Notice once",
+        "consent": "Consent text"
+      },
+      "modeText": {
+        "blocking": "When a new version asks for re-consent, people must accept it before they go on using the app.",
+        "notice": "When a new version asks for re-consent, people see a notice once.",
+        "consent": "A consent text. When a new version asks for re-consent, people confirm or withdraw their consents under it."
+      },
+      "status": {
+        "draft": "Draft",
+        "scheduled": "Scheduled",
+        "published": "In force",
+        "superseded": "Replaced"
+      },
+      "reconsentAction": {
+        "keep": "Stay in effect until confirmed",
+        "pause": "Paused until confirmed"
+      },
+      "publish": {
+        "title": "Publish",
+        "when": "In force from",
+        "when_approval": "As soon as a second admin approves",
+        "when_at": "A date and time",
+        "approvalHint": "The version comes into force when it is approved.",
+        "day": "Day",
+        "time": "Time",
+        "zone": "Your time zone: {{zone}}",
+        "problem_when": "Enter a day and a time.",
+        "problem_past": "Choose a time that is not in the past.",
+        "reconsent": "People must agree to this version again",
+        "reconsentEffect": {
+          "blocking": "If ticked, people must accept the new version before they go on.",
+          "notice": "If ticked, people see a notice about the new version once.",
+          "consent": "If ticked, people with a consent under an older text are asked to confirm it."
+        },
+        "actionLegend": "Consents under the older text",
+        "actionHint": {
+          "keep": "They stay in effect until the person confirms or withdraws them.",
+          "pause": "They count as not given until the person confirms them."
+        },
+        "submit": "Send for approval",
+        "dialog": "Publish {{doc}} {{label}}",
+        "summaryApproval": "In force as soon as a second platform admin approves.",
+        "summaryAt": "In force from {{at}} (or at approval, if that is later).",
+        "summaryReconsent": "People must agree again.",
+        "summaryNoReconsent": "No re-consent.",
+        "fourEyes": "A second platform admin must approve this in Pending approvals within 72 hours.",
+        "scheduledExists": "Version {{label}} is already scheduled. Another version can be published once it is in force."
+      }
+    },
+    "notif": {
+      "title": "Notifications & templates",
+      "intro": "The texts of emails, push messages and SMS, the rules for invitations and reminders, and how well messages are delivered. In-app texts are part of the apps and are not edited here.",
+      "tabsLabel": "Notification settings",
+      "tab": {
+        "templates": "Templates",
+        "rules": "Rules",
+        "health": "Delivery health"
+      },
+      "listLabel": "Message templates",
+      "itemLabel": "Template",
+      "previewLabel": "Preview",
+      "previewHint": "Preview shows the text with sample values, checked as a save would check it.",
+      "empty": "No template matches these filters.",
+      "pick": "Choose a template to see or change its text.",
+      "filter": {
+        "channel": "Channel",
+        "locale": "Language",
+        "missing": "Translation",
+        "missingOnly": "Missing only"
+      },
+      "channel": {
+        "email": "Email",
+        "push": "Push",
+        "sms": "SMS"
+      },
+      "col": {
+        "key": "Template",
+        "channel": "Channel",
+        "locale": "Language",
+        "source": "Text",
+        "flags": "Flags"
+      },
+      "source": {
+        "override": "Edited by staff",
+        "code": "Built-in",
+        "codeLong": "Built-in text (no staff text)"
+      },
+      "flag": {
+        "always": "Always delivered",
+        "locked": "Locked",
+        "missing": "Missing translation",
+        "outdated": "Translation outdated"
+      },
+      "editedBy": "Edited by {{name}}, {{at}}",
+      "alwaysText": "A critical alert: people cannot switch it off.",
+      "missingText": "This language has no text of its own (none, or a copy of the other language).",
+      "outdatedText": "The other language was edited by staff and this one was not. Check that both say the same.",
+      "variables": "Placeholders",
+      "noVariables": "This text takes no placeholders.",
+      "lockedTransactional": "Locked: links, codes, invitations and account security messages keep their built-in text.",
+      "lockedAlways": "Locked: critical alerts keep their built-in text.",
+      "field": {
+        "subject": "Subject",
+        "pushTitle": "Title",
+        "body": "Text",
+        "bodyHint": "Up to 4,000 characters. Use only the placeholders listed above, written as {name}."
+      },
+      "problem": {
+        "subject": "Enter a one-line subject of up to 200 characters.",
+        "body": "Enter the text (up to 4,000 characters).",
+        "unknown": "These placeholders are not available here: {{names}}."
+      },
+      "preview": "Preview",
+      "save": "Save the text",
+      "undo": "Undo changes",
+      "reset": "Back to the built-in text",
+      "saved": "Text saved.",
+      "resetDone": "The built-in text applies again.",
+      "dialog": {
+        "save": "Save the text of {{key}}",
+        "reset": "Use the built-in text of {{key}} again",
+        "where": "{{channel}}, {{locale}}."
+      },
+      "rules": {
+        "updated": "Last changed by {{name}}, {{at}}.",
+        "system": "the system",
+        "invitations": "Review invitations",
+        "delay": "Invitation delay (minutes)",
+        "delayHint": "After the appointment is completed; 0 sends at once; at most 2,880 (2 days).",
+        "invitationDays": "Reminders to the customer (days after the invitation)",
+        "daysHint": "Up to three days from 1 to 6, ascending, for example 2, 5. Empty: no reminders. The link expires after 7 days.",
+        "approvalDays": "Reminders to the business about approval requests (days)",
+        "approvalDaysHint": "Up to three days from 1 to 6, ascending, for example 3, 6. The business has 7 days to answer.",
+        "delivery": "Delivery",
+        "quiet": "Default quiet hours",
+        "quietHint": "For people who have not set their own; on their clock. Critical alerts are always delivered.",
+        "quietStart": "Quiet from",
+        "quietEnd": "Quiet until",
+        "digestHour": "Daily digest hour (0-23)",
+        "digestHourHint": "On the recipient's clock.",
+        "weeklyDay": "Weekly digest day",
+        "weekday": {
+          "1": "Monday",
+          "2": "Tuesday",
+          "3": "Wednesday",
+          "4": "Thursday",
+          "5": "Friday",
+          "6": "Saturday",
+          "7": "Sunday"
+        },
+        "vehicles": "Vehicle reminders",
+        "maintenanceDays": "Maintenance reminder due (days before)",
+        "maintenanceHint": "1 to 90 days before its date.",
+        "mileageKm": "… or (km before)",
+        "mileageHint": "50 to 5,000 km before its mileage.",
+        "alwaysNote": "Critical alerts (security, safety) are always delivered and cannot be switched off.",
+        "save": "Save the rules",
+        "saved": "Rules saved. They apply from the next run of each sweep.",
+        "dialog": "Change the notification rules",
+        "effect": "Reminders already sent are not repeated, and a maintenance reminder already due stays due.",
+        "problem": {
+          "delay": "Enter whole minutes from 0 to 2,880.",
+          "days": "Enter up to three days from 1 to 6, ascending, separated by commas.",
+          "time": "Enter a time as HH:MM.",
+          "quietEnd": "Enter a time as HH:MM that differs from the start.",
+          "hour": "Enter an hour from 0 to 23.",
+          "maintenance": "Enter days from 1 to 90.",
+          "mileage": "Enter km from 50 to 5,000."
+        }
+      },
+      "health": {
+        "intro": "Deliveries by channel and provider; counts only, no recipients or texts. Updated {{at}}.",
+        "empty": "No deliveries in the last 30 days.",
+        "provider": "Provider",
+        "h24": "Last 24 hours",
+        "d7": "Last 7 days",
+        "d30": "Last 30 days",
+        "lastFailure": "Last failure",
+        "none": "None",
+        "counts": "{{failed}} of {{attempted}} failed",
+        "rate": "{{pct}}%"
+      },
+      "aboutLabel": "About templates"
+    },
+    "support": {
+      "title": "Support inbox",
+      "intro": "Questions and problems people send from the apps. Answer within one working day; the clock stops while a ticket waits on the person.",
+      "listLabel": "Tickets",
+      "itemLabel": "Ticket",
+      "actionsLabel": "Actions",
+      "empty": "No ticket matches these filters.",
+      "pick": "Choose a ticket to read it.",
+      "pickFirst": "Choose a ticket first.",
+      "choose": "Choose…",
+      "unassigned": "Not assigned",
+      "dueBy": "Answer by {{at}}",
+      "organization": "Business",
+      "opened": "Opened",
+      "firstResponse": "first answer {{at}}",
+      "bySystem": "closed by the system",
+      "contactHint": "(contact details on the user page, for this ticket)",
+      "diagnostics": "App details",
+      "linked": "Turned into",
+      "resolutionNote": "Internal note",
+      "thread": "Conversation",
+      "staffMessage": "CarPal ({{name}})",
+      "requesterMessage": "{{name}}",
+      "filter": {
+        "view": "View",
+        "topic": "Topic",
+        "mine": "Assigned",
+        "mineOnly": "To me"
+      },
+      "view": {
+        "open": "Open",
+        "waiting": "Waiting on the person",
+        "solved": "Solved",
+        "all": "All"
+      },
+      "col": {
+        "subject": "Subject",
+        "topic": "Topic",
+        "requester": "From",
+        "status": "Status",
+        "clock": "Clock",
+        "assignee": "Assigned to",
+        "last": "Last message",
+        "outcome": "Outcome"
+      },
+      "topic": {
+        "account_access": "Account access",
+        "appointment_problem": "Appointment problem",
+        "data": "My data",
+        "bug": "Something does not work",
+        "plan_billing": "Plan and billing",
+        "other": "Other"
+      },
+      "status": {
+        "new": "New",
+        "waiting_on_team": "Waiting on us",
+        "waiting_on_user": "Waiting on the person",
+        "solved": "Solved"
+      },
+      "outcome": {
+        "answered": "Answered",
+        "converted": "Turned into a work item",
+        "duplicate": "Duplicate",
+        "no_response": "No response",
+        "out_of_scope": "Not something we handle"
+      },
+      "template": {
+        "acknowledgement": "Acknowledgement",
+        "request_information": "Ask for information",
+        "how_to": "How to",
+        "status_update": "Status update",
+        "converted_notice": "Passed to a team",
+        "resolution": "Resolution",
+        "other": "Own words"
+      },
+      "linkedType": {
+        "moderation_case": "Moderation case",
+        "data_subject_request": "Privacy request",
+        "dispute": "Dispute",
+        "subscription_change_request": "Plan request"
+      },
+      "target": {
+        "review": "Review",
+        "review_response": "Business reply",
+        "post": "Post",
+        "comment": "Comment",
+        "question": "Question",
+        "answer": "Answer",
+        "portfolio_item": "Portfolio item",
+        "media_asset": "Photo or video",
+        "inventory_item": "Inventory item",
+        "inventory_fitment": "Fitment",
+        "organization": "Business",
+        "organization_location": "Business location",
+        "user": "Account",
+        "ai_output": "AI answer"
+      },
+      "disputeTarget": {
+        "review": "Review",
+        "service_record": "Service record",
+        "badge": "Badge",
+        "appointment": "Appointment",
+        "moderation_action": "Moderation decision"
+      },
+      "assign": {
+        "title": "Assign",
+        "solved": "A solved ticket is not assigned.",
+        "me": "Take it",
+        "colleague": "Or give it to",
+        "choose": "Choose a colleague",
+        "give": "Assign",
+        "confirm": "Assign",
+        "done": "Assigned."
+      },
+      "reply": {
+        "title": "Reply",
+        "solved": "A reply reopens the ticket for the person.",
+        "template": "Template",
+        "language": "Answer in",
+        "body": "Message",
+        "bodyHint": "Up to 4,000 characters. The person sees it from \"CarPal\", never your name.",
+        "bodyRequired": "Write the message (up to 4,000 characters).",
+        "keepWithTeam": "Keep the ticket with the team (for example after an acknowledgement)",
+        "send": "Send the reply",
+        "sent": "Reply sent. The person is notified.",
+        "effectUser": "The ticket then waits on the person and the team's clock stops.",
+        "effectTeam": "The ticket stays with the team and its clock keeps running."
+      },
+      "convert": {
+        "title": "Turn into",
+        "into": "Work item",
+        "kind": {
+          "moderation_case": "Moderation case",
+          "privacy_request": "Privacy request",
+          "dispute": "Dispute",
+          "plan_request": "Plan request"
+        },
+        "targetType": "What it is about",
+        "targetId": "Its ID",
+        "idHint": "The ID of the record (a UUID).",
+        "reason": "Moderation reason",
+        "severity": "Severity",
+        "floor": "This reason is handled at least as high severity.",
+        "requestType": "Request type",
+        "disputeType": "Dispute type",
+        "plan": "Plan",
+        "statement": "The person's words",
+        "statementHint": "Carried into the item. Empty: the first message of the ticket.",
+        "submit": "Turn into a work item",
+        "done": "Work item created. It follows its own queue.",
+        "effect": "The item is created with the person's words; the person is not notified (answer in the conversation).",
+        "problem": {
+          "into": "Choose a work item.",
+          "target": "Choose what it is about and enter its ID.",
+          "reason": "Choose a moderation reason.",
+          "requestType": "Choose a request type.",
+          "disputeTarget": "Choose what the dispute is about and enter its ID.",
+          "disputeType": "Choose a dispute type.",
+          "planKey": "Choose a plan.",
+          "organization": "A plan request needs a ticket filed for a business.",
+          "statement": "Keep the words to 2,000 characters."
+        }
+      },
+      "close": {
+        "title": "Close",
+        "needsItem": "\"Turned into a work item\" needs a linked item first.",
+        "note": "Internal note (optional)",
+        "noteHint": "Never shown to the person.",
+        "noteTooLong": "Keep the note to 2,000 characters.",
+        "submit": "Close the ticket",
+        "done": "Ticket solved. The person is notified.",
+        "effect": "Outcome: {{outcome}}. The person can reopen it by replying within 14 days."
+      },
+      "dialog": {
+        "assign": "Assign \"{{subject}}\"",
+        "reply": "Reply to \"{{subject}}\"",
+        "convert": "Turn \"{{subject}}\" into a work item",
+        "close": "Close \"{{subject}}\""
+      },
+      "solvedNote": "A solved ticket is closed to staff. If the person replies within 14 days, it opens again in the inbox.",
+      "notOpen": "This ticket cannot be opened for you: it is solved, or a colleague is handling it. Check the list for its state."
     }
   }
 }

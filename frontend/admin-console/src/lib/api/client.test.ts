@@ -44,6 +44,16 @@ describe('admin client: request shape', () => {
     expect(seen[1]!.headers.get('carpal-access-purpose')).toBeNull();
   });
 
+  it('marks a background read with CarPal-Background, on GET only (D-102)', async () => {
+    const { api, seen } = setup(() => json({ count: 0 }));
+    await api.api('admin.notifications_unread_count', { background: true });
+    expect(seen[0]!.headers.get('carpal-background')).toBe('1');
+    await api.api('admin.notifications_mark_read', { body: { ids: [UUID] }, background: true });
+    expect(seen[1]!.headers.get('carpal-background')).toBeNull();
+    await api.api('admin.notifications_unread_count');
+    expect(seen[2]!.headers.get('carpal-background')).toBeNull();
+  });
+
   it('refuses a PURP read without a valid purpose before sending (PURPOSE_REQUIRED)', async () => {
     const { api, seen } = setup(() => json({}));
     await expect(api.api('admin.user_get', { path: { user_id: UUID } })).rejects.toMatchObject({

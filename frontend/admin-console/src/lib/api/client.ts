@@ -21,9 +21,9 @@ import { isRetryable, OperationGate, RETRY, retryDelay } from './retry';
 import { uuidv7 } from './uuid';
 
 /** SEC-ADM-5: the work item a purpose-bound read is for (GD-10), e.g. `case:0193…`. */
-export type PurposeKind = 'case' | 'dispute' | 'dsr' | 'verification' | 'approval';
+export type PurposeKind = 'case' | 'dispute' | 'dsr' | 'verification' | 'approval' | 'ticket';
 export type AccessPurpose = `${PurposeKind}:${string}`;
-const PURPOSE = /^(case|dispute|dsr|verification|approval):[0-9a-f-]{36}$/;
+const PURPOSE = /^(case|dispute|dsr|verification|approval|ticket):[0-9a-f-]{36}$/;
 
 export function purposeOf(kind: PurposeKind, id: string): AccessPurpose {
   return `${kind}:${id}`;
@@ -58,6 +58,11 @@ export type CallArgs<Id extends AdminOperationId> = MaybeRequired<'path', AdminP
     ifMatch?: string;
     /** Reuse a key across a user-initiated retry of the same write. */
     idempotencyKey?: string;
+    /**
+     * A read the console makes on its own (a refresh every minute): sent with CarPal-Background so the BFF does not
+     * count it as activity and the 30-minute idle end still comes (AC14, D-102). Honoured on GET only.
+     */
+    background?: boolean;
     signal?: AbortSignal;
   };
 
@@ -116,6 +121,9 @@ export class EtagCache {
  * If-Match for a record read from a list (AC6): admin lists carry no ETag header per record, so the record's own
  * `version` is the precondition (SEC-IC-3: the server's ETag is "v<version>"). A stale one answers 412 VERSION_MISMATCH.
  */
+/** Marks a console-initiated read that is not staff activity (D-102); the BFF reads and drops it. */
+export const BACKGROUND_HEADER = 'carpal-background';
+
 export function ifMatchOf(version: number): string {
   return `"v${version}"`;
 }
@@ -134,8 +142,10 @@ export function buildSearch(query: Record<string, unknown> | undefined): string 
   const p = new URLSearchParams();
   for (const [k, v] of Object.entries(query)) {
     if (v === undefined || v === null) continue;
-    if (Array.isArray(v)) for (const item of v) p.append(k, String(item));
-    else p.append(k, String(v));
+    // An array is one comma-separated value: the backend refuses a repeated parameter (libs/http-pipeline parseQuery).
+    if (Array.isArray(v)) {
+      if (v.length) p.append(k, v.map(String).join(','));
+    } else p.append(k, String(v));
   }
   const s = p.toString();
   return s ? `?${s}` : '';
@@ -202,6 +212,7 @@ export function createApiClient(o: ApiClientOptions): ApiClient {
       body = JSON.stringify(bodyValue);
     }
     if (op.idempotent) headers.set('idempotency-key', args.idempotencyKey ?? uuidv7());
+    if (args.background && op.method === 'GET') headers.set(BACKGROUND_HEADER, '1');
     if (op.etag) {
       const ifMatch = args.ifMatch ?? etags.get(path);
       if (ifMatch) headers.set('if-match', ifMatch);

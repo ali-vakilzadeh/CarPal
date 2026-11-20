@@ -1,8 +1,8 @@
 // The console's navigation sections (AC4.T3, Docs/23 §3.1, GD-09). A section is visible to a staff member when one of
 // their roles may call one of the operations the section is built on (the generated role table, src/lib/roles); the
-// server still decides every call. Sections whose screens have no operation in contract 1.3.0 are not listed
-// (Featured placements, Notifications & templates, Policies & consent texts, Support: GD-08, BR-11..BR-13, D-25);
-// they join when their operations exist. `stage` says when the screen arrives; until then the section opens a
+// server still decides every call. Sections whose screens have no operation are not listed (Featured placements,
+// GD-08, D-25); Notifications & templates and Policies & consent texts joined in AC14-1 (contract 1.5.0), Support
+// joins with AC14-2. `stage` says when the screen arrives; until then the section opens a
 // placeholder page (src/app/(console)/[section]/page.tsx), and a real page folder of the same name takes over.
 import type { AdminOperationId, StaffRole } from '@/lib/api/generated';
 import { canCallAny } from '@/lib/roles';
@@ -44,6 +44,9 @@ export type SectionId =
   | 'flags'
   | 'rates'
   | 'retention'
+  | 'policies'
+  | 'notifications'
+  | 'support'
   | 'staff';
 
 export const SECTIONS: readonly Section[] = [
@@ -57,6 +60,8 @@ export const SECTIONS: readonly Section[] = [
   { id: 'inventory', path: '/inventory', group: 'work', icon: 'part', ops: ['admin.cases_list'], stage: 'AC8' },
   { id: 'disputes', path: '/disputes', group: 'work', icon: 'comment', ops: ['admin.disputes_queue'], stage: 'AC7' },
   { id: 'privacy', path: '/privacy', group: 'work', icon: 'lock', ops: ['admin.dsr_queue'], stage: 'AC10' },
+  // A-SUP-01 (AC14.T5): the support inbox for support staff and platform admins.
+  { id: 'support', path: '/support', group: 'work', icon: 'chat', ops: ['admin.support_tickets_list'], stage: 'AC14' },
   { id: 'users', path: '/users', group: 'records', icon: 'user', ops: ['admin.users_search'], stage: 'AC10' },
   { id: 'orgs', path: '/orgs', group: 'records', icon: 'building', ops: ['admin.orgs_search'], stage: 'AC9' },
   {
@@ -82,13 +87,17 @@ export const SECTIONS: readonly Section[] = [
   { id: 'flags', path: '/flags', group: 'settings', icon: 'sliders', ops: ['admin.flags_list'], stage: 'AC6' },
   { id: 'rates', path: '/rates', group: 'settings', icon: 'refresh', ops: ['admin.exchange_rates_list'], stage: 'AC6' },
   { id: 'retention', path: '/retention', group: 'settings', icon: 'clock', ops: ['admin.retention_list'], stage: 'AC6' },
+  // A-POL-01 (AC14.T4): policy documents and consent texts with versions.
+  { id: 'policies', path: '/policies', group: 'settings', icon: 'doc', ops: ['admin.policies_list'], stage: 'AC14' },
+  // A-NOTIF-01 (AC14.T3): message templates, notification rules and delivery health.
+  { id: 'notifications', path: '/notifications', group: 'settings', icon: 'bell', ops: ['admin.notif_templates_list'], stage: 'AC14' },
   {
     id: 'staff',
     path: '/staff',
     group: 'settings',
     icon: 'user',
-    ops: ['admin.platform_role_grant', 'admin.platform_role_revoke'],
-    // A-STAFF-01 (directory, disable, four-eyes enable) is AC14.T2; AC10 grants and revokes roles on the user page.
+    // A-STAFF-01 (AC14.T2): the directory with roles, disable and four-eyes enable, for platform admins.
+    ops: ['admin.staff_disable', 'admin.platform_role_grant', 'admin.platform_role_revoke'],
     stage: 'AC14',
   },
 ];

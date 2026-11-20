@@ -4,7 +4,7 @@
 // main area. Below 1000 px the navigation folds behind a menu button. Around it: keyboard shortcuts (AC4.T7), step-up
 // with action replay (AC4.T5) and the session watch with the idle warning (AC4.T4). The lookup box and the queue
 // is a placeholder until AC10 (it says so; no dead actions, GD-08). My queue (AC5) links to My work with the number of
-// changes waiting for the caller's approval.
+// changes waiting for the caller's approval; the bell (AC14.T3, D-79) lists the caller's staff notices.
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useId, useRef, useState, type ReactNode } from 'react';
@@ -18,6 +18,7 @@ import { useWorkSummary } from '@/lib/work/summary';
 import { useT } from '@/lib/i18n/client';
 import { isSigninOutcome, outcomeMessage } from '@/features/auth';
 import { AccountMenu } from './account-menu';
+import { NoticeBell } from './notice-bell';
 import { SECTION_GROUPS, sectionOfPath, visibleSections } from './sections';
 import { SessionWatch } from './session-watch';
 import { ShortcutProvider, useOpenShortcutHelp, useShortcut } from './shortcuts';
@@ -103,6 +104,7 @@ function ShellFrame({ envBadge, themeChoice, children }: ConsoleShellProps) {
           </kbd>
         </div>
         <MyQueue />
+        <NoticeBell />
         <IconButton icon="help" label={t('admin.shell.shortcuts.open')} onClick={openHelp} />
         {staff ? (
           <Suspense fallback={null}>

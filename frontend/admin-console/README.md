@@ -360,6 +360,42 @@ Contract 1.5.0 §23.5. Every screen reads its numbers from the server; nothing p
 - The audit log and the MCP access log are searched only when staff press Search (each search is audited and
   rate-limited); the submitted search lives in the URL (`window=`, or `from`/`to`, and `at=`).
 
+## Staff, policies and notifications (AC14-1)
+
+Contract 1.5.0 (backend S13, S15/S15b, S17, S25a, S26a); platform admins only.
+
+- **Staff & permissions** (`/staff`, A-STAFF-01): every staff member with masked email, roles, security keys, last
+  sign-in and status, filtered by role and status. A member's panel gives or removes roles (a grant waits for a second
+  admin), disables the member at once (all roles suspended, sessions ended, their pending four-eyes requests rejected;
+  never yourself) and asks to enable them again (four-eyes). `?member=<id>` opens a member even when they are not on
+  the page on screen. There is no invite and no access request: new staff are made with backend `pnpm staff:bootstrap`.
+- **Policies & consent texts** (`/policies`, A-POL-01): the 16 documents with their versions. Published, scheduled and
+  replaced versions are read-only (the Markdown is shown as typed). "New version" starts from the newest texts; a
+  draft needs a label and a title and text in English and Persian (a change summary in both or neither) and is saved
+  with If-Match. Publishing (as soon as approved, or from a day and time on your clock; re-consent yes or no; for a
+  consent text, older consents kept or paused) waits for a second admin. The BFF lets these two writes carry 256 KiB.
+- **Notifications & templates** (`/notifications`, A-NOTIF-01): email, push and SMS templates per language with flags
+  (always delivered, locked, missing or outdated translation), the placeholders, a preview with sample values, a staff
+  text saved with a reason, and Reset to the built-in text; the rules (review invitations and reminders, approval
+  reminders to businesses, quiet hours, digests, maintenance due windows; the odometer prompt follows in AC14b); and
+  delivery health per channel and provider. In-app texts stay in the dictionaries.
+- **Notices** (the bell in the top bar): your unread staff notices (four-eyes outcomes, account recovery and break glass,
+  the AI kill switch, privacy deadlines, the exchange-rate reminder), each linked to where it is handled.
+- **Idle time**: reads the console makes on its own (minute refreshes, the bell) are sent with `CarPal-Background` and do
+  not keep the session alive; a screen left open signs out after 30 minutes like any other.
+
+## Support inbox (AC14-2)
+
+- **Support inbox** (`/support`, A-SUP-01; support staff and admins): tickets from the apps by view (open, waiting on the
+  person, solved, all), topic and "assigned to me", with the team's clock (first answer within 1 working day; it stops
+  while the ticket waits on the person). A ticket opens for its own purpose (`ticket:<id>`): the conversation (staff
+  messages reach the person as "CarPal"), the app details, what it was turned into and the internal note; the person's
+  and the business's pages open for the ticket. Take it or give it to a colleague; reply from a template in English or
+  Persian (`src/lib/config/support-replies.ts`, editable); turn it into a moderation case, a privacy request, a dispute or
+  a plan request; close it with an outcome. A solved ticket is shown from its row: the purpose closes when it is solved.
+  The dashboard's support tile opens the inbox.
+- Array query values are sent as one comma-separated value (`status=new,waiting_on_team`), as the backend reads them.
+
 ## Integration tests
 
 `pnpm test:int` signs a fresh ADM account in through the BFF (password, emailed code, a software security key, then
@@ -402,7 +438,12 @@ one in Persian; every account is new, because a recovery restricts its account f
 (AC12: two `e2e-` brands, a transliteration, an edit, a merge approved by a second admin with its job, the survivor
 set inactive; a moderator in Persian) and `oversight.spec.ts` (AC13: the home dashboard and every analytics dashboard
 key with axe in EN and FA, an MCP tool removal that a second admin rejects, so nothing changes, found again in the
-audit log, the access log, AI oversight as a moderator) sign real staff in. A
+audit log, the access log, AI oversight as a moderator) and `settings-ac14.spec.ts` (AC14-1: a throwaway `e2e-`
+moderator gets a role grant and an enable that a second admin rejects and is disabled, with the outcome in the bell; an
+`e2e-` draft of the marketing consent text sent for publication and rejected, so no version goes live; in Persian a
+template text saved, previewed and reset, and the rules changed and saved back) and `support.spec.ts` (AC14-2: an app
+user's ticket taken, acknowledged, turned into a privacy request and closed, the reply seen by the person as "CarPal";
+a ticket answered and closed in Persian) sign real staff in. A
 sign-in that enrols a key stores the recovery codes shown once (`tests/e2e/staff.ts` `storeRecoveryCodes`). `moderation.spec.ts` turns the community flags on in dev (backend `pnpm dev:flags set community on`)
 and has a shop publish a post and a customer report it; the backend asks for the key only when the sign-in is older
 than 10 minutes, so the spec answers the first suspend call with the backend's `STEP_UP_REQUIRED` and the replay

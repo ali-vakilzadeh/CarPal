@@ -30,7 +30,16 @@ test('first sign-in: password, emailed code, security key enrolment, the key; th
   await expect(page.getByRole('heading', { level: 1, name: 'Feature flags' })).toBeVisible();
   const session = await (await page.request.get('/bff/session')).json();
   expect(session).toMatchObject({ signed_in: true, staff: { roles: ['ADM'], acr: 'aal3', display_name: 'Ada Admin' } });
-  expect(await navSections(page)).toEqual(expect.arrayContaining(['Feature flags', 'Exchange rates', 'Audit log', 'Staff']));
+  expect(await navSections(page)).toEqual(
+    expect.arrayContaining([
+      'Feature flags',
+      'Exchange rates',
+      'Audit log',
+      'Staff & permissions',
+      'Policies & consent texts',
+      'Notifications & templates',
+    ]),
+  );
   // The browser holds the session cookie and the language cookie only (no token, GD-12).
   const cookies = (await context.cookies()).map((c) => c.name).sort();
   expect(cookies).toEqual(['__Host-cpa_sid', 'cpa_locale']);
@@ -42,7 +51,17 @@ test('a moderator sees no ADM-only section, and an ADM URL answers the no-permis
   await expect(page.getByRole('heading', { level: 1, name: 'My work' })).toBeVisible();
   const sections = await navSections(page);
   expect(sections).toEqual(expect.arrayContaining(['Pending approvals', 'Reviews', 'Content', 'Disputes & appeals']));
-  for (const adm of ['Feature flags', 'Exchange rates', 'Plans & entitlements', 'Data retention', 'Audit log', 'MCP clients', 'Staff'])
+  for (const adm of [
+    'Feature flags',
+    'Exchange rates',
+    'Plans & entitlements',
+    'Data retention',
+    'Audit log',
+    'MCP clients',
+    'Staff & permissions',
+    'Policies & consent texts',
+    'Notifications & templates',
+  ])
     expect(sections).not.toContain(adm);
 
   // In the shell, server-rendered (status 200, D-26: forbidden() would leave a blank page under Trusted Types).
@@ -62,7 +81,7 @@ test('a moderator sees no ADM-only section, and an ADM URL answers the no-permis
 });
 
 for (const [role, expected] of [
-  ['SUP', ['Dashboard', 'Content', 'Privacy requests', 'Users', 'Organizations', 'Analytics']],
+  ['SUP', ['Dashboard', 'Content', 'Privacy requests', 'Support inbox', 'Users', 'Organizations', 'Analytics']],
   ['CRV', ['Dashboard', 'Reviews', 'Disputes & appeals']],
 ] as const) {
   test(`${role} sees exactly its sections`, async ({ context, page }) => {

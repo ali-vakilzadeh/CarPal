@@ -3,6 +3,8 @@
 // (src/server/bff-runtime.ts builds it from the console environment); nothing here reads process.env, so the BFF can
 // move to backend/api-gateway or a shared package unchanged.
 
+import type { AdminOperationId } from '@/lib/api/generated';
+
 export interface BffConfig {
   /** Public origin of the console, e.g. http://localhost:3200 (Origin check, redirect URI). */
   origin: string;
@@ -41,6 +43,14 @@ export const INTERACTION_COOKIE = '__Host-cp_ia';
 export const RESUME_COOKIE = '__Host-cpa_iar';
 /** Largest request body the BFF accepts (the backend's MAX_BODY_BYTES is 64 KiB). */
 export const MAX_BODY_BYTES = 64 * 1024;
+/**
+ * Operations whose body may be larger, exactly as the backend allows them (backend libs/http-pipeline/pipeline.ts
+ * BODY_LIMITS, S15-D2): the policy texts in every locale (AC14.T4).
+ */
+export const BODY_LIMITS: Partial<Record<AdminOperationId, number>> = {
+  'admin.policy_version_create': 256 * 1024,
+  'admin.policy_version_update': 256 * 1024,
+};
 /** Access tokens are refreshed this long before they expire. */
 export const REFRESH_SKEW_MS = 30_000;
 

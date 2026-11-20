@@ -21,6 +21,8 @@ export const SLA_TARGETS = {
   reportOther: { hours: 48 },
   inventory: { hours: 48 },
   dispute: { workingDays: 5 },
+  // Support tickets (AC14.T5): the first response within 1 working day (Docs/23 §6), on the team's clock.
+  support: { workingDays: 1 },
 } as const satisfies Record<string, SlaTarget>;
 
 /** Moderation reasons that get the 4-hour target (Docs/23 §6: unsafe advice, non-consensual media, privacy). */

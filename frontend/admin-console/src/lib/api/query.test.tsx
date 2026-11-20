@@ -100,3 +100,39 @@ describe('ApiProvider cache (GD-12)', () => {
     window.removeEventListener(SESSION_ENDED_EVENT, ended);
   });
 });
+
+describe('background reads (D-102)', () => {
+  function Read({ background }: { background?: boolean }) {
+    const q = useApiQuery('admin.flags_list', background === undefined ? undefined : { background });
+    return <span>{q.data ? 'read' : 'reading'}</span>;
+  }
+
+  async function run(background?: boolean) {
+    vi.stubGlobal('fetch', fetchMock);
+    const queryClient = createQueryClient();
+    const seen: (string | null)[] = [];
+    const api = createApiClient({
+      transport: async (req) => {
+        seen.push(req.headers.get('carpal-background'));
+        return Response.json({ items: [], next_cursor: null });
+      },
+    });
+    render(
+      <ApiProvider client={api} queryClient={queryClient}>
+        <Read {...(background === undefined ? {} : { background })} />
+      </ApiProvider>,
+    );
+    await screen.findByText('read');
+    await act(() => queryClient.refetchQueries({ queryKey: ['admin.flags_list'] }));
+    await waitFor(() => expect(seen).toHaveLength(2));
+    return seen;
+  }
+
+  it('a first read is activity; reading the same data again is a background read', async () => {
+    expect(await run()).toEqual([null, '1']);
+  });
+
+  it('background: false (a job the staff member watches) never is', async () => {
+    expect(await run(false)).toEqual([null, null]);
+  });
+});

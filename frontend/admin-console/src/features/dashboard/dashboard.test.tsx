@@ -144,8 +144,8 @@ describe('Dashboard (AC13.T6)', () => {
     expect(within(tiles[1]!).getByText('2 overdue')).toBeInTheDocument();
     expect(within(tiles[1]!).getByText('1 assigned to you')).toBeInTheDocument();
     expect(tiles[1]).toHaveAttribute('href', '/verification');
-    // A queue without a console page is a plain tile; an unknown key says so.
-    expect(tiles[3]!.tagName).toBe('DIV');
+    // The support queue opens the support inbox (AC14.T5); an unknown key says so.
+    expect(tiles[3]).toHaveAttribute('href', '/support');
     expect(tiles[4]).toHaveTextContent('Unknown (brand_new_queue)');
     await waitFor(() => expect(tiles[5]).toHaveAttribute('data-count', '0'));
 

@@ -172,7 +172,7 @@ export function PrivacyPage() {
     },
   });
   const deletion = useAdminAction('admin.dsr_execute_deletion', { target: selectedId ?? undefined, onOutcome: refresh });
-  const job = useApiQuery('admin.job_get', jobId ? { path: { job_id: jobId } } : undefined, {
+  const job = useApiQuery('admin.job_get', jobId ? { path: { job_id: jobId }, background: false } : undefined, {
     enabled: !!jobId,
     refetchInterval: (q) => (q.state.data && JOB_DONE.includes(q.state.data.status) ? false : 3_000),
   });

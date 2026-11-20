@@ -48,7 +48,16 @@ export type ReasonKind =
   | 'taxonomy_merge'
   | 'mcp_access'
   | 'mcp_suspend'
-  | 'mcp_reactivate';
+  | 'mcp_reactivate'
+  | 'staff_disable'
+  | 'staff_enable'
+  | 'policy_edit'
+  | 'policy_publish'
+  | 'template_edit'
+  | 'support_assign'
+  | 'support_reply'
+  | 'support_convert'
+  | 'support_close';
 
 export interface ReasonSet {
   codes: readonly string[];
@@ -125,6 +134,21 @@ export const REASON_SETS: Record<ReasonKind, ReasonSet> = {
   mcp_access: { codes: ['least_privilege', 'new_capability', 'incident_response', 'correction', 'other'], noteRequired: true },
   mcp_suspend: { codes: ['incident_response', 'suspicious_activity', 'policy_violation', 'planned_change', 'other'], noteRequired: true },
   mcp_reactivate: { codes: ['incident_resolved', 'planned_change', 'other'], noteRequired: false },
+  // Staff directory (AC14.T2). Disabling stops a colleague at once and enabling gives platform power back after a
+  // second administrator, so both carry a note.
+  staff_disable: { codes: ['staff_left', 'security_concern', 'suspicious_activity', 'other'], noteRequired: true },
+  staff_enable: { codes: ['staff_returned', 'mistake', 'incident_resolved', 'other'], noteRequired: true },
+  // Policies and consent texts (AC14.T4). Publishing changes what every user agrees to and waits for a second admin,
+  // who reads the note.
+  policy_edit: { codes: ['legal_update', 'translation', 'correction', 'planned_change', 'other'], noteRequired: false },
+  policy_publish: { codes: ['legal_update', 'planned_change', 'correction', 'other'], noteRequired: true },
+  // Notification templates (AC14.T3): a staff text and its reset back to the built-in text.
+  template_edit: { codes: ['translation', 'correction', 'planned_change', 'other'], noteRequired: false },
+  // Support tickets (AC14.T5). The requester reads only the reply itself; the reason is the staff record.
+  support_assign: { codes: ['taking_over', 'needs_admin', 'workload', 'other'], noteRequired: false },
+  support_reply: { codes: ['user_request', 'needs_information', 'status_update', 'other'], noteRequired: false },
+  support_convert: { codes: ['needs_review', 'user_request', 'legal_request', 'other'], noteRequired: false },
+  support_close: { codes: ['action_completed', 'duplicate', 'outside_policy', 'other'], noteRequired: false },
 };
 
 /** Every code of every set (for the translation check and the parser). */

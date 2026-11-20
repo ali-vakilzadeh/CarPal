@@ -4,6 +4,7 @@
 // unread count, mark read) arrives with A-NOTIF-01 in AC14, which reads this map and adds the other templates. AC13 adds
 // the AI kill-switch notice (backend S17, BR-26: sent to administrators when ai.automation.kill_switch is turned on or off).
 import type { Notification } from '@carpal/api-contracts';
+import { opLabel } from '@/components/admin/op-label';
 import type { MessageKey, Translate } from '@/lib/i18n/keys';
 
 export interface StaffNoticeDef {
@@ -24,8 +25,26 @@ export const STAFF_NOTICES: Readonly<Record<string, StaffNoticeDef>> = {
   // A recovery was completed with a new key: the account is restricted for 72 hours.
   'staff.recovery_done': { text: 'admin.notices.recoveryDone', href: recoveryHref },
   // Keys and codes were reset from the server (deploy/staff-break-glass.sh): if nobody expected it, disable the account.
-  // The staff directory (AC14) will open the member; until then the notice is read only.
-  'staff.break_glass_notice': { text: 'admin.notices.breakGlass', href: () => null },
+  // The staff directory (AC14.T2) opens the member.
+  'staff.break_glass_notice': {
+    text: 'admin.notices.breakGlass',
+    href: (r) => (r?.type === 'user_account' ? `/staff?member=${encodeURIComponent(r.id)}` : '/staff'),
+  },
+  // AC14.T3 (the bell): a four-eyes change the caller asked for was approved, rejected or expired ({op_id}, {status}).
+  'staff.four_eyes_outcome': {
+    text: 'admin.notices.fourEyesOutcome',
+    href: (r) => (r?.type === 'pending_change' ? `/approvals?change=${encodeURIComponent(r.id)}` : '/approvals'),
+    params: (raw, t) => ({
+      status: ['approved', 'rejected', 'expired'].includes(raw.status ?? '')
+        ? t(`admin.notices.fourEyesStatus.${raw.status as 'approved' | 'rejected' | 'expired'}`)
+        : t('admin.kit.unknown', { value: raw.status ?? '' }),
+      change: opLabel(raw.op_id ?? '', t),
+    }),
+  },
+  // Privacy requests are close to their legal deadline ({request_count}).
+  'admin.dsr_deadline': { text: 'admin.notices.dsrDeadline', href: () => '/privacy' },
+  // The morning reminder to enter the day's exchange rate (backend S26a; {currency}, {per_usd} the rate in force).
+  'staff.exchange_rate_reminder': { text: 'admin.notices.rateReminder', href: () => '/rates' },
   // The AI automation kill switch was turned on or off ({enabled}: on | off); Feature flags shows and changes it.
   'staff.kill_switch_changed': {
     text: 'admin.notices.killSwitch',
