@@ -6,6 +6,7 @@
 //   - CarPal-Access-Purpose (GD-10) only on PURP operations and only in the contract's format kind:<uuid>;
 //   - CarPal-Reason (GD-11, DI-09) only on DELETE operations that take a reason, one printable line;
 //   - Idempotency-Key and If-Match passed through; retry and poll delays passed back unchanged (SEC-RL-5);
+//   - CarPal-Forwarded-Client: the visitor's address signed with the client key (AC14b.T7; left out when unknown);
 //   - no-store and the BFF security headers on every response; Set-Cookie and DPoP-Nonce never reach the browser.
 // On a 401 the token is renewed once and the request repeated (the API refused it before running the operation);
 // STEP_UP_REQUIRED passes through with its WWW-Authenticate challenge, which the browser client turns into /bff/reauth.
@@ -15,6 +16,7 @@ import { BODY_LIMITS, clientHeader, MAX_BODY_BYTES, type BffConfig } from './con
 import { checkCsrf } from './csrf';
 import { isCanonicalPath, type AdminAllowlist } from './allowlist';
 import { problem, readBody, withSecurityHeaders } from './http';
+import { FORWARDED_CLIENT_HEADER, forwardedClientHeader, type ForwardedClientSigner } from './forwarded-client';
 import { dpopProof } from './oauth/dpop';
 import { TokenEndpointError } from './oauth/token-client';
 import type { SessionManager } from './session/manager';
@@ -56,6 +58,8 @@ export interface ForwarderDeps {
   tokens: SessionTokens;
   allowlist: AdminAllowlist;
   fetch: typeof fetch;
+  /** CarPal-Forwarded-Client signer (AC14b.T7); absent in lite dev. */
+  forwardedClient?: ForwardedClientSigner | undefined;
 }
 
 export function pickLocale(header: string | null, config: Pick<BffConfig, 'locales'>, fallback?: string): string {
@@ -101,6 +105,9 @@ export async function forward(request: Request, d: ForwarderDeps): Promise<Respo
   headers.set('accept-language', pickLocale(request.headers.get('accept-language'), d.config, session.staff?.locale ?? session.locale));
   const tz = request.headers.get('carpal-timezone') ?? session.staff?.timezone;
   if (tz && TIMEZONE.test(tz)) headers.set('carpal-timezone', tz);
+  const audience = d.config.adminApiAudience;
+  const forwarded = await forwardedClientHeader(d.forwardedClient, request, { audience, method, htu: `${audience}${path}` });
+  if (forwarded) headers.set(FORWARDED_CLIENT_HEADER, forwarded);
 
   let body: Uint8Array | undefined;
   if (method !== 'GET' && method !== 'DELETE') {

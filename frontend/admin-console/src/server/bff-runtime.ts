@@ -6,6 +6,7 @@ import packageJson from '../../package.json';
 import { LOCALES, LOCALE_COOKIE } from '@/lib/i18n/locales';
 import {
   createBff,
+  forwardedClientSigner,
   DEFAULT_LIFETIMES,
   LiteRecoveryStore,
   LiteSessionStore,
@@ -16,6 +17,7 @@ import {
   type Bff,
   type BffConfig,
   type ClientAuthentication,
+  type ForwardedClientSigner,
 } from './bff';
 import { ADMIN_CLIENT_ID, serverEnv, type ServerEnv } from './env';
 
@@ -41,6 +43,13 @@ export function clientAuthentication(env: ServerEnv): ClientAuthentication | und
   return privateKeyJwt(key, key.crv === 'Ed25519' ? 'EdDSA' : 'ES256');
 }
 
+/** CarPal-Forwarded-Client (AC14b.T7) with the same cp-web-admin key; none without one (lite dev). */
+export function forwardedClient(env: ServerEnv): ForwardedClientSigner | undefined {
+  const key = env.CARPAL_ADMIN_CLIENT_PRIVATE_JWKS?.[ADMIN_CLIENT_ID];
+  if (!key) return undefined;
+  return forwardedClientSigner(key, key.crv === 'Ed25519' ? 'EdDSA' : 'ES256', ADMIN_CLIENT_ID);
+}
+
 const holder = globalThis as typeof globalThis & { __carpalAdminBff?: Bff };
 
 export function bff(): Bff {
@@ -51,7 +60,14 @@ export function bff(): Bff {
     // The staff recovery handles (AC10b) live where the sessions do, under their own key prefix.
     const recoveryStore = redis ? new RedisRecoveryStore(redis) : new LiteRecoveryStore();
     const clientAuth = clientAuthentication(env);
-    holder.__carpalAdminBff = createBff({ config: bffConfig(env), store, recoveryStore, ...(clientAuth ? { clientAuth } : {}) });
+    const signer = forwardedClient(env);
+    holder.__carpalAdminBff = createBff({
+      config: bffConfig(env),
+      store,
+      recoveryStore,
+      ...(clientAuth ? { clientAuth } : {}),
+      ...(signer ? { forwardedClient: signer } : {}),
+    });
   }
   return holder.__carpalAdminBff;
 }

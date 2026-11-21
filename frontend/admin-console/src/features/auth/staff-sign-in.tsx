@@ -4,6 +4,9 @@
 // (cookie-bound on the auth host) and the typed email survive between them:
 //   sign-in   email + password (auth.signin_password, proof of work in strict mode), or the security key alone
 //             (auth.webauthn_options purpose signin); for a step-up (prompt=login) the key comes first
+//   password  a staff account seeded with an initial or one-time password (next 'change_password', contract 1.5.0,
+//             AC14b.T2): the emailed code and a new password twice (auth.password_set_initial); no way to skip. The
+//             same code then opens the enrolment of an account without a key (carried over, not typed again)
 //   enrol     a staff account without a device-bound key (next 'enrol_passkey'): the emailed code, then the browser
 //             creates the key (auth.passkey_enrol_options, auth.passkey_enrol); the auth host asks for it at once
 //   key       the second factor with the security key (next 'mfa'; staff use WebAuthn only, SEC-AU-9)
@@ -43,6 +46,7 @@ import {
   recoveryKeyOptions,
   verifyWithPasskey,
 } from './passkey';
+import { NEW_PASSWORD_MAX, NEW_PASSWORD_MIN, newPasswordProblem, newPasswordRefusal, passwordStrength } from './password-rules';
 import { authOutcome, type AuthOutcome } from './problems';
 import { RecoveryCodes } from './recovery-codes';
 
@@ -63,8 +67,9 @@ export interface StaffSignInProps {
 
 type Step =
   | { name: 'signin' }
-  | { name: 'enrol' }
-  | { name: 'mfa'; added: boolean }
+  | { name: 'password' }
+  | { name: 'enrol'; code?: string }
+  | { name: 'mfa'; added: boolean; passwordChanged?: boolean }
   | { name: 'codes'; codes: readonly string[]; then: AuthNext; added: boolean }
   | { name: 'recover'; email: string }
   | { name: 'recoverCode' }
@@ -96,6 +101,9 @@ interface Flow {
  */
 function expiredNote(step: Step): { note?: MessageKey } {
   if ((step.name === 'mfa' && step.added) || step.name === 'codes') return { note: 'admin.signin.expired.keySaved' };
+  // After the first-sign-in password change (AC14b.T2): the initial password no longer works, the new one does.
+  if ((step.name === 'enrol' && step.code) || (step.name === 'mfa' && step.passwordChanged))
+    return { note: 'admin.signin.expired.passwordSaved' };
   if (step.name.startsWith('recover')) return { note: 'admin.signin.expired.recovery' };
   return {};
 }
@@ -141,7 +149,8 @@ export function StaffSignIn(props: StaffSignInProps) {
       } else if (n.next === 'complete') {
         setStep({ name: 'finishing' });
         goTo(resumeUrl);
-      } else if (n.next === 'enrol_passkey') setStep({ name: 'enrol' });
+      } else if (n.next === 'change_password') setStep({ name: 'password' });
+      else if (n.next === 'enrol_passkey') setStep({ name: 'enrol' });
       else if (n.next === 'mfa') setStep({ name: 'mfa', added });
       // verify_email, verify_phone, consent and reactivate are consumer steps: a staff account never gets them (the
       // backend answers them only for accounts that are not active staff). Treat them as a failed sign-in.
@@ -152,8 +161,11 @@ export function StaffSignIn(props: StaffSignInProps) {
   return (
     <div className="adm-auth-steps" data-step={step.name}>
       {step.name === 'signin' ? <SigninStep flow={flow} email={email} onEmail={setEmail} stepUp={props.stepUp} /> : null}
-      {step.name === 'enrol' ? <EnrolStep flow={flow} restartUrl={props.restartUrl} /> : null}
-      {step.name === 'mfa' ? <KeyStep flow={flow} added={step.added} restartUrl={props.restartUrl} /> : null}
+      {step.name === 'password' ? <PasswordStep flow={flow} restartUrl={props.restartUrl} /> : null}
+      {step.name === 'enrol' ? <EnrolStep flow={flow} restartUrl={props.restartUrl} code={step.code} /> : null}
+      {step.name === 'mfa' ? (
+        <KeyStep flow={flow} added={step.added} passwordChanged={!!step.passwordChanged} restartUrl={props.restartUrl} />
+      ) : null}
       {step.name === 'codes' ? <CodesStep flow={flow} codes={step.codes} then={step.then} added={step.added} /> : null}
       {step.name === 'recover' ? <RecoverStep flow={flow} initialEmail={step.email} /> : null}
       {step.name === 'recoverCode' ? <RecoverCodeStep flow={flow} /> : null}
@@ -284,6 +296,10 @@ function SigninStep({ flow, email, onEmail, stepUp }: { flow: Flow; email: strin
           required
         />
         <FormError message={error ? t(error) : null} />
+        {/* An expired initial password gets the same answer as a wrong one (SEC-AU-11, backend S26a): say what to do. */}
+        {error === 'admin.signin.errors.invalid' && !stepUp ? (
+          <p className="adm-auth-text">{t('admin.signin.errors.initialExpired')}</p>
+        ) : null}
         <Button type="submit" variant={stepUp ? 'secondary' : 'primary'} block loading={busy === 'password'} disabled={busy !== null}>
           {t('admin.signin.continue')}
         </Button>
@@ -306,11 +322,136 @@ function SigninStep({ flow, email, onEmail, stepUp }: { flow: Flow; email: strin
   );
 }
 
-// ---------------------------------------------------------------- first security key (BR-03, SEC-ADM-2)
+// ---------------------------------------------------------------- first sign-in password change (AC14b.T2, SEC-ADM-2)
 
-function EnrolStep({ flow, restartUrl }: { flow: Flow; restartUrl: string }) {
+/** Show or hide a password field's text (the field stays type=password unless asked). */
+function RevealButton({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  const t = useT();
+  return (
+    <button type="button" className="adm-auth-reveal" aria-pressed={shown} aria-label={t('admin.signin.initial.show')} onClick={onToggle}>
+      <Icon name="eye" size={20} />
+    </button>
+  );
+}
+
+function PasswordStep({ flow, restartUrl }: { flow: Flow; restartUrl: string }) {
   const t = useT();
   const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
+  const [repeat, setRepeat] = useState('');
+  const [shown, setShown] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [errors, setErrors] = useState<{ code?: MessageKey; password?: MessageKey; repeat?: MessageKey; form?: MessageKey }>({});
+  const strength = password ? passwordStrength(password) : null;
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    const digits = toLatinDigits(code).replace(/\s/g, '');
+    const next: typeof errors = {};
+    if (!/^\d{6}$/.test(digits)) next.code = 'admin.signin.errors.codeFormat';
+    const problem = newPasswordProblem(password, repeat);
+    if (problem === 'length') next.password = 'admin.signin.initial.errors.length';
+    else if (problem === 'repeat') next.repeat = 'admin.signin.initial.errors.repeat';
+    setErrors(next);
+    if (Object.keys(next).length) return;
+    setBusy(true);
+    try {
+      const answer = await flow.auth.call('auth.password_set_initial', {
+        interaction_id: flow.interactionId,
+        code: digits,
+        new_password: password,
+      });
+      // No key yet: the same code opens the enrolment, so it is carried over. With a key: the key step.
+      if (answer.next === 'enrol_passkey') flow.go({ name: 'enrol', code: digits });
+      else if (answer.next === 'mfa') flow.go({ name: 'mfa', added: false, passwordChanged: true });
+      else flow.next(answer);
+    } catch (err) {
+      const refusal = newPasswordRefusal(err);
+      if (refusal) return setErrors({ password: refusal });
+      // Five wrong codes end the interaction (410): the expired step.
+      const outcome = flow.fail(err, 'admin.signin.errors.codeWrong');
+      if (outcome.kind === 'message')
+        setErrors(outcome.message === 'admin.signin.errors.codeWrong' ? { code: outcome.message } : { form: outcome.message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form className="adm-auth-step" onSubmit={submit} noValidate data-testid="change-password">
+      <StepTitle>{t('admin.signin.initial.title')}</StepTitle>
+      <p className="adm-auth-text">{t('admin.signin.initial.why')}</p>
+      <Banner tone="info" icon="doc" text={t('admin.signin.initial.sent')} />
+      <TextField
+        label={t('admin.signin.enrol.code')}
+        hint={t('admin.signin.enrol.codeHint')}
+        name="one-time-code"
+        autoComplete="one-time-code"
+        inputMode="numeric"
+        dir="ltr"
+        maxLength={6}
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        error={errors.code ? t(errors.code) : undefined}
+        required
+      />
+      <div className="adm-auth-rules">
+        <p className="adm-auth-text">{t('admin.signin.initial.rulesTitle')}</p>
+        <ul>
+          <li>{t('admin.signin.initial.rules.length')}</li>
+          <li>{t('admin.signin.initial.rules.breached')}</li>
+          <li>{t('admin.signin.initial.rules.initial')}</li>
+        </ul>
+        <p className="adm-auth-text">{t('admin.signin.initial.rules.tip')}</p>
+      </div>
+      <TextField
+        label={t('admin.signin.initial.new')}
+        type={shown ? 'text' : 'password'}
+        name="new-password"
+        autoComplete="new-password"
+        spellCheck={false}
+        dir="ltr"
+        maxLength={NEW_PASSWORD_MAX}
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        error={errors.password ? t(errors.password) : undefined}
+        hint={strength ? t(`admin.signin.initial.strength.${strength}`) : undefined}
+        end={<RevealButton shown={shown} onToggle={() => setShown((v) => !v)} />}
+        required
+      />
+      <TextField
+        label={t('admin.signin.initial.repeat')}
+        type={shown ? 'text' : 'password'}
+        name="repeat-password"
+        autoComplete="new-password"
+        spellCheck={false}
+        dir="ltr"
+        maxLength={NEW_PASSWORD_MAX}
+        value={repeat}
+        onChange={(e) => setRepeat(e.target.value)}
+        error={errors.repeat ? t(errors.repeat) : undefined}
+        required
+      />
+      <FormError message={errors.form ? t(errors.form) : null} />
+      <Button type="submit" variant="primary" block loading={busy}>
+        {t('admin.signin.initial.save')}
+      </Button>
+      <p className="adm-auth-text adm-auth-aside">
+        {t('admin.signin.enrol.noCode')}{' '}
+        <a className="adm-link" href={restartUrl}>
+          {t('admin.signin.expired.restart')}
+        </a>
+      </p>
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------- first security key (BR-03, SEC-ADM-2)
+
+function EnrolStep({ flow, restartUrl, code: carried }: { flow: Flow; restartUrl: string; code?: string | undefined }) {
+  const t = useT();
+  // After the first-sign-in password change the same emailed code opens the enrolment (backend S26a): prefilled.
+  const [code, setCode] = useState(carried ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<MessageKey | null>(null);
   const canKey = useBrowserValue(passkeysSupported, true);
@@ -344,8 +485,9 @@ function EnrolStep({ flow, restartUrl }: { flow: Flow; restartUrl: string }) {
   return (
     <form className="adm-auth-step" onSubmit={submit} noValidate>
       <StepTitle>{t('admin.signin.enrol.title')}</StepTitle>
+      {carried ? <Banner tone="success" text={t('admin.signin.initial.changed')} /> : null}
       <p className="adm-auth-text">{t('admin.signin.enrol.why')}</p>
-      <Banner tone="info" icon="doc" text={t('admin.signin.enrol.sent')} />
+      <Banner tone="info" icon="doc" text={t(carried ? 'admin.signin.enrol.sameCode' : 'admin.signin.enrol.sent')} />
       <TextField
         label={t('admin.signin.enrol.code')}
         hint={t('admin.signin.enrol.codeHint')}
@@ -374,7 +516,17 @@ function EnrolStep({ flow, restartUrl }: { flow: Flow; restartUrl: string }) {
 
 // ---------------------------------------------------------------- the security key as the second factor
 
-function KeyStep({ flow, added, restartUrl }: { flow: Flow; added: boolean; restartUrl: string }) {
+function KeyStep({
+  flow,
+  added,
+  passwordChanged,
+  restartUrl,
+}: {
+  flow: Flow;
+  added: boolean;
+  passwordChanged: boolean;
+  restartUrl: string;
+}) {
   const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<MessageKey | null>(null);
@@ -400,6 +552,7 @@ function KeyStep({ flow, added, restartUrl }: { flow: Flow; added: boolean; rest
     <div className="adm-auth-step">
       <StepTitle>{t('admin.signin.mfa.title')}</StepTitle>
       {added ? <Banner tone="success" text={t('admin.signin.mfa.added')} /> : null}
+      {passwordChanged ? <Banner tone="success" text={t('admin.signin.initial.changed')} /> : null}
       <p className="adm-auth-text">{t('admin.signin.mfa.text')}</p>
       <FormError message={error ? t(error) : null} />
       <Button variant="primary" icon="lock" block loading={busy} onClick={() => void verify()}>
@@ -432,8 +585,6 @@ export function normalizeRecoveryCode(raw: string): string {
 }
 
 const RECOVERY_CODE = /^[0-9A-Z-]{20,40}$/;
-export const NEW_PASSWORD_MIN = 12;
-export const NEW_PASSWORD_MAX = 128;
 
 function RecoverStep({ flow, initialEmail }: { flow: Flow; initialEmail: string }) {
   const t = useT();

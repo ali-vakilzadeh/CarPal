@@ -15,6 +15,7 @@ import {
   publicProfileHref,
   statusChanges,
   verificationPurposes,
+  mapLinks,
 } from './org-logic';
 
 const id = (n: number) => `0193a3c4-5d6e-7f80-9a1b-${String(n).padStart(12, '0')}`;
@@ -153,5 +154,29 @@ describe('organization rules (AC9)', () => {
     expect(correctionBody(l, { ...d, city: '' }).problems).toEqual({ city: 'required' });
     expect(correctionBody(l, { ...d, lat: 'x' }).problems).toEqual({ lat: 'invalid' });
     expect(correctionBody(l, { ...d, postal_code: '1'.repeat(21) }).problems).toEqual({ postal_code: 'too_long' });
+  });
+});
+
+describe('map links (AC14b.T6)', () => {
+  const app = (key: string, url_template: string, platforms: ('ios' | 'android' | 'web')[] = ['web']) => ({
+    key,
+    label: { text: key, locale: 'en' as const },
+    platforms,
+    url_template,
+  });
+  it('fills the web https templates and leaves out the others', () => {
+    const apps = [
+      app('neshan', 'https://neshan.org/maps/@{lat},{lng},16z'),
+      app('balad', 'https://balad.ir/location?latitude={lat}&longitude={lng}&name={label}'),
+      app('mobile', 'https://m.example/{lat}', ['android']),
+      app('scheme', 'geo:{lat},{lng}'),
+      app('plain', 'http://example.ir/{lat}'),
+    ];
+    expect(mapLinks(apps, { lat: 35.7, lng: 51.4 }, 'Asa & Co')).toEqual([
+      { key: 'neshan', name: 'neshan', href: 'https://neshan.org/maps/@35.700000,51.400000,16z' },
+      { key: 'balad', name: 'balad', href: 'https://balad.ir/location?latitude=35.700000&longitude=51.400000&name=Asa%20%26%20Co' },
+    ]);
+    expect(mapLinks(apps, null)).toEqual([]);
+    expect(mapLinks(undefined, { lat: 1, lng: 2 })).toEqual([]);
   });
 });

@@ -76,19 +76,22 @@ test('exchange rate: set in the console, served by config.client; over 20 % warn
   const next = Math.round(before * 1.05);
   await input.fill(String(next));
   await expect(editor.getByTestId('rate-change')).toContainText('+5');
-  await editor.getByRole('button', { name: 'Save rate' }).click();
+  await editor.getByRole('button', { name: "Set today's rate" }).click();
   await expectNoAxeViolations(page);
-  await reason(page, 'Change the IRR rate', 'Save rate');
+  await reason(page, 'Change the IRR rate', "Set today's rate");
   await expect(editor.getByText('Saved. The apps show the new rate within five minutes.')).toBeVisible();
   await expect.poll(async () => rateOf(await readClientConfig(), 'IRR'), { timeout: 30_000 }).toBe(next);
   await expect(page.getByTestId('rate-IRR')).toContainText(next.toLocaleString('en'));
 
   // Back to the rate the test found (−4.8 %: no second admin).
   await input.fill(String(before));
-  await editor.getByRole('button', { name: 'Save rate' }).click();
-  await reason(page, 'Change the IRR rate', 'Save rate', 'correction', 'AC6 E2E: rate restored');
+  await editor.getByRole('button', { name: "Set today's rate" }).click();
+  await reason(page, 'Change the IRR rate', "Set today's rate", 'correction', 'AC6 E2E: rate restored');
   await expect(editor.getByText('Saved. The apps show the new rate within five minutes.')).toBeVisible();
   await expect.poll(async () => rateOf(await readClientConfig(), 'IRR'), { timeout: 30_000 }).toBe(before);
+  // A saved rate is set today (AC14b.T3, set_today from the backend): badged, and no Keep is offered.
+  await expect(page.getByTestId('rate-today-IRR')).toHaveAttribute('data-set', 'true');
+  await expect(editor.getByRole('button', { name: /^Keep / })).toHaveCount(0);
 });
 
 test('kill switch on at once, off only with a second admin; plan, retention and assignment (AC6.T2-T5)', async ({ browser }) => {

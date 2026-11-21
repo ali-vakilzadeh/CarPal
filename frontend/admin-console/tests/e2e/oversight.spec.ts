@@ -54,8 +54,15 @@ async function everyDashboard(page: Page) {
 test('administrator: the home dashboard and every analytics dashboard (EN)', async ({ context, page }) => {
   await signInAs(context, page, ['ADM']);
   await expect(page.getByRole('heading', { level: 1, name: 'My work' })).toBeVisible();
-  const widgets = page.locator('[data-widget]');
+  // Seven fixed widgets; the daily rate card (AC14b.T3) shows only while a rate is not set today, which other specs change.
+  const widgets = page.locator('[data-widget]:not([data-widget="rate"])');
   await expect(widgets).toHaveCount(7);
+  const rateCard = page.locator('[data-widget="rate"]');
+  if (await rateCard.count())
+    await expect(rateCard.getByRole('link', { name: "Set today's rate" }).first()).toHaveAttribute(
+      'href',
+      new RegExp('^/rates[?]currency='),
+    );
   for (const id of ['my-work', 'queues', 'safety', 'growth', 'trust', 'ai', 'system'])
     await expect(page.locator(`[data-widget="${id}"]`)).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.locator('[data-queue]')).toHaveCount(8);

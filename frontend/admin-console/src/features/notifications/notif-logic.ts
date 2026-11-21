@@ -53,10 +53,11 @@ export interface RulesDraft {
   weeklyDay: string;
   maintenanceDays: string;
   mileageKm: string;
+  odometerDays: string;
 }
 
 export type RulesProblem =
-  'delay' | 'invitationDays' | 'approvalDays' | 'quietStart' | 'quietEnd' | 'digestHour' | 'maintenanceDays' | 'mileageKm';
+  'delay' | 'invitationDays' | 'approvalDays' | 'quietStart' | 'quietEnd' | 'digestHour' | 'maintenanceDays' | 'mileageKm' | 'odometerDays';
 
 export function rulesDraftOf(r: NotificationRules): RulesDraft {
   return {
@@ -70,6 +71,7 @@ export function rulesDraftOf(r: NotificationRules): RulesDraft {
     weeklyDay: String(r.weekly_digest_day),
     maintenanceDays: String(r.maintenance_due_window_days),
     mileageKm: String(r.mileage_due_window_km),
+    odometerDays: String(r.odometer_prompt_days),
   };
 }
 
@@ -98,8 +100,9 @@ export function parseReminderDays(s: string): number[] | null {
 const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /**
- * The full rules write (without the reason) or the fields that are wrong. The write replaces every rule, so the odometer
- * prompt (backend S26b, edited in AC14b.T4) is sent back as stored (D-100).
+ * The full rules write (without the reason) or the fields that are wrong. The write replaces every rule (D-100); the
+ * odometer prompt (backend S26b, AC14b.T4) is 0 (off) or 14-90 days: the contract allows 0-90 and the backend answers
+ * 422 out_of_range for 1-13.
  */
 export function rulesWriteOf(
   stored: NotificationRules,
@@ -139,6 +142,8 @@ export function rulesWriteOf(
   if (maint === null) problems.push('maintenanceDays');
   const km = int(d.mileageKm, 50, 5000);
   if (km === null) problems.push('mileageKm');
+  const odometer = odometerDays(d.odometerDays);
+  if (odometer === null) problems.push('odometerDays');
   if (problems.length) return { problems };
   return {
     value: {
@@ -150,9 +155,18 @@ export function rulesWriteOf(
       review_approval_reminder_days: appr!,
       maintenance_due_window_days: maint!,
       mileage_due_window_km: km!,
-      odometer_prompt_days: stored.odometer_prompt_days,
+      odometer_prompt_days: odometer!,
     },
   };
+}
+
+/** The odometer prompt: 0 turns it off, otherwise 14-90 days without a reading (NotificationRules.odometer_prompt_days). */
+export const ODOMETER_MIN_DAYS = 14;
+export const ODOMETER_MAX_DAYS = 90;
+
+export function odometerDays(s: string): number | null {
+  const n = int(s, 0, ODOMETER_MAX_DAYS);
+  return n === null || (n > 0 && n < ODOMETER_MIN_DAYS) ? null : n;
 }
 
 /** "0.0423" → 4.2 (percent, one decimal); null stays null. */

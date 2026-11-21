@@ -4,7 +4,15 @@
 // (admin.assist_session_start), the purpose an organization can be read for (SEC-ADM-5: an open work item — a
 // pending verification or an open case; the backend refuses anything else), the public profile link, the
 // pin-versus-address verdict of a location and the fields a location correction sends.
-import type { Location, OrgStatus, OrgType, StaffOrgSearchRow, StaffOrgView, VerificationStatus } from '@carpal/api-contracts';
+import type {
+  Location,
+  OrgStatus,
+  OrgType,
+  RegionConfig,
+  StaffOrgSearchRow,
+  StaffOrgView,
+  VerificationStatus,
+} from '@carpal/api-contracts';
 import type { AccessPurpose } from '@/lib/api/client';
 import { purposeOf } from '@/lib/api/client';
 import type { GeoPoint } from '@/lib/config/geo';
@@ -236,4 +244,40 @@ export function correctionBody(l: Location, d: CorrectionDraft): { body: Record<
   }
   if (!Object.keys(problems).length && !Object.keys(body).length) problems.nothing = 'required';
   return { body, problems };
+}
+
+export type NavigationApp = RegionConfig['navigation_apps'][number];
+
+export interface MapLink {
+  key: string;
+  /** The app's name in the caller's language (the region config resolves it per Accept-Language). */
+  name: string;
+  href: string;
+}
+
+/**
+ * "Open in Neshan" (AC14b.T6, OQ-16 answer (c), owner 2026-11-21): the console shows no basemap of its own, so staff
+ * look at a pin in the region's web map apps (RegionConfig.navigation_apps: Neshan first in the pilot). Only apps for
+ * the web with an https template; {lat} and {lng} get 6 decimals, {label} is URL-encoded. No key, no CSP change: the
+ * page is opened in a new tab (the console sends no Referer). Map precision is not sensitive (SEC-OUT-4).
+ */
+export function mapLinks(apps: readonly NavigationApp[] | undefined, point: GeoPoint | null, labelText = ''): MapLink[] {
+  if (!apps || !point) return [];
+  const links: MapLink[] = [];
+  for (const app of apps) {
+    if (!app.platforms.includes('web')) continue;
+    const href = app.url_template
+      .replaceAll('{lat}', point.lat.toFixed(6))
+      .replaceAll('{lng}', point.lng.toFixed(6))
+      .replaceAll('{label}', encodeURIComponent(labelText));
+    let url: URL;
+    try {
+      url = new URL(href);
+    } catch {
+      continue;
+    }
+    if (url.protocol !== 'https:') continue;
+    links.push({ key: app.key, name: app.label.text, href: url.toString() });
+  }
+  return links;
 }

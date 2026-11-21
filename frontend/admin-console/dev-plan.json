@@ -2,7 +2,7 @@
   "meta": {
     "title": "CarPal admin console (WP15 UI, WP20 admin part; frontend/admin-console/) — build plan and stage log",
     "created": "2026-11-08",
-    "last_updated": "2026-11-20",
+    "last_updated": "2026-11-21",
     "status": "in_progress",
     "owner": "ali-vakilzadeh",
     "purpose": "Build the internal staff console that operates the platform: Path 2 review approvals, moderation, disputes, verification, privacy requests, plans, flags and the AI kill switch, the USD exchange rate, taxonomy, audit, AI/MCP oversight and analytics. Without it the pilot cannot run without direct API or database work (backend S11 open_after_stage, NI-08).",
@@ -19,8 +19,8 @@
       "Backend work that a stage needs (backend_requests with stage 'AC2' or other) is done in backend/ and also logged as a backend stage (S12, S13) in backend/dev_plan.json."
     ],
     "progress": {
-      "as_of": "2026-11-20",
-      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) with pnpm check, build and a Playwright smoke. AC2 done 2026-11-09 (backend S12): contract 1.3.0 gives cp-web-admin DPoP + private_key_jwt, the staff passkey enrolment inside the sign-in (auth.passkey_enrol_options, auth.passkey_enrol), admin.staff_me, and a first-run staff bootstrap (backend pnpm staff:bootstrap, backend/deploy/staff-bootstrap.sh); the console is regenerated (63 admin-api operations, no api reads, because the api host refuses admin tokens), shows a Latin environment badge (OQ-12) and sends HSTS outside dev (OQ-11). OQ-01, OQ-10, OQ-11 and OQ-12 are answered. AC3 done 2026-11-09: the admin BFF (src/server/bff, copied from the PWA with provenance headers) signs staff in at aal3 with code + PKCE, DPoP-bound tokens and private_key_jwt, keeps tokens, the DPoP key and the admin.staff_me profile server-side (browser: one __Host-cpa_sid cookie), ends sessions after 30 min idle / 8 h, forwards exactly the 63 admin-api operations (purpose and reason headers, CSRF), and offers /bff/reauth for step-up; the typed client (src/lib/api) and the TanStack provider (memory-only cache, cleared on sign-out, session end and staff switch) are in. Tests: pnpm check (196), pnpm test:int against the strict backend (7), pnpm e2e (10). AC4 done 2026-11-09: staff sign in on the console's own /id/signin (work email + password with proof of work in strict mode, then the security key; a first-time account enrols a device-bound key with the emailed code in the same sign-in; the key alone for a step-up) and land in the shell: top bar with the environment badge, lookup and My queue placeholders, shortcut list and avatar menu (roles, My actions for ADM, language, theme, sign-out), left navigation filtered by the role table (20 sections, placeholders until their stages), no-permission and not-found states inside the shell, idle warning at 25 min and sign-out at 30 (measured against the server clock), step-up with one-time replay of the saved action, and keyboard shortcuts. Tests: pnpm check (243), pnpm test:int (7), pnpm e2e (22, strict backend). AC5 done 2026-11-10: the admin interaction kit (src/components/admin) carries the admin rules into every later screen: useAdminAction refuses an RSN write without a 3-500 character reason, runs it through the step-up with a one-time replay and reports applied / waiting for a second staff member (FourEyesBanner) / accepted job / an explained problem (SELF_APPROVAL_FORBIDDEN, expired, changed meanwhile); ReasonDialog (console reason codes per kind of action + note, sent as '<code>: <note>', D-29) and ConfirmDialog (second confirmation for irreversible actions); PurposeGate and MaskedField (GD-10); DataTable with URL-bound filters, cursor paging, column choice, saved views without data, keyboard rows and Latin digits; CaseLayout, EntityChip, Timeline, AiEvidenceBlock, SlaBadge and the ADM-only AuditDrawer (Shift+H). Pending approvals (/approvals) lists and decides four-eyes changes; My work (/) shows the approvals waiting and one tile per queue the roles may see with count, oldest age and SLA state (OQ-05 targets, D-32); the top bar's My queue links there with the approvals count. Tests: pnpm check (301), pnpm test:int (7), pnpm e2e (25, strict backend; the four-eyes round trip with two ADM accounts). AC6 built 2026-11-10 (partial: the signed-in E2E is not run yet): Exchange rates (/rates: preview, 20 % four-eyes warning, If-Match; replaces the deploy SQL), Feature flags (/flags: the AI kill switch on top, on at once and off by four-eyes; switch and targeting with If-Match and a Reload on 412), Plans & entitlements (/plans: the ranking rule, plan edits by four-eyes, the audit history, assign plan / trial / overrides) and Data retention (/retention: edits by four-eyes). Tests: pnpm check (330), smoke + bff E2E (13); tests/e2e/settings.spec.ts written, waiting for a strict run with the client key. AC7 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6): Reviews (/reviews: the Path 2 approval queue by stage for community reviewers — the review read for its approval purpose with the business answer, the author history without contact data and evidence links, Confirm once the business step is done, Reject with a note, Ask for evidence, a reason code that is never a rating, A/R keys; moderators read the queue and work review cases: remove, restore, approve a held-back review, warn, move to Path 2 by four-eyes, close) and Disputes & appeals (/disputes: the disputed review with both sides' evidence and the first decider, mediation / uphold / reject with what each does, the different-staff rule explained). Tests: pnpm check (363), smoke + bff E2E (13); tests/e2e/reviews.spec.ts written, its API seeding run against the strict backend. AC8 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6 and AC7): the moderation case workspace for every target type (also under the AC7 review cases): Reports (/content: triage into a case — safety reasons at least high — into the open case about the same item, or dismiss), Content / Accounts & organizations / AI output (/content tabs) and Inventory (/inventory) queues with safety cases first; a case read for its purpose shows the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), \"Take this case\", the actions the backend applies to that item in its state (showcase approval needs the customer's consent), warn / suspend (security key) / reactivate, trust penalties (security key, second confirmation) and badges by id, and closing with a resolution. Tests: pnpm check (397), smoke + bff E2E (13); tests/e2e/moderation.spec.ts written, its API seeding run. AC4-AC8 are committed (the user, 2026-11-10). AC9 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6-AC8): Organizations (/orgs: search by name, slug or id without contact data, two saved views) and the organization page read for an open work item (a pending verification or an open case; otherwise the header from the search and the checks to open it for): Profile with masked contact data, Locations with a MapLibre map (owner's pin, service radius, the server's pin-to-address verdict) and pin or address correction by click, drag or typed coordinates, Verification with the badge approval, Plan; suspend and reactivate; assist sessions with a banner on every page. Verification (/verification: queue with the 2-working-day SLA; submitted data, a watermarked document viewer with zoom, rotate and paging, the checklist; approve blocked by a far pin; reject with the message for the business; the organization's new status after the decision). Tests: pnpm check (429), smoke + bff E2E (13); tests/e2e/orgs.spec.ts written, its API seeding run. AC6-AC9 closed 2026-11-18: the strict signed-in E2E ran with the int:env test keys (no staff key needed), 35/35 passed after two console fixes (D-65 step-up replay notice, D-66 verification deep link) and test fixes; backend_requests BR-02..BR-35 marked done from backend S13-S24 (BR-14 stays deferred); new BR-36 (slow verification queue). 2026-11-18 (after the AC6-AC9 closure): backend/BR-update-plan.json reviewed. Backend S13-S25b and S26a-S26b are done (S26c not started), so the hold is lifted (meta.hold.lifted). The readiness map is backend_status_2026_11_18. The catch-up patch is AC10.T0. The S16a/S16b staff key and recovery work is the new stage AC10b, before AC11. AC14.T1 (the backend half) was done by backend S13-S24. Doc issues and R-items closed by the backend are marked. New BR-37 (verification read by id or organization, from D-66). BR-36 and BR-37 are handed to the backend plan and staged first in S26c (S26c.T0, owner); the console follow-up is AC14b.T8. AC10 done 2026-11-18: users (lookup within the work item, detail with masked contacts, timed suspension, sign out, reset onboarding, staff roles by four-eyes) and privacy requests (queue, steps, export job, deletion by four-eyes), plus the catch-up patch (badge list, own requests from the server, region threshold, assign to a colleague, suspension durations, R-17). Tests: pnpm check green (lint with the R-17 rule, logical CSS, typecheck, unit + DOM 466, contract:check at 1.5.0, i18n:check 1809 keys in en and fa, ds:check); prettier clean on the files of this stage; Strict signed-in E2E on 2026-11-18 against `pnpm int:env backend`: tests/e2e/privacy.spec.ts 2/2 (EN: deletion request through identity and processing, the user page refused without a purpose and opened for dsr:<id> with the full name masked, a 7-day suspension and reactivation, the deletion requested by admin A, approved by admin B, the outcome under Your requests and the request completed by the worker; FA: export request processed, file built and followed with admin.job_get, the user found by email within the request, the request completed and the same lookup then refused; axe on queue, request, lookup and user page in EN and FA). Whole suite 37/37 passed (6.3 min), so the T0 changes did not break AC4-AC9. AC10b done 2026-11-20: staff security keys, recovery codes and account recovery (backend S16a/S16b). Recovery codes shown once after a new key (never stored); /security for every staff member (own keys, backup key, remove, new codes; step-up arms the action instead of replaying it, D-76); \"Lost your security key?\" on the sign-in from the request to the new key, with the request handle kept by the BFF (HttpOnly id cookie, server-side store) so an approval hours later continues in a new sign-in; Recovery requests (/recoveries, ADM: approve with the check method and a note for \"other\", reject); the 72-hour restriction banner and a prompt when no code is left. Tests: pnpm check 494, pnpm test:int 7/7 strict, E2E recovery.spec.ts 3/3 and signin.spec.ts 9/9 strict. New BR-39 (recoveries in admin.work_summary). AC12 done 2026-11-20: taxonomy management on /taxonomy (tree, list and missing translations per type with a search by any label; node editor that requires EN and FA labels and follows the database parent and attribute rules, If-Match on edits; synonyms and transliterations with AI suggestions decided; weighted mappings; merges by four-eyes with the job followed on Pending approvals and the merge tab; zero-result search counts). New DI-35 and BR-40 (terms, synonym search and queue, usage counts, merge preview). Tests: pnpm check 509; E2E taxonomy.spec.ts 2/2 strict; Whole strict E2E suite on 2026-11-20: 42/42 passed (9.0 min, 4 workers; recovery.spec.ts 3, taxonomy.spec.ts 2 and every earlier suite with the recovery-codes step). AC13 done 2026-11-20 (run before AC11 on the owner's request): the full home dashboard from admin.work_summary and admin.system_health (D-32 paging gone), analytics for all 11 dashboard keys with charts and tables, AI oversight (kill switch, alerts, read-only AI outputs), MCP clients with a four-eyes access editor and the access log, and the platform audit log; flags and rates open their audit trail by id. New DI-36..DI-38, BR-41, BR-42. Tests: pnpm check 541; E2E oversight.spec.ts 3/3 strict; Whole strict E2E suite on 2026-11-20: 45/45 passed (10.3 min, 4 workers; oversight.spec.ts 3 and every earlier suite with the new dashboard as the landing page; approvals.spec.ts tile counts updated). AC14-1 done 2026-11-20 (run on the owner's request ahead of AC11, which stays not_started; AC14 split per its split_note): Staff & permissions (/staff: directory, roles, disable, four-eyes enable), Policies & consent texts (/policies: versions, drafts, four-eyes publish with re-consent keep or pause), Notifications & templates (/notifications: templates with preview and reset, rules, delivery health) and the staff notice bell; the BFF takes 256 KiB policy texts and the ticket purpose; reads the console makes on its own no longer keep a session alive (D-102, an AC13 defect). AC14-2 started: the support inbox (/support: views, the team clock, ticket:<id> read, assign, templated replies EN/FA, turn into a case / privacy request / dispute / plan request, close; the dashboard tile links to it; array query values now comma-separated, D-105). New D-98..D-106, DI-39..DI-41, BR-43..BR-45. Tests: pnpm check green; pnpm test:int strict passed; E2E settings-ac14.spec.ts 3/3 and support.spec.ts 2/2 strict; Whole strict E2E suite on 2026-11-20: 50/50 passed (16.0 min, 4 workers; settings-ac14.spec.ts 3 and support.spec.ts 2 with every earlier suite; an earlier run failed 2 AC14 tests on timing, fixed as D-107, and the AC14 specs then passed twice in a row). AC14-2 continues (T5 remaining: user and organization tabs, disputes, verification, moderation actions, plans, retention, my decisions) is not done; its checklist is in stages AC14.parts.",
+      "as_of": "2026-11-21",
+      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) with pnpm check, build and a Playwright smoke. AC2 done 2026-11-09 (backend S12): contract 1.3.0 gives cp-web-admin DPoP + private_key_jwt, the staff passkey enrolment inside the sign-in (auth.passkey_enrol_options, auth.passkey_enrol), admin.staff_me, and a first-run staff bootstrap (backend pnpm staff:bootstrap, backend/deploy/staff-bootstrap.sh); the console is regenerated (63 admin-api operations, no api reads, because the api host refuses admin tokens), shows a Latin environment badge (OQ-12) and sends HSTS outside dev (OQ-11). OQ-01, OQ-10, OQ-11 and OQ-12 are answered. AC3 done 2026-11-09: the admin BFF (src/server/bff, copied from the PWA with provenance headers) signs staff in at aal3 with code + PKCE, DPoP-bound tokens and private_key_jwt, keeps tokens, the DPoP key and the admin.staff_me profile server-side (browser: one __Host-cpa_sid cookie), ends sessions after 30 min idle / 8 h, forwards exactly the 63 admin-api operations (purpose and reason headers, CSRF), and offers /bff/reauth for step-up; the typed client (src/lib/api) and the TanStack provider (memory-only cache, cleared on sign-out, session end and staff switch) are in. Tests: pnpm check (196), pnpm test:int against the strict backend (7), pnpm e2e (10). AC4 done 2026-11-09: staff sign in on the console's own /id/signin (work email + password with proof of work in strict mode, then the security key; a first-time account enrols a device-bound key with the emailed code in the same sign-in; the key alone for a step-up) and land in the shell: top bar with the environment badge, lookup and My queue placeholders, shortcut list and avatar menu (roles, My actions for ADM, language, theme, sign-out), left navigation filtered by the role table (20 sections, placeholders until their stages), no-permission and not-found states inside the shell, idle warning at 25 min and sign-out at 30 (measured against the server clock), step-up with one-time replay of the saved action, and keyboard shortcuts. Tests: pnpm check (243), pnpm test:int (7), pnpm e2e (22, strict backend). AC5 done 2026-11-10: the admin interaction kit (src/components/admin) carries the admin rules into every later screen: useAdminAction refuses an RSN write without a 3-500 character reason, runs it through the step-up with a one-time replay and reports applied / waiting for a second staff member (FourEyesBanner) / accepted job / an explained problem (SELF_APPROVAL_FORBIDDEN, expired, changed meanwhile); ReasonDialog (console reason codes per kind of action + note, sent as '<code>: <note>', D-29) and ConfirmDialog (second confirmation for irreversible actions); PurposeGate and MaskedField (GD-10); DataTable with URL-bound filters, cursor paging, column choice, saved views without data, keyboard rows and Latin digits; CaseLayout, EntityChip, Timeline, AiEvidenceBlock, SlaBadge and the ADM-only AuditDrawer (Shift+H). Pending approvals (/approvals) lists and decides four-eyes changes; My work (/) shows the approvals waiting and one tile per queue the roles may see with count, oldest age and SLA state (OQ-05 targets, D-32); the top bar's My queue links there with the approvals count. Tests: pnpm check (301), pnpm test:int (7), pnpm e2e (25, strict backend; the four-eyes round trip with two ADM accounts). AC6 built 2026-11-10 (partial: the signed-in E2E is not run yet): Exchange rates (/rates: preview, 20 % four-eyes warning, If-Match; replaces the deploy SQL), Feature flags (/flags: the AI kill switch on top, on at once and off by four-eyes; switch and targeting with If-Match and a Reload on 412), Plans & entitlements (/plans: the ranking rule, plan edits by four-eyes, the audit history, assign plan / trial / overrides) and Data retention (/retention: edits by four-eyes). Tests: pnpm check (330), smoke + bff E2E (13); tests/e2e/settings.spec.ts written, waiting for a strict run with the client key. AC7 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6): Reviews (/reviews: the Path 2 approval queue by stage for community reviewers — the review read for its approval purpose with the business answer, the author history without contact data and evidence links, Confirm once the business step is done, Reject with a note, Ask for evidence, a reason code that is never a rating, A/R keys; moderators read the queue and work review cases: remove, restore, approve a held-back review, warn, move to Path 2 by four-eyes, close) and Disputes & appeals (/disputes: the disputed review with both sides' evidence and the first decider, mediation / uphold / reject with what each does, the different-staff rule explained). Tests: pnpm check (363), smoke + bff E2E (13); tests/e2e/reviews.spec.ts written, its API seeding run against the strict backend. AC8 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6 and AC7): the moderation case workspace for every target type (also under the AC7 review cases): Reports (/content: triage into a case — safety reasons at least high — into the open case about the same item, or dismiss), Content / Accounts & organizations / AI output (/content tabs) and Inventory (/inventory) queues with safety cases first; a case read for its purpose shows the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), \"Take this case\", the actions the backend applies to that item in its state (showcase approval needs the customer's consent), warn / suspend (security key) / reactivate, trust penalties (security key, second confirmation) and badges by id, and closing with a resolution. Tests: pnpm check (397), smoke + bff E2E (13); tests/e2e/moderation.spec.ts written, its API seeding run. AC4-AC8 are committed (the user, 2026-11-10). AC9 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6-AC8): Organizations (/orgs: search by name, slug or id without contact data, two saved views) and the organization page read for an open work item (a pending verification or an open case; otherwise the header from the search and the checks to open it for): Profile with masked contact data, Locations with a MapLibre map (owner's pin, service radius, the server's pin-to-address verdict) and pin or address correction by click, drag or typed coordinates, Verification with the badge approval, Plan; suspend and reactivate; assist sessions with a banner on every page. Verification (/verification: queue with the 2-working-day SLA; submitted data, a watermarked document viewer with zoom, rotate and paging, the checklist; approve blocked by a far pin; reject with the message for the business; the organization's new status after the decision). Tests: pnpm check (429), smoke + bff E2E (13); tests/e2e/orgs.spec.ts written, its API seeding run. AC6-AC9 closed 2026-11-18: the strict signed-in E2E ran with the int:env test keys (no staff key needed), 35/35 passed after two console fixes (D-65 step-up replay notice, D-66 verification deep link) and test fixes; backend_requests BR-02..BR-35 marked done from backend S13-S24 (BR-14 stays deferred); new BR-36 (slow verification queue). 2026-11-18 (after the AC6-AC9 closure): backend/BR-update-plan.json reviewed. Backend S13-S25b and S26a-S26b are done (S26c not started), so the hold is lifted (meta.hold.lifted). The readiness map is backend_status_2026_11_18. The catch-up patch is AC10.T0. The S16a/S16b staff key and recovery work is the new stage AC10b, before AC11. AC14.T1 (the backend half) was done by backend S13-S24. Doc issues and R-items closed by the backend are marked. New BR-37 (verification read by id or organization, from D-66). BR-36 and BR-37 are handed to the backend plan and staged first in S26c (S26c.T0, owner); the console follow-up is AC14b.T8. AC10 done 2026-11-18: users (lookup within the work item, detail with masked contacts, timed suspension, sign out, reset onboarding, staff roles by four-eyes) and privacy requests (queue, steps, export job, deletion by four-eyes), plus the catch-up patch (badge list, own requests from the server, region threshold, assign to a colleague, suspension durations, R-17). Tests: pnpm check green (lint with the R-17 rule, logical CSS, typecheck, unit + DOM 466, contract:check at 1.5.0, i18n:check 1809 keys in en and fa, ds:check); prettier clean on the files of this stage; Strict signed-in E2E on 2026-11-18 against `pnpm int:env backend`: tests/e2e/privacy.spec.ts 2/2 (EN: deletion request through identity and processing, the user page refused without a purpose and opened for dsr:<id> with the full name masked, a 7-day suspension and reactivation, the deletion requested by admin A, approved by admin B, the outcome under Your requests and the request completed by the worker; FA: export request processed, file built and followed with admin.job_get, the user found by email within the request, the request completed and the same lookup then refused; axe on queue, request, lookup and user page in EN and FA). Whole suite 37/37 passed (6.3 min), so the T0 changes did not break AC4-AC9. AC10b done 2026-11-20: staff security keys, recovery codes and account recovery (backend S16a/S16b). Recovery codes shown once after a new key (never stored); /security for every staff member (own keys, backup key, remove, new codes; step-up arms the action instead of replaying it, D-76); \"Lost your security key?\" on the sign-in from the request to the new key, with the request handle kept by the BFF (HttpOnly id cookie, server-side store) so an approval hours later continues in a new sign-in; Recovery requests (/recoveries, ADM: approve with the check method and a note for \"other\", reject); the 72-hour restriction banner and a prompt when no code is left. Tests: pnpm check 494, pnpm test:int 7/7 strict, E2E recovery.spec.ts 3/3 and signin.spec.ts 9/9 strict. New BR-39 (recoveries in admin.work_summary). AC12 done 2026-11-20: taxonomy management on /taxonomy (tree, list and missing translations per type with a search by any label; node editor that requires EN and FA labels and follows the database parent and attribute rules, If-Match on edits; synonyms and transliterations with AI suggestions decided; weighted mappings; merges by four-eyes with the job followed on Pending approvals and the merge tab; zero-result search counts). New DI-35 and BR-40 (terms, synonym search and queue, usage counts, merge preview). Tests: pnpm check 509; E2E taxonomy.spec.ts 2/2 strict; Whole strict E2E suite on 2026-11-20: 42/42 passed (9.0 min, 4 workers; recovery.spec.ts 3, taxonomy.spec.ts 2 and every earlier suite with the recovery-codes step). AC13 done 2026-11-20 (run before AC11 on the owner's request): the full home dashboard from admin.work_summary and admin.system_health (D-32 paging gone), analytics for all 11 dashboard keys with charts and tables, AI oversight (kill switch, alerts, read-only AI outputs), MCP clients with a four-eyes access editor and the access log, and the platform audit log; flags and rates open their audit trail by id. New DI-36..DI-38, BR-41, BR-42. Tests: pnpm check 541; E2E oversight.spec.ts 3/3 strict; Whole strict E2E suite on 2026-11-20: 45/45 passed (10.3 min, 4 workers; oversight.spec.ts 3 and every earlier suite with the new dashboard as the landing page; approvals.spec.ts tile counts updated). AC14-1 done 2026-11-20 (run on the owner's request ahead of AC11, which stays not_started; AC14 split per its split_note): Staff & permissions (/staff: directory, roles, disable, four-eyes enable), Policies & consent texts (/policies: versions, drafts, four-eyes publish with re-consent keep or pause), Notifications & templates (/notifications: templates with preview and reset, rules, delivery health) and the staff notice bell; the BFF takes 256 KiB policy texts and the ticket purpose; reads the console makes on its own no longer keep a session alive (D-102, an AC13 defect). AC14-2 started: the support inbox (/support: views, the team clock, ticket:<id> read, assign, templated replies EN/FA, turn into a case / privacy request / dispute / plan request, close; the dashboard tile links to it; array query values now comma-separated, D-105). New D-98..D-106, DI-39..DI-41, BR-43..BR-45. Tests: pnpm check green; pnpm test:int strict passed; E2E settings-ac14.spec.ts 3/3 and support.spec.ts 2/2 strict; Whole strict E2E suite on 2026-11-20: 50/50 passed (16.0 min, 4 workers; settings-ac14.spec.ts 3 and support.spec.ts 2 with every earlier suite; an earlier run failed 2 AC14 tests on timing, fixed as D-107, and the AC14 specs then passed twice in a row). AC14-2 continues (T5 remaining: user and organization tabs, disputes, verification, moderation actions, plans, retention, my decisions) is not done; its checklist is in stages AC14.parts. AC14b done 2026-11-21 on the owner's request: first sign-in password change in /id/signin (code + own password, no skip, the code carried into the key enrolment), the daily exchange rate (Today badge, the unset rate opened first, Set today's rate or Keep for today with a prefilled reason, a dashboard card for ADMs), the odometer prompt rule, CarPal-Forwarded-Client on admin-api and /id calls (backend S26c.T2), verification links read by id (BR-37, D-66 walk removed), and no Neshan basemap in the console by the owner's choice (OQ-16 (c)): Open in Neshan from the Locations tab. New D-108..D-111, OQ-16 (answered). Tests: pnpm check 623; pnpm test:int 7/7 strict; Strict E2E against `pnpm int:env backend` on 2026-11-21: whole suite 47 passed, 1 failed, 2 not run (13.6 min, 4 workers); the failure was this stage's dashboard rate card counted as an 8th widget in oversight.spec.ts (the test now counts the 7 fixed widgets and checks the card's link when shown), and the 2 not run were the serial tests after it. After that fix and the Neshan links: oversight.spec.ts, orgs.spec.ts and settings.spec.ts 9/9 passed (3.7 min), so every test of the suite has passed on this stage's code.",
       "stages_done": [
         "AC1",
         "AC2",
@@ -34,12 +34,13 @@
         "AC10",
         "AC10b",
         "AC12",
-        "AC13"
+        "AC13",
+        "AC14b"
       ],
-      "next": "AC14-2 (AC14.T5 checklist), then AC11 (milestone M1), AC14b, AC15. Full test run when the whole plan is complete (PD-03).",
+      "next": "AC14-2 (AC14.T5 checklist), then AC11 (milestone M1), AC15. Full test run when the whole plan is complete (PD-03).",
       "decisions_needed_now": [
-        "Backend DQ-25 (initial password length for admin100/200/300), DQ-26 (their email addresses) and DQ-29 (Neshan as a third party) were built on their defaults and wait for the owner's confirmation (backend/BR-update-plan.json decisions_needed). DQ-25 and DQ-26 shape AC14b.T2 and the AC11 runbook, and DQ-29 shapes AC14b.T6.",
-        "R-05, R-07, R-19, R-21: non-code pilot preparations (staff names, security keys, who checks Pending approvals, the real IRR rate). They are not needed before AC11. R-24 is closed: Neshan replaces the tile host (AC14b.T6)."
+        "Backend DQ-25 (initial password length for admin100/200/300) and DQ-26 (their email addresses) were built on their defaults and wait for the owner's confirmation (backend/BR-update-plan.json decisions_needed); the console step (AC14b.T2) does not depend on them, the AC11 runbook does. DQ-29 (Neshan as a third party) is settled for the console (no Neshan code, OQ-16 (c), 2026-11-21) but still matters for the backend geocoder and the PWA (PB-10).",
+        "R-05, R-07, R-19, R-21: non-code pilot preparations (staff names, security keys, who checks Pending approvals, the real IRR rate). They are not needed before AC11. R-24 is closed: Neshan replaced the tile host, and the console links to Neshan instead of showing its tiles (AC14b.T6, OQ-16 (c))."
       ],
       "stages_partial": []
     },
@@ -928,8 +929,9 @@
       "priority": "low",
       "request": "A direct read of one verification check for a link from a notice, a case or the organization page: admin.verifications_queue q organization_id and verification_id (or admin.verification_get by id, STF(ADM, MOD)), so the console no longer walks the queue pages to find it.",
       "source": "AC9 D-66 (strict E2E 2026-11-18): a ?verification=<id> link to a check that is not on the first queue page walks up to 20 pages of 50. Under BR-36 each page takes 8-10 s.",
-      "status": "open",
-      "collected_in": "backend/BR-update-plan.json (2026-11-18, recommendations BR-37; staged first in S26c as S26c.T0)"
+      "status": "done",
+      "collected_in": "backend/BR-update-plan.json (2026-11-18, recommendations BR-37; staged first in S26c as S26c.T0)",
+      "done_in": "backend S26c.T0 (b93f5c1); console AC14b.T8 (2026-11-21)"
     },
     {
       "id": "BR-38",
@@ -1153,6 +1155,17 @@
       "answer": "Default approved: Friday only, no holidays (user, 2026-11-12).",
       "status": "answered",
       "applied": "Stays as built in src/lib/config/sla.ts."
+    },
+    {
+      "id": "OQ-16",
+      "raised_in": "AC14b",
+      "question": "Neshan basemap (DQ-29): Neshan's vector tiles can be read only by Neshan's own MapLibre SDK (the tiles are obfuscated and keyed by ?key= in the URL), and that SDK creates its worker from a blob URL, which the console's CSP and Trusted Types refuse. Options: (a) adopt @neshan-maps-platform/maplibre-sdk in the Locations tab and relax the CSP for it; (b) ask Neshan for raster or plain vector tiles for a verified company and use them with the existing maplibre-gl 6; (c) keep the plain map in the console and open a pin in Neshan in a new tab.",
+      "default_if_unanswered": "(c)",
+      "owner": "user",
+      "needed_by": "AC11 (pilot)",
+      "answer": "Option (c) (owner, 2026-11-21): \"lets proceed with option c. this route gets us closer to the mvp launch.\" The owner has created a Neshan account and keys (kept in the git-ignored secrets/ folder; never in the repo).",
+      "status": "answered",
+      "applied": "AC14b.T6: Open in Neshan on the Locations tab; no basemap, key or CSP change in the console. The PWA decides PB-10 separately."
     }
   ],
   "screen_coverage": [
@@ -1524,6 +1537,42 @@
         "admin.staff_recovery_reject"
       ],
       "coverage": "full (backend S16a, S16b); notices bell in AC14 (D-79); My work count from the list until BR-39"
+    },
+    {
+      "screen": "A-AUTH-01 First sign-in password change",
+      "stage": "AC14b",
+      "operations": [
+        "auth.signin_password (next change_password)",
+        "auth.password_set_initial",
+        "auth.passkey_enrol_options (same code)"
+      ],
+      "coverage": "full (backend S26a)"
+    },
+    {
+      "screen": "Exchange rates daily workflow and dashboard rate card",
+      "stage": "AC14b",
+      "operations": [
+        "admin.exchange_rates_list (set_today, age_hours)",
+        "admin.exchange_rate_update"
+      ],
+      "coverage": "full (backend S26a); the morning notice opens /rates (AC14-1)"
+    },
+    {
+      "screen": "A-NOTIF-01 Rules: odometer prompt",
+      "stage": "AC14b",
+      "operations": [
+        "admin.notif_rules_get",
+        "admin.notif_rules_update (odometer_prompt_days)"
+      ],
+      "coverage": "full (backend S26b)"
+    },
+    {
+      "screen": "A-ORG-02 Locations: Neshan",
+      "stage": "AC14b",
+      "operations": [
+        "admin.region_settings (region.navigation_apps)"
+      ],
+      "coverage": "partial by decision (OQ-16 (c)): no basemap; Open in Neshan at the pin and at a proposed point"
     }
   ],
   "stages": [
@@ -4087,7 +4136,7 @@
     {
       "id": "AC14b",
       "title": "Backend S26 follow-ups (contract 1.5.0): first sign-in password change, daily exchange rate, Neshan basemap, edge changes",
-      "status": "not_started",
+      "status": "done",
       "depends_on": [
         "Backend S26a (done 2026-11-17) for T1-T3; S26b (done 2026-11-17) for T4 and T6; S26c (done 2026-11-19) for T7 (S26c.T2) and T8 (S26c.T0)",
         "AC6 (Exchange rates page)",
@@ -4118,58 +4167,76 @@
         {
           "id": "AC14b.T1",
           "task": "Regenerate the contract at 1.5.0 (pnpm check:clients in backend/); handle the new sign-in step change_password and the staff notice exchange_rate.reminder in the op-label and notice maps.",
-          "status": "not_started",
+          "status": "done",
           "backend_ready_2026_11_18": true,
-          "progress_2026_11_18": "Partly done: the console is already regenerated at contract 1.5.0 (src/lib/api/generated, 124 admin-api operations; backend S26a/S26b changed the generated files). Still to do: handle the sign-in step change_password and the staff notice exchange_rate.reminder in the op-label and notice maps (not in src yet)."
+          "progress_2026_11_18": "Partly done: the console is already regenerated at contract 1.5.0 (src/lib/api/generated, 124 admin-api operations; backend S26a/S26b changed the generated files). Still to do: handle the sign-in step change_password and the staff notice exchange_rate.reminder in the op-label and notice maps (not in src yet).",
+          "done_at": "2026-11-21",
+          "result": "Contract 1.5.0 was already generated. auth.password_set_initial is an AuthOperationId of the sign-in client (the /id proxy allows it from OPERATIONS); next change_password opens the new step (T2). The staff notice staff.exchange_rate_reminder was already mapped in AC14-1 and opens /rates, which now opens the rate not set today by itself (T3), so no currency is needed in the link."
         },
         {
           "id": "AC14b.T2",
           "task": "/id/signin: after the emailed code, a seeded account gets \"Choose your own password\" (new password twice, the SEC-AU-7 rules shown before typing, strength hint, show/hide, the server's field errors such as too short, breached or same as the initial one), then the security-key registration as today. No way to skip; an expired initial password shows the generic sign-in error and the line \"ask the server operator for a new initial password\". EN/FA, keyboard, axe.",
-          "status": "not_started",
+          "status": "done",
           "backend_ready_2026_11_18": true,
-          "owner_open": "DQ-25 (initial password length) and DQ-26 (admin email addresses) were built on their defaults and wait for the owner. The step does not depend on the answers."
+          "owner_open": "DQ-25 and DQ-26 still wait for the owner; the step does not depend on them.",
+          "done_at": "2026-11-21",
+          "result": "/id/signin step \"Choose your own password\" (src/features/auth/staff-sign-in.tsx PasswordStep, password-rules.ts): the emailed code, the new password twice with the SEC-AU-7 rules listed before typing (12-128 characters, not breached, not the initial password), a strength hint from length and character variety (no dependency), show/hide for both fields, client checks (code format, length, repeat) before sending, and the server refusals in the field (CODE_INVALID, /new_password pattern = breached, not_unique = the initial password, other codes = length). No skip, no key button on the step. next enrol_passkey carries the same code into the enrolment (prefilled, \"Your new password is saved\", the browser prompt still waits for the click, D-109); next mfa goes to the key step with the same notice. Five wrong codes end the interaction (410): the expired step. If the page expires after the password was changed (enrolment or key step), the expired page says the new password is saved and works, so nobody is sent back to the initial password. An expired initial password gets the generic INVALID_CREDENTIALS answer (SEC-AU-11), so the invalid-credentials message always adds the line \"An initial password works for 7 days ... ask the server operator for a new initial password\". EN/FA, keyboard, axe."
         },
         {
           "id": "AC14b.T3",
           "task": "Exchange rates daily workflow: the /rates page shows when the rate was set and by whom, a \"Not set today\" badge from set_today, and \"Set today's rate\" as the main action (prefilled reason \"Daily rate DD/MM\", editable; preview of sample prices at the current and the new rate; the 20 % four-eyes warning as in AC6). A rate card on the dashboard and in My work for ADMs (today's rate, age, the action) while it is not set today; the morning notice (backend S26a.T4) opens /rates. The per-rate history stays in the AuditDrawer (flag and rate ids, backend S21).",
-          "status": "not_started",
-          "backend_ready_2026_11_18": true
+          "status": "done",
+          "backend_ready_2026_11_18": true,
+          "done_at": "2026-11-21",
+          "result": "/rates: a Today column (Set today / Not set today from set_today), the last change as a relative time, and the page opens the first rate not set today when no ?currency= is given (it stays open after it is set). The editor says when and by whom the rate was set (warning banner while not set today), \"Set today's rate\" is the main action (Send for approval over 20 %, as in AC6), and \"Keep <rate> for today\" saves the same value again (D-108: core.tg_touch stamps updated_at, so set_today turns true; typing the same rate points to Keep). The reason dialog comes prefilled with planned_change and \"Daily rate DD/MM\" (the region day, Latin digits; editable). Dashboard (= My work): a \"Today's exchange rate\" card for ADMs (canCall admin.exchange_rate_update) while a rate is not set today, with the rate, its age and a link to /rates?currency=...; hidden once every rate is set. The per-rate history stays in the AuditDrawer."
         },
         {
           "id": "AC14b.T4",
           "task": "A-NOTIF-01 Rules: odometer_prompt_days (0 = off, 14-90; required on update since 1.5.0), built with the Rules form of AC14.T3.",
           "backend_delivered_2026_11_17": "S26b.T1 built NotificationRules.odometer_prompt_days (admin.notif_rules_get / update; the handler answers 422 out_of_range for 1-13); the contract allows 0-90.",
-          "status": "not_started",
-          "backend_ready_2026_11_18": true
+          "status": "done",
+          "backend_ready_2026_11_18": true,
+          "done_at": "2026-11-21",
+          "result": "Rules tab, Vehicle reminders: \"Ask owners for a mileage reading after (days)\", 0 (off) or 14-90; 1-13 and over 90 refused in the client (the backend answers 422 for 1-13). The rules write sends the typed value instead of the stored one (D-100 comment updated)."
         },
         {
           "id": "AC14b.T6",
           "backend_delivered_2026_11_17": "S26b.T3 built: RegionConfig.map.provider and origins (CSP), tiles_url (Neshan vector tiles), style_url (to be published at cdn.carpals.ir), attribution; SystemHealth.geocoder { provider, requests_today, requests_30d } for the System health widget. The web map key stays unconfirmed until the Neshan docs are readable (down on 2026-11-16 and 2026-11-17).",
           "task": "Neshan basemap in the Locations tab (backend S26b.T3; replaces R-24): MapLibre with the Neshan style from the region config, the web map key from CARPAL_ADMIN_NESHAN_MAP_KEY attached as the Neshan docs require and never put in Web Storage (GD-12), the Neshan origins added to the console CSP (security-headers.ts), attribution, the blank fallback kept. If only Neshan's SDK works, stop and ask (it stores the key in localStorage).",
-          "status": "not_started",
-          "backend_ready_2026_11_18": "yes, with a caveat: the Neshan endpoints, answer shapes and web map key were not checked against the live Neshan docs (down on 2026-11-16 and 2026-11-17). Check them first. DQ-29 (Neshan as a third party) waits for the owner."
+          "status": "done",
+          "backend_ready_2026_11_18": "yes, with a caveat: the Neshan endpoints, answer shapes and web map key were not checked against the live Neshan docs (down on 2026-11-16 and 2026-11-17). Check them first. DQ-29 (Neshan as a third party) waits for the owner. (Resolved 2026-11-21: the docs were checked in AC14b.T6 findings; the owner chose OQ-16 (c), so the console uses no Neshan endpoint.)",
+          "done_at": "2026-11-21",
+          "decision": "OQ-16 answered by the owner on 2026-11-21: option (c), \"this route gets us closer to the mvp launch\". No Neshan basemap in the console.",
+          "result": "Locations tab: the map keeps its plain background (pins, service radius, click/drag and typed coordinates; CARPAL_ADMIN_MAP_STYLE_URL stays an optional fallback style) and every location gets \"Open in Neshan\" (and any other web map app of RegionConfig.navigation_apps, from admin.region_settings) at the owner's pin, plus \"Check the new point in Neshan\" for a proposed correction. Links are built from https templates only ({lat}/{lng} with 6 decimals, {label} encoded; org-logic.ts mapLinks) and open in a new tab with rel noopener noreferrer and an \"(opens in a new tab)\" text for screen readers. No web map key, no CSP change, no Neshan code in the console. The \"no map tiles\" note now points to the links. DOM and unit tests; orgs.spec.ts checks the Neshan link to the corrected pin against the strict backend.",
+          "findings": "Checked 2026-11-21 (docs reachable again; SDK and styles read as data, not run): (1) docs platform.neshan.org/docs/sdk/web/maplibre: the key is only the SDK option apiKey; the current SDK is @neshan-maps-platform/maplibre-sdk (bundles MapLibre 5.24.3; the mapbox-gl fork is retired); styles https://static.neshan.org/sdk/maplibre/styles/{light,dark,...}.json; the logo and copyright may be moved, not hidden; tiles need DecompressionStream (Chrome 80+, Firefox 113+, Safari 16.4+). (2) light.json: sources use the custom scheme nsh://api.neshan.org/basemap/v2/{z}/{x}/{y}/sdk (also poi/v3 and traffic), sprites and glyphs on static.neshan.org. (3) the SDK bundle (5.24.3 umd) registers the nsh protocol: https + ?key=<apiKey> in the query, then the tile bytes are XOR-decoded with a table built into the SDK and gunzipped. Plain maplibre-gl 6 cannot read the tiles without copying that decoding (not done: it is Neshan's protection). The SDK builds its worker from a blob URL (createObjectURL + importScripts), which the console CSP (worker-src 'self') and Trusted Types policy (script URLs under /_next/static/ only) refuse; its strings are obfuscated, so Web Storage use cannot be ruled out by reading. The region config (shared/region-config/ir-pilot.json) points at vts.neshan.org tiles and a cdn.carpals.ir style that does not exist."
         },
         {
           "id": "AC14b.T7",
           "task": "Console BFF edge changes of backend S26c.T2: send CarPal-Forwarded-Client (the visitor IP, signed with the cp-web-admin private_key_jwt key) on every admin-api call and every /id proxy call; keep forwarding Origin and Sec-Fetch-Site from the /id proxy. No CSRF token on the auth routes (the backend binds them to the __Host-cp_ia interaction cookie, S26c-D3).",
-          "status": "not_started",
+          "status": "done",
           "backend_ready_2026_11_18": false,
           "backend_ready_2026_11_19": true,
-          "backend_delivered_2026_11_19": "S26c.T2 built: Docs/40 1.5.0 §1.3 CarPal-Forwarded-Client (compact JWS, typ carpal-fwd+jwt; iss = sub = cp-web-admin, aud = the admin API URL or the issuer for /id, htm, htu = aud + path, cip = the visitor IP, iat, exp at most 60 s later; EdDSA or ES256 with a key of CARPAL_OAUTH_CLIENT_JWKS). A statement that does not verify is ignored and logged, never refused. Auth host: POST /v1/auth/* with Sec-Fetch-Site other than same-origin, or an Origin other than the issuer or CARPAL_AUTH_WEB_ORIGINS (default: the issuer and CARPAL_WEBAUTHN_ORIGINS, plus localhost:3200 and :3300 in dev), answers 403 CSRF_FAILED. Example of the accepted form: backend/apps/testing/s26c-edge.int.test.ts. Same item for the PWA: pwa/BR-update-plan.json PB-12."
+          "backend_delivered_2026_11_19": "S26c.T2 built: Docs/40 1.5.0 §1.3 CarPal-Forwarded-Client (compact JWS, typ carpal-fwd+jwt; iss = sub = cp-web-admin, aud = the admin API URL or the issuer for /id, htm, htu = aud + path, cip = the visitor IP, iat, exp at most 60 s later; EdDSA or ES256 with a key of CARPAL_OAUTH_CLIENT_JWKS). A statement that does not verify is ignored and logged, never refused. Auth host: POST /v1/auth/* with Sec-Fetch-Site other than same-origin, or an Origin other than the issuer or CARPAL_AUTH_WEB_ORIGINS (default: the issuer and CARPAL_WEBAUTHN_ORIGINS, plus localhost:3200 and :3300 in dev), answers 403 CSRF_FAILED. Example of the accepted form: backend/apps/testing/s26c-edge.int.test.ts. Same item for the PWA: pwa/BR-update-plan.json PB-12.",
+          "done_at": "2026-11-21",
+          "result": "src/server/bff/forwarded-client.ts: CarPal-Forwarded-Client signed with the cp-web-admin private_key_jwt key (bff-runtime.ts forwardedClient; key imported once; typ carpal-fwd+jwt, kid, iss = sub = cp-web-admin, htm, htu without query, cip, iat, exp + 60 s). Forwarder: aud = the admin API audience, htu = audience + path. /id proxy: aud = the issuer from discovery, htu = issuer + auth-host path; Origin and Sec-Fetch-Site still forwarded; no CSRF token on the auth routes (cookie-bound, S26c-D3). The visitor is the last X-Forwarded-For hop (Next.js has no request.ip; nginx appends the address it saw, D-110); no usable address, no key (lite dev) or a signing error leaves the header out and the call goes on. The browser's own X-Forwarded-For never reaches the backend. Checked against the strict backend on 2026-11-21: a statement from this signer was accepted while a control with a wrong htu was logged forwarded_client_refused (htm/htu), and the whole E2E run logged no refusal."
         },
         {
           "id": "AC14b.T8",
           "task": "After backend S26c.T0 (BR-37): open a ?verification=<id> link with the admin.verifications_queue verification_id filter instead of walking up to 20 pages (remove the D-66 workaround); keep the not-found state when the check is no longer pending. Unit test and the existing orgs.spec deep-link E2E.",
-          "status": "not_started",
+          "status": "done",
           "backend_ready_2026_11_18": false,
           "backend_ready_2026_11_19": true,
-          "backend_delivered_2026_11_19": "S26c.T0 built (backend commit b93f5c1): admin.verifications_queue q verification_id and organization_id; with verification_id and no status the check is found in any status (S26c-D1). The console is regenerated at 1.5.0 by pnpm check:clients."
+          "backend_delivered_2026_11_19": "S26c.T0 built (backend commit b93f5c1): admin.verifications_queue q verification_id and organization_id; with verification_id and no status the check is found in any status (S26c-D1). The console is regenerated at 1.5.0 by pnpm check:clients.",
+          "done_at": "2026-11-21",
+          "result": "A ?verification=<id> link that is not on the loaded queue page is read with admin.verifications_queue q verification_id=<id>&status=pending&limit=1 (one call; the D-66 walk of up to 20 pages is gone). A check that is no longer pending (decided, expired) shows \"This request is not waiting for a decision any more\" instead of the item. DOM tests for both; the orgs.spec deep-link E2E passed."
         },
         {
           "id": "AC14b.T5",
           "task": "Unit and DOM tests for the new step and the rate workflow; E2E with the other screens in the whole-plan test run (PD-03).",
-          "status": "not_started",
-          "backend_ready_2026_11_18": true
+          "status": "done",
+          "backend_ready_2026_11_18": true,
+          "done_at": "2026-11-21",
+          "result": "pnpm check green on 2026-11-21 (lint with logical CSS, typecheck, unit + DOM 623 tests in 63 files, contract:check at 1.5.0 with 124 admin-api operations, i18n:check 3022 keys in en and fa, ds:check); prettier clean on the files of this stage. New: staff-password-change.test.tsx (flow with enrolment and with an existing key, field and server errors, show/hide and strength, 410 after five wrong codes, the expired-initial-password line, axe EN/FA, password rules), forwarded-client.test.ts (the statement verified with the backend's jwtVerify options for admin-api and the auth host, visitor address, header left out without key/address or when signing fails), daily-rate tests in rates.test.tsx, the rate card in dashboard.test.tsx, the odometer rule in notifications.test.tsx, the deep link by id in verification.test.tsx, the map-app links in orgs.test.tsx and org-logic.test.ts. Strict E2E against `pnpm int:env backend` on 2026-11-21: whole suite 47 passed, 1 failed, 2 not run (13.6 min, 4 workers); the failure was this stage's dashboard rate card counted as an 8th widget in oversight.spec.ts (the test now counts the 7 fixed widgets and checks the card's link when shown), and the 2 not run were the serial tests after it. After that fix and the Neshan links: oversight.spec.ts, orgs.spec.ts and settings.spec.ts 9/9 passed (3.7 min), so every test of the suite has passed on this stage's code. Not covered yet: no console E2E of the change_password step against the real auth host (the strict backend has no seeded account with an initial password; the backend S26a tests cover the flow on the auth host); it belongs to the whole-plan test run (PD-03) and the AC11 first sign-in of admin100/200/300."
         }
       ],
       "deliverables": [
@@ -4183,7 +4250,74 @@
         "An ADM sees on the dashboard when the rate was not set today and sets it in one form; a change over 20 % goes to Pending approvals.",
         "contract:check green at 1.5.0."
       ],
-      "report": null
+      "report": {
+        "started_at": "2026-11-21",
+        "completed_at": "2026-11-21",
+        "summary": "AC14b built on contract 1.5.0 on the owner's request (2026-11-21: \"execute stage AC-14b\"), ahead of the rest of AC14-2 and AC11, which stay as they were. Seeded administrators choose their own password at the first sign-in (code + new password, no skip; the code carries over to the key enrolment). Administrators see and set the daily IRR rate in one form: a Today badge, the rate not set today opened first, Set today's rate or Keep for today with the reason prefilled, and a rate card on the dashboard while it is not set. The odometer prompt rule is editable. The BFF states each staff member's address to the backend (CarPal-Forwarded-Client) on admin-api and auth calls. A verification link opens by id. The Neshan basemap was checked and dropped for the console (OQ-16, the owner chose (c)): staff open a pin in Neshan from the Locations tab instead.",
+        "acceptance": {
+          "A seeded administrator cannot reach the shell before setting a new password that the server accepts.": "The change_password step has no skip and no other action than the code + new password; the backend issues no token while the flag is set (backend S26a test). DOM tests cover the step, its errors, both continuations and an expiry after the change. Not yet run end to end in the console against the real auth host (no console E2E of this step; see T5).",
+          "An ADM sees on the dashboard when the rate was not set today and sets it in one form; a change over 20 % goes to Pending approvals.": "Dashboard rate card (DOM test; oversight.spec.ts checks its link when shown) linking to /rates?currency=IRR; one editor with Set today's rate / Keep for today; over 20 % still answers 202 to Pending approvals (AC6 tests kept; settings.spec.ts E2E).",
+          "contract:check green at 1.5.0.": "Yes: 124 admin-api operations + 0 api reads."
+        },
+        "screens_built": [
+          "/id/signin change_password step",
+          "/rates daily workflow",
+          "Dashboard rate card (My work)",
+          "/notifications Rules: odometer prompt",
+          "/verification deep link by id",
+          "Locations tab: Open in Neshan (no basemap, OQ-16 (c))"
+        ],
+        "operations_used": [
+          "auth.password_set_initial",
+          "admin.exchange_rates_list (set_today, age_hours)",
+          "admin.exchange_rate_update",
+          "admin.notif_rules_get / admin.notif_rules_update (odometer_prompt_days)",
+          "admin.verifications_queue (q verification_id)",
+          "admin.region_settings (region.navigation_apps)"
+        ],
+        "files_created": [
+          "src/features/auth/password-rules.ts",
+          "src/features/auth/staff-password-change.test.tsx",
+          "src/server/bff/forwarded-client.ts",
+          "src/server/bff/forwarded-client.test.ts"
+        ],
+        "files_changed": [
+          "src/features/auth/staff-sign-in.tsx, auth-client.ts, auth.css",
+          "src/features/rates/rates-page.tsx, rate-logic.ts, rates.test.tsx",
+          "src/features/dashboard/dashboard.tsx, dashboard.test.tsx",
+          "src/features/notifications/notif-logic.ts, notifications-page.tsx, notifications.test.tsx",
+          "src/features/verification/verification-page.tsx, verification.test.tsx",
+          "src/features/orgs/locations-tab.tsx, org-page.tsx, org-logic.ts, map/maplibre.ts (comment), orgs.test.tsx, org-logic.test.ts",
+          "src/server/bff/index.ts, forwarder.ts, auth-proxy.ts, test-support.ts; src/server/bff-runtime.ts",
+          "src/lib/i18n/locales/en.json, fa.json (46 keys)",
+          "tests/e2e/settings.spec.ts (Set today's rate; set_today after the save), oversight.spec.ts (the rate card is not one of the 7 fixed widgets), orgs.spec.ts (Neshan link)"
+        ],
+        "tests": {
+          "unit": "pnpm check green on 2026-11-21 (lint with logical CSS, typecheck, unit + DOM 623 tests in 63 files, contract:check at 1.5.0 with 124 admin-api operations, i18n:check 3022 keys in en and fa, ds:check); prettier clean on the files of this stage. New: staff-password-change.test.tsx (flow with enrolment and with an existing key, field and server errors, show/hide and strength, 410 after five wrong codes, the expired-initial-password line, axe EN/FA, password rules), forwarded-client.test.ts (the statement verified with the backend's jwtVerify options for admin-api and the auth host, visitor address, header left out without key/address or when signing fails), daily-rate tests in rates.test.tsx, the rate card in dashboard.test.tsx, the odometer rule in notifications.test.tsx, the deep link by id in verification.test.tsx, the map-app links in orgs.test.tsx and org-logic.test.ts.",
+          "int": "pnpm test:int 7/7 against the strict backend (`pnpm int:env backend`), 2026-11-21.",
+          "e2e": "Strict E2E against `pnpm int:env backend` on 2026-11-21: whole suite 47 passed, 1 failed, 2 not run (13.6 min, 4 workers); the failure was this stage's dashboard rate card counted as an 8th widget in oversight.spec.ts (the test now counts the 7 fixed widgets and checks the card's link when shown), and the 2 not run were the serial tests after it. After that fix and the Neshan links: oversight.spec.ts, orgs.spec.ts and settings.spec.ts 9/9 passed (3.7 min), so every test of the suite has passed on this stage's code.",
+          "a11y": "axe in jsdom EN/FA on the password step, rates, dashboard and the Locations tab (existing suites); E2E axe in the whole run."
+        },
+        "deviations": [
+          "D-108",
+          "D-109",
+          "D-110",
+          "D-111"
+        ],
+        "new_doc_issues": [],
+        "new_backend_requests": [],
+        "notes_for_next": [
+          "OQ-16 answered (c): the console uses no Neshan tiles and needs no CARPAL_ADMIN_NESHAN_MAP_KEY. Hand-offs: PWA PB-10 has the same SDK/CSP blocker (its own decision), and shared/region-config/ir-pilot.json map (tiles_url vts.neshan.org is not what Neshan serves; style_url cdn.carpals.ir does not exist) should be corrected by the backend once the PWA decides. The Neshan service key (backend geocoder, CARPAL_NESHAN_SERVICE_KEY) is separate and still unverified against the live API (backend S26b).",
+          "AC11 deploy kit: nginx in front of the console must set X-Forwarded-For $proxy_add_x_forwarded_for and the console must listen on 127.0.0.1 only (D-110); once the PWA also sends CarPal-Forwarded-Client (PWA PB-12), the backend can lower the raised IP windows in CARPAL_RATE_LIMITS (backend deploy.md).",
+          "The AC11 runbook: the first sign-in of admin100/200/300 is password (initial) -> emailed code + own password -> key enrolment with the same code -> recovery codes -> key. An initial password older than 7 days is refused like a wrong one; reissue it from the server (backend staff tools).",
+          "Next.js 16.4.3: `next build` still stops once with the security advisory and passes on a rerun; the upgrade is the owner's decision."
+        ],
+        "open_after_stage": [
+          "DQ-25, DQ-26 owner confirmations",
+          "PWA PB-10 (Neshan in the PWA)",
+          "Backend: region map block correction and the live check of the Neshan geocoder"
+        ]
+      }
     },
     {
       "id": "AC15",
@@ -5165,6 +5299,39 @@
       "summary": "Found by the whole-suite run: the notification template editor and the rules form were keyed by the record version, so the refetch after a save remounted them and the success notice vanished (the save itself worked). Both are keyed by their identity now; the draft equals what was saved. A failed run had left the dev mileage window at 501 km: it was set back to 500 directly in the dev database (version bumped).",
       "affects": [
         "AC14.T3"
+      ]
+    },
+    {
+      "stage": "AC14b",
+      "id": "D-108",
+      "summary": "Daily rate: \"Keep <rate> for today\" sends the current rate again (admin.exchange_rate_update with the same per_usd). The backend accepts it and core.tg_touch stamps updated_at, so set_today turns true and the morning reminder stops; the audit gets an entry with the prefilled reason. Without it an unchanged rate could not be confirmed (parseRate refuses the same value as a change). /rates opens the first rate not set today when no currency is in the URL.",
+      "affects": [
+        "AC14b.T3"
+      ]
+    },
+    {
+      "stage": "AC14b",
+      "id": "D-109",
+      "summary": "After the first-sign-in password change, the same emailed code opens the key enrolment (backend S26a), so the console carries it into the enrolment step (prefilled, not shown as a new email) instead of asking for it again; the browser's key prompt still waits for the click (Safari needs a user gesture).",
+      "affects": [
+        "AC14b.T2"
+      ]
+    },
+    {
+      "stage": "AC14b",
+      "id": "D-110",
+      "summary": "CarPal-Forwarded-Client takes the visitor from the last X-Forwarded-For hop: Next.js 16 has no request.ip and fills X-Forwarded-For with the socket address only when it is absent. This is right behind one nginx that appends $remote_addr; the AC11 kit must keep the console on loopback behind it. The browser's header is never forwarded.",
+      "affects": [
+        "AC14b.T7",
+        "AC11"
+      ]
+    },
+    {
+      "stage": "AC14b",
+      "id": "D-111",
+      "summary": "No Neshan basemap in the console (T6; the plan said \"if only Neshan's SDK works, stop and ask\"): Neshan tiles are served under nsh://, keyed by ?key= and XOR-obfuscated, so only Neshan's SDK decodes them, and the SDK makes its worker from a blob URL against the console CSP and Trusted Types (AC14b.T6 findings). The owner chose option (c) of OQ-16 on 2026-11-21: the plain map stays and \"Open in Neshan\" (RegionConfig.navigation_apps) shows a pin on the real map in a new tab.",
+      "affects": [
+        "AC14b.T6"
       ]
     }
   ],

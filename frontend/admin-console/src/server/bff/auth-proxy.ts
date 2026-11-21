@@ -4,7 +4,7 @@
 // /oauth/token and /oauth/revoke stay server-to-server (the BFF's only). Only the interaction cookie travels; the BFF
 // session cookie never reaches the auth host. Copied from pwa/src/server/bff/auth-proxy.ts (GD-03); changes: the
 // console's resume cookie name and comments; the staff recovery routes keep their request handle server-side (AC10b,
-// recovery.ts).
+// recovery.ts); the visitor's address is stated in CarPal-Forwarded-Client (AC14b.T7, backend S26c.T2).
 import { OPERATIONS } from '@carpal/api-contracts';
 import { clientHeader, INTERACTION_COOKIE, MAX_BODY_BYTES, RESUME_COOKIE, type BffConfig } from './config';
 import { checkSameOrigin } from './csrf';
@@ -24,6 +24,7 @@ import {
   type RecoveryStore,
 } from './recovery';
 import { randomToken } from './crypto';
+import { FORWARDED_CLIENT_HEADER, forwardedClientHeader, type ForwardedClientSigner } from './forwarded-client';
 
 const BROWSER_OPS = new Set(
   Object.entries(OPERATIONS)
@@ -64,6 +65,8 @@ export interface AuthProxyDeps {
   issuer: () => Promise<string>;
   /** Where the staff recovery request handle is kept (AC10b): never sent to the browser. */
   recovery: RecoveryStore;
+  /** CarPal-Forwarded-Client signer (AC14b.T7); absent in lite dev. aud and htu are the issuer's, as the auth host checks. */
+  forwardedClient?: ForwardedClientSigner | undefined;
 }
 
 export async function proxyAuth(request: Request, d: AuthProxyDeps): Promise<Response> {
@@ -71,7 +74,8 @@ export async function proxyAuth(request: Request, d: AuthProxyDeps): Promise<Res
   const path = url.pathname.slice('/id'.length);
   const method = request.method.toUpperCase();
   if (!isCanonicalPath(path) || !BROWSER_OPS.has(`${method} ${path}`)) return problem(404, 'NOT_FOUND');
-  // The auth host does not check Origin / Sec-Fetch-Site yet (DI-09); the proxy does, for state changes.
+  // The proxy checks Origin / Sec-Fetch-Site on state changes and passes both on: since backend S26c the auth host checks
+  // them too (403 CSRF_FAILED). No CSRF token here: the auth host binds these calls to the interaction cookie (S26c-D3).
   if (checkSameOrigin(request, d.config.origin)) return problem(403, 'CSRF_FAILED');
 
   const headers = new Headers();
@@ -80,6 +84,13 @@ export async function proxyAuth(request: Request, d: AuthProxyDeps): Promise<Res
     if (v !== null) headers.set(name, v);
   }
   headers.set('carpal-client', request.headers.get('carpal-client') ?? clientHeader(d.config.clientId, d.config.clientVersion));
+  if (d.forwardedClient) {
+    const issuer = await d.issuer().catch(() => null);
+    const forwarded = issuer
+      ? await forwardedClientHeader(d.forwardedClient, request, { audience: issuer, method, htu: `${issuer}${path}` })
+      : null;
+    if (forwarded) headers.set(FORWARDED_CLIENT_HEADER, forwarded);
+  }
   const interaction = parseCookies(request.headers.get('cookie')).get(INTERACTION_COOKIE);
   if (interaction) headers.set('cookie', `${INTERACTION_COOKIE}=${interaction}`);
 

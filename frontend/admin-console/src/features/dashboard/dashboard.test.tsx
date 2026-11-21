@@ -218,6 +218,46 @@ describe('Dashboard (AC13.T6)', () => {
     await waitFor(() => expect(system).toHaveAttribute('data-state', 'ready'));
   });
 
+  it('ADM: the rate card while a rate is not set today, gone once it is; others never see it (AC14b.T3)', async () => {
+    let setToday = false;
+    const rate = () => ({
+      id: uuid(31),
+      currency: 'IRR',
+      per_usd: '1000000.0000',
+      updated_at: ago(26),
+      updated_by_display: 'Ali Admin',
+      set_today: setToday,
+      age_hours: 26,
+      version: 2,
+    });
+    const { transport } = scriptedTransport({
+      'admin.work_summary': summary([q('four_eyes')]),
+      'admin.four_eyes_list': () => page([]),
+      'admin.exchange_rates_list': () => Response.json({ items: [rate()] }),
+    });
+    const first = renderConsole(<Dashboard />, { transport, roles: ['ADM'] });
+    const card = await screen.findByTestId('rate-card');
+    expect(screen.getByRole('region', { name: "Today's exchange rate" })).toContainElement(card);
+    expect(card).toHaveTextContent('Not set today');
+    expect(card).toHaveTextContent('1,000,000 IRR per US dollar');
+    expect(card).toHaveTextContent(/Last set .* by Ali Admin/);
+    expect(within(card).getByRole('link', { name: "Set today's rate" })).toHaveAttribute('href', '/rates?currency=IRR');
+    first.unmount();
+
+    setToday = true;
+    renderConsole(<Dashboard />, { transport, roles: ['ADM'] });
+    await screen.findByRole('region', { name: 'My work' });
+    await waitFor(() => expect(screen.queryByRole('region', { name: "Today's exchange rate" })).toBeNull());
+  });
+
+  it('the rate card is for administrators only', async () => {
+    const { transport, calls } = scriptedTransport({ 'admin.work_summary': summary([q('reports')]) });
+    renderConsole(<Dashboard />, { transport, roles: ['MOD'] });
+    await screen.findByRole('region', { name: 'My work' });
+    expect(calls.some((c) => c.opId === 'admin.exchange_rates_list')).toBe(false);
+    expect(screen.queryByTestId('rate-card')).toBeNull();
+  });
+
   for (const locale of ['en', 'fa'] as Locale[]) {
     it(`axe: no violations (${locale})`, async () => {
       const { transport } = scriptedTransport({

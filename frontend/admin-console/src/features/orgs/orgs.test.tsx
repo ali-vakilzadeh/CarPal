@@ -333,6 +333,41 @@ describe('Locations tab (AC9.T3)', () => {
     expect(screen.getByText('Corrected by CarPal')).toBeInTheDocument();
   });
 
+  it('opens the pin, and a proposed point, in the region map apps in a new tab (AC14b.T6, OQ-16 (c))', async () => {
+    resetNav(`/orgs/${ORG}?tab=locations&purpose=verification:${V1}`);
+    const apps = [
+      {
+        key: 'neshan',
+        label: { text: 'Neshan', locale: 'en' },
+        platforms: ['ios', 'android', 'web'],
+        url_template: 'https://neshan.org/maps/@{lat},{lng},16z',
+      },
+      { key: 'app_only', label: { text: 'App only', locale: 'en' }, platforms: ['ios'], url_template: 'https://example.ir/{lat}' },
+    ];
+    const { transport } = scriptedTransport({
+      'admin.org_get': () => Response.json(org()),
+      'admin.region_settings': () => Response.json({ region: { navigation_apps: apps }, location_check_threshold_m: 250 }),
+    });
+    renderConsole(<OrgPage orgId={ORG} mapStyleUrl={null} />, { transport, roles: ['MOD'] });
+    const tab = await screen.findByTestId('locations-tab');
+    const links = await within(tab).findByTestId('map-links');
+    const neshan = within(links).getByRole('link', { name: 'Open in Neshan (opens in a new tab)' });
+    expect(neshan).toHaveAttribute('href', 'https://neshan.org/maps/@35.700000,51.400000,16z');
+    expect(neshan).toHaveAttribute('target', '_blank');
+    expect(neshan).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(within(links).getAllByRole('link')).toHaveLength(1);
+    expect(within(tab).queryByTestId('map-links-proposed')).toBeNull();
+    fireEvent.click(within(tab).getByRole('button', { name: 'Correct pin or address' }));
+    const form = within(tab).getByRole('form', { name: 'Correct the location' });
+    fireEvent.change(within(form).getByLabelText('Latitude'), { target: { value: '35.701' } });
+    fireEvent.change(within(form).getByLabelText('Longitude'), { target: { value: '51.402' } });
+    const proposed = within(tab).getByTestId('map-links-proposed');
+    expect(within(proposed).getByRole('link', { name: /^Check the new point in Neshan/ })).toHaveAttribute(
+      'href',
+      'https://neshan.org/maps/@35.701000,51.402000,16z',
+    );
+  });
+
   it('hides the correction from support staff', async () => {
     resetNav(`/orgs/${ORG}?tab=locations&purpose=verification:${V1}`);
     const { transport } = scriptedTransport({ 'admin.org_get': () => Response.json(org()) });

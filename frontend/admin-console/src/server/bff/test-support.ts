@@ -4,7 +4,7 @@
 // BFF's cookies. Never imported by application code.
 import { SignJWT, decodeJwt, decodeProtectedHeader, exportJWK, generateKeyPair, type JWK } from 'jose';
 import { DEFAULT_LIFETIMES, type BffConfig } from './config';
-import { createBff, type Bff } from './index';
+import { createBff, type Bff, type BffOptions } from './index';
 import { jwkThumbprint } from './oauth/dpop';
 import { LiteSessionStore } from './session/store';
 
@@ -270,11 +270,11 @@ export interface TestBff {
   clock: { now: number };
 }
 
-export async function testBff(over: Partial<BffConfig> = {}): Promise<TestBff> {
+export async function testBff(over: Partial<BffConfig> = {}, o: Pick<BffOptions, 'forwardedClient'> = {}): Promise<TestBff> {
   const clock = { now: Date.now() };
   const backend = await fakeBackend(() => clock.now);
   const store = new LiteSessionStore({ sweepMs: 0, now: () => clock.now });
-  const bff = createBff({ config: testConfig(over), store, fetch: backend.fetch, now: () => clock.now });
+  const bff = createBff({ config: testConfig(over), store, fetch: backend.fetch, now: () => clock.now, ...o });
   return { bff, backend, store, browser: new Browser(bff), clock };
 }
 

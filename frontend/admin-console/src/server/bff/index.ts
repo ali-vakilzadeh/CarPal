@@ -11,6 +11,7 @@ import { LiteRecoveryStore, type RecoveryStore } from './recovery';
 import { clientHeader, type BffConfig } from './config';
 import { checkCsrf } from './csrf';
 import { consumeIntent, csrfToken, saveIntent, sessionView } from './endpoints';
+import type { ForwardedClientSigner } from './forwarded-client';
 import { failure, forward } from './forwarder';
 import { json, problem } from './http';
 import { callback, login, logout, methodNotAllowed, reauth, restartLogin, uiLocale } from './oauth/flow';
@@ -27,6 +28,7 @@ export { RedisSessionStore, RespClient } from './session/redis';
 export { LiteRecoveryStore, RedisRecoveryStore, RECOVERY_COOKIE, type RecoveryStore } from './recovery';
 export { privateKeyJwt, noClientAuthentication, TokenEndpointError, type ClientAuthentication } from './oauth/token-client';
 export { sessionView, type SessionView } from './endpoints';
+export { forwardedClientSigner, type ForwardedClientSigner } from './forwarded-client';
 
 export interface BffOptions {
   config: BffConfig;
@@ -37,6 +39,8 @@ export interface BffOptions {
   now?: () => number;
   /** Client authentication at /oauth/token and /oauth/revoke: private_key_jwt with the cp-web-admin key; none in lite dev. */
   clientAuth?: ClientAuthentication;
+  /** Signs CarPal-Forwarded-Client (the visitor's address, AC14b.T7) with the same key; left out in lite dev. */
+  forwardedClient?: ForwardedClientSigner;
 }
 
 export interface Bff {
@@ -68,9 +72,15 @@ export function createBff(o: BffOptions): Bff {
     const { pathname } = new URL(request.url);
     const method = request.method.toUpperCase();
     if (pathname === '/api' || pathname.startsWith('/api/'))
-      return forward(request, { config, sessions, tokens, allowlist, fetch: doFetch });
+      return forward(request, { config, sessions, tokens, allowlist, fetch: doFetch, forwardedClient: o.forwardedClient });
     if (pathname.startsWith('/id/'))
-      return proxyAuth(request, { config, fetch: doFetch, recovery, issuer: async () => (await tokenClient.discovery()).issuer });
+      return proxyAuth(request, {
+        config,
+        fetch: doFetch,
+        recovery,
+        issuer: async () => (await tokenClient.discovery()).issuer,
+        forwardedClient: o.forwardedClient,
+      });
 
     switch (pathname) {
       case '/bff/login':

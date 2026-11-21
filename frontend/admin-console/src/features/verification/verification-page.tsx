@@ -54,7 +54,6 @@ import {
 } from './verification-logic';
 
 const PAGE_SIZE = 50;
-const DEEP_LINK_PAGES = 20;
 const LIST_KEY = ['admin.verifications_queue'] as const;
 type Decision = 'verified' | 'rejected';
 
@@ -101,21 +100,20 @@ export function VerificationPage() {
   // A decided check leaves the queue and its purpose ends: keep it and the answer on screen.
   const [decided, setDecided] = useState<{ item: QueueItem; result: OrganizationVerification; org: StaffOrgView | null } | null>(null);
   const decidedHere = decided && decided.item.id === selectedId ? decided : null;
-  // A link to a check that is not on this page (a long queue): the queue has no read by id, so walk its pages.
+  // A link to a check that is not on this page (a long queue, another filter): read it by id (q verification_id,
+  // backend S26c.T0, BR-37; D-66 walked up to 20 pages). Only a pending check opens; a decided one keeps the not-found
+  // state, as its purpose has ended.
   const api = useApiClient();
   const deep = useQuery({
-    queryKey: ['verification-deep-link', selectedId, filters.query],
+    queryKey: ['verification-deep-link', selectedId],
     enabled: !!selectedId && !!list.data && !fromList && !decidedHere,
     retry: false,
     queryFn: async ({ signal }) => {
-      let cursor = list.data?.next_cursor ?? null;
-      for (let i = 0; cursor && i < DEEP_LINK_PAGES; i++) {
-        const page = await api.api('admin.verifications_queue', { query: { ...filters.query, limit: PAGE_SIZE, cursor }, signal });
-        const hit = page.items.find((v) => v.id === selectedId);
-        if (hit) return hit;
-        cursor = page.next_cursor ?? null;
-      }
-      return null;
+      const page = await api.api('admin.verifications_queue', {
+        query: { verification_id: selectedId!, status: 'pending', limit: 1 },
+        signal,
+      });
+      return page.items.find((v) => v.id === selectedId) ?? null;
     },
   });
   const item = decidedHere?.item ?? fromList ?? deep.data ?? null;
@@ -237,7 +235,13 @@ export function VerificationPage() {
 
   const itemPanel = () => {
     if (!item) {
-      if (selectedId && list.isPending) return <p className="adm-muted">{t('admin.kit.table.loading')}</p>;
+      if (selectedId && (list.isPending || deep.isFetching)) return <p className="adm-muted">{t('admin.kit.table.loading')}</p>;
+      if (selectedId && deep.isSuccess && deep.data === null)
+        return (
+          <p className="adm-muted" data-testid="verification-gone">
+            {t('admin.verification.linkGone')}
+          </p>
+        );
       return <p className="adm-muted">{t('admin.verification.pick')}</p>;
     }
     return (

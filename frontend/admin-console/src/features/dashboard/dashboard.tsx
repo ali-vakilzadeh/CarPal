@@ -9,6 +9,7 @@
 //      Growth: new users, vehicles, provider profiles, appointment requests and completions, reviews published;
 //   3  Trust: reviews published and awaiting approval, disputes opened, moderation actions (fraud flags and review
 //      velocity alerts have no source, DI-36); AI: insights, acceptance, hallucination reports, the kill switch;
+//   0  The daily exchange rate for administrators while it is not set today (AC14b.T3);
 //   4  System: import, delivery and virus-scan failures, the SMS provider (warning while simulated), the mail transport
 //      and the geocoder's requests (admin.system_health).
 // The period of the metric widgets is today, 7 or 30 days (URL ?range=). Numbers are read again every 60 s while the
@@ -61,6 +62,7 @@ export function Dashboard() {
   const metrics = canCall('admin.analytics_dashboard', roles);
   const ai = metrics && canCall('admin.ai_insights_search', roles);
   const system = canCall('admin.system_health', roles);
+  const rates = canCall('admin.exchange_rate_update', roles);
   return (
     <div className="adm-page" data-testid="my-work">
       <h1 className="adm-page-title">{t('admin.work.title')}</h1>
@@ -68,6 +70,7 @@ export function Dashboard() {
         {t('admin.work.welcome', { name: staff.display_name })} {t('admin.console.home.roles', { roles: roleNames(roles, t) })}
       </p>
       <div className="adm-dash">
+        {rates ? <RateWidget /> : null}
         <MyWorkWidget />
         <SafetyWidget />
         <QueuesWidget />
@@ -160,6 +163,45 @@ function Figures({ rows }: { rows: { label: string; value: ReactNode; testId?: s
         </div>
       ))}
     </dl>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// The daily exchange rate (AC14b.T3, backend S26a): for administrators, while a display rate is not set today (the
+// region's day), a card with the rate in force, how old it is and the action. Hidden once every rate is set today.
+
+function RateWidget() {
+  const t = useT();
+  const f = useFormat();
+  const q = useApiQuery('admin.exchange_rates_list', undefined, { refetchInterval: WORK_REFRESH_MS, staleTime: 30_000 });
+  const missing = q.data?.items.filter((r) => !r.set_today) ?? [];
+  if (q.isPending || (q.isSuccess && missing.length === 0)) return null;
+  return (
+    <Widget
+      id="rate"
+      title={t('admin.dash.rate.title')}
+      icon="tag"
+      state={q.isError ? 'error' : 'ready'}
+      error={q.error}
+      onRetry={() => void q.refetch()}
+    >
+      <ul className="adm-mine" data-testid="rate-card">
+        {missing.map((r) => (
+          <li key={r.currency} data-currency={r.currency}>
+            <p>
+              <Badge tone="signal" icon="clock">
+                {t('admin.rates.notSetToday')}
+              </Badge>
+            </p>
+            <p>{t('admin.rates.perUsd', { amount: f.number(Number(r.per_usd), { maximumFractionDigits: 4 }), currency: r.currency })}</p>
+            <p className="adm-muted">{t('admin.dash.rate.age', { ago: f.relative(r.updated_at), name: r.updated_by_display })}</p>
+            <p>
+              <Link href={`/rates?currency=${encodeURIComponent(r.currency)}`}>{t('admin.rates.setTodayAction')}</Link>
+            </p>
+          </li>
+        ))}
+      </ul>
+    </Widget>
   );
 }
 

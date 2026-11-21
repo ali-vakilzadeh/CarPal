@@ -136,17 +136,33 @@ describe('Verification queue and review (AC9.T4)', () => {
     expect(within(panel).getByText('Document 1 of 1')).toBeInTheDocument();
   });
 
-  it('opens a linked check that is on a later page of a long queue', async () => {
+  it('opens a linked check that is not on the first page by its id (AC14b.T8, BR-37)', async () => {
     resetNav(`/verification?verification=${V2}&purpose=verification:${V2}`);
     const { transport, calls } = scriptedTransport({
       'admin.verifications_queue': (req) =>
-        req.search.includes('cursor=c2') ? page([item({ id: V2, organization: { ...item().organization, name: 'Later Shop' } })]) : page([item()], 'c2'),
+        req.search.includes(`verification_id=${V2}`)
+          ? page([item({ id: V2, organization: { ...item().organization, name: 'Later Shop' } })])
+          : page([item()], 'c2'),
       'admin.org_get': () => Response.json(org({ name: 'Later Shop' })),
     });
     renderConsole(<VerificationPage />, { transport, roles: ['MOD'] });
     const panel = await screen.findByTestId('verification-item');
     expect(panel).toHaveAttribute('data-verification', V2);
-    expect(calls.some((c) => c.opId === 'admin.verifications_queue' && c.search.includes('cursor=c2'))).toBe(true);
+    const queue = calls.filter((c) => c.opId === 'admin.verifications_queue');
+    // One read of the list and one by id: no walk through the pages (D-66 removed).
+    expect(queue.map((c) => c.search)).toEqual(['?status=pending&limit=50', `?verification_id=${V2}&status=pending&limit=1`]);
+  });
+
+  it('keeps the not-found state for a linked check that is no longer pending', async () => {
+    resetNav(`/verification?verification=${V2}&purpose=verification:${V2}`);
+    const { transport, calls } = scriptedTransport({
+      'admin.verifications_queue': (req) => (req.search.includes('verification_id=') ? page([]) : page([item()])),
+    });
+    renderConsole(<VerificationPage />, { transport, roles: ['MOD'] });
+    await waitFor(() => expect(calls.filter((c) => c.opId === 'admin.verifications_queue')).toHaveLength(2));
+    expect(await screen.findByTestId('verification-gone')).toHaveTextContent('not waiting for a decision');
+    expect(screen.queryByTestId('verification-item')).toBeNull();
+    expect(calls.some((c) => c.opId === 'admin.org_get')).toBe(false);
   });
 
   it('approves only after the checklist and shows the organization status afterwards', async () => {

@@ -205,8 +205,8 @@ function OrgTabs({
   const pathname = usePathname();
   const router = useRouter();
   // The region's pin-versus-address threshold (admin.region_settings, backend S13, BR-18; D-58 lifted in AC10.T0).
-  // The map style stays the console's env setting until AC14b.T6: the region config now names the Neshan tile host,
-  // which needs the web map key and CSP origins.
+  // The map style stays the console's env setting (blank fallback when unset): the console shows no Neshan basemap
+  // (OQ-16 answer (c), AC14b.T6); the region's web map apps open a pin on the real map instead.
   const region = useApiQuery('admin.region_settings', {}, { staleTime: 10 * 60_000 });
   const asked = params.get('tab');
   const tab: OrgTab = ORG_TABS.find((x) => x === asked) ?? 'profile';
@@ -252,7 +252,13 @@ function OrgTabs({
         <h2 className="sr-only">{t(`admin.orgs.tab.${tab}`)}</h2>
         {tab === 'profile' ? <ProfileTab org={org} reload={reload} /> : null}
         {tab === 'locations' ? (
-          <LocationsTab org={org} mapStyleUrl={mapStyleUrl} thresholdM={region.data?.location_check_threshold_m} onCorrected={onChanged} />
+          <LocationsTab
+            org={org}
+            mapStyleUrl={mapStyleUrl}
+            thresholdM={region.data?.location_check_threshold_m}
+            mapApps={region.data?.region.navigation_apps}
+            onCorrected={onChanged}
+          />
         ) : null}
         {tab === 'verification' ? <VerificationTab org={org} /> : null}
         {tab === 'plan' ? <PlanTab org={org} /> : null}

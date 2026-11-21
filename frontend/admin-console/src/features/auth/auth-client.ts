@@ -18,6 +18,7 @@ export type AuthOperationId =
   | 'auth.webauthn_options'
   | 'auth.mfa_verify'
   | 'auth.password_reset_start'
+  | 'auth.password_set_initial'
   | 'auth.staff_recovery_start'
   | 'auth.staff_recovery_verify'
   | 'auth.staff_recovery_status'

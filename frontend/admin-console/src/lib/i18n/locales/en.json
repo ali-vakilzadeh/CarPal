@@ -75,7 +75,8 @@
         "codeWrong": "The code is not correct. Check the latest email and try again.",
         "codeFormat": "Enter the 6-digit code from the email.",
         "alreadyRegistered": "This security key is already registered. Use another key, or start again and sign in with this one.",
-        "unsupported": "This browser cannot use security keys. Use a current version of Chrome, Edge, Firefox or Safari."
+        "unsupported": "This browser cannot use security keys. Use a current version of Chrome, Edge, Firefox or Safari.",
+        "initialExpired": "Signing in for the first time? An initial password works for 7 days. If yours is older, ask the server operator for a new initial password."
       },
       "mfa": {
         "title": "Confirm with your security key",
@@ -90,7 +91,8 @@
         "code": "Code from the email",
         "codeHint": "The code is valid for 10 minutes.",
         "create": "Create security key",
-        "noCode": "No email after a minute? Start again to get a new code."
+        "noCode": "No email after a minute? Start again to get a new code.",
+        "sameCode": "Use the same 6-digit code from the email (filled in for you), then follow the browser's prompt to create the key."
       },
       "locked": {
         "title": "Sign-in is paused",
@@ -103,7 +105,8 @@
         "text": "Sign-in pages are valid for 30 minutes. Start again; you will come back to the page you wanted.",
         "restart": "Start again",
         "keySaved": "Your new security key was saved. Start again and sign in with it.",
-        "recovery": "Your recovery request is kept. Start again from this browser to continue it."
+        "recovery": "Your recovery request is kept. Start again from this browser to continue it.",
+        "passwordSaved": "Your new password is saved. Start again and sign in with it (the initial password no longer works)."
       },
       "gate": {
         "title": "Use the company network",
@@ -164,6 +167,35 @@
           "passwordLength": "The new password must have 12 to 128 characters.",
           "passwordRepeat": "The two passwords are not the same.",
           "password": "This password cannot be used. Choose a longer one that you have not used before."
+        }
+      },
+      "initial": {
+        "title": "Choose your own password",
+        "why": "Your staff account was set up with an initial password. Choose your own password before you continue; this step cannot be skipped.",
+        "sent": "We sent a 6-digit code to your work email. Enter it with your new password.",
+        "rulesTitle": "Your new password must be:",
+        "rules": {
+          "length": "12 to 128 characters long",
+          "breached": "not a password known from data breaches",
+          "initial": "different from the initial password",
+          "tip": "A passphrase of several unrelated words is long and easy to remember."
+        },
+        "new": "New password",
+        "repeat": "Repeat the new password",
+        "show": "Show password",
+        "save": "Save password and continue",
+        "changed": "Your new password is saved.",
+        "strength": {
+          "short": "Too short: at least 12 characters.",
+          "fair": "Strength: fair. A longer password is stronger.",
+          "good": "Strength: good.",
+          "strong": "Strength: strong."
+        },
+        "errors": {
+          "length": "The new password must be 12 to 128 characters long.",
+          "repeat": "The two passwords are not the same.",
+          "breached": "This password is known from data breaches. Choose another one.",
+          "same": "This is the initial password. Choose a password of your own."
         }
       }
     },
@@ -639,7 +671,8 @@
         "currency": "Currency",
         "perUsd": "Per US dollar",
         "updatedBy": "Last changed by",
-        "updatedAt": "Last changed"
+        "updatedAt": "Last changed",
+        "today": "Today"
       },
       "editTitle": "Set the {{currency}} rate",
       "current": "Current rate",
@@ -650,7 +683,8 @@
         "empty": "Enter the new rate.",
         "format": "Enter a number, with at most 10 digits before the point and 4 after.",
         "zero": "The rate must be more than zero.",
-        "same": "This is the current rate."
+        "same": "This is the current rate.",
+        "sameKeep": "This is the current rate. To confirm it for today, use the Keep button below."
       },
       "preview": "What people will see",
       "previewPrice": "Price",
@@ -664,7 +698,18 @@
       "applied": "Saved. The apps show the new rate within five minutes.",
       "refreshHint": "The apps read rates from their configuration, which they refresh at least every five minutes.",
       "dialogTitle": "Change the {{currency}} rate",
-      "dialogSummary": "{{currency}} per US dollar: {{from}} → {{to}} ({{pct}} %)."
+      "dialogSummary": "{{currency}} per US dollar: {{from}} → {{to}} ({{pct}} %).",
+      "daily": "The rate is set every morning. A rate not set today is marked, and administrators are reminded in the console and by email.",
+      "setToday": "Set today",
+      "notSetToday": "Not set today",
+      "setTodayAction": "Set today's rate",
+      "todayDone": "Set today by {{name}} ({{when}}).",
+      "todayMissing": "The {{currency}} rate was last set {{ago}} by {{name}} ({{when}}). Enter today's rate, or keep this one for today.",
+      "keep": "Keep {{amount}} {{currency}} for today",
+      "keepTitle": "Keep the {{currency}} rate for today",
+      "keepConfirm": "Keep for today",
+      "keepSummary": "{{currency}} per US dollar stays at {{amount}} and is marked as set today.",
+      "dailyReason": "Daily rate {{date}}"
     },
     "flags": {
       "title": "Feature flags",
@@ -1879,12 +1924,15 @@
         "label": "Map of {{name}}",
         "loading": "Loading the map…",
         "failed": "The map cannot be shown in this browser. The coordinates and the form still work.",
-        "noBasemap": "No map tiles are configured: the map shows the pins and the radius only.",
+        "noBasemap": "The console shows no streets: the map has the pins and the radius only. Open the pin in a map app below to see the area.",
         "pin": "Owner's pin",
         "proposed": "Proposed pin",
         "zoomIn": "Zoom in",
         "zoomOut": "Zoom out",
-        "recenter": "Back to the pin"
+        "recenter": "Back to the pin",
+        "open": "Open in {{app}}",
+        "openProposed": "Check the new point in {{app}}",
+        "newTab": "(opens in a new tab)"
       },
       "correct": {
         "open": "Correct pin or address",
@@ -2063,7 +2111,8 @@
       "orgNow": "The organization's verification status is now: {{status}}.",
       "badgeNext": "The Verified Business badge is awarded by the trust check and waits for staff approval (organization page, Verification tab).",
       "alreadyDecided": "This request is decided: {{status}}.",
-      "cannotDecide": "Only moderators and platform admins decide verification requests."
+      "cannotDecide": "Only moderators and platform admins decide verification requests.",
+      "linkGone": "This request is not waiting for a decision any more (decided, expired or not found). Pick one from the queue."
     },
     "suspension": {
       "label": "Suspend for",
@@ -2797,7 +2846,11 @@
       "geoRequests": "{{today}} requests today, {{month}} in 30 days",
       "generated": "Numbers from {{when}}.",
       "open": "Open",
-      "failed": "Could not load this widget."
+      "failed": "Could not load this widget.",
+      "rate": {
+        "title": "Today's exchange rate",
+        "age": "Last set {{ago}} by {{name}}."
+      }
     },
     "analytics": {
       "title": "Analytics",
@@ -3551,8 +3604,11 @@
           "quietEnd": "Enter a time as HH:MM that differs from the start.",
           "hour": "Enter an hour from 0 to 23.",
           "maintenance": "Enter days from 1 to 90.",
-          "mileage": "Enter km from 50 to 5,000."
-        }
+          "mileage": "Enter km from 50 to 5,000.",
+          "odometer": "Enter 0, or days from 14 to 90."
+        },
+        "odometerDays": "Ask owners for a mileage reading after (days)",
+        "odometerHint": "Days without a reading before the owner is asked for one: 14 to 90, or 0 to turn the prompt off. Fleet vehicles are not asked."
       },
       "health": {
         "intro": "Deliveries by channel and provider; counts only, no recipients or texts. Updated {{at}}.",

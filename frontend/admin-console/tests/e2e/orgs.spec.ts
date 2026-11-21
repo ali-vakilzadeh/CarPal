@@ -3,7 +3,8 @@
 // The data comes from the real API: a published provider (tests/e2e/app-user.ts) asks for its business identity and
 // location checks.
 //   1. EN: a moderator approves the business identity check (checklist), opens the location check's organization on the
-//      Locations tab, corrects the pin by typing coordinates (the map's keyboard alternative), approves the location
+//      Locations tab, corrects the pin by typing coordinates (the map's keyboard alternative), sees the Neshan link to
+//      the corrected pin (AC14b.T6), approves the location
 //      check and sees the organization verified. Axe on the queue, the review and the Locations tab.
 //   2. FA: a platform admin finds the organization by id, opens it for a pending check, reads the audit drawer of the
 //      corrected location (the correction is listed), suspends and reactivates it. Axe in FA.
@@ -82,6 +83,10 @@ test('a provider is verified after its pin is corrected (AC9, EN)', async ({ con
   await expect(page.getByTestId('correct-result')).toContainText('Pin matches address');
   await expect(tab.getByText('Corrected by CarPal')).toBeVisible();
   await expect(tab.getByTestId('pin-coords')).toContainText('35.7219, 51.3347');
+  // No basemap in the console (OQ-16 (c)): the pin opens on Neshan, from the region config (AC14b.T6).
+  const neshan = tab.getByTestId('map-links').getByRole('link', { name: /^Open in Neshan/ });
+  await expect(neshan).toHaveAttribute('href', 'https://neshan.org/maps/@35.721900,51.334700,16z');
+  await expect(neshan).toHaveAttribute('target', '_blank');
 
   // Approve the location check: the organization is verified now.
   await page.goto(`/verification?verification=${locationId}&purpose=${purpose(locationId)}`);

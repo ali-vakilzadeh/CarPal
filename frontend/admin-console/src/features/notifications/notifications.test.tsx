@@ -94,6 +94,14 @@ describe('notification rules (AC14.T3)', () => {
       problems: ['quietEnd', 'mileageKm'],
     });
   });
+
+  it('takes the odometer prompt as 0 (off) or 14-90 days (AC14b.T4)', () => {
+    const write = (odometerDays: string) => rulesWriteOf(rules, { ...rulesDraftOf(rules), odometerDays });
+    expect(write('0')).toMatchObject({ value: { odometer_prompt_days: 0 } });
+    expect(write('۱۴')).toMatchObject({ value: { odometer_prompt_days: 14 } });
+    expect(write('90')).toMatchObject({ value: { odometer_prompt_days: 90 } });
+    for (const bad of ['1', '13', '91', '', 'x']) expect(write(bad), bad).toEqual({ problems: ['odometerDays'] });
+  });
 });
 
 describe('Notifications & templates page (AC14.T3)', () => {
@@ -215,6 +223,12 @@ describe('Notifications & templates page (AC14.T3)', () => {
     expect(within(form).getByText('Enter up to three days from 1 to 6, ascending, separated by commas.')).toBeInTheDocument();
     fireEvent.change(within(form).getByLabelText('Reminders to the customer (days after the invitation)'), { target: { value: '1, 3' } });
     fireEvent.change(within(form).getByLabelText('… or (km before)'), { target: { value: '800' } });
+    const odometer = within(form).getByLabelText('Ask owners for a mileage reading after (days)');
+    expect(odometer).toHaveValue('30');
+    fireEvent.change(odometer, { target: { value: '10' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Save the rules' }));
+    expect(within(form).getByText('Enter 0, or days from 14 to 90.')).toBeInTheDocument();
+    fireEvent.change(odometer, { target: { value: '45' } });
     fireEvent.click(within(form).getByRole('button', { name: 'Save the rules' }));
     const dialog = await screen.findByRole('dialog', { name: 'Change the notification rules' });
     reason(dialog, 'planned_change');
@@ -225,7 +239,7 @@ describe('Notifications & templates page (AC14.T3)', () => {
     expect(put.body).toMatchObject({
       review_invitation_reminder_days: [1, 3],
       mileage_due_window_km: 800,
-      odometer_prompt_days: 30,
+      odometer_prompt_days: 45,
       default_quiet_hours: { start: '22:00', end: '07:00' },
       reason: 'planned_change',
     });

@@ -2,7 +2,7 @@
 // amount of the display currency per US dollar (Dec<14,4>, > 0). A change of more than 20 % waits for a second
 // platform admin (the server decides, rateNeedsSecondApprover in backend/modules/admin/application/platform-ops.ts;
 // the console only warns before sending). Persian digits and separators typed by staff are accepted.
-import { toLatinDigits } from '@/lib/format';
+import { DEFAULT_TIME_ZONE, toLatinDigits } from '@/lib/format';
 
 /** Dec<14,4>: up to 10 digits before the point and 4 after. */
 const DECIMAL = /^\d{1,10}(\.\d{1,4})?$/;
@@ -38,3 +38,14 @@ export function needsSecondApprover(current: string, next: string): boolean {
 
 /** US dollar amounts the preview converts (a small service and a typical repair). */
 export const SAMPLE_USD = [1, 25] as const;
+
+/**
+ * Today's date for the prefilled reason of the daily rate ("Daily rate 21/11", AC14b.T3): the region's day (the
+ * backend's set_today uses the region's time zone), day/month in Latin digits whatever the UI language, so the audit
+ * reads the same for everybody.
+ */
+export function dailyReasonDate(now: Date = new Date(), timeZone: string = DEFAULT_TIME_ZONE): string {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone, day: '2-digit', month: '2-digit' }).formatToParts(now);
+  const get = (type: 'day' | 'month') => parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('day')}/${get('month')}`;
+}

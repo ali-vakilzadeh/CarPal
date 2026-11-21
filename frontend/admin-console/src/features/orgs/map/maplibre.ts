@@ -3,8 +3,9 @@
 // library loads only when a location map is shown; its worker is a static file under /_next/static/, same-origin for
 // worker-src 'self' and admitted by the Trusted Types default policy (src/lib/theme.ts), which allows /_next/static/
 // script URLs only. Style: the URL given by the server (CARPAL_ADMIN_MAP_STYLE_URL, its origin allowed by the page's
-// CSP) or — when none is set or it does not answer — a built-in style without a basemap (the pilot tile URLs are
-// placeholders today, D-59): the pins, the radius circle, the keyboard and the coordinates still work.
+// CSP) or — when none is set or it does not answer — a built-in style without a basemap (D-59; the region's Neshan
+// tiles are not used in the console, OQ-16 answer (c): "Open in Neshan" shows the real map in a new tab): the pins,
+// the radius circle, the keyboard and the coordinates still work.
 import type { StyleSpecification } from 'maplibre-gl';
 import type { GeoPoint } from '@/lib/config/geo';
 

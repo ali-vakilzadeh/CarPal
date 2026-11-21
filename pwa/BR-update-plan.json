@@ -428,7 +428,8 @@
         "backend S26b.T3 (region config map block)",
         "Neshan web map key restricted to pwa.carpals.ir"
       ],
-      "supersedes": "PWA-R-24 (region tile host)"
+      "supersedes": "PWA-R-24 (region tile host)",
+      "note_2026_11_21": "Console AC14b.T6 (2026-11-21), Neshan docs reachable again; SDK and styles read as data, not run: the web key is only the SDK option apiKey; the current SDK is @neshan-maps-platform/maplibre-sdk (bundles MapLibre 5.24.3); styles at https://static.neshan.org/sdk/maplibre/styles/{light,dark,...}.json use tiles under the custom scheme nsh://api.neshan.org/basemap/v2/{z}/{x}/{y}/sdk (also poi/v3, traffic), sprites and glyphs on static.neshan.org. The SDK maps nsh:// to https with ?key=<apiKey> in the query and XOR-decodes then gunzips each tile with a table built into the SDK, so plain maplibre-gl cannot read the tiles; it also builds its worker from a blob URL (createObjectURL + importScripts), which a CSP with worker-src 'self' and Trusted Types refuses. The logo and copyright may be moved, not hidden; tiles need DecompressionStream (Chrome 80+, Firefox 113+, Safari 16.4+). Neshan offers raster tiles to verified companies on request (panel ticket). The admin console chose option (c) on the owner's decision (console OQ-16): no basemap, an \"Open in Neshan\" link per location (RegionConfig.navigation_apps). For the PWA the same choice is open (its own decision): adopt the SDK with a relaxed CSP, ask Neshan for raster/plain tiles, or use navigation links as the console does. The owner has created Neshan keys (kept outside the repo)."
     },
     {
       "id": "PB-11",

@@ -6,6 +6,9 @@
 // the pin or the address with a reason: the pin follows a click or a drag on the map, or the coordinates typed in the
 // form (the keyboard alternative); only changed fields are sent; the backend re-runs the check, marks the point
 // admin_corrected and tells the organization. The correction is audited (Audit drawer, entity organization_location).
+// The console has no basemap of its own (OQ-16 answer (c), owner 2026-11-21: Neshan tiles need Neshan's SDK, which the
+// console CSP refuses): the map shows the pins and the radius on a plain background, and "Open in Neshan" (the
+// region's web map apps) shows the pin, and a proposed new point, on the real map in a new tab (AC14b.T6).
 import { useState } from 'react';
 import type { Location, StaffOrgView } from '@carpal/api-contracts';
 import { ActionNotice, AuditDrawer, ReasonDialog, useAdminAction } from '@/components/admin';
@@ -25,11 +28,14 @@ import {
   draftOf,
   GEO_SOURCES,
   label,
+  mapLinks,
   parseCoord,
   pinOf,
   pinVerdict,
   type CorrectionDraft,
   type CorrectionProblem,
+  type MapLink,
+  type NavigationApp,
 } from './org-logic';
 
 export interface LocationsTabProps {
@@ -37,10 +43,12 @@ export interface LocationsTabProps {
   mapStyleUrl: string | null;
   /** The region threshold when the page knows it (from the verification queue), else the backend default. */
   thresholdM?: number;
+  /** The region's map apps (admin.region_settings region.navigation_apps); absent while it loads. */
+  mapApps?: readonly NavigationApp[] | undefined;
   onCorrected: () => void;
 }
 
-export function LocationsTab({ org, mapStyleUrl, thresholdM = DEFAULT_LOCATION_THRESHOLD_M, onCorrected }: LocationsTabProps) {
+export function LocationsTab({ org, mapStyleUrl, thresholdM = DEFAULT_LOCATION_THRESHOLD_M, mapApps, onCorrected }: LocationsTabProps) {
   const t = useT();
   const locations = [...org.locations].sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -72,6 +80,7 @@ export function LocationsTab({ org, mapStyleUrl, thresholdM = DEFAULT_LOCATION_T
         location={selected}
         mapStyleUrl={mapStyleUrl}
         thresholdM={thresholdM}
+        mapApps={mapApps}
         onCorrected={onCorrected}
       />
     </div>
@@ -83,12 +92,14 @@ function LocationPanel({
   location: l,
   mapStyleUrl,
   thresholdM,
+  mapApps,
   onCorrected,
 }: {
   org: StaffOrgView;
   location: Location;
   mapStyleUrl: string | null;
   thresholdM: number;
+  mapApps: readonly NavigationApp[] | undefined;
   onCorrected: () => void;
 }) {
   const t = useT();
@@ -188,6 +199,10 @@ function LocationPanel({
         styleUrl={mapStyleUrl}
         label={t('admin.orgs.map.label', { name: l.name ?? l.city })}
       />
+      <MapLinks testId="map-links" links={mapLinks(mapApps, pin, l.name ?? l.city)} text="admin.orgs.map.open" />
+      {proposed && moved ? (
+        <MapLinks testId="map-links-proposed" links={mapLinks(mapApps, proposed, l.name ?? l.city)} text="admin.orgs.map.openProposed" />
+      ) : null}
       {result ? (
         <p data-testid="correct-result">
           {t('admin.orgs.correct.done', { verdict: t(`admin.orgs.locations.verdict.${pinVerdict(result)}`) })}
@@ -311,6 +326,31 @@ function LocationPanel({
         name="location-correct"
       />
     </section>
+  );
+}
+
+/** Links that open a point in the region's web map apps, in a new tab (AC14b.T6). */
+function MapLinks({
+  links,
+  text,
+  testId,
+}: {
+  links: MapLink[];
+  text: 'admin.orgs.map.open' | 'admin.orgs.map.openProposed';
+  testId: string;
+}) {
+  const t = useT();
+  if (!links.length) return null;
+  return (
+    <ul className="adm-inline-list" data-testid={testId}>
+      {links.map((m) => (
+        <li key={m.key}>
+          <a className="adm-link" href={m.href} target="_blank" rel="noopener noreferrer" data-app={m.key}>
+            {t(text, { app: m.name })} <span className="sr-only">{t('admin.orgs.map.newTab')}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
   );
 }
 

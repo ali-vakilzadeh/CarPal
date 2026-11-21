@@ -9,8 +9,8 @@
 //   are the clients' dictionaries and are not edited here (owner decision 2026-11-16).
 // - Rules: review invitation delay and reminders (0-3 days, strictly ascending, while the 7-day link is valid),
 //   reminders to businesses about approval requests, default quiet hours, digest hour and weekly day, and the
-//   maintenance due windows by date and mileage; saved as a whole with If-Match and a reason. The odometer prompt is
-//   sent back unchanged (AC14b.T4 adds its field, D-100).
+//   maintenance due windows by date and mileage, and the monthly odometer prompt (0 off, or 14-90 days without a
+//   reading; backend S26b, AC14b.T4); saved as a whole with If-Match and a reason (D-100).
 // - Delivery health: per channel and provider, attempted and failed deliveries with the failure rate over 24 hours, 7
 //   and 30 days, and the last failure (aggregates only).
 import { useQueryClient } from '@tanstack/react-query';
@@ -421,6 +421,7 @@ const RULE_PROBLEM: Record<RulesProblem, MessageKey> = {
   digestHour: 'admin.notif.rules.problem.hour',
   maintenanceDays: 'admin.notif.rules.problem.maintenance',
   mileageKm: 'admin.notif.rules.problem.mileage',
+  odometerDays: 'admin.notif.rules.problem.odometer',
 };
 
 function RulesForm({ rules }: { rules: NotificationRules }) {
@@ -562,6 +563,15 @@ function RulesForm({ rules }: { rules: NotificationRules }) {
           maxLength={4}
           {...num}
           onChange={(e) => set({ mileageKm: e.target.value })}
+        />
+        <TextField
+          label={t('admin.notif.rules.odometerDays')}
+          hint={t('admin.notif.rules.odometerHint')}
+          error={err('odometerDays')}
+          value={draft.odometerDays}
+          maxLength={2}
+          {...num}
+          onChange={(e) => set({ odometerDays: e.target.value })}
         />
       </fieldset>
       <p className="adm-muted">{t('admin.notif.rules.alwaysNote')}</p>
