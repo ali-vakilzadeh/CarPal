@@ -123,11 +123,17 @@ export function orgHref(orgId: string, purpose?: AccessPurpose | null, tab?: Org
   return `/orgs/${orgId}${s ? `?${s}` : ''}`;
 }
 
-export const ORG_TABS = ['profile', 'locations', 'verification', 'plan'] as const;
+export const ORG_TABS = ['profile', 'locations', 'verification', 'badges', 'portfolio', 'inventory', 'members', 'plan'] as const;
 export type OrgTab = (typeof ORG_TABS)[number];
 
-/** Docs/23 A-ORG-02 tabs the contract has no read for yet (DI-06, BR-16, BR-31). */
-export const MISSING_TABS = ['badges', 'reviews', 'portfolio', 'inventory', 'members', 'cases'] as const;
+/** The tabs of an organization: Inventory only for sellers (vendor, or provider and vendor). */
+export function orgTabsFor(type: string): OrgTab[] {
+  const seller = type === 'vendor' || type === 'hybrid_provider_vendor';
+  return ORG_TABS.filter((x) => x !== 'inventory' || seller);
+}
+
+/** Docs/23 A-ORG-02 tabs the contract has no read for yet (Reviews and Cases; the backend S23 reads cover the rest). */
+export const MISSING_TABS = ['reviews', 'cases'] as const;
 
 // ---------------------------------------------------------------- public profile (GD-07)
 

@@ -94,9 +94,10 @@ describe('review rules (AC7)', () => {
     expect(canMoveToApprovalPath(null)).toBe(false);
   });
 
-  it('lets staff mediate, uphold or reject an open dispute, and nothing once decided', () => {
-    expect(disputeOutcomes({ status: 'open' })).toEqual(['in_mediation', 'resolved_upheld', 'resolved_rejected']);
-    expect(disputeOutcomes({ status: 'in_mediation' })).toEqual(['resolved_upheld', 'resolved_rejected']);
+  it('lets staff mediate, uphold, reject or withdraw an open dispute, and nothing once decided or waiting', () => {
+    expect(disputeOutcomes({ status: 'open' })).toEqual(['in_mediation', 'resolved_upheld', 'resolved_rejected', 'withdrawn']);
+    expect(disputeOutcomes({ status: 'in_mediation' })).toEqual(['resolved_upheld', 'resolved_rejected', 'withdrawn']);
+    expect(disputeOutcomes({ status: 'open', pending_change_id: 'c1' })).toEqual([]);
     expect(disputeOutcomes({ status: 'resolved_upheld' })).toEqual([]);
     expect(disputeOutcomes({ status: 'withdrawn' })).toEqual([]);
   });

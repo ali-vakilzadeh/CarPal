@@ -5,6 +5,7 @@
 // (the operation is RSN, not PURP), so a moderator can act from the header even without a work item. Merge is hidden
 // until the re-pointing registry exists (BR-08, D-51). Assist onboarding starts a 4-hour session for one of the flows
 // the organization type has; the session is shown on every page until it ends (assist.tsx).
+import { useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import type { StaffOrgView } from '@carpal/api-contracts';
 import { ActionNotice, ReasonDialog, useAdminAction } from '@/components/admin';
@@ -14,7 +15,7 @@ import { Bidi } from '@/lib/format/bidi';
 import { useFormat } from '@/lib/format/client';
 import { useT } from '@/lib/i18n/client';
 import { canCall } from '@/lib/roles';
-import { assistStore } from './assist';
+import { ASSIST_LIST_KEY, assistStore } from './assist';
 import { assistFlows, statusChanges, STATUS_TARGET, type FlowType, type StatusChange } from './org-logic';
 
 type Org = Pick<StaffOrgView, 'id' | 'name' | 'status' | 'organization_type'>;
@@ -97,6 +98,7 @@ export function AssistStart({ org }: { org: Org }) {
   const [dialog, setDialog] = useState(false);
   const [started, setStarted] = useState<string | null>(null);
   const lastFlow = useRef<FlowType | null>(null);
+  const queryClient = useQueryClient();
   const action = useAdminAction('admin.assist_session_start', {
     target: org.id,
     onOutcome: (o) => {
@@ -110,6 +112,7 @@ export function AssistStart({ org }: { org: Org }) {
         expiresAt: o.data.expires_at,
       });
       setStarted(o.data.expires_at);
+      void queryClient.invalidateQueries({ queryKey: ASSIST_LIST_KEY });
     },
   });
   if (!allowed || !flows.length) return null;

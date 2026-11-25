@@ -3,7 +3,7 @@
 // found by exactly one identifier and only inside the work item the page was opened for (SEC-ADM-5, backend S14):
 // the search is "find within this work item", never a browsable list (DI-03). Platform roles are the user's
 // memberships without an organization whose role is platform_* (Docs/40 Membership).
-import type { Membership, StaffUserView, UserSearch } from '@carpal/api-contracts';
+import type { ConsentRecord, Membership, StaffUserView, UserSearch } from '@carpal/api-contracts';
 import { toLatinDigits } from '@/lib/format';
 
 export const USER_STATUSES = ['pending_verification', 'active', 'suspended', 'deactivated', 'deleted'] as const;
@@ -87,4 +87,63 @@ export function statusChanges(status: StaffUserView['status']): StatusChange[] {
 /** A deleted account, or one whose deletion is running, takes no actions. */
 export function isGone(status: StaffUserView['status']): boolean {
   return status === 'deleted';
+}
+
+// ---------------------------------------------------------------- A-USR-02 tabs (AC14-2, backend S23)
+
+export const USER_TABS = ['overview', 'roles', 'vehicles', 'appointments', 'consents', 'sessions'] as const;
+export type UserTab = (typeof USER_TABS)[number];
+
+/** Docs/23 A-USR-02 tabs with no admin-plane read yet (the Audit tab is the header's Audit trail). */
+export const USER_MISSING_TABS = ['content', 'privacy', 'cases'] as const;
+
+export const VEHICLE_STATUSES = ['active', 'inactive', 'sold', 'in_repair', 'archived'] as const;
+export const APPOINTMENT_TYPES = ['diagnosis', 'repair', 'inspection', 'bodywork_estimate', 'parts_installation'] as const;
+export const APPOINTMENT_STATUSES = [
+  'draft',
+  'requested',
+  'provider_reviewing',
+  'alternative_proposed',
+  'confirmed',
+  'checked_in',
+  'in_progress',
+  'awaiting_parts',
+  'ready_for_pickup',
+  'completed',
+  'cancelled',
+  'no_show',
+] as const;
+export const CONSENT_TYPES = [
+  'vehicle_data_sharing',
+  'service_history_sharing',
+  'vendor_fitment_context',
+  'photo_publishing',
+  'showcase_publishing',
+  'ai_personalization',
+  'review_invitations',
+  'fleet_driver_data_visibility',
+  'fleet_data_ai_use',
+  'provider_analytics_ai_use',
+  'vendor_inventory_ai_use',
+  'location_usage',
+  'marketing',
+] as const;
+
+export type ConsentState = 'granted' | 'reconsent' | 'paused' | 'withdrawn' | 'expired' | 'declined';
+
+/**
+ * The state of one consent record as staff read it (Docs/40 ConsentRecord): paused (re-consent required and paused:
+ * the gate treats it as not granted), re-consent needed, granted, withdrawn, expired (past expires_at) or declined
+ * (never granted).
+ */
+export function consentState(
+  c: Pick<ConsentRecord, 'granted' | 'withdrawn_at' | 'expires_at' | 'paused' | 'reconsent_required'>,
+  now = Date.now(),
+): ConsentState {
+  if (c.withdrawn_at) return 'withdrawn';
+  if (!c.granted) return 'declined';
+  if (c.expires_at && Date.parse(c.expires_at) <= now) return 'expired';
+  if (c.paused) return 'paused';
+  if (c.reconsent_required) return 'reconsent';
+  return 'granted';
 }

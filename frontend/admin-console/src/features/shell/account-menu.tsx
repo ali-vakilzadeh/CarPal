@@ -85,6 +85,11 @@ export function AccountMenu({ name, roles, themeChoice }: { name: string; roles:
               <Link href="/audit?actor=me">{t('admin.shell.account.myActions')}</Link>
             </li>
           ) : null}
+          {canCall('admin.my_decisions_list', roles) ? (
+            <li>
+              <Link href="/decisions">{t('admin.shell.account.myDecisions')}</Link>
+            </li>
+          ) : null}
         </ul>
         <p className="adm-account-heading" id={`${panelId}-lang`}>
           {t('admin.prefs.language')}

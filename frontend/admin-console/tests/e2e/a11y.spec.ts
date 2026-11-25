@@ -57,6 +57,11 @@ const ADMIN_ROUTES = [
   '/notifications',
   '/staff',
   '/security',
+  // AC14-2: the new tabs and views, and My decisions (no permission for an administrator).
+  '/plans?tab=assignments',
+  '/plans?tab=requests',
+  '/orgs?possible_duplicate=true',
+  '/decisions',
   `/users/${NO_ID}`,
   `/orgs/${NO_ID}`,
   '/disputes',

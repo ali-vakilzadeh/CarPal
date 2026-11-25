@@ -128,6 +128,7 @@ describe('console shell navigation (GD-09)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Mina Moderator/ }));
     expect(screen.getByText('Roles: Platform admin · Community reviewer')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'My actions in the audit log' })).toHaveAttribute('href', '/audit?actor=me');
+    expect(screen.getByRole('link', { name: 'My decisions' })).toHaveAttribute('href', '/decisions');
     expect(screen.getByRole('link', { name: 'فارسی' })).toHaveAttribute('href', '/?lang=fa');
     expect(screen.getByRole('link', { name: 'Night' })).toHaveAttribute('href', '/?theme=dark');
     // After the sign-out the session view says signed out: the watch must not take that for a session the server ended.
@@ -168,6 +169,14 @@ describe('console shell navigation (GD-09)', () => {
     setup(view(['MOD']));
     fireEvent.click(screen.getByRole('button', { name: /Mina Moderator/ }));
     expect(screen.queryByRole('link', { name: 'My actions in the audit log' })).toBeNull();
+    // My decisions (AC14-2) is for moderators and community reviewers.
+    expect(screen.getByRole('link', { name: 'My decisions' })).toHaveAttribute('href', '/decisions');
+  });
+
+  it('hides "My decisions" from support staff (AC14-2)', () => {
+    setup(view(['SUP']));
+    fireEvent.click(screen.getByRole('button', { name: /Mina Moderator/ }));
+    expect(screen.queryByRole('link', { name: 'My decisions' })).toBeNull();
   });
 
   it('shows a sign-in outcome that came back while still signed in, then drops it from the URL', async () => {

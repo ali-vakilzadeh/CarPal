@@ -1,5 +1,5 @@
 export { ContentPage, InventoryPage } from './moderation-pages';
-export { BadgePanel } from './badge-panel';
+export { BadgePanel, badgeName, badgeStatus } from './badge-panel';
 export { CaseWorkspace, type CaseExtraContext } from './case-workspace';
 // The case vocabulary and rules, shared with Reviews (AC7 review cases) and My work (SLA timers).
 export {
@@ -8,7 +8,9 @@ export {
   CASE_SOURCES,
   CASE_STATUSES,
   CLOSE_STATUSES,
+  ACTION_TYPES,
   enumLabel,
+  isId,
   MODERATION_REASONS,
   OPEN_CASE_STATUSES,
   reviewContentActions,

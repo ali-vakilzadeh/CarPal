@@ -1,8 +1,10 @@
 'use client';
 // Organizations (AC9.T1, Docs/23 A-ORG-01, Docs/40 admin.orgs_search). Staff find an organization by name (part of
-// it), slug or id, filtered by status, verification and type; the saved views of Docs/23 that the contract can serve
-// are links ("Pending verification", "Suspended"); "Possible duplicates" and "Location issues" need filters the search
-// does not have (DI-31). The search answers narrow StaffOrgSearchRow rows without a purpose (backend S14, BR-35 part 1):
+// it), slug or id, filtered by status, verification and type, and since backend S19 (AC14-2) by city, plan, open cases,
+// location issue and possible duplicate; the four saved views of Docs/23 are links ("Pending verification", "Possible
+// duplicates", "Suspended", "Location issues"). The plan, open-case and location filters look at up to 1,000
+// organizations per request, so a page can hold fewer rows while there is a next page (said on screen). The search
+// answers narrow StaffOrgSearchRow rows without a purpose (backend S14, BR-35 part 1):
 // no contact data and no exact points, only what a queue needs (GD-10, DI-31). A row opens the organization page with the
 // organization's oldest pending verification as its purpose when it has one; otherwise the page asks for a work item.
 import Link from 'next/link';
@@ -13,7 +15,7 @@ import { DataTable, useCursorPaging, useUrlFilters, type Column, type FilterDef 
 import { Button } from '@/components/ds/button';
 import { TextField } from '@/components/ds/text-field';
 import { useApiQuery } from '@/lib/api/query';
-import { planLabel } from '@/lib/config/plans';
+import { PLAN_KEYS, planLabel } from '@/lib/config/plans';
 import { Bidi } from '@/lib/format/bidi';
 import { useFormat } from '@/lib/format/client';
 import { useT } from '@/lib/i18n/client';
@@ -22,6 +24,9 @@ import { label, ORG_STATUSES, ORG_TYPES, orgHref, VERIFICATION_STATUSES, verific
 
 const PAGE_SIZE = 50;
 const SEARCH_IN = ['name', 'slug', 'id'] as const;
+/** Yes-only filters of the search (backend S19): sent as true, left out otherwise. */
+const ORG_FLAGS = ['has_open_cases', 'location_issue', 'possible_duplicate'] as const;
+const CITY_MAX = 80;
 type SearchIn = (typeof SEARCH_IN)[number];
 
 export function OrgStatusChips({ org }: { org: Pick<StaffOrgView, 'status' | 'verification_status'> }) {
@@ -69,6 +74,18 @@ export function OrgsPage() {
         options: ORG_TYPES.map((s) => ({ value: s, label: t(`admin.orgs.type.${s}`) })),
         allowAll: true,
       },
+      {
+        key: 'plan_key',
+        label: t('admin.orgs.filter.plan'),
+        options: PLAN_KEYS.filter((k) => k !== 'individual_free').map((k) => ({ value: k, label: planLabel(k, t) })),
+        allowAll: true,
+      },
+      ...ORG_FLAGS.map((k) => ({
+        key: k,
+        label: t(`admin.orgs.filter.${k}`),
+        options: [{ value: 'true', label: t('admin.orgs.filter.yes') }],
+        allowAll: true,
+      })),
     ],
     [t],
   );
@@ -78,7 +95,9 @@ export function OrgsPage() {
   const q = (params.get('q') ?? '').trim().slice(0, 120);
   const askedIn = params.get('in');
   const searchIn: SearchIn = SEARCH_IN.find((x) => x === askedIn) ?? 'name';
+  const city = (params.get('city') ?? '').trim().slice(0, CITY_MAX);
   const [text, setText] = useState(q);
+  const [cityText, setCityText] = useState(city);
   const [how, setHow] = useState<SearchIn>(searchIn);
   const [idError, setIdError] = useState(false);
   const submit = (e: FormEvent) => {
@@ -94,6 +113,8 @@ export function OrgsPage() {
     else p.delete('q');
     if (how !== 'name') p.set('in', how);
     else p.delete('in');
+    if (cityText.trim()) p.set('city', cityText.trim().slice(0, CITY_MAX));
+    else p.delete('city');
     router.replace(`${pathname}?${p.toString()}`, { scroll: false });
   };
 
@@ -103,7 +124,20 @@ export function OrgsPage() {
     else if (searchIn === 'slug') search.slug = q.toLowerCase();
     else if (searchIn === 'name' && q.length >= 2) search.name = q;
   }
-  const body = { ...filters.query, ...search };
+  const {
+    has_open_cases: openCases,
+    location_issue: locationIssue,
+    possible_duplicate: duplicate,
+    ...plain
+  } = filters.query as Record<string, string>;
+  const body = {
+    ...plain,
+    ...(openCases ? { has_open_cases: true } : {}),
+    ...(locationIssue ? { location_issue: true } : {}),
+    ...(duplicate ? { possible_duplicate: true } : {}),
+    ...(city ? { city } : {}),
+    ...search,
+  };
   const paging = useCursorPaging(JSON.stringify(body));
   const list = useApiQuery('admin.orgs_search', {
     body: { ...body, limit: PAGE_SIZE, ...(paging.cursor ? { cursor: paging.cursor } : {}) },
@@ -125,6 +159,24 @@ export function OrgsPage() {
     { id: 'members', header: t('admin.orgs.col.members'), align: 'end', cell: (o) => f.number(o.member_count) },
     { id: 'cases', header: t('admin.orgs.col.cases'), align: 'end', cell: (o) => f.number(o.open_cases) },
     {
+      id: 'flags',
+      header: t('admin.orgs.col.flags'),
+      cell: (o) => (
+        <span className="adm-chips">
+          {o.location_issue ? (
+            <span className="adm-chip" data-tone="warn">
+              {t('admin.orgs.flag.location')}
+            </span>
+          ) : null}
+          {o.possible_duplicate ? (
+            <span className="adm-chip" data-tone="danger">
+              {t('admin.orgs.flag.duplicate')}
+            </span>
+          ) : null}
+        </span>
+      ),
+    },
+    {
       id: 'trust',
       header: t('admin.orgs.col.trust'),
       align: 'end',
@@ -138,7 +190,13 @@ export function OrgsPage() {
     },
   ];
 
-  const view = (key: 'pending' | 'suspended') => (key === 'pending' ? '/orgs?verification_status=pending' : '/orgs?status=suspended');
+  const VIEWS = {
+    pending: '/orgs?verification_status=pending',
+    duplicates: '/orgs?possible_duplicate=true',
+    suspended: '/orgs?status=suspended',
+    location: '/orgs?location_issue=true',
+  } as const;
+  const short = !!list.data?.next_cursor && list.data.items.length < PAGE_SIZE;
 
   return (
     <div className="adm-page" data-testid="orgs-page">
@@ -170,23 +228,34 @@ export function OrgsPage() {
           spellCheck={false}
           onChange={(e) => setText(e.target.value)}
         />
+        <TextField
+          label={t('admin.orgs.search.city')}
+          value={cityText}
+          maxLength={CITY_MAX}
+          autoComplete="off"
+          onChange={(e) => setCityText(e.target.value)}
+        />
         <Button type="submit" variant="secondary" icon="search">
           {t('admin.orgs.search.go')}
         </Button>
       </form>
       <nav className="adm-quick-views" aria-label={t('admin.orgs.views.label')}>
-        <Link href={view('pending')} className="adm-tab">
-          {t('admin.orgs.views.pending')}
-        </Link>
-        <Link href={view('suspended')} className="adm-tab">
-          {t('admin.orgs.views.suspended')}
-        </Link>
-        {q || Object.keys(filters.query).length ? (
+        {(Object.keys(VIEWS) as (keyof typeof VIEWS)[]).map((k) => (
+          <Link key={k} href={VIEWS[k]} className="adm-tab">
+            {t(`admin.orgs.views.${k}`)}
+          </Link>
+        ))}
+        {q || city || Object.keys(filters.query).length ? (
           <Link href="/orgs" className="adm-tab">
             {t('admin.orgs.views.all')}
           </Link>
         ) : null}
       </nav>
+      {short ? (
+        <p className="adm-muted" data-testid="orgs-short-page">
+          {t('admin.orgs.shortPage')}
+        </p>
+      ) : null}
       <DataTable
         id="orgs"
         caption={t('admin.orgs.listLabel')}

@@ -10,6 +10,11 @@
 // the account (warn, suspend for a chosen duration or until reactivated, reactivate; suspension and trust penalties ask
 // for the security key again, AAL3), a trust penalty for the organization, badges on organization
 // cases; every one with a reason through the ReasonDialog. The case is closed with an outcome and a resolution.
+// AC14-2 (backend S18-S22): the views, a source and a reason filter go to the list as server filters (viewQuery; D-49's
+// narrowing of the rows read is gone); the item shows the author with their history and the content around a
+// comment, answer, post or question (admin.case_context); the decision column adds the actions with parameters
+// (case-more.tsx: reduce weight, edit request, lower fitment confidence, merge into another organization, image
+// redaction).
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useId, useMemo, useState, type ReactNode } from 'react';
@@ -44,6 +49,7 @@ import { useT } from '@/lib/i18n/client';
 import type { MessageKey, Translate } from '@/lib/i18n/keys';
 import { canCall } from '@/lib/roles';
 import { BadgePanel } from './badge-panel';
+import { AuthorBlock, CaseContextPanel, MoreActions } from './case-more';
 import {
   ACTION_REASON,
   ACTION_TYPES,
@@ -55,10 +61,10 @@ import {
   CASE_SOURCES,
   CASE_STATUSES,
   CASE_VIEWS,
+  viewQuery,
   caseDue,
   CLOSE_STATUSES,
   enumLabel,
-  inView,
   IRREVERSIBLE,
   isSafetyCase,
   MODERATION_REASONS,
@@ -126,9 +132,16 @@ type Dialog = { kind: 'action'; action: CaseAction } | { kind: 'close' };
 function useCaseList(queue: CaseQueueId, filters: Record<string, string>, cursor: string | undefined) {
   const api = useApiClient();
   const types = CASE_QUEUES[queue];
-  const { type, view: _view, ...rest } = filters;
+  const { type, view = '', source, reason, ...rest } = filters;
   const single = type || (types.length === 1 ? types[0]! : '');
-  const serverQuery = rest as Partial<Pick<ModerationCase, 'status' | 'severity'>>;
+  // A view is a source or reason filter; an explicit source or reason filter replaces the view's.
+  const fromView = viewQuery(view);
+  const serverQuery = {
+    ...(rest as Partial<Pick<ModerationCase, 'status' | 'severity'>>),
+    ...fromView,
+    ...(source ? { source: [source as ModerationCase['source']] } : {}),
+    ...(reason ? { reason: [reason as ModerationCase['reason']] } : {}),
+  };
   const one = useApiQuery(
     'admin.cases_list',
     { query: { case_type: single as ModerationCase['case_type'], ...serverQuery, limit: CASE_PAGE_SIZE, ...(cursor ? { cursor } : {}) } },
@@ -220,6 +233,22 @@ export function CaseWorkspace({
         allowAll: true,
       },
     );
+    defs.push(
+      {
+        key: 'source',
+        label: t('admin.cases.filter.source'),
+        options: CASE_SOURCES.map((s) => ({ value: s, label: enumLabel(CASE_SOURCES, 'admin.cases.source', s, t) })),
+        defaultValue: '',
+        allowAll: true,
+      },
+      {
+        key: 'reason',
+        label: t('admin.cases.filter.reason'),
+        options: MODERATION_REASONS.map((s) => ({ value: s, label: caseReason(s, t) })),
+        defaultValue: '',
+        allowAll: true,
+      },
+    );
     if (views)
       defs.push({
         key: 'view',
@@ -231,10 +260,9 @@ export function CaseWorkspace({
     return defs;
   }, [t, types, views]);
   const filters = useUrlFilters(filterDefs);
-  const { view = '', ...serverFilters } = filters.query;
-  const paging = useCursorPaging(JSON.stringify(serverFilters));
+  const paging = useCursorPaging(JSON.stringify(filters.query));
   const list = useCaseList(queue, filters.query, paging.cursor);
-  const rows = useMemo(() => (list.items ? bySafetyFirst(list.items.filter((c) => inView(c, view))) : undefined), [list.items, view]);
+  const rows = useMemo(() => (list.items ? bySafetyFirst(list.items) : undefined), [list.items]);
 
   const selectedId = params.get('case');
   const row = list.items?.find((c) => c.id === selectedId) ?? null;
@@ -439,7 +467,11 @@ export function CaseWorkspace({
         ) : null}
         {!readable ? <p className="adm-muted">{t('admin.cases.closedSummary')}</p> : null}
         {target && target.available && purpose ? (
-          (renderTarget?.(target, purpose) ?? <TargetBlock target={target} purpose={purpose} publicWeb={publicWeb} />)
+          <>
+            {renderTarget?.(target, purpose) ?? <TargetBlock target={target} purpose={purpose} publicWeb={publicWeb} />}
+            <AuthorBlock target={target} />
+            <CaseContextPanel caseId={theCase.id} target={target} purpose={purpose} />
+          </>
         ) : readable && detail.data ? (
           <p data-testid="target-gone">
             {t('admin.moderation.targetGone', { thing })} <EntityChip type={theCase.target.type} id={theCase.target.id} />
@@ -651,6 +683,7 @@ export function CaseWorkspace({
         {caseAction.state.status === 'done' || caseAction.state.status === 'failed' ? (
           <ActionNotice state={caseAction.state} applied={done} />
         ) : null}
+        {canAct && purpose && target ? <MoreActions target={target} caseId={theCase.id} purpose={purpose} onDone={refresh} /> : null}
         {canAct && target?.type === 'organization_location' ? <p className="adm-muted">{t('admin.moderation.locationHint')}</p> : null}
         {acts.badges && purpose ? <BadgePanel orgId={org} caseId={theCase.id} purpose={purpose} onDone={refresh} /> : null}
         {purpose ? extra?.({ theCase, target, purpose, busy, refresh }) : null}
@@ -725,7 +758,6 @@ export function CaseWorkspace({
               }
             />
             {list.more ? <p className="adm-muted">{t('admin.moderation.morePerType', { n: f.number(CASE_PAGE_SIZE) })}</p> : null}
-            {view ? <p className="adm-muted">{t('admin.moderation.viewNote')}</p> : null}
           </>
         }
         item={item()}

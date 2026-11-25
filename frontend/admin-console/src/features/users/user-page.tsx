@@ -6,7 +6,8 @@
 // sign-out (ADM, SUP), Reset onboarding (ADM, SUP) and the Audit trail (ADM); none of these is purpose-bound, every
 // one has a reason. Overview: masked contacts with Reveal (a purpose-bound re-read, logged), verification marks,
 // counts, subscription; Roles & organizations; Staff roles for platform admins (grant by four-eyes, revoke at once).
-// A deleted account takes no actions. The other Docs/23 tabs come with AC14.T5 (backend S23 reads, BR-16).
+// A deleted account takes no actions. Tabs (AC14-2, ?tab=): Overview, Roles & organizations, and the backend S23 reads
+// Vehicles, Appointments, Consents, Sessions & devices (user-tabs.tsx); the Docs/23 tabs without a read are listed.
 import Link from 'next/link';
 import { useId, useState } from 'react';
 import type { StaffUserView } from '@carpal/api-contracts';
@@ -14,6 +15,8 @@ import {
   ActionNotice,
   AuditDrawer,
   MaskedField,
+  Tabs,
+  useUrlTab,
   maskName,
   PurposeGate,
   purposeKind,
@@ -41,7 +44,10 @@ import {
   type OnboardingFlow,
   type PlatformRole,
   type StatusChange,
+  USER_MISSING_TABS,
+  USER_TABS,
 } from './user-logic';
+import { AppointmentsTab, ConsentsTab, SessionsTab, VehiclesTab } from './user-tabs';
 import { membershipRole, membershipStatus, onboardingFlow, platformRole, userStatus } from './user-parts';
 
 export function UserPage({ userId }: { userId: string }) {
@@ -81,16 +87,56 @@ function UserDetail({ userId, purpose }: { userId: string; purpose: AccessPurpos
   return (
     <>
       <UserHeader user={user} purpose={purpose} onChanged={onChanged} />
-      <Overview user={user} reload={reload} />
-      <Memberships user={user} />
-      <StaffRoles user={user} onChanged={onChanged} />
+      <UserTabs user={user} purpose={purpose} reload={reload} onChanged={onChanged} />
       <section className="adm-missing" aria-labelledby="user-missing-t">
         <h2 id="user-missing-t" className="adm-subtitle">
           {t('admin.users.missing.title')}
         </h2>
+        <ul className="adm-inline-list">
+          {USER_MISSING_TABS.map((x) => (
+            <li key={x}>{t(`admin.users.missing.tab.${x}`)}</li>
+          ))}
+        </ul>
         <p className="adm-muted">{t('admin.users.missing.text')}</p>
       </section>
     </>
+  );
+}
+
+function UserTabs({
+  user,
+  purpose,
+  reload,
+  onChanged,
+}: {
+  user: StaffUserView;
+  purpose: AccessPurpose;
+  reload: () => Promise<StaffUserView | null>;
+  onChanged: () => void;
+}) {
+  const t = useT();
+  const [tab, go] = useUrlTab(USER_TABS);
+  return (
+    <Tabs
+      tabs={USER_TABS}
+      current={tab}
+      onChange={go}
+      label={t('admin.users.tabsLabel')}
+      idPrefix="user"
+      tabLabel={(x) => t(`admin.users.tab.${x}`)}
+    >
+      {tab === 'overview' ? <Overview user={user} reload={reload} /> : null}
+      {tab === 'roles' ? (
+        <>
+          <Memberships user={user} />
+          <StaffRoles user={user} onChanged={onChanged} />
+        </>
+      ) : null}
+      {tab === 'vehicles' ? <VehiclesTab userId={user.id} purpose={purpose} /> : null}
+      {tab === 'appointments' ? <AppointmentsTab userId={user.id} purpose={purpose} /> : null}
+      {tab === 'consents' ? <ConsentsTab userId={user.id} purpose={purpose} /> : null}
+      {tab === 'sessions' ? <SessionsTab userId={user.id} purpose={purpose} /> : null}
+    </Tabs>
   );
 }
 
@@ -351,9 +397,9 @@ function Overview({ user, reload }: { user: StaffUserView; reload: () => Promise
   const mark = (at: string | null) => (at ? t('admin.users.verifiedOn', { when: f.date(at, 'dateShort') }) : t('admin.users.notVerified'));
   return (
     <section aria-labelledby="user-overview-t" data-testid="user-overview">
-      <h2 id="user-overview-t" className="adm-section-title">
+      <h3 id="user-overview-t" className="adm-section-title">
         {t('admin.users.overview')}
-      </h2>
+      </h3>
       <dl className="adm-facts">
         <MaskedField
           label={t('admin.users.fullName')}
@@ -429,9 +475,9 @@ function Memberships({ user }: { user: StaffUserView }) {
   const list = businessMemberships(user.memberships);
   return (
     <section aria-labelledby="user-members-t" data-testid="user-memberships">
-      <h2 id="user-members-t" className="adm-section-title">
+      <h3 id="user-members-t" className="adm-section-title">
         {t('admin.users.memberships')}
-      </h2>
+      </h3>
       {list.length ? (
         <table className="adm-simple-table">
           <caption className="sr-only">{t('admin.users.memberships')}</caption>
@@ -498,9 +544,9 @@ function StaffRoles({ user, onChanged }: { user: StaffUserView; onChanged: () =>
   };
   return (
     <section aria-labelledby={`${uid}-t`} data-testid="staff-roles" className="adm-panel">
-      <h2 id={`${uid}-t`} className="adm-section-title">
+      <h3 id={`${uid}-t`} className="adm-section-title">
         {t('admin.users.staff.title')}
-      </h2>
+      </h3>
       <p className="adm-muted">{t('admin.users.staff.text')}</p>
       {held.length ? (
         <ul className="adm-stack">

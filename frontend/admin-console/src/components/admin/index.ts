@@ -39,3 +39,4 @@ export {
 } from './case-layout';
 export { AuditDrawer, type AuditDrawerProps } from './audit-drawer';
 export { JobProgress, JOB_DONE } from './job-progress';
+export { Tabs, useUrlTab, type TabsProps } from './tabs';

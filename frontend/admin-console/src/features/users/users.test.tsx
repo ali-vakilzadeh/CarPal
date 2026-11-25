@@ -125,6 +125,8 @@ describe('User detail (AC10.T2/T3)', () => {
     await screen.findByTestId('user-overview');
     expect(screen.queryByRole('button', { name: 'Suspend the account' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Reset onboarding' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Roles & organizations' }));
+    expect(await screen.findByTestId('user-memberships')).toBeInTheDocument();
     expect(screen.queryByTestId('staff-roles')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Sign out everywhere' }));
     const dialog = await screen.findByRole('dialog', { name: 'Sign this user out everywhere' });
@@ -187,6 +189,7 @@ describe('User detail (AC10.T2/T3)', () => {
         ),
       'admin.platform_role_revoke': () => Response.json({ ok: true }),
     });
+    resetNav(`/users/${U1}?purpose=${encodeURIComponent(PURPOSE)}&tab=roles`);
     renderConsole(<UserPage userId={U1} />, { transport, roles: ['ADM'] });
     const roles = await screen.findByTestId('staff-roles');
     expect(within(roles).getByTestId('staff-role')).toHaveTextContent('Support');

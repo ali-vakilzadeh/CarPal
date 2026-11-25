@@ -30,6 +30,14 @@ export type ReasonKind =
   | 'report_dismiss'
   | 'verification_approve'
   | 'verification_reject'
+  | 'verification_info'
+  | 'dispute_withdraw'
+  | 'dispute_message'
+  | 'profile_correct'
+  | 'org_merge'
+  | 'weight_reduce'
+  | 'fitment_downgrade'
+  | 'redaction'
   | 'location_correction'
   | 'assist_start'
   | 'assist_end'
@@ -90,6 +98,16 @@ export const REASON_SETS: Record<ReasonKind, ReasonSet> = {
   dispute_uphold: { codes: ['evidence_supports_claim', 'original_decision_wrong', 'policy_misapplied', 'other'], noteRequired: false },
   dispute_reject: { codes: ['original_decision_stands', 'evidence_insufficient', 'outside_policy', 'other'], noteRequired: true },
   mediation: { codes: ['both_sides_needed', 'more_information', 'other'], noteRequired: false },
+  // AC14-2 (backend S20): a withdrawal on the raiser's request, and a message to one side of a dispute.
+  dispute_withdraw: { codes: ['raiser_request', 'settled_between_parties', 'other'], noteRequired: false },
+  dispute_message: { codes: ['more_information', 'evidence_needed', 'status_update', 'other'], noteRequired: false },
+  // Organizations (AC14-2): a correction is visible to the business; a merge cannot be undone, so it carries a note.
+  profile_correct: { codes: ['obvious_error', 'business_request', 'verification_finding', 'other'], noteRequired: false },
+  org_merge: { codes: ['duplicate', 'business_request', 'other'], noteRequired: true },
+  // Moderation actions with parameters (AC14-2, backend S20-S22). The author or vendor learns the effect from the note.
+  weight_reduce: { codes: ['suspicious_pattern', 'conflict_of_interest', 'decision_reversed', 'other'], noteRequired: true },
+  fitment_downgrade: { codes: ['inaccurate_fitment', 'unverified_claim', 'other'], noteRequired: false },
+  redaction: { codes: ['privacy_violation', 'plate_visible', 'face_visible', 'other'], noteRequired: false },
   // Moderation (AC8). The author or vendor learns what to change from the note, so it is required there; a penalty
   // and a badge revocation are final for the organization, so they carry a note as well.
   changes_request: { codes: ['blur_needed', 'wrong_information', 'missing_consent', 'policy_violation', 'other'], noteRequired: true },
@@ -100,6 +118,11 @@ export const REASON_SETS: Record<ReasonKind, ReasonSet> = {
   // Organizations and verification (AC9). A rejection tells the business what to fix in its own message
   // (rejection_reason); the note here is the staff record and is required like every rejection.
   verification_approve: { codes: ['documents_match', 'location_confirmed', 'contact_confirmed', 'other'], noteRequired: false },
+  // AC14-2: asking the business for more information (the message it reads is written in the form).
+  verification_info: {
+    codes: ['documents_missing', 'documents_unreadable', 'details_mismatch', 'location_unclear', 'other'],
+    noteRequired: false,
+  },
   verification_reject: {
     codes: ['documents_unreadable', 'details_mismatch', 'address_not_found', 'duplicate', 'other'],
     noteRequired: true,

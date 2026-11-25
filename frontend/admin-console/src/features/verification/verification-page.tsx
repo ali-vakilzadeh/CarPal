@@ -7,8 +7,12 @@
 // for that purpose, contact data masked), the document viewer, and the checklist with the decision. Approve needs the
 // checklist (its state ends the audited reason, D-60) and — for a location or address check — no pin far from its
 // address (corrected on the organization's Locations tab first). Reject needs a reason and the message the business
-// reads (rejection_reason). "Request more info" has no operation (DI-30). After a decision the purpose ends; the
-// answer stays on screen with the organization's new verification status (organization search, no purpose).
+// reads (rejection_reason). After a decision the purpose ends; the answer stays on screen with the organization's new
+// verification status (organization search, no purpose). AC14-2 (backend S19, BR-34): the queue shows the assignee,
+// the owner, the latest phone call-back, the possible-duplicate flag and the open request for more information, filters
+// by assignee and by "waiting for the business", and keeps the review clock from sla_started_at, paused while CarPal
+// waits for the business; the review has Take / Assign to a colleague (admin.verification_assign) and Request more
+// info (admin.verification_decide info_requested), and shows the registration number and the AI pre-check when given.
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -40,18 +44,21 @@ import { useFormat } from '@/lib/format/client';
 import { useT } from '@/lib/i18n/client';
 import { canCall } from '@/lib/roles';
 import { CHECK_STATUSES, CHECK_TYPES, farLocations, label, ORG_TYPES, orgHref, VERIFICATION_STATUSES } from '../orgs/org-logic';
+import { enumLabel } from '@/features/moderation';
 import { DocumentViewer } from './document-viewer';
 import {
   approveBlock,
+  CALLBACK_RESULTS,
+  checkClock,
   checklistFor,
   isLocationCheck,
   oldestFirst,
   rejectionProblem,
-  verificationTimer,
   withChecklist,
   type ChecklistItem,
   type QueueItem,
 } from './verification-logic';
+import { InfoRequestForm, InfoRequestView, VerificationAssign } from './verification-parts';
 
 const PAGE_SIZE = 50;
 const LIST_KEY = ['admin.verifications_queue'] as const;
@@ -83,14 +90,34 @@ export function VerificationPage() {
         options: CHECK_TYPES.map((s) => ({ value: s, label: t(`admin.orgs.check.${s}`) })),
         allowAll: true,
       },
+      {
+        key: 'assignee',
+        label: t('admin.verification.filter.assignee'),
+        options: (['me', 'unassigned'] as const).map((s) => ({ value: s, label: t(`admin.verification.filter.assigneeIs.${s}`) })),
+        allowAll: true,
+      },
+      {
+        key: 'info_requested',
+        label: t('admin.verification.filter.info'),
+        options: (['true', 'false'] as const).map((s) => ({ value: s, label: t(`admin.verification.filter.infoIs.${s}`) })),
+        allowAll: true,
+      },
     ],
     [t],
   );
   const filters = useUrlFilters(filterDefs);
   const paging = useCursorPaging(JSON.stringify(filters.query));
+  const { info_requested: infoFilter, ...plainFilters } = filters.query as Record<string, string>;
   const list = useApiQuery(
     'admin.verifications_queue',
-    { query: { ...filters.query, limit: PAGE_SIZE, ...(paging.cursor ? { cursor: paging.cursor } : {}) } },
+    {
+      query: {
+        ...plainFilters,
+        ...(infoFilter ? { info_requested: infoFilter === 'true' } : {}),
+        limit: PAGE_SIZE,
+        ...(paging.cursor ? { cursor: paging.cursor } : {}),
+      },
+    },
     { refetchInterval: 60_000 },
   );
   const rows = useMemo(() => (list.data ? oldestFirst(list.data.items) : undefined), [list.data]);
@@ -159,7 +186,11 @@ export function VerificationPage() {
   const block = item
     ? approveBlock({ status: decidedHere ? 'decided' : item.status, type: item.verification_type, farApart, ticked })
     : 'not_pending';
-  const open = !!item && canDecide && pending;
+  const myId = session.data?.staff?.id;
+  // Only the assignee works on a check under its purpose (backend S19): someone else's check is taken over first.
+  const withOther = !!item?.assignee && item.assignee.user_id !== myId;
+  const waiting = item?.info_request?.status === 'open';
+  const open = !!item && canDecide && pending && !withOther;
   const start = (d: Decision) => {
     if (!open || busy || (d === 'verified' && block)) return;
     action.reset();
@@ -211,11 +242,48 @@ export function VerificationPage() {
       header: t('admin.verification.col.sla'),
       cell: (v) => {
         if (v.status !== 'pending') return label(CHECK_STATUSES, 'admin.orgs.checkStatus', v.status, t);
-        const timer = verificationTimer(v, timeZone);
+        const clock = checkClock(v, timeZone);
+        if (clock.pausedSince != null)
+          return (
+            <span className="adm-chip" data-tone="neutral" data-testid="sla-paused">
+              {t('admin.verification.paused')}
+            </span>
+          );
         return (
-          <SlaBadge state={slaState(timer.start, timer.due, now)} text={t('admin.reviews.dueIn', { when: f.relative(timer.due, now) })} />
+          <SlaBadge state={slaState(clock.start, clock.due, now)} text={t('admin.reviews.dueIn', { when: f.relative(clock.due, now) })} />
         );
       },
+    },
+    {
+      id: 'assignee',
+      header: t('admin.verification.col.assignee'),
+      cell: (v) => (v.assignee ? <Bidi>{v.assignee.display_name}</Bidi> : t('admin.verification.assign.none')),
+    },
+    {
+      id: 'owner',
+      header: t('admin.verification.col.owner'),
+      defaultHidden: true,
+      cell: (v) => (v.owner ? <Bidi>{v.owner.display_name}</Bidi> : '—'),
+    },
+    {
+      id: 'callback',
+      header: t('admin.verification.col.callback'),
+      cell: (v) => enumLabel(CALLBACK_RESULTS, 'admin.verification.callback', v.callback_result, t),
+    },
+    {
+      id: 'flags',
+      header: t('admin.verification.col.flags'),
+      cell: (v) => (
+        <>
+          {v.info_request?.status === 'open' ? <span className="adm-chip">{t('admin.verification.waitingBusiness')}</span> : null}
+          {v.info_request?.status === 'answered' ? <span className="adm-chip">{t('admin.verification.answered')}</span> : null}
+          {v.possible_duplicate ? (
+            <span className="adm-chip" data-tone="danger">
+              {t('admin.verification.duplicate')}
+            </span>
+          ) : null}
+        </>
+      ),
     },
     { id: 'docs', header: t('admin.verification.col.docs'), align: 'end', cell: (v) => f.number(v.submitted_document_ids.length) },
     {
@@ -260,9 +328,10 @@ export function VerificationPage() {
             <SubmittedData
               item={item}
               org={org.data ?? decidedHere?.org ?? null}
-              unavailable={pending && org.isError}
+              unavailable={pending && org.isError && !withOther}
               reload={pending ? async () => (await org.refetch()).data ?? null : undefined}
             />
+            {item.info_request ? <InfoRequestView request={item.info_request} /> : null}
           </section>
           <section aria-labelledby="ver-docs-t" className="adm-stack">
             <h3 id="ver-docs-t" className="adm-subtitle">
@@ -304,8 +373,30 @@ export function VerificationPage() {
       return <p>{t('admin.verification.alreadyDecided', { status: label(CHECK_STATUSES, 'admin.orgs.checkStatus', item.status, t) })}</p>;
     if (!canDecide) return <p data-testid="cannot-decide">{t('admin.verification.cannotDecide')}</p>;
     const items = checklistFor(item.verification_type);
+    // A check read by its link (not on the loaded page) comes from the deep-link read: refresh both.
+    const assignPanel = (
+      <VerificationAssign
+        item={item}
+        onAssigned={() => {
+          void queryClient.invalidateQueries({ queryKey: LIST_KEY });
+          void deep.refetch();
+        }}
+      />
+    );
+    if (withOther) return assignPanel;
+    const clock = checkClock(item, timeZone);
     return (
       <div className="adm-stack">
+        {assignPanel}
+        {waiting ? (
+          <Banner tone="info" icon="clock" title={t('admin.verification.info.waitingTitle')}>
+            <p className="pwa-banner-text" data-testid="clock-paused">
+              {t('admin.verification.info.waitingText', {
+                when: f.date(clock.pausedSince ?? Date.parse(item.info_request!.requested_at), 'dateTime'),
+              })}
+            </p>
+          </Banner>
+        ) : null}
         <fieldset className="adm-checklist" data-testid="checklist">
           <legend>{t('admin.verification.checklist')}</legend>
           {items.map((c) => (
@@ -348,7 +439,18 @@ export function VerificationPage() {
             {t(`admin.verification.block.${block}`)}
           </p>
         ) : null}
-        <p className="adm-muted">{t('admin.verification.noMoreInfo')}</p>
+        {purpose && !waiting ? (
+          <InfoRequestForm
+            key={item.id}
+            item={item}
+            purpose={purpose}
+            disabled={busy}
+            onSent={() => {
+              void queryClient.invalidateQueries({ queryKey: LIST_KEY });
+              void deep.refetch();
+            }}
+          />
+        ) : null}
       </div>
     );
   };
@@ -439,6 +541,10 @@ export function VerificationPage() {
   );
 }
 
+function yesNo(v: boolean | null, t: ReturnType<typeof useT>): string {
+  return v == null ? '—' : v ? t('admin.users.yes') : t('admin.users.no');
+}
+
 function SubmittedData({
   item,
   org,
@@ -525,13 +631,40 @@ function SubmittedData({
           <dt>{t('admin.verification.col.reports')}</dt>
           <dd>{f.number(item.wrong_location_reports)}</dd>
         </div>
+        <div>
+          <dt>{t('admin.verification.registration')}</dt>
+          <dd data-testid="ver-registration">{item.registration_number ? <Bidi ltr>{item.registration_number}</Bidi> : '—'}</dd>
+        </div>
+        <div>
+          <dt>{t('admin.verification.col.owner')}</dt>
+          <dd>{item.owner ? <Bidi>{item.owner.display_name}</Bidi> : '—'}</dd>
+        </div>
+        <div>
+          <dt>{t('admin.verification.col.callback')}</dt>
+          <dd data-testid="ver-callback">{enumLabel(CALLBACK_RESULTS, 'admin.verification.callback', item.callback_result, t)}</dd>
+        </div>
+        <div>
+          <dt>{t('admin.verification.col.flags')}</dt>
+          <dd>{item.possible_duplicate ? t('admin.verification.duplicate') : t('admin.verification.noDuplicate')}</dd>
+        </div>
+        {item.ai_precheck ? (
+          <div>
+            <dt>{t('admin.verification.precheck.title')}</dt>
+            <dd data-testid="ver-precheck">
+              {t('admin.verification.precheck.line', {
+                readable: yesNo(item.ai_precheck.documents_readable, t),
+                name: yesNo(item.ai_precheck.name_match, t),
+                risk: item.ai_precheck.duplicate_risk ? t(`admin.verification.precheck.risk.${item.ai_precheck.duplicate_risk}`) : '—',
+              })}
+            </dd>
+          </div>
+        ) : null}
       </dl>
       {unavailable ? (
         <p className="adm-muted" data-testid="ver-org-unavailable">
           {t('admin.verification.orgUnavailable')}
         </p>
       ) : null}
-      <p className="adm-muted">{t('admin.verification.notInContract')}</p>
       {org ? (
         <p>
           <Link href={orgHref(org.id, purposeOf('verification', item.id), 'locations')}>{t('admin.verification.openLocations')}</Link>

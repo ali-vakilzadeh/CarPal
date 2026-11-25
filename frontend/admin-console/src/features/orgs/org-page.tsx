@@ -5,13 +5,14 @@
 // opened from. Without one (or once the item is closed) the header comes from the organization search, which needs no
 // purpose and carries no contact data or points (StaffOrgSearchRow, backend S14), and the page lists the organization's pending verifications to open it
 // for. Header: name, type, status chips (organization, verification), plan, city, View public profile, and by role
-// Suspend / Reactivate, Assist onboarding, Change plan (a link to the AC6 form) and the Audit trail (ADM). Tabs:
-// Profile, Locations (map, correction), Verification (history, the badge approval), Plan; the other Docs/23 tabs are
-// listed as not available yet (DI-06).
+// Suspend / Reactivate, Assist onboarding, Change plan (a link to the AC6 form), Merge duplicate (ADM, AC14-2) and the
+// Audit trail (ADM). Tabs (?tab=): Profile (with the staff correction and the edit history, AC14-2), Locations (map,
+// correction), Verification (history, the badge approval), and on the backend S23 reads (AC14-2, org-tabs.tsx)
+// Capabilities & badges, Portfolio, Inventory (sellers only), Members and Plan (with its history); Reviews and Cases
+// have no read yet and are listed.
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { StaffOrgView } from '@carpal/api-contracts';
-import { AuditDrawer, MaskedField, purposeKind, usePurpose, withPurpose } from '@/components/admin';
+import { AuditDrawer, MaskedField, purposeKind, Tabs, usePurpose, useUrlTab, withPurpose } from '@/components/admin';
 import { Banner } from '@/components/ds/banner';
 import { Icon } from '@/components/ds/icon';
 import { useApiQuery, useSession } from '@/lib/api/query';
@@ -23,20 +24,21 @@ import { canCall } from '@/lib/roles';
 import { BadgePanel } from '../moderation/badge-panel';
 import { LocationsTab } from './locations-tab';
 import { AssistStart, StatusActions } from './org-actions';
+import { MergePanel } from './org-merge';
+import { CapabilitiesTab, InventoryTab, MembersTab, PlanHistory, PortfolioTab, ProfileCorrection, ProfileHistory } from './org-tabs';
 import {
   CHECK_STATUSES,
   CHECK_TYPES,
   label,
   MISSING_TABS,
-  ORG_TABS,
   ORG_TYPES,
+  orgTabsFor,
   headOf,
   orgHref,
   publicProfileHref,
   VERIFICATION_STATUSES,
   verificationPurposes,
   type OrgHead,
-  type OrgTab,
 } from './org-logic';
 import { OrgStatusChips } from './orgs-page';
 
@@ -140,6 +142,7 @@ function OrgHeader({ org, publicWeb, onChanged }: { org: OrgHead; publicWeb?: st
         ) : null}
         <AuditDrawer entityType="organization" entityId={org.id} label={org.name} />
       </div>
+      <MergePanel org={org} />
     </header>
   );
 }
@@ -201,56 +204,26 @@ function OrgTabs({
   reload: () => Promise<StaffOrgView | null>;
 }) {
   const t = useT();
-  const params = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
+  const tabs = orgTabsFor(org.organization_type);
+  const [tab, go] = useUrlTab(tabs);
   // The region's pin-versus-address threshold (admin.region_settings, backend S13, BR-18; D-58 lifted in AC10.T0).
   // The map style stays the console's env setting (blank fallback when unset): the console shows no Neshan basemap
   // (OQ-16 answer (c), AC14b.T6); the region's web map apps open a pin on the real map instead.
   const region = useApiQuery('admin.region_settings', {}, { staleTime: 10 * 60_000 });
-  const asked = params.get('tab');
-  const tab: OrgTab = ORG_TABS.find((x) => x === asked) ?? 'profile';
-  const go = (x: OrgTab) => {
-    const p = new URLSearchParams(params);
-    if (x === 'profile') p.delete('tab');
-    else p.set('tab', x);
-    router.replace(`${pathname}?${p.toString()}`, { scroll: false });
-  };
   return (
     <>
       <p className="adm-muted" data-testid="org-purpose">
         {t('admin.orgs.purpose.readFor', { kind: t(`admin.orgs.purpose.kind.${purposeKind(purpose)}`) })}
       </p>
-      <div className="adm-tabs" role="tablist" aria-label={t('admin.orgs.tabsLabel')}>
-        {ORG_TABS.map((x) => (
-          <button
-            key={x}
-            type="button"
-            role="tab"
-            id={`org-tab-${x}`}
-            aria-selected={x === tab}
-            aria-controls="org-tabpanel"
-            tabIndex={x === tab ? 0 : -1}
-            className="adm-tab"
-            onClick={() => go(x)}
-            onKeyDown={(e) => {
-              const i = ORG_TABS.indexOf(tab);
-              const rtl = document.documentElement.dir === 'rtl';
-              const next = e.key === (rtl ? 'ArrowLeft' : 'ArrowRight') ? 1 : e.key === (rtl ? 'ArrowRight' : 'ArrowLeft') ? -1 : 0;
-              if (!next) return;
-              e.preventDefault();
-              const to = ORG_TABS[(i + next + ORG_TABS.length) % ORG_TABS.length]!;
-              go(to);
-              document.getElementById(`org-tab-${to}`)?.focus();
-            }}
-          >
-            {t(`admin.orgs.tab.${x}`)}
-          </button>
-        ))}
-      </div>
-      <div id="org-tabpanel" role="tabpanel" aria-labelledby={`org-tab-${tab}`} className="adm-stack">
-        <h2 className="sr-only">{t(`admin.orgs.tab.${tab}`)}</h2>
-        {tab === 'profile' ? <ProfileTab org={org} reload={reload} /> : null}
+      <Tabs
+        tabs={tabs}
+        current={tab}
+        onChange={go}
+        label={t('admin.orgs.tabsLabel')}
+        idPrefix="org"
+        tabLabel={(x) => t(`admin.orgs.tab.${x}`)}
+      >
+        {tab === 'profile' ? <ProfileTab org={org} purpose={purpose} reload={reload} onChanged={onChanged} /> : null}
         {tab === 'locations' ? (
           <LocationsTab
             org={org}
@@ -261,8 +234,12 @@ function OrgTabs({
           />
         ) : null}
         {tab === 'verification' ? <VerificationTab org={org} /> : null}
-        {tab === 'plan' ? <PlanTab org={org} /> : null}
-      </div>
+        {tab === 'badges' ? <CapabilitiesTab orgId={org.id} purpose={purpose} /> : null}
+        {tab === 'portfolio' ? <PortfolioTab orgId={org.id} purpose={purpose} /> : null}
+        {tab === 'inventory' ? <InventoryTab orgId={org.id} purpose={purpose} /> : null}
+        {tab === 'members' ? <MembersTab orgId={org.id} purpose={purpose} /> : null}
+        {tab === 'plan' ? <PlanTab org={org} purpose={purpose} /> : null}
+      </Tabs>
       <section className="adm-missing" aria-labelledby="org-missing-t">
         <h2 id="org-missing-t" className="adm-subtitle">
           {t('admin.orgs.missing.title')}
@@ -278,7 +255,17 @@ function OrgTabs({
   );
 }
 
-function ProfileTab({ org, reload }: { org: StaffOrgView; reload: () => Promise<StaffOrgView | null> }) {
+function ProfileTab({
+  org,
+  purpose,
+  reload,
+  onChanged,
+}: {
+  org: StaffOrgView;
+  purpose: NonNullable<ReturnType<typeof usePurpose>>;
+  reload: () => Promise<StaffOrgView | null>;
+  onChanged: () => void;
+}) {
   const t = useT();
   const f = useFormat();
   const desc = org.description_translations ?? {};
@@ -354,7 +341,9 @@ function ProfileTab({ org, reload }: { org: StaffOrgView; reload: () => Promise<
           )}
         </>
       ) : null}
-      <p className="adm-muted">{t('admin.orgs.profile.noEdit')}</p>
+      <p className="adm-muted">{t('admin.orgs.profile.correctable')}</p>
+      <ProfileCorrection org={org} onChanged={onChanged} />
+      <ProfileHistory orgId={org.id} purpose={purpose} />
     </section>
   );
 }
@@ -419,7 +408,7 @@ function VerificationTab({ org }: { org: StaffOrgView }) {
   );
 }
 
-function PlanTab({ org }: { org: StaffOrgView }) {
+function PlanTab({ org, purpose }: { org: StaffOrgView; purpose: NonNullable<ReturnType<typeof usePurpose>> }) {
   const t = useT();
   const f = useFormat();
   const session = useSession();
@@ -457,7 +446,7 @@ function PlanTab({ org }: { org: StaffOrgView }) {
           <Link href={`/plans?subscriber=organization:${org.id}#assign`}>{t('admin.orgs.changePlan')}</Link>
         </p>
       ) : null}
-      <p className="adm-muted">{t('admin.orgs.plan.noHistory')}</p>
+      <PlanHistory orgId={org.id} purpose={purpose} />
     </section>
   );
 }

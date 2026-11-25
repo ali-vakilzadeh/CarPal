@@ -3,13 +3,25 @@
 // plans and payment never change organic ranking (MVP Rule 2) is on screen. Plans: every plan with its limits and
 // entitlements; an edit changes entitlements (or the plan's status) for every subscriber, so it waits for a second
 // platform admin (4EYES) and the requester sees the four-eyes banner. History: the plan's audit trail (Shift+H; the
-// contract has no plan history read, Docs/23 "History" tab). Assignments: the form that assigns a plan, starts a
-// trial or sets overrides for one subscriber (assign-form.tsx); the contract has no list of assignments.
+// contract has no plan history read, Docs/23 "History" tab). Tabs (AC14-2, ?tab=): Plans (with whether each plan is
+// offered and which is its audience's default, backend S21), Assignments (the subscriptions list and the assign form,
+// plan-tabs.tsx) and Plan requests (the organizations' requests). A link with ?subscriber= opens Assignments.
 import { useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import type { EntitlementKey, Plan } from '@carpal/api-contracts';
-import { ActionNotice, AuditDrawer, CaseLayout, DataTable, ReasonDialog, useAdminAction, type Column } from '@/components/admin';
+import type { EntitlementKey, StaffPlan as Plan } from '@carpal/api-contracts';
+import {
+  ActionNotice,
+  AuditDrawer,
+  CaseLayout,
+  DataTable,
+  ReasonDialog,
+  Tabs,
+  useAdminAction,
+  useUrlTab,
+  type Column,
+} from '@/components/admin';
+import { Badge } from '@/components/ds/badge';
 import { Banner } from '@/components/ds/banner';
 import { Button } from '@/components/ds/button';
 import { Check } from '@/components/ds/check';
@@ -17,7 +29,7 @@ import { TextField } from '@/components/ds/text-field';
 import { useApiQuery } from '@/lib/api/query';
 import { useFormat } from '@/lib/format/client';
 import { useT } from '@/lib/i18n/client';
-import { AssignForm } from './assign-form';
+import { AssignmentsTab, RequestsTab } from './plan-tabs';
 import {
   audienceLabel,
   changedEntitlements,
@@ -31,6 +43,8 @@ import {
 import { planLabel } from '@/lib/config/plans';
 
 const LIST_KEY = ['admin.plans_list'] as const;
+const PLAN_TABS = ['plans', 'assignments', 'requests'] as const;
+type PlanTab = (typeof PLAN_TABS)[number];
 
 export function PlansPage() {
   const t = useT();
@@ -40,6 +54,9 @@ export function PlansPage() {
   const pathname = usePathname();
   const list = useApiQuery('admin.plans_list', undefined);
   const plans = list.data?.items;
+  const [asked, go] = useUrlTab(PLAN_TABS);
+  // A link that names a subscriber (?subscriber=, from an organization or a work item) is about Assignments.
+  const tab: PlanTab = !params.get('tab') && params.get('subscriber') ? 'assignments' : asked;
   const selected = plans?.find((p) => p.id === params.get('plan')) ?? null;
   const select = (plan: Plan) => {
     const p = new URLSearchParams(params);
@@ -59,6 +76,23 @@ export function PlansPage() {
       align: 'end',
       cell: (p) => (p.trial_days ? t('admin.plans.days', { n: f.number(p.trial_days) }) : '—'),
     },
+    {
+      id: 'status',
+      header: t('admin.plans.col.status'),
+      cell: (p) => (
+        <>
+          <Badge tone={p.status === 'active' ? 'success' : 'neutral'}>
+            {t(`admin.plans.status.${p.status === 'inactive' ? 'inactive' : 'active'}`)}
+          </Badge>
+          {p.is_default_for_audience ? (
+            <>
+              {' '}
+              <Badge tone="accent">{t('admin.plans.default')}</Badge>
+            </>
+          ) : null}
+        </>
+      ),
+    },
     { id: 'key', header: t('admin.plans.col.key'), defaultHidden: true, cell: (p) => <bdi dir="ltr">{p.plan_key}</bdi> },
   ];
 
@@ -68,41 +102,49 @@ export function PlansPage() {
       <div data-testid="ranking-rule">
         <Banner tone="info" icon="shield" title={t('admin.plans.rule.title')} text={t('admin.plans.rule.text')} />
       </div>
-      <h2 className="adm-section-title">{t('admin.plans.plansTitle')}</h2>
-      <CaseLayout
-        labels={{ list: t('admin.plans.listLabel'), item: t('admin.plans.itemLabel'), decision: t('admin.plans.historyLabel') }}
-        list={
-          <DataTable
-            id="plans"
-            caption={t('admin.plans.listLabel')}
-            columns={columns}
-            rows={plans}
-            rowKey={(p) => p.id}
-            loading={list.isPending}
-            error={list.error}
-            onRetry={() => void list.refetch()}
-            emptyText={t('admin.plans.empty')}
-            selectedKey={selected?.id ?? null}
-            onSelect={select}
+      <Tabs
+        tabs={PLAN_TABS}
+        current={tab}
+        onChange={go}
+        label={t('admin.plans.tabsLabel')}
+        idPrefix="plans"
+        tabLabel={(x) => t(`admin.plans.tab.${x}`)}
+      >
+        {tab === 'plans' ? (
+          <CaseLayout
+            labels={{ list: t('admin.plans.listLabel'), item: t('admin.plans.itemLabel'), decision: t('admin.plans.historyLabel') }}
+            list={
+              <DataTable
+                id="plans"
+                caption={t('admin.plans.listLabel')}
+                columns={columns}
+                rows={plans}
+                rowKey={(p) => p.id}
+                loading={list.isPending}
+                error={list.error}
+                onRetry={() => void list.refetch()}
+                emptyText={t('admin.plans.empty')}
+                selectedKey={selected?.id ?? null}
+                onSelect={select}
+              />
+            }
+            item={selected ? <PlanEditor key={selected.id} plan={selected} /> : <p className="adm-muted">{t('admin.plans.pick')}</p>}
+            decision={
+              selected ? (
+                <>
+                  <h2 className="adm-panel-title">{t('admin.plans.historyLabel')}</h2>
+                  <p className="adm-muted">{t('admin.plans.historyHint')}</p>
+                  <AuditDrawer entityType="plan" entityId={selected.id} label={planLabel(selected.plan_key, t)} />
+                </>
+              ) : (
+                <p className="adm-muted">{t('admin.plans.pickFirst')}</p>
+              )
+            }
           />
-        }
-        item={selected ? <PlanEditor key={selected.id} plan={selected} /> : <p className="adm-muted">{t('admin.plans.pick')}</p>}
-        decision={
-          selected ? (
-            <>
-              <h2 className="adm-panel-title">{t('admin.plans.historyLabel')}</h2>
-              <p className="adm-muted">{t('admin.plans.historyHint')}</p>
-              <AuditDrawer entityType="plan" entityId={selected.id} label={planLabel(selected.plan_key, t)} />
-            </>
-          ) : (
-            <p className="adm-muted">{t('admin.plans.pickFirst')}</p>
-          )
-        }
-      />
-      <h2 className="adm-section-title" id="assign">
-        {t('admin.plans.assign.title')}
-      </h2>
-      <AssignForm plans={plans} />
+        ) : null}
+        {tab === 'assignments' ? <AssignmentsTab plans={plans} /> : null}
+        {tab === 'requests' ? <RequestsTab /> : null}
+      </Tabs>
     </div>
   );
 }
@@ -155,6 +197,13 @@ function PlanEditor({ plan }: { plan: Plan }) {
         <div>
           <dt>{t('admin.plans.col.trial')}</dt>
           <dd>{plan.trial_days ? t('admin.plans.days', { n: f.number(plan.trial_days) }) : '—'}</dd>
+        </div>
+        <div>
+          <dt>{t('admin.plans.col.status')}</dt>
+          <dd data-testid="plan-status">
+            {t(`admin.plans.status.${plan.status === 'inactive' ? 'inactive' : 'active'}`)}
+            {plan.is_default_for_audience ? ` · ${t('admin.plans.defaultFor', { audience: audienceLabel(plan.audience, t) })}` : ''}
+          </dd>
         </div>
       </dl>
       <form

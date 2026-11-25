@@ -3,7 +3,7 @@
 // possible) only when its business identity and a location are verified; a location or address check cannot be
 // approved while a pin is far from its typed address (the backend answers INVALID_TRANSITION far_apart). The checklist
 // of Docs/23 is the staff member's own: the contract has no field for it, so its state travels at the end of the
-// audited reason (D-60). "Request more info" has no operation in the contract (DI-30): not offered.
+// audited reason (D-60). "Request more info" is admin.verification_decide info_requested (backend S19, AC14-2).
 import type { AdminResponse } from '@/lib/api/generated';
 import { dueAt, SLA_TARGETS } from '@/lib/config/sla';
 import { REASON_MAX } from '@/lib/config/reasons';
@@ -75,4 +75,82 @@ export function rejectionProblem(text: string): 'required' | 'too_long' | null {
   const s = text.trim();
   if (!s) return 'required';
   return s.length > 500 ? 'too_long' : null;
+}
+
+// ---------------------------------------------------------------- AC14-2 (backend S19, BR-34): assign, more info
+
+/** What CarPal may ask the business for (Docs/40 VerificationMissingItem). */
+export const MISSING_ITEMS = [
+  'business_document',
+  'registration_number',
+  'legal_name',
+  'address_proof',
+  'location_pin',
+  'phone_callback',
+  'owner_identity',
+  'readable_copy',
+  'other',
+] as const;
+export type MissingItem = (typeof MISSING_ITEMS)[number];
+
+/** Message templates of a request for more information; the console fills the text per template (Docs/40). */
+export const INFO_TEMPLATES = [
+  'missing_documents',
+  'unreadable_documents',
+  'details_mismatch',
+  'location_mismatch',
+  'callback_failed',
+  'other',
+] as const;
+export type InfoTemplate = (typeof INFO_TEMPLATES)[number];
+
+export const CALLBACK_RESULTS = ['verified', 'pending', 'rejected', 'expired', 'not_requested'] as const;
+
+/** The items a template usually asks for (preselected; staff may change them). */
+export function itemsOfTemplate(t: InfoTemplate, type: string): MissingItem[] {
+  switch (t) {
+    case 'missing_documents':
+      return isLocationCheck(type) ? ['address_proof'] : ['business_document'];
+    case 'unreadable_documents':
+      return ['readable_copy'];
+    case 'details_mismatch':
+      return ['legal_name', 'registration_number'];
+    case 'location_mismatch':
+      return ['location_pin', 'address_proof'];
+    case 'callback_failed':
+      return ['phone_callback'];
+    default:
+      return [];
+  }
+}
+
+export const INFO_MESSAGE_MAX = 1000;
+
+/** A request for more information is ready: at least one item, a message of 1-1000 characters. */
+export function infoRequestProblem(items: readonly string[], message: string): 'items' | 'message' | 'too_long' | null {
+  if (!items.length) return 'items';
+  const s = message.trim();
+  if (!s) return 'message';
+  return s.length > INFO_MESSAGE_MAX ? 'too_long' : null;
+}
+
+/** The reason of a self-assignment (the button is the reason, like cases, D-50). */
+export const VERIFICATION_TAKE_REASON = 'taking_check';
+export const VERIFICATION_COLLEAGUE_REASON = 'assigned_to_colleague';
+
+/**
+ * The review clock of a check (Docs/23 §6: 2 working days): from sla_started_at, which the backend moves forward by
+ * every pause, and paused while CarPal waits for the business (sla_paused_since, backend S19). Older answers without
+ * the field start at created_at.
+ */
+export function checkClock(
+  v: { created_at: string; sla_started_at?: string | null; sla_paused_since?: string | null },
+  timeZone: string,
+): { start: number; due: number; pausedSince: number | null } {
+  const start = Date.parse(v.sla_started_at ?? v.created_at);
+  return {
+    start,
+    due: dueAt(start, SLA_TARGETS.verification, timeZone),
+    pausedSince: v.sla_paused_since ? Date.parse(v.sla_paused_since) : null,
+  };
 }

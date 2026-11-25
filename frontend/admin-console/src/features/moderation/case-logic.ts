@@ -94,7 +94,8 @@ export function caseHref(caseType: string, caseId: string): string {
 
 /**
  * Views of a queue (Docs/23 A-CON-01 tabs Reported / AI flagged / Pending pre-publication review / Unsafe advice /
- * Consent and redaction). The list has no source or reason filter (BR-27), so a view narrows the rows read (D-49).
+ * Consent and redaction). Since backend S18 (BR-27, AC14-2) a view is sent as the list's source / reason filter
+ * (viewQuery); D-49's narrowing of the rows read is gone.
  */
 export const CASE_VIEWS = ['reported', 'ai', 'rule', 'unsafe', 'consent'] as const;
 export type CaseView = (typeof CASE_VIEWS)[number];
@@ -193,7 +194,7 @@ export const field = (t: Target | null, key: string): string | null => (t ? str(
 export type ContentAction = 'approve' | 'hide' | 'remove' | 'restore' | 'request_changes' | 'warn_user';
 export const CONTENT_ACTIONS: readonly ContentAction[] = ['approve', 'hide', 'remove', 'restore', 'request_changes', 'warn_user'];
 
-/** Every action the console takes through admin.case_action (merge_duplicate waits for BR-08, D-51). */
+/** The actions of the standard buttons (the ones with their own parameters are MoreAction, case-more.tsx, AC14-2). */
 export type CaseAction = ContentAction | 'suspend_account' | 'reactivate_account' | 'apply_trust_penalty' | 'revoke_badge';
 
 /** Action types of the history (ModerationActionType; unknown values render as "Unknown (…)"). */
@@ -216,6 +217,13 @@ export const ACTION_TYPES = [
   'request_evidence',
   'correct_location',
   'assist_onboarding',
+  // backend S19-S22 (AC14-2)
+  'reduce_weight',
+  'edit_request',
+  'downgrade_fitment',
+  'request_verification_info',
+  'correct_profile',
+  'apply_redaction',
 ] as const;
 
 export const ACTION_REASON: Record<CaseAction, ReasonKind> = {
@@ -401,3 +409,92 @@ export const SELF_ASSIGN_REASON = 'taking_case';
 
 /** The reason of an assignment to a colleague: the code and the colleague's name (AC10.T0, D-50). */
 export const COLLEAGUE_ASSIGN_REASON = 'assigned_to_colleague';
+
+/** A view as the list's server filters (admin.cases_list source / reason take several values, backend S18). */
+export function viewQuery(view: string): { source?: ModerationCase['source'][]; reason?: ModerationCase['reason'][] } {
+  switch (view) {
+    case 'reported':
+      return { source: ['user_report'] };
+    case 'ai':
+      return { source: ['ai_flag'] };
+    case 'rule':
+      return { source: ['system_rule'] };
+    case 'unsafe':
+      return { reason: ['unsafe_advice'] };
+    case 'consent':
+      return { reason: ['consent_issue', 'redaction_issue', 'non_consensual_media', 'privacy'] };
+    default:
+      return {};
+  }
+}
+
+// ---------------------------------------------------------------- AC14-2: actions with their own parameters
+
+/** Actions of admin.case_action that need parameters (backend S20-S22): reduce_weight, edit_request, downgrade_fitment, merge_duplicate, apply_redaction. */
+export type MoreAction = 'reduce_weight' | 'edit_request' | 'downgrade_fitment' | 'merge_duplicate' | 'apply_redaction';
+
+/** Of those, the ones the backend makes step up with the security key (admin.case_action AAL3(...)). */
+export const MORE_STEP_UP: ReadonlySet<MoreAction> = new Set(['merge_duplicate', 'reduce_weight']);
+
+/** Which of them apply to a target in its state. */
+export function moreActions(t: Target | null): MoreAction[] {
+  if (!t || !t.available) return [];
+  const s = field(t, 'status');
+  switch (t.type) {
+    case 'review':
+      return s === 'published' ? ['reduce_weight', 'edit_request'] : [];
+    case 'inventory_fitment':
+      return field(t, 'confidence') !== 'uncertain' && s !== 'rejected' ? ['downgrade_fitment'] : [];
+    case 'organization':
+      return s !== 'merged' ? ['merge_duplicate'] : [];
+    case 'media_asset':
+      return field(t, 'media_type') === 'image' && s !== 'removed' && field(t, 'redaction_status') !== 'pending' ? ['apply_redaction'] : [];
+    default:
+      return [];
+  }
+}
+
+/** The shares of its weight a review may keep (1 restores it). */
+export const WEIGHT_FACTORS = ['0.75', '0.5', '0.25', '0', '1'] as const;
+
+/** Lower confidences than a fitment row's own (confirmed → likely or uncertain, likely → uncertain). */
+export function fitmentChoices(confidence: string | null): ('likely' | 'uncertain')[] {
+  if (confidence === 'confirmed') return ['likely', 'uncertain'];
+  if (confidence === 'likely') return ['uncertain'];
+  return [];
+}
+
+export const EDIT_MESSAGE_MAX = 1000;
+
+/** The span of a passage in a review field (exact text, first match), or null when it is not there. */
+export function editSpanOf(text: string | null, passage: string): { start: number; end: number } | null {
+  const p = passage.trim();
+  if (!text || !p) return null;
+  const start = text.indexOf(p);
+  return start < 0 ? null : { start, end: start + p.length };
+}
+
+/** A redaction box in fractions of the image (0-1), as the contract's decimal strings. */
+export interface RedactionBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Clamps a box into the image and drops boxes smaller than 1 % a side. */
+export function cleanBox(b: RedactionBox): RedactionBox | null {
+  const x = Math.min(Math.max(Math.min(b.x, b.x + b.w), 0), 1);
+  const y = Math.min(Math.max(Math.min(b.y, b.y + b.h), 0), 1);
+  const w = Math.min(Math.abs(b.w), 1 - x);
+  const h = Math.min(Math.abs(b.h), 1 - y);
+  return w >= 0.01 && h >= 0.01 ? { x, y, w, h } : null;
+}
+
+export const regionOf = (b: RedactionBox) => ({ x: b.x.toFixed(4), y: b.y.toFixed(4), w: b.w.toFixed(4), h: b.h.toFixed(4) });
+
+/** Percent text (0-100) to a fraction, or null. */
+export function percentOf(raw: string): number | null {
+  const v = Number(raw.trim().replace(',', '.'));
+  return raw.trim() !== '' && Number.isFinite(v) && v >= 0 && v <= 100 ? v / 100 : null;
+}

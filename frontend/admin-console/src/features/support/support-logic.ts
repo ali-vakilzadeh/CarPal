@@ -201,7 +201,7 @@ export function linkedHref(item: { type: string; id: string }): string | null {
     case 'dispute':
       return `/disputes?dispute=${encodeURIComponent(item.id)}`;
     case 'subscription_change_request':
-      return '/plans';
+      return '/plans?tab=requests';
     default:
       return null;
   }

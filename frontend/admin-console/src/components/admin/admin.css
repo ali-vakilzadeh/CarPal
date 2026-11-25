@@ -1653,3 +1653,38 @@ form.adm-search {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* AC14-2: redaction boxes over an image (apply_redaction). Box positions are fractions of the image itself, so the
+   frame keeps the image's own coordinates whatever the page direction. */
+.adm-redact-frame {
+  position: relative;
+  display: inline-block;
+  max-inline-size: 100%;
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+  direction: ltr;
+}
+.adm-redact-frame img {
+  display: block;
+  max-inline-size: 100%;
+  max-block-size: 480px;
+  pointer-events: none;
+}
+.adm-redact-box {
+  position: absolute;
+  background: var(--ink);
+  outline: 2px solid var(--danger);
+}
+.adm-redact-typed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: flex-end;
+  border: 0;
+  padding: 0;
+}
+.adm-thread-item[data-current] {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}

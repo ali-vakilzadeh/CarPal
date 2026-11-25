@@ -14,11 +14,11 @@ console part is in `Docs/23.Admin_WebUI_screens.md` §0.
 The build plan and stage log is [dev-plan.json](dev-plan.json). Sources of truth: `Docs/40.API contract.md`
 (contract 1.5.0, §23 admin plane) for operations and security rules, `Docs/23.Admin_WebUI_screens.md` for screens.
 
-Status (2026-11-25): AC1-AC10, AC10b, AC12, AC13, AC14-1, AC14b, AC11 (deploy kit, pilot E2E, security pass;
-milestone M1) and AC15 (hardening: role journeys, accessibility, RTL screenshots, performance, security review) are
-done. AC15 ran before the rest of AC14-2 at the owner's request (D-115): the screens of AC14-2's checklist
-(`dev-plan.json` AC14.parts) are still to build, and the AC15 suites cover them when they arrive (the accessibility and
-security sweeps list every route). The sections below describe each stage's screens.
+Status (2026-11-25): every stage of the plan is done: AC1-AC14 (with AC14-1, AC14-2 and AC14b), AC11 (deploy kit,
+pilot E2E, security pass; milestone M1) and AC15 (hardening: role journeys, accessibility, RTL screenshots,
+performance, security review), closed as AC15-b after AC14-2. Every admin-api operation of contract 1.5.0 has a screen.
+The owner decisions still open are in `dev-plan.json` AC15 `next_iteration` (the Next.js 16.4.5 update F-1, the rate
+card place D-118). The sections below describe each stage's screens.
 
 ## Requirements
 
@@ -182,8 +182,8 @@ Platform admins only (the other roles see the no-permission state).
   admin. The plan's history is its audit trail (Shift+H). The assignment form gives one user or organization a plan,
   a trial (end day required) and limit or entitlement overrides. It applies at once. Other screens link to it with
   `/plans?subscriber=organization:<id>` or `user:<id>`.
-- **Data retention** (`/retention`): policy edits always wait for a second admin. The contract has no add and no
-  dry run, and the screen says so.
+- **Data retention** (`/retention`): policy edits always wait for a second admin. Add a policy and the Dry run came
+  with AC14-2.
 
 Writes that carry an ETag send the record's `version` from the list as If-Match (`ifMatchOf` in
 `src/lib/api/client.ts`; lists have no per-record ETag header). A 412 shows "changed meanwhile" with a **Reload**
@@ -239,7 +239,7 @@ waiting for the caller's approval.
   lifted automatically, BR-07), reactivate. Organizations: a **trust penalty** (1-100 points, 12 months, security key,
   second confirmation) and **Badges** (approve the Verified Business badge, revoke a badge; the badge id is entered,
   because no read lists an organization's badges yet, BR-31). Every action needs a reason; the case is closed with an
-  outcome and a resolution. Merging duplicates is not offered until BR-08.
+  outcome and a resolution. Merging duplicates and the other actions with parameters came with AC14-2.
 
 ## Organizations and verification (AC9)
 
@@ -254,8 +254,8 @@ waiting for the caller's approval.
   (moderators, admins; reason, a second confirmation for Suspend), Assist onboarding (support, admins), Change plan
   (admins, a link to the AC6 form) and the Audit trail. Tabs: **Profile** (contact data masked, Reveal re-reads for
   the purpose), **Locations**, **Verification** (the checks, a link to review a pending one, the Verified Business
-  badge approval) and **Plan**; the other Docs/23 tabs are listed as not available yet (DI-06). Moderation cases about
-  an organization or a location link here for the case's purpose. Merge is hidden until BR-08.
+  badge approval) and **Plan**; AC14-2 added the other tabs with a read and Merge duplicate (see below). Moderation
+  cases about an organization or a location link here for the case's purpose.
 - **Locations**: each location with the typed address, the owner's pin, the pin-to-address distance with the server's
   verdict (far apart above the region threshold, 300 m by default), where the point came from, address visibility,
   the service radius (a circle on the map) and the hours. **Correct pin or address** (moderators, admins): click the
@@ -268,8 +268,8 @@ waiting for the caller's approval.
   with a "CarPal internal" watermark, zoom, rotate, one document at a time; a file without a display copy opens in a
   new tab), and the checklist with the decision. Approve needs every checklist item (their state is saved at the end
   of the reason) and, for a location or address check, no pin far from its address; Reject needs a reason and the
-  message the business reads. After the decision the organization's new verification status is shown. "Request more
-  info" is not in the contract (DI-30).
+  message the business reads. After the decision the organization's new verification status is shown. Assignment and
+  "Ask the business for more" came with AC14-2.
 - **Assist sessions**: a 4-hour session for one of the organization type's onboarding flows, started and ended with a
   reason; a banner shows it on every page while it is open. The contract has no read of open sessions, so the
   console keeps them in memory: after a reload the banner is gone (the session still ends by itself, BR-34). The
@@ -396,6 +396,30 @@ Contract 1.5.0 (backend S13, S15/S15b, S17, S25a, S26a); platform admins only.
   The dashboard's support tile opens the inbox.
 - Array query values are sent as one comma-separated value (`status=new,waiting_on_team`), as the backend reads them.
 
+## Records, queues and settings completed (AC14-2)
+
+- **User page** (`/users/<id>`): tabs bound to `?tab=` (`src/components/admin/tabs.tsx`): Overview, Roles &
+  organizations, and under the page's work item Vehicles (VIN last four, plate last two), Appointments, Consents
+  (read only: active consents and the history) and Sessions & devices.
+- **Organization page** (`/orgs/<id>`): Profile with "Correct the profile" (name, legal name, website, description;
+  the business is told) and the profile history; Capabilities & badges (the matrix and each badge's rule evaluation),
+  Portfolio (the customer's consent), Inventory (sellers only), Members (emails masked) and Plan with its history.
+  **Merge duplicate** (administrators): find the organization that stays, read the preview of what moves, send it for a
+  second administrator; the approval starts the merge job. The assist banner reads the open sessions from the server.
+  `/orgs` filters by city, plan, open cases, location issue and possible duplicate, with the four saved views.
+- **Verification**: assignee, owner, phone call-back and flags in the queue; the clock pauses while CarPal waits for
+  the business; Take / Assign to a colleague; "Ask the business for more" (template, missing items, message).
+- **Disputes**: the other party, the disputed record, message threads with each side (sent as "CarPal", templates,
+  a reply-by day), Withdraw on the raiser's request, and an outcome that waits for an administrator's approval.
+- **Moderation**: views, source and reason are server filters; the author with their history and the content around a
+  comment, answer, post or question; Reduce a review's weight, Ask the author to edit, Lower a fitment's confidence,
+  Merge an organization into another, Black out parts of an image (boxes drawn or typed).
+- **Plans** (`/plans`): tabs Plans (offered or not, the default), Assignments (every subscription, filters, a row fills
+  the assign form) and Plan requests ("Assign this plan" opens the form prefilled).
+- **Retention**: Add a policy (four-eyes) and the Dry run (what the next daily run would do, also for an edit).
+- **My decisions** (`/decisions`, from the account menu; moderators and community reviewers): own approval and dispute
+  decisions of the last 30 days.
+
 ## Integration tests
 
 `pnpm test:int` signs a fresh ADM account in through the BFF (password, emailed code, a software security key, then
@@ -443,7 +467,11 @@ moderator gets a role grant and an enable that a second admin rejects and is dis
 `e2e-` draft of the marketing consent text sent for publication and rejected, so no version goes live; in Persian a
 template text saved, previewed and reset, and the rules changed and saved back) and `support.spec.ts` (AC14-2: an app
 user's ticket taken, acknowledged, turned into a privacy request and closed, the reply seen by the person as "CarPal";
-a ticket answered and closed in Persian) sign real staff in. A
+a ticket answered and closed in Persian) and `ac14-2.spec.ts` (AC14-2: a retention policy added and rejected by a
+second admin, the dry run, plan assignments and requests; a moderator takes a fresh business check, asks for more
+information and corrects the organization's profile across the new tabs; a community reviewer writes to the business
+in an objection thread and opens My decisions, Persian; the organization filters, a merge rejected by a second admin,
+a user's tabs for a privacy request and a moderation view) sign real staff in. A
 sign-in that enrols a key stores the recovery codes shown once (`tests/e2e/staff.ts` `storeRecoveryCodes`). `moderation.spec.ts` turns the community flags on in dev (backend `pnpm dev:flags set community on`)
 and has a shop publish a post and a customer report it; the backend asks for the key only when the sign-in is older
 than 10 minutes, so the spec answers the first suspend call with the backend's `STEP_UP_REQUIRED` and the replay

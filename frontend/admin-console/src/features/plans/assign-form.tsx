@@ -2,7 +2,7 @@
 // Assign plan / start trial / overrides (AC6.T4, Docs/23 A-PLAN-01 "Assignments", Docs/40 admin.subscription_assign,
 // MVP manual billing). The subscriber is named by exact id: an organization found by name (admin.orgs_search, no
 // personal data) or pasted, or a user id copied from a work item (finding a person needs a work item, GD-10). A link
-// from another screen fills it in (?subscriber=organization:<id> or user:<id>, AC9/AC10). The plan list offers the
+// from another screen fills it in (?subscriber=organization:<id> or user:<id>, AC9/AC10; ?plan_key= from a plan request). The plan list offers the
 // plans the subscriber may take; a trial needs its end day; limits and entitlements can be overridden for this
 // subscriber only. The assignment applies at once (no four-eyes in the contract), replaces the current subscription
 // and is audited with the reason.
@@ -51,7 +51,8 @@ export function AssignForm({ plans }: { plans: readonly Plan[] | undefined }) {
   const [org, setOrg] = useState<OrgHit | null>(null);
   const [searchText, setSearchText] = useState('');
   const [searchName, setSearchName] = useState('');
-  const [planKey, setPlanKey] = useState('');
+  // ?plan_key= comes with a plan request (AC14-2: Assign this plan).
+  const [planKey, setPlanKey] = useState(() => params.get('plan_key') ?? '');
   const [status, setStatus] = useState<'active' | 'trial'>('active');
   const [trialEnd, setTrialEnd] = useState('');
   const [expires, setExpires] = useState('');

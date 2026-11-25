@@ -1,2 +1,3 @@
 export { PlansPage } from './plans-page';
 export { dayIn, zoneOffsetMinutes } from './plan-logic';
+export { overridesText } from './plan-tabs';

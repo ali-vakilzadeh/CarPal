@@ -184,14 +184,15 @@ describe('Organization page (AC9.T2, T5)', () => {
       within(tabs)
         .getAllByRole('tab')
         .map((x) => x.textContent),
-    ).toEqual(['Profile', 'Locations', 'Verification', 'Plan']);
+    ).toEqual(['Profile', 'Locations', 'Verification', 'Capabilities & badges', 'Portfolio', 'Members', 'Plan']);
     const profile = screen.getByTestId('profile-tab');
     expect(within(profile).queryByText('owner@asa-auto.ir')).toBeNull();
     expect(within(profile).getAllByRole('button', { name: 'Reveal' })).toHaveLength(2);
     fireEvent.click(within(profile).getAllByRole('button', { name: 'Reveal' })[0]!);
     expect(await within(profile).findByText('owner@asa-auto.ir')).toBeInTheDocument();
     expect(calls.filter((c) => c.opId === 'admin.org_get')).toHaveLength(2);
-    expect(screen.getByText('Capabilities & badges')).toBeInTheDocument();
+    // Reviews and Cases have no read yet (AC14-2): listed under Not available yet.
+    expect(screen.getByText('Reviews')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Change plan' })).toHaveAttribute('href', `/plans?subscriber=organization:${ORG}#assign`);
     fireEvent.click(within(tabs).getByRole('tab', { name: 'Verification' }));
     expect(nav.search).toContain('tab=verification');

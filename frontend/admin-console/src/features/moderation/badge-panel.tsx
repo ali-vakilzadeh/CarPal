@@ -42,7 +42,7 @@ export function badgeName(type: string, t: Translate): string {
     : t('admin.kit.unknown', { value: type });
 }
 
-function badgeStatus(status: string, t: Translate): string {
+export function badgeStatus(status: string, t: Translate): string {
   return (BADGE_STATUSES as readonly string[]).includes(status)
     ? t(`admin.moderation.badge.status.${status}` as MessageKey)
     : t('admin.kit.unknown', { value: status });

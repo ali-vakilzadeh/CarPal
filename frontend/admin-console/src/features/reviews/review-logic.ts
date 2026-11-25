@@ -147,18 +147,26 @@ export const DISPUTE_STATUSES: readonly StaffDispute['status'][] = [
 export const OPEN_DISPUTE_STATUSES: readonly StaffDispute['status'][] = ['open', 'in_mediation'];
 export const DISPUTE_TARGETS = ['review', 'service_record', 'badge', 'appointment', 'moderation_action'] as const;
 
-export type DisputeOutcome = 'in_mediation' | 'resolved_upheld' | 'resolved_rejected';
+export type DisputeOutcome = 'in_mediation' | 'resolved_upheld' | 'resolved_rejected' | 'withdrawn';
 
 export const OUTCOME_REASON: Record<DisputeOutcome, ReasonKind> = {
   in_mediation: 'mediation',
   resolved_upheld: 'dispute_uphold',
   resolved_rejected: 'dispute_reject',
+  withdrawn: 'dispute_withdraw',
 };
 
-/** The outcomes a staff member may choose now (withdrawing is the raiser's own step; Docs/40 has no staff withdraw). */
-export function disputeOutcomes(d: Pick<StaffDispute, 'status'>): DisputeOutcome[] {
-  if (d.status === 'open') return ['in_mediation', 'resolved_upheld', 'resolved_rejected'];
-  if (d.status === 'in_mediation') return ['resolved_upheld', 'resolved_rejected'];
+/** Outcomes that close the dispute and need the resolution text both sides read (withdrawn: the raiser's request). */
+export const CLOSING_OUTCOMES: ReadonlySet<DisputeOutcome> = new Set(['resolved_upheld', 'resolved_rejected', 'withdrawn']);
+
+/**
+ * The outcomes a staff member may choose now. Withdrawn closes the dispute on the raiser's request (backend S20); a
+ * dispute waiting for an administrator's approval of its outcome (pending_change_id, S25a) takes none until decided.
+ */
+export function disputeOutcomes(d: Pick<StaffDispute, 'status'> & { pending_change_id?: string | null }): DisputeOutcome[] {
+  if (d.pending_change_id) return [];
+  if (d.status === 'open') return ['in_mediation', 'resolved_upheld', 'resolved_rejected', 'withdrawn'];
+  if (d.status === 'in_mediation') return ['resolved_upheld', 'resolved_rejected', 'withdrawn'];
   return [];
 }
 
@@ -168,6 +176,7 @@ export function disputeOutcomes(d: Pick<StaffDispute, 'status'>): DisputeOutcome
  */
 export function outcomeEffect(type: string, outcome: DisputeOutcome): MessageKey {
   if (outcome === 'in_mediation') return 'admin.disputes.effect.mediation';
+  if (outcome === 'withdrawn') return 'admin.disputes.effect.withdrawn';
   const upheld = outcome === 'resolved_upheld';
   switch (type) {
     case 'review_approval_objection':

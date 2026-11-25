@@ -11,6 +11,8 @@ export {
   OUTCOME_REASON,
   outcomeEffect,
   RESOLUTION_MAX,
+  CLOSING_OUTCOMES,
+  REVIEW_STATUSES,
   type DisputeOutcome,
 } from './review-logic';
 export { AuthorContext, BusinessStep, EvidenceList, ReviewBlock } from './review-parts';

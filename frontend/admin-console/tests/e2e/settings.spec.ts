@@ -155,7 +155,7 @@ test('kill switch on at once, off only with a second admin; plan, retention and 
     const planChangeId = (await planChange.getAttribute('data-change'))!;
 
     await gotoReady(pageA, '/retention');
-    await expect(pageA.getByTestId('retention-gaps')).toBeVisible();
+    await expect(pageA.getByRole('button', { name: 'Add a policy' })).toBeVisible();
     const rows = pageA.getByRole('table', { name: 'Retention policies' }).locator('button[data-row-button]');
     await expect(rows.first()).toBeVisible();
     // Another run may have left a policy waiting (409 DUPLICATE): try the policies until one is filed.
@@ -260,8 +260,8 @@ test('Persian: exchange rates, flags, plans and retention right to left (axe)', 
   for (const [path, heading, ready] of [
     ['/rates?currency=IRR', 'نرخ ارز', 'rate-editor'],
     ['/flags?flag=featured.enabled', 'پرچم‌های قابلیت', 'flag-detail'],
-    ['/plans', 'طرح‌ها و امکانات', 'assign-form'],
-    ['/retention', 'نگهداری داده‌ها', 'retention-gaps'],
+    ['/plans?tab=assignments', 'طرح‌ها و امکانات', 'assign-form'],
+    ['/retention', 'نگهداری داده‌ها', 'retention-page'],
   ] as const) {
     await gotoReady(page, path);
     await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();

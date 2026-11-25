@@ -257,7 +257,8 @@
         "roles": "Roles: {{roles}}",
         "myActions": "My actions in the audit log",
         "signOut": "Sign out",
-        "security": "Security keys and recovery codes"
+        "security": "Security keys and recovery codes",
+        "myDecisions": "My decisions"
       },
       "section": {
         "text": "This section is not built yet. It arrives in stage {{stage}} of the console plan.",
@@ -559,7 +560,20 @@
         "taking_over": "Taking it over",
         "workload": "Sharing the workload",
         "needs_information": "More information needed",
-        "status_update": "Status update"
+        "status_update": "Status update",
+        "documents_missing": "Documents missing",
+        "location_unclear": "Location unclear",
+        "raiser_request": "The person who raised it asked to withdraw",
+        "settled_between_parties": "Settled between the parties",
+        "evidence_needed": "Evidence needed",
+        "obvious_error": "Obvious error",
+        "business_request": "The business asked",
+        "verification_finding": "Found during verification",
+        "suspicious_pattern": "Suspicious pattern",
+        "inaccurate_fitment": "Fitment not accurate",
+        "unverified_claim": "Claim not verified",
+        "plate_visible": "Number plate visible",
+        "face_visible": "Face visible"
       }
     },
     "ops": {
@@ -847,7 +861,8 @@
         "vehicles": "Vehicles",
         "users": "Users",
         "trial": "Trial",
-        "key": "Key"
+        "key": "Key",
+        "status": "Status"
       },
       "days": "{{n}} days",
       "unlimited": "Unlimited",
@@ -967,12 +982,73 @@
         "applied": "Assigned. The subscriber's limits change at once.",
         "subscriberNotFound": "No user or organization with this ID can take a plan.",
         "planNotForSubscriber": "This plan is not for this kind of subscriber."
+      },
+      "tabsLabel": "Parts of plans and entitlements",
+      "tab": {
+        "plans": "Plans",
+        "assignments": "Assignments",
+        "requests": "Plan requests"
+      },
+      "default": "Default",
+      "defaultFor": "default for {{audience}}",
+      "subs": {
+        "intro": "Who has which plan. Choose a row to change that subscriber's plan in the form below.",
+        "listLabel": "Subscriptions",
+        "empty": "No subscriptions match these filters.",
+        "bySystem": "CarPal (automatic)",
+        "trialSoon": "Trials ending within {{n}} days",
+        "vehicleLimit": "{{n}} vehicles",
+        "userLimit": "{{n}} users",
+        "entOverrides_one": "{{n}} entitlement changed",
+        "entOverrides_other": "{{n}} entitlements changed",
+        "filter": {
+          "plan": "Plan",
+          "status": "Status",
+          "type": "Subscriber"
+        },
+        "col": {
+          "subscriber": "Subscriber",
+          "type": "Kind",
+          "status": "Status",
+          "trialEnds": "Trial ends",
+          "expires": "Ends",
+          "overrides": "Overrides",
+          "assignedBy": "Assigned by",
+          "started": "Started",
+          "open": "Business page"
+        },
+        "openShort": "Open",
+        "openOrg": "Open {{name}}"
+      },
+      "requests": {
+        "intro": "Plans the businesses asked for, oldest first. Assigning the plan closes the request.",
+        "listLabel": "Plan requests",
+        "empty": "No plan requests here.",
+        "assign": "Assign this plan",
+        "changeLine": "{{from}} → {{to}}",
+        "handled": "by {{who}}, {{when}}",
+        "filter": {
+          "status": "Status"
+        },
+        "status": {
+          "open": "Open",
+          "assigned": "Assigned",
+          "declined": "Declined",
+          "withdrawn": "Withdrawn"
+        },
+        "col": {
+          "organization": "Business",
+          "change": "Plan asked for",
+          "note": "Note",
+          "by": "Asked by",
+          "asked": "Asked",
+          "status": "Status"
+        }
       }
     },
     "retention": {
       "title": "Data retention",
       "intro": "How long records are kept, and what happens to them afterwards.",
-      "gaps": "Adding a policy and the dry run (how many records the next run would affect) are not available yet.",
       "listLabel": "Retention policies",
       "itemLabel": "Policy",
       "historyLabel": "History",
@@ -1008,7 +1084,41 @@
       "undo": "Undo changes",
       "fourEyesHint": "Retention changes need a second platform admin before they apply.",
       "dialogTitle": "Change retention of {{entity}}",
-      "summary": "{{from}}, then {{fromAction}} → {{to}}, then {{toAction}} ({{status}})."
+      "summary": "{{from}}, then {{fromAction}} → {{to}}, then {{toAction}} ({{status}}).",
+      "add": {
+        "open": "Add a policy",
+        "title": "New retention policy",
+        "text": "One policy per record type and status. Delete and anonymize need a record type CarPal knows how to apply; archive keeps the records.",
+        "entity": "Record type",
+        "entityHint": "As the data model names it, for example Notification or ReviewInvitation.",
+        "entityInvalid": "Start with a capital letter; letters and digits only (2 to 64).",
+        "fourEyes": "A second platform admin must approve it; the policy is created when they do.",
+        "afterApproval": "The new policy appears in the list once a second platform admin approves it in Pending approvals.",
+        "duplicate": "There is already a policy, or a request for one, for this record type and status.",
+        "dialog": "Add a retention policy for {{entity}}",
+        "summary": "{{entity}}: kept for {{days}}, then {{action}} ({{status}})."
+      },
+      "dry": {
+        "title": "Dry run",
+        "text": "Counts what the next daily run would do under this policy. Nothing is changed.",
+        "run": "Count what the next run would do",
+        "runChanged": "Count with the edited period and status",
+        "failed": "The dry run did not work. Try again.",
+        "basis": "Kept for {{days}}: records from before {{cutoff}} are due (status: {{status}}).",
+        "inactive": "This policy is inactive: these are the counts once it is active.",
+        "affected": {
+          "delete": "{{n}} records would be deleted.",
+          "anonymize": "{{n}} records would be anonymized."
+        },
+        "byStatus": "Records due, by status",
+        "count": "Records",
+        "outcome": {
+          "counted": "Counted.",
+          "archive": "An archive policy keeps the records, so the run changes nothing to count.",
+          "no_handler": "No part of CarPal applies this record type yet: the run would skip it.",
+          "not_countable": "The run applies this policy, but its records cannot be counted here."
+        }
+      }
     },
     "trust": {
       "reviewStatus": {
@@ -1173,7 +1283,9 @@
       "intro": "Reported, AI-flagged and rule-flagged reviews. Take an action with a reason, then close the case. Moving a review to the approval path needs a second moderator.",
       "filter": {
         "status": "Status",
-        "severity": "Severity"
+        "severity": "Severity",
+        "source": "Source",
+        "reason": "Reason"
       },
       "status": {
         "open": "Open",
@@ -1353,15 +1465,14 @@
       "resolution": "Outcome message",
       "resolvedAt": "Decided",
       "notes": "Internal notes",
-      "targetNotShown": "The console cannot show this record yet; use its ID to look it up.",
       "decidedSummary": "Decided disputes show their summary only.",
-      "noThread": "Messages to each side are not available in the console yet.",
       "reviewNotPath2": "This review is not on the approval path, so its details are shown in its moderation case.",
       "closed": "This dispute is closed: {{status}}.",
       "done": {
         "in_mediation": "Mediation started. Both sides are invited to add information.",
         "resolved_upheld": "Upheld. The outcome is applied and both sides are told.",
-        "resolved_rejected": "Rejected. The original decision stands and both sides are told."
+        "resolved_rejected": "Rejected. The original decision stands and both sides are told.",
+        "withdrawn": "Withdrawn. The dispute is closed without an outcome and both sides are told."
       },
       "cannotDecideNow": "Deciding needs the dispute to be open and yours or unassigned.",
       "differentStaff": "Rule: you cannot decide a dispute you raised or about a decision you made. A colleague decides it.",
@@ -1369,7 +1480,8 @@
       "outcomes": {
         "in_mediation": "Start mediation",
         "resolved_upheld": "Uphold",
-        "resolved_rejected": "Reject"
+        "resolved_rejected": "Reject",
+        "withdrawn": "Withdraw (the person who raised it asked)"
       },
       "outcomeRequired": "Choose an outcome.",
       "resolutionRequiredLabel": "Outcome message (required)",
@@ -1378,7 +1490,6 @@
       "notesHint": "Only staff see these (at most {{n}} characters).",
       "notesTooLong": "At most {{n}} characters.",
       "record": "Record the decision",
-      "withdrawNote": "Only the person who raised a dispute can withdraw it.",
       "refused": {
         "title": "A colleague must decide this",
         "text": "You raised this dispute or made the decision under dispute. A different staff member has to decide it."
@@ -1391,11 +1502,120 @@
         "badgeUpheld": "The badge is revoked.",
         "appealUpheld": "The hidden or removed content is restored.",
         "manualUpheld": "The outcome is recorded; correct the record itself where it is kept.",
-        "keepTarget": "Nothing changes on the record; the original decision stands."
+        "keepTarget": "Nothing changes on the record; the original decision stands.",
+        "withdrawn": "The dispute closes without an outcome. Write down the request to withdraw in the resolution."
       },
       "outcomesObjection": {
         "resolved_upheld": "Publish the review (the objection is not accepted)",
         "resolved_rejected": "Accept the objection (the review is rejected)"
+      },
+      "waiting": {
+        "title": "Waiting for an administrator",
+        "text": "This outcome takes something out of public view, so a second administrator must approve it. Nothing has changed yet and the dispute stays open with you.",
+        "link": "Open Pending approvals"
+      },
+      "respondent": {
+        "label": "Other party",
+        "contacted": "{{name}} (has been written to)",
+        "notYet": "{{name}} (not written to yet: the first message lets them read and answer)",
+        "none": "This record has no other party."
+      },
+      "snapshot": {
+        "title": "The disputed record",
+        "gone": "The disputed record no longer exists.",
+        "action": "Action",
+        "actionReason": "Reason given",
+        "decidedBy": "Taken by",
+        "staffOnly": "(staff only; never shown to the person appealing)",
+        "on": "When",
+        "serviceDate": "Service date",
+        "provider": "Business",
+        "description": "Description",
+        "mileage": "Mileage",
+        "km": "{{n}} km",
+        "source": "Recorded by",
+        "confirmation": "Confirmation",
+        "status": "Status",
+        "badge": "Badge",
+        "organization": "Business",
+        "rule": "Rule",
+        "awarded": "Awarded",
+        "revokedReason": "Why it was revoked",
+        "review": "Review",
+        "rating": "Rating",
+        "sources": {
+          "user_manual": "The owner",
+          "provider_logged": "The business",
+          "appointment_completed": "A completed appointment",
+          "invoice_upload": "An uploaded invoice"
+        },
+        "verification": {
+          "self_reported": "Not confirmed",
+          "provider_confirmed": "Confirmed by the business",
+          "appointment_verified": "Confirmed by an appointment",
+          "invoice_verified": "Confirmed by an invoice",
+          "admin_verified": "Confirmed by CarPal"
+        },
+        "serviceStatus": {
+          "active": "Active",
+          "disputed": "Disputed",
+          "removed": "Removed"
+        }
+      },
+      "thread": {
+        "title": "Messages with each side",
+        "intro": "Messages go out as \"CarPal\"; staff names never reach the parties. Each side only sees its own thread.",
+        "failed": "The messages could not be loaded.",
+        "with": {
+          "raiser": "With {{name}} (raised it)",
+          "respondent": "With {{name}} (other party)"
+        },
+        "noRespondent": "No other party",
+        "empty": "No messages yet.",
+        "writtenBy": "written by {{name}}",
+        "replyBy": "Answer asked by {{when}}",
+        "files": "Files",
+        "file": "File {{n}}",
+        "fileNotReady": "File {{n}} (not ready)",
+        "newTab": "(opens in a new tab)",
+        "writeTo": {
+          "raiser": "Write to the person who raised it",
+          "respondent": "Write to the other party"
+        },
+        "templateLabel": "Kind of message",
+        "template": {
+          "request_information": "Ask for information",
+          "request_evidence": "Ask for evidence",
+          "mediation_invitation": "Invite to mediation",
+          "status_update": "Status update",
+          "withdrawal_confirmation": "Confirm the withdrawal",
+          "outcome_notice": "Tell the outcome",
+          "other": "Other"
+        },
+        "text": {
+          "request_information": "We are looking into this dispute. Please tell us more about what happened.",
+          "request_evidence": "Please add any evidence you have, such as an invoice or photos.",
+          "mediation_invitation": "We would like to help both sides reach an agreement. Please share your view of what happened.",
+          "status_update": "We are still working on this dispute and will tell you when there is news.",
+          "withdrawal_confirmation": "You asked to withdraw this dispute. We have closed it without an outcome.",
+          "outcome_notice": "We have decided this dispute. The outcome is shown in your app."
+        },
+        "message": "Message",
+        "messageHint": "The party reads this as written, from \"CarPal\".",
+        "problem": {
+          "required": "Write the message.",
+          "too_long": "At most {{n}} characters."
+        },
+        "due": "Ask for an answer by (optional)",
+        "dueHint": "A day within the next {{n}} days.",
+        "dueInvalid": "Choose a day from tomorrow to {{n}} days ahead.",
+        "send": "Send the message",
+        "sent": "Sent. The party is told.",
+        "asCarPal": "The message is sent as \"CarPal\" and the party is notified.",
+        "dialog": {
+          "raiser": "Send to the person who raised it",
+          "respondent": "Send to the other party"
+        }
       }
     },
     "moderation": {
@@ -1435,7 +1655,6 @@
         "unsafe": "Unsafe advice",
         "consent": "Consent and privacy"
       },
-      "viewNote": "A view narrows the cases on this page; the list cannot filter by source or reason yet.",
       "morePerType": "Showing up to {{n}} cases of each type. Choose a type to page through all of them.",
       "col": {
         "type": "Type",
@@ -1549,7 +1768,13 @@
         "reject_review_approval": "Review rejected",
         "request_evidence": "Evidence requested",
         "correct_location": "Location corrected",
-        "assist_onboarding": "Onboarding assisted"
+        "assist_onboarding": "Onboarding assisted",
+        "reduce_weight": "Weight reduced",
+        "edit_request": "Edit asked of the author",
+        "downgrade_fitment": "Fitment confidence lowered",
+        "request_verification_info": "More information asked",
+        "correct_profile": "Profile corrected",
+        "apply_redaction": "Image blacked out"
       },
       "do": {
         "approve": "Approve",
@@ -1727,7 +1952,95 @@
         }
       },
       "orgPage": "Open the organization",
-      "orgLocations": "Correct it on the organization’s Locations tab"
+      "orgLocations": "Correct it on the organization’s Locations tab",
+      "author": {
+        "title": "Author",
+        "name": "Name",
+        "as": "Wrote as",
+        "history": "History",
+        "historyLine": "{{published}} published, {{removed}} removed, {{warnings}} warnings",
+        "role": {
+          "member": "A member",
+          "provider": "A workshop",
+          "vendor": "A parts seller",
+          "fleet": "A fleet",
+          "hybrid_provider_vendor": "A workshop and seller"
+        }
+      },
+      "context": {
+        "title": "Around this content",
+        "failed": "The content around it could not be loaded.",
+        "parent": "Written on:",
+        "around": "{{shown}} of {{total}}",
+        "reported": "This one",
+        "none": "Nothing else around it."
+      },
+      "more": {
+        "title": {
+          "reduce_weight": "Reduce the review's weight",
+          "edit_request": "Ask the author to edit",
+          "downgrade_fitment": "Lower the fitment confidence",
+          "merge_duplicate": "Merge into another organization",
+          "apply_redaction": "Black out parts of the image"
+        },
+        "effect": {
+          "reduce_weight": "The review stays visible but counts for less in the trust score from the next scoring. Choose full weight to restore it.",
+          "edit_request": "The review is hidden until you check the author's edit. The author is told which part to change and has 7 days.",
+          "downgrade_fitment": "The listing shows a lower fitment confidence for this vehicle.",
+          "merge_duplicate": "Everything of this organization moves to the other one, and this one is marked merged. This cannot be undone.",
+          "apply_redaction": "The file leaves public view at once; a copy with the boxes blacked out replaces it. The original stays for the owner and staff with a purpose."
+        },
+        "do": {
+          "reduce_weight": "Reduce the weight",
+          "edit_request": "Ask for the edit",
+          "downgrade_fitment": "Lower the confidence",
+          "merge_duplicate": "Merge",
+          "apply_redaction": "Black out"
+        },
+        "done": {
+          "reduce_weight": "The weight is changed from the next trust scoring.",
+          "edit_request": "The author is asked to edit; the review is hidden until checked.",
+          "downgrade_fitment": "The fitment confidence is lowered.",
+          "merge_duplicate": "Merged.",
+          "apply_redaction": "The image is off public view; the blacked-out copy is being made."
+        },
+        "weight": "Weight to keep",
+        "weightKeep": "Keep {{n}} % of its weight",
+        "weightRestore": "Full weight (restore)",
+        "editField": "Part of the review",
+        "editFields": {
+          "body": "Text",
+          "title": "Title"
+        },
+        "passage": "The passage to change",
+        "passageHint": "Copy the exact words from the review.",
+        "passageMissing": "These words are not in that part of the review. Copy them exactly.",
+        "editMessage": "Message to the author",
+        "editMessageHint": "Say what to change; the author reads it as written.",
+        "editMessageMissing": "Write a message of at most {{n}} characters.",
+        "confidence": "New confidence",
+        "confidences": {
+          "likely": "Likely fits",
+          "uncertain": "Not sure it fits"
+        },
+        "into": "ID of the organization that stays",
+        "intoHint": "Check it first with Merge duplicate on the organization page, which previews what moves.",
+        "intoInvalid": "Enter the ID of another organization.",
+        "redactShow": "Show the image to mark it",
+        "redactHint": "Drag over the image to draw a box, or type a box in percent of the image below.",
+        "redactTyped": "Add a box by numbers (percent of the image)",
+        "redactField": {
+          "x": "From the left",
+          "y": "From the top",
+          "w": "Width",
+          "h": "Height"
+        },
+        "redactAdd": "Add the box",
+        "redactBoxes": "Boxes to black out",
+        "redactBox": "Box {{n}}: {{x}} % from the left, {{y}} % from the top, {{w}} % × {{h}} %",
+        "redactRemove": "Remove box {{n}}",
+        "redactNone": "Draw or add at least one box."
+      }
     },
     "orgs": {
       "title": "Organizations",
@@ -1751,18 +2064,26 @@
           "name": "Part of the name, at least 2 characters.",
           "slug": "The exact slug of the public profile.",
           "id": "The exact organization id."
-        }
+        },
+        "city": "City (optional)"
       },
       "views": {
         "label": "Saved views",
         "pending": "Pending verification",
         "suspended": "Suspended",
-        "all": "Clear search and filters"
+        "all": "Clear search and filters",
+        "duplicates": "Possible duplicates",
+        "location": "Location issues"
       },
       "filter": {
         "status": "Status",
         "verification": "Verification",
-        "type": "Type"
+        "type": "Type",
+        "plan": "Plan",
+        "has_open_cases": "Open cases",
+        "location_issue": "Location issue",
+        "possible_duplicate": "Possible duplicate",
+        "yes": "Yes"
       },
       "col": {
         "name": "Name",
@@ -1774,7 +2095,8 @@
         "members": "Members",
         "cases": "Open cases",
         "trust": "Trust score",
-        "created": "Created"
+        "created": "Created",
+        "flags": "Flags"
       },
       "type": {
         "provider": "Service provider",
@@ -1858,17 +2180,17 @@
         "profile": "Profile",
         "locations": "Locations",
         "verification": "Verification",
-        "plan": "Plan"
+        "plan": "Plan",
+        "badges": "Capabilities & badges",
+        "portfolio": "Portfolio",
+        "inventory": "Inventory",
+        "members": "Members"
       },
       "missing": {
         "title": "Not available yet",
-        "text": "These parts of the organization page need reads the admin plane does not offer yet; open the public profile meanwhile.",
+        "text": "These parts of the organization page have no read on the admin plane yet; open the public profile meanwhile.",
         "tab": {
-          "badges": "Capabilities & badges",
           "reviews": "Reviews",
-          "portfolio": "Portfolio",
-          "inventory": "Inventory",
-          "members": "Members",
           "cases": "Cases"
         }
       },
@@ -1886,7 +2208,7 @@
         "created": "Created",
         "updated": "Last changed",
         "description": "Description",
-        "noEdit": "Profile fields cannot be corrected from the console yet; locations can (Locations tab)."
+        "correctable": "Staff correct obvious errors in the name, legal name, website and description here; the city and address per location (Locations tab). Contact data and the slug stay the business's own."
       },
       "locations": {
         "none": "This organization has no location.",
@@ -1992,8 +2314,7 @@
         "trialEnds": "Trial ends",
         "started": "Started",
         "expires": "Ends",
-        "entitlements": "Entitlements in effect",
-        "noHistory": "The plan history is not available yet."
+        "entitlements": "Entitlements in effect"
       },
       "assist": {
         "start": "Assist onboarding",
@@ -2012,6 +2333,239 @@
         "bannerNote": "Everything done in this session is recorded as assisted onboarding. Keep this page open: after a reload the console cannot show the session any more (it still ends by itself).",
         "end": "End the session",
         "endTitle": "End the assist session"
+      },
+      "flag": {
+        "location": "Location issue",
+        "duplicate": "Possible duplicate"
+      },
+      "shortPage": "With these filters a page can hold fewer rows than usual. Use Next page to see the rest.",
+      "caps": {
+        "title": "Capabilities",
+        "empty": "No capabilities recorded.",
+        "more": "The {{shown}} strongest of {{total}} capabilities are listed.",
+        "anyVehicle": "Any vehicle",
+        "col": {
+          "service": "Service",
+          "vehicle": "Vehicles",
+          "confidence": "Confidence",
+          "score": "Score",
+          "evidence": "Evidence",
+          "source": "Source",
+          "experience": "Experience",
+          "status": "Status",
+          "public": "Public"
+        },
+        "confidence": {
+          "self_declared": "Self-declared",
+          "low_evidence": "Low evidence",
+          "moderate_evidence": "Moderate evidence",
+          "strong_evidence": "Strong evidence",
+          "verified_expert": "Verified expert"
+        },
+        "source": {
+          "self_declared": "The business",
+          "ai_suggested": "AI suggestion",
+          "job_evidence": "Completed jobs",
+          "review_evidence": "Reviews",
+          "certification": "Certification",
+          "admin_verified": "CarPal"
+        },
+        "experience": {
+          "beginner": "Beginner",
+          "intermediate": "Intermediate",
+          "advanced": "Advanced",
+          "specialist": "Specialist"
+        },
+        "status": {
+          "pending_provider_approval": "Waiting for the business",
+          "active": "Active",
+          "rejected": "Rejected",
+          "inactive": "Inactive"
+        }
+      },
+      "badges": {
+        "title": "Badges",
+        "empty": "No badges.",
+        "decide": "Approving or revoking a badge is on the Verification tab.",
+        "inputs": "{{n}} inputs",
+        "col": {
+          "badge": "Badge",
+          "status": "Status",
+          "rule": "Rule",
+          "awarded": "Awarded",
+          "evaluated": "Last checked",
+          "evaluation": "Rule evaluation",
+          "revoked": "Why revoked"
+        }
+      },
+      "portfolio": {
+        "note": "Showcase items with the customer's consent and moderation status. The customer is shown by display name only.",
+        "empty": "No showcase items.",
+        "grantedOn": "given {{when}}",
+        "withdrawnOn": "withdrawn {{when}}",
+        "col": {
+          "title": "Item",
+          "status": "Status",
+          "moderation": "Moderation",
+          "consent": "Customer consent",
+          "visibility": "Visibility",
+          "media": "Files",
+          "cases": "Open cases",
+          "job": "Job date",
+          "added": "Added"
+        },
+        "status": {
+          "draft": "Draft",
+          "pending_review": "Waiting for review",
+          "published": "Published",
+          "rejected": "Rejected",
+          "archived": "Archived"
+        },
+        "moderation": {
+          "pending": "Not checked yet",
+          "approved": "Approved",
+          "rejected": "Rejected"
+        },
+        "consent": {
+          "not_required": "Not needed",
+          "requested": "Asked",
+          "granted": "Given",
+          "withdrawn": "Withdrawn"
+        },
+        "visibility": {
+          "public": "Public",
+          "unlisted": "Unlisted",
+          "private": "Private"
+        }
+      },
+      "inventory": {
+        "lowQuality": "Active items of low quality",
+        "averageQuality": "Average data quality",
+        "fitment": "Items with confirmed fitment",
+        "inquiries": "Inquiries (90 days)",
+        "fulfillment": "Inquiries fulfilled",
+        "response": "Response time",
+        "minutes": "{{n}} min",
+        "percent": "{{n}} %",
+        "score": "Catalog quality score (now)",
+        "flagged": "Flagged items",
+        "flaggedMore": "The {{shown}} newest of {{total}} flagged items are listed.",
+        "noFlagged": "No flagged items.",
+        "col": {
+          "item": "Item",
+          "sku": "SKU",
+          "status": "Status",
+          "quality": "Data quality",
+          "flags": "Flags",
+          "changed": "Changed"
+        },
+        "status": {
+          "draft": "Draft",
+          "active": "Active",
+          "pending_review": "Waiting for review",
+          "hidden": "Hidden",
+          "discontinued": "Discontinued",
+          "removed": "Removed"
+        },
+        "flag": {
+          "open_case": "Open case",
+          "pending_review": "Waiting for review",
+          "hidden": "Hidden",
+          "possible_duplicate": "Possible duplicate",
+          "low_quality": "Low quality"
+        }
+      },
+      "members": {
+        "note": "Members and pending invitations, as the business sees them. Emails are masked.",
+        "empty": "No members.",
+        "invited": "Invited",
+        "col": {
+          "name": "Name",
+          "email": "Email",
+          "role": "Role",
+          "status": "Status",
+          "joined": "Joined"
+        }
+      },
+      "planHistory": {
+        "title": "Plan history",
+        "empty": "No earlier plans.",
+        "request": "Plan request",
+        "requestLine": "{{plan}}, asked by {{who}} on {{when}}"
+      },
+      "correct2": {
+        "open": "Correct the profile",
+        "title": "Correct the profile",
+        "text": "Fix obvious errors only. The business is told, and the change appears in the history below.",
+        "descriptionEn": "Description in English",
+        "descriptionFa": "Description in Persian",
+        "nameInvalid": "Enter a name of at most {{n}} characters.",
+        "websiteHint": "The full address, starting with https://.",
+        "websiteInvalid": "Enter a web address starting with http:// or https://.",
+        "nothing": "Nothing was changed.",
+        "save": "Save the correction",
+        "cancel": "Cancel",
+        "dialog": "Correct this organization's profile",
+        "effect": "The change is published at once; the business is told and can see who changed it and why.",
+        "done": "Corrected. The business is told."
+      },
+      "history": {
+        "title": "Profile history",
+        "none": "No changes recorded.",
+        "empty": "(empty)",
+        "actor": {
+          "member": "member",
+          "staff": "staff"
+        },
+        "col": {
+          "when": "When",
+          "who": "By",
+          "changes": "Changes",
+          "reason": "Reason"
+        },
+        "field": {
+          "name": "Name",
+          "legal_name": "Legal name",
+          "contact_email": "Email",
+          "contact_phone": "Phone",
+          "website": "Website",
+          "description_translations": "Description",
+          "slug": "Slug"
+        }
+      },
+      "merge": {
+        "open": "Merge duplicate",
+        "title": "Merge {{name}} into another organization",
+        "intro": "Choose the organization that stays. The preview shows what would move; nothing changes until a second administrator approves.",
+        "find": "Find the organization that stays",
+        "byName": "Name of the organization that stays",
+        "choose": "Organization that stays",
+        "noHits": "No other organization with that name.",
+        "byId": "Or its ID",
+        "useId": "Preview with this ID",
+        "previewFailed": "The preview could not be made. Check the organization, then try again.",
+        "line": "{{from}} → {{into}}",
+        "caption": "What the merge would change",
+        "col": {
+          "reference": "Records",
+          "rule": "What happens",
+          "count": "Records now",
+          "conflicts": "Conflicts"
+        },
+        "rule": {
+          "move": "Moved",
+          "keep_target": "The other's kept",
+          "merge": "Merged",
+          "retire": "Retired",
+          "refuse": "Blocks the merge",
+          "history": "Kept as history"
+        },
+        "blockedTitle": "The merge cannot run now",
+        "blockedText": "End what blocks it first (for example an open assist session), then preview again.",
+        "send": "Send the merge for approval",
+        "cancel": "Cancel",
+        "dialog": "Merge this organization",
+        "effect": "After a second administrator approves, a background job moves every record, marks this organization merged and takes its profiles off publication. Its members lose access. This cannot be undone."
       }
     },
     "verification": {
@@ -2025,7 +2579,17 @@
       "pickFirst": "Pick a request first.",
       "filter": {
         "status": "Status",
-        "type": "Check"
+        "type": "Check",
+        "assignee": "Assigned",
+        "assigneeIs": {
+          "me": "To me",
+          "unassigned": "To nobody"
+        },
+        "info": "More information",
+        "infoIs": {
+          "true": "Waiting for the business",
+          "false": "Not waiting"
+        }
       },
       "col": {
         "org": "Organization",
@@ -2035,7 +2599,11 @@
         "sla": "SLA",
         "docs": "Documents",
         "pin": "Pin check",
-        "reports": "Wrong-location reports"
+        "reports": "Wrong-location reports",
+        "assignee": "Assigned to",
+        "owner": "Owner",
+        "callback": "Phone call-back",
+        "flags": "Flags"
       },
       "pinFar": "Far from address",
       "pinOk": "Matches",
@@ -2043,7 +2611,6 @@
       "itemTitle": "{{type}} check of {{name}}",
       "data": "Submitted data",
       "orgUnavailable": "The organization cannot be read for this request any more (decided, or taken by someone else).",
-      "notInContract": "Registration number, owner and call-back result are not part of the request yet.",
       "openLocations": "Open the organization's locations",
       "openOrg": "Open the organization",
       "docs": {
@@ -2084,7 +2651,6 @@
         "checklist": "Tick every checklist item to approve.",
         "not_pending": "This request is decided."
       },
-      "noMoreInfo": "Asking the business for more information is not available yet: reject with what to fix, or contact them.",
       "message": "Message to the business",
       "messageHint": "What to fix, in words the business understands (up to 500 characters).",
       "messageProblem": {
@@ -2112,7 +2678,94 @@
       "badgeNext": "The Verified Business badge is awarded by the trust check and waits for staff approval (organization page, Verification tab).",
       "alreadyDecided": "This request is decided: {{status}}.",
       "cannotDecide": "Only moderators and platform admins decide verification requests.",
-      "linkGone": "This request is not waiting for a decision any more (decided, expired or not found). Pick one from the queue."
+      "linkGone": "This request is not waiting for a decision any more (decided, expired or not found). Pick one from the queue.",
+      "paused": "Paused: waiting for the business",
+      "waitingBusiness": "Waiting for the business",
+      "answered": "Business answered",
+      "duplicate": "Possible duplicate",
+      "noDuplicate": "No duplicate flagged",
+      "registration": "Registration number",
+      "callback": {
+        "verified": "Confirmed",
+        "pending": "Waiting",
+        "rejected": "Failed",
+        "expired": "Expired",
+        "not_requested": "Not asked"
+      },
+      "precheck": {
+        "title": "AI pre-check",
+        "line": "Documents readable: {{readable}} · name matches: {{name}} · duplicate risk: {{risk}}",
+        "risk": {
+          "low": "low",
+          "medium": "medium",
+          "high": "high"
+        }
+      },
+      "assign": {
+        "none": "Nobody",
+        "nobody": "Nobody is reviewing this check yet.",
+        "yours": "You are reviewing this check.",
+        "with": "{{name}} is reviewing this check. Only they can decide it until it is taken over.",
+        "take": "Take this check",
+        "takeOver": "Take it over",
+        "to": "Or assign to",
+        "choose": "Choose a colleague",
+        "assign": "Assign",
+        "done": "Assigned."
+      },
+      "info": {
+        "open": "Ask the business for more",
+        "title": "Ask for more information",
+        "effect": "The check stays pending and its clock stops until the business answers. The business is told what is missing, with your message.",
+        "template": "Kind of request",
+        "templates": {
+          "missing_documents": "Documents are missing",
+          "unreadable_documents": "Documents cannot be read",
+          "details_mismatch": "Details do not match",
+          "location_mismatch": "The location does not match",
+          "callback_failed": "The phone call-back failed",
+          "other": "Something else"
+        },
+        "text": {
+          "missing_documents": "Some documents are missing from your verification request. Please add the items listed below so we can finish the review.",
+          "unreadable_documents": "We could not read some of your documents. Please upload clear, complete copies of the items listed below.",
+          "details_mismatch": "Some details in your request do not match your documents. Please check and correct the items listed below.",
+          "location_mismatch": "The pin on the map and the address of your business do not match. Please check the pin and send proof of the address.",
+          "callback_failed": "We could not confirm your phone number by calling it. Please check the number and tell us when we can call."
+        },
+        "items": "What is missing",
+        "itemsRequired": "Choose at least one item.",
+        "item": {
+          "business_document": "Business document",
+          "registration_number": "Registration number",
+          "legal_name": "Legal name",
+          "address_proof": "Proof of address",
+          "location_pin": "Map pin",
+          "phone_callback": "Phone call-back",
+          "owner_identity": "Owner's identity",
+          "readable_copy": "Readable copy",
+          "other": "Something else"
+        },
+        "message": "Message to the business",
+        "messageHint": "The business reads this as written.",
+        "messageRequired": "Write the message.",
+        "messageTooLong": "At most 1,000 characters.",
+        "send": "Send the request",
+        "cancel": "Cancel",
+        "dialog": "Ask the business for more information",
+        "sent": "Sent. The clock is paused until the business answers.",
+        "failed": "The request was not sent. Check that you are reviewing this check, then try again.",
+        "waitingTitle": "Waiting for the business",
+        "waitingText": "More information was asked for on {{when}}. The clock is paused until the business answers.",
+        "state": {
+          "open": "Asked for more information",
+          "answered": "The business answered",
+          "closed": "Closed without an answer"
+        },
+        "askedOn": "Asked on {{when}}",
+        "answeredOn": "Answered on {{when}}",
+        "added": "Documents added with the answer: {{n}}"
+      }
     },
     "suspension": {
       "label": "Suspend for",
@@ -2320,8 +2973,13 @@
         "other": "The user cannot be read for this work item now (it may be closed). Open the user again from an open work item."
       },
       "missing": {
-        "title": "More about this user",
-        "text": "Vehicles, appointments, consents, sessions and devices, privacy requests, content and cases come in a later stage (AC14)."
+        "title": "Not available yet",
+        "text": "These parts of the user page have no read on the admin plane yet. The audit trail is in the header.",
+        "tab": {
+          "content": "Reviews & content",
+          "privacy": "Privacy requests",
+          "cases": "Cases & disputes"
+        }
       },
       "status": {
         "pending_verification": "Not verified yet",
@@ -2407,6 +3065,153 @@
         "effect": {
           "grant": "A second platform admin must approve this in Pending approvals within 72 hours.",
           "revoke": "The role ends at once and the user loses its access."
+        }
+      },
+      "tabsLabel": "Parts of the user page",
+      "tab": {
+        "overview": "Overview",
+        "roles": "Roles & organizations",
+        "vehicles": "Vehicles",
+        "appointments": "Appointments",
+        "consents": "Consents",
+        "sessions": "Sessions & devices"
+      },
+      "vehicles": {
+        "note": "Brand, model, year and status only. The VIN shows its last four characters and the plate its last two; documents are never listed.",
+        "empty": "This user has no vehicles.",
+        "col": {
+          "vehicle": "Vehicle",
+          "year": "Year",
+          "status": "Status",
+          "vin": "VIN",
+          "plate": "Plate",
+          "added": "Added"
+        },
+        "status": {
+          "active": "Active",
+          "inactive": "Inactive",
+          "sold": "Sold",
+          "in_repair": "In repair",
+          "archived": "Archived"
+        }
+      },
+      "appointments": {
+        "note": "The appointments this user asked for. Descriptions, notes and addresses are not shown; open the business for more.",
+        "empty": "This user has no appointments.",
+        "businessGone": "Business no longer exists",
+        "safety": "Safety",
+        "col": {
+          "business": "Business",
+          "vehicle": "Vehicle",
+          "type": "Type",
+          "status": "Status",
+          "fleet": "For fleet",
+          "requested": "Requested",
+          "confirmed": "Confirmed for",
+          "completed": "Completed"
+        },
+        "type": {
+          "diagnosis": "Diagnosis",
+          "repair": "Repair",
+          "inspection": "Inspection",
+          "bodywork_estimate": "Bodywork estimate",
+          "parts_installation": "Parts installation"
+        },
+        "status": {
+          "draft": "Draft",
+          "requested": "Requested",
+          "provider_reviewing": "Business reviewing",
+          "alternative_proposed": "Other time proposed",
+          "confirmed": "Confirmed",
+          "checked_in": "Checked in",
+          "in_progress": "In progress",
+          "awaiting_parts": "Waiting for parts",
+          "ready_for_pickup": "Ready for pickup",
+          "completed": "Completed",
+          "cancelled": "Cancelled",
+          "no_show": "No-show"
+        }
+      },
+      "consents": {
+        "note": "Read only: staff never give or withdraw a consent for a user.",
+        "current": "Active consents",
+        "history": "Consent history",
+        "noneActive": "No active consents.",
+        "empty": "No consent records.",
+        "confirmedUnder": "(confirmed under {{version}})",
+        "col": {
+          "type": "Consent",
+          "state": "State",
+          "sharedWith": "Shared with",
+          "text": "Text version",
+          "source": "Given through",
+          "granted": "Given",
+          "withdrawn": "Withdrawn",
+          "expires": "Expires"
+        },
+        "state": {
+          "granted": "Given",
+          "reconsent": "Needs new consent",
+          "paused": "Paused until new consent",
+          "withdrawn": "Withdrawn",
+          "expired": "Expired",
+          "declined": "Not given"
+        },
+        "to": {
+          "organization": "A business",
+          "platform": "CarPal",
+          "mcp_client": "A connected AI client"
+        },
+        "source": {
+          "ui": "The app",
+          "admin": "Staff",
+          "import": "Import",
+          "api": "API"
+        }
+      },
+      "sessions": {
+        "title": "Sessions",
+        "note": "Devices signed in to the account. To end them all, use Sign out everywhere at the top of the page.",
+        "empty": "No active sessions.",
+        "more": "The {{shown}} newest of {{total}} sessions are listed.",
+        "staff": "Staff",
+        "col": {
+          "device": "Device",
+          "client": "App",
+          "country": "Country",
+          "assurance": "Sign-in strength",
+          "started": "Signed in",
+          "lastSeen": "Last seen"
+        },
+        "acr": {
+          "aal1": "Password or code",
+          "aal2": "Two steps",
+          "aal3": "Security key"
+        }
+      },
+      "devices": {
+        "title": "Push devices",
+        "empty": "No push devices.",
+        "col": {
+          "platform": "Platform",
+          "app": "App version",
+          "language": "Language",
+          "status": "Status",
+          "added": "Added",
+          "lastSeen": "Last seen"
+        },
+        "platform": {
+          "ios": "iPhone",
+          "android": "Android",
+          "web": "Web"
+        },
+        "locale": {
+          "en": "English",
+          "fa": "Persian"
+        },
+        "status": {
+          "active": "Active",
+          "revoked": "Turned off"
         }
       }
     },
@@ -3805,6 +4610,38 @@
       },
       "solvedNote": "A solved ticket is closed to staff. If the person replies within 14 days, it opens again in the inbox.",
       "notOpen": "This ticket cannot be opened for you: it is solved, or a colleague is handling it. Check the list for its state."
+    },
+    "decisions": {
+      "title": "My decisions",
+      "intro": "Your review approvals and dispute decisions of the last 30 days, newest first. Only the business concerned is shown, never the author, the reporter or the evidence.",
+      "listLabel": "My decisions",
+      "empty": "No decisions in the last 30 days.",
+      "truncated": "Only the newest decisions are listed.",
+      "aboutReview": "Review approval",
+      "filter": {
+        "kind": "Kind"
+      },
+      "kind": {
+        "approval": "Review approval",
+        "dispute": "Dispute"
+      },
+      "decision": {
+        "approved": "Confirmed",
+        "rejected": "Rejected",
+        "evidence_requested": "Evidence requested",
+        "resolved_upheld": "Upheld",
+        "resolved_rejected": "Rejected",
+        "withdrawn": "Withdrawn on request"
+      },
+      "col": {
+        "decided": "Decided",
+        "kind": "Kind",
+        "decision": "Decision",
+        "business": "Business",
+        "about": "About",
+        "now": "Now",
+        "reason": "Reason"
+      }
     }
   }
 }

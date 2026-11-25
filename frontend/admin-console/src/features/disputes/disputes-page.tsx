@@ -7,11 +7,15 @@
 // first decider (admin.review_approval_get under the same purpose). The decision is admin.dispute_resolve: start
 // mediation, uphold or reject, with an outcome message both sides see and internal notes. The decider must differ
 // from whoever made the decision under dispute and from whoever raised it: the server enforces it
-// (SELF_APPROVAL_FORBIDDEN) and the screen explains it. Withdrawing is the raiser's step (no staff operation).
+// (SELF_APPROVAL_FORBIDDEN) and the screen explains it. AC14-2 (backend S20/S25a): the other party (respondent), the
+// disputed record as a typed snapshot when it is not a Path 2 review, the message threads with each side
+// (dispute-parts.tsx), Withdraw on the raiser's request, and an outcome that waits for an administrator's approval
+// (202 PendingChange; the dispute stays open with pending_change_id and takes no other outcome until it is decided).
 import { useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useId, useMemo, useState } from 'react';
-import type { StaffDispute } from '@carpal/api-contracts';
+import Link from 'next/link';
+import type { StaffDispute, StaffDisputeDetail } from '@carpal/api-contracts';
 import {
   ActionNotice,
   CaseLayout,
@@ -38,7 +42,9 @@ import { useT } from '@/lib/i18n/client';
 import type { MessageKey, Translate } from '@/lib/i18n/keys';
 import { canCall } from '@/lib/roles';
 import { disputeTimer } from '@/lib/work/queues';
+import { DisputeTarget, DisputeThreads, Respondent } from './dispute-parts';
 import {
+  CLOSING_OUTCOMES,
   DISPUTE_STATUSES,
   DISPUTE_TARGETS,
   DISPUTE_TYPES,
@@ -69,7 +75,8 @@ const targetType = (v: string, t: Translate) => enumLabel(DISPUTE_TARGETS, 'admi
  * as disputed) and "rejected" accepts the objection: those two read as what they do (DI-24).
  */
 export function outcomeLabel(type: string, outcome: DisputeOutcome, t: Translate): string {
-  if (type === 'review_approval_objection' && outcome !== 'in_mediation') return t(`admin.disputes.outcomesObjection.${outcome}`);
+  if (type === 'review_approval_objection' && (outcome === 'resolved_upheld' || outcome === 'resolved_rejected'))
+    return t(`admin.disputes.outcomesObjection.${outcome}`);
   return t(`admin.disputes.outcomes.${outcome}`);
 }
 
@@ -223,7 +230,13 @@ export function DisputesPage() {
         }
         item={
           dispute && purpose ? (
-            <DisputeItem dispute={dispute} purpose={purpose} readable={readable} unavailable={readable && detail.isError} />
+            <DisputeItem
+              dispute={dispute}
+              detail={readable ? (detail.data ?? null) : null}
+              purpose={purpose}
+              readable={readable}
+              unavailable={readable && detail.isError}
+            />
           ) : selectedId && detail.isError ? (
             <p data-testid="dispute-unavailable">{t('admin.disputes.unavailable')}</p>
           ) : selectedId ? (
@@ -257,11 +270,13 @@ export function DisputesPage() {
 
 function DisputeItem({
   dispute,
+  detail,
   purpose,
   readable,
   unavailable,
 }: {
   dispute: StaffDispute;
+  detail: StaffDisputeDetail | null;
   purpose: AccessPurpose;
   readable: boolean;
   unavailable: boolean;
@@ -329,6 +344,14 @@ function DisputeItem({
               <dd>{f.date(dispute.resolved_at, 'dateTime')}</dd>
             </div>
           ) : null}
+          {detail ? (
+            <div>
+              <dt>{t('admin.disputes.respondent.label')}</dt>
+              <dd>
+                <Respondent detail={detail} />
+              </dd>
+            </div>
+          ) : null}
           {dispute.moderator_notes ? (
             <div>
               <dt>{t('admin.disputes.notes')}</dt>
@@ -340,27 +363,47 @@ function DisputeItem({
         </dl>
       </section>
       {readable && dispute.target.type === 'review' ? (
-        <DisputedReview reviewId={dispute.target.id} purpose={purpose} />
-      ) : (
+        <DisputedReview reviewId={dispute.target.id} purpose={purpose} snapshot={detail?.target_snapshot ?? null} />
+      ) : readable && detail ? (
+        <DisputeTarget snapshot={detail.target_snapshot} />
+      ) : !readable ? (
         <p className="adm-muted" data-testid="target-note">
-          {readable ? t('admin.disputes.targetNotShown') : t('admin.disputes.decidedSummary')}
+          {t('admin.disputes.decidedSummary')}
         </p>
-      )}
-      <p className="adm-muted">{t('admin.disputes.noThread')}</p>
+      ) : null}
+      {readable && detail ? (
+        <DisputeThreads
+          detail={detail}
+          purpose={purpose}
+          open={OPEN_DISPUTE_STATUSES.includes(detail.status) && !detail.pending_change_id}
+        />
+      ) : null}
     </article>
   );
 }
 
 /** The disputed review with both sides' evidence: the business's answer and note, the author's files. */
-function DisputedReview({ reviewId, purpose }: { reviewId: string; purpose: AccessPurpose }) {
+function DisputedReview({
+  reviewId,
+  purpose,
+  snapshot,
+}: {
+  reviewId: string;
+  purpose: AccessPurpose;
+  /** The review as dispute_get gives it, shown when it is not a Path 2 review (backend S20). */
+  snapshot: StaffDisputeDetail['target_snapshot'] | null;
+}) {
   const t = useT();
   const view = useApiQuery('admin.review_approval_get', { path: { review_id: reviewId }, purpose });
   if (view.isPending) return <p className="adm-muted">{t('admin.kit.table.loading')}</p>;
   if (view.isError)
     return (
-      <p className="adm-muted" data-testid="review-not-path2">
-        {t('admin.disputes.reviewNotPath2')}
-      </p>
+      <>
+        <p className="adm-muted" data-testid="review-not-path2">
+          {t('admin.disputes.reviewNotPath2')}
+        </p>
+        {snapshot ? <DisputeTarget snapshot={snapshot} /> : null}
+      </>
     );
   return (
     <div className="adm-stack" data-testid="disputed-review">
@@ -388,6 +431,7 @@ function DisputeDecision({
   const uid = useId();
   const queryClient = useQueryClient();
   const outcomes = disputeOutcomes(dispute);
+  const waitingApproval = !!dispute.pending_change_id;
   const [outcome, setOutcome] = useState<DisputeOutcome | null>(null);
   const [resolution, setResolution] = useState('');
   const [notes, setNotes] = useState(dispute.moderator_notes ?? '');
@@ -402,10 +446,13 @@ function DisputeDecision({
         if (o.data.status === 'in_mediation') void queryClient.invalidateQueries({ queryKey: ['admin.dispute_get'] });
         else onResolved(o.data);
       }
+      // An outcome that takes something out of public view waits for an administrator (DQ-22, S25a): the dispute
+      // stays open with pending_change_id.
+      if (o.kind === 'pending') void queryClient.invalidateQueries({ queryKey: ['admin.dispute_get'] });
     },
   });
   const busy = action.state.status === 'busy';
-  const resolving = outcome === 'resolved_upheld' || outcome === 'resolved_rejected';
+  const resolving = !!outcome && CLOSING_OUTCOMES.has(outcome);
   const problems = {
     outcome: !outcome,
     resolution: (resolving && !resolution.trim()) || resolution.length > RESOLUTION_MAX,
@@ -413,6 +460,19 @@ function DisputeDecision({
   };
   const valid = !problems.outcome && !problems.resolution && !problems.notes;
 
+  if (waitingApproval)
+    return (
+      <div className="adm-stack" data-testid="dispute-waiting-approval">
+        <Banner tone="info" icon="clock" title={t('admin.disputes.waiting.title')} text={t('admin.disputes.waiting.text')} />
+        {action.state.status === 'done' ? (
+          <ActionNotice state={action.state} />
+        ) : (
+          <p>
+            <Link href="/approvals">{t('admin.disputes.waiting.link')}</Link>
+          </p>
+        )}
+      </div>
+    );
   if (!outcomes.length)
     return (
       <div data-testid="dispute-closed">
@@ -504,7 +564,6 @@ function DisputeDecision({
             {t('admin.disputes.record')}
           </Button>
         </div>
-        <p className="adm-muted">{t('admin.disputes.withdrawNote')}</p>
         {failed?.selfApproval ? (
           <div data-kit="outcome" data-outcome="failed" data-code={failed.code} data-testid="different-staff-refused">
             <Banner tone="warn" icon="alert" title={t('admin.disputes.refused.title')} text={t('admin.disputes.refused.text')} />

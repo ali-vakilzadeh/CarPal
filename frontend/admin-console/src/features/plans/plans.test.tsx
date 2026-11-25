@@ -4,9 +4,16 @@
 // found by name, trial end required, overrides, the request body, the result, unknown subscriber); axe in EN and FA.
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PendingChange, Plan, StaffOrgView, Subscription } from '@carpal/api-contracts';
+import type {
+  PendingChange,
+  Plan,
+  StaffOrgView,
+  StaffSubscriptionRow,
+  Subscription,
+  SubscriptionChangeRequestView,
+} from '@carpal/api-contracts';
 import { axeViolations, page, renderConsole, scriptedTransport, searchRow } from '../../../tests/support/console-harness';
-import { resetNav } from '../../../tests/support/navigation-mock';
+import { nav, resetNav } from '../../../tests/support/navigation-mock';
 import type { Locale } from '@/lib/i18n/locales';
 import { audiencesOf, changedEntitlements, dayIn, draftsOf, endOfDayIso, parseSubscriberParam } from './plan-logic';
 import { PlansPage } from './plans-page';
@@ -169,7 +176,9 @@ describe('Plans & entitlements page (AC6.T3/T4)', () => {
   });
 
   it('assigns a trial to an organization found by name, with an override', async () => {
+    resetNav('/plans?tab=assignments');
     const { transport, calls } = scriptedTransport({
+      'admin.subscriptions_list': () => page([]),
       'admin.plans_list': () => page([free, fleet20, providerBasic]),
       'admin.orgs_search': () => page([searchRow(org())]),
       'admin.subscription_assign': () => Response.json(subscription()),
@@ -217,6 +226,7 @@ describe('Plans & entitlements page (AC6.T3/T4)', () => {
   it('a user from a link: individual plans only; a trial needs its end day; an unknown id is explained', async () => {
     resetNav(`/plans?subscriber=user:${USER}`);
     const { transport, calls } = scriptedTransport({
+      'admin.subscriptions_list': () => page([]),
       'admin.plans_list': () => page([free, fleet20]),
       'admin.subscription_assign': () =>
         Response.json(
@@ -256,14 +266,122 @@ describe('Plans & entitlements page (AC6.T3/T4)', () => {
       const { transport } = scriptedTransport({
         'admin.plans_list': () => page([free, fleet20]),
         'admin.orgs_search': () => page([searchRow(org())]),
+        'admin.subscriptions_list': () => page([subRow]),
+        'admin.subscription_change_requests_list': () => page([request]),
       });
       renderConsole(<PlansPage />, { transport, roles: ['ADM'], locale });
       await screen.findByTestId('plan-editor');
-      const form = screen.getByTestId('assign-form');
+      expect(await axeViolations()).toEqual([]);
+      fireEvent.click(screen.getByRole('tab', { name: locale === 'en' ? 'Plan requests' : 'درخواست‌های طرح' }));
+      await screen.findByTestId('request-assign');
+      expect(await axeViolations()).toEqual([]);
+      fireEvent.click(screen.getByRole('tab', { name: locale === 'en' ? 'Assignments' : 'واگذاری‌ها' }));
+      const form = await screen.findByTestId('assign-form');
+      await screen.findAllByText('Tehran Logistics');
       fireEvent.change(within(form).getAllByRole('textbox')[0]!, { target: { value: 'Tehran' } });
       fireEvent.click(within(form).getAllByRole('button')[0]!);
       await within(form).findByText('Tehran Logistics');
       expect(await axeViolations()).toEqual([]);
     });
   }
+});
+
+const subRow: StaffSubscriptionRow = {
+  id: '0193a3c4-5d6e-7f80-9a1b-0000000000c1',
+  subscriber: { type: 'organization', id: ORG, display: 'Tehran Logistics' },
+  plan_key: 'fleet_20',
+  status: 'trial',
+  started_at: '2026-11-10T08:00:00Z',
+  trial_ends_at: '2026-11-28T20:29:59Z',
+  expires_at: null,
+  overrides: { vehicle_limit: 30, user_limit: null, entitlements: [{ key: 'ai_tools_enabled', value: false }] },
+  assigned_by_display: null,
+};
+const request: SubscriptionChangeRequestView = {
+  id: '0193a3c4-5d6e-7f80-9a1b-0000000000c2',
+  organization: {
+    id: ORG,
+    name: 'Tehran Logistics',
+    organization_type: 'fleet',
+    slug: null,
+    logo_url: null,
+    status: 'active',
+    verification_status: 'verified',
+  },
+  requested_plan_key: 'fleet_50',
+  current_plan_key: 'fleet_20',
+  note: 'We are growing',
+  requested_by_display: 'Reza K.',
+  status: 'open',
+  created_at: '2026-11-20T08:00:00Z',
+  handled_by_display: null,
+  handled_at: null,
+};
+
+describe('Plans tabs (AC14-2)', () => {
+  it('Plans shows whether each plan is offered and the default of its audience', async () => {
+    const { transport } = scriptedTransport({
+      'admin.plans_list': () =>
+        page([
+          { ...free, status: 'active', is_default_for_audience: true },
+          { ...fleet20, status: 'inactive', is_default_for_audience: false },
+        ]),
+    });
+    renderConsole(<PlansPage />, { transport, roles: ['ADM'] });
+    const table = await screen.findByRole('table', { name: 'Plans' });
+    const freeRow = (await within(table).findByText('Individual Free')).closest('tr')!;
+    expect(freeRow).toHaveTextContent('Active');
+    expect(freeRow).toHaveTextContent('Default');
+    expect(within(table).getByText('Fleet 20').closest('tr')!).toHaveTextContent('Inactive');
+  });
+
+  it('Assignments lists subscriptions with filters; trials ending soon; a row fills the assign form', async () => {
+    resetNav('/plans?tab=assignments');
+    const { transport, calls } = scriptedTransport({
+      'admin.plans_list': () => page([free, fleet20]),
+      'admin.subscriptions_list': () => page([subRow]),
+    });
+    renderConsole(<PlansPage />, { transport, roles: ['ADM'] });
+    const table = await screen.findByRole('table', { name: 'Subscriptions' });
+    const row = (await within(table).findByRole('link', { name: 'Open Tehran Logistics' })).closest('tr')!;
+    expect(row).toHaveTextContent('Fleet 20');
+    expect(row).toHaveTextContent('Trial');
+    expect(row).toHaveTextContent('30 vehicles · 1 entitlement changed');
+    expect(row).toHaveTextContent('CarPal (automatic)');
+    fireEvent.change(screen.getByRole('combobox', { name: 'Status' }), { target: { value: 'trial_soon' } });
+    await waitFor(() => expect(calls.at(-1)!.search).toContain('status=trial'));
+    expect(calls.at(-1)!.search).toContain('trial_ends_before=');
+    const again = await screen.findByRole('table', { name: 'Subscriptions' });
+    fireEvent.click((await within(again).findAllByRole('button', { name: /Tehran Logistics/ }))[0]!);
+    await waitFor(() => expect(nav.search).toContain(`subscriber=organization%3A${ORG}`));
+    const form = await screen.findByTestId('assign-form');
+    await waitFor(() => expect(within(form).getByLabelText('Organization ID')).toHaveValue(ORG));
+  });
+
+  it('Plan requests: open first; "Assign this plan" opens the form with the organization and the requested plan', async () => {
+    resetNav('/plans?tab=requests');
+    const { transport, calls } = scriptedTransport({
+      'admin.plans_list': () => page([free, fleet20, { ...fleet20, id: 'f50', plan_key: 'fleet_50' }]),
+      'admin.subscription_change_requests_list': () => page([request]),
+      'admin.subscriptions_list': () => page([]),
+    });
+    renderConsole(<PlansPage />, { transport, roles: ['ADM'] });
+    const table = await screen.findByRole('table', { name: 'Plan requests' });
+    const row = (await within(table).findByText('We are growing')).closest('tr')!;
+    expect(row).toHaveTextContent('Fleet 20 → Fleet 50');
+    expect(calls.find((c) => c.opId === 'admin.subscription_change_requests_list')!.search).toContain('status=open');
+    const link = within(row).getByRole('link', { name: 'Assign this plan' });
+    expect(link).toHaveAttribute('href', `/plans?tab=assignments&subscriber=organization:${ORG}&plan_key=fleet_50#assign`);
+    resetNav(`/plans?tab=assignments&subscriber=organization:${ORG}&plan_key=fleet_50`);
+    const form = await screen.findByTestId('assign-form');
+    await waitFor(() => expect(within(form).getByLabelText('Organization ID')).toHaveValue(ORG));
+    await waitFor(() => expect(within(form).getByLabelText('Plan')).toHaveValue('fleet_50'));
+  });
+
+  it('a ?subscriber= link without a tab opens Assignments', async () => {
+    resetNav(`/plans?subscriber=organization:${ORG}`);
+    const { transport } = scriptedTransport({ 'admin.plans_list': () => page([fleet20]), 'admin.subscriptions_list': () => page([]) });
+    renderConsole(<PlansPage />, { transport, roles: ['ADM'] });
+    expect(await screen.findByRole('tab', { name: 'Assignments' })).toHaveAttribute('aria-selected', 'true');
+  });
 });
