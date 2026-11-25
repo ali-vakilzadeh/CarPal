@@ -70,10 +70,13 @@ export function Dashboard() {
         {t('admin.work.welcome', { name: staff.display_name })} {t('admin.console.home.roles', { roles: roleNames(roles, t) })}
       </p>
       <div className="adm-dash">
-        {rates ? <RateWidget /> : null}
         <MyWorkWidget />
         <SafetyWidget />
         <QueuesWidget />
+        {/* After Queues: the card appears only after its read (and only while a rate is not set today), so placed first
+            it pushed every widget aside on each load (CLS 0.43 in AC15.T4). Queues spans the row, so the card now sits
+            below it, under the fold for an administrator at 1280 × 720: an owner trade-off (D-118). */}
+        {rates ? <RateWidget /> : null}
       </div>
       {metrics ? (
         <>

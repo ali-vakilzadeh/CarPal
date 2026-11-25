@@ -227,8 +227,11 @@ function RateEditor({ rate, onReload, onChanged }: { rate: ExchangeRate; onReloa
           onChange={(e) => setInput(e.target.value)}
         />
         <div className="adm-preview" data-testid="rate-preview" aria-live="polite">
-          <p className="adm-preview-title">{t('admin.rates.preview')}</p>
-          <table className="adm-mini-table">
+          <p className="adm-preview-title" id="rate-preview-title">
+            {t('admin.rates.preview')}
+          </p>
+          {/* Named by the heading above it, so a screen reader announces what the table shows (AC15.T2). */}
+          <table className="adm-mini-table" aria-labelledby="rate-preview-title">
             <thead>
               <tr>
                 <th scope="col">{t('admin.rates.previewPrice')}</th>

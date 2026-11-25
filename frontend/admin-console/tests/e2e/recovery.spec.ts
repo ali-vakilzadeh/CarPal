@@ -22,7 +22,9 @@ import {
 } from './staff';
 
 test.beforeAll(requireBackend);
-test.describe.configure({ mode: 'serial', timeout: 240_000 });
+// Three strict sign-ins with proof of work in one test: 2.1 min in a quiet full run, past 4 min once when AC15's suites
+// shared the four workers (2026-11-25), so 6 min.
+test.describe.configure({ mode: 'serial', timeout: 360_000 });
 
 const unique = (prefix: string) => `${prefix} ${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
 

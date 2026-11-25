@@ -51,7 +51,7 @@ export function UserPage({ userId }: { userId: string }) {
       <p className="adm-muted">
         <Link href="/users">{t('admin.users.back')}</Link>
       </p>
-      <PurposeGate>{(purpose) => <UserDetail userId={userId} purpose={purpose} />}</PurposeGate>
+      <PurposeGate title={t('admin.users.detailTitle')}>{(purpose) => <UserDetail userId={userId} purpose={purpose} />}</PurposeGate>
     </div>
   );
 }

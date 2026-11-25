@@ -43,21 +43,24 @@ export interface PurposeGateProps {
   /** A purpose given by the page (e.g. the work item it is); otherwise ?purpose= from the URL. */
   purpose?: AccessPurpose | null;
   children: (purpose: AccessPurpose) => ReactNode;
+  /** The page heading while the purpose is missing, when the page has no heading of its own outside the gate (AC15.T2). */
+  title?: string;
 }
 
-export function PurposeGate({ purpose: given, children }: PurposeGateProps) {
+export function PurposeGate({ purpose: given, children, title }: PurposeGateProps) {
   const fromUrl = usePurpose();
   const purpose = given ?? fromUrl;
   if (purpose) return <>{children(purpose)}</>;
-  return <PurposeMissing />;
+  return <PurposeMissing title={title} />;
 }
 
-function PurposeMissing() {
+function PurposeMissing({ title }: { title?: string | undefined }) {
   const t = useT();
   const session = useSession();
   const queues = visibleSections(session.data?.staff?.roles ?? []).filter((s) => s.group === 'work' && s.path !== '/');
   return (
     <div className="adm-purpose" data-kit="purpose-missing">
+      {title ? <h1 className="adm-page-title">{title}</h1> : null}
       <Banner tone="info" icon="lock" title={t('admin.kit.purpose.title')} text={t('admin.kit.purpose.text')} />
       {queues.length ? (
         <>

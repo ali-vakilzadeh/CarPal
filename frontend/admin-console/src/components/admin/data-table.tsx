@@ -169,10 +169,22 @@ export function DataTable<T>(props: DataTableProps<T>) {
     buttons?.[index]?.focus();
   };
 
+  // The row the last J/K asked for, until the selection on screen catches up: a long table re-renders slowly after a
+  // selection (the page changes the URL first), and a second key press in between must move on from the asked-for row,
+  // not from the old selection (AC15.T4: a 1,000-row table under a slowed CPU chose the same row twice).
+  // A click forgets it; so does the selection reaching it.
+  const asked = useRef<{ key: string; index: number } | null>(null);
+  useEffect(() => {
+    if (asked.current?.key === selectedKey) asked.current = null;
+  }, [selectedKey]);
+
   const move = (delta: number) => {
     if (!rows?.length || !onSelect) return;
-    const from = selectedIndex < 0 ? (delta > 0 ? -1 : rows.length) : selectedIndex;
+    const pending = asked.current && keys[asked.current.index] === asked.current.key ? asked.current.index : null;
+    const current = pending ?? selectedIndex;
+    const from = current < 0 ? (delta > 0 ? -1 : rows.length) : current;
     const to = Math.min(rows.length - 1, Math.max(0, from + delta));
+    asked.current = { key: keys[to]!, index: to };
     onSelect(rows[to]!);
     focusRow(to);
   };
@@ -233,7 +245,10 @@ export function DataTable<T>(props: DataTableProps<T>) {
                               className="adm-row-button"
                               data-row-button
                               aria-pressed={selected}
-                              onClick={() => onSelect(row)}
+                              onClick={() => {
+                                asked.current = null;
+                                onSelect(row);
+                              }}
                               onKeyDown={(e) => onRowKey(e, index)}
                             >
                               {c.cell(row, ctx)}

@@ -56,7 +56,7 @@ async function reason(page: Page, dialogName: string | RegExp, confirm: string, 
   await expect(dialog).toBeHidden();
 }
 
-test('exchange rate: set in the console, served by config.client; over 20 % warns (AC6.T1)', async ({ context, page }) => {
+test('exchange rate: set in the console, served by config.client; over 20 % warns (AC6.T1) @pilot', async ({ context, page }) => {
   test.setTimeout(180_000);
   await signInAs(context, page, ['ADM'], { path: '/rates?currency=IRR' });
   await expect(page.getByRole('heading', { level: 1, name: 'Exchange rates' })).toBeVisible();
@@ -94,7 +94,7 @@ test('exchange rate: set in the console, served by config.client; over 20 % warn
   await expect(editor.getByRole('button', { name: /^Keep / })).toHaveCount(0);
 });
 
-test('kill switch on at once, off only with a second admin; plan, retention and assignment (AC6.T2-T5)', async ({ browser }) => {
+test('kill switch on at once, off only with a second admin; plan, retention and assignment (AC6.T2-T5) @pilot', async ({ browser }) => {
   test.setTimeout(300_000);
   // A run that stopped half-way may have left the kill switch on: turn it off directly and let the cache expire.
   if (flagOf(await readClientConfig(), KILL)) {

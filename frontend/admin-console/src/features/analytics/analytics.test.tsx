@@ -52,7 +52,8 @@ describe('analytics rules', () => {
   });
 });
 
-const TODAY = new Date().toISOString().slice(0, 10);
+// The page's last day is today on the viewer's clock (Tehran), not in UTC: from 00:00 to 03:30 Tehran time the two differ.
+const TODAY = dayIn(Date.now(), 'Asia/Tehran');
 const answer: Handler = (req) => {
   const key = req.path.split('/').pop()!;
   const sp = new URLSearchParams(req.search);

@@ -37,7 +37,7 @@ async function chooseReason(page: Page, l: 'en' | 'fa', code: string, note?: str
   return dialog;
 }
 
-test('a reported post is triaged, hidden, restored and closed (AC8, EN)', async ({ context, page }) => {
+test('a reported post is triaged, hidden, restored and closed (AC8, EN) @pilot', async ({ context, page }) => {
   test.setTimeout(300_000);
   const shop = await publishedShop('m1');
   const post = await shopPost(shop, 'm1');

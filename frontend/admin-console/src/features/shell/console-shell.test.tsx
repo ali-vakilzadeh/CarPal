@@ -139,6 +139,31 @@ describe('console shell navigation (GD-09)', () => {
     expect(posted.map((p) => p.url)).toContain('/bff/logout');
   });
 
+  it('the account menu closes when one of its links takes the browser to another page (AC15)', () => {
+    const { rerender } = setup(view(['ADM']));
+    const menu = screen.getByRole('button', { name: /Mina Moderator/ });
+    fireEvent.click(menu);
+    expect(menu).toHaveAttribute('aria-expanded', 'true');
+    nav.pathname = '/audit';
+    nav.search = 'actor=me';
+    rerender(
+      <I18nProvider locale="en" resources={pickNamespaces(BUNDLED.en)}>
+        <FormatProvider timeZone="Asia/Tehran" distanceUnit="km">
+          <ApiProvider
+            client={createApiClient({ transport: async () => Response.json({}) })}
+            queryClient={createQueryClient()}
+            initialSession={view(['ADM'])}
+          >
+            <ConsoleShell envBadge={<p data-testid="env-badge">DEV</p>} themeChoice="auto">
+              <p>page</p>
+            </ConsoleShell>
+          </ApiProvider>
+        </FormatProvider>
+      </I18nProvider>,
+    );
+    expect(screen.getByRole('button', { name: /Mina Moderator/ })).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('hides "My actions" from roles that cannot read the audit log', () => {
     setup(view(['MOD']));
     fireEvent.click(screen.getByRole('button', { name: /Mina Moderator/ }));
@@ -181,6 +206,7 @@ describe('keyboard shortcuts (AC4.T7)', () => {
     fireEvent.keyDown(document.body, { key: '?', code: 'Slash', shiftKey: true });
     const help = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });
     expect(within(help).getByText('Next item')).toBeInTheDocument();
+    expect(within(help).getByRole('table', { name: 'Keyboard shortcuts' })).toBeInTheDocument();
     expect(within(help).getByText('Approve').closest('tr')).toHaveAttribute('data-available', 'false');
     expect(within(help).getByText('Next item').closest('tr')).toHaveAttribute('data-available', 'true');
     // While a dialog is open the page's keys stay off.

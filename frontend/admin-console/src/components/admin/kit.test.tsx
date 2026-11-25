@@ -222,6 +222,12 @@ describe('PurposeGate and MaskedField (AC5.T3)', () => {
     expect(screen.queryByText(/read with/)).toBeNull();
   });
 
+  it('without a work item a page without its own heading gets one (AC15.T2)', () => {
+    renderConsole(<PurposeGate title="User">{(p) => <p>read with {p}</p>}</PurposeGate>, { roles: ['SUP'] });
+    expect(screen.getByRole('heading', { level: 1, name: 'User' })).toBeInTheDocument();
+    expect(screen.getByText('Open this from a work item')).toBeInTheDocument();
+  });
+
   it('with ?purpose= the content gets the purpose; links keep it', () => {
     resetNav(`/users/x?purpose=case:${ID}`);
     renderConsole(<PurposeGate>{(p) => <p>read with {p}</p>}</PurposeGate>);
@@ -343,6 +349,31 @@ describe('DataTable (AC5.T1)', () => {
     expect(screen.getByTestId('selected')).toHaveTextContent('r-103');
     fireEvent.keyDown(document.body, { key: 'k', code: 'KeyK' });
     expect(screen.getByTestId('selected')).toHaveTextContent('r-102');
+  });
+
+  it('J pressed again before the page shows the selection moves on, not back to the same row (AC15.T4)', () => {
+    // A long table re-renders slowly after a selection (the URL changes first): the next J must start from the row the
+    // last J asked for, not from the selection still on screen.
+    const chosen: string[] = [];
+    renderConsole(
+      <DataTable
+        id="lagging"
+        caption="Lagging rows"
+        columns={[{ id: 'name', header: 'Name', pinned: true, cell: (r: Row) => r.name }]}
+        rows={ROWS}
+        rowKey={(r) => r.id}
+        emptyText="Nothing here."
+        selectedKey={null}
+        onSelect={(r) => chosen.push(r.id)}
+      />,
+    );
+    fireEvent.keyDown(document.body, { key: 'j', code: 'KeyJ' });
+    fireEvent.keyDown(document.body, { key: 'j', code: 'KeyJ' });
+    fireEvent.keyDown(document.body, { key: 'j', code: 'KeyJ' });
+    expect(chosen).toEqual(['r-101', 'r-102', 'r-103']);
+    expect(screen.getByRole('button', { name: 'Third' })).toHaveFocus();
+    fireEvent.keyDown(document.body, { key: 'k', code: 'KeyK' });
+    expect(chosen.at(-1)).toBe('r-102');
   });
 
   it('shows loading, empty and error states', () => {

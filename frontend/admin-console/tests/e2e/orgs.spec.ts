@@ -46,7 +46,7 @@ let shop: Shop;
 let identityId: string;
 let locationId: string;
 
-test('a provider is verified after its pin is corrected (AC9, EN)', async ({ context, page }) => {
+test('a provider is verified after its pin is corrected (AC9, EN) @pilot', async ({ context, page }) => {
   test.setTimeout(300_000);
   shop = await publishedShop('v1');
   identityId = await submitVerification(shop, 'business_identity');

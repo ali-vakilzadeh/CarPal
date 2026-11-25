@@ -81,6 +81,7 @@ describe('Exchange rates page (AC6.T1)', () => {
     fireEvent.change(within(editor).getByLabelText('New rate (IRR per US dollar)'), { target: { value: '1050000' } });
     const preview = within(editor).getByTestId('rate-preview');
     expect(preview).toHaveTextContent('2,500,000 T');
+    expect(within(preview).getByRole('table', { name: 'What people will see' })).toBeInTheDocument();
     expect(preview).toHaveTextContent('2,625,000 T');
     expect(within(editor).getByTestId('rate-change')).toHaveTextContent('+5 %');
     expect(within(editor).queryByTestId('rate-four-eyes-warning')).toBeNull();

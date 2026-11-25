@@ -9,7 +9,10 @@ test.beforeAll(requireBackend);
 // in the browser: allow for several browsers doing that at once.
 test.describe.configure({ timeout: 120_000 });
 
-test('first sign-in: password, emailed code, security key enrolment, the key; the shell at aal3 (ADM)', async ({ context, page }) => {
+test('first sign-in: password, emailed code, security key enrolment, the key; the shell at aal3 (ADM) @pilot', async ({
+  context,
+  page,
+}) => {
   const email = createStaff(['ADM'], { name: 'Ada Admin' });
   await addSecurityKey(context, page);
   await page.goto('/flags');
@@ -92,7 +95,7 @@ for (const [role, expected] of [
   });
 }
 
-test('the next sign-in goes straight to the key; sign-out ends the session', async ({ context, page }) => {
+test('the next sign-in goes straight to the key; sign-out ends the session @pilot', async ({ context, page }) => {
   const email = await signInAs(context, page, ['ADM']);
   await page.getByRole('button', { name: /E2E ADM/ }).click();
   await page.getByRole('button', { name: 'Sign out' }).click();
@@ -154,7 +157,7 @@ test('keyboard: ? lists the shortcuts, / goes to the lookup box', async ({ conte
   await expect(page.getByRole('searchbox', { name: 'Look up' })).toBeFocused();
 });
 
-test('step-up: /bff/reauth asks for the security key first and returns with a fresh sign-in (GD-11)', async ({ context, page }) => {
+test('step-up: /bff/reauth asks for the security key first and returns with a fresh sign-in (GD-11) @pilot', async ({ context, page }) => {
   await signInAs(context, page, ['ADM'], { path: '/rates' });
   const before = (await (await page.request.get('/bff/session')).json()) as { staff: { auth_time: string; id: string } };
   // auth_time has whole seconds: let one pass.

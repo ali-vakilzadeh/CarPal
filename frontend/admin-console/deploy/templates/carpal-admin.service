@@ -1,0 +1,50 @@
+# CarPal admin console (Next.js production server with the staff BFF and the staff sign-in pages).
+# Listens on 127.0.0.1:@ADMIN_PORT@ only (CarPal-Forwarded-Client takes the visitor from the X-Forwarded-For nginx
+# appends, D-110); nginx serves https://@ADMIN_CONSOLE_HOST@. Installed by admin-setup.sh, re-rendered by every update.
+[Unit]
+Description=CarPal admin console (next start)
+Documentation=file://@ADMIN_APP_DIR@/deploy/deploy.md
+After=network-online.target carpal-backend.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@ADMIN_SERVICE_USER@
+Group=@ADMIN_SERVICE_GROUP@
+WorkingDirectory=@ADMIN_APP_DIR@
+EnvironmentFile=@ADMIN_ENV_FILE@
+Environment=NODE_ENV=production
+Environment=NEXT_TELEMETRY_DISABLED=1
+Environment=NODE_OPTIONS=--max-old-space-size=768
+ExecStart=@NODE_BIN@/node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port @ADMIN_PORT@
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+LimitNOFILE=65536
+UMask=0027
+
+# Hardening: read-only system and code; Next.js writes only its build folder (.next: cache).
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ReadWritePaths=@ADMIN_APP_DIR@/.next
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

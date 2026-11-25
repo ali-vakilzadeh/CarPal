@@ -81,6 +81,11 @@
 }
 
 @layer base {
+  /* Keep the scrollbar's room even while a page is short: when a page grows past the window as its reads arrive, the
+     scrollbar would otherwise appear, narrow the page and re-flow every grid (dashboard CLS 0.22 in AC15.T4). */
+  html {
+    scrollbar-gutter: stable;
+  }
   :focus-visible {
     outline: none;
     box-shadow: var(--ring-focus);

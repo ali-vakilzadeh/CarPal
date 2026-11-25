@@ -12,19 +12,18 @@ identical copies of those pages for the business (`../public-ui-dev-plan.json` P
 console part is in `Docs/23.Admin_WebUI_screens.md` §0.
 
 The build plan and stage log is [dev-plan.json](dev-plan.json). Sources of truth: `Docs/40.API contract.md`
-(contract 1.3.0, §23 admin plane) for operations and security rules, `Docs/23.Admin_WebUI_screens.md` for screens.
+(contract 1.5.0, §23 admin plane) for operations and security rules, `Docs/23.Admin_WebUI_screens.md` for screens.
 
-Status: AC1 (foundation), AC2 (backend S12: staff sign-in, contract 1.3.0), AC3 (the BFF), AC4 (staff sign-in and
-the console shell), AC5 (the admin interaction kit, Pending approvals and My work) and AC6 (platform settings:
-exchange rates, feature flags and the AI kill switch, plans and assignments, data retention) are done; AC7 (reviews:
-the Path 2 approval queue, review cases, disputes and appeals), AC8 (moderation: the reports inbox, content,
-account, AI output and inventory cases, badges) and AC9 (organizations, verification with documents, locations on a
-map with pin correction, assist sessions) are built, their signed-in E2E waiting for a strict run with the client key.
-The other sections in the navigation are placeholders until their stages (AC10 on).
+Status (2026-11-25): AC1-AC10, AC10b, AC12, AC13, AC14-1, AC14b, AC11 (deploy kit, pilot E2E, security pass;
+milestone M1) and AC15 (hardening: role journeys, accessibility, RTL screenshots, performance, security review) are
+done. AC15 ran before the rest of AC14-2 at the owner's request (D-115): the screens of AC14-2's checklist
+(`dev-plan.json` AC14.parts) are still to build, and the AC15 suites cover them when they arrive (the accessibility and
+security sweeps list every route). The sections below describe each stage's screens.
 
 ## Requirements
 
-- The project-local Node 24.21.0 in `backend/.tools/node` (the system Node 20 stays for other projects):
+- Node 24 (`.node-version` 24.21.0). The system Node is 24 on the development PC; where it is older, use the
+  project-local copy in `backend/.tools/node`:
   - Git Bash: `source tools/use-local-node.sh`
   - PowerShell: `. tools\use-local-node.ps1`
 - pnpm 10.5.2. The app is its own pnpm package with its own lockfile; there is no root workspace.
@@ -42,6 +41,7 @@ The other sections in the navigation are placeholders until their stages (AC10 o
 | `pnpm test`                                 | Vitest unit (`*.test.ts`) and DOM (`*.test.tsx`) projects.                                |
 | `pnpm test:int`                             | Integration tests against backend `pnpm dev` (see "Integration tests").                   |
 | `pnpm e2e`                                  | Build, then Playwright (Chromium) on :3300. `pnpm e2e:install` downloads Chromium once.   |
+| `pnpm e2e:pilot` / `pnpm e2e:perf`          | The pilot suite (`@pilot`) / the performance run, one worker (on an existing build).      |
 | `pnpm contract:generate` / `contract:check` | Admin operation map, role table and types in `src/lib/api/generated/`.                    |
 | `pnpm i18n:check`                           | EN/FA parity of the console dictionary (`admin` + shared `common`, `format`).             |
 | `pnpm ds:sync` / `ds:check`                 | Design-system copy in `shared/design-system/web` (same tool as the PWA).                  |
@@ -118,7 +118,7 @@ cookie). Tokens, the DPoP key and the staff profile stay in the server-side sess
 | `GET /bff/session`                                    | Who is signed in, roles, language, time zone, idle and absolute end. Never tokens.         |
 | `GET /bff/csrf`, `POST /bff/logout`                   | CSRF token; sign-out (revokes the refresh token).                                          |
 | `POST /bff/intents`, `POST /bff/intents/<id>/consume` | An action saved before a step-up, replayed once after it.                                  |
-| `/api/v1/admin/*`                                     | The 63 admin-api operations of the generated map, 1:1; anything else 404.                  |
+| `/api/v1/admin/*`                                     | The admin-api operations of the generated map (124 at contract 1.5.0), 1:1; else 404.      |
 | `/id/oauth/*`, `/id/v1/auth/*`, `/id/.well-known/*`   | The auth host on this origin (sign-in steps, passkey enrolment).                           |
 
 Sessions end after 30 minutes without an API call and 8 hours after sign-in (the backend's `cp-web-admin`
@@ -460,6 +460,52 @@ emailed code from `backend/.data/outbox-mail.jsonl`, and use Chrome's virtual au
 security key. For the strict run, export `CARPAL_STRICT_AUTH=1` and `CARPAL_ADMIN_CLIENT_PRIVATE_JWKS` before
 `pnpm e2e`; the Playwright config passes them, and the dev redirect URI, to `next start`. The idle test mocks the
 browser clock.
+
+**Pilot suite (AC11, milestone M1).** `pnpm e2e:pilot` runs the tests tagged `@pilot` (on an existing build; run
+`pnpm build` first): the first sign-in, the next sign-in and the step-up (`signin.spec.ts`), the exchange rate and the
+kill switch with its four-eyes off (`settings.spec.ts`), a Path 2 approval (`reviews.spec.ts`), report → case → action
+(`moderation.spec.ts`), a verification after a pin correction (`orgs.spec.ts`), a deletion request decided by four-eyes
+(`privacy.spec.ts`), and `pilot.spec.ts`: the security headers of every route class and, after a signed-in walk, no
+token or personal data in cookies, Web Storage, IndexedDB or a service worker. Run it strict before every upload:
+
+```sh
+cd ../../backend && pnpm int:env backend            # shell 1 (strict backend with test keys)
+eval "$(pnpm -C ../../backend -s int:env env)" && pnpm build && pnpm e2e:pilot   # shell 2, in this folder
+```
+
+**Hardening suites (AC15).** On top of the section suites:
+
+- `journeys.spec.ts`: one journey per role (MOD, CRV, SUP, ADM) in English and Persian — the exact sections of the
+  role, every one opened through the navigation, a section the role may not open, one piece of the role's work (SUP
+  takes a ticket, CRV confirms a Path 2 review, MOD reads the content and review queues, ADM opens My actions in the
+  audit log) and the sign-out.
+- `a11y.spec.ts`: axe on every route (the pages outside the console, every administrator page with the edge states,
+  the moderator's disputes queue) × EN/FA × Daylight/Sunlight/Night; tables and charts named for screen readers,
+  badges never colour alone, no sideways scroll; a keyboard-only run (sign-in with a new key, skip link, a section, the
+  shortcut list, J through a list); reduced motion.
+- `visual.spec.ts`: right-to-left screenshots of the key screens (shell and dashboard, the case layout, a table, two
+  forms, charts, the sign-in). The admin reads come from `tests/e2e/visual.fixtures.json` and the browser clock is
+  fixed, so the pictures do not change with the shared database (and, by the fixed clock, the day: checked on the day of recording so far). After a screen changes on purpose, record
+  again: `CARPAL_VISUAL_RECORD=1 pnpm exec playwright test tests/e2e/visual.spec.ts --update-snapshots`. The baselines
+  are per platform (`-chromium-win32.png`).
+- `security-review.spec.ts`: the AC11 pass on the whole app — page headers, no CSP or Trusted Types violation and
+  `no-store` admin reads on every route, no email or token in any request URL, hostile return addresses kept on the
+  console. Findings: [deploy/security-pass.md](deploy/security-pass.md).
+- `performance.spec.ts` (`pnpm e2e:perf`, one worker; the full run skips it): route ready time, LCP, CLS and server
+  time; 1,000+ staff members through paging; J on a page of 100 rows; a 1,000-row table; the dashboard's background
+  refresh. Profile: Lighthouse desktop (no CPU slowdown, 10 Mbps, 40 ms); `CARPAL_PERF_CPU=4` for a slow PC. Budgets
+  and the measured numbers are in the AC15 report of `dev-plan.json`.
+
+A whole run (`pnpm exec playwright test` on a build, strict) takes about 25 minutes with 4 workers.
+
+## Deployment
+
+The deploy kit is [deploy/](deploy/): [deploy/deploy.md](deploy/deploy.md) (server setup and updates with WinSCP and
+two scripts, `admin-setup.sh` and `admin-update.sh`, on `admin.<DOMAIN>` behind nginx, with the access gate
+`ADMIN_GATE`) and [deploy/runbook.md](deploy/runbook.md) (first staff accounts, first sign-in, lost keys, break glass,
+the daily routine). The security pass of AC11, repeated on the whole app in AC15, is in
+[deploy/security-pass.md](deploy/security-pass.md).
+`src/server/deploy-kit.test.ts` checks the kit's templates against `src/server/env.ts`.
 
 ## Language and theme
 

@@ -2,7 +2,7 @@
   "meta": {
     "title": "CarPal admin console (WP15 UI, WP20 admin part; frontend/admin-console/) — build plan and stage log",
     "created": "2026-11-08",
-    "last_updated": "2026-11-21",
+    "last_updated": "2026-11-25",
     "status": "in_progress",
     "owner": "ali-vakilzadeh",
     "purpose": "Build the internal staff console that operates the platform: Path 2 review approvals, moderation, disputes, verification, privacy requests, plans, flags and the AI kill switch, the USD exchange rate, taxonomy, audit, AI/MCP oversight and analytics. Without it the pilot cannot run without direct API or database work (backend S11 open_after_stage, NI-08).",
@@ -19,8 +19,8 @@
       "Backend work that a stage needs (backend_requests with stage 'AC2' or other) is done in backend/ and also logged as a backend stage (S12, S13) in backend/dev_plan.json."
     ],
     "progress": {
-      "as_of": "2026-11-21",
-      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) with pnpm check, build and a Playwright smoke. AC2 done 2026-11-09 (backend S12): contract 1.3.0 gives cp-web-admin DPoP + private_key_jwt, the staff passkey enrolment inside the sign-in (auth.passkey_enrol_options, auth.passkey_enrol), admin.staff_me, and a first-run staff bootstrap (backend pnpm staff:bootstrap, backend/deploy/staff-bootstrap.sh); the console is regenerated (63 admin-api operations, no api reads, because the api host refuses admin tokens), shows a Latin environment badge (OQ-12) and sends HSTS outside dev (OQ-11). OQ-01, OQ-10, OQ-11 and OQ-12 are answered. AC3 done 2026-11-09: the admin BFF (src/server/bff, copied from the PWA with provenance headers) signs staff in at aal3 with code + PKCE, DPoP-bound tokens and private_key_jwt, keeps tokens, the DPoP key and the admin.staff_me profile server-side (browser: one __Host-cpa_sid cookie), ends sessions after 30 min idle / 8 h, forwards exactly the 63 admin-api operations (purpose and reason headers, CSRF), and offers /bff/reauth for step-up; the typed client (src/lib/api) and the TanStack provider (memory-only cache, cleared on sign-out, session end and staff switch) are in. Tests: pnpm check (196), pnpm test:int against the strict backend (7), pnpm e2e (10). AC4 done 2026-11-09: staff sign in on the console's own /id/signin (work email + password with proof of work in strict mode, then the security key; a first-time account enrols a device-bound key with the emailed code in the same sign-in; the key alone for a step-up) and land in the shell: top bar with the environment badge, lookup and My queue placeholders, shortcut list and avatar menu (roles, My actions for ADM, language, theme, sign-out), left navigation filtered by the role table (20 sections, placeholders until their stages), no-permission and not-found states inside the shell, idle warning at 25 min and sign-out at 30 (measured against the server clock), step-up with one-time replay of the saved action, and keyboard shortcuts. Tests: pnpm check (243), pnpm test:int (7), pnpm e2e (22, strict backend). AC5 done 2026-11-10: the admin interaction kit (src/components/admin) carries the admin rules into every later screen: useAdminAction refuses an RSN write without a 3-500 character reason, runs it through the step-up with a one-time replay and reports applied / waiting for a second staff member (FourEyesBanner) / accepted job / an explained problem (SELF_APPROVAL_FORBIDDEN, expired, changed meanwhile); ReasonDialog (console reason codes per kind of action + note, sent as '<code>: <note>', D-29) and ConfirmDialog (second confirmation for irreversible actions); PurposeGate and MaskedField (GD-10); DataTable with URL-bound filters, cursor paging, column choice, saved views without data, keyboard rows and Latin digits; CaseLayout, EntityChip, Timeline, AiEvidenceBlock, SlaBadge and the ADM-only AuditDrawer (Shift+H). Pending approvals (/approvals) lists and decides four-eyes changes; My work (/) shows the approvals waiting and one tile per queue the roles may see with count, oldest age and SLA state (OQ-05 targets, D-32); the top bar's My queue links there with the approvals count. Tests: pnpm check (301), pnpm test:int (7), pnpm e2e (25, strict backend; the four-eyes round trip with two ADM accounts). AC6 built 2026-11-10 (partial: the signed-in E2E is not run yet): Exchange rates (/rates: preview, 20 % four-eyes warning, If-Match; replaces the deploy SQL), Feature flags (/flags: the AI kill switch on top, on at once and off by four-eyes; switch and targeting with If-Match and a Reload on 412), Plans & entitlements (/plans: the ranking rule, plan edits by four-eyes, the audit history, assign plan / trial / overrides) and Data retention (/retention: edits by four-eyes). Tests: pnpm check (330), smoke + bff E2E (13); tests/e2e/settings.spec.ts written, waiting for a strict run with the client key. AC7 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6): Reviews (/reviews: the Path 2 approval queue by stage for community reviewers — the review read for its approval purpose with the business answer, the author history without contact data and evidence links, Confirm once the business step is done, Reject with a note, Ask for evidence, a reason code that is never a rating, A/R keys; moderators read the queue and work review cases: remove, restore, approve a held-back review, warn, move to Path 2 by four-eyes, close) and Disputes & appeals (/disputes: the disputed review with both sides' evidence and the first decider, mediation / uphold / reject with what each does, the different-staff rule explained). Tests: pnpm check (363), smoke + bff E2E (13); tests/e2e/reviews.spec.ts written, its API seeding run against the strict backend. AC8 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6 and AC7): the moderation case workspace for every target type (also under the AC7 review cases): Reports (/content: triage into a case — safety reasons at least high — into the open case about the same item, or dismiss), Content / Accounts & organizations / AI output (/content tabs) and Inventory (/inventory) queues with safety cases first; a case read for its purpose shows the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), \"Take this case\", the actions the backend applies to that item in its state (showcase approval needs the customer's consent), warn / suspend (security key) / reactivate, trust penalties (security key, second confirmation) and badges by id, and closing with a resolution. Tests: pnpm check (397), smoke + bff E2E (13); tests/e2e/moderation.spec.ts written, its API seeding run. AC4-AC8 are committed (the user, 2026-11-10). AC9 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6-AC8): Organizations (/orgs: search by name, slug or id without contact data, two saved views) and the organization page read for an open work item (a pending verification or an open case; otherwise the header from the search and the checks to open it for): Profile with masked contact data, Locations with a MapLibre map (owner's pin, service radius, the server's pin-to-address verdict) and pin or address correction by click, drag or typed coordinates, Verification with the badge approval, Plan; suspend and reactivate; assist sessions with a banner on every page. Verification (/verification: queue with the 2-working-day SLA; submitted data, a watermarked document viewer with zoom, rotate and paging, the checklist; approve blocked by a far pin; reject with the message for the business; the organization's new status after the decision). Tests: pnpm check (429), smoke + bff E2E (13); tests/e2e/orgs.spec.ts written, its API seeding run. AC6-AC9 closed 2026-11-18: the strict signed-in E2E ran with the int:env test keys (no staff key needed), 35/35 passed after two console fixes (D-65 step-up replay notice, D-66 verification deep link) and test fixes; backend_requests BR-02..BR-35 marked done from backend S13-S24 (BR-14 stays deferred); new BR-36 (slow verification queue). 2026-11-18 (after the AC6-AC9 closure): backend/BR-update-plan.json reviewed. Backend S13-S25b and S26a-S26b are done (S26c not started), so the hold is lifted (meta.hold.lifted). The readiness map is backend_status_2026_11_18. The catch-up patch is AC10.T0. The S16a/S16b staff key and recovery work is the new stage AC10b, before AC11. AC14.T1 (the backend half) was done by backend S13-S24. Doc issues and R-items closed by the backend are marked. New BR-37 (verification read by id or organization, from D-66). BR-36 and BR-37 are handed to the backend plan and staged first in S26c (S26c.T0, owner); the console follow-up is AC14b.T8. AC10 done 2026-11-18: users (lookup within the work item, detail with masked contacts, timed suspension, sign out, reset onboarding, staff roles by four-eyes) and privacy requests (queue, steps, export job, deletion by four-eyes), plus the catch-up patch (badge list, own requests from the server, region threshold, assign to a colleague, suspension durations, R-17). Tests: pnpm check green (lint with the R-17 rule, logical CSS, typecheck, unit + DOM 466, contract:check at 1.5.0, i18n:check 1809 keys in en and fa, ds:check); prettier clean on the files of this stage; Strict signed-in E2E on 2026-11-18 against `pnpm int:env backend`: tests/e2e/privacy.spec.ts 2/2 (EN: deletion request through identity and processing, the user page refused without a purpose and opened for dsr:<id> with the full name masked, a 7-day suspension and reactivation, the deletion requested by admin A, approved by admin B, the outcome under Your requests and the request completed by the worker; FA: export request processed, file built and followed with admin.job_get, the user found by email within the request, the request completed and the same lookup then refused; axe on queue, request, lookup and user page in EN and FA). Whole suite 37/37 passed (6.3 min), so the T0 changes did not break AC4-AC9. AC10b done 2026-11-20: staff security keys, recovery codes and account recovery (backend S16a/S16b). Recovery codes shown once after a new key (never stored); /security for every staff member (own keys, backup key, remove, new codes; step-up arms the action instead of replaying it, D-76); \"Lost your security key?\" on the sign-in from the request to the new key, with the request handle kept by the BFF (HttpOnly id cookie, server-side store) so an approval hours later continues in a new sign-in; Recovery requests (/recoveries, ADM: approve with the check method and a note for \"other\", reject); the 72-hour restriction banner and a prompt when no code is left. Tests: pnpm check 494, pnpm test:int 7/7 strict, E2E recovery.spec.ts 3/3 and signin.spec.ts 9/9 strict. New BR-39 (recoveries in admin.work_summary). AC12 done 2026-11-20: taxonomy management on /taxonomy (tree, list and missing translations per type with a search by any label; node editor that requires EN and FA labels and follows the database parent and attribute rules, If-Match on edits; synonyms and transliterations with AI suggestions decided; weighted mappings; merges by four-eyes with the job followed on Pending approvals and the merge tab; zero-result search counts). New DI-35 and BR-40 (terms, synonym search and queue, usage counts, merge preview). Tests: pnpm check 509; E2E taxonomy.spec.ts 2/2 strict; Whole strict E2E suite on 2026-11-20: 42/42 passed (9.0 min, 4 workers; recovery.spec.ts 3, taxonomy.spec.ts 2 and every earlier suite with the recovery-codes step). AC13 done 2026-11-20 (run before AC11 on the owner's request): the full home dashboard from admin.work_summary and admin.system_health (D-32 paging gone), analytics for all 11 dashboard keys with charts and tables, AI oversight (kill switch, alerts, read-only AI outputs), MCP clients with a four-eyes access editor and the access log, and the platform audit log; flags and rates open their audit trail by id. New DI-36..DI-38, BR-41, BR-42. Tests: pnpm check 541; E2E oversight.spec.ts 3/3 strict; Whole strict E2E suite on 2026-11-20: 45/45 passed (10.3 min, 4 workers; oversight.spec.ts 3 and every earlier suite with the new dashboard as the landing page; approvals.spec.ts tile counts updated). AC14-1 done 2026-11-20 (run on the owner's request ahead of AC11, which stays not_started; AC14 split per its split_note): Staff & permissions (/staff: directory, roles, disable, four-eyes enable), Policies & consent texts (/policies: versions, drafts, four-eyes publish with re-consent keep or pause), Notifications & templates (/notifications: templates with preview and reset, rules, delivery health) and the staff notice bell; the BFF takes 256 KiB policy texts and the ticket purpose; reads the console makes on its own no longer keep a session alive (D-102, an AC13 defect). AC14-2 started: the support inbox (/support: views, the team clock, ticket:<id> read, assign, templated replies EN/FA, turn into a case / privacy request / dispute / plan request, close; the dashboard tile links to it; array query values now comma-separated, D-105). New D-98..D-106, DI-39..DI-41, BR-43..BR-45. Tests: pnpm check green; pnpm test:int strict passed; E2E settings-ac14.spec.ts 3/3 and support.spec.ts 2/2 strict; Whole strict E2E suite on 2026-11-20: 50/50 passed (16.0 min, 4 workers; settings-ac14.spec.ts 3 and support.spec.ts 2 with every earlier suite; an earlier run failed 2 AC14 tests on timing, fixed as D-107, and the AC14 specs then passed twice in a row). AC14-2 continues (T5 remaining: user and organization tabs, disputes, verification, moderation actions, plans, retention, my decisions) is not done; its checklist is in stages AC14.parts. AC14b done 2026-11-21 on the owner's request: first sign-in password change in /id/signin (code + own password, no skip, the code carried into the key enrolment), the daily exchange rate (Today badge, the unset rate opened first, Set today's rate or Keep for today with a prefilled reason, a dashboard card for ADMs), the odometer prompt rule, CarPal-Forwarded-Client on admin-api and /id calls (backend S26c.T2), verification links read by id (BR-37, D-66 walk removed), and no Neshan basemap in the console by the owner's choice (OQ-16 (c)): Open in Neshan from the Locations tab. New D-108..D-111, OQ-16 (answered). Tests: pnpm check 623; pnpm test:int 7/7 strict; Strict E2E against `pnpm int:env backend` on 2026-11-21: whole suite 47 passed, 1 failed, 2 not run (13.6 min, 4 workers); the failure was this stage's dashboard rate card counted as an 8th widget in oversight.spec.ts (the test now counts the 7 fixed widgets and checks the card's link when shown), and the 2 not run were the serial tests after it. After that fix and the Neshan links: oversight.spec.ts, orgs.spec.ts and settings.spec.ts 9/9 passed (3.7 min), so every test of the suite has passed on this stage's code.",
+      "as_of": "2026-11-25",
+      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) with pnpm check, build and a Playwright smoke. AC2 done 2026-11-09 (backend S12): contract 1.3.0 gives cp-web-admin DPoP + private_key_jwt, the staff passkey enrolment inside the sign-in (auth.passkey_enrol_options, auth.passkey_enrol), admin.staff_me, and a first-run staff bootstrap (backend pnpm staff:bootstrap, backend/deploy/staff-bootstrap.sh); the console is regenerated (63 admin-api operations, no api reads, because the api host refuses admin tokens), shows a Latin environment badge (OQ-12) and sends HSTS outside dev (OQ-11). OQ-01, OQ-10, OQ-11 and OQ-12 are answered. AC3 done 2026-11-09: the admin BFF (src/server/bff, copied from the PWA with provenance headers) signs staff in at aal3 with code + PKCE, DPoP-bound tokens and private_key_jwt, keeps tokens, the DPoP key and the admin.staff_me profile server-side (browser: one __Host-cpa_sid cookie), ends sessions after 30 min idle / 8 h, forwards exactly the 63 admin-api operations (purpose and reason headers, CSRF), and offers /bff/reauth for step-up; the typed client (src/lib/api) and the TanStack provider (memory-only cache, cleared on sign-out, session end and staff switch) are in. Tests: pnpm check (196), pnpm test:int against the strict backend (7), pnpm e2e (10). AC4 done 2026-11-09: staff sign in on the console's own /id/signin (work email + password with proof of work in strict mode, then the security key; a first-time account enrols a device-bound key with the emailed code in the same sign-in; the key alone for a step-up) and land in the shell: top bar with the environment badge, lookup and My queue placeholders, shortcut list and avatar menu (roles, My actions for ADM, language, theme, sign-out), left navigation filtered by the role table (20 sections, placeholders until their stages), no-permission and not-found states inside the shell, idle warning at 25 min and sign-out at 30 (measured against the server clock), step-up with one-time replay of the saved action, and keyboard shortcuts. Tests: pnpm check (243), pnpm test:int (7), pnpm e2e (22, strict backend). AC5 done 2026-11-10: the admin interaction kit (src/components/admin) carries the admin rules into every later screen: useAdminAction refuses an RSN write without a 3-500 character reason, runs it through the step-up with a one-time replay and reports applied / waiting for a second staff member (FourEyesBanner) / accepted job / an explained problem (SELF_APPROVAL_FORBIDDEN, expired, changed meanwhile); ReasonDialog (console reason codes per kind of action + note, sent as '<code>: <note>', D-29) and ConfirmDialog (second confirmation for irreversible actions); PurposeGate and MaskedField (GD-10); DataTable with URL-bound filters, cursor paging, column choice, saved views without data, keyboard rows and Latin digits; CaseLayout, EntityChip, Timeline, AiEvidenceBlock, SlaBadge and the ADM-only AuditDrawer (Shift+H). Pending approvals (/approvals) lists and decides four-eyes changes; My work (/) shows the approvals waiting and one tile per queue the roles may see with count, oldest age and SLA state (OQ-05 targets, D-32); the top bar's My queue links there with the approvals count. Tests: pnpm check (301), pnpm test:int (7), pnpm e2e (25, strict backend; the four-eyes round trip with two ADM accounts). AC6 built 2026-11-10 (partial: the signed-in E2E is not run yet): Exchange rates (/rates: preview, 20 % four-eyes warning, If-Match; replaces the deploy SQL), Feature flags (/flags: the AI kill switch on top, on at once and off by four-eyes; switch and targeting with If-Match and a Reload on 412), Plans & entitlements (/plans: the ranking rule, plan edits by four-eyes, the audit history, assign plan / trial / overrides) and Data retention (/retention: edits by four-eyes). Tests: pnpm check (330), smoke + bff E2E (13); tests/e2e/settings.spec.ts written, waiting for a strict run with the client key. AC7 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6): Reviews (/reviews: the Path 2 approval queue by stage for community reviewers — the review read for its approval purpose with the business answer, the author history without contact data and evidence links, Confirm once the business step is done, Reject with a note, Ask for evidence, a reason code that is never a rating, A/R keys; moderators read the queue and work review cases: remove, restore, approve a held-back review, warn, move to Path 2 by four-eyes, close) and Disputes & appeals (/disputes: the disputed review with both sides' evidence and the first decider, mediation / uphold / reject with what each does, the different-staff rule explained). Tests: pnpm check (363), smoke + bff E2E (13); tests/e2e/reviews.spec.ts written, its API seeding run against the strict backend. AC8 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6 and AC7): the moderation case workspace for every target type (also under the AC7 review cases): Reports (/content: triage into a case — safety reasons at least high — into the open case about the same item, or dismiss), Content / Accounts & organizations / AI output (/content tabs) and Inventory (/inventory) queues with safety cases first; a case read for its purpose shows the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), \"Take this case\", the actions the backend applies to that item in its state (showcase approval needs the customer's consent), warn / suspend (security key) / reactivate, trust penalties (security key, second confirmation) and badges by id, and closing with a resolution. Tests: pnpm check (397), smoke + bff E2E (13); tests/e2e/moderation.spec.ts written, its API seeding run. AC4-AC8 are committed (the user, 2026-11-10). AC9 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6-AC8): Organizations (/orgs: search by name, slug or id without contact data, two saved views) and the organization page read for an open work item (a pending verification or an open case; otherwise the header from the search and the checks to open it for): Profile with masked contact data, Locations with a MapLibre map (owner's pin, service radius, the server's pin-to-address verdict) and pin or address correction by click, drag or typed coordinates, Verification with the badge approval, Plan; suspend and reactivate; assist sessions with a banner on every page. Verification (/verification: queue with the 2-working-day SLA; submitted data, a watermarked document viewer with zoom, rotate and paging, the checklist; approve blocked by a far pin; reject with the message for the business; the organization's new status after the decision). Tests: pnpm check (429), smoke + bff E2E (13); tests/e2e/orgs.spec.ts written, its API seeding run. AC6-AC9 closed 2026-11-18: the strict signed-in E2E ran with the int:env test keys (no staff key needed), 35/35 passed after two console fixes (D-65 step-up replay notice, D-66 verification deep link) and test fixes; backend_requests BR-02..BR-35 marked done from backend S13-S24 (BR-14 stays deferred); new BR-36 (slow verification queue). 2026-11-18 (after the AC6-AC9 closure): backend/BR-update-plan.json reviewed. Backend S13-S25b and S26a-S26b are done (S26c not started), so the hold is lifted (meta.hold.lifted). The readiness map is backend_status_2026_11_18. The catch-up patch is AC10.T0. The S16a/S16b staff key and recovery work is the new stage AC10b, before AC11. AC14.T1 (the backend half) was done by backend S13-S24. Doc issues and R-items closed by the backend are marked. New BR-37 (verification read by id or organization, from D-66). BR-36 and BR-37 are handed to the backend plan and staged first in S26c (S26c.T0, owner); the console follow-up is AC14b.T8. AC10 done 2026-11-18: users (lookup within the work item, detail with masked contacts, timed suspension, sign out, reset onboarding, staff roles by four-eyes) and privacy requests (queue, steps, export job, deletion by four-eyes), plus the catch-up patch (badge list, own requests from the server, region threshold, assign to a colleague, suspension durations, R-17). Tests: pnpm check green (lint with the R-17 rule, logical CSS, typecheck, unit + DOM 466, contract:check at 1.5.0, i18n:check 1809 keys in en and fa, ds:check); prettier clean on the files of this stage; Strict signed-in E2E on 2026-11-18 against `pnpm int:env backend`: tests/e2e/privacy.spec.ts 2/2 (EN: deletion request through identity and processing, the user page refused without a purpose and opened for dsr:<id> with the full name masked, a 7-day suspension and reactivation, the deletion requested by admin A, approved by admin B, the outcome under Your requests and the request completed by the worker; FA: export request processed, file built and followed with admin.job_get, the user found by email within the request, the request completed and the same lookup then refused; axe on queue, request, lookup and user page in EN and FA). Whole suite 37/37 passed (6.3 min), so the T0 changes did not break AC4-AC9. AC10b done 2026-11-20: staff security keys, recovery codes and account recovery (backend S16a/S16b). Recovery codes shown once after a new key (never stored); /security for every staff member (own keys, backup key, remove, new codes; step-up arms the action instead of replaying it, D-76); \"Lost your security key?\" on the sign-in from the request to the new key, with the request handle kept by the BFF (HttpOnly id cookie, server-side store) so an approval hours later continues in a new sign-in; Recovery requests (/recoveries, ADM: approve with the check method and a note for \"other\", reject); the 72-hour restriction banner and a prompt when no code is left. Tests: pnpm check 494, pnpm test:int 7/7 strict, E2E recovery.spec.ts 3/3 and signin.spec.ts 9/9 strict. New BR-39 (recoveries in admin.work_summary). AC12 done 2026-11-20: taxonomy management on /taxonomy (tree, list and missing translations per type with a search by any label; node editor that requires EN and FA labels and follows the database parent and attribute rules, If-Match on edits; synonyms and transliterations with AI suggestions decided; weighted mappings; merges by four-eyes with the job followed on Pending approvals and the merge tab; zero-result search counts). New DI-35 and BR-40 (terms, synonym search and queue, usage counts, merge preview). Tests: pnpm check 509; E2E taxonomy.spec.ts 2/2 strict; Whole strict E2E suite on 2026-11-20: 42/42 passed (9.0 min, 4 workers; recovery.spec.ts 3, taxonomy.spec.ts 2 and every earlier suite with the recovery-codes step). AC13 done 2026-11-20 (run before AC11 on the owner's request): the full home dashboard from admin.work_summary and admin.system_health (D-32 paging gone), analytics for all 11 dashboard keys with charts and tables, AI oversight (kill switch, alerts, read-only AI outputs), MCP clients with a four-eyes access editor and the access log, and the platform audit log; flags and rates open their audit trail by id. New DI-36..DI-38, BR-41, BR-42. Tests: pnpm check 541; E2E oversight.spec.ts 3/3 strict; Whole strict E2E suite on 2026-11-20: 45/45 passed (10.3 min, 4 workers; oversight.spec.ts 3 and every earlier suite with the new dashboard as the landing page; approvals.spec.ts tile counts updated). AC14-1 done 2026-11-20 (run on the owner's request ahead of AC11, which stays not_started; AC14 split per its split_note): Staff & permissions (/staff: directory, roles, disable, four-eyes enable), Policies & consent texts (/policies: versions, drafts, four-eyes publish with re-consent keep or pause), Notifications & templates (/notifications: templates with preview and reset, rules, delivery health) and the staff notice bell; the BFF takes 256 KiB policy texts and the ticket purpose; reads the console makes on its own no longer keep a session alive (D-102, an AC13 defect). AC14-2 started: the support inbox (/support: views, the team clock, ticket:<id> read, assign, templated replies EN/FA, turn into a case / privacy request / dispute / plan request, close; the dashboard tile links to it; array query values now comma-separated, D-105). New D-98..D-106, DI-39..DI-41, BR-43..BR-45. Tests: pnpm check green; pnpm test:int strict passed; E2E settings-ac14.spec.ts 3/3 and support.spec.ts 2/2 strict; Whole strict E2E suite on 2026-11-20: 50/50 passed (16.0 min, 4 workers; settings-ac14.spec.ts 3 and support.spec.ts 2 with every earlier suite; an earlier run failed 2 AC14 tests on timing, fixed as D-107, and the AC14 specs then passed twice in a row). AC14-2 continues (T5 remaining: user and organization tabs, disputes, verification, moderation actions, plans, retention, my decisions) is not done; its checklist is in stages AC14.parts. AC14b done 2026-11-21 on the owner's request: first sign-in password change in /id/signin (code + own password, no skip, the code carried into the key enrolment), the daily exchange rate (Today badge, the unset rate opened first, Set today's rate or Keep for today with a prefilled reason, a dashboard card for ADMs), the odometer prompt rule, CarPal-Forwarded-Client on admin-api and /id calls (backend S26c.T2), verification links read by id (BR-37, D-66 walk removed), and no Neshan basemap in the console by the owner's choice (OQ-16 (c)): Open in Neshan from the Locations tab. New D-108..D-111, OQ-16 (answered). Tests: pnpm check 623; pnpm test:int 7/7 strict; Strict E2E against `pnpm int:env backend` on 2026-11-21: whole suite 47 passed, 1 failed, 2 not run (13.6 min, 4 workers); the failure was this stage's dashboard rate card counted as an 8th widget in oversight.spec.ts (the test now counts the 7 fixed widgets and checks the card's link when shown), and the 2 not run were the serial tests after it. After that fix and the Neshan links: oversight.spec.ts, orgs.spec.ts and settings.spec.ts 9/9 passed (3.7 min), so every test of the suite has passed on this stage's code. AC11 done 2026-11-22 (milestone M1): the deploy kit frontend/admin-console/deploy/ (admin-setup.sh, admin-update.sh, nginx with ADMIN_GATE default none, own service user, sessions in memory D-112, ADMIN_CONSOLE_HOST D-113), the staff runbook, the backend deploy.md admin plane settings, the pilot E2E suite (pnpm e2e:pilot) and the security pass (deploy/security-pass.md: no high-severity finding; F-1 moderate: Next.js 16.4.5 update). pnpm check 627; pilot E2E 11/11 strict. New D-112..D-114. AC15 (hardening) built 2026-11-25 on the screens that exist, before AC14-2 by the owner's request (D-115): role journeys EN/FA, axe on every route × direction × theme with keyboard and reduced-motion runs, RTL screenshots from recorded reads, performance budgets met at the desktop profile, the security pass on the whole app (F-1 still open, F-7 dev only); fixes: account menu, two table names, a missing heading, dashboard CLS 0.43 → 0.008, J on slow tables. Status partial: its closure waits for AC14-2 (AC15-b).",
       "stages_done": [
         "AC1",
         "AC2",
@@ -35,9 +35,10 @@
         "AC10b",
         "AC12",
         "AC13",
-        "AC14b"
+        "AC14b",
+        "AC11"
       ],
-      "next": "AC14-2 (AC14.T5 checklist), then AC11 (milestone M1), AC15. Full test run when the whole plan is complete (PD-03).",
+      "next": "AC14-2 (AC14.T5 checklist), then AC15-b (rerun the AC15 suites, screen_coverage final, meta.status). F-1 (Next.js 16.4.5) when the owner agrees. R-01 before the provider plan's PP1.",
       "decisions_needed_now": [
         "Backend DQ-25 (initial password length for admin100/200/300) and DQ-26 (their email addresses) were built on their defaults and wait for the owner's confirmation (backend/BR-update-plan.json decisions_needed); the console step (AC14b.T2) does not depend on them, the AC11 runbook does. DQ-29 (Neshan as a third party) is settled for the console (no Neshan code, OQ-16 (c), 2026-11-21) but still matters for the backend geocoder and the PWA (PB-10).",
         "R-05, R-07, R-19, R-21: non-code pilot preparations (staff names, security keys, who checks Pending approvals, the real IRR rate). They are not needed before AC11. R-24 is closed: Neshan replaced the tile host, and the console links to Neshan instead of showing its tiles (AC14b.T6, OQ-16 (c))."
@@ -187,7 +188,8 @@
       "id": "GD-15",
       "decision": "Deployment: frontend/admin-console/deploy/ (deploy.md, admin-setup.sh, admin-update.sh, lib.sh, templates/) following the WinSCP + staging-folder workflow and the shared /carpal/config/deploy.conf; ADMIN_HOST=admin.<DOMAIN> derived from DOMAIN; scripts LF-only. The access gate in front of the console is a setting (ADMIN_GATE=ip_allowlist | none), default ip_allowlist, because the final access strategy is still open (Docs/02 §15, OQ-02).",
       "reason": "Memory: deploy workflow and host naming; SEC-ADM-1.",
-      "stage": "plan"
+      "stage": "plan",
+      "amendment_2026_11_22": "As built in AC11: ADMIN_GATE=none | ip_allowlist with default none (OQ-02 answered: passkey only); the host variable is ADMIN_CONSOLE_HOST (D-113); the kit is admin-setup.sh / admin-update.sh with deploy.md, runbook.md and security-pass.md."
     },
     {
       "id": "GD-16",
@@ -3512,7 +3514,7 @@
     {
       "id": "AC11",
       "title": "Pilot release: deploy kit, pilot E2E, security pass (milestone M1)",
-      "status": "not_started",
+      "status": "done",
       "depends_on": [
         "AC6",
         "AC7",
@@ -3542,35 +3544,41 @@
         {
           "id": "AC11.T1",
           "task": "deploy/: deploy.md, admin-setup.sh (service user, systemd unit on 127.0.0.1:3200, nginx server block for ADMIN_HOST with TLS, gate per ADMIN_GATE, client key placement), admin-update.sh (stop, copy from staging, pnpm install --frozen-lockfile, build, restart), lib.sh; LF only; reads /carpal/config/deploy.conf.",
-          "status": "not_started",
-          "note_2026_11_18": "R-23 backend half done (S25b: the storage host sends CORP cross-origin; never add same-origin in nginx). The map style comes from the region settings (admin.region_settings, AC10.T0), with CARPAL_ADMIN_MAP_STYLE_URL only as a fallback. The deploy kit places the Neshan web map key (CARPAL_ADMIN_NESHAN_MAP_KEY, AC14b.T6). After backend S26c, trusted proxy addresses (CARPAL_TRUSTED_PROXIES) are a backend setting; the console BFF change is AC14b.T7."
+          "status": "done",
+          "note_2026_11_18": "R-23 backend half done (S25b: the storage host sends CORP cross-origin; never add same-origin in nginx). The map style comes from the region settings (admin.region_settings, AC10.T0), with CARPAL_ADMIN_MAP_STYLE_URL only as a fallback. The deploy kit places the Neshan web map key (CARPAL_ADMIN_NESHAN_MAP_KEY, AC14b.T6). After backend S26c, trusted proxy addresses (CARPAL_TRUSTED_PROXIES) are a backend setting; the console BFF change is AC14b.T7.",
+          "result": "frontend/admin-console/deploy/: deploy.md, admin-setup.sh, admin-update.sh, lib.sh, admin-deploy.conf.example, .gitattributes (eol=lf), templates/ (carpal-admin.service, nginx-carpal-admin.conf, nginx-carpal-admin-proxy.conf, admin.env.template). Copied from the PWA kit and adapted: host ADMIN_CONSOLE_HOST (admin.<DOMAIN>; ADMIN_HOST stays the backend's admin-api, D-113), release /carpal/admin/src/{frontend/admin-console,shared} (the pnpm links), own service user carpal-admin, next start --hostname 127.0.0.1 --port 3200 (D-110), nginx zones carpal_admin_* and limit_req_status inside the server block (the backend site sets it at http level; a second one there fails nginx -t, advisor) (sign-in and recovery start 2/min, code-sending steps 1/min, the rest 20/s), client_max_body_size 512k (256 KiB policy texts), X-Forwarded-For appended, ADMIN_GATE none | ip_allowlist rendered per location (certbot challenge stays open), certbot --redirect (OQ-11), admin.env with the cp-web-admin key from oauth-admin-client-keys.json, sessions in memory (D-112). admin-update.sh: preflight (contract of the upload vs the backend, origin, audience, no dev settings), copy before the stop, build with one retry (SecurityFatalError), health /id/signed-out, a /bff/csrf session read back, CSP/HSTS/no-store/noindex on the page, rollback. The Neshan key of the 2026-11-18 note is gone (OQ-16 (c)). src/server/deploy-kit.test.ts checks the env template against env.ts and the placeholders against render(); bash -n on the scripts; both gate modes rendered with a sample deploy.conf; the backend-settings checks of admin-setup.sh run in Git Bash against the rendered backend.env template (no warning) and a broken copy (the expected warnings). Not run on a server (out_of_scope)."
         },
         {
           "id": "AC11.T2",
           "task": "Backend deploy settings for the admin client (redirect URI, WebAuthn origin, sign-in URL map, client public key) documented and added to backend/deploy templates.",
-          "status": "not_started"
+          "status": "done",
+          "result": "The backend template already had the redirect URI, WebAuthn origin and the cp-web-admin public key (S12). admin-setup.sh checks them (and CARPAL_AUTH_WEB_ORIGINS, the audience, strict mode, CARPAL_SIGNIN_URL unset, the RP id). backend/deploy/deploy.md: Admin plane section lists the console's backend settings and points to the console kit; the DNS row adds admin.; known limitation 5 updated. No media CORS entry is needed (the console never fetches media; <img>/<video> need CORP cross-origin only)."
         },
         {
           "id": "AC11.T3",
           "task": "First-staff runbook: create the first ADM on the server (dev tool is refused in prod → document a one-time server command or backend bootstrap flag), enrol passkeys, grant roles by four-eyes from then on.",
-          "status": "not_started",
+          "status": "done",
           "note_ac2": "OQ-10 answer: admin-setup.sh runs backend/deploy/staff-bootstrap.sh on its first install when /carpal/config/staff-bootstrap.json exists (it prints one-time passwords; existing accounts are left alone). The runbook covers handing over the passwords, the first sign-in (password, emailed code from the outbox until NI-07, device-bound passkey), and until BR-19 a lost key (SQL to disable the staff member's webauthn methods).",
-          "note_2026_11_18": "Since backend S26a the pilot administrators admin100, admin200 and admin300 are seeded with the owner's initial password (CARPAL_STAFF_INITIAL_PASSWORD; it expires after 7 days, staff:bootstrap --reissue) and must choose a new password at the first sign-in (AC14b.T2). Real email goes through the carpals.ir SMTP mailbox (backend deploy/email_setup_guide.md). A lost key uses the console recovery (AC10b). Break glass (deploy/staff-break-glass.sh) is only for when fewer than two other ADMs are active. The lost-key SQL is gone."
+          "note_2026_11_18": "Since backend S26a the pilot administrators admin100, admin200 and admin300 are seeded with the owner's initial password (CARPAL_STAFF_INITIAL_PASSWORD; it expires after 7 days, staff:bootstrap --reissue) and must choose a new password at the first sign-in (AC14b.T2). Real email goes through the carpals.ir SMTP mailbox (backend deploy/email_setup_guide.md). A lost key uses the console recovery (AC10b). Break glass (deploy/staff-break-glass.sh) is only for when fewer than two other ADMs are active. The lost-key SQL is gone.",
+          "result": "deploy/runbook.md: the accounts the pilot needs (four ADM with the sealed backup, DQ-16), the staff spec and CARPAL_STAFF_INITIAL_PASSWORD, staff-bootstrap.sh (run by admin-setup.sh on the first install) and --reissue after 7 days, the first sign-in note for staff (R-14), roles by four-eyes, lost key through Recovery requests with two other ADMs, break glass, the daily routine (rate every morning, Pending approvals on duty R-19, recoveries), before the pilot opens (the real rate is a four-eyes change from the placeholder, R-21), open owner decisions DQ-25/DQ-26."
         },
         {
           "id": "AC11.T4",
           "task": "Pilot E2E suite in strict mode: sign-in, exchange rate, kill switch, Path 2 approval, report → case → action, verification, DSR deletion with four-eyes.",
-          "status": "not_started"
+          "status": "done",
+          "result": "The pilot suite is the existing tests of the pilot flows tagged @pilot in their titles (signin.spec.ts: first sign-in, next sign-in, step-up; settings.spec.ts: exchange rate, kill switch with four-eyes off; reviews.spec.ts: Path 2 approval; moderation.spec.ts: report -> case -> action; orgs.spec.ts: verification after a pin correction; privacy.spec.ts: deletion by four-eyes) plus the new tests/e2e/pilot.spec.ts (security headers of every route class; after a signed-in walk no token or personal data in cookies, Web Storage, IndexedDB or a service worker). package.json e2e:pilot = playwright test --grep @pilot. Strict run on 2026-11-22 against `pnpm int:env backend`: 11/11 passed (3.9 min, 4 workers)."
         },
         {
           "id": "AC11.T5",
           "task": "Security pass: headers and CSP on every route, no tokens or PII in the browser storage or logs, purpose header on every PURP call, BFF allowlist review, rate limit behaviour, session limits; findings fixed or recorded.",
-          "status": "not_started"
+          "status": "done",
+          "result": "deploy/security-pass.md: headers and CSP on every route class (curl on a prod-mode build; pilot.spec.ts), tokens and personal data in browser storage and logs, purpose header, BFF allowlist (124 operations), rate limits, session limits, the server setup, dependencies (pnpm audit). No high-severity finding. Open: F-1 moderate, next@16.4.3 has 7 moderate advisories fixed in 16.4.5 (the owner decides the upgrade). F-2 low (backend log keeps one-time passwords without CARPAL_STAFF_INITIAL_PASSWORD), F-3 low (static files without nosniff/HSTS), F-4..F-6 info."
         },
         {
           "id": "AC11.T6",
           "task": "Docs: README (setup, commands, env), update frontend/README and Docs/02 §1.4 if DI-01 is confirmed; memory/handoff notes; milestone M1 report.",
-          "status": "not_started"
+          "status": "done",
+          "result": "README: status, Node 24, contract 1.5.0, 124 operations, the pilot suite (pnpm e2e:pilot), a Deployment section. GD-15 amended (ADMIN_GATE default none, ADMIN_CONSOLE_HOST). backend deploy.md (T2). Memory: deploy workflow now four kits. M1 report = this stage report. DI-01 was resolved in 2026-11-13 (GD-01 confirmed): Docs/02 §1.4 and frontend/README need no change for it."
         }
       ],
       "deliverables": [
@@ -3587,7 +3595,64 @@
       "out_of_scope": [
         "the first production deploy itself (needs server access; the user runs it)"
       ],
-      "report": null
+      "report": {
+        "started_at": "2026-11-22",
+        "completed_at": "2026-11-22",
+        "summary": "Milestone M1 (pilot minimum) reached in code: the console has its own deploy kit for admin.<DOMAIN> in the WinSCP workflow (admin-setup.sh once, admin-update.sh per release, behind nginx with the ADMIN_GATE setting, default none per OQ-02), a staff runbook, a pilot E2E suite (pnpm e2e:pilot: the pilot flows tagged @pilot plus pilot.spec.ts for headers and browser storage) and a security pass without a high-severity finding. pnpm check green (627 tests in 64 files); strict pilot E2E 11/11. A time-of-day bug in the AC13 analytics DOM test (UTC date instead of the viewer's Tehran day, failing from 00:00 to 03:30 Tehran time) was fixed on the way (D-114).",
+        "acceptance": {
+          "A fresh server deploy following deploy.md serves the console on admin.<DOMAIN> behind the gate; update.sh redeploys without manual steps.": "Built and checked locally (template test, bash -n, rendering both gates, a prod-mode build probed with curl); the first real server run is the owner's (out_of_scope).",
+          "Pilot E2E suite green in strict mode against backend pnpm dev.": "Met on 2026-11-22: pnpm e2e:pilot 11/11 against the strict backend (pnpm int:env backend). The whole-plan run of PD-03 still follows.",
+          "No open high-severity security finding.": "Met: F-1 is moderate (Next.js 16.4.5 update recommended before go-live)."
+        },
+        "screens_built": [],
+        "operations_used": [],
+        "files_created": [
+          "deploy/{deploy.md, runbook.md, security-pass.md, lib.sh, admin-setup.sh, admin-update.sh, admin-deploy.conf.example, .gitattributes}",
+          "deploy/templates/{carpal-admin.service, nginx-carpal-admin.conf, nginx-carpal-admin-proxy.conf, admin.env.template}",
+          "src/server/deploy-kit.test.ts",
+          "tests/e2e/pilot.spec.ts"
+        ],
+        "files_changed": [
+          "package.json (e2e:pilot)",
+          "tests/e2e/{signin, settings, reviews, moderation, orgs, privacy}.spec.ts (@pilot in the titles)",
+          "src/features/analytics/analytics.test.tsx (D-114)",
+          "README.md",
+          "backend/deploy/deploy.md (Admin plane, DNS, known limitation 5)",
+          "dev-plan.json"
+        ],
+        "tests": {
+          "unit": "pnpm check green on 2026-11-22: lint (logical CSS), typecheck, unit + DOM 627 tests in 64 files, then 628 with the nginx check (new: src/server/deploy-kit.test.ts, 5 tests: the nginx http level, the rendered admin.env passes env.ts in prod, template placeholders match render(), loopback and X-Forwarded-For, LF only), contract:check 1.5.0 with 124 admin-api operations, i18n:check 3022 keys, ds:check. Prettier clean on the files of this stage.",
+          "int": "Not rerun: the BFF did not change in this stage.",
+          "e2e": "Strict pilot suite (pnpm e2e:pilot) on 2026-11-22 against `pnpm int:env backend`: 11 passed (3.9 min, 4 workers). The whole suite was not rerun (only titles and a new spec changed); PD-03's whole-plan run follows.",
+          "a11y": "No screen changed; axe runs inside the tagged tests as before.",
+          "deploy_kit": "bash -n on lib.sh, admin-setup.sh, admin-update.sh; nginx site rendered for ADMIN_GATE=none and ip_allowlist with a sample deploy.conf; a prod-mode build (CARPAL_ADMIN_ENV=prod, strict, throwaway key) probed with curl for every route class; /id/signed-out answers 200 without a session (the health URL). admin-setup.sh backend-settings checks run against the rendered backend.env template (clean) and a broken copy (two expected warnings). deploy-kit.test.ts also keeps the nginx site free of http-level directives other than its own zones. Not run: shellcheck (not installed), nginx -t, certbot and systemd (no server).",
+          "security": "deploy/security-pass.md; pnpm audit --prod: 7 moderate advisories in next@16.4.3 (F-1), none high.",
+          "build": "pnpm build passed on the second attempt (the first stopped with the known SecurityFatalError, which admin-update.sh retries)."
+        },
+        "deviations": [
+          "D-112",
+          "D-113",
+          "D-114"
+        ],
+        "new_doc_issues": [],
+        "new_backend_requests": [],
+        "decisions": [
+          "Sessions in memory on the server (D-22 decided as D-112): the staff tokens never leave the console process and the PWA's Redis password is not shared; a restart signs staff out and drops a waiting recovery handle, so the runbook says to deploy without one.",
+          "The console runs as its own user carpal-admin, so the PWA process cannot read the staff client key.",
+          "The pilot suite reuses the AC4-AC10 tests of the pilot flows by tag instead of copies; only the security checks are new."
+        ],
+        "notes_for_next": [
+          "F-1: update next and @next/eslint-plugin-next to 16.4.5 when the owner agrees (PWA too), then pnpm check, pnpm build, pnpm e2e:pilot.",
+          "The owner's first server run: backend kit, then frontend/admin-console/deploy/admin-setup.sh (deploy.md \"First deployment\"); report what differs from the guide.",
+          "AC14-2 (rest of AC14.T5 checklist) and AC15 remain; AC15.T5 repeats the security pass on the whole app with a dependency audit.",
+          "Backend follow-up (F-2): keep one-time staff passwords out of the deploy log."
+        ],
+        "open_after_stage": [
+          "F-1 (moderate, owner decision on the Next.js patch update).",
+          "DQ-25, DQ-26, R-05, R-07, R-19 (owner/pilot preparations in the runbook).",
+          "Nothing committed (commit only when the user asks; audit first per CLAUDE.md)."
+        ]
+      }
     },
     {
       "id": "AC12",
@@ -4322,7 +4387,7 @@
     {
       "id": "AC15",
       "title": "Hardening and closure: full E2E, accessibility, RTL visuals, performance, security review, handoff",
-      "status": "not_started",
+      "status": "partial",
       "depends_on": [
         "AC12",
         "AC13",
@@ -4348,32 +4413,39 @@
         {
           "id": "AC15.T1",
           "task": "Full E2E across all sections in EN and FA, per role (a MOD, CRV, SUP and ADM journey each).",
-          "status": "not_started"
+          "status": "done",
+          "result": "tests/e2e/journeys.spec.ts: eight journeys (MOD, CRV, SUP, ADM × EN, FA): fresh staff in that language, html dir/lang, the exact sections of the role in navigation order, every section opened through the navigation (heading, aria-current, no loading/error/no-permission/not-found state), a section the role may not open, one piece of the role's work (SUP takes a ticket filed by an app user; CRV confirms a Path 2 review the business confirmed; MOD reads the content and review queues without the reviewer's buttons; ADM Pending approvals and My actions in the audit log) and sign-out from the account menu. Found and fixed: the account menu stayed open after one of its links navigated (console-shell.test.tsx covers it)."
         },
         {
           "id": "AC15.T2",
           "task": "Accessibility sweep (axe on every route × EN/FA × themes, keyboard only, screen-reader labels on tables and charts, reduced motion).",
-          "status": "not_started"
+          "status": "done",
+          "result": "tests/e2e/a11y.spec.ts: axe on the pages outside the console (sign-in with an interaction, /id/signin, three signed-out reasons) and on 28 administrator routes (23 sections, /security, a user and an organization without a purpose, /disputes as no-permission, an unknown page) × EN/FA × Daylight/Sunlight/Night, plus the moderator's /disputes; on every page: tables and charts named, images named, no exposed unnamed svg, badges/chips with words, no sideways scroll. Keyboard only: sign-in with a new key (Tab/Enter/Space), skip link to #main, Feature flags from the navigation, ? and Escape, J through a list. Reduced motion: no running animation, no smooth scroll, the shortcut list without a transition. Found and fixed: the rate preview table and the shortcut list table had no accessible name; a user page opened without a purpose had no h1 (PurposeGate title)."
         },
         {
           "id": "AC15.T3",
           "task": "RTL visual regression screenshots for key screens (shell, case layout, tables, forms, charts).",
-          "status": "not_started"
+          "status": "done",
+          "result": "tests/e2e/visual.spec.ts: seven right-to-left screenshots in Persian, Daylight, 1280 × 720 (shell and dashboard, case layout on Feature flags with an open flag, the staff directory table, the exchange-rate form, the audit search form, analytics charts, the sign-in). Every admin read is replayed from tests/e2e/visual.fixtures.json (17 reads recorded from the dev backend) and the browser clock is fixed (2026-11-25T08:30Z), so the pictures hold on a shared, growing database (D-117). Baselines tests/e2e/visual.spec.ts-snapshots/*-chromium-win32.png; maxDiffPixelRatio 0.002."
         },
         {
           "id": "AC15.T4",
           "task": "Performance: large queues (1000+ items through paging), table rendering, dashboard refresh; budgets recorded.",
-          "status": "not_started"
+          "status": "done",
+          "result": "tests/e2e/performance.spec.ts (pnpm e2e:perf, one worker), profile Lighthouse desktop (no CPU slowdown, 10/5 Mbps, 40 ms; D-116). Final run 2026-11-25: routes / 1202 ms (LCP 1076, CLS 0.008, 15 reads, slowest system-health 192 ms); /approvals 720 ms (LCP 540, CLS 0, 5 reads, slowest work-summary 216 ms); /content 1289 ms (LCP 272, CLS 0, 11 reads, slowest work-summary 193 ms); /support 832 ms (LCP 248, CLS 0, 4 reads, slowest work-summary 147 ms); /users 426 ms (LCP 268, CLS 0, 3 reads, slowest work-summary 117 ms); /orgs 1868 ms (LCP 192, CLS 0, 4 reads, slowest orgs/search 636 ms); /audit 445 ms (LCP 228, CLS 0, 4 reads, slowest work-summary 140 ms); /analytics 710 ms (LCP 248, CLS 0, 4 reads, slowest work-summary 168 ms); /staff 750 ms (LCP 388, CLS 0, 4 reads, slowest work-summary 133 ms); /flags 747 ms (LCP 612, CLS 0.039, 5 reads, slowest work-summary 172 ms); /verification 889 ms (LCP 356, CLS 0, 4 reads, slowest work-summary 124 ms). Paging 1,000 staff members (BR-43 dev data): median 193 ms, p95 386 ms a page of 100 (staff_list 74-86 ms on the server). J on a page of 100: focus median 85 ms (slowest 143), selection shown median 175 ms (slowest 469). 1,000 rows: 1680 ms after the answer; J focus median 453 ms (recorded, not judged). Dashboard refresh: 13 background reads in 345 ms, CLS 0. JavaScript per page 907-978 KB decoded. Found and fixed: dashboard CLS 0.43 (the rate card first in the grid; widgets 94 px while loading; now CLS 0.008 with the card after Queues (below the fold for ADMs: D-118, owner decision) and loading heights reserved, plus scrollbar-gutter: stable); J pressed twice before a slow re-render chose the same row (DataTable remembers the asked-for row). Slow-PC reference (CARPAL_PERF_CPU=4, 2026-11-25): routes 2.8-9.1 s ready, paging p95 942 ms, 1,000 rows 6.4 s; at 4× Playwright's own in-page checks slow down too, which is why timings are taken in the page."
         },
         {
           "id": "AC15.T5",
           "task": "Security review (repeat AC11.T5 on the whole app, plus dependency audit); deploy kit updated.",
-          "status": "not_started"
+          "status": "done",
+          "result": "deploy/security-pass.md \"AC15\": tests/e2e/security-review.spec.ts on every route (page headers, no CSP/Trusted Types violation, no-store admin reads, no email or JWT in any request URL, hostile return_to values kept same-origin); allowlist 124 operations (unchanged); pnpm audit --prod 7 moderate (F-1, next@16.4.3), full audit 8 moderate (F-7 minimatch via eslint, dev only); none high. Deploy kit: deploy.md \"Before uploading\" names the whole suite and pnpm audit --prod for releases that change screens; runbook.md \"Before the pilot opens\" lists the F-1 update."
         },
         {
           "id": "AC15.T6",
           "task": "Closure: README final, screen_coverage final, next_iteration list, recommendation R-01 detailed (shared BFF + kit package for cp-web-portal), meta.status scratch_build_done.",
-          "status": "not_started"
+          "status": "partial",
+          "partial_reason": "screen_coverage final and meta.status scratch_build_done wait for AC14-2 (D-115).",
+          "result": "README: status, the hardening suites, e2e:pilot/e2e:perf, Deployment. next_iteration below (report.next_iteration). R-01 detailed in recommendations_for_next_stages (detailed_2026_11_25: extract shared/web-bff and shared/web-client before PP1.T2 of the provider plan instead of a third copy; admin kit parts when the portal needs them). Not done: screen_coverage final, meta.status."
         }
       ],
       "deliverables": [
@@ -4388,7 +4460,119 @@
       "out_of_scope": [
         "post-MVP screens"
       ],
-      "report": null
+      "report": {
+        "started_at": "2026-11-22",
+        "completed_at": "2026-11-25",
+        "summary": "Hardening on every screen built so far (AC14-2's are not). Role journeys in EN and FA, axe on every route in both directions and three themes with keyboard-only and reduced-motion runs, right-to-left screenshots that do not depend on the shared database, performance budgets with server time separated from rendering, and the security pass repeated on the whole app. Fixes found by the suites: the account menu closes after its links navigate; two tables got accessible names; a user page without a purpose has a heading; the dashboard no longer shifts while it loads (CLS 0.43 → 0.008: rate card moved after Queues (D-118), loading heights reserved, scrollbar-gutter); J pressed again before a slow table re-render moves on instead of repeating a row. No open high-severity accessibility or security finding.",
+        "acceptance": {
+          "pnpm check, build, test:int and two consecutive full pnpm e2e runs green.": "Met on 2026-11-25: pnpm check, pnpm build (second attempt after the known SecurityFatalError, F-1), pnpm test:int 7/7 and two consecutive full E2E runs green (81 passed each) against the strict backend.",
+          "No open high-severity accessibility or security finding.": "Met: axe clean on every route; security findings open: F-1 (moderate, owner decision: next 16.4.5), F-7 (moderate, dev only)."
+        },
+        "screens_built": [],
+        "operations_used": [],
+        "files_created": [
+          "tests/e2e/{journeys, a11y, visual, performance, security-review}.spec.ts",
+          "tests/e2e/visual.fixtures.json",
+          "tests/e2e/visual.spec.ts-snapshots/ (7 baselines, chromium-win32)"
+        ],
+        "files_changed": [
+          "src/features/shell/account-menu.tsx (closes on navigation) + console-shell.test.tsx",
+          "src/components/admin/data-table.tsx (J/K remember the asked-for row) + kit.test.tsx",
+          "src/components/admin/purpose-gate.tsx (title while the purpose is missing) + kit.test.tsx; src/features/users/user-page.tsx",
+          "src/features/rates/rates-page.tsx (preview table named) + rates.test.tsx; src/features/shell/shortcuts.tsx (caption)",
+          "src/features/dashboard/dashboard.tsx (rate card after Queues, D-118); src/components/admin/admin.css (loading heights); src/app/globals.css (scrollbar-gutter)",
+          "tests/e2e/recovery.spec.ts (timeout 240 s → 360 s: three strict sign-ins; past 4 min once under the AC15 suites' load)",
+          "package.json (e2e:perf)",
+          "README.md; deploy/{deploy.md, runbook.md, security-pass.md}",
+          "dev-plan.json"
+        ],
+        "tests": {
+          "unit": "pnpm check green on 2026-11-25: lint (logical CSS), typecheck, unit + DOM 631 tests in 64 files (new: account menu closes on navigation, J/K before a slow re-render, PurposeGate title, rate preview and shortcut tables named), contract, i18n, ds checks. pnpm typecheck again after the last spec edits.",
+          "int": "pnpm test:int 7/7 against the strict backend (pnpm int:env backend) on 2026-11-25.",
+          "e2e": "Whole suite (pnpm exec playwright test, build of 2026-11-25, strict backend, 4 workers) twice in a row: 81 passed, 5 skipped (the performance tests skip themselves with more than one worker) in 22.4 and 21.7 min. An earlier pair failed once on time (recovery.spec.ts past its 4 min under the new suites' load); fixed by splitting the administrator axe sweep per theme and giving recovery.spec.ts 6 min, then the two consecutive green runs above.",
+          "a11y": "a11y.spec.ts 10/10 (with security-review.spec.ts) on 2026-11-25; also inside the full runs.",
+          "visual": "Recorded and checked again from the fixtures: 7/7 twice; inside the full runs.",
+          "performance": "pnpm e2e:perf: see AC15.T4 result (all budgets met at the desktop profile; the 1,000-row J is recorded, not judged).",
+          "security": "security-review.spec.ts 2/2; pnpm audit as in T5."
+        },
+        "deviations": [
+          "D-115",
+          "D-116",
+          "D-117",
+          "D-118"
+        ],
+        "new_doc_issues": [],
+        "new_backend_requests": [],
+        "next_iteration": [
+          {
+            "id": "NI-AC15-01",
+            "item": "AC14-2: the eight checklist items of AC14.parts (user and organization tabs, disputes threads, verification assign/more info, moderation actions, plans, retention add/dry run, my decisions), then AC15-b.",
+            "owner": "console",
+            "priority": "before_go_live"
+          },
+          {
+            "id": "NI-AC15-09",
+            "item": "Owner decision D-118: where the daily rate card sits on the dashboard (today below Queues, under the fold for ADMs at 1280 × 720; alternative between Safety and Queues, visible, with a shift only on mornings when the rate is unset). Change it, then rerun visual (record), journeys, a11y and the whole suite.",
+            "owner": "owner decision",
+            "priority": "before_go_live"
+          },
+          {
+            "id": "NI-AC15-02",
+            "item": "F-1: next and @next/eslint-plugin-next 16.4.3 → 16.4.5 (PWA too), then pnpm check, build, the whole E2E suite and a visual check.",
+            "owner": "owner decision",
+            "priority": "before_go_live"
+          },
+          {
+            "id": "NI-AC15-03",
+            "item": "R-01: shared/web-bff and shared/web-client before PP1.T2 of the provider plan (no third BFF copy).",
+            "owner": "owner + PP1",
+            "priority": "before_PP1"
+          },
+          {
+            "id": "NI-AC15-04",
+            "item": "Visual baselines for a Linux CI (record with CARPAL_VISUAL_RECORD=1 there); record again when a key screen changes on purpose.",
+            "owner": "console",
+            "priority": "when_ci"
+          },
+          {
+            "id": "NI-AC15-05",
+            "item": "DataTable rows memoized, so a selection re-renders one row instead of the page (J on 1,000 rows ~450 ms; pages hold 100, where J is ~90 ms).",
+            "owner": "console",
+            "priority": "low"
+          },
+          {
+            "id": "NI-AC15-06",
+            "item": "F-7: eslint update when it ships a minimatch fix (development only).",
+            "owner": "console",
+            "priority": "low"
+          },
+          {
+            "id": "NI-AC15-07",
+            "item": "BR-36 looks fixed: /verification ready in 0.9-1.3 s with every read under 250 ms on the dev database (AC15 performance runs, 2026-11-25); close it after the owner's check. BR-43 stays (staff_list without an id filter; 2,000+ e2e staff rows in the dev DB).",
+            "owner": "owner / backend",
+            "priority": "low"
+          },
+          {
+            "id": "NI-AC15-08",
+            "item": "Not covered by AC15: Firefox and Safari, real hardware keys, a real server run of the deploy kit, load on the rate limits (security-pass.md \"Not covered\").",
+            "owner": "owner / pilot",
+            "priority": "pilot"
+          }
+        ],
+        "notes_for_next": [
+          "A screen of AC14-2 joins the AC15 sweeps by adding its route to ADMIN_ROUTES in a11y.spec.ts and ROUTES in security-review.spec.ts, and its section to SECTIONS in journeys.spec.ts if the role table shows it; record visual fixtures again only if a key screen changes.",
+          "pnpm e2e:perf on an existing build, alone (one worker). The budgets are at the desktop profile; CARPAL_PERF_CPU=4 is a reference only.",
+          "Visual fixtures hold a throwaway staff email (e2e-…@staff.carpals.test) and dev data only; never record against a real backend."
+        ],
+        "open_after_stage": [
+          "AC14-2 and AC15-b (closure: screen_coverage final, meta.status scratch_build_done).",
+          "D-118 (owner decision: the daily rate card below the fold).",
+          "F-1 (moderate, owner decision).",
+          "Nothing committed (commit only when the user asks; audit first per CLAUDE.md)."
+        ]
+      },
+      "partial_reason": "T1-T5 done; T6 closure partly: screen_coverage cannot be final and meta.status cannot be scratch_build_done while AC14-2 (AC14.parts checklist, eight items) is open. AC15 ran before AC14-2 at the owner's request (D-115). AC15-b: after AC14-2, rerun the AC15 suites (they list every route), finish screen_coverage, set meta.status.",
+      "note_2026_11_25": "Started 2026-11-22 03:30 on the owner's request (\"wait until 3:30 am, then execute AC-15\"), continued 2026-11-25. AC14 was still in_progress (AC14-2: eight checklist items not started); the advisor review agreed to build AC15 on the screens that exist and not to declare the scratch build done."
     }
   ],
   "deviations_log": [
@@ -5333,6 +5517,67 @@
       "affects": [
         "AC14b.T6"
       ]
+    },
+    {
+      "stage": "AC11",
+      "id": "D-112",
+      "summary": "D-22 decided: on the server the BFF keeps sessions and recovery handles in memory (CARPAL_ADMIN_SESSION_STORE=lite), not in the PWA's Redis. Staff tokens never leave the console process and the PWA's Redis password is not shared with the staff console; a restart (every update) signs staff out and forgets a waiting lost-key recovery (deploy.md, runbook.md). A Redis store of its own can follow when a second instance is needed.",
+      "affects": [
+        "AC11.T1",
+        "D-22"
+      ]
+    },
+    {
+      "stage": "AC11",
+      "id": "D-113",
+      "summary": "GD-15 says ADMIN_HOST=admin.<DOMAIN>, but the shared deploy.conf already uses ADMIN_HOST for the backend's admin-api host (backend/deploy/lib.sh). The console kit serves ADMIN_CONSOLE_HOST (default admin.<DOMAIN>, the backend kit's name for it) and uses ADMIN_HOST only for the DPoP audience.",
+      "affects": [
+        "GD-15",
+        "AC11.T1"
+      ]
+    },
+    {
+      "stage": "AC11",
+      "id": "D-114",
+      "summary": "Test fix outside the stage: src/features/analytics/analytics.test.tsx took TODAY as the UTC date, while the page ends the period on the viewer's day (Tehran), so the AC13 chart test failed every night from 00:00 to 03:30 Tehran time. TODAY is now dayIn(Date.now(), \"Asia/Tehran\").",
+      "affects": [
+        "AC13.T5"
+      ]
+    },
+    {
+      "stage": "AC15",
+      "id": "D-115",
+      "summary": "AC15 ran before AC14-2 (AC15 depends on AC14) at the owner's request; it hardens the screens that exist, and its T6 closure (screen_coverage final, meta.status) waits for AC14-2 as AC15-b.",
+      "affects": [
+        "AC15",
+        "AC14-2"
+      ]
+    },
+    {
+      "stage": "AC15",
+      "id": "D-116",
+      "summary": "Performance profile: Lighthouse desktop (no CPU slowdown) for staff office PCs instead of the PWA's 4× phone profile; under a 4× slowdown Playwright's own in-page checks dominated the profile, so key timings are taken inside the page with animation frames. The keyboard budget is judged on the median of presses 2-10 with the slowest recorded; the 1,000-row table is a recorded stress case (no page holds more than 100).",
+      "affects": [
+        "AC15.T4"
+      ]
+    },
+    {
+      "stage": "AC15",
+      "id": "D-117",
+      "summary": "RTL visual regression replays recorded admin reads (tests/e2e/visual.fixtures.json) with a fixed browser clock instead of masking dynamic regions, so whole screens are compared; baselines are per platform (win32 today). Stable over the day of recording (2026-11-25: recorded, then checked three times); a rerun on a later day confirms the fixed clock covers every date the screens compute.",
+      "affects": [
+        "AC15.T3"
+      ]
+    },
+    {
+      "stage": "AC15",
+      "id": "D-118",
+      "summary": "Dashboard: the daily rate card (AC14b.T3) moved from first to after Queues to stop the load shift (CLS 0.43 → 0.008). Queues spans the whole row, so for an administrator at 1280 × 720 the card is now below the fold: ADMs scroll to see the morning prompt the pilot runbook relies on. Alternative for the owner: put it between Safety and Queues (visible; shifts the page only on mornings when the rate is not set, nothing renders once it is). Not changed in AC15 (the acceptance runs were done on this layout).",
+      "affects": [
+        "AC14b.T3",
+        "AC15.T4",
+        "deploy/runbook.md Before the pilot opens"
+      ]
     }
   ],
   "handoff_notes": [
@@ -5352,7 +5597,36 @@
   "recommendations_for_next_stages": [
     {
       "id": "R-01",
-      "text": "When the business web app (cp-web-portal) starts, extract the BFF core (session, oauth, dpop, private_key_jwt, forwarder, csrf), the typed client and the design-system kit from pwa/ and frontend/admin-console/ into shared packages instead of making a third copy."
+      "text": "When the business web app (cp-web-portal) starts, extract the BFF core (session, oauth, dpop, private_key_jwt, forwarder, csrf), the typed client and the design-system kit from pwa/ and frontend/admin-console/ into shared packages instead of making a third copy.",
+      "detailed_2026_11_25": {
+        "why": "Two copies already exist and drift: of the 18 BFF modules both apps have, only crypto.ts, csrf.ts, session/store.ts and oauth/dpop.ts are still the same (1-5 lines apart); oauth/flow.ts differs in 260 lines, test-support.ts in 217, tokens.ts in 181, forwarder.ts in 161. Every security fix since AC1 (console D-102 background reads and D-110 CarPal-Forwarded-Client; the PWA's PoW on the anonymous grant and its Redis store) had to be made twice or exists in one app only. The provider plan's PP1.T2 says 'BFF copied from pwa/src/server/bff': that would be the third copy.",
+        "when": "Before PP1.T2 of frontend/provider-dev-plan.json (the business web app foundation, client cp-web-portal). Change PP1.T2 from 'copy' to 'extract, then use'; the owner decides (cross-plan change, not made by AC15).",
+        "packages": [
+          {
+            "name": "shared/web-bff (@carpal/web-bff, linked like @carpal/i18n)",
+            "contents": "The same-in-all-three core: session/{types,store,redis,manager} with the store interface, crypto (sealing), csrf, http (headers per route class, problem answers), oauth/dpop, oauth/token-client (private_key_jwt + DPoP + nonce retry + the PoW hook), oauth/flow (code + PKCE, callback, reauth/step-up with intents), the forwarder (allowlist match, purpose/reason/If-Match/Idempotency headers, body limits, Origin + Sec-Fetch-Site + CSRF on writes, background reads), the /id auth proxy, the signed CarPal-Forwarded-Client header, and test-support (the fake auth server and fixture sessions).",
+            "per_app": "Each app keeps only its configuration: client id and key, origin, cookie names (cp_ / cpa_ / the portal's), the operation map and allowlist rule (PWA: api host, public reads; console: admin-api only, 124 operations; portal: {me}, {pub}, {org} per SEC-WEB-5), the session limits (console: aal3, 30 min idle, 8 h; PWA and portal: theirs), extra endpoints (console: staff recovery handle, recovery.ts; PWA: PoW search), and its env schema.",
+            "shape": "createBff(config) returns the route handlers (login, callback, logout, reauth, session, csrf, intents, forward, id proxy); the app's src/server/bff/index.ts becomes the config plus a few lines."
+          },
+          {
+            "name": "shared/web-client (@carpal/web-client)",
+            "contents": "The browser side used by all three: the typed client over a generated operation map (client.ts, problem.ts, retry.ts with Retry-After-Ms and full jitter, uuid.ts, the PoW worker), TanStack Query wiring (query.tsx, background reads) and session helpers. The operation map stays per app (generated from @carpal/api-contracts)."
+          },
+          {
+            "name": "shared/admin-kit (@carpal/admin-kit) — only if the portal needs it",
+            "contents": "The console's admin kit (src/components/admin: DataTable with URL filters, saved views and cursor paging, CaseLayout, ReasonPanel, FourEyesBanner, PurposeGate, AuditDrawer, JobProgress, MaskedField) is console-only today. The business web app needs DataTable, CaseLayout and JobProgress for its queues and imports (vendor CSV import, fleet lists); move those three (plus their CSS) when PP1 needs them, and leave ReasonPanel, FourEyesBanner, PurposeGate and AuditDrawer in the console (staff-only concepts). shared/business-ui (PRV-GD-08) stays for the provider/workshop components."
+          }
+        ],
+        "steps": [
+          "1. Create shared/web-bff with the four modules that are still the same (crypto, csrf, session/store, oauth/dpop) and their tests; switch the PWA and the console to them. No behaviour change; pnpm check, test:int and e2e:pilot in both apps.",
+          "2. Unify the rest module by module, taking the newer behaviour of either app (console: background reads D-102, forwarded client D-110, intents with return_to checks; PWA: PoW on the anonymous grant, the Redis session store verified in P13); each move ends with both apps green (the PWA's strict suites and the console's pilot suite).",
+          "3. Move the browser client to shared/web-client the same way.",
+          "4. PP1.T2 then uses @carpal/web-bff with the portal's configuration instead of a copy.",
+          "5. Admin kit parts: in the PP stage that first needs a server-paged table."
+        ],
+        "risks": "The two apps' sessions differ on purpose (aal3, idle limits, staff recovery); keep them as configuration with tests in each app, not as flags inside the shared code. The design-system copy in src/components/ds is byte for byte the same in both apps (2026-11-25) and synced from shared/design-system (ds:check); it can move in step 1 too.",
+        "size": "About two working sessions for steps 1-3 (today 2,479 lines of BFF code and 2,031 of tests in the PWA, 2,782 and 1,628 in the console)."
+      }
     },
     {
       "id": "R-02",
@@ -5637,9 +5911,10 @@
         "admin-console",
         "ops"
       ],
-      "status": "todo",
+      "status": "done",
       "action": "Write the pilot staff onboarding note (first sign-in = password + emailed code + security key in one go; mailbox open, key at hand; synced phone passkeys refused) into the AC11 runbook.",
-      "when": "AC11"
+      "when": "AC11",
+      "note_2026_11_22": "In deploy/runbook.md \"First sign-in of each staff member\" (AC11.T3)."
     },
     {
       "r_item": "R-15",
@@ -5690,7 +5965,8 @@
       ],
       "status": "todo",
       "action": "Agree who checks Pending approvals daily (a four-eyes change waits up to 72 h for the second ADM); put it in the AC11 runbook.",
-      "when": "AC11"
+      "when": "AC11",
+      "note_2026_11_22": "The runbook has the duty table and a line for the names (AC11.T3); naming the people stays with the owner."
     },
     {
       "r_item": "R-20",
@@ -5711,7 +5987,8 @@
       "status": "todo",
       "action": "Before the pilot set the real IRR rate in the console with two ADM accounts ready (the placeholder 1,000,000 makes the first change over 20 % and four-eyes). Put it in the AC11 runbook and backend deploy.md Exchange rate section.",
       "when": "AC11 / pilot",
-      "note_2026_11_18": "Backend half done: deploy.md 'Exchange rate' updated in S25b. Since S26a the rate is never blank (CARPAL_DEFAULT_IRR_PER_USD) and ADMs get a morning reminder; the daily workflow is AC14b.T3. Setting the real rate is still an owner action at the pilot."
+      "note_2026_11_18": "Backend half done: deploy.md 'Exchange rate' updated in S25b. Since S26a the rate is never blank (CARPAL_DEFAULT_IRR_PER_USD) and ADMs get a morning reminder; the daily workflow is AC14b.T3. Setting the real rate is still an owner action at the pilot.",
+      "note_2026_11_22": "In deploy/runbook.md \"Before the pilot opens\" (AC11.T3); setting the real rate stays an owner action."
     },
     {
       "r_item": "R-22",
@@ -5731,10 +6008,11 @@
         "admin-console",
         "backend"
       ],
-      "status": "todo",
+      "status": "done",
       "action": "AC11 deploy kit: set CARPAL_STORAGE_URL and CARPAL_ADMIN_PUBLIC_WEB_URL in the console env file (admin-console). Check that the storage host serves display copies without Cross-Origin-Resource-Policy: same-origin (backend/storage deploy).",
       "when": "AC11",
-      "note_2026_11_18": "Backend half done (S25b: CORP cross-origin on the storage host). Console env remains AC11.T1."
+      "note_2026_11_18": "Backend half done (S25b: CORP cross-origin on the storage host). Console env remains AC11.T1.",
+      "note_2026_11_22": "admin.env.template sets CARPAL_STORAGE_URL=https://media.<DOMAIN> and CARPAL_ADMIN_PUBLIC_WEB_URL=https://pwa.<DOMAIN> (AC11.T1)."
     },
     {
       "r_item": "R-24",
@@ -5896,7 +6174,8 @@
         "stage": "AC11",
         "ready": true,
         "backend": "Nothing new is required to build it. The runbook uses S16a/S16b (lost key), S26a (seeded admins with a forced password change, SMTP mail) and R-23 (backend half, S25b).",
-        "note": "The pilot E2E green criterion still waits for the whole-plan test run (PD-03)."
+        "note": "The pilot E2E green criterion still waits for the whole-plan test run (PD-03).",
+        "done": "2026-11-22 (deploy kit, runbook, pilot suite, security pass; F-1 moderate open)"
       },
       {
         "stage": "AC12",

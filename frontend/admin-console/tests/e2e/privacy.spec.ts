@@ -47,7 +47,7 @@ async function startProcessing(page: Page, l: 'en' | 'fa') {
   await expect(page.getByTestId('dsr-status')).toHaveText(say(l, 'privacy.status.in_progress'));
 }
 
-test('a deletion request: identity, the user, a timed suspension, and the deletion by four-eyes (AC10, EN)', async ({ browser }) => {
+test('a deletion request: identity, the user, a timed suspension, and the deletion by four-eyes (AC10, EN) @pilot', async ({ browser }) => {
   test.setTimeout(360_000);
   const user = await appUser('dsr-del', 'Dana Deletion');
   const dsr = await requestData(user, 'deletion', 'Please delete my CarPal account.');

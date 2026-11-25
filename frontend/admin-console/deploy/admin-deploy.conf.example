@@ -1,0 +1,69 @@
+# CarPal admin console deployment settings (defaults; sourced by every script in frontend/admin-console/deploy/).
+#
+# Order of reading: this file, then /carpal/config/deploy.conf (shared with the backend, PWA and landing kits: DOMAIN,
+# STAGING_DIR, host overrides), then /carpal/config/admin-deploy.conf (console-only overrides, optional). Put only the
+# values you change in the server copies. Plain bash: KEY=value, no spaces around "=".
+
+# --- Public names (normally set once in /carpal/config/deploy.conf) ----------------------
+# Production: DOMAIN=carpals.ir gives admin.carpals.ir for the console. Set overrides in deploy.conf, not here: the
+# backend kit reads the same names.
+DOMAIN=example.com
+LETSENCRYPT_EMAIL=admin@example.com
+# The console is served at ADMIN_CONSOLE_HOST (default admin.<DOMAIN>). ADMIN_HOST is the backend's name for its
+# admin-api host (default admin-api.<DOMAIN>, never published): the console only uses it as the audience of its DPoP
+# proofs (CARPAL_ADMIN_API_AUDIENCE). WEB_HOST (pwa.<DOMAIN>) is the public app the console links to; MEDIA_HOST
+# (media.<DOMAIN>) serves the signed display copies the console shows.
+# ADMIN_CONSOLE_HOST=admin.example.com
+
+# --- Folders -------------------------------------------------------------------------
+CARPAL_ROOT=/carpal
+STAGING_DIR=/home/root/staging            # where WinSCP uploads the repository (the same folder the other kits use)
+CONFIG_DIR=/carpal/config                 # admin.env lives here (secrets never inside the code folder)
+ADMIN_ROOT=/carpal/admin                  # ADMIN_ROOT/src holds frontend/admin-console/ and shared/, as in the repository
+BACKUP_DIR=/carpal/backups                # previous console releases (one folder per update)
+LOG_DIR=/carpal/logs                      # logs of the deploy scripts (the service logs to journald)
+
+# Repository folders copied from staging. The console links ../../shared (pnpm link: packages, design system), so both
+# keep their places relative to each other.
+ADMIN_SYNC_DIRS="frontend/admin-console shared"
+
+# --- Service -------------------------------------------------------------------------
+ADMIN_SERVICE_NAME=carpal-admin
+ADMIN_SERVICE_USER=carpal-admin           # its own user: the PWA's user (carpal-web) can never read the staff client key
+ADMIN_SERVICE_GROUP=carpal-admin
+ADMIN_PORT=3200                           # next start listens on 127.0.0.1:ADMIN_PORT only (nginx proxies the host here)
+ADMIN_HEALTH_TIMEOUT_S=120
+# The environment badge every staff member sees (GD-06): prod | staging. The pilot server holds real data: prod.
+ADMIN_ENV=prod
+
+# --- Access gate in front of the console (SEC-ADM-1, OQ-02) ----------------------------
+# none: anyone can reach the sign-in page; staff still need password + device-bound security key (aal3). The owner's
+# answer to OQ-02 (2026-11-12): passkey only.
+# ip_allowlist: only ADMIN_GATE_ALLOW may open the console; everybody else gets 403 from nginx.
+ADMIN_GATE=none
+ADMIN_GATE_ALLOW=""                       # space-separated addresses or CIDRs, e.g. "203.0.113.10 198.51.100.0/24"
+
+# --- Backend this console talks to (server side; the browser never sees these) -----------
+BACKEND_ADMIN_API_URL=http://127.0.0.1:8081
+BACKEND_AUTH_URL=http://127.0.0.1:8082
+BACKEND_HEALTH_URL=http://127.0.0.1:8080/v1/health
+REQUIRE_BACKEND=1                         # 1 = an update stops when the backend is down or serves an older contract
+
+# --- Node.js (the version comes from backend/.node-version when the staging copy has it) ---
+NODE_VERSION_FALLBACK=24.21.0
+NODE_INSTALL_ROOT=/opt
+
+# --- admin-update.sh -----------------------------------------------------------------
+RUN_TYPECHECK=1                           # pnpm typecheck (next typegen + tsc)
+RUN_UNIT_TESTS=1                          # pnpm test (unit + DOM; never the E2E or integration suites)
+RUN_LINT=0                                # pnpm lint (slow; run it before uploading)
+BUILD_MEMORY_MB=3072                      # Node heap for next build / tsc / vitest on small servers
+BUILD_ATTEMPTS=2                          # next build sometimes stops after compiling (Next.js advisory check); a rerun passes
+KEEP_BACKUPS=5                            # previous releases kept (oldest removed first)
+AUTO_ROLLBACK=1                           # 1 = a release that fails its health check is replaced by the previous one
+
+# --- admin-setup.sh ------------------------------------------------------------------
+RUN_CERTBOT=0                             # 1 = request the TLS certificate for ADMIN_CONSOLE_HOST (DNS must point here)
+RUN_STAFF_BOOTSTRAP=1                     # 1 = on the first install, run the backend's staff-bootstrap.sh when
+                                          #     /carpal/config/staff-bootstrap.json exists (OQ-10)
+FIRST_DEPLOY=1                            # 1 = admin-setup.sh ends by running admin-update.sh (the first release)

@@ -100,6 +100,8 @@ export function ShortcutProvider({ children }: { children: ReactNode }) {
       {children}
       <Dialog open={help} onClose={() => setHelp(false)} title={t('admin.shell.shortcuts.title')} name="shortcuts">
         <table className="adm-shortcuts">
+          {/* A table needs its own name for screen readers, not only the dialog's (AC15.T2). */}
+          <caption className="sr-only">{t('admin.shell.shortcuts.title')}</caption>
           <thead>
             <tr>
               <th scope="col">{t('admin.shell.shortcuts.key')}</th>

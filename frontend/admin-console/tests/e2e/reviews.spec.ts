@@ -43,7 +43,7 @@ async function chooseReason(page: Page, l: 'en' | 'fa', code: string, note?: str
   return dialog;
 }
 
-test('a community reviewer confirms a Path 2 review end to end; a moderator cannot decide (AC7, EN)', async ({ browser }) => {
+test('a community reviewer confirms a Path 2 review end to end; a moderator cannot decide (AC7, EN) @pilot', async ({ browser }) => {
   test.setTimeout(300_000);
   const shop = await publishedShop('t1');
   const [confirmed, other] = await Promise.all([path2Review(shop, 't1a', { rating: 2 }), path2Review(shop, 't1b', { rating: 4 })]);

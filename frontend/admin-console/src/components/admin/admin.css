@@ -1465,6 +1465,22 @@ form.adm-search {
 .adm-widget[data-wide] {
   grid-column: 1 / -1;
 }
+/* While a widget reads, keep about the room its figures take (measured at 1280 px in AC15.T4, a little under so a loaded
+   widget only grows): without it every widget started 94 px high and pushed the rest of the dashboard down when its
+   data came (CLS 0.28). */
+.adm-widget[data-state='loading'] {
+  min-block-size: 14.5rem;
+}
+.adm-widget[data-state='loading']:is([data-widget='growth'], [data-widget='trust']) {
+  min-block-size: 26rem;
+}
+.adm-widget[data-state='loading']:is([data-widget='ai'], [data-widget='system']) {
+  min-block-size: 18rem;
+}
+/* Queues: two rows of tiles (an administrator has three rows, a reviewer one); what grows past it is below the fold. */
+.adm-widget[data-state='loading'][data-widget='queues'] {
+  min-block-size: 28rem;
+}
 .adm-widget-title {
   display: flex;
   align-items: center;

@@ -30,6 +30,14 @@ export function AccountMenu({ name, roles, themeChoice }: { name: string; roles:
   const button = useRef<HTMLButtonElement>(null);
   const here = `${pathname}${search.size ? `?${search.toString()}` : ''}`;
 
+  // Following one of the panel's links (Security, My actions) is a client navigation: close the panel then, as the
+  // shell does with the folded section menu (found in AC15's journeys: the panel stayed open on the next page).
+  const [openAt, setOpenAt] = useState(here);
+  if (openAt !== here) {
+    setOpenAt(here);
+    if (open) setOpen(false);
+  }
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
