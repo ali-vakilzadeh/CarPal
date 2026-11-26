@@ -2,7 +2,7 @@
 
 Node.js + NestJS (TypeScript, ESM) **modular monolith** with event-driven workers. See `Docs/02.Detailed project plan.md` §1 and `Docs/41.backend plan.md`. Each module owns its own PostgreSQL schema and talks to other modules only through its public `interface/` or domain events, so any module can later be extracted into its own service.
 
-Build progress and stage-by-stage notes: [`dev_plan.json`](dev_plan.json) — the scratch build (S1–S9) is done; what comes next is its `next_iteration` list. Known risks and their treatment: [`risk_control_plan.json`](risk_control_plan.json).
+The plan: [`BE-Integration-plan.json`](BE-Integration-plan.json) — release and deployment of the test editions and every action still open from the earlier plans. The build history (stages S1–S26c, decisions, deviations) is in [`Docs/dev-history/backend/`](../Docs/dev-history/backend/). Known risks and their treatment: [`risk_control_plan.json`](risk_control_plan.json).
 
 ## Quick start
 

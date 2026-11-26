@@ -26,6 +26,8 @@ export const PURPOSE_KINDS: Partial<Record<UploadPurpose, readonly UploadKind[]>
   appointment_photo: ['image', 'video'],
   // CarPal Workshop's optional licence photo (provider plan PW2.T6); private, owned by the organization.
   verification_document: ['image', 'pdf'],
+  // CarPal Workshop Close job: the invoice photo on the job log of a completed visit (provider plan PW4.T3); private, owned by the organization.
+  job_log_photo: ['image'],
 };
 
 const BY_MIME: Record<string, UploadMime> = {

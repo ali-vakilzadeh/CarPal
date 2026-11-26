@@ -16,7 +16,7 @@
 //
 // The PWA's two integration suites (src/server/bff/*.int.test.ts) build a lite BFF and call /oauth/token and the
 // search directly without a client assertion or DPoP, so they run against `backend --lite` until the PWA refinement
-// round makes them strict-aware (pwa/BR-update-plan.json). The PWA's strict acceptance is its E2E run (pwa/README.md
+// round makes them strict-aware (backend/BE-Integration-plan.json T1.04, PWA PB-08). The PWA's strict acceptance is its E2E run (pwa/README.md
 // "Strict mode"), which takes the same keys from `env`.
 //
 // Variables set in backend/.env.test win over backend/.env (process.loadEnvFile never overwrites a set variable).

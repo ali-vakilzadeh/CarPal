@@ -4,7 +4,7 @@
 // not provided"; history only with the customer's service_history_sharing consent, else "Not shared by customer"),
 // the photos and video, the preferred times at the shop, the AI duration suggestion (on request, a labelled draft;
 // the screen works with the AI off), the customer-visible messages, and the answers Accept · Propose time · More
-// (Decline, Ask for information) from allowed_transitions (answer-sheets.tsx).
+// (Decline, Ask for information) from allowed_transitions (answer-sheets.tsx). A booked visit links to its job page (PW4).
 // Opening a new request moves it to provider_reviewing once (StrictMode-safe); a refused move only reloads. Every
 // change puts the server's appointment into the cache and refreshes the lists Today and Requests share.
 // Not in the contract, so not shown: 'first visit' and the brand coverage mismatch (PW3 deviations).
@@ -14,7 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { Banner } from '@/components/ds/banner';
-import { Button } from '@/components/ds/button';
+import { Button, buttonClass } from '@/components/ds/button';
 import { Icon } from '@/components/ds/icon';
 import { MediaImage } from '@/components/media/media-image';
 import { SkeletonCard } from '@/components/shell/skeleton';
@@ -28,6 +28,7 @@ import { useLocale, useT } from '@/lib/i18n/client';
 import type { MessageKey, Translate } from '@/lib/i18n/keys';
 import { AnswerSheet, type SheetMode } from './answer-sheets';
 import { useActiveBusiness } from './context';
+import { hasJobPage } from './job-model';
 import { isSafetyCritical, workshopPath } from './model';
 import {
   answersOf,
@@ -178,6 +179,18 @@ export function WorkshopRequestDetail({ appointmentId }: { appointmentId: string
           icon="check"
           text={t('provider.requests.detail.booked', { time: shop.date(a.confirmed_start_at, 'dateTime') })}
         />
+      ) : null}
+      {hasJobPage(a) ? (
+        <div>
+          <Link
+            href={workshopPath(locale, `jobs/${encodeURIComponent(a.id)}`)}
+            className={buttonClass({ variant: 'primary' })}
+            data-testid="open-job"
+          >
+            <Icon name="wrench" size={20} />
+            <span className="cp-btn-label">{t('provider.jobs.open')}</span>
+          </Link>
+        </div>
       ) : null}
       {isDeclined(a) ? (
         <p className="pwa-text-body m-0">{t('provider.requests.detail.declined')}</p>

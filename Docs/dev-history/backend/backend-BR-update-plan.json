@@ -7457,6 +7457,15 @@
             "PRV-BR-14 (P2: provider.portfolio_get GET {prv}/portfolio/{item_id}, ORG(P*): the showcase deep link /provider/photos/<id> of the consent-answer notification and the PP8 editor need one item by id; PRV-BR-08 named it but contract 1.5.0 has only provider.portfolio_list)",
             "PRV-BR-12 (P2: counts for the Workshop Today and the P-DASH-01 dashboard without reading lists: e.g. GET {prv}/summary with new requests, safety-critical new requests, oldest waiting request time, today's jobs, reviews without a reply, open approval requests (P+ only), unreplied comments (after PRV-BR-02), completed appointments without a showcase, showcases waiting for the customer. Page<T> has no totals, so PW1 counts one page of each list and shows '50+'; it also has no 'without showcase' filter)"
           ]
+        },
+        {
+          "group": "E (PW4)",
+          "recorded": "2026-11-26 (provider plan stage PW4)",
+          "needed_before": "provider plan PP5 (both have fallbacks in PW4)",
+          "items": [
+            "PRV-BR-16 (P2: completion with the shop's evidence: provider.appointments_transition 'completed' accepts invoice_media_ids (the caller organization's clean files) attached to the service record it creates as ServiceRecordEvidence 'invoice', and the completion creates the ProviderJobLog linked to the appointment and the record (Docs/11 Ch.7) and returns its id on the provider view. Today the shop cannot put its invoice on the customer's record (service_records.evidence_add is FC; the appointment is the requester's media target) and complete() makes no job log; the Workshop PW4 fallback creates the job log itself and attaches the photo to it)",
+            "PRV-BR-17 (P3: an expected cost range on Awaiting parts, cost_estimate_min and cost_estimate_max (Money) on AppointmentTransition 'awaiting_parts' and AppointmentProviderUpdate, shown by W-APP-01 as a range; PW4 writes the range into parts_availability_note and sends its upper end as cost_estimate)"
+          ]
         }
       ],
       "not_requested": "PRV-BR-07 (showcase consent for a job without an appointment) is in the provider plan's next_phase_plan (NX-01)."

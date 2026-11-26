@@ -1,6 +1,18 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { CounterTile, PreVisitReport, RequestCard, StateBlock, StatusChip, appointmentTone, showcaseTone, urgencyTone } from './index';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  CounterTile,
+  JobStatusBar,
+  PartLines,
+  PreVisitReport,
+  RequestCard,
+  StateBlock,
+  StatusChip,
+  appointmentTone,
+  showcaseTone,
+  urgencyTone,
+  type PartLine,
+} from './index';
 
 describe('@carpal/business-ui (PRV-GD-08)', () => {
   it('renders a status chip with the tone class', () => {
@@ -113,5 +125,64 @@ describe('@carpal/business-ui PW3 components', () => {
     expect(screen.getByText('Brakes 14 months ago.')).toBeTruthy();
     expect(screen.getByText('photo')).toBeTruthy();
     expect(screen.queryByText('Triage: not provided')).toBeNull();
+  });
+});
+
+describe('@carpal/business-ui PW4 components', () => {
+  it('renders the job steps with the current one, its mark and the actions', () => {
+    const onClick = vi.fn();
+    render(
+      <JobStatusBar
+        label="Job progress"
+        steps={[
+          { key: 'confirmed', label: 'Booked' },
+          { key: 'in_progress', label: 'In progress' },
+          { key: 'completed', label: 'Completed' },
+        ]}
+        current={1}
+        mark="Awaiting parts"
+        actionsLabel="Update job"
+        actions={[
+          { key: 'in_progress', label: 'Start work', variant: 'primary', onClick },
+          { key: 'cancelled', label: 'Cancel visit', variant: 'ghost', onClick: vi.fn(), disabled: true },
+        ]}
+      />,
+    );
+    const current = screen.getByText('In progress').closest('li')!;
+    expect(current.getAttribute('aria-current')).toBe('step');
+    expect(current.textContent).toContain('Awaiting parts');
+    expect(screen.getByText('Booked').closest('li')!.className).toContain('is-done');
+    fireEvent.click(screen.getByRole('button', { name: 'Start work' }));
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect((screen.getByRole('button', { name: 'Cancel visit' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole('group', { name: 'Update job' })).toBeTruthy();
+  });
+
+  it('edits part lines: add, type, remove', () => {
+    let rows: PartLine[] = [];
+    const words = {
+      legend: 'Parts used',
+      name: 'Part',
+      partNumber: 'Part number',
+      quantity: 'Qty',
+      add: 'Add a part',
+      remove: (n: number) => `Remove part ${n}`,
+    };
+    const onChange = (next: PartLine[]) => {
+      rows = next;
+      rerender(<PartLines rows={rows} onChange={onChange} words={words} />);
+    };
+    const { rerender } = render(<PartLines rows={rows} onChange={onChange} words={words} error={undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Add a part' }));
+    expect(rows).toEqual([{ name: '', partNumber: '', quantity: '1' }]);
+    fireEvent.change(screen.getByLabelText('Part number'), { target: { value: '31126776940' } });
+    expect(rows[0]!.partNumber).toBe('31126776940');
+    expect(screen.getByLabelText('Part number').getAttribute('dir')).toBe('ltr');
+    fireEvent.click(screen.getByRole('button', { name: 'Remove part 1' }));
+    expect(rows).toEqual([]);
+    rerender(
+      <PartLines rows={[{ name: '', partNumber: 'X', quantity: '1' }]} onChange={onChange} words={words} error="Each part needs a name" />,
+    );
+    expect(screen.getByRole('alert').textContent).toBe('Each part needs a name');
   });
 });

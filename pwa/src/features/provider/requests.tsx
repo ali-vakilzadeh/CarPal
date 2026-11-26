@@ -22,6 +22,7 @@ import { useLocale, useT } from '@/lib/i18n/client';
 import type { MessageKey, Translate } from '@/lib/i18n/keys';
 import { useActiveBusiness } from './context';
 import { isSafetyCritical, workshopPath } from './model';
+import { isOpenJob } from './job-model';
 import {
   SEGMENTS,
   cardTime,
@@ -210,7 +211,8 @@ function RequestItem({ a, now, fallbackZone }: { a: Appointment; now: number; fa
   const shop = createFormatter(f.locale, t, shopTimeZone(a, fallbackZone));
   return (
     <RequestCard
-      href={workshopPath(locale, `requests/${encodeURIComponent(a.id)}`)}
+      // A booked visit is a job (PW4): its card opens the job page.
+      href={workshopPath(locale, `${isOpenJob(a) ? 'jobs' : 'requests'}/${encodeURIComponent(a.id)}`)}
       linkAs={Link}
       vehicle={vehicleLine(a.vehicle, f.digits)}
       subject={requestSubject(a)}

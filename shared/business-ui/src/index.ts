@@ -10,3 +10,5 @@ export { CounterTile, type CounterTileProps, type LinkLike } from './counter-til
 export { StateBlock, type StateBlockProps } from './state-block';
 export { RequestCard, urgencyTone, type RequestCardProps } from './request-card';
 export { PreVisitReport, type PreVisitData, type PreVisitReportProps, type PreVisitWords } from './pre-visit-report';
+export { JobStatusBar, type JobAction, type JobStatusBarProps, type JobStep } from './job-status';
+export { PartLines, emptyPartLine, type PartLine, type PartLinesProps, type PartLinesWords } from './part-lines';

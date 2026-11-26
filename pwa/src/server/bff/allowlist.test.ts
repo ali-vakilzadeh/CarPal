@@ -107,7 +107,9 @@ describe('Workshop operations (provider plan PRV-GD-01, PRV-BR-08)', () => {
     expect(opOf('POST', `/v1/orgs/${ORG}/members/invitations`)).toBe('not_found');
     expect(opOf('PATCH', `/v1/orgs/${ORG}`)).toBe('method_not_allowed');
     expect(opOf('POST', `/v1/orgs/${ORG}/provider/unpublish`)).toBe('not_found');
-    expect(opOf('GET', `/v1/orgs/${ORG}/provider/job-logs`)).toBe('not_found');
+    // PW4: creating a job log (the invoice photo of a closed job) is forwarded; reading job logs is not (PX1).
+    expect(opOf('POST', `/v1/orgs/${ORG}/provider/job-logs`)).toBe('provider.job_log_create');
+    expect(opOf('GET', `/v1/orgs/${ORG}/provider/job-logs`)).toBe('method_not_allowed');
     expect(opOf('GET', `/v1/orgs/${ORG}/provider/customer-notes`)).toBe('not_found');
     expect(opOf('POST', `/v1/orgs/${ORG}/provider/appointments/${ORG}/participants`)).toBe('method_not_allowed');
     expect(opOf('GET', `/v1/orgs/${ORG}/provider/time-off`)).toBe('not_found');

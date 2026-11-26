@@ -27,12 +27,12 @@ import {
   jobsReadyForPhotos,
   oldestWaitingMinutes,
   pageCount,
-  safetyFirst,
   splitMinutes,
   verificationPending,
   waitingForCustomer,
   workshopPath,
 } from './model';
+import { floorJobs } from './job-model';
 import { OpenInWebUi } from './shell';
 
 const LIMIT = 50;
@@ -133,24 +133,36 @@ function PhotosTile({ orgId }: { orgId: string }) {
   );
 }
 
+/**
+ * Today's jobs (PW4): the visits booked for today (group=today, keyed on the start day) and the jobs still in the
+ * workshop from earlier days (group=in_progress, e.g. a job awaiting parts since yesterday); each opens its job page.
+ */
 function TodaysJobs({ orgId }: { orgId: string }) {
   const t = useT();
   const f = useFormat();
-  const q = useApiQuery('provider.appointments_list', { path: { org_id: orgId }, query: { group: 'today', limit: LIMIT } });
-  const jobs = useMemo(() => (q.data ? safetyFirst(q.data.items) : []), [q.data]);
+  const locale = useLocale();
+  const today = useApiQuery('provider.appointments_list', { path: { org_id: orgId }, query: { group: 'today', limit: LIMIT } });
+  const floor = useApiQuery('provider.appointments_list', { path: { org_id: orgId }, query: { group: 'in_progress', limit: LIMIT } });
+  const failed = today.isError || floor.isError;
+  const data = today.data && floor.data ? today.data : undefined;
+  const jobs = useMemo(() => (today.data && floor.data ? floorJobs(today.data.items, floor.data.items) : []), [today.data, floor.data]);
+  const retry = () => {
+    void today.refetch();
+    void floor.refetch();
+  };
   return (
     <section className="pwa-stack-sm" aria-labelledby="ws-lifts">
       <h2 id="ws-lifts" className="pwa-ws-section-title">
         {t('provider.today.lifts')}
       </h2>
-      {!q.data ? (
-        q.isPending ? (
+      {!data ? (
+        !failed ? (
           <SkeletonList count={2} label={t('provider.today.lifts')} />
         ) : (
           <StateBlock
             kind="error"
             title={t('provider.today.loadError')}
-            action={<Button onClick={() => void q.refetch()}>{t('common.actions.retry')}</Button>}
+            action={<Button onClick={retry}>{t('common.actions.retry')}</Button>}
           />
         )
       ) : jobs.length === 0 ? (
@@ -160,25 +172,28 @@ function TodaysJobs({ orgId }: { orgId: string }) {
           {jobs.map((a) => {
             const start = a.confirmed_start_at ?? a.proposed_start_at;
             const work = a.service_task?.text ?? a.service_system?.text ?? a.symptom?.text ?? null;
+            const earlier = !!start && f.date(start, 'dateShort') !== f.date(new Date().toISOString(), 'dateShort');
             return (
-              <li key={a.id} className="pwa-card pwa-ws-job">
-                <span className="pwa-ws-job-time">{start ? f.date(start, 'time') : '—'}</span>
-                <span className="pwa-stack-xs pwa-ws-job-body">
-                  <span className="pwa-text-label">
-                    <bdi>{vehicleName(a)}</bdi>
-                  </span>
-                  <span className="pwa-text-caption">
-                    {work ? <bdi>{work}</bdi> : null}
-                    {work && a.estimated_duration_minutes ? ' · ' : null}
-                    {a.estimated_duration_minutes ? duration(t, a.estimated_duration_minutes) : null}
-                  </span>
-                  {isSafetyCritical(a) ? (
-                    <span className="pwa-ws-safety">
-                      <Icon name="alert" size={16} /> {t('provider.today.safetyMark')}
+              <li key={a.id}>
+                <Link href={workshopPath(locale, `jobs/${encodeURIComponent(a.id)}`)} className="pwa-card pwa-ws-job pwa-ws-job-link">
+                  <span className="pwa-ws-job-time">{start ? f.date(start, earlier ? 'dateShort' : 'time') : '—'}</span>
+                  <span className="pwa-stack-xs pwa-ws-job-body">
+                    <span className="pwa-text-label">
+                      <bdi>{vehicleName(a)}</bdi>
                     </span>
-                  ) : null}
-                </span>
-                <StatusChip label={t(`provider.status.${a.status}` as MessageKey)} tone={appointmentTone(a.status)} />
+                    <span className="pwa-text-caption">
+                      {work ? <bdi>{work}</bdi> : null}
+                      {work && a.estimated_duration_minutes ? ' · ' : null}
+                      {a.estimated_duration_minutes ? duration(t, a.estimated_duration_minutes) : null}
+                    </span>
+                    {isSafetyCritical(a) ? (
+                      <span className="pwa-ws-safety">
+                        <Icon name="alert" size={16} /> {t('provider.today.safetyMark')}
+                      </span>
+                    ) : null}
+                  </span>
+                  <StatusChip label={t(`provider.status.${a.status}` as MessageKey)} tone={appointmentTone(a.status)} />
+                </Link>
               </li>
             );
           })}

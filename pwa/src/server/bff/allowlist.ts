@@ -51,6 +51,8 @@ export const WORKSHOP_OPERATIONS = [
   'provider.participants_list',
   'provider.calendar',
   'ai.appointment_suggestions',
+  // PW4 Close job: the invoice photo goes on a job log of the completed visit (PRV-BR-16 fallback; job-log reads stay PX1)
+  'provider.job_log_create',
   // PW5 review replies and approvals
   'reviews.org_get',
   'review_responses.create',

@@ -4,7 +4,7 @@
     "created": "2026-11-15",
     "last_updated": "2026-11-26",
     "status": "in_development",
-    "status_note": "The proposal of 2026-11-15 was reviewed against Docs/11 and converted into this development plan on 2026-11-16 with the owner's decisions (decisions_2026_11_16). Stages PW1, PW2 and PW3 were built on 2026-11-26 (uncommitted; see progress_log, open_questions PRV-OQ-12..16, all answered, and recommendations_2026_11_26); all other stages are not started. frontend/provider-portal/ holds only the mockup, which still shows the old /workshop paths; mockup_coverage maps every mockup screen to a stage.",
+    "status_note": "The proposal of 2026-11-15 was reviewed against Docs/11 and converted into this development plan on 2026-11-16 with the owner's decisions (decisions_2026_11_16). Stages PW1, PW2 and PW3 were built on 2026-11-26 (committed in 4954ec3) and PW4 on 2026-11-26 (uncommitted; see progress_log, open_questions PRV-OQ-12..16, all answered, and recommendations_2026_11_26); all other stages are not started. frontend/provider-portal/ holds only the mockup, which still shows the old /workshop paths; mockup_coverage maps every mockup screen to a stage.",
     "owner": "project owner",
     "deliverables": [
       {
@@ -39,7 +39,7 @@
       "pwa/dev_plan.json (P2 BFF, P4 hosted sign-in, P6 map, P7 upload kit, P12 service worker and web push, DI-16, DI-71, DI-72, OQ-26)",
       "frontend/public-ui-dev-plan.json (PU-P01, PU-P02, PU-BR-03, PU-BR-04, backend_follow_ups_for_business_screens)",
       "frontend/admin-console/dev-plan.json (AC1 package setup and BFF copy, the pattern for PP1)",
-      "backend/BR-update-plan.json (action_plan.intake_rules; intake_candidates_provider_plan)"
+      "backend/BE-Integration-plan.json (carried_items, tasks T5.2/T5.3; since 2026-11-26 — the earlier backend/BR-update-plan.json is frozen at Docs/dev-history/backend/backend-BR-update-plan.json)"
     ],
     "how_to_use": "Run one stage per session in build_order. Before a stage, read its context_to_read and nothing else. A stage with needs_backend starts only when those requests are done in the backend plan, or it builds the named fallback. Each stage ends with its stage checks (conventions.stage_checks) and a report in progress_log. End-to-end, accessibility, performance and security tests of both deliverables run together in FT1a and FT1b."
   },
@@ -271,7 +271,7 @@
       { "mockup": "PW-RPL-01 · Replies, PW-RPL-02 · Reply to a review, PW-RPL-04 · Approval request", "plan": "PW5", "status": "planned" },
       { "mockup": "PW-RPL-03 · Reply to a comment", "plan": "PW6 (PRV-BR-01..03)", "status": "planned" },
       { "mockup": "PW-PHO-01 · Photos, PW-PHO-02 · New before/after, PW-PHO-03 · Check and caption, PW-PHO-04 · Send for customer approval", "plan": "PW7", "status": "planned" },
-      { "mockup": "PW-JOB-01 · Update job / Close job ('Proposed addition')", "plan": "PW4 (decided PRV-OQ-02)", "status": "planned" }
+      { "mockup": "PW-JOB-01 · Update job / Close job ('Proposed addition')", "plan": "PW4 (decided PRV-OQ-02)", "status": "built (PW4)" }
     ],
     "desktop_frames": [
       { "mockup": "P-DASH-01 Provider dashboard (left navigation Dashboard, Requests, Calendar, Profile, Portfolio, Reviews, Insights, Parts, Job log, Team, Settings; Owner · switch)", "plan": "PP2 (shell, switcher, Parts and Job log greyed out, PRV-GD-11), PP5.T1 (dashboard)", "status": "planned" },
@@ -301,7 +301,7 @@
   },
 
   "backend_requests": {
-    "note": "Handed over to backend/BR-update-plan.json (action_plan.intake_candidates_provider_plan) on 2026-11-16. Status here follows the backend plan. 'needed_by' is the first stage that needs the request; 'fallback' is what that stage builds if the request is not done.",
+    "note": "Handed over to backend/BR-update-plan.json (action_plan.intake_candidates_provider_plan) on 2026-11-16; that plan was frozen and moved to Docs/dev-history/backend/backend-BR-update-plan.json on 2026-11-26, and open requests (incl. PRV-BR-16, -17) are carried in backend/BE-Integration-plan.json (carried_items, T5.2/T5.3), where new ones (PRV-BR-18+) go. Status here follows the backend plan. 'needed_by' is the first stage that needs the request; 'fallback' is what that stage builds if the request is not done.",
     "items": [
       {
         "id": "PRV-BR-08", "group": "A — before PW1", "priority": "P0", "status": "handed_over", "needed_by": "PW1",
@@ -400,6 +400,26 @@
         "request": "review_approvals.get: GET {org}/review-approvals/{review_id}, ORG(P+, V+), returns the ReviewApprovalView with its state (waiting, answered with the answer, expired) and days left.",
         "why": "review.approval_needed and its reminders open /provider/replies/approvals/<id>; review_approvals.list lists only waiting approvals, so an answered or expired approval cannot be told from a wrong link ('Already answered' of PW5.T4), and reviews.org_get would show the review text that the approval page must not show.",
         "fallback": "PW5 pages through review_approvals.list; not found → 'Already answered or no longer waiting' with a link to the Approvals tab."
+      },
+      {
+        "id": "PRV-BR-16",
+        "group": "E — found in PW4",
+        "priority": "P2",
+        "status": "handed_over 2026-11-26",
+        "needed_by": "PW4 (fallback built), PP5",
+        "request": "Completion with the shop's evidence: provider.appointments_transition 'completed' accepts invoice_media_ids (the caller organization's clean files, purpose service_evidence) attached to the service record it creates as ServiceRecordEvidence 'invoice' (starting the invoice check), and the completion creates the ProviderJobLog linked to the appointment and the record (Docs/11 Ch.7) and returns its id on the Appointment's provider view.",
+        "why": "The shop's invoice photo belongs to the customer's service record (Docs/11 Ch.7), but service_records.evidence_add is FC and the appointment is the requester's media target; completion creates no job log although Docs/11 says it does.",
+        "fallback": "PW4 creates the job log itself (provider.job_log_create with appointment_id and service_record_id, forwarded by the consumer BFF) and attaches the photo to it as evidence (purpose job_log_photo, images only)."
+      },
+      {
+        "id": "PRV-BR-17",
+        "group": "E — found in PW4",
+        "priority": "P3",
+        "status": "handed_over 2026-11-26",
+        "needed_by": "PW4 (fallback built), PP5",
+        "request": "An expected cost range on Awaiting parts: cost_estimate_min and cost_estimate_max (Money) on AppointmentTransition 'awaiting_parts' and AppointmentProviderUpdate, shown by W-APP-01 as a range.",
+        "why": "Docs/11 Ch.6: Reza sets Awaiting parts \"with the expected cost range\"; the contract has one cost_estimate amount only, and a range written into the note freezes the shop's language and the exchange rate of that moment.",
+        "fallback": "The range in words in parts_availability_note and its upper end as cost_estimate (provider.appointments_update with If-Match)."
       },
       {
         "id": "PRV-BR-12", "group": "E — found in PW1", "priority": "P2", "status": "handed_over 2026-11-26", "needed_by": "PW1 (fallback built), PP5",
@@ -608,7 +628,49 @@
       "id": "PW4",
       "deliverable": "D2",
       "title": "Update job and close job",
-      "status": "not_started",
+      "status": "built",
+      "result_2026_11_26": {
+        "summary": "T1-T4 built in one session, uncommitted. Stage checks green: pwa `pnpm check` (lint incl. business-ui and logical CSS, typecheck, 86 test files / 798 tests, contract, i18n 3650 keys, design system, service worker, legal) and `pnpm build` (passes on the rerun after the known Next.js advisory stop, F-1). Smoke against the strict dev backend at 360 px, EN and FA (Playwright, temporary spec, removed after the run): a seeded shop owner opens a visit booked for today from Today's jobs, taps Car arrived → Start work → Awaiting parts (note, a day chip, 13:00, cost from/to) → Start work → Ready for pickup → Close job (category prefilled from the request, labour and parts cost, one part line with its part number, warranty, an invoice photo, an internal note), 8-9 s for the whole job flow, no horizontal scroll; the customer's appointment is completed with a service record (parts_used with the part number, cost 4500000.00 in the base currency, cost_breakdown labor and parts, the warranty note, appointment_verified), can_review true, the automatic review invitation is listed for the shop, the internal note is not in the customer's notes, the invoice's job log is appointment_verified; W-APP-01 as the customer shows 'Your service record has been added', 'View the service record', 'Leave a review' and the Awaiting parts note in the timeline. A second run (EN) checked the invoice: POST /api/v1/media/attachments answered 201 (role evidence on the job log) and no failure toast appeared. The e2e helper retire() answers 400 MALFORMED_REQUEST (provider.unpublish takes a JSON body, the helper sends none), so the smoke shops stay published in the shared dev database (R-19).",
+        "built": [
+          "T1 shared/business-ui: JobStatusBar (steps Booked · Car arrived · In progress · Ready for pickup · Completed with the current step, a mark such as \"Awaiting parts\", and status buttons the caller derives from allowed_transitions; design-system button classes) and PartLines (controlled rows: name, part number LTR, quantity; add and remove; error line). Words as props; imports only react (boundaries test). Styles in business-ui styles.css, logical properties only.",
+          "T2 job.tsx (PW-JOB-01) at /<locale>/provider/jobs/<id> (route jobs/[[...rest]]; /jobs alone redirects to Today): customer, car, the work, the booked time at the shop, the status bar with the buttons the server allows (job-model jobActions: Car arrived, Start work, Ready for pickup as one tap; Awaiting parts as a sheet; Customer did not come only from the booked start time on, with a confirmation; Cancel visit with a reason the customer sees; the next step forward is the primary button) and Close job as a link to the close page. Awaiting parts sheet: note for the customer, estimated completion (14 day chips and a time at the shop, optional), expected cost from/to. 409 INVALID_TRANSITION reloads and says what the job is now; 403 says to ask the owner. Today's jobs read group=today and group=in_progress (jobs still in the workshop from earlier days, e.g. awaiting parts since yesterday), one row per job, each a link to its job page; Upcoming request cards and the detail of a booked request (\"Open job\") lead to the job page.",
+          "T3 close-job.tsx (PW-JOB-01 Close job) at /<locale>/provider/jobs/<id>/close: service category (required) and task prefilled from the pre-visit report's likely services, else by the request's labels (the Appointment has labels, not node ids; the user's choice wins), labour and parts cost (Persian digits and separators accepted, summed in cents, total shown), PartLines, warranty note, invoice photo (upload kit, purpose job_log_photo, owned by the business), internal note. Sends provider.appointments_transition completed with final_cost (sum, base currency), service_record {system, task, parts_used, cost_breakdown {labor, parts}, warranty_note}; 422 pointers show beside their field (job-model closeFieldOf), INVALID_TRANSITION says what the job is now. After success: the internal note (provider.note_create internal) and the invoice (provider.job_log_create with appointment_id and service_record_id, then media.attach role evidence once the photo is clean, in module scope like the garage's invoices); a failure of either is a toast, the job stays closed.",
+          "T4 the closed job page: \"Job closed on <time>\", \"The service record is on the customer's car\" (or why there is none), \"<customer> gets an invitation to review your shop\", and \"Add before/after photos\" → /<locale>/provider/photos/new?appointment=<id> (PW7).",
+          "pwa src/server/bff/allowlist.ts WORKSHOP_OPERATIONS + provider.job_log_create (POST only: job-log reads still answer 405/404 at the BFF; allowlist test updated).",
+          "features/media policy: job_log_photo accepts images (backend purposes.ts: images, private).",
+          "i18n: provider.jobs.* (EN and FA)."
+        ],
+        "tests_added": [
+          "pwa/src/features/provider/job-model.test.ts (16: job pages, steps and Awaiting parts on In progress, jobs on the floor once and safety first, status buttons from allowed_transitions with the next step first, No-show only from the booked time, money parsing with Persian digits and cent sums, Awaiting parts body with the range in words and the upper end as estimate, 500-character note, Close job body with cost split, total and part number, required category, part rows, 422 pointers to fields, prefill from likely services or labels, job-log date)",
+          "pwa/src/features/provider/job.dom.test.tsx (10, as provider_staff: status change with the allowed buttons; Awaiting parts with note, day, time and cost range, then cost_estimate with If-Match; INVALID_TRANSITION reload and \"It is now\"; No-show hidden before the booked time and Cancel needing a reason; No-show once the booked time has passed (the last read's time, which advances with the 30 s poll); closed job with record, invitation and photos shortcut; Close job prefill, cost split, part line, warranty and internal note without a job log when there is no photo; required category and a server task error beside the field; \"cannot be closed now\"; Today with group=in_progress and job links)",
+          "shared/business-ui/src/business-ui.test.tsx (+2: job status bar with current step, mark and actions; part lines add, type, remove, error)",
+          "pwa/src/server/bff/allowlist.test.ts (job-logs: POST forwarded as provider.job_log_create, GET method_not_allowed)"
+        ],
+        "deviations": [
+          "T1 put JobStatusBar and PartLines in shared/business-ui; the Awaiting parts sheet and the Close job form stay in pwa (like PW3's answer sheets): they use the app's fields, taxonomy cache and upload kit, which business-ui may not import. PP5 reuses the two components and builds its own form.",
+          "Cost range (Docs/11 Ch.6): the contract has no range. The range goes into parts_availability_note in words (formatted in the shop's language and display currency at that moment) and its upper end into cost_estimate (provider.appointments_update with If-Match after the transition, best effort; W-APP-01 shows it as the estimate). PRV-BR-17.",
+          "Invoice photo and internal note have no place in the completed transition. The internal note is a provider.note_create internal note. The invoice photo goes on a job log of the visit (provider.job_log_create with appointment_id and service_record_id, verification appointment_verified, not counted twice by the trust scorer, 54 §1.1), attached as evidence; the provider cannot attach to the appointment (the requester owns it) nor to the customer's service record (service_records.evidence_add is FC). Completion itself creates no ProviderJobLog in the backend, unlike Docs/11 Ch.7. The BFF now forwards provider.job_log_create. Images only (purpose job_log_photo); no PDF invoices. PRV-BR-16.",
+          "PW-JOB-01 names In progress, Awaiting parts and Ready for pickup; from a booked visit the server allows only checked_in, no_show and cancelled (Docs/40 §16), so the bar also has Car arrived, Customer did not come and Cancel visit (the booked visit's cancel left over from PW3).",
+          "The estimated completion is one time (estimated_completion_to); estimated_completion_from is not sent. W-APP-01 shows either.",
+          "Close job is a page of its own (jobs/<id>/close), not a sheet: eight fields and an upload do not fit a bottom sheet at 360 px.",
+          "Amounts are typed in the region's base currency (the field shows its code, as the garage form does) and shown converted by f.money (PRV-OQ-17).",
+          "No mileage on the closing (not in PW-JOB-01); the service record takes none from the Workshop.",
+          "Today now makes seven list reads (group=in_progress added for jobs from earlier days); see PRV-OQ-15 and R-06.",
+          "Appointment notifications still open /requests/<id>; a booked request shows \"Open job\" there.",
+          "\"A staff member can update status if the server allows it\" is covered by the DOM test (provider_staff membership) only: there is still no staff-membership seed helper for the smoke (R-12)."
+        ],
+        "backend_requests": {
+          "PRV-BR-16": "new (handed over 2026-11-26); fallback built: job log + media.attach evidence, BFF forwards provider.job_log_create",
+          "PRV-BR-17": "new (handed over 2026-11-26); fallback built: range in the note, upper end as cost_estimate"
+        },
+        "notes_for_next_stage": [
+          "PW5 (Replies) is next in build_order. Its status changes follow the same pattern as PW4: buttons only from what the server allows, a 409 reloads and says what changed, a 403 says \"Ask the owner\".",
+          "PW7 should read ?appointment=<id> on /provider/photos/new: PW4's \"Add before/after photos\" sends it.",
+          "job-model.ts floorJobs merges group=today and group=in_progress; PW8 counts these reads in the Today budget.",
+          "The smoke recipe of PW3 works for jobs: seedProvider (rules: false), one businessUser customer with a vehicle and up to three requests, the shop confirms by API at now + 30 min, then the Workshop at 360 px; review invitations appear under /v1/orgs/<org>/review-invitations within seconds.",
+          "Amounts in the smoke must be realistic for the base currency (USD): 4,000,000 typed showed as 400,000,000,000 Toman in the note."
+        ]
+      },
       "load": "medium",
       "depends_on": ["PW3"],
       "needs_backend": [],
@@ -1028,11 +1090,12 @@
     { "id": "PRV-OQ-13", "raised": "2026-11-26 (PW1)", "question": "The mockup's PW-AUTH-01 has its own mobile-number, code and passkey form and sends new businesses to the full portal. The plan uses the hosted sign-in (RF-01) and the compact onboarding (PRV-OQ-03). Is the built entry page (what the app does, Sign in, Sign up) acceptable as PW-AUTH-01?", "default": "Yes; the mockup is corrected in FT1b.T4.", "answer": "Owner 2026-11-26: build the entry page according to the plan: the hosted sign-in (RF-01) and, for new businesses, the compact onboarding of PW2 (Sign up returns to /provider/start). The built page stays; the mockup's own form is corrected in FT1b.T4 (R-07).", "status": "answered" },
     { "id": "PRV-OQ-14", "raised": "2026-11-26 (PW1)", "question": "The Workshop bell opens a full notifications page (PW-NOT-01) instead of the consumer shell's dropdown panel. Keep the page?", "default": "Keep the page: one column, 48 px rows, no panel over the tab bar on a 360 px phone.", "answer": "Owner 2026-11-26: the full notifications page is better. PW-NOT-01 stays a page.", "status": "answered" },
     { "id": "PRV-OQ-15", "raised": "2026-11-26 (PW1)", "question": "Today counts one page of each list (limit 50, shown as '50+'), six list reads per visit, until a summary operation exists (PRV-BR-12). Is that acceptable for the pilot, or should PRV-BR-12 be staged before PW8's budget check?", "default": "Acceptable for the pilot (small shops rarely pass 50); PRV-BR-12 as P2.", "answer": "Owner 2026-11-26: Today's '50+' counts are good for the pilot. PRV-BR-12 stays P2 and is not needed before PW8.", "status": "answered" },
-    { "id": "PRV-OQ-16", "raised": "2026-11-26 (PW1)", "question": "shared/business-ui is built without its own node_modules and is typechecked, tested and linted from pwa/ (tsconfig paths, vitest dedupe). When PP1 creates the business web app, should it copy that mapping, or should the package get its own toolchain (its own package.json devDependencies, tsconfig, vitest and eslint config, pnpm install in shared/business-ui)?", "default": "Copy the mapping in PP1 (one React copy per app, no second install); revisit if a third app uses the package.", "answer": "Owner 2026-11-26 asked for the option with the least coding effort and the least future complexity. Recommended and taken: copy the mapping in PP1 (R-05: about 15 lines of tsconfig paths, vitest dedupe and fs.allow, and the two lint scripts). An own toolchain means a second pnpm install and lockfile and a second React copy in the package folder, the main source of hook and context bugs, which is exactly what the mapping avoids; with two apps it brings no gain. Revisit only if a third app uses the package.", "status": "answered" }
+    { "id": "PRV-OQ-16", "raised": "2026-11-26 (PW1)", "question": "shared/business-ui is built without its own node_modules and is typechecked, tested and linted from pwa/ (tsconfig paths, vitest dedupe). When PP1 creates the business web app, should it copy that mapping, or should the package get its own toolchain (its own package.json devDependencies, tsconfig, vitest and eslint config, pnpm install in shared/business-ui)?", "default": "Copy the mapping in PP1 (one React copy per app, no second install); revisit if a third app uses the package.", "answer": "Owner 2026-11-26 asked for the option with the least coding effort and the least future complexity. Recommended and taken: copy the mapping in PP1 (R-05: about 15 lines of tsconfig paths, vitest dedupe and fs.allow, and the two lint scripts). An own toolchain means a second pnpm install and lockfile and a second React copy in the package folder, the main source of hook and context bugs, which is exactly what the mapping avoids; with two apps it brings no gain. Revisit only if a third app uses the package.", "status": "answered" },
+    { "id": "PRV-OQ-17", "raised": "2026-11-26 (PW4)", "question": "Close job and Awaiting parts take amounts in the region's base currency (USD, the field shows its code, as the consumer garage form does) and show them converted to Toman. Should a phone-only Iranian workshop type Toman instead, converted to the base currency at the admin rate before sending?", "default": "Keep the base currency as the garage form does until the owner decides; the converted total is shown under the fields." }
   ],
 
   "recommendations_2026_11_26": {
-    "note": "R-01..R-09 from stage PW1 (R-04 done in PW2), R-10..R-12 from PW2, R-13..R-15 from PW3. Backend items are also in backend/BR-update-plan.json (intake_candidates_provider_plan group E and the PRV-BR-08 amendment).",
+    "note": "R-01..R-09 from stage PW1 (R-04 done in PW2), R-10..R-12 from PW2, R-13..R-15 from PW3, R-16..R-19 from PW4. Backend items are also in backend/BR-update-plan.json (intake_candidates_provider_plan group E and the PRV-BR-08 amendment).",
     "items": [
       { "id": "R-01", "for": "backend", "recommendation": "Close PRV-BR-08 with wording only: Docs/40 SEC-WEB-5 (the consumer BFF also forwards the named Workshop operations; list from pwa allowlist.ts WORKSHOP_OPERATIONS) and notifications.list ('business notifications appear only in portal contexts or the Workshop PWA'), plus an integration test (cp-web-consumer token, provider_staff, provider.profile_get 200; another organization 404)." },
       { "id": "R-02", "for": "backend", "recommendation": "Stage group E: PRV-BR-13 (mark_read by organization context) and PRV-BR-11 ('My jobs' filter) as P1, PRV-BR-15 (review_approvals.get), PRV-BR-14 (provider.portfolio_get) and PRV-BR-12 (summary counts) as P2." },
@@ -1048,7 +1111,11 @@
       { "id": "R-12", "for": "this plan, FT1b", "raised": "2026-11-26 (PW2)", "recommendation": "Turn the PW1/PW2 smoke (owner reaches Today, no-business entry, new mechanic publishes and resumes after step 2; strict backend, 360 px, FA and EN) into the first Workshop journeys, and add a staff-membership seed helper." },
       { "id": "R-13", "for": "pwa plan (consumer)", "raised": "2026-11-26 (PW3)", "recommendation": "W-APP-01's proposal card ('The shop proposed …') does not show the note the shop sent with alternative_proposed (it is only in appointments.history, and the timeline has no proposal step). Show the latest provider history note on the proposal card; then the Workshop can stop sending the note again as a customer-visible message (PW3 deviation)." },
       { "id": "R-14", "for": "pwa plan (consumer)", "raised": "2026-11-26 (PW3)", "recommendation": "Docs/40 §3 caps list limits at 50 (admin 100). PW3 fixed W-APP-01's appointments.notes_list (limit 100 → 422, the notes thread was always empty). Two more consumer reads ask for 100: reminders.list in features/notifications/links.ts and CONSENTS_ARGS in features/settings/consents.ts; check them against the API and add a test double that refuses limit > 50." },
-      { "id": "R-15", "for": "backend", "raised": "2026-11-26 (PW3)", "recommendation": "PW-REQ-02 and P-REQ-02 show 'first visit' and a coverage mismatch note ('No evidence for this brand in your profile', Docs/11 Ch.5), but contract 1.5.0 gives neither: add to the provider view of Appointment a derived requester_previous_visits (count of completed visits with this provider) and a coverage_mismatch flag (vehicle brand not in provider coverage), or put them in the appointment_slot_suggestion payload." }
+      { "id": "R-15", "for": "backend", "raised": "2026-11-26 (PW3)", "recommendation": "PW-REQ-02 and P-REQ-02 show 'first visit' and a coverage mismatch note ('No evidence for this brand in your profile', Docs/11 Ch.5), but contract 1.5.0 gives neither: add to the provider view of Appointment a derived requester_previous_visits (count of completed visits with this provider) and a coverage_mismatch flag (vehicle brand not in provider coverage), or put them in the appointment_slot_suggestion payload." },
+      { "id": "R-16", "for": "owner, backend", "raised": "2026-11-26 (PW4)", "recommendation": "Owner: confirm the consumer BFF forwarding provider.job_log_create (a security-boundary change: any member of a provider business can now create job logs from the Workshop, also ones without appointment_id, which the Workshop never sends; job-log reads stay closed). Backend: stage PRV-BR-16 (invoice evidence and the ProviderJobLog on completion) before PP5, so the Web UI does not copy the job-log fallback; then drop provider.job_log_create from the consumer BFF allowlist." },
+      { "id": "R-17", "for": "this plan, PW7", "raised": "2026-11-26 (PW4)", "recommendation": "Honour ?appointment=<id> on /provider/photos/new: PW4's closed job links there with 'Add before/after photos'." },
+      { "id": "R-18", "for": "owner", "raised": "2026-11-26 (PW4)", "recommendation": "Answer PRV-OQ-17 (amounts in USD or Toman in the Workshop) before the pilot: a shop that types Toman into a USD field records costs about 100 000 times too high." },
+      { "id": "R-19", "for": "repository (e2e)", "raised": "2026-11-26 (PW4)", "recommendation": "pwa/tests/e2e/flows.ts retire() posts provider.unpublish without a body and gets 400 MALFORMED_REQUEST (the operation takes JSON), so key-flow, review and smoke shops stay published in the shared dev database and skew the Help Me ranking the helper exists to protect. Send the body the contract asks for and fail loudly on a 4xx." }
     ]
   },
 
@@ -1079,6 +1146,11 @@
       "date": "2026-11-26",
       "stage": "PW3",
       "summary": "Stage PW3 built (T1-T5, no split), uncommitted: Requests tab (segments New · Proposed · Upcoming, safety first, My jobs, pull to refresh), request detail with the pre-visit report, AI duration draft on request, messages, and the answer sheets Accept · Propose time · Decline · Ask for information with CAPACITY_UNAVAILABLE and INVALID_TRANSITION handling; RequestCard and PreVisitReport in shared/business-ui. Backend PRV-BR-05 and PRV-BR-11 still open, fallbacks used. The smoke found and fixed a consumer bug (W-APP-01 notes read with limit 100 → 422, so customers never saw shop messages). Checks: `pnpm check` green (771 tests), `pnpm build` green on the rerun (F-1), acceptance smoke green in FA and EN at 360 px (owner; staff not seeded). New: R-13..R-15."
+    },
+    {
+      "date": "2026-11-26",
+      "stage": "PW4",
+      "summary": "Stage PW4 built (T1-T4, one session), uncommitted: job page /<locale>/provider/jobs/<id> with the business-ui JobStatusBar and the buttons the server allows (Car arrived, Start work, Awaiting parts sheet with note, estimated completion and cost range, Ready for pickup, No-show, Cancel visit), Close job page /jobs/<id>/close (category and task prefilled, labour and parts cost, PartLines, warranty, invoice photo, internal note), the closed state with the review-invitation notice and the before/after shortcut; Today lists the jobs still in the workshop. Stage checks and the strict-backend smoke in EN and FA at 360 px passed; the completion made the customer's service record with the part number and the review invitation. Fallbacks for PRV-BR-16 (invoice on a job log; the BFF forwards provider.job_log_create) and PRV-BR-17 (cost range in the note); open question PRV-OQ-17 (USD or Toman), recommendations R-16..R-19. Next: PW5."
     }
   ]
 }
