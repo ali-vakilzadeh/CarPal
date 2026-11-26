@@ -7415,9 +7415,10 @@
           "group": "A",
           "needed_before": "provider plan PW1 and PP1",
           "items": [
-            "PRV-BR-08 (Docs/40 SEC-WEB-5: the consumer BFF may forward a named list of provider operations for the Workshop PWA at pwa.<DOMAIN>/<locale>/provider; confirm with a test that these accept a cp-web-consumer token)",
+            "PRV-BR-08 (Docs/40 SEC-WEB-5: the consumer BFF may forward a named list of provider operations for the Workshop PWA at pwa.<DOMAIN>/<locale>/provider; confirm with a test that these accept a cp-web-consumer token). Amended 2026-11-26 by provider plan PW1: the list is the 47 operations of pwa/src/server/bff/allowlist.ts WORKSHOP_OPERATIONS (added geo.reverse, org.get, org.locations_list, provider.service_categories_list, provider.coverage_list, provider.appointments_update, provider.participants_list, posts.create, posts.publish; provider.portfolio_get is not in contract 1.5.0, see PRV-BR-14); also reword notifications.list ('business notifications appear only in portal contexts' → also in the Workshop PWA).",
             "PRV-BR-10 (cp-web-portal as a working BFF client: DPoP and private_key_jwt, keys, redirect URIs; backend NI-08)"
-          ]
+          ],
+          "pw1_finding_2026_11_26": "No backend code change is expected for PRV-BR-08: libs/auth authenticates any api-audience token (CarPal-Client = token client_id, live session) and ORG(...) checks the membership; nothing binds {org} operations to a client, and notifications.list/unread_count authorize organization_id by membership only (modules/notification/application/notification-ops.ts contextOrg). What remains: the Docs/40 SEC-WEB-5 and notifications.list wording and an integration test that a cp-web-consumer token reaches a listed provider operation (e.g. provider.profile_get) for a provider_staff member and gets 404 for another organization."
         },
         {
           "group": "B",
@@ -7443,6 +7444,18 @@
           "items": [
             "PRV-BR-05 (structured decline reason on the provider-side cancel transition)",
             "PU-BR-03 and the rest of PU-BR-04 (already accepted intake of the public Web UI plan)"
+          ]
+        },
+        {
+          "group": "E",
+          "recorded": "2026-11-26 (provider plan stage PW1)",
+          "needed_before": "provider plan PW3 (PRV-BR-11), PW5 (PRV-BR-15), PW7 (PRV-BR-14), PW8 (PRV-BR-13); PRV-BR-12 only improves PW1 and PP5",
+          "items": [
+            "PRV-BR-13 (P1: notifications.mark_read takes organization_id; with up_to it marks only that context, without organization_id only personal notifications. Today up_to marks every unread notification of the user, so the consumer PWA's 'Mark all as read' also clears a business member's unread business notifications, and the Workshop can mark by ids only)",
+            "PRV-BR-11 (P1: 'My jobs' filter on provider.appointments_list, e.g. q participant=me: appointments where the caller's membership is a participant (Docs/11 Ch.3-4 technician view, PRV-GD-07). Without it the Workshop needs one provider.participants_list call per appointment)",
+            "PRV-BR-15 (P2: review_approvals.get GET {org}/review-approvals/{review_id}, ORG(P+, V+), returning the ReviewApprovalView with its state (waiting, answered with the answer, expired) and days left: the approval notification and its reminders deep-link to /provider/replies/approvals/<id>, but review_approvals.list lists only waiting approvals, so an answered or expired one cannot be told from a wrong link, and reviews.org_get would show the review text the approval page must not show)",
+            "PRV-BR-14 (P2: provider.portfolio_get GET {prv}/portfolio/{item_id}, ORG(P*): the showcase deep link /provider/photos/<id> of the consent-answer notification and the PP8 editor need one item by id; PRV-BR-08 named it but contract 1.5.0 has only provider.portfolio_list)",
+            "PRV-BR-12 (P2: counts for the Workshop Today and the P-DASH-01 dashboard without reading lists: e.g. GET {prv}/summary with new requests, safety-critical new requests, oldest waiting request time, today's jobs, reviews without a reply, open approval requests (P+ only), unreplied comments (after PRV-BR-02), completed appointments without a showcase, showcases waiting for the customer. Page<T> has no totals, so PW1 counts one page of each list and shows '50+'; it also has no 'without showcase' filter)"
           ]
         }
       ],

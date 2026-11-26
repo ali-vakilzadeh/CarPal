@@ -19,7 +19,7 @@ import { ApiProblem } from '@/lib/api/problem';
 import { apiQueryKey, useApiClient, useApiQuery } from '@/lib/api/query';
 import { currentPath, loginUrl, useSession } from '@/lib/api/session';
 import { goTo } from '@/lib/browser-nav';
-import { useT } from '@/lib/i18n/client';
+import { useLocale, useT } from '@/lib/i18n/client';
 import { applySignupChoices, syncTimeZone } from './account';
 import { PermissionsStep, ProblemStep, RoleStep } from './steps';
 import { VehicleStep, type SavedVehicle } from './vehicle-step';
@@ -116,6 +116,7 @@ function Wizard({
   const router = useRouter();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const locale = useLocale();
   const [step, setStep] = useState<StepKey>(() =>
     isStep(requested) ? requested : isStep(flow?.current_step) ? flow.current_step : 'role',
   );
@@ -136,7 +137,7 @@ function Wizard({
   useEffect(() => heading.current?.focus(), [step]);
 
   /** Saves the move to `to` (or completion); false when it failed (the toast says so). */
-  const save = async (o: { to: StepKey | 'done'; completed?: StepKey; status?: 'completed' }): Promise<boolean> => {
+  const save = async (o: { to: StepKey | 'done'; completed?: StepKey; status?: 'completed' | 'abandoned' }): Promise<boolean> => {
     setSaving(true);
     try {
       const res = await api.api('onboarding.update', {
@@ -171,6 +172,13 @@ function Wizard({
     router.replace(next);
   };
 
+  // 'Service provider' (provider plan PW2.T1): the individual flow is set aside, so later sign-ins go straight on, and
+  // the compact onboarding of CarPal Workshop starts.
+  const toWorkshop = async () => {
+    await save({ to: step, status: 'abandoned' });
+    router.push(`/${locale}/provider/start`);
+  };
+
   const common = { saving, onNext: () => void advance(true), onSkip: () => void advance(false) };
   return (
     <div className="flex flex-col gap-5">
@@ -183,7 +191,7 @@ function Wizard({
       <h1 ref={heading} tabIndex={-1} className="pwa-auth-title">
         {t(`onboarding.titles.${step}`)}
       </h1>
-      {step === 'role' ? <RoleStep {...common} portalUrl={portalUrl} /> : null}
+      {step === 'role' ? <RoleStep {...common} portalUrl={portalUrl} onWorkshop={() => void toWorkshop()} /> : null}
       {step === 'vehicle' ? <VehicleStep {...common} saved={vehicle} onSaved={setVehicle} /> : null}
       {step === 'problem' ? <ProblemStep {...common} vehicle={vehicle} /> : null}
       {step === 'permissions' ? <PermissionsStep {...common} policyVersion={policyVersion} /> : null}

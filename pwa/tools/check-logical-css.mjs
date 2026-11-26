@@ -38,7 +38,8 @@ function cssFiles(dir) {
 
 function main() {
   let count = 0;
-  for (const file of cssFiles(join(pwaDir, 'src'))) {
+  // @carpal/business-ui (provider plan PRV-GD-08) is styled and checked from here.
+  for (const file of [...cssFiles(join(pwaDir, 'src')), ...cssFiles(join(pwaDir, '..', 'shared', 'business-ui', 'src'))]) {
     for (const p of checkCss(readFileSync(file, 'utf8'))) {
       console.error(`${relative(pwaDir, file)}:${p.line}  ${p.message}\n    ${p.text}`);
       count++;

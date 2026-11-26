@@ -1,6 +1,7 @@
 'use client';
-// W-ONB-01 steps 1, 3 and 4: how you'll use CarPal (S-AUTH-04; business choices open the business portal sign-up in
-// the same tab, keeping the account), anything wrong? (C-ONB-02; the description becomes a Help Me draft) and the web
+// W-ONB-01 steps 1, 3 and 4: how you'll use CarPal (S-AUTH-04; 'Service provider' opens the compact onboarding of
+// CarPal Workshop, provider plan PW2.T1; fleet and vendor open the business portal sign-up in the same tab, keeping
+// the account), anything wrong? (C-ONB-02; the description becomes a Help Me draft) and the web
 // permissions (S-AUTH-05 for the browser: location for "near me"; web push is offered in P12).
 import { useEffect, useState } from 'react';
 import { Banner } from '@/components/ds/banner';
@@ -48,7 +49,7 @@ const ROLES: { key: Role; icon: IconName; title: MessageKey; text: MessageKey }[
   { key: 'vendor', icon: 'store', title: 'onboarding.role.vendor', text: 'onboarding.role.vendorText' },
 ];
 
-export function RoleStep({ saving, onNext, portalUrl }: StepProps & { portalUrl: string }) {
+export function RoleStep({ saving, onNext, portalUrl, onWorkshop }: StepProps & { portalUrl: string; onWorkshop: () => void }) {
   const t = useT();
   const [role, setRole] = useState<Role>('individual');
   const business = role !== 'individual';
@@ -71,7 +72,15 @@ export function RoleStep({ saving, onNext, portalUrl }: StepProps & { portalUrl:
           ))}
         </div>
       </fieldset>
-      {business ? (
+      {role === 'provider' ? (
+        <Banner tone="info" icon="wrench" title={t('onboarding.role.workshopTitle')} text={t('onboarding.role.workshopText')}>
+          <div className="pwa-banner-actions">
+            <Button size="sm" icon="wrench" disabled={saving} onClick={onWorkshop}>
+              {t('onboarding.role.setUpWorkshop')}
+            </Button>
+          </div>
+        </Banner>
+      ) : business ? (
         <Banner tone="info" icon="building" title={t('onboarding.role.businessTitle')} text={t('onboarding.role.businessText')}>
           <div className="pwa-banner-actions">
             <a href={portalUrl} className={buttonClass({ size: 'sm' })}>

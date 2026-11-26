@@ -34,10 +34,16 @@ function localeOfPath(path: string, fallback?: string): string {
   return isLocale(fallback) ? fallback : DEFAULT_LOCALE;
 }
 
-/** The page after sign-in: the onboarding check first, unless this is a step-up or the page is the onboarding itself. */
+/**
+ * The page after sign-in: the onboarding check first, unless this is a step-up, the page is the onboarding itself, or
+ * the page is in CarPal Workshop (/<locale>/provider/…), which has its own compact onboarding (provider plan PW2): a
+ * mechanic who signs up there must not pass the car owner's steps.
+ */
 export function afterSigninPath(returnTo: string, locale?: string): string {
   const lang = localeOfPath(returnTo, locale);
-  if (returnTo.split(/[?#]/)[0] === `/${lang}/onboarding`) return returnTo;
+  const path = returnTo.split(/[?#]/)[0];
+  if (path === `/${lang}/onboarding`) return returnTo;
+  if (path === `/${lang}/provider` || path?.startsWith(`/${lang}/provider/`)) return returnTo;
   return `/${lang}/onboarding?${new URLSearchParams({ next: returnTo }).toString()}`;
 }
 

@@ -8,6 +8,8 @@ import { defineConfig } from 'vitest/config';
 //   dom          *.test.tsx   jsdom + Testing Library (components)
 //   integration  *.int.test.ts  against the live backend in lite mode (P2 onward; `pnpm dev` in backend/)
 const pwaDir = dirname(fileURLToPath(import.meta.url));
+// @carpal/business-ui (provider plan PRV-GD-08) has no toolchain of its own: its tests run here.
+const BUSINESS_UI = '../shared/business-ui/src';
 
 const shared = {
   plugins: [react()],
@@ -17,7 +19,10 @@ const shared = {
       // 'server-only' throws outside the React server build; tests import server modules directly.
       'server-only': join(pwaDir, 'tests', 'setup', 'server-only.ts'),
     },
+    // Linked packages outside pwa/ (business-ui) take React and the test libraries of this app.
+    dedupe: ['react', 'react-dom', '@testing-library/react'],
   },
+  server: { fs: { allow: [pwaDir, join(pwaDir, '..', 'shared')] } },
 };
 
 export default defineConfig({
@@ -25,14 +30,14 @@ export default defineConfig({
     projects: [
       {
         ...shared,
-        test: { name: 'unit', include: ['src/**/*.test.ts', 'tools/**/*.test.ts'], exclude: ['**/*.int.test.ts'], environment: 'node' },
+        test: { name: 'unit', include: ['src/**/*.test.ts', 'tools/**/*.test.ts', BUSINESS_UI + '/**/*.test.ts'], exclude: ['**/*.int.test.ts'], environment: 'node' },
       },
       {
         ...shared,
         // jsdom renders of whole screens take well under a second alone but can pass 5 s when every worker is busy (P8).
         test: {
           name: 'dom',
-          include: ['src/**/*.test.tsx'],
+          include: ['src/**/*.test.tsx', BUSINESS_UI + '/**/*.test.tsx'],
           environment: 'jsdom',
           setupFiles: ['tests/setup/dom.ts'],
           testTimeout: 15_000,

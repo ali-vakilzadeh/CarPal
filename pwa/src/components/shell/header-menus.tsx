@@ -3,13 +3,16 @@
 // dropdown panel (W-NOTIF-01, features/notifications since P9), and the avatar menu (Profile, My activity, Saved,
 // Settings, Switch account, Log out, plus language and theme). The menu is a disclosure (button + panel of links),
 // closed by Esc, a click outside or choosing an item. P12: fleet drivers get "My fleet vehicles" (DRV-WEB), asked once
-// the menu opens; Switch account first revokes this browser's push token (BA-18).
+// the menu opens; Switch account first revokes this browser's push token (BA-18). Provider plan PW1.T3: members of a
+// provider business get one "CarPal Workshop: <business>" entry per business, also asked once the menu opens. PW2.T1:
+// "Create a business" opens the compact onboarding of CarPal Workshop (/provider/start).
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Avatar } from '@/components/ds/avatar';
 import { cx } from '@/components/ds/cx';
 import { Icon, type IconName } from '@/components/ds/icon';
 import { useIsDriver } from '@/features/fleet-driver';
+import { useProviderBusinesses, workshopPath } from '@/features/provider';
 import { runLogoutSteps, useLogout, type SessionView } from '@/lib/api/session';
 import { goTo } from '@/lib/browser-nav';
 import { useLocale, useT } from '@/lib/i18n/client';
@@ -38,6 +41,7 @@ export function AccountMenu({ user }: { user: NonNullable<SessionView['user']> }
   const [open, setOpen] = useState(false);
   const [opened, setOpened] = useState(false);
   const isDriver = useIsDriver(opened);
+  const { businesses } = useProviderBusinesses(opened);
   const panelId = useId();
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -104,6 +108,24 @@ export function AccountMenu({ user }: { user: NonNullable<SessionView['user']> }
                 </Link>
               </li>
             ) : null}
+            {(businesses ?? []).map((b) => (
+              <li key={b.orgId}>
+                <Link
+                  href={`${workshopPath(locale, 'today')}?org=${encodeURIComponent(b.orgId)}`}
+                  className="pwa-menu-item"
+                  onClick={() => setOpen(false)}
+                >
+                  <Icon name="wrench" size={20} />
+                  <span>{t('shell.menu.workshop', { name: b.name })}</span>
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link href={workshopPath(locale, 'start')} className="pwa-menu-item" onClick={() => setOpen(false)}>
+                <Icon name="plus" size={20} />
+                <span>{t('shell.menu.createBusiness')}</span>
+              </Link>
+            </li>
             <li>
               <a
                 href={switchHref}

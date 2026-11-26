@@ -92,6 +92,25 @@ describe('Privacy requests (AC10.T4/T5)', () => {
     expect(screen.getByRole('button', { name: 'Identity verified: start processing' })).toBeInTheDocument();
   });
 
+  it('a link to a request past the loaded page walks the queue with the same filters (D-125)', async () => {
+    resetNav(`/privacy?type=export&status=received&request=${R1}`);
+    const { transport, calls } = scriptedTransport({
+      'admin.dsr_queue': (req) => {
+        const q = new URLSearchParams(req.search);
+        if (q.get('limit') === '50') return page([dsr(R2)], 'c1');
+        return q.get('cursor') ? page([dsr(R1)]) : page([dsr(R2)], 'c2');
+      },
+    });
+    renderConsole(<PrivacyPage />, { transport, roles: ['SUP'] });
+    const detail = await screen.findByTestId('dsr-detail');
+    expect(detail).toHaveAttribute('data-request', R1);
+    const walk = calls.filter((c) => new URLSearchParams(c.search).get('limit') === '100');
+    expect(walk).toHaveLength(2);
+    expect(new URLSearchParams(walk[1]!.search).get('cursor')).toBe('c2');
+    expect(new URLSearchParams(walk[0]!.search).get('status')).toBe('received');
+    expect(new URLSearchParams(walk[0]!.search).get('request_type')).toBe('export');
+  });
+
   it('a rejection needs the text the user reads, and sends it', async () => {
     resetNav(`/privacy?request=${R1}`);
     const { transport, calls } = scriptedTransport({

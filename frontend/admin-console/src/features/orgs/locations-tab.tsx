@@ -52,6 +52,9 @@ export function LocationsTab({ org, mapStyleUrl, thresholdM = DEFAULT_LOCATION_T
   const t = useT();
   const locations = [...org.locations].sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // The answer of the last correction lives here: the panel below is keyed by the location version, so it starts
+  // again when the organization is read after the correction, and the confirmation must survive that.
+  const [result, setResult] = useState<Location | null>(null);
   const selected = locations.find((l) => l.id === selectedId) ?? locations[0] ?? null;
   if (!selected) return <p data-testid="no-locations">{t('admin.orgs.locations.none')}</p>;
   return (
@@ -82,6 +85,8 @@ export function LocationsTab({ org, mapStyleUrl, thresholdM = DEFAULT_LOCATION_T
         thresholdM={thresholdM}
         mapApps={mapApps}
         onCorrected={onCorrected}
+        result={result && result.id === selected.id ? result : null}
+        onResult={setResult}
       />
     </div>
   );
@@ -94,6 +99,8 @@ function LocationPanel({
   thresholdM,
   mapApps,
   onCorrected,
+  result,
+  onResult,
 }: {
   org: StaffOrgView;
   location: Location;
@@ -101,6 +108,8 @@ function LocationPanel({
   thresholdM: number;
   mapApps: readonly NavigationApp[] | undefined;
   onCorrected: () => void;
+  result: Location | null;
+  onResult: (l: Location | null) => void;
 }) {
   const t = useT();
   const f = useFormat();
@@ -110,12 +119,11 @@ function LocationPanel({
   const [draft, setDraft] = useState<CorrectionDraft>(() => draftOf(l));
   const [tried, setTried] = useState(false);
   const [dialog, setDialog] = useState(false);
-  const [result, setResult] = useState<Location | null>(null);
   const action = useAdminAction('admin.location_correct', {
     target: l.id,
     onOutcome: (o) => {
       if (o.kind !== 'applied') return;
-      setResult(o.data);
+      onResult(o.data);
       setEditing(false);
       onCorrected();
     },
@@ -217,7 +225,7 @@ function LocationPanel({
             icon="pin"
             onClick={() => {
               action.reset();
-              setResult(null);
+              onResult(null);
               setDraft(draftOf(l));
               setTried(false);
               setEditing(true);

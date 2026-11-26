@@ -332,6 +332,8 @@ describe('Locations tab (AC9.T3)', () => {
     expect(call.body).toEqual({ pin: { lat: 35.701, lng: 51.402 }, reason: 'owner_pin_wrong' });
     await waitFor(() => expect(screen.getByTestId('pin-verdict')).toHaveTextContent('Pin matches address'));
     expect(screen.getByText('Corrected by CarPal')).toBeInTheDocument();
+    // The organization re-read (location version 2) starts the panel again; the confirmation stays (AC15-b).
+    expect(screen.getByTestId('correct-result')).toHaveTextContent('Pin matches address');
   });
 
   it('opens the pin, and a proposed point, in the region map apps in a new tab (AC14b.T6, OQ-16 (c))', async () => {

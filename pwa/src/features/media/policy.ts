@@ -24,6 +24,8 @@ export const PURPOSE_KINDS: Partial<Record<UploadPurpose, readonly UploadKind[]>
   post: ['image', 'video'],
   qna: ['image'],
   appointment_photo: ['image', 'video'],
+  // CarPal Workshop's optional licence photo (provider plan PW2.T6); private, owned by the organization.
+  verification_document: ['image', 'pdf'],
 };
 
 const BY_MIME: Record<string, UploadMime> = {

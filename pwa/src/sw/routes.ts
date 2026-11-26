@@ -46,6 +46,8 @@ export const PRIVATE_PAGE_SECTIONS = new Set([
   'login',
   'signup',
   'drive',
+  // CarPal Workshop (provider plan PW1, PRV-GD-05): network only, never an offline copy.
+  'provider',
 ]);
 
 /** Public pages that depend on the query or the visitor's position: always from the network. */

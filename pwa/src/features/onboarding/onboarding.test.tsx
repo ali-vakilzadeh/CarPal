@@ -99,6 +99,31 @@ describe('after sign-in (P4.T7)', () => {
   });
 });
 
+describe('Service provider (provider plan PW2.T1)', () => {
+  it('sets the individual flow aside and opens the compact onboarding of CarPal Workshop', async () => {
+    const updates: Record<string, unknown>[] = [];
+    renderApp(<Onboarding next={NEXT} portalUrl="https://portal.test/signup" policyVersion="2026-10" />, {
+      locale: 'en',
+      session: signedIn(),
+      handlers: {
+        'onboarding.list': () => ({ items: [progress()], next_cursor: null }),
+        'onboarding.update': (a) => {
+          updates.push(a);
+          return progress({ version: 2, status: 'abandoned' });
+        },
+      },
+    });
+    fireEvent.click(await screen.findByLabelText(/I run a repair or service business/));
+    fireEvent.click(screen.getByRole('button', { name: 'Set up your workshop' }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/en/provider/start'));
+    expect(updates[0]).toMatchObject({
+      path: { flow_type: 'individual' },
+      body: { current_step: 'role', status: 'abandoned' },
+      ifMatch: '"v1"',
+    });
+  });
+});
+
 describe('the stepper (P4.T6)', () => {
   it('new account: role → first car (VIN suggestion kept) → skip the problem → finish, then the page', async () => {
     sessionStorage.setItem(
@@ -130,9 +155,13 @@ describe('the stepper (P4.T6)', () => {
       handlers,
     });
 
-    // 1. How you'll use CarPal: a business choice points to the portal; the individual path goes on.
+    // 1. How you'll use CarPal: a repair business is offered CarPal Workshop, fleet and vendor the portal; the
+    //    individual path goes on.
     expect(await screen.findByRole('heading', { name: 'How will you mainly use CarPal?' })).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText(/I run a repair or service business/));
+    expect(screen.getByRole('button', { name: 'Set up your workshop' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Open the business portal' })).toBeNull();
+    fireEvent.click(screen.getByLabelText(/I manage a company fleet/));
     expect(screen.getByRole('link', { name: 'Open the business portal' })).toHaveAttribute('href', 'https://portal.test/signup');
     fireEvent.click(screen.getByRole('button', { name: 'Continue as an individual' }));
 

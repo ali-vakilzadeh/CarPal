@@ -7,6 +7,8 @@
 import type { ApiClient } from '@/lib/api/client';
 import { takeSignupChoices } from '@/features/auth';
 
+/** Records the stored sign-up choices once (they are taken from storage first). CarPal Workshop calls it too: its
+ *  sign-ins skip this onboarding (provider plan PW2). */
 export async function applySignupChoices(api: ApiClient): Promise<void> {
   const choices = takeSignupChoices();
   if (!choices) return;

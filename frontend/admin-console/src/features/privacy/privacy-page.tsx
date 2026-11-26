@@ -8,12 +8,15 @@
 // staff never download it, DQ-12: the user does); and the deletion, run only after a second administrator approves
 // (four-eyes, ADM). The contract has no read of one request (the item comes from the queue row, D-67, BR-38), no
 // assignee, no deletion preview and no list of the records a rectification concerns: the screen says so (DI-33).
-import { useQueryClient } from '@tanstack/react-query';
+// A ?request= link to a request that is not on the loaded page (a long queue) walks the queue with the same filters,
+// up to 10 pages of 100, until BR-38 gives a read by id (D-125, as D-66 did for verification before BR-37).
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useId, useMemo, useState } from 'react';
 import {
   ActionNotice,
+  ADMIN_PAGE_MAX,
   CaseLayout,
   DataTable,
   ReasonDialog,
@@ -29,7 +32,7 @@ import { Banner } from '@/components/ds/banner';
 import { Button } from '@/components/ds/button';
 import { TextField } from '@/components/ds/text-field';
 import { purposeOf } from '@/lib/api/client';
-import { useApiQuery, useSession } from '@/lib/api/query';
+import { useApiClient, useApiQuery, useSession } from '@/lib/api/query';
 import type { ReasonKind } from '@/lib/config/reasons';
 import { slaState } from '@/lib/config/sla';
 import { Bidi } from '@/lib/format/bidi';
@@ -58,6 +61,8 @@ import {
 } from './dsr-logic';
 
 const PAGE_SIZE = 50;
+/** Pages of 100 a ?request= link walks before it gives up (D-125, until BR-38). */
+const DEEP_PAGES = 10;
 const JOB_DONE = ['succeeded', 'failed', 'cancelled'];
 
 function enumLabel(list: readonly string[], prefix: string, value: string, t: Translate): string {
@@ -135,7 +140,35 @@ export function PrivacyPage() {
   );
 
   const selectedId = params.get('request');
-  const listed = list.data?.items.find((r) => r.id === selectedId) ?? null;
+  const onPage = list.data?.items.find((r) => r.id === selectedId) ?? null;
+  // A link to a request past the loaded page: walk the queue with the same filters (D-125).
+  const api = useApiClient();
+  const deep = useQuery({
+    queryKey: ['dsr-deep-link', selectedId, filters.values.status ?? '', filters.values.type ?? ''],
+    enabled: !!selectedId && !!list.data && !onPage,
+    retry: false,
+    staleTime: 60_000,
+    queryFn: async ({ signal }) => {
+      let cursor: string | undefined;
+      for (let i = 0; i < DEEP_PAGES; i++) {
+        const page = await api.api('admin.dsr_queue', {
+          query: {
+            ...(filters.values.status ? { status: filters.values.status as DsrStatus } : {}),
+            ...(filters.values.type ? { request_type: filters.values.type as DsrType } : {}),
+            limit: ADMIN_PAGE_MAX,
+            ...(cursor ? { cursor } : {}),
+          },
+          signal,
+        });
+        const hit = page.items.find((r) => r.id === selectedId);
+        if (hit) return hit;
+        if (!page.next_cursor) return null;
+        cursor = page.next_cursor;
+      }
+      return null;
+    },
+  });
+  const listed = onPage ?? deep.data ?? null;
   // The answer of the last write replaces the row until the list is read again (the contract has no read by id).
   const [answer, setAnswer] = useState<DsrRow | null>(null);
   const selected: DsrRow | null = answer && answer.id === selectedId ? { ...answer, user_id: listed?.user_id ?? answer.user_id } : listed;
@@ -152,7 +185,10 @@ export function PrivacyPage() {
     router.replace(`${pathname}?${p.toString()}`, { scroll: false });
   };
 
-  const refresh = () => void queryClient.invalidateQueries({ queryKey: ['admin.dsr_queue'] });
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ['admin.dsr_queue'] });
+    void queryClient.invalidateQueries({ queryKey: ['dsr-deep-link'] });
+  };
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [lastMove, setLastMove] = useState<DsrMove | null>(null);
   const [rejection, setRejection] = useState('');

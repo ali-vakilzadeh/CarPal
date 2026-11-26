@@ -173,7 +173,8 @@ describe('forwarder (/api/v1)', () => {
     const { browser, backend } = await testBff();
     const csrf = await browser.csrf();
     expect((await browser.fetch('/api/v1/admin/flags')).status).toBe(404);
-    expect((await browser.fetch('/api/v1/orgs/0193/locations')).status).toBe(404);
+    // An organization route outside the Workshop list (provider plan PRV-BR-08).
+    expect((await browser.fetch('/api/v1/orgs/0193/members')).status).toBe(404);
     expect((await browser.fetch('/api/v1/me/%2e%2e/admin')).status).toBe(404);
     expect((await browser.fetch('/api/v2/me')).status).toBe(404);
     const wrong = await browser.fetch('/api/v1/me', { method: 'DELETE', headers: { 'x-csrf-token': csrf } });

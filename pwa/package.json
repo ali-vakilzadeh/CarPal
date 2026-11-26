@@ -13,7 +13,7 @@
     "dev": "node tools/sync-design-system.mjs --public && next dev --port 3000",
     "build": "node tools/sync-design-system.mjs --public && next build",
     "start": "next start --port 3000",
-    "lint": "eslint . && node tools/check-logical-css.mjs",
+    "lint": "eslint . && node tools/lint-business-ui.mjs && node tools/check-logical-css.mjs",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run --project unit --project dom",
     "test:int": "vitest run --project integration --passWithNoTests",
@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@carpal/api-contracts": "link:../shared/api-contracts",
+    "@carpal/business-ui": "link:../shared/business-ui",
     "@carpal/i18n": "link:../shared/i18n",
     "@carpal/region-config": "link:../shared/region-config",
     "@simplewebauthn/browser": "14.0.0",

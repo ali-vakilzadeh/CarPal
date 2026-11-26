@@ -1,7 +1,8 @@
 // AC14-2 E2E (AC14.T6 for these screens) against the live backend (strict for the acceptance run). The shared database
 // keeps its state: fresh app users and shops are made per run, throwaway e2e- staff sign in, and every four-eyes
 // request (a new retention policy, an organization merge) is rejected by a second administrator, so nothing changes
-// for real data.
+// for real data. Every work item a test opens is closed at its end (the check rejected, the objection withdrawn, the
+// export request rejected), so the shared queues do not grow from run to run.
 //   EN  admins A and B: retention Add (an archive policy of a made-up record type, rejected by B) and the Dry run;
 //       Plans Assignments and Plan requests. Axe on each view.
 //   EN  a moderator: a fresh shop's business check taken, more information asked (the clock pauses); the
@@ -145,6 +146,13 @@ test('a moderator takes a business check, asks for more information, reads and c
     await tab(page, name, id);
     await expectNoAxeViolations(page);
   }
+
+  // Close the check: rejected with a message for the business.
+  await gotoReady(page, `/verification?verification=${checkId}&purpose=${purpose}`);
+  await page.getByRole('button', { name: 'Reject', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Reject this check' }).getByLabel('Message to the business').fill('Closed by the AC14-2 test.');
+  await confirmWith(page, 'en', 'Reject this check', 'Reject', 'details_mismatch', 'AC14-2 E2E, closed by the test');
+  await expect(page.getByTestId('decision-done')).toBeVisible({ timeout: 30_000 });
   await context.close();
 });
 
@@ -181,6 +189,14 @@ test('a community reviewer writes to the business in an objection thread; My dec
   await confirmWith(page, 'fa', say('fa', 'disputes.thread.dialog.raiser'), say('fa', 'disputes.thread.send'), 'evidence_needed');
   await expect(raiser.getByText(say('fa', 'disputes.thread.text.request_evidence'))).toBeVisible({ timeout: 30_000 });
   await expect(raiser).toContainText('CarPal');
+
+  // Close the objection: withdrawn (the community reviewer made no decision on this review).
+  const form = page.getByTestId('dispute-decision');
+  await form.getByLabel(say('fa', 'disputes.outcomes.withdrawn')).check();
+  await form.getByLabel(say('fa', 'disputes.resolutionRequiredLabel')).fill('بسته شده توسط آزمون AC14-2.');
+  await form.getByRole('button', { name: say('fa', 'disputes.record') }).click();
+  await confirmWith(page, 'fa', say('fa', 'disputes.outcomes.withdrawn'), say('fa', 'disputes.record'), 'raiser_request');
+  await expect(page.getByTestId('dispute-closed')).toBeVisible({ timeout: 30_000 });
 
   await gotoReady(page, '/decisions');
   await expect(page.getByRole('heading', { level: 1, name: say('fa', 'decisions.title') })).toBeVisible();
@@ -237,6 +253,13 @@ test('organization filters and Merge duplicate (rejected by a second admin); a u
     await tab(a, name, id);
     await expectNoAxeViolations(a);
   }
+
+  // Close the privacy request: rejected with a text for the user.
+  await gotoReady(a, `/privacy?type=export&status=received&request=${dsr.id}&purpose=${purpose}`);
+  await a.getByLabel('Reason the user will read').fill('Closed by the AC14-2 test.');
+  await a.getByRole('button', { name: 'Reject the request' }).click();
+  await confirmWith(a, 'en', 'Reject the request', 'Reject the request', 'request_unfounded', 'AC14-2 E2E, closed by the test');
+  await expect(a.getByTestId('dsr-status')).toHaveText('Rejected', { timeout: 30_000 });
 
   // A moderation view goes to the server as a reason filter.
   await gotoReady(a, '/content?tab=content&view=consent');

@@ -79,7 +79,9 @@
       "settings": "Settings",
       "switchAccount": "Switch account",
       "logOut": "Log out",
-      "loggedOut": "You are logged out"
+      "loggedOut": "You are logged out",
+      "workshop": "CarPal Workshop: {{name}}",
+      "createBusiness": "Create a business"
     },
     "nav": {
       "label": "Main",
@@ -510,7 +512,10 @@
       "businessTitle": "Business tools open in the business portal",
       "businessText": "Set up your business there with the same account. Meanwhile you can use CarPal as an individual.",
       "openPortal": "Open the business portal",
-      "continueIndividual": "Continue as an individual"
+      "continueIndividual": "Continue as an individual",
+      "workshopTitle": "Set up your workshop on this phone",
+      "workshopText": "CarPal Workshop takes about five minutes: name, place, what you repair and your hours. Your personal account stays as it is.",
+      "setUpWorkshop": "Set up your workshop"
     },
     "vehicle": {
       "intro": "Every search and suggestion fits your car once we know it.",
@@ -3954,6 +3959,503 @@
       "used": "You already answered this request",
       "usedText": "You can change your answer in Privacy & consent.",
       "mismatchText": "This request belongs to another account. Sign out and open it again with the account that received the email."
+    }
+  },
+  "provider": {
+    "appName": "CarPal Workshop",
+    "metaTitle": "CarPal Workshop",
+    "tabs": {
+      "label": "Workshop",
+      "today": "Today",
+      "requests": "Requests",
+      "replies": "Replies",
+      "photos": "Photos"
+    },
+    "business": {
+      "switchLabel": "Switch business",
+      "current": "Business",
+      "personal": "Personal",
+      "personalHint": "Your own cars and appointments",
+      "add": "Add a business",
+      "role": {
+        "provider_owner": "Owner",
+        "provider_manager": "Manager",
+        "provider_staff": "Staff"
+      },
+      "verificationPending": "Verification pending",
+      "verified": "Verified business"
+    },
+    "menu": {
+      "label": "Workshop menu",
+      "openWebUi": "Open in Web UI",
+      "openWebUiHint": "Opens the full provider portal in a new tab. Sign in there too.",
+      "notifications": "Notification settings",
+      "signOut": "Sign out",
+      "signedOut": "You are signed out"
+    },
+    "entry": {
+      "tagline": "For repair shops",
+      "title": "Your workshop on your phone",
+      "intro": "Answer appointment requests, reply to customers and post before/after photos from the workshop floor.",
+      "signIn": "Sign in",
+      "newBusiness": "New to CarPal? Sign in or sign up, then set up your workshop in a few minutes.",
+      "personal": "Looking for your own car? Open CarPal"
+    },
+    "gate": {
+      "checking": "Opening your workshop",
+      "noBusinessTitle": "You have no workshop on CarPal yet",
+      "noBusinessText": "Set up your workshop in a few minutes, or ask the owner of your workshop to invite you.",
+      "start": "Set up your workshop",
+      "errorTitle": "Could not load your businesses"
+    },
+    "start": {
+      "title": "Set up your workshop"
+    },
+    "soon": {
+      "title": "Coming soon to CarPal Workshop",
+      "replies": "You will reply to reviews and customers here soon. Until then, use the Web UI.",
+      "photos": "You will post before/after photos here soon. Until then, use the Web UI."
+    },
+    "today": {
+      "title": "Today",
+      "newRequests": "New requests",
+      "oldest": "Oldest waiting {{time}}",
+      "usualReply": "You usually reply in {{time}}",
+      "safety_one": "{{count, number}} safety-critical",
+      "safety_other": "{{count, number}} safety-critical",
+      "replies": "Replies waiting",
+      "reviews_one": "{{count, number}} review without a reply",
+      "reviews_other": "{{count, number}} reviews without a reply",
+      "approvals_one": "{{count, number}} approval request",
+      "approvals_other": "{{count, number}} approval requests",
+      "photos": "Photos",
+      "jobsReady_one": "{{count, number}} job ready for photos",
+      "jobsReady_other": "{{count, number}} jobs ready for photos",
+      "waiting_one": "{{count, number}} waiting for the customer",
+      "waiting_other": "{{count, number}} waiting for the customer",
+      "nothingWaiting": "Nothing waits for you",
+      "lifts": "Today on the lifts",
+      "noJobs": "No jobs booked for today.",
+      "safetyMark": "Safety-critical",
+      "loadError": "Could not load this part",
+      "finishTitle": "Finish your profile",
+      "finishText": "Customers find complete profiles first.",
+      "finishWeb": "In the Web UI",
+      "finish": {
+        "hours_set": "Set your working hours",
+        "service_categories": "Add what you repair",
+        "business_info": "Describe your business and how customers reach you",
+        "appointment_availability": "Turn on appointment booking",
+        "portfolio_items": "Post your first before/after photos",
+        "certifications": "Add a certificate"
+      },
+      "verificationPending": "Verification pending: your profile is live while CarPal checks your business.",
+      "time": {
+        "hm": "{{h, number}} h {{m, number}} min",
+        "h": "{{h, number}} h",
+        "m": "{{m, number}} min"
+      },
+      "draftTitle": "Your workshop is not on CarPal yet",
+      "draftText": "Customers cannot find it until the set-up is finished and the profile is published.",
+      "draftAction": "Continue setting up"
+    },
+    "status": {
+      "requested": "New",
+      "provider_reviewing": "Reviewing",
+      "alternative_proposed": "Time proposed",
+      "confirmed": "Booked",
+      "checked_in": "Checked in",
+      "in_progress": "In progress",
+      "awaiting_parts": "Awaiting parts",
+      "ready_for_pickup": "Ready for pickup",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No-show",
+      "draft": "Draft"
+    },
+    "notifications": {
+      "title": "Business notifications",
+      "bellLabel": "Notifications of {{name}}",
+      "empty": "No notifications for this business yet.",
+      "markAllRead": "Mark all as read",
+      "generic": {
+        "title": "Business update",
+        "text": "Open the Web UI to see this update."
+      },
+      "templates": {
+        "appointment.request_received": {
+          "title": "New appointment request",
+          "text": "A customer asked for an appointment. Answer soon."
+        },
+        "appointment.customer_message": {
+          "title": "New message from a customer",
+          "text": "A customer wrote about an appointment."
+        },
+        "appointment.delay": {
+          "title": "Customer running late",
+          "text": "A customer will be {{customer_delay_minutes}} minutes late."
+        },
+        "appointment.cancelled": {
+          "title": "Appointment cancelled",
+          "text": "An appointment was cancelled."
+        },
+        "appointment.status_updated": {
+          "title": "Appointment updated",
+          "text": "An appointment changed to: {{new_status}}."
+        },
+        "review.received": {
+          "title": "New review",
+          "text": "A new review about your business was published. You can reply."
+        },
+        "review.approval_needed": {
+          "title": "Do you recognise this customer?",
+          "text": "A review waits for your answer. No answer in 7 days counts as no objection."
+        },
+        "review.approval_reminder": {
+          "title": "A review still waits for your answer",
+          "text": "Days left: {{days_left}}. No answer counts as no objection."
+        },
+        "organization.verified": {
+          "title": "Your business is verified",
+          "text": "CarPal verified your business. Your profile now shows it."
+        },
+        "organization.location_corrected": {
+          "title": "Your location was corrected",
+          "text": "CarPal corrected the map pin or address of a location. Check it in the Web UI."
+        },
+        "organization.verification_info_requested": {
+          "title": "CarPal needs more information",
+          "text": "To verify your business CarPal needs a few more details. Open the Web UI."
+        },
+        "organization.verification_rejected": {
+          "title": "CarPal could not verify your business",
+          "text": "See what to fix in the Web UI."
+        },
+        "organization.profile_corrected": {
+          "title": "CarPal corrected your profile",
+          "text": "Some details of your business profile were corrected. Check them in the Web UI."
+        }
+      }
+    },
+    "onboarding": {
+      "checking": "Opening the set-up",
+      "loadError": "Could not open the set-up",
+      "stepOf": "Step {{step}} of {{total}}",
+      "steps": {
+        "business": "Your business",
+        "location": "Where",
+        "services": "What you repair",
+        "hours": "Hours and go live"
+      },
+      "titles": {
+        "business": "Start your business",
+        "location": "Where is the workshop?",
+        "services": "What do you repair?",
+        "hours": "Hours and go live"
+      },
+      "back": "Back",
+      "next": "Save and continue",
+      "saveFailed": "Could not save. Check the connection and try again.",
+      "publish": "Publish my workshop",
+      "publishNote": "You can change everything later. Models, tasks, photos, capacity and your team are added in the Web UI.",
+      "business": {
+        "name": "Business name",
+        "nameHint": "The name customers see, for example Reza Auto Repair.",
+        "nameRequired": "Enter the name of the business.",
+        "nameRejected": "This name cannot be used. Try another one.",
+        "type": "Type of business",
+        "phone": "Business phone",
+        "phoneHint": "Customers and CarPal call this number.",
+        "phoneInvalid": "Enter a mobile or landline number, for example 0912 345 6789.",
+        "email": "Business e-mail",
+        "emailHint": "Filled in from your account. CarPal sends business notices here.",
+        "emailInvalid": "Enter an e-mail address.",
+        "terms": "I accept the CarPal terms for my business.",
+        "termsLink": "Read the terms",
+        "termsRequired": "Accept the terms to create the business.",
+        "ai": "Let CarPal's AI use my business data for tips and drafts",
+        "aiHint": "Optional. AI drafts are only suggestions: you check every text before it is sent. You can turn this off in the Web UI.",
+        "aiNotSaved": "The AI choice was not saved. You can set it in the Web UI.",
+        "create": "Create the business",
+        "verifyTitle": "Verify your e-mail or phone first",
+        "verifyText": "CarPal creates a business only for an account with a verified e-mail or phone number.",
+        "verifyAction": "Open my profile"
+      },
+      "types": {
+        "independent_mechanic": "Mechanic",
+        "garage": "Garage",
+        "mobile_mechanic": "Mobile mechanic",
+        "body_shop": "Body shop",
+        "tire_wheel_specialist": "Tyres and wheels",
+        "diagnostics_specialist": "Diagnostics",
+        "ev_hybrid_specialist": "Electric and hybrid",
+        "transmission_specialist": "Gearbox",
+        "detailing_reconditioning": "Detailing",
+        "fleet_service_center": "Fleet service centre"
+      },
+      "location": {
+        "loading": "Opening the map",
+        "intro": "Put the pin exactly on your workshop door, then check the address.",
+        "useMine": "Use my location",
+        "denied": "Location is blocked for this site. Move the map instead, or allow location in the browser settings.",
+        "noMap": "The map cannot open on this phone. Use your location to place the pin.",
+        "mapLabel": "Map: move it until the pin is on your workshop",
+        "moveMap": "Move the map to place the pin",
+        "pinSet": "The pin is set",
+        "noWayTitle": "The location cannot be set on this phone",
+        "noWayText": "Neither the map nor the phone's location is available. Set the location in the Web UI, then come back here.",
+        "pinRequired": "Place the pin on the map or use your location.",
+        "fillFromPin": "Fill in the address from the pin",
+        "street": "Street and number",
+        "streetRequired": "Enter the street.",
+        "city": "City",
+        "cityRequired": "Enter the city.",
+        "postal": "Postal code (optional)",
+        "farTitle": "The pin is far from the address",
+        "farText": "The pin is about {{distance}} km from the typed address. Check both, or save anyway: CarPal's reviewer sees the distance.",
+        "show": "What customers see",
+        "exact": "The exact address",
+        "exactText": "Best for a workshop customers drive to.",
+        "area": "Only the area",
+        "areaText": "For a home workshop: the address is shared when you confirm an appointment.",
+        "radius": "How far you travel (km)",
+        "radiusHint": "Customers see a circle around your base instead of a street address.",
+        "radiusInvalid": "Enter a distance between 1 and 200 km.",
+        "saveAnyway": "Save anyway"
+      },
+      "services": {
+        "loadError": "Could not load the list of repairs and brands",
+        "intro": "Choose at least one kind of repair and one car brand. Customers find you by these.",
+        "missing": "Choose at least one repair and one brand",
+        "missingText": "A profile is published only with both.",
+        "systems": "Repairs",
+        "brands": "Car brands",
+        "brandSearch": "Search brands",
+        "noBrand": "No brand with this name.",
+        "savedNote": "Greyed choices are saved. Remove them in the Web UI.",
+        "later": "Models, series and single tasks are added later in the Web UI."
+      },
+      "hours": {
+        "title": "Working hours",
+        "intro": "The usual week is filled in. Change the days and times that differ.",
+        "saved_one": "{{count}} working day is saved. Change your hours in the Web UI.",
+        "saved_other": "{{count}} working days are saved. Change your hours in the Web UI.",
+        "days": {
+          "0": "Sunday",
+          "1": "Monday",
+          "2": "Tuesday",
+          "3": "Wednesday",
+          "4": "Thursday",
+          "5": "Friday",
+          "6": "Saturday"
+        },
+        "opens": "{{day}} opens at",
+        "closes": "{{day}} closes at",
+        "closed": "Closed",
+        "badTimes": "A closing time must be after the opening time.",
+        "noDays": "Choose at least one working day.",
+        "preset": "Use the usual week"
+      },
+      "licence": {
+        "title": "Business licence (optional)",
+        "text": "A photo of your licence lets CarPal verify your business. Without it your profile is still published, with 'Verification pending'.",
+        "add": "Add a photo of the licence",
+        "hint": "A photo or a PDF. Only CarPal's reviewers see it.",
+        "notSent": "The licence photo was not sent. You can send it later in the Web UI."
+      },
+      "summary": {
+        "title": "Your profile",
+        "name": "Business",
+        "place": "Place",
+        "repairs": "Repairs",
+        "counts": "Repairs: {{systems}} · Brands: {{brands}}"
+      },
+      "unmet": {
+        "title": "The profile cannot be published yet",
+        "text": "CarPal needs the items below. Fix them, then publish again.",
+        "provider_profile": "The business details are missing.",
+        "active_location": "The workshop's place is missing.",
+        "service_category": "Choose at least one kind of repair.",
+        "supported_brand": "Choose at least one car brand.",
+        "organization_active": "The business is not active. Contact CarPal support.",
+        "profile_not_suspended": "The profile is suspended. Contact CarPal support.",
+        "other": "Something else is missing. Open the Web UI to see it."
+      },
+      "goTo": {
+        "business": "Go to Your business",
+        "location": "Go to Where",
+        "services": "Go to What you repair",
+        "hours": "Go to Hours"
+      },
+      "result": {
+        "title": "Your workshop is live",
+        "text": "can now be found by customers on CarPal.",
+        "pendingChip": "Verification pending",
+        "pending": "CarPal checks your business; the profile stays live meanwhile.",
+        "profile": "See your public profile",
+        "laterTitle": "Finish later in the Web UI",
+        "later": {
+          "models": "Car models and single tasks",
+          "portfolio": "Photos of your work",
+          "capacity": "Appointment capacity",
+          "team": "Your team"
+        },
+        "laterNote": "The Web UI opens in a new tab on a computer or a tablet.",
+        "today": "Go to Today"
+      }
+    },
+    "requests": {
+      "title": "Requests",
+      "refresh": "Refresh",
+      "segmentsLabel": "Request groups",
+      "segments": {
+        "new": "New",
+        "proposed": "Proposed",
+        "upcoming": "Upcoming"
+      },
+      "myJobs": "My jobs",
+      "myJobsPartial": "Some assignments could not be read; the list may miss a job.",
+      "loadError": "Could not load the requests.",
+      "empty": {
+        "new": "No new requests. New ones appear here and on Today.",
+        "proposed": "No proposed times waiting for the customer.",
+        "upcoming": "No booked visits coming up."
+      },
+      "emptyMine": "None of these requests is assigned to you.",
+      "more": "Showing the first 50. See all in the Web UI:",
+      "todayLink": "Today's jobs",
+      "back": "All requests",
+      "urgency": {
+        "low": "Low",
+        "medium": "Within days",
+        "high": "Urgent",
+        "safety_critical": "Safety-critical"
+      },
+      "card": {
+        "preferred": "Preferred: {{time}}",
+        "proposed": "You proposed: {{time}}",
+        "confirmed": "Booked: {{time}}",
+        "anyTime": "Any time"
+      },
+      "time": {
+        "hm": "{{h, number}} h {{m, number}} min",
+        "h": "{{h, number}} h",
+        "m": "{{m, number}} min"
+      },
+      "actions": {
+        "accept": "Accept",
+        "propose": "Propose time",
+        "more": "More",
+        "decline": "Decline",
+        "ask": "Ask for information"
+      },
+      "detail": {
+        "safetyTitle": "Safety-critical request",
+        "safetyText": "The customer may not be able to drive safely. Answer this request first.",
+        "km": "{{value}} km",
+        "received": "Received {{time}}",
+        "answer": "Answer the request",
+        "waitingSince": "The customer has waited since {{time}}.",
+        "report": "Pre-visit report",
+        "preferred": "Preferred times",
+        "noPreferred": "The customer gave no preferred time.",
+        "proposedWait": "You proposed {{time}}. Waiting for the customer to accept or suggest another time.",
+        "booked": "Booked for {{time}}.",
+        "reason": "Reason: {{reason}}",
+        "declined": "You declined this request.",
+        "messages": "Messages with the customer",
+        "noMessages": "No messages yet.",
+        "messagesError": "Could not load the messages.",
+        "video": "Video from the customer",
+        "photo": "Photo from the customer",
+        "photoPending": "Photo being checked",
+        "document": "Document"
+      },
+      "report": {
+        "issue": "What the customer says",
+        "symptoms": "Reported symptoms",
+        "aiLabel": "AI pre-visit summary",
+        "aiNote": "Written by AI from what the customer reported. Not a diagnosis.",
+        "triageNone": "Triage: not provided",
+        "triageNoneText": "The customer did not use Help Me. Above are their own words.",
+        "likely": "Likely services",
+        "expectations": "Customer's note",
+        "history": "Service history",
+        "historyNotShared": "Not shared by customer",
+        "warnings": "Warnings",
+        "focus": "Suggested focus areas",
+        "media": "Photos and video"
+      },
+      "ai": {
+        "label": "AI suggestion",
+        "intro": "Ask the AI for a duration and possible conflicts. You decide the time.",
+        "run": "Suggest a duration",
+        "off": "AI suggestions are not available for your business now. You can answer without them.",
+        "failed": "The AI suggestion did not finish.",
+        "duration": "Suggested duration: {{time}}",
+        "longer": "longer than the customer expects",
+        "conflicts_one": "{{count, number}} conflict with booked work",
+        "conflicts_other": "{{count, number}} conflicts with booked work",
+        "use": "Use this duration",
+        "note": "A draft from AI. Check it before you answer."
+      },
+      "sheets": {
+        "cancel": "Back",
+        "theirTimes": "Customer's preferred times",
+        "day": "Day",
+        "time": "Time at the shop",
+        "duration": "Duration",
+        "aiDuration": "AI suggested {{time}}.",
+        "accept": {
+          "title": "Accept the request",
+          "submit": "Confirm booking"
+        },
+        "propose": {
+          "title": "Propose another time",
+          "submit": "Send proposal",
+          "note": "Note to the customer (optional)",
+          "noteHint": "For example why this time works better."
+        },
+        "decline": {
+          "title": "Decline the request",
+          "submit": "Decline"
+        },
+        "ask": {
+          "title": "Ask for information",
+          "submit": "Send",
+          "label": "Message to the customer",
+          "hint": "The request stays open while you wait for the answer."
+        }
+      },
+      "decline": {
+        "reason": "Reason",
+        "reasons": {
+          "fully_booked": "Fully booked",
+          "vehicle_not_covered": "We do not work on this vehicle",
+          "service_not_offered": "We do not offer this service",
+          "other": "Other reason"
+        },
+        "note": "Note to the customer (optional)",
+        "noteHint": "The customer sees the reason and your note."
+      },
+      "load": {
+        "title": "Your day: {{day}}",
+        "loading": "Checking your day…",
+        "failed": "Could not read your calendar for this day.",
+        "visits_one": "{{count, number}} visit booked",
+        "visits_other": "{{count, number}} visits booked",
+        "slots": "{{used, number}} of {{max, number}} slots taken",
+        "timeOff": "Time off on this day"
+      },
+      "errors": {
+        "capacity": "That time is full. Pick another time, or propose one to the customer.",
+        "changed": "This request changed meanwhile. It is now: {{status}}.",
+        "past": "Pick a time in the future.",
+        "tooMany": "Too many changes at once. Wait a moment and try again.",
+        "forbidden": "You cannot do this for this business. Ask the owner.",
+        "failed": "That did not work. Try again.",
+        "emptyMessage": "Write a message first."
+      }
     }
   }
 }

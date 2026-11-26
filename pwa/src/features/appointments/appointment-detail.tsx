@@ -68,7 +68,7 @@ export function AppointmentDetail({ appointmentId, backHref }: { appointmentId: 
   const history = useApiQuery('appointments.history', { path, query: { limit: 50 } }, { enabled: !!a });
   const notes = useApiQuery(
     'appointments.notes_list',
-    { path, query: { limit: 100 } },
+    { path, query: { limit: 50 } },
     {
       enabled: !!a,
       refetchInterval: pollInterval(a?.status),

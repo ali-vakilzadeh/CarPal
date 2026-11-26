@@ -112,6 +112,8 @@ export const PRIVATE_SECTIONS = new Set([
   'login',
   'signup',
   'drive',
+  // CarPal Workshop (provider plan PW1): business data, never cached or indexed.
+  'provider',
 ]);
 
 /** Pages that preview private PDFs in a frame (W-GAR-01/02: /<locale>/garage/…). */

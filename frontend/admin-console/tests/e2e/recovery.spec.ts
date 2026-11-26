@@ -6,7 +6,7 @@
 //   EN  a lost key: the request with a stored code, two administrators approve it, the new key and new codes, the
 //       restriction banner; the request completed on Recovery requests
 //   FA  a request rejected by an administrator; the requester learns it on the waiting page; axe on the pages
-import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type Browser, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import { expectNoAxeViolations } from './support';
 import {
   addSecurityKey,
@@ -73,6 +73,16 @@ async function decide(page: Page, name: string, decision: 'approve' | 'reject', 
     await dialog.getByRole('button', { name: fa ? 'رد' : 'Reject', exact: true }).click();
     await expect(page.getByText(fa ? 'درخواست رد شد.' : 'The request was rejected.')).toBeVisible({ timeout: 30_000 });
   }
+}
+
+/**
+ * The waiting page reads the request again on its own; when the decision is already shown there is no "Check again" to
+ * press (AC15-b: the approvals took longer than one refresh in the 2026-11-26 runs).
+ */
+async function checkAgainUnlessShown(page: Page, button: string, outcome: Locator) {
+  const again = page.getByRole('button', { name: button });
+  await expect(again.or(outcome)).toBeVisible({ timeout: 30_000 });
+  if (await again.isVisible()) await again.click();
 }
 
 test('Security page: a backup key, the first key removed, new recovery codes shown once (EN)', async ({ context, page }) => {
@@ -150,7 +160,7 @@ test('lost key: a recovery approved by two administrators, a new key and new cod
   }
 
   // Back on the waiting page: approved; a new key on a new device, then the new codes once.
-  await requester.page.getByRole('button', { name: 'Check again' }).click();
+  await checkAgainUnlessShown(requester.page, 'Check again', requester.page.getByTestId('recover-approved'));
   await expect(requester.page.getByTestId('recover-approved')).toBeVisible({ timeout: 30_000 });
   await requester.page.getByRole('button', { name: 'Continue' }).click();
   const newKey = await addSecurityKey(requester.context, requester.page);
@@ -185,7 +195,7 @@ test('a recovery rejected by an administrator; the requester learns it (FA)', as
   await expectNoAxeViolations(admin.page);
   await admin.context.close();
 
-  await requester.page.getByRole('button', { name: 'بررسی دوباره' }).click();
+  await checkAgainUnlessShown(requester.page, 'بررسی دوباره', requester.page.getByTestId('recover-ended'));
   await expect(requester.page.getByTestId('recover-ended')).toHaveAttribute('data-state', 'rejected', { timeout: 30_000 });
   await expectNoAxeViolations(requester.page);
   // The ended request was dropped from the BFF.

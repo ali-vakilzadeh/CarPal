@@ -241,7 +241,8 @@ describe('BFF against the live backend', () => {
     const browser = new RecordingBrowser(bff);
     const count = upstream.length;
     for (const path of [
-      '/api/v1/orgs/0193a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b/locations',
+      // An organization route outside the Workshop list (provider plan PRV-BR-08).
+      '/api/v1/orgs/0193a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b/members',
       '/api/v1/admin/flags',
       '/api/v1/orgs/0193a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b/fleet/members',
     ])

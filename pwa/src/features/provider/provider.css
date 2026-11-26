@@ -1,0 +1,385 @@
+/* CarPal Workshop (provider plan PW1): the phone-first frame of /<locale>/provider — top bar with the business switch,
+   the page column and the bottom tab bar on every width (a workshop app, PRV-GD-04: 48 px targets, one primary
+   action). Tokens only, logical properties only. */
+
+.pwa-ws {
+  min-block-size: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+}
+.pwa-ws.has-tabs {
+  padding-block-end: calc(var(--bar-height) + env(safe-area-inset-bottom, 0px));
+}
+
+.pwa-ws-top {
+  position: sticky;
+  z-index: 25;
+  inset-block-start: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-block-size: var(--bar-height);
+  padding-inline: var(--space-3);
+  background: var(--surface-raised);
+  border-block-end: 1px solid var(--divider);
+}
+[data-theme='sun'] .pwa-ws-top {
+  border-block-end: 2px solid var(--border);
+}
+.pwa-ws-top-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.pwa-ws-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 800;
+}
+
+.pwa-ws-switch {
+  min-inline-size: 0;
+}
+.pwa-ws-switch-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--tap-min);
+  max-inline-size: 100%;
+  padding-inline: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+.pwa-ws-switch-button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+.pwa-ws-switch-name {
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pwa-ws-switch-role {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+.pwa-ws-switch-panel {
+  inset-inline-end: auto;
+  inset-inline-start: 0;
+}
+.pwa-menu-item.is-active {
+  background: var(--accent-soft);
+}
+
+.pwa-ws-main {
+  flex: 1;
+  inline-size: 100%;
+  max-inline-size: 720px;
+  margin-inline: auto;
+}
+.pwa-ws-main:focus {
+  outline: none;
+}
+
+.pwa-ws-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+.pwa-ws-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.pwa-ws-title {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  font-weight: 800;
+}
+.pwa-ws-section-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.pwa-ws-counters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.pwa-ws-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pwa-ws-job {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.pwa-ws-job-time {
+  min-inline-size: 3.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.pwa-ws-job-body {
+  flex: 1;
+  min-inline-size: 0;
+}
+.pwa-ws-safety {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.pwa-ws-finish {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pwa-ws-finish-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding-inline-start: var(--space-4);
+}
+.pwa-ws-finish-list li {
+  min-block-size: var(--tap-min);
+  display: flex;
+  align-items: center;
+}
+
+.pwa-ws-entry {
+  align-items: flex-start;
+  padding-block-start: var(--space-8);
+}
+.pwa-ws-entry-mark {
+  display: inline-flex;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--signal);
+  color: var(--ink);
+}
+
+.cp-tabbar.pwa-ws-tabs {
+  position: fixed;
+  z-index: 20;
+  inset-inline: 0;
+  inset-block-end: 0;
+}
+
+/* Compact onboarding (PW2, PW-ONB-01..04): one column, 48 px targets, the map pin fixed at the map's centre. */
+.pwa-ws-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+.pwa-ws-error {
+  color: var(--danger);
+}
+.pwa-ws-entry-mark.is-success {
+  align-self: flex-start;
+  background: var(--accent-soft);
+}
+
+.pwa-ws-pinmap {
+  position: relative;
+}
+.pwa-ws-pinmap .pwa-map {
+  min-block-size: 300px;
+}
+.pwa-ws-pinmap-pin {
+  position: absolute;
+  z-index: 4;
+  inset-block-start: 50%;
+  inset-inline: 0;
+  inline-size: max-content;
+  margin-inline: auto;
+  translate: 0 -100%;
+  color: var(--ink-muted);
+  pointer-events: none;
+}
+.pwa-ws-pinmap-pin.is-set {
+  color: var(--danger);
+}
+.pwa-ws-pinmap-hint {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+
+.pwa-ws-hours {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pwa-ws-hours-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-block-size: 48px;
+  padding-block: var(--space-1);
+  border-block-end: 1px solid var(--divider);
+}
+.pwa-ws-hours-row.is-error .cp-field-input {
+  border-color: var(--danger);
+}
+.pwa-ws-hours-times {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.pwa-ws-hours-times .cp-field-input {
+  inline-size: 7.5rem;
+  min-block-size: 48px;
+}
+
+.pwa-ws-summary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+}
+.pwa-ws-summary dt {
+  color: var(--ink-muted);
+}
+.pwa-ws-summary dd {
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.pwa-ws-unmet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.pwa-ws-later {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-block-size: 48px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.pwa-ws-later:hover {
+  text-decoration: underline;
+}
+
+/* PW3 requests (PW-REQ-01..03) */
+.pwa-ws-segments {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+.pwa-ws-segment {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-block-size: var(--tap-min);
+  padding-inline: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pwa-ws-segment[aria-pressed='true'] {
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-1);
+}
+.pwa-ws-segment:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+.pwa-ws-segment-count {
+  min-inline-size: 1.5rem;
+  padding-inline: var(--space-1);
+  border-radius: 999px;
+  background: var(--signal-soft);
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.pwa-ws-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  align-self: flex-start;
+}
+.pwa-ws-answers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+.pwa-ws-media {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
+}
+.pwa-ws-video {
+  inline-size: 100%;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+.pwa-ws-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.pwa-ws-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.pwa-ws-days {
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+  padding-block-end: var(--space-1);
+  scroll-snap-type: inline mandatory;
+}
+.pwa-ws-days > * {
+  flex: none;
+  scroll-snap-align: start;
+}

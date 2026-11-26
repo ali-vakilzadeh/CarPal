@@ -4,13 +4,13 @@ import type { NextConfig } from 'next';
 
 const pwaDir = dirname(fileURLToPath(import.meta.url));
 
-// The linked packages (@carpal/api-contracts, @carpal/i18n, @carpal/region-config) live in ../shared and ship TypeScript sources.
+// The linked packages (@carpal/api-contracts, @carpal/business-ui, @carpal/i18n, @carpal/region-config) live in ../shared and ship TypeScript sources.
 // Turbopack keeps pwa/ as its root and follows the pnpm links into ../shared through an additional root, instead
 // of widening the root to the repository (which would also watch backend/, including its database files).
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  transpilePackages: ['@carpal/api-contracts', '@carpal/i18n', '@carpal/region-config'],
+  transpilePackages: ['@carpal/api-contracts', '@carpal/business-ui', '@carpal/i18n', '@carpal/region-config'],
   turbopack: { root: pwaDir },
   // The root layout is app/[locale]/layout.tsx, so unmatched URLs get their own document (app/global-not-found.tsx).
   // authInterrupts: forbidden() renders the W-SYS-01 "No access" page with status 403 (P3.T8).

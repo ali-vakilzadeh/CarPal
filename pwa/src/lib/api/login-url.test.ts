@@ -22,6 +22,13 @@ describe('login URLs', () => {
     expect(afterSigninPath('/garage', 'en')).toBe('/en/onboarding?next=%2Fgarage');
   });
 
+  it('returns straight into CarPal Workshop, which has its own onboarding (provider plan PW2)', () => {
+    expect(afterSigninPath('/fa/provider/start')).toBe('/fa/provider/start');
+    expect(afterSigninPath('/en/provider/today?org=x')).toBe('/en/provider/today?org=x');
+    expect(afterSigninPath('/en/provider')).toBe('/en/provider');
+    expect(afterSigninPath('/en/providers')).toBe('/en/onboarding?next=%2Fen%2Fproviders');
+  });
+
   it('accepts only same-origin app paths', () => {
     expect(safeNextPath('/fa/garage')).toBe('/fa/garage');
     for (const bad of ['//evil.example', 'https://evil.example', '/\\evil', '/bff/logout', '/api/v1/me', '/id/oauth/authorize', null, '']) {

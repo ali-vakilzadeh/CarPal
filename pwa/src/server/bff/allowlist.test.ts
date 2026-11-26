@@ -1,19 +1,24 @@
 import { OPERATIONS } from '@carpal/api-contracts';
 import { describe, expect, it } from 'vitest';
-import { ConsumerAllowlist, isCanonicalPath } from './allowlist';
+import { ConsumerAllowlist, WORKSHOP_OPERATIONS, isCanonicalPath } from './allowlist';
 
 const allowlist = new ConsumerAllowlist();
 const opOf = (method: string, path: string) => {
   const m = allowlist.match(method, path);
   return m.kind === 'ok' ? m.route.opId : m.kind;
 };
+const ORG = '0193a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b';
+const isOrgRoute = (path: string) => path.startsWith('/v1/orgs/');
+const isFleetRoute = (path: string) => path.startsWith('/v1/orgs/{org_id}/fleet/');
 
 describe('consumer allowlist (SEC-WEB-5, GD-08 amendment)', () => {
-  it('holds the consumer routes and the 18 fleet driver routes of the registry', () => {
-    const fleet = allowlist.routes.filter((r) => r.route.path.startsWith('/v1/orgs/'));
+  it('holds the consumer routes, the 18 fleet driver routes and the listed Workshop routes of the registry', () => {
+    const fleet = allowlist.routes.filter((r) => isFleetRoute(r.route.path));
+    const workshop = allowlist.routes.filter((r) => isOrgRoute(r.route.path) && !isFleetRoute(r.route.path));
     expect(fleet).toHaveLength(18);
-    expect(fleet.every((r) => r.route.path.startsWith('/v1/orgs/{org_id}/fleet/'))).toBe(true);
-    expect(allowlist.routes.length - fleet.length).toBe(181); // + vehicles.odometer_prompt_skip (1.5.0, backend S26b), search.session_get (1.1.0), me.deactivate (1.2.0), policy.current and policy.accept (1.4.0, backend S15), disputes.messages_list and disputes.message_post (1.4.0, backend S20), support.ticket_create, support.tickets_list, support.ticket_get and support.ticket_reply (1.4.0, backend S24)
+    // One /v1/orgs/{org_id}/… route per listed operation, and nothing else in the organization scope.
+    expect(workshop.map((r) => r.opId).sort()).toEqual([...WORKSHOP_OPERATIONS].sort());
+    expect(allowlist.routes.length - fleet.length - workshop.length).toBe(181); // + vehicles.odometer_prompt_skip (1.5.0, backend S26b), search.session_get (1.1.0), me.deactivate (1.2.0), policy.current and policy.accept (1.4.0, backend S15), disputes.messages_list and disputes.message_post (1.4.0, backend S20), support.ticket_create, support.tickets_list, support.ticket_get and support.ticket_reply (1.4.0, backend S24)
     expect(allowlist.routes.every((r) => r.route.host === 'api')).toBe(true);
   });
 
@@ -47,7 +52,7 @@ describe('consumer allowlist (SEC-WEB-5, GD-08 amendment)', () => {
   });
 
   it('refuses business, admin and auth-host routes and unknown paths', () => {
-    expect(opOf('GET', '/v1/orgs/0193/locations')).toBe('not_found');
+    expect(opOf('GET', '/v1/orgs/0193/members')).toBe('not_found');
     expect(opOf('GET', '/v1/orgs/0193/fleet/members')).toBe('not_found');
     expect(opOf('GET', '/v1/admin/flags')).toBe('not_found');
     expect(opOf('POST', '/v1/auth/signin')).toBe('not_found');
@@ -59,8 +64,9 @@ describe('consumer allowlist (SEC-WEB-5, GD-08 amendment)', () => {
     expect(allowlist.match('DELETE', '/v1/me')).toEqual({ kind: 'method_not_allowed', allow: expect.arrayContaining(['GET']) });
   });
 
-  it('never admits an operation whose only principals are ORG or STF', () => {
+  it('never admits an operation whose only principals are ORG or STF, except the listed Workshop routes', () => {
     for (const r of allowlist.routes) {
+      if (isOrgRoute(r.route.path) && !isFleetRoute(r.route.path)) continue;
       const tags = r.route.principals.flat().map((t) => t.tag);
       expect(
         tags.some((t) => ['USR', 'PUB', 'LNK', 'DRV'].includes(t)),
@@ -69,6 +75,50 @@ describe('consumer allowlist (SEC-WEB-5, GD-08 amendment)', () => {
     }
     const admin = Object.keys(OPERATIONS).filter((id) => id.startsWith('admin.'));
     expect(allowlist.routes.some((r) => admin.includes(r.opId))).toBe(false);
+  });
+});
+
+describe('Workshop operations (provider plan PRV-GD-01, PRV-BR-08)', () => {
+  it('names only operations of the registry that have a provider-organization route', () => {
+    for (const id of WORKSHOP_OPERATIONS) {
+      const op = OPERATIONS[id];
+      expect(op, id).toBeDefined();
+      expect(
+        op.routes.some((r) => r.host === 'api' && isOrgRoute(r.path) && !isFleetRoute(r.path)),
+        id,
+      ).toBe(true);
+    }
+    expect(new Set(WORKSHOP_OPERATIONS).size).toBe(WORKSHOP_OPERATIONS.length);
+  });
+
+  it('forwards the listed operations on their organization route', () => {
+    expect(opOf('GET', `/v1/orgs/${ORG}/provider/profile`)).toBe('provider.profile_get');
+    expect(opOf('GET', `/v1/orgs/${ORG}/provider/appointments`)).toBe('provider.appointments_list');
+    expect(opOf('POST', `/v1/orgs/${ORG}/provider/appointments/${ORG}/transitions`)).toBe('provider.appointments_transition');
+    expect(opOf('GET', `/v1/orgs/${ORG}/reviews`)).toBe('reviews.org_list');
+    expect(opOf('POST', `/v1/orgs/${ORG}/review-approvals/${ORG}/answer`)).toBe('review_approvals.answer');
+    expect(opOf('POST', `/v1/orgs/${ORG}/provider/portfolio/${ORG}/publish`)).toBe('provider.portfolio_publish');
+    expect(opOf('POST', `/v1/orgs/${ORG}/locations/pin-check`)).toBe('org.location_pin_check');
+  });
+
+  it('still refuses every other organization operation (404)', () => {
+    // Team, unpublish, job logs, private customer notes, verification history, members' consents withdrawal …
+    expect(opOf('GET', `/v1/orgs/${ORG}/members`)).toBe('not_found');
+    expect(opOf('POST', `/v1/orgs/${ORG}/members/invitations`)).toBe('not_found');
+    expect(opOf('PATCH', `/v1/orgs/${ORG}`)).toBe('method_not_allowed');
+    expect(opOf('POST', `/v1/orgs/${ORG}/provider/unpublish`)).toBe('not_found');
+    expect(opOf('GET', `/v1/orgs/${ORG}/provider/job-logs`)).toBe('not_found');
+    expect(opOf('GET', `/v1/orgs/${ORG}/provider/customer-notes`)).toBe('not_found');
+    expect(opOf('POST', `/v1/orgs/${ORG}/provider/appointments/${ORG}/participants`)).toBe('method_not_allowed');
+    expect(opOf('GET', `/v1/orgs/${ORG}/provider/time-off`)).toBe('not_found');
+    expect(opOf('POST', `/v1/orgs/${ORG}/consents/${ORG}/withdraw`)).toBe('not_found');
+    expect(opOf('POST', `/v1/orgs/${ORG}/subscription/change-requests`)).toBe('not_found');
+    expect(opOf('GET', `/v1/orgs/${ORG}/provider/ai/skill-heatmap`)).toBe('not_found');
+    // Vendor, fleet-manager and admin routes.
+    expect(opOf('POST', `/v1/orgs/${ORG}/vendor/ai/normalize`)).toBe('not_found');
+    expect(opOf('POST', `/v1/orgs/${ORG}/fleet/ai/suggestions`)).toBe('not_found');
+    expect(opOf('GET', `/v1/orgs/${ORG}/fleet/members`)).toBe('not_found');
+    expect(opOf('GET', '/v1/admin/flags')).toBe('not_found');
   });
 });
 

@@ -23,8 +23,16 @@
     "esModuleInterop": true,
     "types": ["node"],
     "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./src/*"] }
+    // @carpal/business-ui (../shared/business-ui, provider plan PRV-GD-08) has no node_modules of its own: its imports
+    // of React and of the test libraries resolve to the copies of this app.
+    "paths": {
+      "@/*": ["./src/*"],
+      "react": ["./node_modules/@types/react"],
+      "react/*": ["./node_modules/@types/react/*"],
+      "vitest": ["./node_modules/vitest"],
+      "@testing-library/react": ["./node_modules/@testing-library/react"]
+    }
   },
-  "include": ["next-env.d.ts", "src", "tools", "tests", "*.ts", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
+  "include": ["next-env.d.ts", "src", "../shared/business-ui/src", "tools", "tests", "*.ts", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
   "exclude": ["node_modules", ".next", "public"]
 }

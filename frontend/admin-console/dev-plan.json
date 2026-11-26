@@ -3,7 +3,7 @@
     "title": "CarPal admin console (WP15 UI, WP20 admin part; frontend/admin-console/) — build plan and stage log",
     "created": "2026-11-08",
     "last_updated": "2026-11-25",
-    "status": "in_progress",
+    "status": "scratch_build_done",
     "owner": "ali-vakilzadeh",
     "purpose": "Build the internal staff console that operates the platform: Path 2 review approvals, moderation, disputes, verification, privacy requests, plans, flags and the AI kill switch, the USD exchange rate, taxonomy, audit, AI/MCP oversight and analytics. Without it the pilot cannot run without direct API or database work (backend S11 open_after_stage, NI-08).",
     "sources_of_truth": [
@@ -20,7 +20,7 @@
     ],
     "progress": {
       "as_of": "2026-11-25",
-      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) with pnpm check, build and a Playwright smoke. AC2 done 2026-11-09 (backend S12): contract 1.3.0 gives cp-web-admin DPoP + private_key_jwt, the staff passkey enrolment inside the sign-in (auth.passkey_enrol_options, auth.passkey_enrol), admin.staff_me, and a first-run staff bootstrap (backend pnpm staff:bootstrap, backend/deploy/staff-bootstrap.sh); the console is regenerated (63 admin-api operations, no api reads, because the api host refuses admin tokens), shows a Latin environment badge (OQ-12) and sends HSTS outside dev (OQ-11). OQ-01, OQ-10, OQ-11 and OQ-12 are answered. AC3 done 2026-11-09: the admin BFF (src/server/bff, copied from the PWA with provenance headers) signs staff in at aal3 with code + PKCE, DPoP-bound tokens and private_key_jwt, keeps tokens, the DPoP key and the admin.staff_me profile server-side (browser: one __Host-cpa_sid cookie), ends sessions after 30 min idle / 8 h, forwards exactly the 63 admin-api operations (purpose and reason headers, CSRF), and offers /bff/reauth for step-up; the typed client (src/lib/api) and the TanStack provider (memory-only cache, cleared on sign-out, session end and staff switch) are in. Tests: pnpm check (196), pnpm test:int against the strict backend (7), pnpm e2e (10). AC4 done 2026-11-09: staff sign in on the console's own /id/signin (work email + password with proof of work in strict mode, then the security key; a first-time account enrols a device-bound key with the emailed code in the same sign-in; the key alone for a step-up) and land in the shell: top bar with the environment badge, lookup and My queue placeholders, shortcut list and avatar menu (roles, My actions for ADM, language, theme, sign-out), left navigation filtered by the role table (20 sections, placeholders until their stages), no-permission and not-found states inside the shell, idle warning at 25 min and sign-out at 30 (measured against the server clock), step-up with one-time replay of the saved action, and keyboard shortcuts. Tests: pnpm check (243), pnpm test:int (7), pnpm e2e (22, strict backend). AC5 done 2026-11-10: the admin interaction kit (src/components/admin) carries the admin rules into every later screen: useAdminAction refuses an RSN write without a 3-500 character reason, runs it through the step-up with a one-time replay and reports applied / waiting for a second staff member (FourEyesBanner) / accepted job / an explained problem (SELF_APPROVAL_FORBIDDEN, expired, changed meanwhile); ReasonDialog (console reason codes per kind of action + note, sent as '<code>: <note>', D-29) and ConfirmDialog (second confirmation for irreversible actions); PurposeGate and MaskedField (GD-10); DataTable with URL-bound filters, cursor paging, column choice, saved views without data, keyboard rows and Latin digits; CaseLayout, EntityChip, Timeline, AiEvidenceBlock, SlaBadge and the ADM-only AuditDrawer (Shift+H). Pending approvals (/approvals) lists and decides four-eyes changes; My work (/) shows the approvals waiting and one tile per queue the roles may see with count, oldest age and SLA state (OQ-05 targets, D-32); the top bar's My queue links there with the approvals count. Tests: pnpm check (301), pnpm test:int (7), pnpm e2e (25, strict backend; the four-eyes round trip with two ADM accounts). AC6 built 2026-11-10 (partial: the signed-in E2E is not run yet): Exchange rates (/rates: preview, 20 % four-eyes warning, If-Match; replaces the deploy SQL), Feature flags (/flags: the AI kill switch on top, on at once and off by four-eyes; switch and targeting with If-Match and a Reload on 412), Plans & entitlements (/plans: the ranking rule, plan edits by four-eyes, the audit history, assign plan / trial / overrides) and Data retention (/retention: edits by four-eyes). Tests: pnpm check (330), smoke + bff E2E (13); tests/e2e/settings.spec.ts written, waiting for a strict run with the client key. AC7 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6): Reviews (/reviews: the Path 2 approval queue by stage for community reviewers — the review read for its approval purpose with the business answer, the author history without contact data and evidence links, Confirm once the business step is done, Reject with a note, Ask for evidence, a reason code that is never a rating, A/R keys; moderators read the queue and work review cases: remove, restore, approve a held-back review, warn, move to Path 2 by four-eyes, close) and Disputes & appeals (/disputes: the disputed review with both sides' evidence and the first decider, mediation / uphold / reject with what each does, the different-staff rule explained). Tests: pnpm check (363), smoke + bff E2E (13); tests/e2e/reviews.spec.ts written, its API seeding run against the strict backend. AC8 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6 and AC7): the moderation case workspace for every target type (also under the AC7 review cases): Reports (/content: triage into a case — safety reasons at least high — into the open case about the same item, or dismiss), Content / Accounts & organizations / AI output (/content tabs) and Inventory (/inventory) queues with safety cases first; a case read for its purpose shows the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), \"Take this case\", the actions the backend applies to that item in its state (showcase approval needs the customer's consent), warn / suspend (security key) / reactivate, trust penalties (security key, second confirmation) and badges by id, and closing with a resolution. Tests: pnpm check (397), smoke + bff E2E (13); tests/e2e/moderation.spec.ts written, its API seeding run. AC4-AC8 are committed (the user, 2026-11-10). AC9 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6-AC8): Organizations (/orgs: search by name, slug or id without contact data, two saved views) and the organization page read for an open work item (a pending verification or an open case; otherwise the header from the search and the checks to open it for): Profile with masked contact data, Locations with a MapLibre map (owner's pin, service radius, the server's pin-to-address verdict) and pin or address correction by click, drag or typed coordinates, Verification with the badge approval, Plan; suspend and reactivate; assist sessions with a banner on every page. Verification (/verification: queue with the 2-working-day SLA; submitted data, a watermarked document viewer with zoom, rotate and paging, the checklist; approve blocked by a far pin; reject with the message for the business; the organization's new status after the decision). Tests: pnpm check (429), smoke + bff E2E (13); tests/e2e/orgs.spec.ts written, its API seeding run. AC6-AC9 closed 2026-11-18: the strict signed-in E2E ran with the int:env test keys (no staff key needed), 35/35 passed after two console fixes (D-65 step-up replay notice, D-66 verification deep link) and test fixes; backend_requests BR-02..BR-35 marked done from backend S13-S24 (BR-14 stays deferred); new BR-36 (slow verification queue). 2026-11-18 (after the AC6-AC9 closure): backend/BR-update-plan.json reviewed. Backend S13-S25b and S26a-S26b are done (S26c not started), so the hold is lifted (meta.hold.lifted). The readiness map is backend_status_2026_11_18. The catch-up patch is AC10.T0. The S16a/S16b staff key and recovery work is the new stage AC10b, before AC11. AC14.T1 (the backend half) was done by backend S13-S24. Doc issues and R-items closed by the backend are marked. New BR-37 (verification read by id or organization, from D-66). BR-36 and BR-37 are handed to the backend plan and staged first in S26c (S26c.T0, owner); the console follow-up is AC14b.T8. AC10 done 2026-11-18: users (lookup within the work item, detail with masked contacts, timed suspension, sign out, reset onboarding, staff roles by four-eyes) and privacy requests (queue, steps, export job, deletion by four-eyes), plus the catch-up patch (badge list, own requests from the server, region threshold, assign to a colleague, suspension durations, R-17). Tests: pnpm check green (lint with the R-17 rule, logical CSS, typecheck, unit + DOM 466, contract:check at 1.5.0, i18n:check 1809 keys in en and fa, ds:check); prettier clean on the files of this stage; Strict signed-in E2E on 2026-11-18 against `pnpm int:env backend`: tests/e2e/privacy.spec.ts 2/2 (EN: deletion request through identity and processing, the user page refused without a purpose and opened for dsr:<id> with the full name masked, a 7-day suspension and reactivation, the deletion requested by admin A, approved by admin B, the outcome under Your requests and the request completed by the worker; FA: export request processed, file built and followed with admin.job_get, the user found by email within the request, the request completed and the same lookup then refused; axe on queue, request, lookup and user page in EN and FA). Whole suite 37/37 passed (6.3 min), so the T0 changes did not break AC4-AC9. AC10b done 2026-11-20: staff security keys, recovery codes and account recovery (backend S16a/S16b). Recovery codes shown once after a new key (never stored); /security for every staff member (own keys, backup key, remove, new codes; step-up arms the action instead of replaying it, D-76); \"Lost your security key?\" on the sign-in from the request to the new key, with the request handle kept by the BFF (HttpOnly id cookie, server-side store) so an approval hours later continues in a new sign-in; Recovery requests (/recoveries, ADM: approve with the check method and a note for \"other\", reject); the 72-hour restriction banner and a prompt when no code is left. Tests: pnpm check 494, pnpm test:int 7/7 strict, E2E recovery.spec.ts 3/3 and signin.spec.ts 9/9 strict. New BR-39 (recoveries in admin.work_summary). AC12 done 2026-11-20: taxonomy management on /taxonomy (tree, list and missing translations per type with a search by any label; node editor that requires EN and FA labels and follows the database parent and attribute rules, If-Match on edits; synonyms and transliterations with AI suggestions decided; weighted mappings; merges by four-eyes with the job followed on Pending approvals and the merge tab; zero-result search counts). New DI-35 and BR-40 (terms, synonym search and queue, usage counts, merge preview). Tests: pnpm check 509; E2E taxonomy.spec.ts 2/2 strict; Whole strict E2E suite on 2026-11-20: 42/42 passed (9.0 min, 4 workers; recovery.spec.ts 3, taxonomy.spec.ts 2 and every earlier suite with the recovery-codes step). AC13 done 2026-11-20 (run before AC11 on the owner's request): the full home dashboard from admin.work_summary and admin.system_health (D-32 paging gone), analytics for all 11 dashboard keys with charts and tables, AI oversight (kill switch, alerts, read-only AI outputs), MCP clients with a four-eyes access editor and the access log, and the platform audit log; flags and rates open their audit trail by id. New DI-36..DI-38, BR-41, BR-42. Tests: pnpm check 541; E2E oversight.spec.ts 3/3 strict; Whole strict E2E suite on 2026-11-20: 45/45 passed (10.3 min, 4 workers; oversight.spec.ts 3 and every earlier suite with the new dashboard as the landing page; approvals.spec.ts tile counts updated). AC14-1 done 2026-11-20 (run on the owner's request ahead of AC11, which stays not_started; AC14 split per its split_note): Staff & permissions (/staff: directory, roles, disable, four-eyes enable), Policies & consent texts (/policies: versions, drafts, four-eyes publish with re-consent keep or pause), Notifications & templates (/notifications: templates with preview and reset, rules, delivery health) and the staff notice bell; the BFF takes 256 KiB policy texts and the ticket purpose; reads the console makes on its own no longer keep a session alive (D-102, an AC13 defect). AC14-2 started: the support inbox (/support: views, the team clock, ticket:<id> read, assign, templated replies EN/FA, turn into a case / privacy request / dispute / plan request, close; the dashboard tile links to it; array query values now comma-separated, D-105). New D-98..D-106, DI-39..DI-41, BR-43..BR-45. Tests: pnpm check green; pnpm test:int strict passed; E2E settings-ac14.spec.ts 3/3 and support.spec.ts 2/2 strict; Whole strict E2E suite on 2026-11-20: 50/50 passed (16.0 min, 4 workers; settings-ac14.spec.ts 3 and support.spec.ts 2 with every earlier suite; an earlier run failed 2 AC14 tests on timing, fixed as D-107, and the AC14 specs then passed twice in a row). AC14-2 continues (T5 remaining: user and organization tabs, disputes, verification, moderation actions, plans, retention, my decisions) is not done; its checklist is in stages AC14.parts. AC14b done 2026-11-21 on the owner's request: first sign-in password change in /id/signin (code + own password, no skip, the code carried into the key enrolment), the daily exchange rate (Today badge, the unset rate opened first, Set today's rate or Keep for today with a prefilled reason, a dashboard card for ADMs), the odometer prompt rule, CarPal-Forwarded-Client on admin-api and /id calls (backend S26c.T2), verification links read by id (BR-37, D-66 walk removed), and no Neshan basemap in the console by the owner's choice (OQ-16 (c)): Open in Neshan from the Locations tab. New D-108..D-111, OQ-16 (answered). Tests: pnpm check 623; pnpm test:int 7/7 strict; Strict E2E against `pnpm int:env backend` on 2026-11-21: whole suite 47 passed, 1 failed, 2 not run (13.6 min, 4 workers); the failure was this stage's dashboard rate card counted as an 8th widget in oversight.spec.ts (the test now counts the 7 fixed widgets and checks the card's link when shown), and the 2 not run were the serial tests after it. After that fix and the Neshan links: oversight.spec.ts, orgs.spec.ts and settings.spec.ts 9/9 passed (3.7 min), so every test of the suite has passed on this stage's code. AC11 done 2026-11-22 (milestone M1): the deploy kit frontend/admin-console/deploy/ (admin-setup.sh, admin-update.sh, nginx with ADMIN_GATE default none, own service user, sessions in memory D-112, ADMIN_CONSOLE_HOST D-113), the staff runbook, the backend deploy.md admin plane settings, the pilot E2E suite (pnpm e2e:pilot) and the security pass (deploy/security-pass.md: no high-severity finding; F-1 moderate: Next.js 16.4.5 update). pnpm check 627; pilot E2E 11/11 strict. New D-112..D-114. AC15 (hardening) built 2026-11-25 on the screens that exist, before AC14-2 by the owner's request (D-115): role journeys EN/FA, axe on every route × direction × theme with keyboard and reduced-motion runs, RTL screenshots from recorded reads, performance budgets met at the desktop profile, the security pass on the whole app (F-1 still open, F-7 dev only); fixes: account menu, two table names, a missing heading, dashboard CLS 0.43 → 0.008, J on slow tables. Status partial: its closure waits for AC14-2 (AC15-b).",
+      "summary": "Plan written 2026-11-08 against backend contract 1.2.0 (S1-S11) and the finished PWA (P1-P15). AC1 done 2026-11-09: frontend/admin-console is a Next.js 16.4.3 package (@carpal/admin-console) with pnpm check, build and a Playwright smoke. AC2 done 2026-11-09 (backend S12): contract 1.3.0 gives cp-web-admin DPoP + private_key_jwt, the staff passkey enrolment inside the sign-in (auth.passkey_enrol_options, auth.passkey_enrol), admin.staff_me, and a first-run staff bootstrap (backend pnpm staff:bootstrap, backend/deploy/staff-bootstrap.sh); the console is regenerated (63 admin-api operations, no api reads, because the api host refuses admin tokens), shows a Latin environment badge (OQ-12) and sends HSTS outside dev (OQ-11). OQ-01, OQ-10, OQ-11 and OQ-12 are answered. AC3 done 2026-11-09: the admin BFF (src/server/bff, copied from the PWA with provenance headers) signs staff in at aal3 with code + PKCE, DPoP-bound tokens and private_key_jwt, keeps tokens, the DPoP key and the admin.staff_me profile server-side (browser: one __Host-cpa_sid cookie), ends sessions after 30 min idle / 8 h, forwards exactly the 63 admin-api operations (purpose and reason headers, CSRF), and offers /bff/reauth for step-up; the typed client (src/lib/api) and the TanStack provider (memory-only cache, cleared on sign-out, session end and staff switch) are in. Tests: pnpm check (196), pnpm test:int against the strict backend (7), pnpm e2e (10). AC4 done 2026-11-09: staff sign in on the console's own /id/signin (work email + password with proof of work in strict mode, then the security key; a first-time account enrols a device-bound key with the emailed code in the same sign-in; the key alone for a step-up) and land in the shell: top bar with the environment badge, lookup and My queue placeholders, shortcut list and avatar menu (roles, My actions for ADM, language, theme, sign-out), left navigation filtered by the role table (20 sections, placeholders until their stages), no-permission and not-found states inside the shell, idle warning at 25 min and sign-out at 30 (measured against the server clock), step-up with one-time replay of the saved action, and keyboard shortcuts. Tests: pnpm check (243), pnpm test:int (7), pnpm e2e (22, strict backend). AC5 done 2026-11-10: the admin interaction kit (src/components/admin) carries the admin rules into every later screen: useAdminAction refuses an RSN write without a 3-500 character reason, runs it through the step-up with a one-time replay and reports applied / waiting for a second staff member (FourEyesBanner) / accepted job / an explained problem (SELF_APPROVAL_FORBIDDEN, expired, changed meanwhile); ReasonDialog (console reason codes per kind of action + note, sent as '<code>: <note>', D-29) and ConfirmDialog (second confirmation for irreversible actions); PurposeGate and MaskedField (GD-10); DataTable with URL-bound filters, cursor paging, column choice, saved views without data, keyboard rows and Latin digits; CaseLayout, EntityChip, Timeline, AiEvidenceBlock, SlaBadge and the ADM-only AuditDrawer (Shift+H). Pending approvals (/approvals) lists and decides four-eyes changes; My work (/) shows the approvals waiting and one tile per queue the roles may see with count, oldest age and SLA state (OQ-05 targets, D-32); the top bar's My queue links there with the approvals count. Tests: pnpm check (301), pnpm test:int (7), pnpm e2e (25, strict backend; the four-eyes round trip with two ADM accounts). AC6 built 2026-11-10 (partial: the signed-in E2E is not run yet): Exchange rates (/rates: preview, 20 % four-eyes warning, If-Match; replaces the deploy SQL), Feature flags (/flags: the AI kill switch on top, on at once and off by four-eyes; switch and targeting with If-Match and a Reload on 412), Plans & entitlements (/plans: the ranking rule, plan edits by four-eyes, the audit history, assign plan / trial / overrides) and Data retention (/retention: edits by four-eyes). Tests: pnpm check (330), smoke + bff E2E (13); tests/e2e/settings.spec.ts written, waiting for a strict run with the client key. AC7 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6): Reviews (/reviews: the Path 2 approval queue by stage for community reviewers — the review read for its approval purpose with the business answer, the author history without contact data and evidence links, Confirm once the business step is done, Reject with a note, Ask for evidence, a reason code that is never a rating, A/R keys; moderators read the queue and work review cases: remove, restore, approve a held-back review, warn, move to Path 2 by four-eyes, close) and Disputes & appeals (/disputes: the disputed review with both sides' evidence and the first decider, mediation / uphold / reject with what each does, the different-staff rule explained). Tests: pnpm check (363), smoke + bff E2E (13); tests/e2e/reviews.spec.ts written, its API seeding run against the strict backend. AC8 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6 and AC7): the moderation case workspace for every target type (also under the AC7 review cases): Reports (/content: triage into a case — safety reasons at least high — into the open case about the same item, or dismiss), Content / Accounts & organizations / AI output (/content tabs) and Inventory (/inventory) queues with safety cases first; a case read for its purpose shows the item as the public sees it (a file inline with a \"CarPal internal\" watermark, no download), \"Take this case\", the actions the backend applies to that item in its state (showcase approval needs the customer's consent), warn / suspend (security key) / reactivate, trust penalties (security key, second confirmation) and badges by id, and closing with a resolution. Tests: pnpm check (397), smoke + bff E2E (13); tests/e2e/moderation.spec.ts written, its API seeding run. AC4-AC8 are committed (the user, 2026-11-10). AC9 built 2026-11-10 (partial: the signed-in E2E is not run, like AC6-AC8): Organizations (/orgs: search by name, slug or id without contact data, two saved views) and the organization page read for an open work item (a pending verification or an open case; otherwise the header from the search and the checks to open it for): Profile with masked contact data, Locations with a MapLibre map (owner's pin, service radius, the server's pin-to-address verdict) and pin or address correction by click, drag or typed coordinates, Verification with the badge approval, Plan; suspend and reactivate; assist sessions with a banner on every page. Verification (/verification: queue with the 2-working-day SLA; submitted data, a watermarked document viewer with zoom, rotate and paging, the checklist; approve blocked by a far pin; reject with the message for the business; the organization's new status after the decision). Tests: pnpm check (429), smoke + bff E2E (13); tests/e2e/orgs.spec.ts written, its API seeding run. AC6-AC9 closed 2026-11-18: the strict signed-in E2E ran with the int:env test keys (no staff key needed), 35/35 passed after two console fixes (D-65 step-up replay notice, D-66 verification deep link) and test fixes; backend_requests BR-02..BR-35 marked done from backend S13-S24 (BR-14 stays deferred); new BR-36 (slow verification queue). 2026-11-18 (after the AC6-AC9 closure): backend/BR-update-plan.json reviewed. Backend S13-S25b and S26a-S26b are done (S26c not started), so the hold is lifted (meta.hold.lifted). The readiness map is backend_status_2026_11_18. The catch-up patch is AC10.T0. The S16a/S16b staff key and recovery work is the new stage AC10b, before AC11. AC14.T1 (the backend half) was done by backend S13-S24. Doc issues and R-items closed by the backend are marked. New BR-37 (verification read by id or organization, from D-66). BR-36 and BR-37 are handed to the backend plan and staged first in S26c (S26c.T0, owner); the console follow-up is AC14b.T8. AC10 done 2026-11-18: users (lookup within the work item, detail with masked contacts, timed suspension, sign out, reset onboarding, staff roles by four-eyes) and privacy requests (queue, steps, export job, deletion by four-eyes), plus the catch-up patch (badge list, own requests from the server, region threshold, assign to a colleague, suspension durations, R-17). Tests: pnpm check green (lint with the R-17 rule, logical CSS, typecheck, unit + DOM 466, contract:check at 1.5.0, i18n:check 1809 keys in en and fa, ds:check); prettier clean on the files of this stage; Strict signed-in E2E on 2026-11-18 against `pnpm int:env backend`: tests/e2e/privacy.spec.ts 2/2 (EN: deletion request through identity and processing, the user page refused without a purpose and opened for dsr:<id> with the full name masked, a 7-day suspension and reactivation, the deletion requested by admin A, approved by admin B, the outcome under Your requests and the request completed by the worker; FA: export request processed, file built and followed with admin.job_get, the user found by email within the request, the request completed and the same lookup then refused; axe on queue, request, lookup and user page in EN and FA). Whole suite 37/37 passed (6.3 min), so the T0 changes did not break AC4-AC9. AC10b done 2026-11-20: staff security keys, recovery codes and account recovery (backend S16a/S16b). Recovery codes shown once after a new key (never stored); /security for every staff member (own keys, backup key, remove, new codes; step-up arms the action instead of replaying it, D-76); \"Lost your security key?\" on the sign-in from the request to the new key, with the request handle kept by the BFF (HttpOnly id cookie, server-side store) so an approval hours later continues in a new sign-in; Recovery requests (/recoveries, ADM: approve with the check method and a note for \"other\", reject); the 72-hour restriction banner and a prompt when no code is left. Tests: pnpm check 494, pnpm test:int 7/7 strict, E2E recovery.spec.ts 3/3 and signin.spec.ts 9/9 strict. New BR-39 (recoveries in admin.work_summary). AC12 done 2026-11-20: taxonomy management on /taxonomy (tree, list and missing translations per type with a search by any label; node editor that requires EN and FA labels and follows the database parent and attribute rules, If-Match on edits; synonyms and transliterations with AI suggestions decided; weighted mappings; merges by four-eyes with the job followed on Pending approvals and the merge tab; zero-result search counts). New DI-35 and BR-40 (terms, synonym search and queue, usage counts, merge preview). Tests: pnpm check 509; E2E taxonomy.spec.ts 2/2 strict; Whole strict E2E suite on 2026-11-20: 42/42 passed (9.0 min, 4 workers; recovery.spec.ts 3, taxonomy.spec.ts 2 and every earlier suite with the recovery-codes step). AC13 done 2026-11-20 (run before AC11 on the owner's request): the full home dashboard from admin.work_summary and admin.system_health (D-32 paging gone), analytics for all 11 dashboard keys with charts and tables, AI oversight (kill switch, alerts, read-only AI outputs), MCP clients with a four-eyes access editor and the access log, and the platform audit log; flags and rates open their audit trail by id. New DI-36..DI-38, BR-41, BR-42. Tests: pnpm check 541; E2E oversight.spec.ts 3/3 strict; Whole strict E2E suite on 2026-11-20: 45/45 passed (10.3 min, 4 workers; oversight.spec.ts 3 and every earlier suite with the new dashboard as the landing page; approvals.spec.ts tile counts updated). AC14-1 done 2026-11-20 (run on the owner's request ahead of AC11, which stays not_started; AC14 split per its split_note): Staff & permissions (/staff: directory, roles, disable, four-eyes enable), Policies & consent texts (/policies: versions, drafts, four-eyes publish with re-consent keep or pause), Notifications & templates (/notifications: templates with preview and reset, rules, delivery health) and the staff notice bell; the BFF takes 256 KiB policy texts and the ticket purpose; reads the console makes on its own no longer keep a session alive (D-102, an AC13 defect). AC14-2 started: the support inbox (/support: views, the team clock, ticket:<id> read, assign, templated replies EN/FA, turn into a case / privacy request / dispute / plan request, close; the dashboard tile links to it; array query values now comma-separated, D-105). New D-98..D-106, DI-39..DI-41, BR-43..BR-45. Tests: pnpm check green; pnpm test:int strict passed; E2E settings-ac14.spec.ts 3/3 and support.spec.ts 2/2 strict; Whole strict E2E suite on 2026-11-20: 50/50 passed (16.0 min, 4 workers; settings-ac14.spec.ts 3 and support.spec.ts 2 with every earlier suite; an earlier run failed 2 AC14 tests on timing, fixed as D-107, and the AC14 specs then passed twice in a row). AC14-2 continues (T5 remaining: user and organization tabs, disputes, verification, moderation actions, plans, retention, my decisions) is not done; its checklist is in stages AC14.parts. AC14b done 2026-11-21 on the owner's request: first sign-in password change in /id/signin (code + own password, no skip, the code carried into the key enrolment), the daily exchange rate (Today badge, the unset rate opened first, Set today's rate or Keep for today with a prefilled reason, a dashboard card for ADMs), the odometer prompt rule, CarPal-Forwarded-Client on admin-api and /id calls (backend S26c.T2), verification links read by id (BR-37, D-66 walk removed), and no Neshan basemap in the console by the owner's choice (OQ-16 (c)): Open in Neshan from the Locations tab. New D-108..D-111, OQ-16 (answered). Tests: pnpm check 623; pnpm test:int 7/7 strict; Strict E2E against `pnpm int:env backend` on 2026-11-21: whole suite 47 passed, 1 failed, 2 not run (13.6 min, 4 workers); the failure was this stage's dashboard rate card counted as an 8th widget in oversight.spec.ts (the test now counts the 7 fixed widgets and checks the card's link when shown), and the 2 not run were the serial tests after it. After that fix and the Neshan links: oversight.spec.ts, orgs.spec.ts and settings.spec.ts 9/9 passed (3.7 min), so every test of the suite has passed on this stage's code. AC11 done 2026-11-22 (milestone M1): the deploy kit frontend/admin-console/deploy/ (admin-setup.sh, admin-update.sh, nginx with ADMIN_GATE default none, own service user, sessions in memory D-112, ADMIN_CONSOLE_HOST D-113), the staff runbook, the backend deploy.md admin plane settings, the pilot E2E suite (pnpm e2e:pilot) and the security pass (deploy/security-pass.md: no high-severity finding; F-1 moderate: Next.js 16.4.5 update). pnpm check 627; pilot E2E 11/11 strict. New D-112..D-114. AC15 (hardening) built 2026-11-25 on the screens that exist, before AC14-2 by the owner's request (D-115): role journeys EN/FA, axe on every route × direction × theme with keyboard and reduced-motion runs, RTL screenshots from recorded reads, performance budgets met at the desktop profile, the security pass on the whole app (F-1 still open, F-7 dev only); fixes: account menu, two table names, a missing heading, dashboard CLS 0.43 → 0.008, J on slow tables. Status partial: its closure waits for AC14-2 (AC15-b). AC14-2 done 2026-11-25 on the owner's request: user and organization tabs, organization correction, history and merge, the S19 organization filters, verification assignment and more information, dispute threads and withdraw, moderation filters, context and actions with parameters, plans tabs, retention add and dry run, My decisions; every admin-api operation has a screen. New D-119..D-124. AC15-b closed the hardening: two consecutive full strict runs green on 2026-11-26: 85 passed, 5 skipped (the performance tests skip themselves with more than one worker), 21.4 and 23.3 min. meta.status scratch_build_done.",
       "stages_done": [
         "AC1",
         "AC2",
@@ -36,9 +36,11 @@
         "AC12",
         "AC13",
         "AC14b",
-        "AC11"
+        "AC11",
+        "AC14",
+        "AC15"
       ],
-      "next": "AC14-2 (AC14.T5 checklist), then AC15-b (rerun the AC15 suites, screen_coverage final, meta.status). F-1 (Next.js 16.4.5) when the owner agrees. R-01 before the provider plan's PP1.",
+      "next": "Owner decisions in AC15 next_iteration (F-1 Next.js 16.4.5, D-118 rate card place); then the pilot (NI-AC15-08).",
       "decisions_needed_now": [
         "Backend DQ-25 (initial password length for admin100/200/300) and DQ-26 (their email addresses) were built on their defaults and wait for the owner's confirmation (backend/BR-update-plan.json decisions_needed); the console step (AC14b.T2) does not depend on them, the AC11 runbook does. DQ-29 (Neshan as a third party) is settled for the console (no Neshan code, OQ-16 (c), 2026-11-21) but still matters for the backend geocoder and the PWA (PB-10).",
         "R-05, R-07, R-19, R-21: non-code pilot preparations (staff names, security keys, who checks Pending approvals, the real IRR rate). They are not needed before AC11. R-24 is closed: Neshan replaced the tile host, and the console links to Neshan instead of showing its tiles (AC14b.T6, OQ-16 (c))."
@@ -1220,8 +1222,9 @@
         "admin.platform_role_revoke",
         "admin.user_get (PURP)"
       ],
-      "coverage": "partial (tabs BR-16)",
-      "coverage_ac10": "Built in AC10 (/users/<id>): overview with masked contacts and Reveal, roles in organizations, suspend (durations) / reactivate, sign out everywhere, reset onboarding, staff roles (ADM), audit drawer. Tabs from S23 in AC14.T5 (D-71)."
+      "coverage": "full except three tabs without a read (content, privacy requests, cases)",
+      "coverage_ac10": "Built in AC10 (/users/<id>): overview with masked contacts and Reveal, roles in organizations, suspend (durations) / reactivate, sign out everywhere, reset onboarding, staff roles (ADM), audit drawer. Tabs from S23 in AC14.T5 (D-71).",
+      "coverage_ac14_2": "AC14-2: tabs Overview, Roles & organizations, Vehicles, Appointments, Consents, Sessions & devices. Coverage now: full except Reviews & content, Privacy requests and Cases & disputes (no read)."
     },
     {
       "screen": "A-ORG-01 Organization list",
@@ -1230,7 +1233,8 @@
         "admin.orgs_search"
       ],
       "coverage": "full",
-      "coverage_ac9": "built: search by name/slug/id, status/verification/type filters, two saved views as links; no city/plan/duplicate/location-issue filters (DI-31, BR-35)"
+      "coverage_ac9": "built: search by name/slug/id, status/verification/type filters, two saved views as links; no city/plan/duplicate/location-issue filters (DI-31, BR-35)",
+      "coverage_ac14_2": "AC14-2: city, plan, open cases, location issue and possible duplicate filters; the four saved views; flags column."
     },
     {
       "screen": "A-ORG-02 Organization detail",
@@ -1244,8 +1248,9 @@
         "admin.assist_session_end",
         "admin.subscription_assign"
       ],
-      "coverage": "partial (tabs BR-16; merge after BR-08; assisted wizard DI-08)",
-      "coverage_ac9": "built: header and actions (suspend/reactivate, assist, change plan link, audit), Profile (read-only, DI-32), Locations (map, correction), Verification (+ badge approval by id), Plan; other tabs listed as not available (DI-06); merge hidden (BR-08)"
+      "coverage": "full except Reviews and Cases tabs (no read) and the assisted wizard (DI-08, the public Web UI)",
+      "coverage_ac9": "built: header and actions (suspend/reactivate, assist, change plan link, audit), Profile (read-only, DI-32), Locations (map, correction), Verification (+ badge approval by id), Plan; other tabs listed as not available (DI-06); merge hidden (BR-08)",
+      "coverage_ac14_2": "AC14-2: Capabilities & badges, Portfolio, Inventory, Members, Plan history, profile correction and history, Merge duplicate (preview, four-eyes, job), assist banner from the server."
     },
     {
       "screen": "A-VER-01 / A-VER-02 Verification",
@@ -1256,7 +1261,8 @@
         "admin.media_download_url"
       ],
       "coverage": "full",
-      "coverage_ac9": "built: queue with SLA, three-panel review, checklist, approve/reject; no request-more-info, pre-check or assignee (DI-30, BR-35)"
+      "coverage_ac9": "built: queue with SLA, three-panel review, checklist, approve/reject; no request-more-info, pre-check or assignee (DI-30, BR-35)",
+      "coverage_ac14_2": "AC14-2: assign, more information with the paused clock, owner, call-back, flags, registration number, AI pre-check."
     },
     {
       "screen": "A-REV-01 / A-REV-02 Reviews and approvals",
@@ -1272,9 +1278,10 @@
         "admin.case_get",
         "admin.case_close (D-43)"
       ],
-      "coverage": "full except reduce weight / edit request (BR-15)",
+      "coverage": "full",
       "coverage_ac7": "Built in AC7: approval queue by stage with decisions, review cases (remove, restore, approve held-back, warn, move to Path 2 by four-eyes, close). Not built: reduce weight / edit request (BR-15), source tabs and suspicious-pattern tab (DI-21, BR-27).",
-      "coverage_ac8": "AC8: review cases run on the shared moderation workspace (take the case, account and penalty panels added)."
+      "coverage_ac8": "AC8: review cases run on the shared moderation workspace (take the case, account and penalty panels added).",
+      "coverage_ac14_2": "AC14-2: reduce weight and edit request on review cases."
     },
     {
       "screen": "A-CON-01 / A-CON-02 Content moderation",
@@ -1289,8 +1296,9 @@
         "admin.case_close",
         "admin.media_download_url"
       ],
-      "coverage": "full except redaction drawing (BR-15)",
-      "coverage_ac8": "Built in AC8: reports inbox with triage; Content / Accounts & organizations / AI output queues (safety first, views on the client, D-49); case detail with the item, media viewer, actions by target and state, account, penalty, badges, close. Not built: redaction overlay and drawing (BR-15), author column and history, consent record and the whole thread (BR-33), \"Pending pre-publication review\" as a server filter (BR-27)."
+      "coverage": "full",
+      "coverage_ac8": "Built in AC8: reports inbox with triage; Content / Accounts & organizations / AI output queues (safety first, views on the client, D-49); case detail with the item, media viewer, actions by target and state, account, penalty, badges, close. Not built: redaction overlay and drawing (BR-15), author column and history, consent record and the whole thread (BR-33), \"Pending pre-publication review\" as a server filter (BR-27).",
+      "coverage_ac14_2": "AC14-2: server source/reason filters, author and context, image redaction by boxes, merge on organization cases."
     },
     {
       "screen": "A-INV-01 Inventory moderation",
@@ -1300,7 +1308,8 @@
         "admin.case_action"
       ],
       "coverage": "full as a filtered case view",
-      "coverage_ac8": "Built in AC8 (/inventory): listings and fitment rows (request correction, hide, remove, restore, reject fitment, vendor penalty). Not built: downgrade fitment (BR-15), the reason tabs (BR-32), vendor suspension here (organization page, AC9)."
+      "coverage_ac8": "Built in AC8 (/inventory): listings and fitment rows (request correction, hide, remove, restore, reject fitment, vendor penalty). Not built: downgrade fitment (BR-15), the reason tabs (BR-32), vendor suspension here (organization page, AC9).",
+      "coverage_ac14_2": "AC14-2: lower the fitment confidence."
     },
     {
       "screen": "A-DSP-01 Disputes & appeals",
@@ -1310,8 +1319,9 @@
         "admin.dispute_get",
         "admin.dispute_resolve"
       ],
-      "coverage": "partial (thread, target reads and staff withdraw BR-28)",
-      "coverage_ac7": "Built in AC7: queue (status, type, assignment), detail with the disputed Path 2 review and both sides' evidence, mediation / uphold / reject with the different-staff rule explained."
+      "coverage": "full",
+      "coverage_ac7": "Built in AC7: queue (status, type, assignment), detail with the disputed Path 2 review and both sides' evidence, mediation / uphold / reject with the different-staff rule explained.",
+      "coverage_ac14_2": "AC14-2: threads with both sides, respondent, disputed record, Withdraw, the 202 fairness approval."
     },
     {
       "screen": "A-DSR-01 / A-DSR-02 Privacy requests",
@@ -1385,8 +1395,9 @@
         "admin.plan_update",
         "admin.subscription_assign"
       ],
-      "coverage": "partial (history tab via audit search)",
-      "coverage_ac6": "Built in AC6: plans + edit (four-eyes), history via the audit drawer, assignment form; no assignments list (BR-24), plan status not readable (BR-23)."
+      "coverage": "full (history per plan in the audit trail)",
+      "coverage_ac6": "Built in AC6: plans + edit (four-eyes), history via the audit drawer, assignment form; no assignments list (BR-24), plan status not readable (BR-23).",
+      "coverage_ac14_2": "AC14-2: tabs Plans (status, default), Assignments (subscriptions), Plan requests."
     },
     {
       "screen": "A-FLAG-01 Feature flags + kill switch",
@@ -1415,8 +1426,9 @@
         "admin.retention_list",
         "admin.retention_update"
       ],
-      "coverage": "partial (no add, no dry run in contract)",
-      "coverage_ac6": "Built in AC6: list and edit (four-eyes); add and dry run not in the contract (BR-25)."
+      "coverage": "full",
+      "coverage_ac6": "Built in AC6: list and edit (four-eyes); add and dry run not in the contract (BR-25).",
+      "coverage_ac14_2": "AC14-2: Add a policy (four-eyes) and the Dry run."
     },
     {
       "screen": "A-ANL-01 Analytics",
@@ -1575,6 +1587,14 @@
         "admin.region_settings (region.navigation_apps)"
       ],
       "coverage": "partial by decision (OQ-16 (c)): no basemap; Open in Neshan at the pin and at a proposed point"
+    },
+    {
+      "screen": "My decisions (new, not in Docs/23)",
+      "stage": "AC14 (AC14-2)",
+      "operations": [
+        "admin.my_decisions_list"
+      ],
+      "coverage": "full (account menu, MOD and CRV)"
     }
   ],
   "stages": [
@@ -4033,7 +4053,7 @@
     {
       "id": "AC14",
       "title": "Contract gaps: backend contract 1.4.0 for the missing admin screens, and those screens",
-      "status": "in_progress",
+      "status": "done",
       "depends_on": [
         "AC5",
         "Backend S13-S24 and S25a (done; contract 1.4.0 frozen in S25b)",
@@ -4095,7 +4115,7 @@
         {
           "id": "AC14.T5",
           "task": "Console: other approved gaps (support inbox, AI decisions, moderation actions, extended tabs, system health).",
-          "status": "partial",
+          "status": "done",
           "backend_delivered": [
             "S18: source filter and tabs, typed target snapshots (author, consent), severity floor, reason filter, review approval stage and timer (BR-27, BR-29, BR-32, BR-33).",
             "S19: A-ORG-01 filters and saved views; A-VER-01/02 Request more info, Assign, paused clock, owner and call-back columns; A-ORG-02 profile correction and history; assist sessions list for the banner (BR-34, BR-35).",
@@ -4107,13 +4127,14 @@
             "S25a: re-authentication on max_age=300 for every AAL3 action; A-DSP-01 handles 202 PendingChange; a ticket solved with no solved_by was closed by the system.",
             "Not for now: A-AI-02 decisions and A-AI-03 (BR-14, NP-01); NP-07 tabs; geo-IP columns (NP-03)."
           ],
-          "progress": "A-SUP-01 support inbox done 2026-11-20 (stages AC14.parts AC14-2 checklist); the other items are not started."
+          "progress": "Done 2026-11-25: every AC14-2 checklist item (AC14.parts). A-AI-02 decisions and A-AI-03 stay out (BR-14, NP-01)."
         },
         {
           "id": "AC14.T6",
           "task": "E2E and axe for every new screen in EN and FA; update screen_coverage.",
-          "status": "partial",
-          "result_ac14_1": "AC14-1 and the AC14-2 support inbox: DOM tests with axe EN/FA for every new screen (staff 10, policies 14, notifications and bell 14, support 10); tests/e2e/settings-ac14.spec.ts 3/3 and support.spec.ts 2/2 strict. Whole strict E2E suite on 2026-11-20: 50/50 passed (16.0 min, 4 workers; settings-ac14.spec.ts 3 and support.spec.ts 2 with every earlier suite; an earlier run failed 2 AC14 tests on timing, fixed as D-107, and the AC14 specs then passed twice in a row)."
+          "status": "done",
+          "result_ac14_1": "AC14-1 and the AC14-2 support inbox: DOM tests with axe EN/FA for every new screen (staff 10, policies 14, notifications and bell 14, support 10); tests/e2e/settings-ac14.spec.ts 3/3 and support.spec.ts 2/2 strict. Whole strict E2E suite on 2026-11-20: 50/50 passed (16.0 min, 4 workers; settings-ac14.spec.ts 3 and support.spec.ts 2 with every earlier suite; an earlier run failed 2 AC14 tests on timing, fixed as D-107, and the AC14 specs then passed twice in a row).",
+          "result_ac14_2": "DOM tests with axe in EN and FA for every AC14-2 screen (user-tabs, decisions, retention, plans, verification-ac14, disputes-ac14, orgs-ac14, case-more: 79 new tests). tests/e2e/ac14-2.spec.ts 4/4 strict (retention add rejected by a second admin and dry run; plans tabs; a moderator's check taken with more information asked, the organization's tabs and a profile correction; a community reviewer's message in an objection thread and My decisions in Persian; organization filters, a merge rejected by a second admin, a user's tabs, a moderation view). The AC15 sweeps cover the new routes (a11y ADMIN_ROUTES and security-review ROUTES: /plans?tab=assignments, /plans?tab=requests, /orgs?possible_duplicate=true, /decisions). screen_coverage rows updated (coverage_ac14_2)."
         }
       ],
       "deliverables": [
@@ -4128,7 +4149,88 @@
         "A-FEAT-01 featured placements",
         "A-TRU-01 trusted users"
       ],
-      "report": null,
+      "report": {
+        "started_at": "2026-11-20",
+        "completed_at": "2026-11-25",
+        "summary": "AC14-1 (2026-11-20): staff directory, policies and consent texts, notification templates, rules and delivery health, the notice bell. AC14-2 (support inbox 2026-11-20, the rest 2026-11-25): user tabs (vehicles, appointments, consents, sessions and devices); organization tabs (capabilities and badges, portfolio, inventory, members, plan history), the profile correction and history, Merge duplicate with preview and four-eyes, the assist sessions read from the server, the S19 search filters and the four saved views; verification assignment, more information with the paused clock, owner, call-back and flags; dispute threads, the respondent, the disputed record, Withdraw and the 202 fairness approval; moderation views and filters on the server, the author and the content around, reduce weight, edit request, fitment downgrade, merge, image redaction; plans tabs with subscriptions and plan requests; retention add and dry run; My decisions.",
+        "acceptance": {
+          "Backend contract sweep and console contract:check green at 1.4.0.": "Yes, at 1.5.0: 124 admin-api operations + 0 api reads; every one is called by a screen.",
+          "Every approved gap has a working screen with E2E coverage.": "Yes: the AC14-1 specs, support.spec.ts and ac14-2.spec.ts (strict), and the AC15 sweeps over the new routes; whole suite two consecutive full strict runs green on 2026-11-26: 85 passed, 5 skipped (the performance tests skip themselves with more than one worker), 21.4 and 23.3 min."
+        },
+        "screens_built": [
+          "/users/<id> tabs",
+          "/orgs filters and views; /orgs/<id> tabs, correction and history, Merge duplicate",
+          "/verification assign and more information",
+          "/disputes threads, respondent, snapshot, withdraw, fairness approval",
+          "/content /reviews /inventory case additions",
+          "/plans tabs",
+          "/retention add and dry run",
+          "/decisions"
+        ],
+        "operations_used": [
+          "admin.user_vehicles, admin.user_appointments, admin.user_consents, admin.user_sessions",
+          "admin.org_capabilities, admin.org_portfolio, admin.org_inventory_quality, admin.org_members, admin.org_plan_history",
+          "admin.org_correct, admin.org_history, admin.org_merge_preview, admin.org_merge, admin.assist_sessions_list",
+          "admin.verification_assign, admin.verification_decide (info_requested)",
+          "admin.dispute_messages_list, admin.dispute_message_post, admin.dispute_resolve (withdrawn, 202)",
+          "admin.case_context, admin.case_action (reduce_weight, edit_request, downgrade_fitment, merge_duplicate, apply_redaction), admin.cases_list (source, reason)",
+          "admin.subscriptions_list, admin.subscription_change_requests_list",
+          "admin.retention_create, admin.retention_dry_run",
+          "admin.my_decisions_list"
+        ],
+        "files_created": [
+          "src/components/admin/tabs.tsx",
+          "src/features/users/user-tabs.tsx (+ test)",
+          "src/features/decisions/ (page, index, test); src/app/(console)/decisions/page.tsx",
+          "src/features/plans/plan-tabs.tsx",
+          "src/features/verification/verification-parts.tsx, verification-ac14.test.tsx",
+          "src/features/disputes/dispute-parts.tsx, disputes-ac14.test.tsx",
+          "src/features/orgs/org-tabs.tsx, org-merge.tsx, orgs-ac14.test.tsx",
+          "src/features/moderation/case-more.tsx, case-more.test.tsx",
+          "tests/e2e/ac14-2.spec.ts"
+        ],
+        "files_changed": [
+          "src/features/users/user-page.tsx, user-logic.ts, users.test.tsx",
+          "src/features/shell/account-menu.tsx, console-shell.test.tsx",
+          "src/features/retention/retention-page.tsx, retention.test.tsx",
+          "src/features/plans/plans-page.tsx, assign-form.tsx, plans.test.tsx, index.ts",
+          "src/features/verification/verification-page.tsx, verification-logic.ts",
+          "src/features/disputes/disputes-page.tsx; src/features/reviews/review-logic.ts, index.ts, review-logic.test.ts",
+          "src/features/orgs/org-page.tsx, org-logic.ts, orgs-page.tsx, assist.tsx, org-actions.tsx, orgs.test.tsx",
+          "src/features/moderation/case-workspace.tsx, case-logic.ts, badge-panel.tsx, index.ts",
+          "src/features/support/support-logic.ts (plan requests link); src/features/taxonomy/index.ts; src/features/users/index.ts",
+          "src/lib/config/reasons.ts (14 new reason sets); src/components/admin/index.ts, admin.css",
+          "src/lib/i18n/locales/en.json, fa.json",
+          "tests/e2e/a11y.spec.ts, security-review.spec.ts, settings.spec.ts",
+          "README.md, dev-plan.json"
+        ],
+        "tests": {
+          "unit": "pnpm check green on 2026-11-26: lint (logical CSS, cross-feature imports through the feature index, R-17), typecheck, unit + DOM 710 tests in 70 files (631 before AC14-2), contract:check 1.5.0 with 124 admin-api operations (each used by a screen), i18n:check 3651 keys in en and fa, ds:check; prettier clean on the changed files.",
+          "e2e": "Whole suite against pnpm int:env backend (strict), build of 2026-11-26, 4 workers, twice in a row: 85 passed, 5 skipped (21.4 and 23.3 min). ac14-2.spec.ts 4/4 inside both. Before that: run 1 (2026-11-25) 79 passed, 1 failed (a visual fixture lacked the new assist-sessions read); runs 2 and 3 failed 4 tests each, see AC15 report ac15_b.findings.",
+          "a11y": "axe in jsdom EN/FA on every new view and form; a11y.spec.ts over the new routes in both directions and three themes."
+        },
+        "deviations": [
+          "D-119",
+          "D-120",
+          "D-121",
+          "D-122",
+          "D-123",
+          "D-124",
+          "D-125",
+          "D-126"
+        ],
+        "new_doc_issues": [],
+        "new_backend_requests": [],
+        "notes_for_next": [
+          "Reviews & content, Privacy requests and Cases & disputes on the user page, and Reviews and Cases on the organization page, still have no admin-plane read (listed on screen as not available).",
+          "Capabilities name taxonomy nodes only for ADM and MOD (admin.taxonomy_snapshot); support staff read a short id.",
+          "The redaction editor draws on the purpose-bound display copy; check it on real hardware and with a touch screen in the pilot."
+        ],
+        "open_after_stage": [
+          "A-AI-02 decisions and A-AI-03 (BR-14, NP-01)",
+          "The AC15 next_iteration owner decisions (F-1, D-118)"
+        ]
+      },
       "order_note": "Built after AC11 in the plan order (meta.progress.next). A part can start earlier once its backend stage is done (admin_console_resume).",
       "parts": [
         {
@@ -4149,7 +4251,7 @@
             "AC14.T5",
             "AC14.T6 (for these screens)"
           ],
-          "status": "in_progress",
+          "status": "done",
           "checklist": [
             {
               "item": "A-SUP-01 /support: list (status, topic, mine, organization), ticket:<id> read, assign, templated replies EN/FA, Turn into (case, privacy request, dispute, plan request), Close with outcome; system-closed tickets (S25a); the dashboard support_tickets tile links here (today href null)",
@@ -4207,10 +4309,14 @@
             },
             {
               "item": "E2E and axe in EN and FA for every AC14-2 screen; screen_coverage rows",
-              "status": "not_started"
+              "status": "done",
+              "done_at": "2026-11-25",
+              "result": "DOM tests with axe in EN and FA for every AC14-2 screen (user-tabs, decisions, retention, plans, verification-ac14, disputes-ac14, orgs-ac14, case-more: 79 new tests). tests/e2e/ac14-2.spec.ts 4/4 strict (retention add rejected by a second admin and dry run; plans tabs; a moderator's check taken with more information asked, the organization's tabs and a profile correction; a community reviewer's message in an objection thread and My decisions in Persian; organization filters, a merge rejected by a second admin, a user's tabs, a moderation view). The AC15 sweeps cover the new routes (a11y ADMIN_ROUTES and security-review ROUTES: /plans?tab=assignments, /plans?tab=requests, /orgs?possible_duplicate=true, /decisions). screen_coverage rows updated (coverage_ac14_2)."
             }
           ],
-          "note": "Built after AC14-1 in its own session(s); the plan split_note allows it (do not call it AC14b). The 42 operations unused before AC14 minus those AC14-1 used are the floor of its scope; org_merge and retention_create are only named in op-label so far."
+          "note": "Built after AC14-1 in its own session(s); the plan split_note allows it (do not call it AC14b). The 42 operations unused before AC14 minus those AC14-1 used are the floor of its scope; org_merge and retention_create are only named in op-label so far.",
+          "completed_at": "2026-11-25",
+          "summary": "Every remaining A-USR-02, A-ORG-01/02, A-VER-01/02, A-DSP-01, A-CON-01/02, A-PLAN-01 and A-RET-01 gap of contract 1.5.0 is built, plus My decisions: all 124 admin-api operations now have a screen. Built in one session on the owner's request (\"integrate and complete what is left from AC-14 and AC-15\")."
         }
       ]
     },
@@ -4403,7 +4509,7 @@
     {
       "id": "AC15",
       "title": "Hardening and closure: full E2E, accessibility, RTL visuals, performance, security review, handoff",
-      "status": "partial",
+      "status": "done",
       "depends_on": [
         "AC12",
         "AC13",
@@ -4459,9 +4565,9 @@
         {
           "id": "AC15.T6",
           "task": "Closure: README final, screen_coverage final, next_iteration list, recommendation R-01 detailed (shared BFF + kit package for cp-web-portal), meta.status scratch_build_done.",
-          "status": "partial",
-          "partial_reason": "screen_coverage final and meta.status scratch_build_done wait for AC14-2 (D-115).",
-          "result": "README: status, the hardening suites, e2e:pilot/e2e:perf, Deployment. next_iteration below (report.next_iteration). R-01 detailed in recommendations_for_next_stages (detailed_2026_11_25: extract shared/web-bff and shared/web-client before PP1.T2 of the provider plan instead of a third copy; admin kit parts when the portal needs them). Not done: screen_coverage final, meta.status."
+          "status": "done",
+          "result": "README: status, the hardening suites, e2e:pilot/e2e:perf, Deployment. next_iteration below (report.next_iteration). R-01 detailed in recommendations_for_next_stages (detailed_2026_11_25: extract shared/web-bff and shared/web-client before PP1.T2 of the provider plan instead of a third copy; admin kit parts when the portal needs them). Not done: screen_coverage final, meta.status.",
+          "result_ac15_b": "AC15-b (2026-11-25, after AC14-2): screen_coverage final (coverage_ac14_2 on every AC14-2 row, My decisions added), the new routes in the a11y and security sweeps, README final, meta.status scratch_build_done. Acceptance run again: two consecutive full strict runs green on 2026-11-26: 85 passed, 5 skipped (the performance tests skip themselves with more than one worker), 21.4 and 23.3 min. pnpm test:int 7/7 and pnpm e2e:perf 5/5 on the final build (ac15_b.tests)."
         }
       ],
       "deliverables": [
@@ -4524,7 +4630,8 @@
             "id": "NI-AC15-01",
             "item": "AC14-2: the eight checklist items of AC14.parts (user and organization tabs, disputes threads, verification assign/more info, moderation actions, plans, retention add/dry run, my decisions), then AC15-b.",
             "owner": "console",
-            "priority": "before_go_live"
+            "priority": "before_go_live",
+            "status": "done 2026-11-25 (AC14-2 and AC15-b)"
           },
           {
             "id": "NI-AC15-09",
@@ -4573,6 +4680,12 @@
             "item": "Not covered by AC15: Firefox and Safari, real hardware keys, a real server run of the deploy kit, load on the rate limits (security-pass.md \"Not covered\").",
             "owner": "owner / pilot",
             "priority": "pilot"
+          },
+          {
+            "id": "NI-AC15-10",
+            "item": "The /orgs list loads 1141 KB of JavaScript since AC14-2 (the organization tabs and merge share its bundle; other routes 909-994 KB). Load org-tabs.tsx and org-merge.tsx only on /orgs/<id> (next/dynamic or a narrower import), then rerun pnpm e2e:perf.",
+            "owner": "console",
+            "priority": "low"
           }
         ],
         "notes_for_next": [
@@ -4581,11 +4694,32 @@
           "Visual fixtures hold a throwaway staff email (e2e-…@staff.carpals.test) and dev data only; never record against a real backend."
         ],
         "open_after_stage": [
-          "AC14-2 and AC15-b (closure: screen_coverage final, meta.status scratch_build_done).",
           "D-118 (owner decision: the daily rate card below the fold).",
           "F-1 (moderate, owner decision).",
           "Nothing committed (commit only when the user asks; audit first per CLAUDE.md)."
-        ]
+        ],
+        "ac15_b": {
+          "completed_at": "2026-11-25",
+          "summary": "Closure after AC14-2 (D-115): the AC15 sweeps now cover the AC14-2 routes; the whole strict suite ran green twice in a row with the AC14-2 screens.",
+          "findings": "Runs 2 and 3 (2026-11-26) failed the same 4 tests each: privacy.spec (its export request was past the 50 rows of the received-exports queue; earlier ac14-2.spec runs had left 5 export requests open), the AC14-2 user-tab step for the same reason, orgs.spec (the correction confirmation lost on re-read, D-126) and recovery.spec (the waiting page had already shown the decision before the test pressed Check again). Fixed: D-125 (page walk), D-126, ac14-2.spec.ts now closes everything it opens (check rejected, objection withdrawn, export rejected), the 5 leftover AC14-2 export requests rejected through the console, recovery.spec.ts accepts the decision already shown. Leftovers of the earlier AC14-2 runs that cannot be told apart from other specs data were left: a few pending business checks of AC7 Garage shops with an open information request, and a few open objection disputes.",
+          "visual": "The first full run on the AC14-2 build failed one visual test: the assist banner now reads admin.assist_sessions_list on every page (D-123), a read the fixtures did not have. One entry was added to tests/e2e/visual.fixtures.json by hand (an empty list, which renders nothing, so the screens and baselines are unchanged); no re-record. visual.spec.ts 7/7 again on 2026-11-26, a day after recording (D-117 holds).",
+          "tests": {
+            "unit": "pnpm check green on 2026-11-26: lint (logical CSS, cross-feature imports through the feature index, R-17), typecheck, unit + DOM 710 tests in 70 files (631 before AC14-2), contract:check 1.5.0 with 124 admin-api operations (each used by a screen), i18n:check 3651 keys in en and fa, ds:check; prettier clean on the changed files.",
+            "e2e": "Whole suite against pnpm int:env backend (strict), build of 2026-11-26, 4 workers, twice in a row: 85 passed, 5 skipped (21.4 and 23.3 min). ac14-2.spec.ts 4/4 inside both. Before that: run 1 (2026-11-25) 79 passed, 1 failed (a visual fixture lacked the new assist-sessions read); runs 2 and 3 failed 4 tests each, see AC15 report ac15_b.findings.",
+            "int": "pnpm test:int 7/7 against the strict backend (pnpm int:env backend), 2026-11-26, after runs 4 and 5.",
+            "performance": "pnpm e2e:perf 5/5 on the final build (2026-11-26, one worker, desktop profile), now with the assist-sessions read on every page: routes ready 501-1796 ms (/orgs slowest, orgs/search 736 ms on the server), CLS at most 0.043 (/flags), 5-16 reads per route; paging 1,000 staff median 159 ms, p95 214 ms; J on 100 rows focus median 97 ms; 1,000 rows rendered in 1203 ms (J median 431 ms, recorded, not judged); dashboard refresh 14 background reads in 302 ms, CLS 0. JavaScript per page 909-994 KB, except /orgs at 1141 KB (the AC14-2 organization tabs and merge share the orgs feature bundle with the list): within the budget; splitting org-tabs.tsx off the list route is NI-AC15-10."
+          },
+          "files_changed": [
+            "src/features/privacy/privacy-page.tsx (D-125) + privacy.test.tsx",
+            "src/features/orgs/locations-tab.tsx (D-126) + orgs.test.tsx",
+            "tests/e2e/ac14-2.spec.ts (closes its work items), recovery.spec.ts (decision already shown), a11y.spec.ts and security-review.spec.ts (AC14-2 routes), visual.fixtures.json (one empty assist-sessions read)",
+            "README.md, dev-plan.json"
+          ],
+          "deviations": [
+            "D-125",
+            "D-126"
+          ]
+        }
       },
       "partial_reason": "T1-T5 done; T6 closure partly: screen_coverage cannot be final and meta.status cannot be scratch_build_done while AC14-2 (AC14.parts checklist, eight items) is open. AC15 ran before AC14-2 at the owner's request (D-115). AC15-b: after AC14-2, rerun the AC15 suites (they list every route), finish screen_coverage, set meta.status.",
       "note_2026_11_25": "Started 2026-11-22 03:30 on the owner's request (\"wait until 3:30 am, then execute AC-15\"), continued 2026-11-25. AC14 was still in_progress (AC14-2: eight checklist items not started); the advisor review agreed to build AC15 on the screens that exist and not to declare the scratch build done."
@@ -5593,6 +5727,79 @@
         "AC14b.T3",
         "AC15.T4",
         "deploy/runbook.md Before the pilot opens"
+      ]
+    },
+    {
+      "stage": "AC14",
+      "id": "D-119",
+      "summary": "My decisions (admin.my_decisions_list) is reached from the account menu as /decisions, like My actions for administrators, not as a navigation section: it is a look back at one's own work, and the role journeys and the navigation order stay as AC15 tested them. Other roles get the no-permission page.",
+      "affects": [
+        "AC14-2",
+        "src/features/shell/account-menu.tsx"
+      ]
+    },
+    {
+      "stage": "AC14",
+      "id": "D-120",
+      "summary": "The case list views are server filters now (admin.cases_list source and reason, backend S18, BR-27): D-49's narrowing of the rows read is retired; every case queue also has Source and Reason filters, and an explicit one replaces the view's.",
+      "affects": [
+        "AC8",
+        "D-49"
+      ]
+    },
+    {
+      "stage": "AC14",
+      "id": "D-121",
+      "summary": "/plans has tabs (Plans, Assignments, Plan requests); the assign form moved to Assignments. A link with ?subscriber= and no tab opens Assignments, so the AC9/AC10 \"Change plan\" links keep working; a plan request opens it with ?plan_key= prefilled.",
+      "affects": [
+        "AC6",
+        "A-PLAN-01"
+      ]
+    },
+    {
+      "stage": "AC14",
+      "id": "D-122",
+      "summary": "Verification: Take this check sends the button as the reason (taking_check), as cases do (D-50); a check assigned to someone else shows only the assignment panel, because the backend lets only the assignee work under its purpose.",
+      "affects": [
+        "AC9",
+        "A-VER-02"
+      ]
+    },
+    {
+      "stage": "AC14",
+      "id": "D-123",
+      "summary": "The assist banner reads the caller's open sessions from admin.assist_sessions_list (minute refresh) and keeps the in-tab memory of AC9 only for the moment between Start and the next read; D-62's \"a reload forgets it\" no longer applies.",
+      "affects": [
+        "AC9",
+        "D-62"
+      ]
+    },
+    {
+      "stage": "AC14",
+      "id": "D-124",
+      "summary": "Moderation merge_duplicate on an organization case takes the id of the organization that stays and points to the organization page's Merge duplicate for the preview (admin.org_merge_preview is administrators only, the case action is moderators and administrators). Image redaction boxes are drawn on the purpose-bound display copy or typed in percent (keyboard), and sent as fractions of the image.",
+      "affects": [
+        "A-CON-02",
+        "A-ORG-02"
+      ]
+    },
+    {
+      "stage": "AC15",
+      "id": "D-125",
+      "summary": "Privacy requests: a ?request= link to a request past the loaded page (the queue shows 50, oldest first, and has no read by id, BR-38) walks the queue with the same filters, up to 10 pages of 100, as D-66 did for verification before BR-37. Found in AC15-b: the dev queue passed 50 received exports and privacy.spec.ts lost its request; a support ticket turned into a privacy request links there the same way.",
+      "affects": [
+        "AC10",
+        "BR-38",
+        "src/features/privacy/privacy-page.tsx"
+      ]
+    },
+    {
+      "stage": "AC15",
+      "id": "D-126",
+      "summary": "Locations tab: the confirmation of a pin or address correction lives in the tab, not in the location panel that is keyed by the location version, so it survives the organization read after the correction. Found in AC15-b (orgs.spec.ts lost it whenever the re-read came back before the check; a staff member could miss it the same way).",
+      "affects": [
+        "AC9",
+        "src/features/orgs/locations-tab.tsx"
       ]
     }
   ],
